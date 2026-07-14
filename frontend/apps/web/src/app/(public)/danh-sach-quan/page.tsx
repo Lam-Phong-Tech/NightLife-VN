@@ -47,6 +47,7 @@ type VenueView = {
   priceLabel: string;
   tags: string[];
   statusLabel: string;
+  statusTone: "open" | "closed";
   dealLabel: string;
   image: string;
   isOpenNow: boolean;
@@ -392,14 +393,78 @@ const getLocalizedCategoryTags = (category: string, fallback: string, language: 
 
 const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-const currentOpeningSlot = (store: PublicStore) => store.openingHours?.[weekdayKeys[new Date().getDay()] ?? "monday"];
+type OpeningSlot = NonNullable<PublicStore["openingHours"]>[string];
 
-const openingStatus = (store: PublicStore, language: LanguageCode) => {
-  const slot = currentOpeningSlot(store);
-  if (!slot) return { label: translateText("Theo giờ admin", language), isOpen: true };
-  if (slot.closed) return { label: slot.note || translateText("Tạm nghỉ", language), isOpen: false };
-  if (slot.open && slot.close) return { label: `${slot.open} - ${slot.close}`, isOpen: true };
-  return { label: slot.note || translateText("Đang mở", language), isOpen: true };
+const parseClockMinutes = (value?: string | null) => {
+  if (typeof value !== "string") return null;
+
+  const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2] ?? "0");
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+
+  return hours * 60 + minutes;
+};
+
+const openingRangeFromSlot = (slot?: OpeningSlot | null) => {
+  if (!slot || slot.closed) return null;
+
+  const openMinutes = parseClockMinutes(slot.open);
+  const closeMinutes = parseClockMinutes(slot.close);
+
+  return openMinutes !== null && closeMinutes !== null ? { openMinutes, closeMinutes } : null;
+};
+
+const openingLabelFromSlot = (slot: OpeningSlot | undefined, language: LanguageCode) => {
+  if (!slot) return translateText("Chưa có giờ mở cửa", language);
+  if (slot.closed) return slot.note || translateText("Tạm nghỉ", language);
+  if (slot.open && slot.close) return `${slot.open} - ${slot.close}`;
+  return slot.note || translateText("Chưa có giờ mở cửa", language);
+};
+
+const openingStatus = (store: PublicStore, language: LanguageCode, now = new Date()) => {
+  const currentDayIndex = now.getDay();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const previousDayKey = weekdayKeys[(currentDayIndex + 6) % weekdayKeys.length] ?? "monday";
+  const todayKey = weekdayKeys[currentDayIndex] ?? "monday";
+  const previousSlot = store.openingHours?.[previousDayKey];
+  const todaySlot = store.openingHours?.[todayKey];
+  const previousRange = openingRangeFromSlot(previousSlot);
+
+  if (
+    previousRange &&
+    previousRange.closeMinutes <= previousRange.openMinutes &&
+    currentMinutes < previousRange.closeMinutes
+  ) {
+    return {
+      label: openingLabelFromSlot(previousSlot, language),
+      isOpen: true,
+      tone: "open" as const,
+    };
+  }
+
+  const todayRange = openingRangeFromSlot(todaySlot);
+  if (todayRange) {
+    const crossesMidnight = todayRange.closeMinutes <= todayRange.openMinutes;
+    const isOpen = crossesMidnight
+      ? currentMinutes >= todayRange.openMinutes
+      : currentMinutes >= todayRange.openMinutes && currentMinutes < todayRange.closeMinutes;
+
+    return {
+      label: openingLabelFromSlot(todaySlot, language),
+      isOpen,
+      tone: isOpen ? ("open" as const) : ("closed" as const),
+    };
+  }
+
+  return {
+    label: openingLabelFromSlot(todaySlot, language),
+    isOpen: false,
+    tone: "closed" as const,
+  };
 };
 
 const formatDistance = (distanceKm: number | null | undefined, language: LanguageCode) =>
@@ -409,13 +474,13 @@ const formatDistance = (distanceKm: number | null | undefined, language: Languag
       ? "By area"
       : translateText("Theo khu vực", language);
 
-const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
+const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): VenueView => {
   const categoryLabel = getLocalizedCategoryLabel(store.category, language);
   const areaLabel = getLocalizedAreaLabel(store.area?.name ?? store.district ?? store.city ?? "Trung tâm", language);
   const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
   const image = backendImage ?? emptyVenueImage;
-  const { label: statusLabel, isOpen } = openingStatus(store, language);
+  const { label: statusLabel, isOpen, tone } = openingStatus(store, language, now);
   const adminTags = store.tags?.filter(Boolean) ?? [];
   const localizedAdminTags = adminTags.map((tag) => translateText(tag, language));
   const localizedDealLabel = store.activeCoupon?.name
@@ -437,6 +502,7 @@ const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
         : getLocalizedCategoryTags(store.category, categoryLabel, language)
     ).slice(0, 3),
     statusLabel,
+    statusTone: tone,
     dealLabel: localizedDealLabel || localizedAdminTags[0] || categoryLabel,
     image,
     isOpenNow: isOpen,
@@ -459,6 +525,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [openNow, setOpenNow] = useState(defaultOpenNow);
+  const [openingClock, setOpeningClock] = useState(() => Date.now());
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [isLocationPermissionOpen, setLocationPermissionOpen] = useState(false);
@@ -478,6 +545,16 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
   const isCategoryLocked = Boolean(fixedCategory);
   const effectiveCategory = fixedCategory || category;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setOpeningClock(Date.now());
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -680,26 +757,27 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     () => new Map(topRankingStoreSlugs.map((slug, index) => [slug, index])),
     [topRankingStoreSlugs],
   );
+  const openingNow = useMemo(() => new Date(openingClock), [openingClock]);
 
   const venues = useMemo(() => {
     const searchSortedVenues = sortBySearchRelevance(stores, query, (store) => ({
-        primary: [store.name],
-        secondary: [
-          store.category,
-          categoryLabels[store.category],
-          store.description,
-          store.address,
-          store.area?.name,
-          store.area?.code,
-          store.district,
-          store.city,
-          store.cityCode,
-          store.slug,
-        ],
-      }))
-        .map((store) => toVenueView(store, activeLanguage))
-        .filter((venue) => !openNow || venue.isOpenNow)
-        .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
+      primary: [store.name],
+      secondary: [
+        store.category,
+        categoryLabels[store.category],
+        store.description,
+        store.address,
+        store.area?.name,
+        store.area?.code,
+        store.district,
+        store.city,
+        store.cityCode,
+        store.slug,
+      ],
+    }))
+      .map((store) => toVenueView(store, activeLanguage, openingNow))
+      .filter((venue) => !openNow || venue.isOpenNow)
+      .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
 
     if (!topRankingOnly) return searchSortedVenues;
 
@@ -708,7 +786,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         (topRankingOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [activeLanguage, openNow, query, stores, topRankingOnly, topRankingOrder]);
+  }, [activeLanguage, openNow, openingNow, query, stores, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
   const selectedCityLabel = cityLabel;
@@ -1607,7 +1685,7 @@ function VenueResultCard({
         style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
       >
         <div className="venue-image-shade" />
-        <span className={`venue-status ${venue.statusLabel.includes("02:00") ? "is-late" : ""}`}>
+        <span className={`venue-status is-${venue.statusTone}`}>
           <span />
           {venue.statusLabel}
         </span>
@@ -2198,23 +2276,29 @@ const venueSearchCss = `
   .venue-status {
     top: 12px;
     left: 14px;
+    min-height: 22px;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    min-height: 22px;
-    border: 1px solid rgba(58, 222, 143, .34);
+    border: 1px solid rgba(212, 178, 106, .42);
     border-radius: 999px;
-    background: rgba(9, 28, 22, .74);
-    color: #8df0ba;
+    background: rgba(42, 32, 16, .78);
+    color: var(--vy-gold-pale);
     padding: 0 9px;
     font-size: 10px;
     font-weight: 900;
   }
 
-  .venue-status.is-late {
-    border-color: rgba(212, 178, 106, .36);
-    background: rgba(42, 32, 16, .78);
-    color: var(--vy-gold-pale);
+  .venue-status.is-open {
+    border-color: rgba(58, 222, 143, .42);
+    background: rgba(9, 32, 22, .78);
+    color: #8df0ba;
+  }
+
+  .venue-status.is-closed {
+    border-color: rgba(212, 178, 106, .46);
+    background: rgba(42, 32, 16, .8);
+    color: #f0d481;
   }
 
   .venue-status span {
@@ -2245,18 +2329,32 @@ const venueSearchCss = `
     height: 36px;
     display: inline-grid;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, .28);
+    border: 1.5px solid rgba(255, 255, 255, .92);
     border-radius: 50%;
-    background: rgba(12, 12, 15, .46);
-    color: var(--vy-text);
+    background: rgba(12, 12, 15, .22);
+    color: #ffffff;
     backdrop-filter: blur(8px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
     cursor: pointer;
   }
 
   .venue-heart.is-active {
-    border-color: rgba(255, 61, 113, .58);
-    background: rgba(255, 61, 113, .18);
+    border-color: rgba(255, 255, 255, .95);
+    background: rgba(12, 12, 15, .28);
     color: #ff3d71;
+  }
+
+  html.vy-light .venue-heart {
+    border-color: rgba(151, 112, 37, .42);
+    background: rgba(255, 248, 230, .76);
+    color: #7a5a24;
+    box-shadow: 0 10px 24px rgba(86, 62, 18, .18);
+  }
+
+  html.vy-light .venue-heart.is-active {
+    border-color: rgba(229, 49, 103, .42);
+    background: rgba(255, 232, 241, .88);
+    color: #e53167;
   }
 
   .venue-heart:focus-visible {
