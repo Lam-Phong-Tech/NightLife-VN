@@ -26,7 +26,9 @@ export function AdminSupportDashboard() {
 
   useEffect(() => {
     const user = getAuthUser();
+    console.log('[Admin Dashboard] Loaded user:', user);
     if (user) setCurrentUser(user);
+    else console.warn('[Admin Dashboard] No user found. Socket will not connect.');
   }, []);
 
   const adminId = currentUser?.id;
@@ -44,7 +46,20 @@ export function AdminSupportDashboard() {
       path: socketConfig.path,
       query: { adminId, role },
     });
+    console.log(`[Admin Dashboard] Connecting to socket at ${socketConfig.host}${socketConfig.path || ''} with role ${role}...`);
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('[Admin Dashboard] Socket connected! Admin is now ONLINE. Socket ID:', newSocket.id);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('[Admin Dashboard] Socket connection error:', err);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('[Admin Dashboard] Socket disconnected. Reason:', reason);
+    });
 
     // Initial load pending tickets via REST API
     const token = getAuthSessionToken();

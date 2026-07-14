@@ -51,9 +51,12 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
   handleConnection(client: Socket) {
     // Determine if connection is from an Admin
     const role = client.handshake.query.role as string;
+    const adminId = client.handshake.query.adminId as string;
+    console.log(`[SupportChat] Client connected: ${client.id}, role: ${role}, adminId: ${adminId}`);
+
     if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'STAFF' || role === 'OPERATOR') {
       this.onlineAdmins.add(client.id);
-      // Optionally broadcast to other admins or log
+      console.log(`[SupportChat] Admin added to onlineAdmins. Total online admins: ${this.onlineAdmins.size}`);
     }
 
     const ticketId = client.handshake.query.ticketId as string;
@@ -63,7 +66,8 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
   }
 
   handleDisconnect(client: Socket) {
-    this.onlineAdmins.delete(client.id);
+    const wasAdmin = this.onlineAdmins.delete(client.id);
+    console.log(`[SupportChat] Client disconnected: ${client.id}. Was admin: ${wasAdmin}. Total online admins: ${this.onlineAdmins.size}`);
   }
 
   @SubscribeMessage('check_status')
@@ -79,6 +83,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
   ) {
     try {
       const isOnline = this.onlineAdmins.size > 0;
+      console.log(`[SupportChat] Handling send_message from client ${client.id}. isOnline: ${isOnline}, onlineAdmins size: ${this.onlineAdmins.size}`);
       
       // Yêu cầu: Chỉ text, không xử lý file ở đây
       if (!data.content || data.content.trim() === '') return { error: 'Content is required' };
