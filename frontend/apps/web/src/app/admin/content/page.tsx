@@ -88,6 +88,9 @@ export default function AdminContentPage() {
   const [bannerLinkedStore, setBannerLinkedStore] = useState<any | null>(null);
   const [isDeletingBanner, setIsDeletingBanner] = useState(false);
 
+  const [campaignDiscountType, setCampaignDiscountType] = useState<'percent' | 'amount'>('percent');
+  const [campaignDiscountValue, setCampaignDiscountValue] = useState<string>('10%');
+
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -1635,18 +1638,80 @@ export default function AdminContentPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên chương trình</div>
                 <input placeholder="VD: Happy Hour cuối tuần" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức ưu đãi</div>
-                  <input placeholder="−30% / 2+1" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 10px', color: '#e3c27e', fontSize: '15px', fontWeight: 800, textAlign: 'center', fontFamily: 'inherit', outline: 'none' }} />
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức giảm</div>
+                <div style={{ display: 'flex', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '4px', marginBottom: '12px' }}>
+                  <button 
+                    onClick={() => { setCampaignDiscountType('percent'); setCampaignDiscountValue('10%'); }}
+                    style={{
+                      flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', 
+                      background: campaignDiscountType === 'percent' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                      color: campaignDiscountType === 'percent' ? '#241a0a' : '#c5c0b6',
+                      fontWeight: campaignDiscountType === 'percent' ? 700 : 500,
+                      fontSize: '14px', cursor: 'pointer'
+                    }}
+                  >
+                    Giảm %
+                  </button>
+                  <button 
+                    onClick={() => { setCampaignDiscountType('amount'); setCampaignDiscountValue('100K'); }}
+                    style={{
+                      flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', 
+                      background: campaignDiscountType === 'amount' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                      color: campaignDiscountType === 'amount' ? '#241a0a' : '#c5c0b6',
+                      fontWeight: campaignDiscountType === 'amount' ? 700 : 500,
+                      fontSize: '14px', cursor: 'pointer'
+                    }}
+                  >
+                    Giảm tiền (đ)
+                  </button>
                 </div>
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Trạng thái</div>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Đang chạy</span>
-                    <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã lên lịch</span>
-                    <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã kết thúc</span>
+                
+                {campaignDiscountType === 'percent' ? (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['5%', '10%', '15%', '20%', '30%', '50%'].map(val => (
+                      <span 
+                        key={val}
+                        onClick={() => setCampaignDiscountValue(val)}
+                        style={{
+                          flex: '1 1 0', textAlign: 'center', padding: '10px 0', borderRadius: '10px', fontSize: '14px', cursor: 'pointer',
+                          background: campaignDiscountValue === val ? 'rgba(212,178,106,.08)' : 'rgba(12,12,15,.55)',
+                          border: campaignDiscountValue === val ? '1px solid rgba(212,178,106,.4)' : '1px solid rgba(255,255,255,.1)',
+                          color: campaignDiscountValue === val ? '#e3c27e' : '#9b958a',
+                          fontWeight: campaignDiscountValue === val ? 700 : 500
+                        }}
+                      >
+                        {val}
+                      </span>
+                    ))}
                   </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['50K', '100K', '200K', '300K', '500K'].map(val => (
+                      <span 
+                        key={val}
+                        onClick={() => setCampaignDiscountValue(val)}
+                        style={{
+                          flex: '1 1 0', textAlign: 'center', padding: '10px 0', borderRadius: '10px', fontSize: '14px', cursor: 'pointer',
+                          background: campaignDiscountValue === val ? 'rgba(212,178,106,.08)' : 'rgba(12,12,15,.55)',
+                          border: campaignDiscountValue === val ? '1px solid rgba(212,178,106,.4)' : '1px solid rgba(255,255,255,.1)',
+                          color: campaignDiscountValue === val ? '#e3c27e' : '#9b958a',
+                          fontWeight: campaignDiscountValue === val ? 700 : 500
+                        }}
+                      >
+                        {val}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Trạng thái</div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Đang chạy</span>
+                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã lên lịch</span>
+                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã kết thúc</span>
                 </div>
               </div>
 
