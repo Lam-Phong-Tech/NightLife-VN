@@ -2667,10 +2667,14 @@ const castSearchCss = `
 
 .cast-range-slider input {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
+  right: 0;
   width: 100%;
-  height: 30px;
+  height: 18px;
   margin: 0;
+  transform: translateY(-50%);
+  -webkit-appearance: none;
   appearance: none;
   background: transparent;
   pointer-events: none;
@@ -2684,8 +2688,10 @@ const castSearchCss = `
 .cast-range-slider input::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
+  margin-top: -7px;
   border: 2px solid #d4b26a;
   border-radius: 50%;
+  -webkit-appearance: none;
   appearance: none;
   background: #f3efe6;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.44);
