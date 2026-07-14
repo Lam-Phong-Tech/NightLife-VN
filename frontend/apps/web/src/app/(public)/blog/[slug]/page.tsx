@@ -11,20 +11,12 @@ type PageProps = {
   searchParams: Promise<{ preview?: string }>;
 };
 
-export const revalidate = 300;
-export const dynamicParams = true;
-
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
-
-export async function generateStaticParams() {
-  const posts = await getPublishedBlogPosts();
-  return posts.map((post) => ({ slug: post.slug }));
-}
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params;
