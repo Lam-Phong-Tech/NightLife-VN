@@ -1121,7 +1121,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{store.area || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' ? store.area?.name : store.area) || store.city} · {store.category}</div>
                   </div>
                   {featuredItems.find(f => f.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã thêm</span>
@@ -1418,7 +1418,7 @@ export default function AdminContentPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', borderRadius: '11px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bannerLinkedStore.name}</div>
-                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{bannerLinkedStore.category} · {bannerLinkedStore.area}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{bannerLinkedStore.category} · {typeof bannerLinkedStore.area === 'object' ? bannerLinkedStore.area?.name : bannerLinkedStore.area}</div>
                     </div>
                     <span onClick={() => { setBannerLinkedStore(null); setBannerLink(''); }} style={{ fontSize: '11px', fontWeight: 600, color: '#e88b99', cursor: 'pointer', padding: '4px 10px', borderRadius: '8px', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.25)' }}>Bỏ chọn</span>
                   </div>
@@ -1434,7 +1434,7 @@ export default function AdminContentPage() {
                           <div key={s.id} onClick={() => { setBannerLinkedStore(s); setBannerLink(`/quan/${s.slug}`); setBannerStoreSearch(''); setBannerStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
-                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {s.area}</div>
+                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {typeof s.area === 'object' ? s.area?.name : s.area}</div>
                             </div>
                             <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbb884' }}>Chọn</span>
                           </div>
@@ -1883,7 +1883,7 @@ export default function AdminContentPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', borderRadius: '11px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{campaignLinkedStore.name}</div>
-                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{campaignLinkedStore.category} · {campaignLinkedStore.area}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{campaignLinkedStore.category} · {typeof campaignLinkedStore.area === 'object' ? campaignLinkedStore.area?.name : campaignLinkedStore.area}</div>
                     </div>
                     <span onClick={() => setCampaignLinkedStore(null)} style={{ fontSize: '11px', fontWeight: 600, color: '#e88b99', cursor: 'pointer', padding: '4px 10px', borderRadius: '8px', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.25)' }}>Bỏ chọn</span>
                   </div>
@@ -1899,7 +1899,7 @@ export default function AdminContentPage() {
                           <div key={s.id} onClick={() => { setCampaignLinkedStore(s); setCampaignStoreSearch(''); setCampaignStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
-                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {s.area}</div>
+                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {typeof s.area === 'object' ? s.area?.name : s.area}</div>
                             </div>
                             <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbb884' }}>Chọn</span>
                           </div>
