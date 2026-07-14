@@ -634,15 +634,21 @@ function MapBlock({
 function BookingFieldError({
   activeLanguage,
   message,
+  reserveSpace = false,
 }: {
   activeLanguage: LanguageCode;
   message?: string;
+  reserveSpace?: boolean;
 }) {
-  if (!message) return null;
+  if (!message && !reserveSpace) return null;
 
   return (
-    <span className="booking-field-error" aria-live="polite">
-      {translateText(message, activeLanguage)}
+    <span
+      className={`booking-field-error${message ? "" : " is-empty"}`}
+      aria-live="polite"
+      aria-hidden={message ? undefined : true}
+    >
+      {message ? translateText(message, activeLanguage) : ""}
     </span>
   );
 }
@@ -720,72 +726,79 @@ function BookingCard({
         </div>
 
         <div className="booking-form-grid booking-contact-grid">
-          <label className="booking-field booking-input-field">
-            <span>{translateText("Họ tên", activeLanguage)}</span>
-            <input
-              {...bookingInputAutofillBlockProps}
-              name="nl-booking-store-display"
-              value={guestName}
-              onBlur={() => onFieldTouched("guestName")}
-              onChange={(event) => {
-                onFieldTouched("guestName");
-                onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value));
-              }}
-              placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
-            />
+          <div className="booking-field-stack">
+            <label className="booking-field booking-input-field">
+              <span>{translateText("Họ tên", activeLanguage)}</span>
+              <input
+                {...bookingInputAutofillBlockProps}
+                name="nl-booking-store-display"
+                value={guestName}
+                onBlur={() => onFieldTouched("guestName")}
+                onChange={(event) => {
+                  onFieldTouched("guestName");
+                  onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value));
+                }}
+                placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
+              />
+            </label>
             <BookingFieldError
               activeLanguage={activeLanguage}
               message={fieldErrors.guestName}
+              reserveSpace
             />
-          </label>
-          <label className="booking-field booking-input-field">
-            <span>{translateText("Email", activeLanguage)}</span>
-            <input
-              {...bookingInputAutofillBlockProps}
-              type="email"
-              name="nl-booking-store-contact"
-              value={email}
-              onBlur={() => onFieldTouched("email")}
-              onChange={(event) => {
-                onFieldTouched("email");
-                onEmailChange(event.target.value);
-              }}
-              placeholder={translateText("Vui lòng nhập email", activeLanguage)}
-              inputMode="email"
-            />
-            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} />
-          </label>
+          </div>
+          <div className="booking-field-stack">
+            <label className="booking-field booking-input-field">
+              <span>{translateText("Email", activeLanguage)}</span>
+              <input
+                {...bookingInputAutofillBlockProps}
+                type="email"
+                name="nl-booking-store-contact"
+                value={email}
+                onBlur={() => onFieldTouched("email")}
+                onChange={(event) => {
+                  onFieldTouched("email");
+                  onEmailChange(event.target.value);
+                }}
+                placeholder={translateText("Vui lòng nhập email", activeLanguage)}
+                inputMode="email"
+              />
+            </label>
+            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} reserveSpace />
+          </div>
         </div>
 
         <div className="booking-schedule-grid">
-          <div className="booking-field booking-guest-field">
-            <span>{translateText("Số người", activeLanguage)}</span>
-            <div className="guest-stepper">
-              <button
-                type="button"
-                aria-label={translateText("Giảm số khách", activeLanguage)}
-                onClick={() => {
-                  onFieldTouched("guestCount");
-                  onGuestCountChange(Math.max(1, guestCount - 1));
-                }}
-                disabled={guestCount <= 1}
-              >
-                <Minus size={15} />
-              </button>
-              <strong>{translateText(`${guestCount} người`, activeLanguage)}</strong>
-              <button
-                type="button"
-                aria-label={translateText("Tăng số khách", activeLanguage)}
-                onClick={() => {
-                  onFieldTouched("guestCount");
-                  onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1));
-                }}
-                disabled={guestCount >= maxBookingGuests}
-              >
-                <Plus size={15} />
-              </button>
+          <div className="booking-field-stack">
+            <div className="booking-field booking-guest-field">
+              <span>{translateText("Số người", activeLanguage)}</span>
+              <div className="guest-stepper">
+                <button
+                  type="button"
+                  aria-label={translateText("Giảm số khách", activeLanguage)}
+                  onClick={() => {
+                    onFieldTouched("guestCount");
+                    onGuestCountChange(Math.max(1, guestCount - 1));
+                  }}
+                  disabled={guestCount <= 1}
+                >
+                  <Minus size={15} />
+                </button>
+                <strong>{translateText(`${guestCount} người`, activeLanguage)}</strong>
+                <button
+                  type="button"
+                  aria-label={translateText("Tăng số khách", activeLanguage)}
+                  onClick={() => {
+                    onFieldTouched("guestCount");
+                    onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1));
+                  }}
+                  disabled={guestCount >= maxBookingGuests}
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
             </div>
-            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.guestCount} />
+            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.guestCount} reserveSpace />
           </div>
 
           <BookingDateTimeFields
@@ -807,6 +820,8 @@ function BookingCard({
             dateError={fieldErrors.bookingDate}
             timeError={fieldErrors.bookingTime}
             fieldClassName="booking-field"
+            errorClassName="booking-field-error"
+            errorPlacement="outside"
           />
         </div>
 
@@ -825,7 +840,7 @@ function BookingCard({
           }}
           placeholder={translateText("Vui lòng nhập ghi chú nếu có", activeLanguage)}
         />
-        <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} />
+        <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} reserveSpace />
 
         {errorMessage ? <div className="booking-error">{translateText(errorMessage, activeLanguage)}</div> : null}
 
@@ -993,17 +1008,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
   const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
-  const favoriteSnapshot = useMemo(
-    () => ({
-      slug: store.slug,
-      name: displayName,
-      categoryLabel,
-      areaLabel: store.area?.name ?? store.district ?? "",
-      cityLabel: store.cityCode ?? store.city,
-      image: galleryImageUrl(heroImage),
-    }),
-    [categoryLabel, displayName, heroImage, store.area?.name, store.city, store.cityCode, store.district, store.slug],
-  );
+  const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
+  const favoriteCityLabel = store.cityCode ?? store.city;
+  const heroFavoriteImage = galleryImageUrl(heroImage);
+  const favoriteSnapshot = {
+    slug: store.slug,
+    name: displayName,
+    categoryLabel,
+    areaLabel: favoriteAreaLabel,
+    cityLabel: favoriteCityLabel,
+    image: heroFavoriteImage,
+  };
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
   const { rates } = useMoneyFormatter(activeLanguage);
   const priceText = priceRangeText(store, activeLanguage, rates);
@@ -1146,28 +1161,40 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   useEffect(() => {
     let ignore = false;
+    const syncFavoriteSnapshot = {
+      slug: store.slug,
+      name: displayName,
+      categoryLabel,
+      areaLabel: favoriteAreaLabel,
+      cityLabel: favoriteCityLabel,
+      image: heroFavoriteImage,
+    };
 
     if (!hasMemberFavoriteAccess()) {
-      setIsFavorite(false);
+      Promise.resolve().then(() => {
+        if (!ignore) setIsFavorite(false);
+      });
       return () => {
         ignore = true;
       };
     }
 
-    setIsFavorite(isFavoriteStore(favoriteSnapshot.slug));
+    Promise.resolve(isFavoriteStore(syncFavoriteSnapshot.slug)).then((favorited) => {
+      if (!ignore) setIsFavorite(favorited);
+    });
     storeFavoriteApi
-      .getState(favoriteSnapshot.slug)
+      .getState(syncFavoriteSnapshot.slug)
       .then((state) => {
         if (ignore) return;
         setIsFavorite(state.favorited);
-        writeFavoriteStore(favoriteSnapshot, state.favorited);
+        writeFavoriteStore(syncFavoriteSnapshot, state.favorited);
       })
       .catch(() => undefined);
 
     return () => {
       ignore = true;
     };
-  }, [favoriteSnapshot]);
+  }, [categoryLabel, displayName, favoriteAreaLabel, favoriteCityLabel, heroFavoriteImage, store.slug]);
 
   const showPreviousMedia = () =>
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
@@ -2559,6 +2586,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: contents;
         }
 
+        .booking-field-stack,
+        .booking-card .nl-booking-field-stack {
+          display: grid;
+          grid-template-rows: auto minmax(18px, auto);
+          gap: 5px;
+          min-width: 0;
+          align-self: stretch;
+        }
+
         .booking-field {
           display: grid;
           align-content: center;
@@ -2819,14 +2855,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.45;
         }
 
-        .booking-field .booking-field-error,
-        .booking-note-label .booking-field-error {
+        .booking-field-error,
+        .booking-card .nl-booking-field-error {
           display: block;
-          margin-top: 6px;
+          min-height: 18px;
+          margin: 0;
+          padding: 0 2px;
           color: #ff86a0;
-          font-size: 11.5px;
-          font-weight: 820;
+          font-size: 13px;
+          font-weight: 850;
           line-height: 1.35;
+          letter-spacing: 0;
+          text-transform: none;
+        }
+
+        .booking-field-error.is-empty {
+          visibility: hidden;
         }
 
         :global(html.vy-light) .booking-error {
@@ -2836,8 +2880,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-weight: 760;
         }
 
-        :global(html.vy-light) .booking-field .booking-field-error,
-        :global(html.vy-light) .booking-note-label .booking-field-error {
+        :global(html.vy-light) .booking-field-error,
+        :global(html.vy-light) .booking-card .nl-booking-field-error {
           color: #b01632;
         }
 

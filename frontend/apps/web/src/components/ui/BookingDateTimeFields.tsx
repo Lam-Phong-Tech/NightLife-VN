@@ -67,6 +67,7 @@ type BookingDateTimeFieldsProps = {
   fieldClassName?: string;
   labelClassName?: string;
   layout?: "grid" | "stack";
+  errorPlacement?: "inside" | "outside";
   disabled?: boolean;
 };
 
@@ -143,6 +144,7 @@ export function BookingDateTimeFields({
   fieldClassName,
   labelClassName,
   layout = "grid",
+  errorPlacement = "inside",
   disabled = false,
 }: BookingDateTimeFieldsProps) {
   const activeLanguage = useActiveLanguage();
@@ -212,6 +214,108 @@ export function BookingDateTimeFields({
     }
   };
 
+  const dateErrorNode = dateError || errorPlacement === "outside" ? (
+    <span
+      className={`${fieldErrorClassName}${dateError ? "" : " is-empty"}`}
+      aria-live="polite"
+      aria-hidden={dateError ? undefined : true}
+    >
+      {dateError ? localizedDateError : ""}
+    </span>
+  ) : null;
+  const timeErrorNode = timeError || errorPlacement === "outside" ? (
+    <span
+      className={`${fieldErrorClassName}${timeError ? "" : " is-empty"}`}
+      aria-live="polite"
+      aria-hidden={timeError ? undefined : true}
+    >
+      {timeError ? localizedTimeError : ""}
+    </span>
+  ) : null;
+  const dateField = (
+    <div className={dateFieldClassName}>
+      <span className={labelClassName}>{localizedDateLabel}</span>
+      <DatePicker
+        allowClear={false}
+        autoComplete="off"
+        className="nl-booking-ant-control nl-booking-ant-picker"
+        disabled={disabled}
+        disabledDate={(date) =>
+          date ? date.isBefore(min, "day") || date.isAfter(max, "day") : false
+        }
+        format={(value) => formatBookingDateLabel(value, activeLanguage)}
+        getPopupContainer={getDocumentBodyPopupContainer}
+        inputReadOnly
+        maxDate={max}
+        minDate={min}
+        onChange={(nextDate) => {
+          if (!nextDate) return;
+          onDateChange(nextDate.format("YYYY-MM-DD"));
+          setDatePickerOpen(false);
+        }}
+        onOpenChange={(open) => setDatePickerOpen(open && !disabled)}
+        open={isDatePickerOpen && !disabled}
+        placeholder={selectDateText}
+        popupClassName="nl-booking-ant-popup"
+        value={currentDate}
+      />
+      {errorPlacement === "inside" ? dateErrorNode : null}
+      {dateFieldAddon ? (
+        <div className="nl-booking-date-addon">{dateFieldAddon}</div>
+      ) : null}
+    </div>
+  );
+  const timeField = (
+    <div className={timeFieldClassName}>
+      <span className={labelClassName}>{localizedTimeLabel}</span>
+      <div className="nl-booking-time-control">
+        {showPeriodTabs ? (
+          <div
+            className="nl-booking-period-tabs"
+            role="tablist"
+            aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
+          >
+            {periodTabs.map((group) => {
+              const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
+              const isDisabled = disabled || loadingTimes || !group.slots.length;
+
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
+                  aria-selected={isActive}
+                  aria-disabled={isDisabled}
+                  disabled={isDisabled}
+                  role="tab"
+                  onClick={() => selectPeriod(group.key)}
+                >
+                  {translateSlotPeriod(group, activeLanguage)}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+        <Select
+          className="nl-booking-ant-control nl-booking-ant-select"
+          disabled={shouldDisableTime}
+          getPopupContainer={getDocumentBodyPopupContainer}
+          loading={loadingTimes}
+          notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
+          onChange={onTimeChange}
+          options={options}
+          placeholder={loadingTimes ? loadingTimesText : selectTimeText}
+          popupClassName="nl-booking-select-popup"
+          value={selectedTimeValue}
+        />
+      </div>
+      {!timeError && !loadingTimes && !activeTimeOptions.length ? (
+        <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>
+      ) : null}
+      {errorPlacement === "inside" ? timeErrorNode : null}
+    </div>
+  );
+
   return (
     <ConfigProvider locale={antdLocales[activeLanguage]} theme={bookingPickerTheme}>
       <div
@@ -219,94 +323,19 @@ export function BookingDateTimeFields({
           .filter(Boolean)
           .join(" ")}
       >
-        <div className={dateFieldClassName}>
-          <span className={labelClassName}>{localizedDateLabel}</span>
-          <DatePicker
-            allowClear={false}
-            autoComplete="off"
-            className="nl-booking-ant-control nl-booking-ant-picker"
-            disabled={disabled}
-            disabledDate={(date) =>
-              date ? date.isBefore(min, "day") || date.isAfter(max, "day") : false
-            }
-            format={(value) => formatBookingDateLabel(value, activeLanguage)}
-            getPopupContainer={getDocumentBodyPopupContainer}
-            inputReadOnly
-            maxDate={max}
-            minDate={min}
-            onChange={(nextDate) => {
-              if (!nextDate) return;
-              onDateChange(nextDate.format("YYYY-MM-DD"));
-              setDatePickerOpen(false);
-            }}
-            onOpenChange={(open) => setDatePickerOpen(open && !disabled)}
-            open={isDatePickerOpen && !disabled}
-            placeholder={selectDateText}
-            popupClassName="nl-booking-ant-popup"
-            value={currentDate}
-          />
-          {dateError ? (
-            <span className={fieldErrorClassName} aria-live="polite">
-              {localizedDateError}
-            </span>
-          ) : null}
-          {dateFieldAddon ? (
-            <div className="nl-booking-date-addon">{dateFieldAddon}</div>
-          ) : null}
-        </div>
-
-        <div className={timeFieldClassName}>
-          <span className={labelClassName}>{localizedTimeLabel}</span>
-          <div className="nl-booking-time-control">
-            {showPeriodTabs ? (
-              <div
-                className="nl-booking-period-tabs"
-                role="tablist"
-                aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
-              >
-                {periodTabs.map((group) => {
-                  const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
-                  const isDisabled = disabled || loadingTimes || !group.slots.length;
-
-                  return (
-                    <button
-                      key={group.key}
-                      type="button"
-                      className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
-                      aria-selected={isActive}
-                      aria-disabled={isDisabled}
-                      disabled={isDisabled}
-                      role="tab"
-                      onClick={() => selectPeriod(group.key)}
-                    >
-                      {translateSlotPeriod(group, activeLanguage)}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-            <Select
-              className="nl-booking-ant-control nl-booking-ant-select"
-              disabled={shouldDisableTime}
-              getPopupContainer={getDocumentBodyPopupContainer}
-              loading={loadingTimes}
-              notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
-              onChange={onTimeChange}
-              options={options}
-              placeholder={loadingTimes ? loadingTimesText : selectTimeText}
-              popupClassName="nl-booking-select-popup"
-              value={selectedTimeValue}
-            />
+        {errorPlacement === "outside" ? (
+          <div className="nl-booking-field-stack">
+            {dateField}
+            {dateErrorNode}
           </div>
-          {!timeError && !loadingTimes && !activeTimeOptions.length ? (
-            <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>
-          ) : null}
-          {timeError ? (
-            <span className={fieldErrorClassName} aria-live="polite">
-              {localizedTimeError}
-            </span>
-          ) : null}
-        </div>
+        ) : dateField}
+
+        {errorPlacement === "outside" ? (
+          <div className="nl-booking-field-stack">
+            {timeField}
+            {timeErrorNode}
+          </div>
+        ) : timeField}
       </div>
     </ConfigProvider>
   );
