@@ -274,6 +274,28 @@ const stripVietnameseMarks = (value: string) =>
     .replace(/\bQuan\b/g, "District")
     .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
 
+const normalizeAreaKey = (value?: string | null) =>
+  (value ?? "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const isGenericArea = (area: PublicArea) => {
+  const code = normalizeAreaKey(area.code);
+  const name = normalizeAreaKey(area.name);
+  const district = normalizeAreaKey(area.district);
+
+  return (
+    code.endsWith("-tong-hop") ||
+    code.endsWith("-general") ||
+    ["tong-hop", "general", "all"].includes(name) ||
+    ["tong-hop", "general", "all"].includes(district)
+  );
+};
+
 const getVenueCopy = (language: LanguageCode): VenueSearchCopy => {
   if (language === "en") return venueCopyEn;
   if (language === "vi") return venueCopyVi;
@@ -506,6 +528,15 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   useEffect(() => {
     let cancelled = false;
 
+    if (!city) {
+      queueMicrotask(() => {
+        if (!cancelled) setAreas([]);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     discoveryApi
       .listAreas({ city })
       .then((items) => {
@@ -699,10 +730,28 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   );
 
   const areaOptions = useMemo<FilterOption[]>(() => {
-    const dynamicOptions = areas.map((item) => ({
-      value: item.code || item.name,
-      label: getLocalizedAreaLabel(item.name, activeLanguage),
-    }));
+    if (!city) {
+      return [{ value: "", label: copy.all }];
+    }
+
+    const seenAreaLabels = new Set<string>();
+    const dynamicOptions = areas.reduce<FilterOption[]>((options, item) => {
+      if (isGenericArea(item)) return options;
+
+      const labelSource = item.name || item.district || item.city;
+      const value = item.code || item.name || item.district || item.city;
+      const dedupeKey = normalizeAreaKey(labelSource);
+
+      if (!value || !dedupeKey || seenAreaLabels.has(dedupeKey)) return options;
+      seenAreaLabels.add(dedupeKey);
+
+      options.push({
+        value,
+        label: getLocalizedAreaLabel(labelSource, activeLanguage),
+      });
+
+      return options;
+    }, []);
 
     const fallbackOptions = getFallbackAreaOptions(city).map((option) => ({
       ...option,
