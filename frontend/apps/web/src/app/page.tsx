@@ -248,6 +248,16 @@ function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
   return content.metadata ?? {};
 }
 
+function getHomeBannerImageUrl(content: CmsContentItem) {
+  const imageUrl = getHomeBannerMetadata(content).imageUrl;
+
+  return typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : null;
+}
+
+function hasHomeBannerImage(content: CmsContentItem) {
+  return Boolean(getHomeBannerImageUrl(content));
+}
+
 type HomeStoreCard = {
   id: string;
   slug: string;
@@ -1027,43 +1037,28 @@ function CategoryGrid({
 
 function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const activeLanguage = useActiveLanguage();
-  const { formatMoney } = useMoneyFormatter(activeLanguage);
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner = useMemo<HomeBanner>(() => ({
-    title: "Sự kiện đêm nay",
-    desc: `Đặt bàn VIP từ ${formatMoney(2_500_000)}`,
-    btnText: "Đặt ngay",
-    img: "var(--vy-hero-grad)",
-    statusLabel: "HOT",
-    subtitle: "NightLife-VN",
-    hasImage: false,
-  }), [formatMoney]);
-  
-  const mappedBanners: HomeBanner[] = useMemo(() => {
-    if (apiBanners.length === 0) return [fallbackBanner];
-    return apiBanners.map(b => {
+  const banners: HomeBanner[] = useMemo(() => {
+    return apiBanners.flatMap(b => {
       const meta = getHomeBannerMetadata(b);
-      const hasImage = !!meta.imageUrl;
-      return {
+      const imageUrl = getHomeBannerImageUrl(b);
+
+      if (!imageUrl) return [];
+
+      return [{
         title: b.title,
         desc: meta.description || "",
         btnText: meta.tag || "Chi tiết",
         href: meta.link || "#",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: hasImage ? `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${meta.imageUrl}')` : "var(--vy-hero-grad)",
-        hasImage,
-      };
+        img: `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${imageUrl}')`,
+        hasImage: true,
+      }];
     });
-  }, [apiBanners, fallbackBanner]);
+  }, [apiBanners]);
 
-  const banners: HomeBanner[] = mappedBanners;
-  const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
-  const eventTitle = translateText(event.title, activeLanguage);
-  const eventDesc = translateText(event.desc, activeLanguage);
-  const eventButtonText = translateText(event.btnText, activeLanguage);
-  const eventStatusLabel = translateText(event.statusLabel ?? "", activeLanguage);
-  const eventSubtitle = translateText(event.subtitle ?? "", activeLanguage);
+  const event = banners[activeBanner] ?? banners[0] ?? null;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
@@ -1075,6 +1070,21 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
+
+  if (!event) {
+    return (
+      <HomeDataMessage
+        text="Chưa có banner trang chủ từ admin."
+        minHeight={desktop ? 310 : 208}
+      />
+    );
+  }
+
+  const eventTitle = translateText(event.title, activeLanguage);
+  const eventDesc = translateText(event.desc, activeLanguage);
+  const eventButtonText = translateText(event.btnText, activeLanguage);
+  const eventStatusLabel = translateText(event.statusLabel ?? "", activeLanguage);
+  const eventSubtitle = translateText(event.subtitle ?? "", activeLanguage);
 
   return (
     <Link
@@ -1198,33 +1208,26 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner = useMemo<HomeBanner>(() => ({
-    title: "Ưu đãi đêm nay",
-    desc: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
-    btnText: "Xem ngay",
-    img: "linear-gradient(135deg,#15151a,#2a2112)",
-  }), []);
   const banners: HomeBanner[] = useMemo(() => {
-    if (!apiBanners.length) return [fallbackBanner];
-    return apiBanners.map((banner) => {
+    return apiBanners.flatMap((banner) => {
       const meta = getHomeBannerMetadata(banner);
-      return {
+      const imageUrl = getHomeBannerImageUrl(banner);
+
+      if (!imageUrl) return [];
+
+      return [{
         title: banner.title,
         desc: meta.description || banner.excerpt || "",
         btnText: meta.tag || "Xem ngay",
         href: meta.link || "/uu-dai",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: meta.imageUrl
-          ? `linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.34)), url('${meta.imageUrl}') center/cover`
-          : "linear-gradient(135deg,#15151a,#2a2112)",
-      };
+        img: `linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.34)), url('${imageUrl}') center/cover`,
+        hasImage: true,
+      }];
     });
-  }, [apiBanners, fallbackBanner]);
-  const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
-  const eventTitle = translateText(event.title, activeLanguage);
-  const eventDesc = translateText(event.desc, activeLanguage);
-  const eventButtonText = translateText(event.btnText, activeLanguage);
+  }, [apiBanners]);
+  const event = banners[activeBanner] ?? banners[0] ?? null;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
@@ -1236,6 +1239,19 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
+
+  if (!event) {
+    return (
+      <HomeDataMessage
+        text="Chưa có banner nổi bật từ admin."
+        minHeight={desktop ? 310 : 208}
+      />
+    );
+  }
+
+  const eventTitle = translateText(event.title, activeLanguage);
+  const eventDesc = translateText(event.desc, activeLanguage);
+  const eventButtonText = translateText(event.btnText, activeLanguage);
 
   return (
     <Link
@@ -2028,13 +2044,21 @@ function ContentPlaceholderCard({
   );
 }
 
-function HomeDataMessage({ text, compact = false }: { text: string; compact?: boolean }) {
+function HomeDataMessage({
+  text,
+  compact = false,
+  minHeight,
+}: {
+  text: string;
+  compact?: boolean;
+  minHeight?: number | string;
+}) {
   const activeLanguage = useActiveLanguage();
   return (
     <div
       className="nl-home-data-message"
       style={{
-        minHeight: compact ? 92 : 118,
+        minHeight: minHeight ?? (compact ? 92 : 118),
         width: "100%",
         minWidth: compact ? 180 : 0,
         gridColumn: "1 / -1",
@@ -2336,6 +2360,7 @@ export default function Page() {
     [homeTours, homeContentItems],
   );
   const heroBanners = useMemo(() => [...homeBanners]
+    .filter(hasHomeBannerImage)
     .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position)
     .sort((a, b) => {
       const orderA = getHomeBannerMetadata(a).order;
@@ -2343,6 +2368,7 @@ export default function Page() {
       return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
     }), [homeBanners]);
   const midBanners = useMemo(() => [...homeBanners]
+    .filter(hasHomeBannerImage)
     .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #2")
     .sort((a, b) => {
       const orderA = getHomeBannerMetadata(a).order;
