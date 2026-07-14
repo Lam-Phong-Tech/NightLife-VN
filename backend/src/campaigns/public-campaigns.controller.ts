@@ -23,18 +23,15 @@ export class PublicCampaignsController {
       ],
     };
 
-    const [items, total] = await Promise.all([
-      this.campaignsService.findAll(skip, take, where),
-      this.campaignsService.count(where),
-    ]);
+    const result = await this.campaignsService.findAll({ skip, take, where });
 
     return {
-      data: items,
+      data: result.data,
       meta: {
-        total,
-        page: Number(page) || 1,
-        limit: take,
-        totalPages: Math.ceil(total / take),
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: Math.ceil(result.total / take),
       },
     };
   }
