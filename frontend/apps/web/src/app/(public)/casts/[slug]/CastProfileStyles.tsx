@@ -2,6 +2,9 @@ export function CastProfileStyles() {
   return (
     <style>{`
       .cast-page {
+        --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+        --cast-mobile-cta-height: 76px;
+        --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
         min-height: 100vh;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
@@ -10,13 +13,27 @@ export function CastProfileStyles() {
 
       .cast-mobile {
         min-height: 100vh;
-        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        padding-bottom: var(--cast-mobile-fixed-space);
         background: var(--vy-bg);
       }
 
       .nl-page-content:has(.cast-page) {
+        --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+        --cast-mobile-cta-height: 76px;
+        --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
         padding-bottom: 0 !important;
-        scroll-padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
+        scroll-padding-bottom: 0 !important;
+      }
+
+      @media (max-width: 767px) {
+        .nl-page-content:has(.cast-page) {
+          padding-bottom: var(--cast-mobile-fixed-space) !important;
+          scroll-padding-bottom: var(--cast-mobile-fixed-space) !important;
+        }
+
+        .nl-page-content:has(.cast-page) + .nl-site-footer {
+          padding-bottom: calc(180px + env(safe-area-inset-bottom)) !important;
+        }
       }
 
       .cast-mobile-hero {
@@ -671,10 +688,10 @@ export function CastProfileStyles() {
         min-height: var(--cast-mobile-cta-height);
         margin: 0 !important;
         padding: 10px 14px;
-        background: rgba(255,250,240,.98);
-        border-top: 1px solid rgba(212,178,106,.30);
+        background: color-mix(in srgb, var(--vy-surface) 90%, var(--vy-bg) 10%);
+        border-top: 1px solid var(--vy-border-gold-32);
         box-sizing: border-box;
-        box-shadow: 0 -16px 34px rgba(80,61,27,.14);
+        box-shadow: var(--vy-shadow);
         backdrop-filter: blur(12px);
         transform: translateZ(0);
         pointer-events: auto;
@@ -685,19 +702,19 @@ export function CastProfileStyles() {
         height: 46px;
         flex: none;
         border-radius: 13px;
-        border: 1px solid rgba(212,178,106,.45);
-        background: #fffaf0;
-        color: #d4a744;
+        border: 1px solid var(--vy-border-gold-32);
+        background: var(--vy-surface-2);
+        color: var(--vy-favorite);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 10px 20px rgba(80,61,27,.10);
+        box-shadow: var(--vy-shadow-card);
       }
 
       .cast-booking-favorite.is-active {
-        border-color: rgba(182,146,74,.55);
-        background: linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a);
+        border-color: var(--vy-border-gold-40);
+        background: var(--vy-gold-grad);
         color: var(--vy-on-gold);
       }
 
@@ -709,7 +726,7 @@ export function CastProfileStyles() {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg,#f0dda8,#d4b26a 55%,#b6924a);
+        background: var(--vy-gold-grad);
         color: var(--vy-on-gold);
         text-decoration: none;
         border: 0;
