@@ -777,6 +777,7 @@ function BookingCard({
                     pattern="[0-9]*"
                     name="nl-booking-store-guests"
                     value={String(guestCount)}
+                    style={{ width: `${String(guestCount).length}ch` }}
                     onBlur={() => onFieldTouched("guestCount")}
                     onKeyDown={(event) => {
                       if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -2752,9 +2753,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card .guest-count-input-wrap input {
-          width: 2.5ch;
-          min-width: 2.5ch;
-          max-width: 3ch;
+          width: auto;
+          min-width: 1ch;
+          max-width: 2ch;
           height: 26px;
           margin: 0;
           padding: 0;
@@ -2764,7 +2765,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: inherit;
           font: inherit;
           line-height: 26px;
-          text-align: right;
+          text-align: center;
           appearance: textfield;
           cursor: text;
         }

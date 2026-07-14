@@ -581,6 +581,7 @@ export default function Page() {
                           pattern="[0-9]*"
                           name="nl-booking-guests"
                           value={String(guests)}
+                          style={{ width: `${String(guests).length}ch` }}
                           onBlur={() => markFieldTouched("guestCount")}
                           onKeyDown={(event) => {
                             if (event.ctrlKey || event.metaKey || event.altKey) return;

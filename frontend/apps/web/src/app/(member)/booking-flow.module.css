@@ -427,9 +427,9 @@
 }
 
 .stepInputWrap input {
-  width: 2.5ch;
-  min-width: 2.5ch;
-  max-width: 3ch;
+  width: auto;
+  min-width: 1ch;
+  max-width: 2ch;
   height: 30px;
   margin: 0;
   padding: 0;
@@ -439,7 +439,7 @@
   color: inherit;
   font: inherit;
   line-height: 30px;
-  text-align: right;
+  text-align: center;
   appearance: textfield;
 }
 
