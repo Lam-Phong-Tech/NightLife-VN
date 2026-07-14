@@ -1617,6 +1617,64 @@ export default function AdminContentPage() {
         </div>
       )}
 
+      {/* NEW CAMPAIGN MODAL (MOCKUP) */}
+      {isAdding === 'campaign' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '620px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Campaign &amp; Discount</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Thêm campaign</div>
+              </div>
+              <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                <X size={16} />
+              </span>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên chương trình</div>
+                <input placeholder="VD: Happy Hour cuối tuần" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức ưu đãi</div>
+                  <input placeholder="−30% / 2+1" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 10px', color: '#e3c27e', fontSize: '15px', fontWeight: 800, textAlign: 'center', fontFamily: 'inherit', outline: 'none' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Trạng thái</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Đang chạy</span>
+                    <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã lên lịch</span>
+                    <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã kết thúc</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Áp dụng cho</div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Toàn hệ thống</span>
+                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Quán cụ thể</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời gian chạy</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <input placeholder="01/07" style={{ width: '110px', textAlign: 'center', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 10px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                  <span style={{ color: '#57534b' }}>–</span>
+                  <input placeholder="31/07" style={{ width: '110px', textAlign: 'center', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 10px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                  <span style={{ fontSize: '11px', color: '#57534b' }}>Để trống cả hai = Luôn áp dụng</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
+              <span style={{ flex: 1 }}></span>
+              <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
+              <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }}>Tạo campaign</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MANAGE CATEGORIES MODAL */}
       {isManagingCategories && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
