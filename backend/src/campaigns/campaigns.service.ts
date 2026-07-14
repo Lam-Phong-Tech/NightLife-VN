@@ -20,7 +20,7 @@ export class CampaignsService {
         take,
         where,
         orderBy: orderBy || { createdAt: 'desc' },
-        include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true } } }
+        include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true, city: true, district: true, media: true } } }
       }),
       this.prisma.campaign.count({ where }),
     ]);
