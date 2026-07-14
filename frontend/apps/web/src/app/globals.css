@@ -1954,6 +1954,22 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
     linear-gradient(120deg, rgba(255, 255, 255, 0.24), transparent 30%, transparent 70%, rgba(154, 52, 18, 0.1)) !important;
 }
 
+.nl-home-ranking-label {
+  text-shadow: none !important;
+}
+
+html.vy-light .nl-home-ranking-row[data-rank-tier="1"] .nl-home-ranking-label {
+  color: #7a4a00 !important;
+}
+
+html.vy-light .nl-home-ranking-row[data-rank-tier="2"] .nl-home-ranking-label {
+  color: #334155 !important;
+}
+
+html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-label {
+  color: #8c3d10 !important;
+}
+
 html.vy-light .nl-home-ranking-row .nl-home-ranking-arrow {
   color: #8a5a00 !important;
   background: rgba(255, 248, 229, 0.9) !important;

@@ -606,31 +606,31 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
     }
   > = {
     1: {
-      badgeBackground: "linear-gradient(140deg, #fef08a, #eab308)",
-      badgeColor: "#713f12",
+      badgeBackground: "linear-gradient(140deg, #fff4a8 0%, #f2c94c 58%, #c88614 100%)",
+      badgeColor: "#3d2503",
       rowBackground:
-        "linear-gradient(135deg, rgba(254,240,138,.27), rgba(212,178,106,.15) 42%, rgba(255,255,255,.06))",
-      rowBorder: "rgba(240,221,168,.58)",
-      rowShadow: "0 0 0 1px rgba(254,240,138,.13) inset, 0 22px 48px rgba(234,179,8,.24), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#8a5a00",
+        "linear-gradient(100deg, rgba(244,196,76,.58) 0%, rgba(174,123,26,.40) 27%, rgba(42,33,18,.94) 58%, rgba(20,20,24,.98) 100%), linear-gradient(135deg, rgba(255,232,150,.30), rgba(24,24,28,.96))",
+      rowBorder: "rgba(255,220,112,.72)",
+      rowShadow: "0 0 0 1px rgba(255,220,112,.22) inset, 0 24px 58px rgba(224,158,22,.32), 0 18px 38px rgba(0,0,0,.34)",
+      labelColor: "#ffd76a",
     },
     2: {
-      badgeBackground: "linear-gradient(140deg, #f8fafc, #94a3b8)",
-      badgeColor: "#1e293b",
+      badgeBackground: "linear-gradient(140deg, #f8fafc 0%, #cbd5e1 56%, #64748b 100%)",
+      badgeColor: "#111827",
       rowBackground:
-        "linear-gradient(135deg, rgba(226,232,240,.25), rgba(148,163,184,.14) 42%, rgba(255,255,255,.06))",
-      rowBorder: "rgba(226,232,240,.46)",
-      rowShadow: "0 0 0 1px rgba(226,232,240,.10) inset, 0 22px 48px rgba(148,163,184,.22), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#475569",
+        "linear-gradient(100deg, rgba(203,213,225,.50) 0%, rgba(100,116,139,.34) 28%, rgba(35,39,47,.94) 58%, rgba(20,20,24,.98) 100%), linear-gradient(135deg, rgba(241,245,249,.22), rgba(24,24,28,.96))",
+      rowBorder: "rgba(226,232,240,.66)",
+      rowShadow: "0 0 0 1px rgba(226,232,240,.18) inset, 0 24px 58px rgba(148,163,184,.26), 0 18px 38px rgba(0,0,0,.34)",
+      labelColor: "#dbe7f5",
     },
     3: {
-      badgeBackground: "linear-gradient(140deg, #fed7aa, #b45309)",
-      badgeColor: "#451a03",
+      badgeBackground: "linear-gradient(140deg, #ffd7a8 0%, #f59e45 56%, #a84c12 100%)",
+      badgeColor: "#321303",
       rowBackground:
-        "linear-gradient(135deg, rgba(251,146,60,.24), rgba(180,83,9,.14) 42%, rgba(255,255,255,.06))",
-      rowBorder: "rgba(251,146,60,.46)",
-      rowShadow: "0 0 0 1px rgba(251,146,60,.10) inset, 0 22px 48px rgba(180,83,9,.22), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#9a3412",
+        "linear-gradient(100deg, rgba(245,142,60,.50) 0%, rgba(151,70,21,.36) 28%, rgba(45,29,21,.94) 58%, rgba(20,20,24,.98) 100%), linear-gradient(135deg, rgba(255,183,111,.24), rgba(24,24,28,.96))",
+      rowBorder: "rgba(251,146,60,.62)",
+      rowShadow: "0 0 0 1px rgba(251,146,60,.18) inset, 0 24px 58px rgba(180,83,9,.26), 0 18px 38px rgba(0,0,0,.34)",
+      labelColor: "#ffb06b",
     },
     4: {
       badgeBackground: "linear-gradient(140deg, #a7f3d0, #22c55e)",
@@ -1815,7 +1815,7 @@ function RankingRow({ item }: { item: RankedItem }) {
           >
             {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
           </span>
-          <span style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "0 1px 0 rgba(255,255,255,.65)" }}>
+          <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none" }}>
             Top {item.rank}
           </span>
         </div>
