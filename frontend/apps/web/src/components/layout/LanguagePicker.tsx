@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Globe, X } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   defaultLanguageCode,
@@ -71,6 +71,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
   const [activeCode, setActiveCode] = useState<LanguageCode>(defaultLanguageCode);
   const [draftCode, setDraftCode] = useState<LanguageCode>(defaultLanguageCode);
   const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
 
   const activeLanguage = useMemo(() => getLanguage(activeCode), [activeCode]);
   const draftLanguage = useMemo(() => getLanguage(draftCode), [draftCode]);
@@ -103,14 +104,37 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
       }
     };
 
-    document.body.style.overflow = "hidden";
+    if (isMobile) {
+      document.body.style.overflow = "hidden";
+    }
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      if (isMobile) {
+        document.body.style.overflow = previousOverflow;
+      }
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [activeCode, isOpen]);
+  }, [activeCode, isMobile, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || isMobile) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (target instanceof Node && pickerRef.current?.contains(target)) return;
+      setDraftCode(activeCode);
+      setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [activeCode, isMobile, isOpen]);
 
   const openPicker = () => {
     setDraftCode(activeCode);
@@ -126,6 +150,13 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
     const nextLanguage = getLanguage(draftCode);
     setActiveCode(nextLanguage.code);
     storeLanguage(nextLanguage);
+    setIsOpen(false);
+  };
+
+  const selectDesktopLanguage = (language: LanguageOption) => {
+    setActiveCode(language.code);
+    setDraftCode(language.code);
+    storeLanguage(language);
     setIsOpen(false);
   };
 
@@ -152,6 +183,19 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
     fontFamily: "var(--nl-font-sans)",
   };
 
+  const dropdownStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "calc(100% + 10px)",
+    right: 0,
+    zIndex: 90,
+    width: "min(318px, calc(100vw - 32px))",
+    padding: "8px",
+    borderRadius: "14px",
+    border: `1px solid ${colors.border}`,
+    background: colors.modalBg,
+    boxShadow: "0 18px 45px rgba(0,0,0,.34)",
+  };
+
   const modalStyle: React.CSSProperties = isMobile
     ? {
         position: "absolute",
@@ -174,13 +218,19 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
       };
 
   return (
-    <>
+    <div ref={pickerRef} style={{ position: "relative", display: "inline-flex" }}>
       <button
         type="button"
-        aria-haspopup="dialog"
+        aria-haspopup={isMobile ? "dialog" : "menu"}
         aria-expanded={isOpen}
         aria-label={`Chọn ngôn ngữ, hiện tại ${activeLanguage.label}`}
-        onClick={openPicker}
+        onClick={() => {
+          if (isOpen) {
+            closePicker();
+            return;
+          }
+          openPicker();
+        }}
         style={triggerStyle}
       >
         <Globe size={isMobile ? 14 : 16} strokeWidth={1.8} style={{ flex: "none" }} />
@@ -190,7 +240,88 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         {!isMobile ? <ChevronDown size={13} strokeWidth={2.2} style={{ flex: "none" }} /> : null}
       </button>
 
-      {isOpen && typeof document !== "undefined" ? createPortal(
+      {!isMobile && isOpen ? (
+        <div role="menu" aria-label="Select language" style={dropdownStyle}>
+          {languages.map((language) => {
+            const isActive = language.code === activeCode;
+
+            return (
+              <button
+                key={language.code}
+                type="button"
+                role="menuitemradio"
+                aria-checked={isActive}
+                onClick={() => selectDesktopLanguage(language)}
+                style={{
+                  width: "100%",
+                  minHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "11px",
+                  padding: "8px 10px",
+                  border: 0,
+                  borderRadius: "10px",
+                  background: isActive ? "rgba(212,178,106,.12)" : "transparent",
+                  color: colors.text,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "var(--nl-font-sans)",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  data-no-translate="true"
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    border: isActive ? "0" : "1px solid rgba(212,178,106,.38)",
+                    background: isActive ? colors.goldGrad : "transparent",
+                    color: isActive ? colors.onGold : colors.gold,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    letterSpacing: ".4px",
+                    flex: "none",
+                  }}
+                >
+                  {language.badge}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: "block",
+                      color: colors.text,
+                      fontSize: "14px",
+                      fontWeight: isActive ? 800 : 700,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {language.label}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      color: colors.muted,
+                      fontSize: "11px",
+                      marginTop: "3px",
+                    }}
+                  >
+                    {language.helper}
+                  </span>
+                </span>
+                {isActive ? (
+                  <Check size={16} strokeWidth={2.6} color={colors.goldSoft} style={{ flex: "none" }} />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {isMobile && isOpen && typeof document !== "undefined" ? createPortal(
         <div
           className="nl-language-picker-overlay"
           role="presentation"
@@ -477,6 +608,6 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         </div>,
         document.body,
       ) : null}
-    </>
+    </div>
   );
 }
