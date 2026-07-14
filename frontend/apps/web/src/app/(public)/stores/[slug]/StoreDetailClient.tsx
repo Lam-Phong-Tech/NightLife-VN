@@ -1707,11 +1707,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
           --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
+          --store-hero-control-bg: rgba(8, 8, 11, .16);
+          --store-hero-control-bg-strong: rgba(8, 8, 11, .22);
+          --store-hero-control-border: rgba(255, 255, 255, .34);
+          --store-hero-control-icon: #fff7d7;
+          --store-hero-control-shadow: 0 12px 30px rgba(0, 0, 0, .32);
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .92)) drop-shadow(0 0 8px rgba(0, 0, 0, .58));
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
           font-family: var(--nl-font-sans);
           padding-bottom: 86px;
+        }
+
+        html.vy-light .store-detail-page {
+          --store-hero-control-bg: rgba(255, 255, 255, .14);
+          --store-hero-control-bg-strong: rgba(255, 255, 255, .2);
+          --store-hero-control-border: rgba(36, 26, 10, .28);
+          --store-hero-control-icon: #241a0a;
+          --store-hero-control-shadow: 0 12px 28px rgba(36, 26, 10, .16);
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .96)) drop-shadow(0 0 7px rgba(255, 255, 255, .82));
         }
 
         .nl-page-content:has(.store-detail-page) {
@@ -1830,17 +1845,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .round-action {
           width: 40px;
           height: 40px;
-          border: 1px solid rgba(182, 146, 74, .54);
+          border: 1px solid var(--store-hero-control-border);
           border-radius: 50%;
-          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-          color: var(--vy-on-gold);
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          box-shadow: 0 12px 26px rgba(79, 57, 19, .24);
+          box-shadow: var(--store-hero-control-shadow);
+          backdrop-filter: blur(9px) saturate(1.08);
+          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           cursor: pointer;
           padding: 0;
+        }
+
+        .round-action svg,
+        .hero-media-nav svg,
+        .hero-video-play svg,
+        .video-badge svg {
+          filter: var(--store-hero-control-icon-shadow);
         }
 
         .round-action.hero-back {
@@ -1848,23 +1872,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .store-favorite-action {
-          color: #4f3710;
+          color: var(--store-hero-control-icon);
         }
 
         .store-favorite-action.is-active {
-          background: linear-gradient(135deg, #ffe99d, #e0b747 54%, #c29636);
-          border-color: rgba(143, 95, 27, .44);
-          color: #7b4c11;
+          background: var(--store-hero-control-bg-strong);
+          border-color: color-mix(in srgb, var(--vy-favorite) 70%, transparent);
+          color: var(--vy-favorite);
         }
 
         .hero-media-nav {
           top: 50%;
           width: 46px;
           height: 64px;
-          border: 1px solid rgba(182, 146, 74, .5);
+          border: 1px solid var(--store-hero-control-border);
           border-radius: 999px;
-          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-          color: var(--vy-on-gold);
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           display: grid;
           place-items: center;
           transform: translateY(-50%);
@@ -1872,7 +1896,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           animation: none;
           will-change: auto;
           cursor: pointer;
-          box-shadow: 0 14px 28px rgba(79, 57, 19, .22);
+          box-shadow: var(--store-hero-control-shadow);
+          backdrop-filter: blur(9px) saturate(1.08);
+          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           text-shadow: none;
         }
 
@@ -1892,22 +1918,24 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-video-play {
           left: 50%;
           top: 50%;
-          width: 74px;
-          height: 74px;
-          border: 1px solid rgba(244, 221, 155, .76);
+          width: 70px;
+          height: 70px;
+          border: 1px solid var(--store-hero-control-border);
           border-radius: 50%;
-          background: linear-gradient(135deg, rgba(247, 232, 185, .96), rgba(212, 178, 106, .94) 58%, rgba(182, 146, 74, .92));
-          color: #241a0a;
+          background: var(--store-hero-control-bg-strong);
+          color: var(--store-hero-control-icon);
           display: grid;
           place-items: center;
           padding: 0 0 0 5px;
           transform: translate(-50%, -50%);
           cursor: pointer;
-          box-shadow: 0 18px 42px rgba(0, 0, 0, .38), 0 0 0 10px rgba(12, 12, 15, .28);
+          box-shadow: var(--store-hero-control-shadow);
+          backdrop-filter: blur(10px) saturate(1.08);
+          -webkit-backdrop-filter: blur(10px) saturate(1.08);
         }
 
         .hero-video-play:where(:hover, :focus-visible) {
-          box-shadow: 0 20px 48px rgba(0, 0, 0, .44), 0 0 0 12px rgba(244, 221, 155, .16);
+          background: color-mix(in srgb, var(--store-hero-control-bg-strong) 86%, white 14%);
         }
 
         .video-badge {
@@ -1916,16 +1944,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(212, 178, 106, .42);
+          border: 1px solid var(--store-hero-control-border);
           border-radius: 999px;
-          background: rgba(12, 12, 15, .5);
-          color: #f0e6d2;
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           font-size: 10px;
           font-weight: 800;
           letter-spacing: 0;
           text-transform: uppercase;
           padding: 7px 12px;
-          backdrop-filter: blur(6px);
+          backdrop-filter: blur(9px) saturate(1.08);
+          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           cursor: pointer;
         }
 
@@ -3406,9 +3435,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .hero-media-nav {
             width: 42px;
             height: 60px;
-            border-color: rgba(182, 146, 74, .5);
-            background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-            color: var(--vy-on-gold);
+            border-color: var(--store-hero-control-border);
+            background: var(--store-hero-control-bg);
+            color: var(--store-hero-control-icon);
           }
 
           .hero-media-nav.previous {

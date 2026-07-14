@@ -5,10 +5,25 @@ export function CastProfileStyles() {
         --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
         --cast-mobile-cta-height: 76px;
         --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
+        --cast-hero-control-bg: rgba(8, 8, 11, .16);
+        --cast-hero-control-bg-strong: rgba(8, 8, 11, .22);
+        --cast-hero-control-border: rgba(255, 255, 255, .34);
+        --cast-hero-control-icon: #fff7d7;
+        --cast-hero-control-shadow: 0 12px 30px rgba(0, 0, 0, .32);
+        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .92)) drop-shadow(0 0 8px rgba(0, 0, 0, .58));
         min-height: 100vh;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
         background: var(--vy-bg);
+      }
+
+      html.vy-light .cast-page {
+        --cast-hero-control-bg: rgba(255, 255, 255, .14);
+        --cast-hero-control-bg-strong: rgba(255, 255, 255, .2);
+        --cast-hero-control-border: rgba(36, 26, 10, .28);
+        --cast-hero-control-icon: #241a0a;
+        --cast-hero-control-shadow: 0 12px 28px rgba(36, 26, 10, .16);
+        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .96)) drop-shadow(0 0 7px rgba(255, 255, 255, .82));
       }
 
       .cast-mobile {
@@ -76,17 +91,25 @@ export function CastProfileStyles() {
         height: 38px;
         min-width: 38px;
         min-height: 38px;
-        border: 1px solid rgba(182,146,74,.48);
+        border: 1px solid var(--cast-hero-control-border);
         border-radius: 999px;
-        background: linear-gradient(135deg, rgba(244,227,180,.98), rgba(212,178,106,.96) 58%, rgba(182,146,74,.95));
-        color: var(--vy-on-gold);
+        background: var(--cast-hero-control-bg);
+        color: var(--cast-hero-control-icon);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(9px) saturate(1.08);
+        -webkit-backdrop-filter: blur(9px) saturate(1.08);
         text-decoration: none;
         padding: 0;
-        box-shadow: 0 12px 26px rgba(79,57,19,.22);
+        box-shadow: var(--cast-hero-control-shadow);
+      }
+
+      .cast-icon-link svg,
+      .cast-icon-button svg,
+      .cast-hero-media-nav button svg,
+      .cast-play svg {
+        filter: var(--cast-hero-control-icon-shadow);
       }
 
       .cast-icon-button {
@@ -95,7 +118,9 @@ export function CastProfileStyles() {
       }
 
       .cast-icon-button.is-active {
-        color: var(--vy-on-gold);
+        background: var(--cast-hero-control-bg-strong);
+        border-color: color-mix(in srgb, var(--vy-favorite) 70%, transparent);
+        color: var(--vy-favorite);
       }
 
       .cast-hero-media-nav {
@@ -110,10 +135,10 @@ export function CastProfileStyles() {
         top: 47%;
         width: 38px;
         height: 38px;
-        border: 1px solid rgba(182,146,74,.48);
+        border: 1px solid var(--cast-hero-control-border);
         border-radius: 999px;
-        background: linear-gradient(135deg, rgba(244,227,180,.98), rgba(212,178,106,.96) 58%, rgba(182,146,74,.95));
-        color: var(--vy-on-gold);
+        background: var(--cast-hero-control-bg);
+        color: var(--cast-hero-control-icon);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -124,8 +149,9 @@ export function CastProfileStyles() {
         transition: none;
         animation: none;
         will-change: auto;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 12px 26px rgba(79,57,19,.24);
+        backdrop-filter: blur(9px) saturate(1.08);
+        -webkit-backdrop-filter: blur(9px) saturate(1.08);
+        box-shadow: var(--cast-hero-control-shadow);
       }
 
       .cast-hero-media-nav button:active,
@@ -147,15 +173,17 @@ export function CastProfileStyles() {
         top: 46%;
         transform: translate(-50%, -50%);
         z-index: 2;
-        width: 58px;
-        height: 58px;
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
         display: grid;
         place-items: center;
-        background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
-        color: var(--vy-on-gold);
-        box-shadow: 0 16px 36px rgba(0,0,0,.34);
-        border: 0;
+        background: var(--cast-hero-control-bg-strong);
+        color: var(--cast-hero-control-icon);
+        box-shadow: var(--cast-hero-control-shadow);
+        border: 1px solid var(--cast-hero-control-border);
+        backdrop-filter: blur(10px) saturate(1.08);
+        -webkit-backdrop-filter: blur(10px) saturate(1.08);
         cursor: pointer;
       }
 
