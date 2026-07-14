@@ -1074,7 +1074,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
   if (!event) {
     return (
       <HomeDataMessage
-        text="Chưa có banner trang chủ từ admin."
+        text="Chưa có banner trang chủ."
         minHeight={desktop ? 310 : 208}
       />
     );
@@ -1243,7 +1243,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
   if (!event) {
     return (
       <HomeDataMessage
-        text="Chưa có banner nổi bật từ admin."
+        text="Chưa có banner nổi bật."
         minHeight={desktop ? 310 : 208}
       />
     );
