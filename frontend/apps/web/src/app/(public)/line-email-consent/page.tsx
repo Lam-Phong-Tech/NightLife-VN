@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 const colors = {
@@ -36,11 +36,11 @@ const emailConsentBenefits = [
 
 export default function LineEmailConsentPage() {
   const [accepted, setAccepted] = useState(false);
-  const [redirectTo, setRedirectTo] = useState("/tai-khoan");
-
-  useEffect(() => {
-    setRedirectTo(normalizeRedirect(new URLSearchParams(window.location.search).get("redirect")));
-  }, []);
+  const [redirectTo] = useState(() =>
+    typeof window === "undefined"
+      ? "/tai-khoan"
+      : normalizeRedirect(new URLSearchParams(window.location.search).get("redirect")),
+  );
 
   return (
     <main className="nl-line-consent-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
@@ -318,14 +318,29 @@ export default function LineEmailConsentPage() {
           color: #8f6a2a !important;
         }
 
+        .nl-line-consent-shell,
+        .nl-line-consent-layout,
+        .nl-line-consent-hero,
+        .nl-line-consent-card,
+        .nl-line-consent-check,
+        .nl-line-consent-benefits,
+        .nl-line-consent-submit {
+          box-sizing: border-box;
+          max-width: 100%;
+        }
+
         @media (max-width: 767px) {
+          .nl-line-consent-shell {
+            padding: 24px 16px 44px !important;
+          }
+
           .nl-line-consent-layout {
             grid-template-columns: 1fr !important;
           }
 
           .nl-line-consent-hero {
             min-height: auto !important;
-            padding: 24px !important;
+            padding: clamp(20px, 5.5vw, 24px) !important;
             gap: 22px !important;
           }
 
@@ -341,7 +356,7 @@ export default function LineEmailConsentPage() {
           }
 
           .nl-line-consent-card {
-            padding: 22px !important;
+            padding: clamp(20px, 5.5vw, 24px) !important;
           }
 
           .nl-line-consent-card-head {

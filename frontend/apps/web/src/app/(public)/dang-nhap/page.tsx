@@ -918,6 +918,16 @@ export default function Page() {
           background: rgba(255, 255, 255, 0.9) !important;
         }
 
+        .nl-login-page .nl-login-form-section > div,
+        .nl-login-page .nl-login-card,
+        .nl-login-page .nl-login-tabs,
+        .nl-login-page .nl-field-box,
+        .nl-login-page .nl-login-submit,
+        .nl-login-page .nl-social-button {
+          box-sizing: border-box;
+          max-width: 100%;
+        }
+
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
@@ -943,19 +953,58 @@ export default function Page() {
 
           .nl-login-page .nl-login-form-section {
             min-height: auto !important;
-            padding: 20px !important;
+            padding: 20px clamp(16px, 5vw, 22px) 28px !important;
             align-items: flex-start !important;
           }
 
           .nl-login-page .nl-login-card {
             width: 100% !important;
-            padding: 18px !important;
+            padding: clamp(18px, 5vw, 24px) !important;
             border-radius: 16px !important;
             background: rgba(255, 255, 255, 0.055) !important;
           }
 
           html.vy-light .nl-login-page .nl-login-card {
             background: rgba(255, 255, 255, 0.82) !important;
+          }
+
+          .nl-login-page .nl-login-tabs {
+            padding: 4px !important;
+          }
+
+          .nl-login-page .nl-login-tab {
+            padding: 10px 8px !important;
+            font-size: 13px !important;
+            line-height: 1.1 !important;
+          }
+
+          .nl-login-page .nl-field-box {
+            padding: 0 12px !important;
+          }
+
+          .nl-login-page .nl-login-title {
+            font-size: clamp(24px, 7vw, 26px) !important;
+          }
+        }
+
+        @media (max-width: 374px) {
+          .nl-login-page .nl-login-visual {
+            padding: 20px 18px !important;
+          }
+
+          .nl-login-page .nl-login-form-section {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+          }
+
+          .nl-login-page .nl-login-card {
+            padding: 18px 16px !important;
+          }
+
+          .nl-login-page .nl-social-button {
+            gap: 8px !important;
+            padding: 0 10px !important;
+            font-size: 12.5px !important;
           }
         }
       `}</style>

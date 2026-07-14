@@ -365,6 +365,8 @@ function Field({
           background: colors.panelStrong,
           borderRadius: 12,
           padding: "0 12px",
+          boxSizing: "border-box",
+          maxWidth: "100%",
           color: colors.gold,
         }}
       >
