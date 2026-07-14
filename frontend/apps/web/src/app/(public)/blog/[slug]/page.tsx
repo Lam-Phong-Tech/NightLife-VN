@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { SystemStatusPage } from "@/components/ui/SystemStatusPage";
 import { articleJsonLd, breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { getBlogPost, getPublishedBlogPosts } from "@/lib/content/blog";
 import { absoluteSiteUrl } from "@/lib/site";
@@ -87,7 +87,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
   const isPreview = preview === "1";
   const post = await getBlogPost(slug, { preview: isPreview });
 
-  if (!post) notFound();
+  if (!post) return <SystemStatusPage kind="not-found" />;
 
   const allPosts = await getPublishedBlogPosts();
   const relatedPosts = allPosts
