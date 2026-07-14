@@ -38,6 +38,11 @@ import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 
 type PriceRange = "" | "under400" | "400600" | "6001000" | "over1000";
 
+type AgeRange = {
+  min: number;
+  max: number;
+};
+
 type Coordinates = {
   lat: number;
   lng: number;
@@ -61,8 +66,12 @@ type CastSearchCopy = {
   filterTitle: string;
   find: string;
   findCast: string;
+  filterLocation: string;
+  filterNeeds: string;
+  filterOther: string;
   hasDeals: string;
   language: string;
+  age: string;
   listAria: string;
   locating: string;
   openFilters: string;
@@ -142,6 +151,10 @@ const compactLanguageLabels: Record<string, string> = {
 const favoriteCounts = ["1.2k", "1.0k", "947", "880", "812", "760", "690", "642"];
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
 const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
+const ageRangeMin = 20;
+const ageRangeMax = 40;
+const ageRangeStep = 1;
+const defaultAgeRange: AgeRange = { min: ageRangeMin, max: ageRangeMax };
 
 const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
@@ -159,8 +172,12 @@ const castCopyVi: CastSearchCopy = {
   filterTitle: "Bộ lọc",
   find: "Tìm",
   findCast: "Tìm cast",
+  filterLocation: "Địa điểm",
+  filterNeeds: "Nhu cầu",
+  filterOther: "Khác",
   hasDeals: "Có ưu đãi",
   language: "Ngôn ngữ",
+  age: "Độ tuổi",
   listAria: "Danh sách cast",
   locating: "Đang lấy vị trí",
   openFilters: "Mở bộ lọc",
@@ -188,8 +205,12 @@ const castCopyEn: CastSearchCopy = {
   filterTitle: "Filters",
   find: "Find",
   findCast: "Find Cast",
+  filterLocation: "Location",
+  filterNeeds: "Needs",
+  filterOther: "More",
   hasDeals: "Has deals",
   language: "Language",
+  age: "Age",
   listAria: "Cast list",
   locating: "Finding location",
   openFilters: "Open filters",
@@ -244,8 +265,12 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
     filterTitle: translateText(castCopyVi.filterTitle, language),
     find: translateText(castCopyVi.find, language),
     findCast: translateText(castCopyVi.findCast, language),
+    filterLocation: translateText(castCopyVi.filterLocation, language),
+    filterNeeds: translateText(castCopyVi.filterNeeds, language),
+    filterOther: translateText(castCopyVi.filterOther, language),
     hasDeals: translateText(castCopyVi.hasDeals, language),
     language: translateText(castCopyVi.language, language),
+    age: translateText(castCopyVi.age, language),
     listAria: translateText(castCopyVi.listAria, language),
     locating: translateText(castCopyVi.locating, language),
     openFilters: translateText(castCopyVi.openFilters, language),
@@ -305,6 +330,41 @@ const matchesPriceRange = (range: PriceRange, value?: number | null) => {
   return value > 1_000_000;
 };
 
+const isDefaultAgeRange = (range: AgeRange) =>
+  range.min === defaultAgeRange.min && range.max === defaultAgeRange.max;
+
+const normalizeAgeSearchText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+const extractPublicCastAge = (cast: PublicCast) => {
+  const text = normalizeAgeSearchText(
+    [cast.publicHeadline, ...cast.tags].filter(Boolean).join(" "),
+  );
+  const exactAge =
+    text.match(/(?:age|tuoi|do tuoi)\D*(\d{2})/)?.[1] ??
+    text.match(/\b(\d{2})\s*(?:tuoi|age)\b/)?.[1];
+
+  if (exactAge) {
+    const parsedAge = Number(exactAge);
+    return Number.isFinite(parsedAge) ? parsedAge : null;
+  }
+
+  if (/\b20s\b|do tuoi 20|tuoi 20/.test(text)) return 25;
+  if (/\b30s\b|do tuoi 30|tuoi 30/.test(text)) return 35;
+  if (/\b40s\b|do tuoi 40|tuoi 40/.test(text)) return 40;
+  return null;
+};
+
+const matchesAgeRange = (range: AgeRange, cast: PublicCast) => {
+  if (isDefaultAgeRange(range)) return true;
+  const age = extractPublicCastAge(cast);
+  if (age === null) return true;
+  return age >= range.min && age <= range.max;
+};
+
 const highlightMatch = (text: string, query: string) => {
   const normalizedQuery = query.trim().toLowerCase();
   const normalizedText = text.toLowerCase();
@@ -329,6 +389,7 @@ export default function Page() {
   const [language, setLanguage] = useState("");
   const [storeSlug, setStoreSlug] = useState("");
   const [priceRange, setPriceRange] = useState<PriceRange>("");
+  const [ageRange, setAgeRange] = useState<AgeRange>(defaultAgeRange);
   const [sort, setSort] = useState<DiscoverySort>("newest");
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingCastSlugs, setTopRankingCastSlugs] = useState<string[]>([]);
@@ -570,6 +631,7 @@ export default function Page() {
     const filteredCasts = casts
       .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
       .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd))
+      .filter((cast) => matchesAgeRange(ageRange, cast))
       .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug));
     const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
       primary: [cast.name, cast.publicAlias, cast.stageName],
@@ -592,7 +654,7 @@ export default function Page() {
         (topRankingOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [casts, priceRange, query, storeSlug, topRankingOnly, topRankingOrder]);
+  }, [ageRange, casts, priceRange, query, storeSlug, topRankingOnly, topRankingOrder]);
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const cityLabel = getCastCityLabel(city, activeLanguage);
@@ -631,6 +693,7 @@ export default function Page() {
     language,
     storeSlug,
     priceRange,
+    !isDefaultAgeRange(ageRange),
     topRankingOnly,
     sort !== "newest",
     hasActiveCoupon,
@@ -644,6 +707,7 @@ export default function Page() {
     setLanguage("");
     setStoreSlug("");
     setPriceRange("");
+    setAgeRange(defaultAgeRange);
     setTopRankingOnly(false);
     setHasActiveCoupon(false);
     setSort("newest");
@@ -857,6 +921,7 @@ export default function Page() {
                 <CastFilterPanel
                   area={area}
                   areaOptions={areaOptions}
+                  ageRange={ageRange}
                   category={category}
                   categoryOptions={localizedCategoryOptions}
                   city={city}
@@ -877,6 +942,7 @@ export default function Page() {
                   topRankingOnly={topRankingOnly}
                   variant="desktop"
                   onArea={setArea}
+                  onAgeRange={setAgeRange}
                   onCategory={setCategory}
                   onCity={handleCityChange}
                   onClose={() => setFilterOpen(false)}
@@ -986,6 +1052,7 @@ export default function Page() {
         <CastFilterPanel
           area={area}
           areaOptions={areaOptions}
+          ageRange={ageRange}
           category={category}
           categoryOptions={localizedCategoryOptions}
           city={city}
@@ -1005,6 +1072,7 @@ export default function Page() {
           topRankingOnly={topRankingOnly}
           variant="mobile"
           onArea={setArea}
+          onAgeRange={setAgeRange}
           onCategory={setCategory}
           onCity={handleCityChange}
           onClose={() => setFilterOpen(false)}
@@ -1275,6 +1343,7 @@ function CastDiscoveryCard({
 function CastFilterPanel({
   area,
   areaOptions,
+  ageRange,
   category,
   categoryOptions,
   city,
@@ -1295,6 +1364,7 @@ function CastFilterPanel({
   topRankingOnly,
   variant,
   onArea,
+  onAgeRange,
   onCategory,
   onCity,
   onClose,
@@ -1308,6 +1378,7 @@ function CastFilterPanel({
 }: {
   area: string;
   areaOptions: Option[];
+  ageRange: AgeRange;
   category: string;
   categoryOptions: Option[];
   city: string;
@@ -1328,6 +1399,7 @@ function CastFilterPanel({
   topRankingOnly: boolean;
   variant: "desktop" | "mobile";
   onArea: (value: string) => void;
+  onAgeRange: (value: AgeRange) => void;
   onCategory: (value: string) => void;
   onCity: (value: string) => void;
   onClose: () => void;
@@ -1363,84 +1435,82 @@ function CastFilterPanel({
         </header>
 
         <div className="cast-sheet-scroll hscroll">
-          <FilterChipGroup label={copy.city} options={cityOptions} value={city} onChange={onCity} />
-          <FilterChipGroup label={copy.area} options={areaOptions} value={area} onChange={onArea} />
-          <FilterChipGroup
-            label={copy.store}
-            options={storeOptions}
-            value={storeSlug}
-            onChange={onStore}
-          />
-          <FilterChipGroup
-            label={copy.category}
-            options={categoryOptions}
-            value={category}
-            onChange={onCategory}
-          />
-          <FilterChipGroup
-            label={copy.language}
-            options={languageOptions}
-            value={language}
-            onChange={onLanguage}
-          />
-          <FilterChipGroup
-            label={copy.priceRange}
-            note={copy.priceRangeNote}
-            options={priceRangeOptions}
-            value={priceRange}
-            onChange={onPrice}
-          />
-          <FilterChipGroup
-            label={copy.sortLabel.replace(":", "")}
-            options={sortOptions}
-            value={sort}
-            onChange={(value) => onSort(value as DiscoverySort)}
-          />
+          <div className="cast-filter-layout">
+            <section className="cast-filter-column" aria-label={copy.filterLocation}>
+              <h3 className="cast-filter-column-title">{copy.filterLocation}</h3>
+              <FilterChipGroup label={copy.city} options={cityOptions} value={city} onChange={onCity} />
+              <FilterChipGroup label={copy.area} options={areaOptions} value={area} onChange={onArea} />
+              <FilterChipGroup
+                label={copy.store}
+                options={storeOptions}
+                value={storeSlug}
+                onChange={onStore}
+              />
+            </section>
 
-          <div className="cast-range-preview" aria-hidden="true">
-            <div>
-              <span>Độ tuổi</span>
-              <b>22 - 28</b>
-            </div>
-            <i>
-              <span />
-              <b />
-              <b />
-            </i>
-            <small>
-              <span>20</span>
-              <span>40+</span>
-            </small>
-          </div>
+            <section className="cast-filter-column" aria-label={copy.filterNeeds}>
+              <h3 className="cast-filter-column-title">{copy.filterNeeds}</h3>
+              <FilterChipGroup
+                label={copy.category}
+                options={categoryOptions}
+                value={category}
+                onChange={onCategory}
+              />
+              <FilterChipGroup
+                label={copy.language}
+                options={languageOptions}
+                value={language}
+                onChange={onLanguage}
+              />
+              <FilterChipGroup
+                label={copy.priceRange}
+                note={copy.priceRangeNote}
+                options={priceRangeOptions}
+                value={priceRange}
+                onChange={onPrice}
+              />
+              <FilterChipGroup
+                label={copy.sortLabel.replace(":", "")}
+                options={sortOptions}
+                value={sort}
+                onChange={(value) => onSort(value as DiscoverySort)}
+              />
+            </section>
 
-          <div className="cast-toggle-row">
-            <span>
-              <i />
-              {copy.hasDeals}
-            </span>
-            <button
-              type="button"
-              aria-pressed={hasActiveCoupon}
-              className={hasActiveCoupon ? "is-on" : ""}
-              onClick={onToggleCoupon}
-            >
-              <b />
-            </button>
-          </div>
+            <section className="cast-filter-column" aria-label={copy.filterOther}>
+              <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
+              <AgeRangeFilter label={copy.age} value={ageRange} onChange={onAgeRange} />
 
-          <div className="cast-toggle-row">
-            <span>
-              <i />
-              {copy.topRanking}
-            </span>
-            <button
-              type="button"
-              aria-pressed={topRankingOnly}
-              className={topRankingOnly ? "is-on" : ""}
-              onClick={onToggleTopRanking}
-            >
-              <b />
-            </button>
+              <div className="cast-toggle-row">
+                <span>
+                  <i />
+                  {copy.hasDeals}
+                </span>
+                <button
+                  type="button"
+                  aria-pressed={hasActiveCoupon}
+                  className={hasActiveCoupon ? "is-on" : ""}
+                  onClick={onToggleCoupon}
+                >
+                  <b />
+                </button>
+              </div>
+
+              <div className="cast-toggle-row">
+                <span>
+                  <i />
+                  {copy.topRanking}
+                </span>
+                <button
+                  type="button"
+                  aria-pressed={topRankingOnly}
+                  className={topRankingOnly ? "is-on" : ""}
+                  onClick={onToggleTopRanking}
+                >
+                  <b />
+                </button>
+              </div>
+            </section>
           </div>
         </div>
 
@@ -1465,6 +1535,70 @@ function CastFilterPanel({
   );
 
   return createPortal(sheet, document.body);
+}
+
+function AgeRangeFilter({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: AgeRange;
+  onChange: (value: AgeRange) => void;
+}) {
+  const lowerPercent = ((value.min - ageRangeMin) / (ageRangeMax - ageRangeMin)) * 100;
+  const upperPercent = ((value.max - ageRangeMin) / (ageRangeMax - ageRangeMin)) * 100;
+  const valueLabel = `${value.min} - ${value.max >= ageRangeMax ? `${ageRangeMax}+` : value.max}`;
+
+  const updateMin = (nextValue: number) => {
+    onChange({
+      min: Math.min(Math.max(nextValue, ageRangeMin), value.max - ageRangeStep),
+      max: value.max,
+    });
+  };
+
+  const updateMax = (nextValue: number) => {
+    onChange({
+      min: value.min,
+      max: Math.max(Math.min(nextValue, ageRangeMax), value.min + ageRangeStep),
+    });
+  };
+
+  return (
+    <section className="cast-range-preview" aria-label={label}>
+      <div className="cast-range-head">
+        <span>{label}</span>
+        <b>{valueLabel}</b>
+      </div>
+      <div className="cast-range-slider">
+        <span className="cast-range-track" aria-hidden="true">
+          <span style={{ left: `${lowerPercent}%`, right: `${100 - upperPercent}%` }} />
+        </span>
+        <input
+          type="range"
+          min={ageRangeMin}
+          max={ageRangeMax - ageRangeStep}
+          step={ageRangeStep}
+          value={value.min}
+          aria-label={`${label} tối thiểu`}
+          onChange={(event) => updateMin(Number(event.target.value))}
+        />
+        <input
+          type="range"
+          min={ageRangeMin + ageRangeStep}
+          max={ageRangeMax}
+          step={ageRangeStep}
+          value={value.max}
+          aria-label={`${label} tối đa`}
+          onChange={(event) => updateMax(Number(event.target.value))}
+        />
+      </div>
+      <small>
+        <span>{ageRangeMin}</span>
+        <span>{ageRangeMax}+</span>
+      </small>
+    </section>
+  );
 }
 
 function FilterChipGroup({
@@ -2387,31 +2521,44 @@ const castSearchCss = `
 }
 
 .cast-filter-sheet--desktop .cast-sheet-scroll {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 18px 16px;
   min-height: 0;
   overflow-y: auto;
   padding: 18px;
 }
 
+.cast-filter-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.cast-filter-sheet--desktop .cast-filter-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(250px, 0.92fr);
+  align-items: start;
+}
+
+.cast-filter-column {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cast-filter-column-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #e3c27e;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .cast-sheet-group {
-  margin-bottom: 18px;
+  margin: 0;
 }
 
 .cast-filter-sheet--desktop .cast-sheet-group {
-  grid-column: span 4;
   min-width: 0;
-  margin-bottom: 0;
-}
-
-.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(3) {
-  grid-column: span 8;
-}
-
-.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(6),
-.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(7) {
-  grid-column: span 4;
 }
 
 .cast-sheet-group h3 {
@@ -2462,83 +2609,109 @@ const castSearchCss = `
 }
 
 .cast-range-preview {
-  margin: 4px 0 20px;
-}
-
-.cast-filter-sheet--desktop .cast-range-preview {
-  grid-column: span 4;
-  align-self: stretch;
   display: grid;
-  align-content: center;
-  min-height: 94px;
-  margin: 0;
+  gap: 12px;
+  min-width: 0;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.035);
   padding: 13px 14px;
 }
 
-.cast-range-preview > div,
+.cast-range-head,
 .cast-range-preview small {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.cast-range-preview > div {
-  margin-bottom: 12px;
+.cast-range-head {
   color: #f3f0ea;
   font-size: 13.5px;
   font-weight: 750;
 }
 
-.cast-range-preview > div b {
+.cast-range-head b {
   color: #e3c27e;
   font-size: 12px;
 }
 
-.cast-range-preview > i {
+.cast-range-slider {
   position: relative;
-  display: block;
-  height: 4px;
+  display: grid;
+  align-items: center;
+  height: 30px;
   margin: 0 6px;
-  border-radius: 3px;
+}
+
+.cast-range-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  margin: auto 0;
+  overflow: hidden;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
 }
 
-.cast-range-preview > i span {
+.cast-range-track span {
   position: absolute;
-  left: 18%;
-  right: 32%;
   top: 0;
   bottom: 0;
-  border-radius: 3px;
-  background: linear-gradient(90deg, #d4b26a, #e3c27e);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d4b26a, #f0dda8);
 }
 
-.cast-range-preview > i b {
+.cast-range-slider input {
   position: absolute;
-  top: 50%;
+  inset: 0;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.cast-range-slider input::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.cast-range-slider input::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d4b26a;
+  border-radius: 50%;
+  appearance: none;
+  background: #f3efe6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.44);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.cast-range-slider input::-moz-range-track {
+  height: 4px;
+  border: 0;
+  background: transparent;
+}
+
+.cast-range-slider input::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border: 2px solid #d4b26a;
   border-radius: 50%;
   background: #f3efe6;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-
-.cast-range-preview > i b:nth-child(2) {
-  left: 18%;
-  transform: translate(-50%, -50%);
-}
-
-.cast-range-preview > i b:nth-child(3) {
-  left: 68%;
-  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.44);
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .cast-range-preview small {
-  margin: 9px 4px 0;
+  margin: 0 4px;
   color: var(--vy-muted);
   font-size: 10.5px;
 }
@@ -2556,8 +2729,7 @@ const castSearchCss = `
 }
 
 .cast-filter-sheet--desktop .cast-toggle-row {
-  grid-column: span 4;
-  min-height: 94px;
+  min-height: 58px;
   align-self: stretch;
   margin-bottom: 0;
 }
@@ -2692,7 +2864,7 @@ html.vy-light .cast-chip,
 html.vy-light .cast-card,
 html.vy-light .cast-suggestions,
 html.vy-light .cast-filter-sheet,
-html.vy-light .cast-filter-sheet--desktop .cast-range-preview,
+html.vy-light .cast-range-preview,
 html.vy-light .cast-toggle-row,
 html.vy-light .cast-sheet-group button,
 html.vy-light .cast-suggestion-tags button {
@@ -2716,7 +2888,7 @@ html.vy-light .cast-suggestion-searchline span,
 html.vy-light .cast-suggestion-row b,
 html.vy-light .cast-sheet-head h2,
 html.vy-light .cast-sheet-group h3,
-html.vy-light .cast-range-preview > div,
+html.vy-light .cast-range-head,
 html.vy-light .cast-toggle-row span {
   color: #241a0a;
 }
@@ -2805,7 +2977,8 @@ html.vy-light .cast-card-foot b,
 html.vy-light .cast-rating,
 html.vy-light .cast-sort-select .cast-dropdown-trigger b,
 html.vy-light .cast-suggestions mark,
-html.vy-light .cast-range-preview > div b {
+html.vy-light .cast-range-head b,
+html.vy-light .cast-filter-column-title {
   color: #8f6a2a;
 }
 
@@ -2839,7 +3012,7 @@ html.vy-light .cast-filter-sheet--desktop {
 }
 
 html.vy-light .cast-sheet-handle,
-html.vy-light .cast-range-preview > i,
+html.vy-light .cast-range-track,
 html.vy-light .cast-toggle-row button {
   background: rgba(150, 116, 52, 0.16);
 }
@@ -2860,20 +3033,13 @@ html.vy-light .cast-sheet-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .cast-filter-sheet--desktop .cast-sheet-scroll {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+  .cast-filter-sheet--desktop .cast-filter-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cast-filter-sheet--desktop .cast-sheet-group,
-  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(6),
-  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(7),
-  .cast-filter-sheet--desktop .cast-range-preview,
-  .cast-filter-sheet--desktop .cast-toggle-row {
-    grid-column: span 3;
-  }
-
-  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(3) {
-    grid-column: span 6;
+  .cast-filter-sheet--desktop .cast-filter-column:last-child {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
