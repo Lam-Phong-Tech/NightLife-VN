@@ -33,6 +33,25 @@ export class SupportChatService {
     return messages.reverse();
   }
 
+  async getAdminTickets(adminId: string) {
+    return this.prisma.supportTicket.findMany({
+      where: {
+        OR: [
+          { status: SupportTicketStatus.PENDING },
+          { status: SupportTicketStatus.ACTIVE, assignedAdminId: adminId }
+        ]
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        user: { select: { id: true, displayName: true, email: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      },
+    });
+  }
+
   async getPendingTickets() {
     return this.prisma.supportTicket.findMany({
       where: { status: SupportTicketStatus.PENDING },

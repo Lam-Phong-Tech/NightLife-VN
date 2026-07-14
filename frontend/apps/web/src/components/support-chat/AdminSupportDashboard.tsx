@@ -17,7 +17,12 @@ export function AdminSupportDashboard() {
   const [toast, setToast] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   
+  const activeTicketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    activeTicketIdRef.current = activeTicketId;
+  }, [activeTicketId]);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -54,7 +59,14 @@ export function AdminSupportDashboard() {
       })
       .then(data => {
         if (Array.isArray(data)) {
-          setPendingTickets(data);
+          // Format tickets with latest message from DB if available
+          const formatted = data.map(t => ({
+            ...t,
+            latestMessage: t.messages?.[0]?.content || null
+          }));
+          setPendingTickets(formatted);
+          // Join socket rooms for all tickets so admin receives new messages
+          formatted.forEach(t => newSocket.emit('rejoin_ticket', { ticketId: t.id }));
         } else {
           console.error('Expected array for pending tickets, got:', data);
         }
@@ -62,10 +74,19 @@ export function AdminSupportDashboard() {
       .catch(console.error);
 
     newSocket.on('new_ticket', (ticket: any) => {
-      setPendingTickets(prev => [ticket, ...prev]);
+      setPendingTickets(prev => {
+        if (prev.some(t => t.id === ticket.id)) return prev;
+        return [ticket, ...prev];
+      });
+      newSocket.emit('rejoin_ticket', { ticketId: ticket.id });
     });
 
     newSocket.on('ticket_claimed', (data: { ticketId: string; adminId: string }) => {
+      // If WE claimed it, don't remove it from the list! Just mark it as ours
+      if (data.adminId === currentUser.id) {
+        setPendingTickets(prev => prev.map(t => t.id === data.ticketId ? { ...t, claimedByOther: false, status: 'ACTIVE' } : t));
+        return;
+      }
       setPendingTickets(prev => 
         prev.map(t => t.id === data.ticketId ? { ...t, claimedByOther: true } : t)
       );
@@ -76,10 +97,18 @@ export function AdminSupportDashboard() {
     });
 
     newSocket.on('receive_message', (msg: any) => {
-      setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
+      // Update preview in the sidebar
+      setPendingTickets(prev => prev.map(t => 
+        t.id === msg.ticketId ? { ...t, latestMessage: msg.content } : t
+      ));
+
+      // Update active messages ONLY if it belongs to activeTicketId
+      if (activeTicketIdRef.current === msg.ticketId) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      }
     });
 
     newSocket.on('ticket_closed', (data: { ticketId: string }) => {
@@ -136,7 +165,8 @@ export function AdminSupportDashboard() {
         const ticketInfo = pendingTickets.find(t => t.id === ticketId);
         setActiveTicketInfo(ticketInfo || response.ticket);
         setActiveTicketId(ticketId);
-        setPendingTickets(prev => prev.filter(t => t.id !== ticketId));
+        // Don't filter it out, keep it in the list as ACTIVE
+        setPendingTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'ACTIVE' } : t));
         fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
           .then(res => res.json())
           .then(data => setMessages(data));
@@ -178,6 +208,7 @@ export function AdminSupportDashboard() {
     if (!socket || !activeTicketId) return;
     socket.emit('close_ticket', { ticketId: activeTicketId }, (response: any) => {
       if (response.success) {
+        setPendingTickets(prev => prev.filter(t => t.id !== activeTicketId));
         setActiveTicketId(null);
         setActiveTicketInfo(null);
         setMessages([]);
@@ -355,7 +386,7 @@ export function AdminSupportDashboard() {
                       className="truncate"
                       style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px' }}
                     >
-                      {isClaimed ? 'Đang có Admin nhận...' : 'Đang chờ hỗ trợ...'}
+                      {isClaimed ? 'Đang có Admin nhận...' : (ticket.latestMessage || (ticket.status === 'ACTIVE' ? 'Đang hỗ trợ...' : 'Đang chờ hỗ trợ...'))}
                     </div>
                     <div 
                       style={{ fontSize: '9.5px', color: '#57534b', marginTop: '3px' }}

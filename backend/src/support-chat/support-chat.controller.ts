@@ -23,8 +23,10 @@ export class SupportChatController {
 
   @Get('pending')
   @UseGuards(JwtAuthGuard) // Only admins should see this
-  async getPendingTickets() {
-    return this.supportChatService.getPendingTickets();
+  async getPendingTickets(@Req() req: any) {
+    const adminId = req.user?.id;
+    if (!adminId) return [];
+    return this.supportChatService.getAdminTickets(adminId);
   }
 
   @Post('merge')
