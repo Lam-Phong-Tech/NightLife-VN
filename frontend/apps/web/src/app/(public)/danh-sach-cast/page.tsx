@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
@@ -336,6 +336,7 @@ export default function Page() {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const [isDesktopViewport, setDesktopViewport] = useState(false);
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
@@ -345,6 +346,7 @@ export default function Page() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const filterPanelRef = useRef<HTMLElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getCastCopy(activeLanguage), [activeLanguage]);
 
@@ -352,7 +354,9 @@ export default function Page() {
     let cancelled = false;
 
     if (!hasMemberFavoriteAccess()) {
-      setFavoriteCastSlugs([]);
+      queueMicrotask(() => {
+        if (!cancelled) setFavoriteCastSlugs([]);
+      });
       return () => {
         cancelled = true;
       };
@@ -479,21 +483,60 @@ export default function Page() {
   }, [city, topRankingOnly]);
 
   useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const syncViewport = () => setDesktopViewport(media.matches);
+
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+
+    return () => {
+      media.removeEventListener("change", syncViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isFilterOpen) return;
 
-    const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFilterOpen(false);
     };
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", closeOnEscape);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [isFilterOpen]);
+
+  useEffect(() => {
+    if (!isFilterOpen || isDesktopViewport) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isDesktopViewport, isFilterOpen]);
+
+  useEffect(() => {
+    if (!isFilterOpen || !isDesktopViewport) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (filterPanelRef.current?.contains(target)) return;
+      if (target.closest(".cast-filter-chip, .cast-input-filter")) return;
+      setFilterOpen(false);
+    };
+
+    window.addEventListener("pointerdown", closeOnOutsidePointer);
+
+    return () => {
+      window.removeEventListener("pointerdown", closeOnOutsidePointer);
+    };
+  }, [isDesktopViewport, isFilterOpen]);
 
   const storeOptions = useMemo<Option[]>(() => {
     const seen = new Map<string, string>();
@@ -776,8 +819,10 @@ export default function Page() {
               <button
                 type="button"
                 aria-label={copy.openFilters}
+                aria-expanded={isFilterOpen}
+                aria-controls="cast-filter-panel-mobile"
                 className="cast-input-filter"
-                onClick={() => setFilterOpen(true)}
+                onClick={() => setFilterOpen((current) => !current)}
               >
                 <SlidersHorizontal size={16} />
               </button>
@@ -805,6 +850,45 @@ export default function Page() {
                 onKeyword={setPopularKeyword}
                 onRecent={(value) => setQuery(value)}
               />
+            ) : null}
+
+            {isFilterOpen && isDesktopViewport ? (
+              <div className="cast-filter-popover">
+                <CastFilterPanel
+                  area={area}
+                  areaOptions={areaOptions}
+                  category={category}
+                  categoryOptions={localizedCategoryOptions}
+                  city={city}
+                  cityOptions={localizedCityOptions}
+                  copy={copy}
+                  language={language}
+                  languageOptions={localizedLanguageOptions}
+                  panelRef={filterPanelRef}
+                  priceRangeOptions={localizedPriceRangeOptions}
+                  priceRange={priceRange}
+                  sort={sort}
+                  sortOptions={effectiveSortOptions}
+                  subtitle={activeFilterCount ? formatCastActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+                  storeOptions={storeOptions}
+                  storeSlug={storeSlug}
+                  total={visibleCasts.length}
+                  hasActiveCoupon={hasActiveCoupon}
+                  topRankingOnly={topRankingOnly}
+                  variant="desktop"
+                  onArea={setArea}
+                  onCategory={setCategory}
+                  onCity={handleCityChange}
+                  onClose={() => setFilterOpen(false)}
+                  onLanguage={setLanguage}
+                  onPrice={(value) => setPriceRange(value as PriceRange)}
+                  onReset={resetFilters}
+                  onSort={handleSortChange}
+                  onStore={setStoreSlug}
+                  onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
+                  onToggleTopRanking={() => setTopRankingOnly((current) => !current)}
+                />
+              </div>
             ) : null}
           </div>
 
@@ -844,7 +928,9 @@ export default function Page() {
             <button
               type="button"
               className="cast-chip cast-filter-chip"
-              onClick={() => setFilterOpen(true)}
+              aria-expanded={isFilterOpen}
+              aria-controls={isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"}
+              onClick={() => setFilterOpen((current) => !current)}
             >
               <SlidersHorizontal size={14} />
               {copy.filterTitle}
@@ -896,8 +982,8 @@ export default function Page() {
         </section>
       </div>
 
-      {isFilterOpen ? (
-        <MobileFilterSheet
+      {isFilterOpen && !isDesktopViewport ? (
+        <CastFilterPanel
           area={area}
           areaOptions={areaOptions}
           category={category}
@@ -917,6 +1003,7 @@ export default function Page() {
           total={visibleCasts.length}
           hasActiveCoupon={hasActiveCoupon}
           topRankingOnly={topRankingOnly}
+          variant="mobile"
           onArea={setArea}
           onCategory={setCategory}
           onCity={handleCityChange}
@@ -1185,7 +1272,7 @@ function CastDiscoveryCard({
   );
 }
 
-function MobileFilterSheet({
+function CastFilterPanel({
   area,
   areaOptions,
   category,
@@ -1195,6 +1282,7 @@ function MobileFilterSheet({
   copy,
   language,
   languageOptions,
+  panelRef,
   priceRange,
   priceRangeOptions,
   storeOptions,
@@ -1205,6 +1293,7 @@ function MobileFilterSheet({
   total,
   hasActiveCoupon,
   topRankingOnly,
+  variant,
   onArea,
   onCategory,
   onCity,
@@ -1226,6 +1315,7 @@ function MobileFilterSheet({
   copy: CastSearchCopy;
   language: string;
   languageOptions: Option[];
+  panelRef?: React.Ref<HTMLElement>;
   priceRange: PriceRange;
   priceRangeOptions: Option[];
   sort: DiscoverySort;
@@ -1236,6 +1326,7 @@ function MobileFilterSheet({
   total: number;
   hasActiveCoupon: boolean;
   topRankingOnly: boolean;
+  variant: "desktop" | "mobile";
   onArea: (value: string) => void;
   onCategory: (value: string) => void;
   onCity: (value: string) => void;
@@ -1248,19 +1339,22 @@ function MobileFilterSheet({
   onToggleCoupon: () => void;
   onToggleTopRanking: () => void;
 }) {
-  const sheet = (
-    <div className="cast-sheet-backdrop" role="presentation" onMouseDown={onClose}>
+  const titleId = `cast-filter-title-${variant}`;
+  const panelId = `cast-filter-panel-${variant}`;
+  const panel = (
       <section
-        className="cast-filter-sheet"
+        id={panelId}
+        ref={panelRef}
+        className={`cast-filter-sheet cast-filter-sheet--${variant}`}
         role="dialog"
-        aria-modal="true"
-        aria-labelledby="cast-filter-title"
+        aria-modal={variant === "mobile"}
+        aria-labelledby={titleId}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="cast-sheet-handle" />
         <header className="cast-sheet-head">
           <div>
-            <h2 id="cast-filter-title">{copy.filterTitle}</h2>
+            <h2 id={titleId}>{copy.filterTitle}</h2>
             <p>{subtitle}</p>
           </div>
           <button type="button" onClick={onClose} aria-label={copy.closeFilters}>
@@ -1360,6 +1454,13 @@ function MobileFilterSheet({
           </button>
         </footer>
       </section>
+  );
+
+  if (variant === "desktop") return panel;
+
+  const sheet = (
+    <div className="cast-sheet-backdrop" role="presentation" onMouseDown={onClose}>
+      {panel}
     </div>
   );
 
@@ -2154,6 +2255,15 @@ const castSearchCss = `
   color: #d9c08a;
 }
 
+.cast-filter-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 28px;
+  z-index: 80;
+  width: min(720px, calc(100% - 56px));
+  color: #f3f0ea;
+}
+
 .cast-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -2185,10 +2295,39 @@ const castSearchCss = `
   animation: cast-filter-sheet-in 0.28s var(--vy-motion-ease, cubic-bezier(.2, .8, .2, 1)) both;
 }
 
+.cast-filter-sheet--desktop {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-height: min(560px, calc(100dvh - 300px));
+  margin: 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.032)),
+    rgba(14, 13, 18, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 48px -34px rgba(0, 0, 0, 0.86);
+  animation: cast-filter-panel-in 0.22s var(--vy-motion-ease, cubic-bezier(.2, .8, .2, 1)) both;
+}
+
 @keyframes cast-filter-sheet-in {
   from {
     opacity: 0;
     transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cast-filter-panel-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
   }
   to {
     opacity: 1;
@@ -2204,6 +2343,10 @@ const castSearchCss = `
   background: rgba(255, 255, 255, 0.18);
 }
 
+.cast-filter-sheet--desktop .cast-sheet-handle {
+  display: none;
+}
+
 .cast-sheet-head {
   display: flex;
   align-items: center;
@@ -2211,6 +2354,10 @@ const castSearchCss = `
   gap: 16px;
   padding: 8px 18px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cast-filter-sheet--desktop .cast-sheet-head {
+  padding: 16px 18px 14px;
 }
 
 .cast-sheet-head h2 {
@@ -2239,8 +2386,32 @@ const castSearchCss = `
   padding: 14px 18px 4px;
 }
 
+.cast-filter-sheet--desktop .cast-sheet-scroll {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+}
+
 .cast-sheet-group {
   margin-bottom: 18px;
+}
+
+.cast-filter-sheet--desktop .cast-sheet-group {
+  grid-column: span 4;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(3) {
+  grid-column: span 8;
+}
+
+.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(6),
+.cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(7) {
+  grid-column: span 4;
 }
 
 .cast-sheet-group h3 {
@@ -2277,6 +2448,12 @@ const castSearchCss = `
   cursor: pointer;
 }
 
+.cast-filter-sheet--desktop .cast-sheet-group button {
+  min-height: 34px;
+  border-radius: 12px;
+  padding: 7px 12px;
+}
+
 .cast-sheet-group button.is-active {
   border-color: transparent;
   background: linear-gradient(135deg, #f0dda8, #d4b26a);
@@ -2286,6 +2463,19 @@ const castSearchCss = `
 
 .cast-range-preview {
   margin: 4px 0 20px;
+}
+
+.cast-filter-sheet--desktop .cast-range-preview {
+  grid-column: span 4;
+  align-self: stretch;
+  display: grid;
+  align-content: center;
+  min-height: 94px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 13px 14px;
 }
 
 .cast-range-preview > div,
@@ -2365,6 +2555,13 @@ const castSearchCss = `
   padding: 11px 13px;
 }
 
+.cast-filter-sheet--desktop .cast-toggle-row {
+  grid-column: span 4;
+  min-height: 94px;
+  align-self: stretch;
+  margin-bottom: 0;
+}
+
 .cast-toggle-row:first-of-type {
   border-color: rgba(212, 178, 106, 0.22);
 }
@@ -2425,6 +2622,12 @@ const castSearchCss = `
   background: rgba(8, 8, 11, 0.72);
 }
 
+.cast-filter-sheet--desktop .cast-sheet-actions {
+  justify-content: flex-end;
+  padding: 14px 18px 16px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
 .cast-reset-button,
 .cast-apply-button {
   min-height: 48px;
@@ -2456,6 +2659,12 @@ const castSearchCss = `
   flex: 1;
 }
 
+.cast-filter-sheet--desktop .cast-apply-button {
+  flex: none;
+  min-width: 178px;
+  padding: 0 24px;
+}
+
 html.vy-light .cast-search-page {
   background:
     radial-gradient(circle at 14% 0%, rgba(212, 178, 106, 0.18), transparent 30%),
@@ -2483,6 +2692,7 @@ html.vy-light .cast-chip,
 html.vy-light .cast-card,
 html.vy-light .cast-suggestions,
 html.vy-light .cast-filter-sheet,
+html.vy-light .cast-filter-sheet--desktop .cast-range-preview,
 html.vy-light .cast-toggle-row,
 html.vy-light .cast-sheet-group button,
 html.vy-light .cast-suggestion-tags button {
@@ -2619,6 +2829,15 @@ html.vy-light .cast-filter-sheet {
   box-shadow: 0 -20px 52px -28px rgba(62, 42, 16, 0.42);
 }
 
+html.vy-light .cast-filter-sheet--desktop {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(250, 244, 232, 0.76)),
+    #fffaf1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 22px 50px -38px rgba(68, 48, 18, 0.46);
+}
+
 html.vy-light .cast-sheet-handle,
 html.vy-light .cast-range-preview > i,
 html.vy-light .cast-toggle-row button {
@@ -2640,6 +2859,22 @@ html.vy-light .cast-sheet-actions {
   .cast-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .cast-filter-sheet--desktop .cast-sheet-scroll {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .cast-filter-sheet--desktop .cast-sheet-group,
+  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(6),
+  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(7),
+  .cast-filter-sheet--desktop .cast-range-preview,
+  .cast-filter-sheet--desktop .cast-toggle-row {
+    grid-column: span 3;
+  }
+
+  .cast-filter-sheet--desktop .cast-sheet-group:nth-of-type(3) {
+    grid-column: span 6;
+  }
 }
 
 @media (max-width: 767px) {
@@ -2651,6 +2886,10 @@ html.vy-light .cast-sheet-actions {
 
   .cast-search-shell {
     width: 100%;
+  }
+
+  .cast-filter-popover {
+    display: none;
   }
 
   .cast-mobile-topbar {
