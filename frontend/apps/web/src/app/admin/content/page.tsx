@@ -1806,6 +1806,21 @@ export default function AdminContentPage() {
                     ))}
                   </div>
                 )}
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                  <input
+                    value={campaignDiscountValue.replace(/\D/g, '')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setCampaignDiscountValue(val ? val + (campaignDiscountType === 'percent' ? '%' : 'K') : '');
+                    }}
+                    placeholder={campaignDiscountType === 'percent' ? "Hoặc nhập % giảm..." : "Hoặc nhập số tiền giảm..."}
+                    style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, outline: 'none' }}
+                  />
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#c5c0b6', width: '40px', textAlign: 'center' }}>
+                    {campaignDiscountType === 'percent' ? '%' : 'K'}
+                  </span>
+                </div>
               </div>
 
               <div>
