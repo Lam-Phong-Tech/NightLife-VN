@@ -1771,7 +1771,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
         if (scrollDirection === "up") {
           const rect = element.getBoundingClientRect();
-          if (rect.top < window.innerHeight + 96) {
+          if (rect.top < window.innerHeight + 180) {
             revealElement(element, true);
           }
           return;
@@ -1791,8 +1791,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         });
       },
       {
-        rootMargin: "0px 0px -12% 0px",
-        threshold: 0.08,
+        rootMargin: "0px 0px 28% 0px",
+        threshold: 0.01,
       },
     );
 
@@ -1806,7 +1806,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
       const rect = element.getBoundingClientRect();
       const shouldRevealImmediately =
-        scrollDirection === "up" || rect.bottom <= 0 || rect.top < window.innerHeight * 0.86;
+        scrollDirection === "up" || rect.bottom <= 0 || rect.top < window.innerHeight * 1.12;
 
       if (shouldRevealImmediately) {
         revealElement(element, true);
