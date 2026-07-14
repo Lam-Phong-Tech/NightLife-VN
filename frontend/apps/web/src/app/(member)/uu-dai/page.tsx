@@ -1085,6 +1085,33 @@ export default function Page() {
           color: #211e19;
         }
 
+        html.vy-light .empty-state {
+          border-color: rgba(150, 116, 52, .18);
+          background: rgba(255, 255, 255, .7);
+        }
+
+        html.vy-light .empty-state h2 {
+          color: #211e19;
+        }
+
+        html.vy-light .empty-state p {
+          color: #6f675c;
+        }
+
+        html.vy-light .empty-state svg {
+          color: #8c8679;
+        }
+
+        html.vy-light .empty-state button {
+          background: #d4b26a;
+          color: #241a0a;
+        }
+
+        html.vy-light .empty-state button:hover {
+          background: #b6924a;
+          color: #ffffff;
+        }
+
         html.vy-light .campaign-header-simple h1 {
           color: #211e19;
         }
