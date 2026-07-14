@@ -25,10 +25,12 @@ import {
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
+  clampBookingGuestCount,
   normalizeBookingDisplayName,
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
+  sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import {
   buildBookingFieldErrors,
@@ -564,20 +566,40 @@ export default function Page() {
                         className={styles.stepButton}
                         onClick={() => {
                           markFieldTouched("guestCount");
-                          setGuests((value) => Math.max(1, value - 1));
+                          setGuests((value) => clampBookingGuestCount(value - 1));
                         }}
                         aria-label="Giảm số người"
                         disabled={guests <= 1}
                       >
                         <Minus size={15} />
                       </button>
-                      <span className={styles.stepValue}>{guests}</span>
+                      <label className={styles.stepInputWrap}>
+                        <input
+                          {...bookingAutofillBlockProps}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          name="nl-booking-guests"
+                          value={String(guests)}
+                          onBlur={() => markFieldTouched("guestCount")}
+                          onKeyDown={(event) => {
+                            if (event.ctrlKey || event.metaKey || event.altKey) return;
+                            if (event.key.length === 1 && !/\d/.test(event.key)) event.preventDefault();
+                          }}
+                          onChange={(event) => {
+                            markFieldTouched("guestCount");
+                            setGuests(sanitizeBookingGuestCountInput(event.target.value));
+                          }}
+                          aria-label="Số người"
+                        />
+                        <span aria-hidden="true">người</span>
+                      </label>
                       <button
                         type="button"
                         className={`${styles.stepButton} ${styles.stepButtonActive}`}
                         onClick={() => {
                           markFieldTouched("guestCount");
-                          setGuests((value) => Math.min(maxGuests, value + 1));
+                          setGuests((value) => clampBookingGuestCount(value + 1));
                         }}
                         aria-label="Tăng số người"
                         disabled={guests >= maxGuests}

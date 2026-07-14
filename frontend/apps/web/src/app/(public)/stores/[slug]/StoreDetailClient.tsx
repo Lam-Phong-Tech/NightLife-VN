@@ -37,10 +37,12 @@ import {
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
+  clampBookingGuestCount,
   normalizeBookingDisplayName,
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
+  sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import {
   buildBookingFieldErrors,
@@ -778,19 +780,39 @@ function BookingCard({
                   aria-label={translateText("Giảm số khách", activeLanguage)}
                   onClick={() => {
                     onFieldTouched("guestCount");
-                    onGuestCountChange(Math.max(1, guestCount - 1));
+                    onGuestCountChange(clampBookingGuestCount(guestCount - 1));
                   }}
                   disabled={guestCount <= 1}
                 >
                   <Minus size={15} />
                 </button>
-                <strong>{translateText(`${guestCount} người`, activeLanguage)}</strong>
+                <label className="guest-count-input-wrap">
+                  <input
+                    {...bookingInputAutofillBlockProps}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    name="nl-booking-store-guests"
+                    value={String(guestCount)}
+                    onBlur={() => onFieldTouched("guestCount")}
+                    onKeyDown={(event) => {
+                      if (event.ctrlKey || event.metaKey || event.altKey) return;
+                      if (event.key.length === 1 && !/\d/.test(event.key)) event.preventDefault();
+                    }}
+                    onChange={(event) => {
+                      onFieldTouched("guestCount");
+                      onGuestCountChange(sanitizeBookingGuestCountInput(event.target.value));
+                    }}
+                    aria-label={translateText("Số người", activeLanguage)}
+                  />
+                  <span aria-hidden="true">{translateText("người", activeLanguage)}</span>
+                </label>
                 <button
                   type="button"
                   aria-label={translateText("Tăng số khách", activeLanguage)}
                   onClick={() => {
                     onFieldTouched("guestCount");
-                    onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1));
+                    onGuestCountChange(clampBookingGuestCount(guestCount + 1));
                   }}
                   disabled={guestCount >= maxBookingGuests}
                 >
@@ -2731,9 +2753,47 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           opacity: .45;
         }
 
-        .guest-stepper strong {
+        .guest-count-input-wrap {
+          min-width: 0;
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
           color: var(--vy-text);
           font-size: 13px;
+          font-weight: 850;
+          line-height: 1.2;
+        }
+
+        .guest-count-input-wrap input {
+          width: 2.5ch;
+          min-width: 2.5ch;
+          max-width: 3ch;
+          height: 26px;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: inherit;
+          font: inherit;
+          line-height: 26px;
+          text-align: right;
+          appearance: textfield;
+          cursor: text;
+        }
+
+        .guest-count-input-wrap input::-webkit-outer-spin-button,
+        .guest-count-input-wrap input::-webkit-inner-spin-button {
+          margin: 0;
+          appearance: none;
+        }
+
+        .guest-count-input-wrap span {
+          color: var(--vy-text);
+          font-size: 13px;
+          line-height: 1.2;
         }
 
         .booking-note-box {

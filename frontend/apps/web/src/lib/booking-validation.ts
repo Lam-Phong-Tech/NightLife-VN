@@ -31,6 +31,21 @@ export const normalizeBookingPhone = (value: string) => value.trim().replace(/\s
 export const sanitizeBookingPhoneInput = (value: string) =>
   value.replace(/[^0-9+\-\s().]/g, "").replace(/\s{2,}/g, " ");
 
+export function clampBookingGuestCount(guestCount: number) {
+  const integerValue = Number.isFinite(guestCount) ? Math.trunc(guestCount) : 1;
+  return Math.min(bookingValidationLimits.maxGuests, Math.max(1, integerValue));
+}
+
+export function sanitizeBookingGuestCountInput(value: string) {
+  const normalizedValue = value.trim();
+  if (normalizedValue.startsWith("-")) return 1;
+
+  const integerMatch = normalizedValue.match(/\d+/);
+  if (!integerMatch) return 1;
+
+  return clampBookingGuestCount(Number(integerMatch[0]));
+}
+
 const phoneDigits = (value: string) => value.replace(/\D/g, "");
 
 export function validateBookingDisplayName(value: string) {

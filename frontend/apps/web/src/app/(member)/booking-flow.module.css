@@ -413,7 +413,43 @@
   opacity: 0.45;
 }
 
-.stepValue {
+.stepInputWrap {
+  min-width: 0;
+  flex: 1;
+  color: #f3f0ea;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.stepInputWrap input {
+  width: 2.5ch;
+  min-width: 2.5ch;
+  max-width: 3ch;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 30px;
+  text-align: right;
+  appearance: textfield;
+}
+
+.stepInputWrap input::-webkit-outer-spin-button,
+.stepInputWrap input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.stepInputWrap span {
   color: #f3f0ea;
   font-size: 14px;
   font-weight: 820;
@@ -574,7 +610,8 @@
   color: #b01632;
 }
 
-:global(html.vy-light) .stepValue {
+:global(html.vy-light) .stepInputWrap,
+:global(html.vy-light) .stepInputWrap span {
   color: #241a0a;
   text-shadow: none;
 }

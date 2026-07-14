@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampBookingGuestCount,
   normalizeBookingDisplayName,
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
+  sanitizeBookingGuestCountInput,
   validateBookingDisplayName,
   validateBookingEmail,
   validateBookingFormFields,
@@ -61,6 +63,17 @@ describe("booking validation", () => {
       "Số điện thoại phải có từ 8 đến 15 chữ số.",
     );
     expect(validateBookingPhone("+84 901 234 567")).toBe("");
+  });
+
+  it("clamps manually typed guest counts to whole numbers from 1 to 50", () => {
+    expect(clampBookingGuestCount(0)).toBe(1);
+    expect(clampBookingGuestCount(4.8)).toBe(4);
+    expect(clampBookingGuestCount(99)).toBe(50);
+
+    expect(sanitizeBookingGuestCountInput("")).toBe(1);
+    expect(sanitizeBookingGuestCountInput("-2")).toBe(1);
+    expect(sanitizeBookingGuestCountInput("2.5")).toBe(2);
+    expect(sanitizeBookingGuestCountInput("999")).toBe(50);
   });
 
   it("validates the full booking form before submit", () => {
