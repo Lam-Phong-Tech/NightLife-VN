@@ -166,7 +166,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 cursor: "pointer",
               }}
             >
-              Lọc
+              Tìm kiếm
             </button>
           </form>
 

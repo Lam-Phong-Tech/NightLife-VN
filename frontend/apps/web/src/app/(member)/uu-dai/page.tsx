@@ -490,14 +490,6 @@ export default function Page() {
             >
               Theo quán
             </button>
-            <button
-              className={`vip-only-chip ${activeFilter === "VIP" ? "active" : ""}`}
-              onClick={() => updateFilter("VIP")}
-              type="button"
-            >
-              <Star size={12} fill={activeFilter === "VIP" ? "#241a0a" : "none"} />
-              VIP-only
-            </button>
           </div>
 
           <div className="custom-sort-dropdown">
