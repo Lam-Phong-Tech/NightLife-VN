@@ -102,6 +102,14 @@ export class SupportChatService {
   }
 
   async claimTicket(ticketId: string, adminId: string) {
+    const existing = await this.prisma.supportTicket.findUnique({ where: { id: ticketId }});
+    if (existing && existing.status === SupportTicketStatus.ACTIVE && existing.assignedAdminId === adminId) {
+      return this.prisma.supportTicket.findUnique({
+        where: { id: ticketId },
+        include: { user: true },
+      });
+    }
+
     // Tiêu chuẩn vàng - Atomic update
     const result = await this.prisma.supportTicket.updateMany({
       where: {
