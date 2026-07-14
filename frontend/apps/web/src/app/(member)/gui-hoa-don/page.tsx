@@ -24,6 +24,7 @@ import {
 } from "@/lib/api/bills";
 import { bookingApi, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { discoveryApi } from "@/lib/api/discovery";
 import {
   intlLocaleByLanguage,
@@ -101,8 +102,6 @@ const allowedEvidenceExtension = /\.(jpe?g|png|webp|gif|pdf)$/i;
 type FormNotice =
   | { tone: "success"; message: string; bill?: BillRecord }
   | { tone: "warning" | "danger"; message: string };
-
-const moneyVnd = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 
 const billStatusLabel = (status?: string | null) => {
   switch (status) {
@@ -299,6 +298,7 @@ const cleanApiMessage = (error: unknown) => {
 export default function Page() {
   const searchParams = useSearchParams();
   const activeLanguage = useActiveLanguage();
+  const { formatMoney } = useMoneyFormatter(activeLanguage);
   const focusedBillId = searchParams.get("billId") || "";
   const requestedBookingId = searchParams.get("bookingId")?.trim() || "";
   const requestedStoreSlug = searchParams.get("storeSlug")?.trim() || "";
@@ -870,7 +870,7 @@ export default function Page() {
                   <span>
                     Tổng tiền:{" "}
                     {ocrPreview.suggestions.totalVnd
-                      ? moneyVnd(ocrPreview.suggestions.totalVnd)
+                      ? formatMoney(ocrPreview.suggestions.totalVnd)
                       : "cần nhập tay"}
                   </span>
                   <span>
@@ -926,7 +926,7 @@ export default function Page() {
             </div>
             <div className="nl-side-row">
               <span>Tổng tiền</span>
-              <strong>{amount > 0 ? moneyVnd(amount) : "Chưa nhập"}</strong>
+              <strong>{amount > 0 ? formatMoney(amount) : "Chưa nhập"}</strong>
             </div>
             <div className="nl-side-row">
               <span>Thời gian sử dụng</span>
@@ -956,7 +956,7 @@ export default function Page() {
                     <strong>{bill.billNumber ?? bill.id.slice(0, 8)}</strong>
                     <span>{bill.store?.name ?? selectedStore?.name ?? "Quán"}</span>
                     <em>
-                      {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt, activeLanguage)}
+                      {formatMoney(bill.totalVnd)} - {formatDateTime(bill.usedAt, activeLanguage)}
                     </em>
                     <small>{billStatusLabel(bill.status)}</small>
                   </article>

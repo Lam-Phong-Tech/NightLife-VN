@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronRight, MapPin, Route, Sparkles } from "lucide-react";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { contentApi, type PublicTourItem } from "@/lib/api/content";
 import { resolveClientUrl } from "@/lib/api/client";
 import { getHomeBehaviorSignals, trackHomeVenueSignal } from "@/lib/analytics/home";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 const cityTabs = [
   { id: "all", label: "Tất cả" },
@@ -26,10 +28,6 @@ const categoryLabels: Record<string, string> = {
   RESTAURANT: "Nhà hàng",
   CASINO: "Casino",
 };
-
-function money(value: number) {
-  return new Intl.NumberFormat("vi-VN").format(value);
-}
 
 export function TourClient() {
   const [activeCity, setActiveCity] = useState<CityTab>("all");
@@ -120,6 +118,9 @@ export function TourClient() {
 }
 
 function TourCard({ tour }: { tour: PublicTourItem }) {
+  const activeLanguage = useActiveLanguage();
+  const { formatMoney } = useMoneyFormatter(activeLanguage);
+
   return (
     <article
       style={{
@@ -152,7 +153,7 @@ function TourCard({ tour }: { tour: PublicTourItem }) {
         <h2 style={{ margin: "10px 0 0", fontSize: 22, lineHeight: 1.25, fontWeight: 950 }}>{tour.title}</h2>
         <p style={{ margin: "8px 0 0", color: "#c5c0b6", lineHeight: 1.6 }}>{tour.subtitle}</p>
         <div style={{ marginTop: 10, color: "#f0dda8", fontSize: 14, fontWeight: 900 }}>
-          Từ {money(tour.priceFromVnd)}đ / nhóm
+          Từ {formatMoney(tour.priceFromVnd)} / nhóm
         </div>
         <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
           {tour.stops.map((stop) => (

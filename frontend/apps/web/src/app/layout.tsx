@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { jsonLdGraph, organizationJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
@@ -61,9 +62,11 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ClientLanguageTranslator>
-          <SocketProvider>
-            <SiteChrome>{children}</SiteChrome>
-          </SocketProvider>
+          <CurrencyProvider>
+            <SocketProvider>
+              <SiteChrome>{children}</SiteChrome>
+            </SocketProvider>
+          </CurrencyProvider>
         </ClientLanguageTranslator>
       </body>
     </html>

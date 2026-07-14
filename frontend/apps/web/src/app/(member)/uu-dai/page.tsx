@@ -14,8 +14,9 @@ import {
 import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { contentApi, type CmsContentItem } from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { translateText } from "@/lib/i18n/client-translations";
-import { formatVndByLanguage } from "@/lib/i18n/currency-format";
+import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import {
   intlLocaleByLanguage,
   useActiveLanguage,
@@ -68,12 +69,13 @@ type CouponBannerMetadata = {
 const formatDiscount = (
   coupon: Pick<PublicCoupon, "discountType" | "discountValue">,
   language: LanguageCode = "vi",
+  rates?: CurrencyRateMap,
 ) => {
   if (coupon.discountType === "PERCENT") {
     return `-${coupon.discountValue}%`;
   }
 
-  return `-${formatVndByLanguage(coupon.discountValue, language)}`;
+  return `-${formatVndByLanguage(coupon.discountValue, language, rates)}`;
 };
 
 const formatShortDate = (value?: string | null, language: LanguageCode = "vi") => {
@@ -271,10 +273,12 @@ function CouponDealCard({
   coupon,
   index,
   language,
+  rates,
 }: {
   coupon: PublicCoupon;
   index: number;
   language: LanguageCode;
+  rates: CurrencyRateMap;
 }) {
   const storeName = readableName(coupon.store.name);
   const couponName = readableName(coupon.name);
@@ -302,7 +306,7 @@ function CouponDealCard({
             {copy.validUntil} {formatShortDate(coupon.endsAt, language)}
           </span>
         </span>
-        <strong>{formatDiscount(coupon, language)}</strong>
+        <strong>{formatDiscount(coupon, language, rates)}</strong>
         <span className="coupon-title">{couponName}</span>
         <span className="coupon-place">
           <MapPin size={13} />
@@ -319,6 +323,7 @@ function CouponDealCard({
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const { rates } = useMoneyFormatter(activeLanguage);
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
   const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -489,7 +494,7 @@ export default function Page() {
               <strong>{featuredCoupon ? readableName(featuredCoupon.name) : "Ưu đãi mới"}</strong>
               <p>
                 {featuredCoupon
-                  ? `${readableName(featuredCoupon.store.name)} · ${formatDiscount(featuredCoupon, activeLanguage)}`
+                  ? `${readableName(featuredCoupon.store.name)} · ${formatDiscount(featuredCoupon, activeLanguage, rates)}`
                   : "Các ưu đãi sẽ được cập nhật liên tục theo khu vực."}
               </p>
             </div>
@@ -577,6 +582,7 @@ export default function Page() {
                     index={couponStartIndex + index}
                     key={coupon.id}
                     language={activeLanguage}
+                    rates={rates}
                   />
                 ))}
               </section>

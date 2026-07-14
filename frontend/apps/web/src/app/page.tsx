@@ -56,6 +56,7 @@ import {
   type AppearanceItem,
 } from "@/lib/api/appearance";
 import { formatPriceTier } from "@/lib/price-tier";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import {
   getHomeAnonymousId,
   getHomeBehaviorSignals,
@@ -66,7 +67,8 @@ import {
 } from "@/lib/analytics/home";
 import { storeImageForSlug } from "@/lib/demo-media";
 import { translateText } from "@/lib/i18n/client-translations";
-import { useActiveLanguage } from "@/lib/i18n/use-active-language";
+import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -310,10 +312,6 @@ function isUsableContentImage(value?: string | null) {
   return Boolean(url && !/placehold\.co|placeholder/i.test(url));
 }
 
-function formatVnd(value: number) {
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
-}
-
 function firstContentImage(...values: Array<string | null | undefined>) {
   return values.find((value) => isUsableContentImage(value));
 }
@@ -451,20 +449,24 @@ function storeAreaText(area?: string | null, cityCode?: string | null, city?: st
   return [readableArea, readableCity].filter(Boolean).join(" · ");
 }
 
-function formatCouponValue(coupon: PublicCoupon) {
+function formatCouponValue(coupon: PublicCoupon, language: LanguageCode, rates: CurrencyRateMap) {
   if (coupon.discountType === "PERCENT") return `-${coupon.discountValue}%`;
-  if (coupon.discountValue >= 1000) return `-${Math.round(coupon.discountValue / 1000)}.000đ`;
-  return `-${coupon.discountValue}đ`;
+  return `-${formatVndByLanguage(coupon.discountValue, language, rates)}`;
 }
 
-function mapCouponToHomeItem(coupon: PublicCoupon, index: number): HomeCouponItem {
+function mapCouponToHomeItem(
+  coupon: PublicCoupon,
+  index: number,
+  language: LanguageCode,
+  rates: CurrencyRateMap,
+): HomeCouponItem {
   void index;
   const storeImageUrl = coupon.store.media?.[0]?.url;
 
   return {
     id: coupon.id,
     title: coupon.name,
-    value: formatCouponValue(coupon),
+    value: formatCouponValue(coupon, language, rates),
     place: [coupon.store.name, storeAreaText(coupon.store.district, undefined, coupon.store.city)]
       .filter(Boolean)
       .join(" · "),
@@ -503,7 +505,11 @@ function mapTrackedHotVideoToHomeItem(video: PublicHotVideo, index: number): Hom
   };
 }
 
-function mapTourToHomeItem(tour: PublicTourItem): HomeContentItem {
+function mapTourToHomeItem(
+  tour: PublicTourItem,
+  language: LanguageCode,
+  rates: CurrencyRateMap,
+): HomeContentItem {
   const stopText = tour.stops
     .slice(0, 2)
     .map((stop) => stop.name)
@@ -513,7 +519,7 @@ function mapTourToHomeItem(tour: PublicTourItem): HomeContentItem {
   const meta = [
     tour.area,
     tour.durationHours ? `${tour.durationHours} giờ` : "",
-    tour.priceFromVnd ? `Từ ${formatVnd(tour.priceFromVnd)}` : "",
+    tour.priceFromVnd ? `Từ ${formatVndByLanguage(tour.priceFromVnd, language, rates)}` : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -1011,16 +1017,17 @@ function CategoryGrid({
 
 function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const activeLanguage = useActiveLanguage();
+  const { formatMoney } = useMoneyFormatter(activeLanguage);
   const [activeBanner, setActiveBanner] = useState(0);
   const fallbackBanner = useMemo<HomeBanner>(() => ({
     title: "Sự kiện đêm nay",
-    desc: "Đặt bàn VIP từ 2.500.000đ",
+    desc: `Đặt bàn VIP từ ${formatMoney(2_500_000)}`,
     btnText: "Đặt ngay",
     img: "var(--vy-hero-grad)",
     statusLabel: "HOT",
     subtitle: "NightLife-VN",
     hasImage: false,
-  }), []);
+  }), [formatMoney]);
   
   const mappedBanners: HomeBanner[] = useMemo(() => {
     if (apiBanners.length === 0) return [fallbackBanner];
@@ -2260,6 +2267,8 @@ function BottomNav() {
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
+  const { rates } = useMoneyFormatter(activeLanguage);
   const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
@@ -2402,7 +2411,13 @@ export default function Page() {
     couponApi
       .listPublicCoupons()
       .then((coupons) => {
-        if (!cancelled) setHomeCoupons(coupons.slice(0, 6).map(mapCouponToHomeItem));
+        if (!cancelled) {
+          setHomeCoupons(
+            coupons
+              .slice(0, 6)
+              .map((coupon, index) => mapCouponToHomeItem(coupon, index, activeLanguage, rates)),
+          );
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -2426,7 +2441,7 @@ export default function Page() {
     ])
       .then(([tourResponse, blogResponse, policyResponse]) => {
         if (cancelled) return;
-        const tourItems = tourResponse.map(mapTourToHomeItem);
+        const tourItems = tourResponse.map((tour) => mapTourToHomeItem(tour, activeLanguage, rates));
         const tourImages = tourResponse.flatMap((tour) => [
           tour.thumbnailUrl,
           ...tour.stops.map((stop) => stop.thumbnailUrl),
@@ -2450,7 +2465,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeLanguage, rates]);
 
   useEffect(() => {
     let cancelled = false;

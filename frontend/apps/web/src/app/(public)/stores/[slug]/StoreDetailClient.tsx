@@ -26,6 +26,7 @@ import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBooking
 import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
@@ -51,6 +52,7 @@ import {
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
+import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
@@ -329,10 +331,22 @@ const rawOpeningSummary = (store: PublicStoreDetail) => {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 };
 
-const priceRangeText = (store: PublicStoreDetail) => {
+const priceRangeText = (store: PublicStoreDetail, language: LanguageCode, rates: CurrencyRateMap) => {
   const values = store.priceReference.items
     .map((item) => item.amountVnd)
     .filter((value): value is number => typeof value === "number" && value > 0);
+
+  if (values.length) {
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const minText = formatVndByLanguage(min, language, rates);
+    const maxText = formatVndByLanguage(max, language, rates);
+    return min === max ? minText : `${minText} - ${maxText}`;
+  }
+
+  if (store.priceReference.startingFromVnd) {
+    return formatVndByLanguage(store.priceReference.startingFromVnd, language, rates);
+  }
 
   return formatPriceTierRange(values, store.priceReference.startingFromVnd);
 };
@@ -462,6 +476,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
 
 function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
+  const { formatMoney } = useMoneyFormatter(activeLanguage);
   const items = store.priceReference.items;
   const menuGroups = Array.from(
     new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
@@ -507,7 +522,9 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                 </small>
               </span>
               <b>
-                {item.displayPrice || formatPriceTier(item.amountVnd)}
+                {typeof item.amountVnd === "number" && item.amountVnd > 0
+                  ? formatMoney(item.amountVnd)
+                  : item.displayPrice || formatPriceTier(item.amountVnd)}
                 {item.unit === "hour" ? translateText("/giờ", activeLanguage) : ""}
               </b>
             </div>
@@ -680,6 +697,8 @@ function BookingCard({
   onFieldTouched: (field: BookingValidationField) => void;
   onSubmit: () => void;
 }) {
+  const { formatMoney } = useMoneyFormatter(activeLanguage);
+
   return (
     <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
       <form
@@ -696,7 +715,11 @@ function BookingCard({
             <strong>{translateText("Đặt bàn", activeLanguage)}</strong>
             <small>{translateText("Gửi yêu cầu · Admin xác nhận", activeLanguage)}</small>
           </span>
-          <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
+          <b>
+            {store.priceReference.startingFromVnd
+              ? formatMoney(store.priceReference.startingFromVnd)
+              : formatPriceTier(store.priceReference.startingFromVnd)}
+          </b>
         </div>
 
         <div className="booking-form-grid booking-contact-grid">
@@ -964,7 +987,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
   const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
-  const priceText = priceRangeText(store);
+  const { rates } = useMoneyFormatter(activeLanguage);
+  const priceText = priceRangeText(store, activeLanguage, rates);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const introText = useMemo(

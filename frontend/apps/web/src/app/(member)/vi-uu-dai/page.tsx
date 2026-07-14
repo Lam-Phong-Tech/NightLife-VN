@@ -14,9 +14,12 @@ import {
   Ticket,
   WalletCards,
 } from "lucide-react";
+import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { ApiError } from "@/lib/api/client";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 type WalletFilter = "all" | "active" | "used" | "expired";
 type IssueKind = "active" | "used" | "expired" | "inactive";
@@ -102,7 +105,7 @@ const issueStatusText = (issue: CouponIssue) => {
 const canShowIssueQr = (issue: CouponIssue) =>
   issueKind(issue) === "active" && Boolean(issue.qrImageDataUrl);
 
-const issueDiscountText = (issue: CouponIssue) => {
+const issueDiscountText = (issue: CouponIssue, language: LanguageCode, rates: CurrencyRateMap) => {
   if (typeof issue.discountPercent === "number") {
     return `-${issue.discountPercent}%`;
   }
@@ -115,7 +118,7 @@ const issueDiscountText = (issue: CouponIssue) => {
     issue.coupon.discountType === "FIXED_AMOUNT" &&
     typeof issue.coupon.discountValue === "number"
   ) {
-    return `${Math.round(issue.coupon.discountValue / 1000)}K`;
+    return formatVndByLanguage(issue.coupon.discountValue, language, rates);
   }
 
   return "Ưu đãi";
@@ -130,6 +133,8 @@ const issueTimestamp = (issue: CouponIssue) => {
 };
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
+  const { rates } = useMoneyFormatter(activeLanguage);
   const [authUser] = useState<AuthUser | null>(() => getAuthUser());
   const isMember = isMemberUser(authUser);
   const [issues, setIssues] = useState<CouponIssue[]>([]);
@@ -337,7 +342,7 @@ export default function Page() {
                     <article className={`wallet-card ${kind}`} key={issue.id}>
                       <div className="wallet-card-copy">
                         <div className="value-row">
-                          <strong>{issueDiscountText(issue)}</strong>
+                          <strong>{issueDiscountText(issue, activeLanguage, rates)}</strong>
                           <span>{issueStatusText(issue)}</span>
                         </div>
                         <h2>{readableName(issue.coupon.name)}</h2>
