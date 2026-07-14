@@ -100,6 +100,9 @@ export default function AdminContentPage() {
   const [campaignDiscountValue, setCampaignDiscountValue] = useState<string>('10%');
   const [campaignDates, setCampaignDates] = useState<any>(null);
   const [campaignStatus, setCampaignStatus] = useState('Hoạt động');
+  const [campaignStoreSearch, setCampaignStoreSearch] = useState('');
+  const [campaignStoreResults, setCampaignStoreResults] = useState<any[]>([]);
+  const [campaignLinkedStore, setCampaignLinkedStore] = useState<any | null>(null);
 
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
@@ -511,6 +514,15 @@ export default function AdminContentPage() {
     try {
       const res = await apiClient<any>('/admin/stores', { params: { search: q, limit: 6 } });
       if (res?.data) setBannerStoreResults(res.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const searchCampaignStores = async (q: string) => {
+    setCampaignStoreSearch(q);
+    if (!q.trim()) { setCampaignStoreResults([]); return; }
+    try {
+      const res = await apiClient<any>('/admin/stores', { params: { search: q, limit: 6 } });
+      if (res?.data) setCampaignStoreResults(res.data);
     } catch (e) { console.error(e); }
   };
 
@@ -1766,6 +1778,41 @@ export default function AdminContentPage() {
                   </ConfigProvider>
                   <span style={{ fontSize: '11px', color: '#57534b' }}>Để trống cả hai = Luôn áp dụng</span>
                 </div>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>Quán áp dụng</div>
+                </div>
+                {campaignLinkedStore ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', borderRadius: '11px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{campaignLinkedStore.name}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{campaignLinkedStore.category} · {campaignLinkedStore.area}</div>
+                    </div>
+                    <span onClick={() => setCampaignLinkedStore(null)} style={{ fontSize: '11px', fontWeight: 600, color: '#e88b99', cursor: 'pointer', padding: '4px 10px', borderRadius: '8px', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.25)' }}>Bỏ chọn</span>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px', marginBottom: '8px' }}>
+                      <Search size={14} style={{ color: '#8c8679', flex: 'none' }} />
+                      <input value={campaignStoreSearch} onChange={e => searchCampaignStores(e.target.value)} placeholder="Tìm quán theo tên, loại hình, khu vực..." style={{ flex: 1, background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '13px', outline: 'none' }} />
+                    </div>
+                    {campaignStoreResults.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {campaignStoreResults.map((s: any) => (
+                          <div key={s.id} onClick={() => { setCampaignLinkedStore(s); setCampaignStoreSearch(''); setCampaignStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
+                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {s.area}</div>
+                            </div>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbb884' }}>Chọn</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
