@@ -28,10 +28,12 @@ import {
 } from './dto/create-partner-request.dto';
 import {
   MemberFavoriteCastDto,
+  MemberFavoriteStoreDto,
   PublicCastFavoriteStateDto,
   PublicCastDetailResponseDto,
   PublicCastListResponseDto,
   PublicRankingResponseDto,
+  PublicStoreFavoriteStateDto,
   PublicStoreDetailResponseDto,
   PublicStoreListResponseDto,
 } from './dto/public-discovery-response.dto';
@@ -323,10 +325,22 @@ const castFavoriteStateExample = {
   favorited: true,
 };
 
+const storeFavoriteStateExample = {
+  storeId: 'store_01',
+  storeSlug: 'neon-club',
+  favorited: true,
+};
+
 const memberFavoriteCastExample = {
   favoriteId: 'fav_01',
   favoritedAt: '2026-06-30T10:00:00.000Z',
   cast: castDetailExample.relatedCasts[0],
+};
+
+const memberFavoriteStoreExample = {
+  favoriteId: 'fav_store_01',
+  favoritedAt: '2026-06-30T10:00:00.000Z',
+  store: storeExample,
 };
 
 const castListExample = {
@@ -1258,6 +1272,117 @@ export function PublicCastDetailContract() {
           error: 'Not Found',
         },
       },
+    }),
+  );
+}
+
+export function MemberStoreFavoriteStateContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: get own favorite state for a store',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Returns whether the current member has saved the active public store.',
+    }),
+    ApiParam({ name: 'slug', example: 'neon-club' }),
+    ApiOkResponse({
+      description: 'Favorite state for the current member.',
+      type: PublicStoreFavoriteStateDto,
+      schema: { example: storeFavoriteStateExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberFavoriteStoreContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: save a public store',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates or keeps the current member favorite for an active public store.',
+    }),
+    ApiParam({ name: 'slug', example: 'neon-club' }),
+    ApiCreatedResponse({
+      description: 'Store saved for the current member.',
+      type: PublicStoreFavoriteStateDto,
+      schema: { example: storeFavoriteStateExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberUnfavoriteStoreContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: remove a saved public store',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Removes the current member favorite for an active public store.',
+    }),
+    ApiParam({ name: 'slug', example: 'neon-club' }),
+    ApiOkResponse({
+      description: 'Store removed from current member favorites.',
+      type: PublicStoreFavoriteStateDto,
+      schema: { example: { ...storeFavoriteStateExample, favorited: false } },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberFavoriteStoresContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: list own saved public stores',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Own-resource route.',
+    }),
+    ApiOkResponse({
+      description: 'Saved stores for the current member.',
+      type: [MemberFavoriteStoreDto],
+      schema: { example: [memberFavoriteStoreExample] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
     }),
   );
 }

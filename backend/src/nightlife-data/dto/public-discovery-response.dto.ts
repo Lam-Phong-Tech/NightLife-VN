@@ -313,6 +313,17 @@ export class PublicCastFavoriteStateDto {
   favorited!: boolean;
 }
 
+export class PublicStoreFavoriteStateDto {
+  @ApiProperty({ example: 'store_01' })
+  storeId!: string;
+
+  @ApiProperty({ example: 'neon-club' })
+  storeSlug!: string;
+
+  @ApiProperty({ example: true })
+  favorited!: boolean;
+}
+
 export class MemberFavoriteCastDto {
   @ApiProperty({ example: 'fav_01' })
   favoriteId!: string;
@@ -322,6 +333,17 @@ export class MemberFavoriteCastDto {
 
   @ApiProperty({ type: () => PublicRelatedCastDto })
   cast!: PublicRelatedCastDto;
+}
+
+export class MemberFavoriteStoreDto {
+  @ApiProperty({ example: 'fav_store_01' })
+  favoriteId!: string;
+
+  @ApiProperty({ example: '2026-06-30T10:00:00.000Z' })
+  favoritedAt!: Date;
+
+  @ApiProperty({ type: () => PublicStoreDto })
+  store!: PublicStoreDto;
 }
 
 export class PublicStoreGalleryItemDto {

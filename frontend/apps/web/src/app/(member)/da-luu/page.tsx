@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight, Heart, Star, Trash2 } from "lucide-react";
 import { castFavoriteApi } from "@/lib/api/cast-detail";
 import { discoveryApi, type PublicCast, type PublicStore } from "@/lib/api/discovery";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { castImageForSlug, storeImageForSlug } from "@/lib/demo-media";
+import { hasMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import {
   readFavoriteCastItems,
   readFavoriteCastSlugs,
@@ -42,6 +44,14 @@ const withTimeout = async <T,>(promise: Promise<T>, fallback: T, ms = 2500) =>
     promise.catch(() => fallback),
     new Promise<T>((resolve) => {
       window.setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
+
+const withNullableTimeout = async <T,>(promise: Promise<T>, ms = 2500) =>
+  Promise.race([
+    promise.catch(() => null),
+    new Promise<null>((resolve) => {
+      window.setTimeout(() => resolve(null), ms);
     }),
   ]);
 
@@ -108,24 +118,51 @@ export default function Page() {
     const castSnapshots = readFavoriteCastItems();
     const mergedStoreSlugs = unique(storeSlugs);
     const mergedCastSlugs = unique(castSlugs);
+    const canSyncFavorites = hasMemberFavoriteAccess();
 
     setStores(mergedStoreSlugs.map((slug, index) => mergeStoreItem(slug, [], storeSnapshots, index)));
     setCasts(mergedCastSlugs.map((slug, index) => mergeCastItem(slug, [], castSnapshots, index)));
     setIsLoading(false);
 
     void (async () => {
-      const [storeList, castList, serverCastFavorites] = await Promise.all([
+      const [storeList, castList] = await Promise.all([
         mergedStoreSlugs.length
           ? withTimeout(discoveryApi.listStores({ city: "all", limit: 120 }), [] as PublicStore[])
           : Promise.resolve([] as PublicStore[]),
         mergedCastSlugs.length
           ? withTimeout(discoveryApi.listCasts({ city: "all", limit: 160 }), [] as PublicCast[])
           : Promise.resolve([] as PublicCast[]),
-        withTimeout(castFavoriteApi.list(), []),
       ]);
 
-      const serverCastSlugs = serverCastFavorites.map((item) => item.cast.slug);
-      const serverSnapshots = serverCastFavorites.map((item, index) => ({
+      let serverStoreFavorites = canSyncFavorites
+        ? await withNullableTimeout(storeFavoriteApi.list())
+        : null;
+      let serverCastFavorites = canSyncFavorites
+        ? await withNullableTimeout(castFavoriteApi.list())
+        : null;
+
+      if (canSyncFavorites && serverStoreFavorites && !serverStoreFavorites.length && mergedStoreSlugs.length) {
+        await Promise.allSettled(mergedStoreSlugs.map((slug) => storeFavoriteApi.favorite(slug)));
+        serverStoreFavorites = (await withNullableTimeout(storeFavoriteApi.list())) ?? serverStoreFavorites;
+      }
+
+      if (canSyncFavorites && serverCastFavorites && !serverCastFavorites.length && mergedCastSlugs.length) {
+        await Promise.allSettled(mergedCastSlugs.map((slug) => castFavoriteApi.favorite(slug)));
+        serverCastFavorites = (await withNullableTimeout(castFavoriteApi.list())) ?? serverCastFavorites;
+      }
+
+      const serverStoreSlugs = serverStoreFavorites?.map((item) => item.store.slug) ?? [];
+      const serverStoreSnapshots = serverStoreFavorites?.map((item, index) => ({
+        slug: item.store.slug,
+        name: item.store.name,
+        categoryLabel: categoryLabels[item.store.category] ?? item.store.category,
+        areaLabel: storeArea(item.store),
+        cityLabel: item.store.city,
+        image: item.store.thumbnailUrl ?? storeImageForSlug(item.store.slug, index),
+        favoritedAt: item.favoritedAt,
+      })) ?? [];
+      const serverCastSlugs = serverCastFavorites?.map((item) => item.cast.slug) ?? [];
+      const serverSnapshots = serverCastFavorites?.map((item, index) => ({
         slug: item.cast.slug,
         name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
         storeName: item.cast.store.name,
@@ -133,12 +170,14 @@ export default function Page() {
         areaLabel: storeArea(item.cast.store),
         image: item.cast.thumbnailUrl ?? castImageForSlug(item.cast.slug, index),
         favoritedAt: item.favoritedAt,
-      }));
+      })) ?? [];
 
-      const nextCastSlugs = unique([...mergedCastSlugs, ...serverCastSlugs]);
-      const mergedCastSnapshots = [...serverSnapshots, ...castSnapshots];
+      const nextStoreSlugs = serverStoreFavorites ? unique(serverStoreSlugs) : mergedStoreSlugs;
+      const nextCastSlugs = serverCastFavorites ? unique(serverCastSlugs) : mergedCastSlugs;
+      const mergedStoreSnapshots = serverStoreFavorites ? serverStoreSnapshots : storeSnapshots;
+      const mergedCastSnapshots = serverCastFavorites ? serverSnapshots : castSnapshots;
 
-      setStores(mergedStoreSlugs.map((slug, index) => mergeStoreItem(slug, storeList, storeSnapshots, index)));
+      setStores(nextStoreSlugs.map((slug, index) => mergeStoreItem(slug, storeList, mergedStoreSnapshots, index)));
       setCasts(nextCastSlugs.map((slug, index) => mergeCastItem(slug, castList, mergedCastSnapshots, index)));
     })();
   }, []);
@@ -164,6 +203,7 @@ export default function Page() {
   const removeStore = (item: SavedFavoriteStore) => {
     writeFavoriteStore(item, false);
     setStores((current) => current.filter((store) => store.slug !== item.slug));
+    void storeFavoriteApi.unfavorite(item.slug).catch(() => undefined);
   };
 
   const removeCast = (item: SavedFavoriteCast) => {

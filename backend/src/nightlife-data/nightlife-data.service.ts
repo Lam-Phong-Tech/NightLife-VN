@@ -4798,6 +4798,143 @@ export class NightlifeDataService {
     }));
   }
 
+  async listMemberFavoriteStores(userId: string) {
+    const now = new Date();
+    const favorites = await this.prisma.memberFavoriteStore.findMany({
+      where: {
+        userId,
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        createdAt: true,
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            category: true,
+            description: true,
+            address: true,
+            city: true,
+            district: true,
+            tags: true,
+            latitude: true,
+            longitude: true,
+            openingHours: true,
+            pricingInfo: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+                ward: true,
+              },
+            },
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+              select: {
+                url: true,
+                purpose: true,
+              },
+            },
+            casts: {
+              where: {
+                deletedAt: null,
+                status: 'ACTIVE',
+                isPublic: true,
+              },
+              select: {
+                hourlyRateVnd: true,
+              },
+            },
+            coupons: {
+              where: this.buildActiveCouponWhere(now),
+              orderBy: { startsAt: 'desc' },
+              take: 1,
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                description: true,
+                discountType: true,
+                discountValue: true,
+                maxDiscountVnd: true,
+                minSpendVnd: true,
+                startsAt: true,
+                endsAt: true,
+                usageLimit: true,
+                usedCount: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return favorites.map((favorite) => {
+      const store = favorite.store;
+
+      return {
+        favoriteId: favorite.id,
+        favoritedAt: favorite.createdAt,
+        store: {
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          category: store.category,
+          description: store.description,
+          address: store.address,
+          city: store.city,
+          cityCode: store.area?.code
+            ? this.cityCodeFromAreaCode(store.area.code)
+            : this.normalizeCityCode(store.city),
+          district: store.district,
+          tags: store.tags ?? [],
+          area: this.mapPublicArea(store.area),
+          latitude: this.toNumber(store.latitude),
+          longitude: this.toNumber(store.longitude),
+          openingHours: store.openingHours,
+          thumbnailUrl: this.resolveStoreCoverImage(store.media),
+          priceReference: this.buildStorePriceReference(
+            store.pricingInfo,
+            store.casts ?? [],
+          ),
+          activeCoupon: store.coupons?.[0]
+            ? {
+                id: store.coupons[0].id,
+                code: store.coupons[0].code,
+                name: store.coupons[0].name,
+                description: store.coupons[0].description,
+                discountType: store.coupons[0].discountType,
+                discountValue: store.coupons[0].discountValue,
+                maxDiscountVnd: store.coupons[0].maxDiscountVnd,
+                minSpendVnd: store.coupons[0].minSpendVnd,
+                startsAt: store.coupons[0].startsAt,
+                endsAt: store.coupons[0].endsAt,
+                usageLimit: store.coupons[0].usageLimit,
+                usedCount: store.coupons[0].usedCount,
+              }
+            : null,
+          distanceKm: null,
+        },
+      };
+    });
+  }
+
   async getMemberCastFavoriteState(userId: string, slug: string) {
     const cast = await this.resolvePublicCastForMemberFavorite(slug);
     const favorite = await this.prisma.memberFavoriteCast.findUnique({
@@ -4813,6 +4950,25 @@ export class NightlifeDataService {
     return {
       castId: cast.id,
       castSlug: cast.slug,
+      favorited: Boolean(favorite),
+    };
+  }
+
+  async getMemberStoreFavoriteState(userId: string, slug: string) {
+    const store = await this.resolvePublicStoreForMemberFavorite(slug);
+    const favorite = await this.prisma.memberFavoriteStore.findUnique({
+      where: {
+        userId_storeId: {
+          userId,
+          storeId: store.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    return {
+      storeId: store.id,
+      storeSlug: store.slug,
       favorited: Boolean(favorite),
     };
   }
@@ -4841,6 +4997,30 @@ export class NightlifeDataService {
     };
   }
 
+  async favoriteMemberStore(user: AuthenticatedUser, slug: string) {
+    const store = await this.resolvePublicStoreForMemberFavorite(slug);
+
+    await this.prisma.memberFavoriteStore.upsert({
+      where: {
+        userId_storeId: {
+          userId: user.id,
+          storeId: store.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        storeId: store.id,
+      },
+    });
+
+    return {
+      storeId: store.id,
+      storeSlug: store.slug,
+      favorited: true,
+    };
+  }
+
   async unfavoriteMemberCast(user: AuthenticatedUser, slug: string) {
     const cast = await this.resolvePublicCastForMemberFavorite(slug);
 
@@ -4854,6 +5034,23 @@ export class NightlifeDataService {
     return {
       castId: cast.id,
       castSlug: cast.slug,
+      favorited: false,
+    };
+  }
+
+  async unfavoriteMemberStore(user: AuthenticatedUser, slug: string) {
+    const store = await this.resolvePublicStoreForMemberFavorite(slug);
+
+    await this.prisma.memberFavoriteStore.deleteMany({
+      where: {
+        userId: user.id,
+        storeId: store.id,
+      },
+    });
+
+    return {
+      storeId: store.id,
+      storeSlug: store.slug,
       favorited: false,
     };
   }
@@ -12576,6 +12773,31 @@ export class NightlifeDataService {
     }
 
     return cast;
+  }
+
+  private async resolvePublicStoreForMemberFavorite(slug: string) {
+    const normalizedSlug = this.normalizeStoreSlug(slug);
+    if (!normalizedSlug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    const store = await this.prisma.store.findFirst({
+      where: {
+        slug: normalizedSlug,
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    return store;
   }
 
   private buildStoreSeoDescription(store: {

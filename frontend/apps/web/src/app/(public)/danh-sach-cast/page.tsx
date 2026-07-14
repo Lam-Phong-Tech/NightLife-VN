@@ -24,10 +24,12 @@ import {
   type PublicArea,
   type PublicCast,
 } from "@/lib/api/discovery";
+import { castFavoriteApi } from "@/lib/api/cast-detail";
+import { ApiError } from "@/lib/api/client";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -268,8 +270,9 @@ const stripCastVietnameseMarks = (value: string) =>
 
 const localizeCastOption = (option: Option, language: LanguageCode, copy: CastSearchCopy): Option => {
   if (!option.value) return { ...option, label: copy.all };
-  if (language === "en" && englishCastCityLabels[option.value]) {
-    return { ...option, label: englishCastCityLabels[option.value] };
+  const englishLabel = englishCastCityLabels[option.value];
+  if (language === "en" && englishLabel) {
+    return { ...option, label: englishLabel };
   }
   return { ...option, label: translateText(option.label, language) };
 };
@@ -344,6 +347,50 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getCastCopy(activeLanguage), [activeLanguage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      setFavoriteCastSlugs([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    castFavoriteApi
+      .list()
+      .then((items) => {
+        if (cancelled) return;
+        items.forEach((item) => {
+          writeFavoriteCast(
+            {
+              slug: item.cast.slug,
+              name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
+              storeName: item.cast.store.name,
+              categoryLabel: getCastCategoryLabel(item.cast.store.category, activeLanguage),
+              areaLabel: [
+                item.cast.store.area?.name ?? item.cast.store.district,
+                getCastCityLabel(item.cast.store.cityCode ?? "", activeLanguage),
+              ]
+                .filter(Boolean)
+                .join(" Â· "),
+              image: item.cast.thumbnailUrl ?? undefined,
+              favoritedAt: item.favoritedAt,
+            },
+            true,
+          );
+        });
+        setFavoriteCastSlugs(items.map((item) => item.cast.slug));
+      })
+      .catch(() => {
+        if (!cancelled) setFavoriteCastSlugs(readFavoriteCastSlugs());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -613,7 +660,7 @@ export default function Page() {
     setHasActiveCoupon(true);
   };
 
-  const toggleCastFavorite = (cast: PublicCast) => {
+  const toggleCastFavorite = async (cast: PublicCast) => {
     if (!requireMemberFavoriteAccess()) {
       return;
     }
@@ -636,6 +683,52 @@ export default function Page() {
       nextValue,
     );
     setFavoriteCastSlugs(readFavoriteCastSlugs());
+
+    try {
+      const state = nextValue
+        ? await castFavoriteApi.favorite(cast.slug)
+        : await castFavoriteApi.unfavorite(cast.slug);
+      writeFavoriteCast(
+        {
+          slug: cast.slug,
+          name: cast.publicAlias ?? cast.name ?? cast.stageName,
+          storeName: cast.store.name,
+          categoryLabel: getCastCategoryLabel(cast.store.category, activeLanguage),
+          areaLabel: [
+            cast.store.area?.name ?? cast.store.district,
+            getCastCityLabel(cast.store.cityCode ?? "", activeLanguage),
+          ]
+            .filter(Boolean)
+            .join(" Â· "),
+          image: cast.thumbnailUrl ?? undefined,
+        },
+        state.favorited,
+      );
+      setFavoriteCastSlugs(readFavoriteCastSlugs());
+    } catch (error) {
+      const rollbackValue = !nextValue;
+      writeFavoriteCast(
+        {
+          slug: cast.slug,
+          name: cast.publicAlias ?? cast.name ?? cast.stageName,
+          storeName: cast.store.name,
+          categoryLabel: getCastCategoryLabel(cast.store.category, activeLanguage),
+          areaLabel: [
+            cast.store.area?.name ?? cast.store.district,
+            getCastCityLabel(cast.store.cityCode ?? "", activeLanguage),
+          ]
+            .filter(Boolean)
+            .join(" Â· "),
+          image: cast.thumbnailUrl ?? undefined,
+        },
+        error instanceof ApiError && [401, 403].includes(error.status) ? false : rollbackValue,
+      );
+      setFavoriteCastSlugs(readFavoriteCastSlugs());
+
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        redirectToLoginForFavorite();
+      }
+    }
   };
 
   return (

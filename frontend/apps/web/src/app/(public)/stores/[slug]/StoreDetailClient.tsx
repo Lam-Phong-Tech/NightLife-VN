@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
@@ -53,7 +54,7 @@ import {
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -992,6 +993,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
   const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
+  const favoriteSnapshot = useMemo(
+    () => ({
+      slug: store.slug,
+      name: displayName,
+      categoryLabel,
+      areaLabel: store.area?.name ?? store.district ?? "",
+      cityLabel: store.cityCode ?? store.city,
+      image: galleryImageUrl(heroImage),
+    }),
+    [categoryLabel, displayName, heroImage, store.area?.name, store.city, store.cityCode, store.district, store.slug],
+  );
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
   const { rates } = useMoneyFormatter(activeLanguage);
   const priceText = priceRangeText(store, activeLanguage, rates);
@@ -1131,29 +1143,63 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxMediaUrl = lightboxMedia ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url) : "";
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMediaUrl) : "";
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      setIsFavorite(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setIsFavorite(isFavoriteStore(favoriteSnapshot.slug));
+    storeFavoriteApi
+      .getState(favoriteSnapshot.slug)
+      .then((state) => {
+        if (ignore) return;
+        setIsFavorite(state.favorited);
+        writeFavoriteStore(favoriteSnapshot, state.favorited);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      ignore = true;
+    };
+  }, [favoriteSnapshot]);
+
   const showPreviousMedia = () =>
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   const showNextMedia = () =>
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!requireMemberFavoriteAccess()) {
       return;
     }
 
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
-    writeFavoriteStore(
-      {
-        slug: store.slug,
-        name: displayName,
-        categoryLabel,
-        areaLabel: store.area?.name ?? store.district ?? "",
-        cityLabel: store.cityCode ?? store.city,
-        image: galleryImageUrl(heroImage),
-      },
-      nextValue,
-    );
+    writeFavoriteStore(favoriteSnapshot, nextValue);
     trackStoreDetailClick(store, "favorite", { favorited: nextValue });
+
+    try {
+      const state = nextValue
+        ? await storeFavoriteApi.favorite(store.slug)
+        : await storeFavoriteApi.unfavorite(store.slug);
+      setIsFavorite(state.favorited);
+      writeFavoriteStore(favoriteSnapshot, state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        setIsFavorite(false);
+        writeFavoriteStore(favoriteSnapshot, false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      setIsFavorite(!nextValue);
+      writeFavoriteStore(favoriteSnapshot, !nextValue);
+    }
   };
   const openGallery = (index: number) => {
     if (!gallery.length) return;
