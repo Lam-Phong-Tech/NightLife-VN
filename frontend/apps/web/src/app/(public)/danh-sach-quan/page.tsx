@@ -347,6 +347,24 @@ const formatVenueSearchTitle = (
   return `${copy.titlePrefix} ${cityLabel}`;
 };
 
+const formatCategoryVenueSearchTitle = (category: string, cityLabel: string, language: LanguageCode) => {
+  const categoryLabel = getLocalizedCategoryLabel(category, language);
+  if (language === "en") {
+    return category === "RESTAURANT" ? `Restaurants in ${cityLabel}` : `${categoryLabel} in ${cityLabel}`;
+  }
+  return translateText(`${categoryLabel} tại ${cityLabel}`, language);
+};
+
+const getCategoryVenueMobileTitle = (category: string, language: LanguageCode) =>
+  getLocalizedCategoryLabel(category, language);
+
+const getCategoryVenueSubtitle = (category: string, language: LanguageCode) => {
+  if (language === "en") {
+    return category === "RESTAURANT" ? "RESTAURANTS" : "SPA & WELLNESS";
+  }
+  return translateText(category === "RESTAURANT" ? "NHÀ HÀNG" : "SPA & WELLNESS", language);
+};
+
 const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
   (categoryTags[category] ?? [fallback]).map((tag) => translateText(tag, language));
 
@@ -403,7 +421,12 @@ const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
   };
 };
 
-export default function Page() {
+type VenueDirectoryPageProps = {
+  fixedCategory?: string;
+};
+
+export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
+  const defaultOpenNow = !fixedCategory;
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("hn");
   const [area, setArea] = useState("");
@@ -413,7 +436,7 @@ export default function Page() {
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
-  const [openNow, setOpenNow] = useState(true);
+  const [openNow, setOpenNow] = useState(defaultOpenNow);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [isLocationPermissionOpen, setLocationPermissionOpen] = useState(false);
@@ -431,6 +454,8 @@ export default function Page() {
   const desktopFilterRef = useRef<HTMLDivElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
+  const isCategoryLocked = Boolean(fixedCategory);
+  const effectiveCategory = fixedCategory || category;
 
   useEffect(() => {
     let cancelled = false;
@@ -506,7 +531,7 @@ export default function Page() {
           q: query,
           city,
           area,
-          category,
+          category: effectiveCategory,
           lat: coords?.lat,
           lng: coords?.lng,
           limit: 48,
@@ -531,7 +556,7 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, query, sort]);
+  }, [area, city, coords, effectiveCategory, hasActiveCoupon, query, sort]);
 
   useEffect(() => {
     if (!topRankingOnly) {
@@ -768,13 +793,22 @@ export default function Page() {
   const activeFilterCount = [
     city !== "hn",
     area,
-    category,
+    !isCategoryLocked && category,
     sort !== "priority",
     hasActiveCoupon,
     topRankingOnly,
-    !openNow,
+    openNow !== defaultOpenNow,
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
+  const pageTitle = fixedCategory
+    ? formatCategoryVenueSearchTitle(fixedCategory, cityLabel, activeLanguage)
+    : formatVenueSearchTitle(cityLabel, activeLanguage, copy);
+  const pageMobileTitle = fixedCategory
+    ? getCategoryVenueMobileTitle(fixedCategory, activeLanguage)
+    : copy.mobileTitle;
+  const pageSubtitle = fixedCategory
+    ? getCategoryVenueSubtitle(fixedCategory, activeLanguage)
+    : copy.subtitleDesktop;
 
   const resetFilters = () => {
     setCity("hn");
@@ -783,7 +817,7 @@ export default function Page() {
     setSort("priority");
     setHasActiveCoupon(false);
     setTopRankingOnly(false);
-    setOpenNow(true);
+    setOpenNow(defaultOpenNow);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
   };
@@ -861,13 +895,13 @@ export default function Page() {
           <div className="venue-search-title">
             <h1>
               <span className="venue-title-desktop">
-                {formatVenueSearchTitle(cityLabel, activeLanguage, copy)}
+                {pageTitle}
               </span>
-              <span className="venue-title-mobile">{copy.mobileTitle}</span>
+              <span className="venue-title-mobile">{pageMobileTitle}</span>
             </h1>
             <p>
-              <span className="venue-subtitle-desktop">{copy.subtitleDesktop}</span>
-              <span className="venue-subtitle-mobile">{copy.mobileSubtitle}</span>
+              <span className="venue-subtitle-desktop">{pageSubtitle}</span>
+              <span className="venue-subtitle-mobile">{fixedCategory ? pageSubtitle : copy.mobileSubtitle}</span>
             </p>
           </div>
         </header>
@@ -908,6 +942,7 @@ export default function Page() {
                 cityOptions={localizedCityOptions}
                 copy={copy}
                 hasActiveCoupon={hasActiveCoupon}
+                hideCategory={isCategoryLocked}
                 openNow={openNow}
                 topRankingOnly={topRankingOnly}
                 sort={sort}
@@ -1001,7 +1036,7 @@ export default function Page() {
           >
             {copy.topRanking}
           </button>
-          {categoryChips.map((chip) => (
+          {!isCategoryLocked ? categoryChips.map((chip) => (
             <button
               key={chip.value}
               type="button"
@@ -1010,7 +1045,7 @@ export default function Page() {
             >
               {chip.label}
             </button>
-          ))}
+          )) : null}
         </nav>
 
         <div className="venue-result-bar">
@@ -1092,6 +1127,7 @@ export default function Page() {
           cityOptions={localizedCityOptions}
           copy={copy}
           hasActiveCoupon={hasActiveCoupon}
+          hideCategory={isCategoryLocked}
           openNow={openNow}
           topRankingOnly={topRankingOnly}
           sort={sort}
@@ -1118,6 +1154,10 @@ export default function Page() {
       ) : null}
     </main>
   );
+}
+
+export default function Page() {
+  return <VenueDirectoryPage />;
 }
 
 function LocationPermissionDialog({
@@ -1171,6 +1211,7 @@ function DesktopVenueFilterPopover({
   cityOptions,
   copy,
   hasActiveCoupon,
+  hideCategory,
   openNow,
   topRankingOnly,
   sort,
@@ -1195,6 +1236,7 @@ function DesktopVenueFilterPopover({
   cityOptions: FilterOption[];
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
+  hideCategory?: boolean;
   openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
@@ -1251,12 +1293,14 @@ function DesktopVenueFilterPopover({
           value={area}
           onChange={onArea}
         />
-        <DesktopVenueFilterOptionGroup
-          label={copy.filterCategory}
-          options={categoryOptions}
-          value={category}
-          onChange={onCategory}
-        />
+        {!hideCategory ? (
+          <DesktopVenueFilterOptionGroup
+            label={copy.filterCategory}
+            options={categoryOptions}
+            value={category}
+            onChange={onCategory}
+          />
+        ) : null}
         <DesktopVenueFilterOptionGroup
           label={copy.sortLabel.replace(":", "")}
           options={sortOptions}
@@ -1318,6 +1362,7 @@ function MobileVenueFilterSheet({
   cityOptions,
   copy,
   hasActiveCoupon,
+  hideCategory,
   openNow,
   topRankingOnly,
   sort,
@@ -1342,6 +1387,7 @@ function MobileVenueFilterSheet({
   cityOptions: FilterOption[];
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
+  hideCategory?: boolean;
   openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
@@ -1391,12 +1437,14 @@ function MobileVenueFilterSheet({
             value={area}
             onChange={onArea}
           />
-          <VenueFilterChipGroup
-            label={copy.filterCategory}
-            options={categoryOptions}
-            value={category}
-            onChange={onCategory}
-          />
+          {!hideCategory ? (
+            <VenueFilterChipGroup
+              label={copy.filterCategory}
+              options={categoryOptions}
+              value={category}
+              onChange={onCategory}
+            />
+          ) : null}
 
           <section className="venue-filter-group" aria-label={copy.filterNeeds}>
             <h3>{copy.filterNeeds}</h3>

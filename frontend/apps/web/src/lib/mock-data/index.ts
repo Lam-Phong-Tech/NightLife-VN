@@ -126,7 +126,7 @@ export const homeCategories = [
   { name: 'Tìm Cast', icon: '/SVG/tim cast.svg', href: '/danh-sach-cast' },
   { name: 'Ưu đãi', icon: '/SVG/uu daI.svg', href: '/uu-dai' },
   { name: 'Sự kiện', icon: '/SVG/su kien.svg', href: '/danh-sach-quan' },
-  { name: 'Nhà hàng', icon: '/icons/nha-hang.svg', href: '/danh-sach-quan' },
-  { name: 'Spa', icon: '/SVG/spa.svg', href: '/danh-sach-quan' },
+  { name: 'Nhà hàng', icon: '/icons/nha-hang.svg', href: '/nha-hang' },
+  { name: 'Spa', icon: '/SVG/spa.svg', href: '/spa' },
   { name: 'Hướng dẫn', icon: 'https://img.icons8.com/fluency/96/book.png', href: '/huong-dan' }
 ];
