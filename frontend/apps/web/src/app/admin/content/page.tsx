@@ -33,8 +33,8 @@ const colors = {
 
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
-  const [activeTab, setActiveTab] = useState<'banner' | 'featured' | 'video' | 'blog'>('banner');
-  const [isAdding, setIsAdding] = useState<'banner' | 'blog' | null>(null);
+  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
+  const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [editBannerId, setEditBannerId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
@@ -696,6 +696,18 @@ export default function AdminContentPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
           <button 
+            onClick={() => setActiveTab('campaign')}
+            style={{
+              padding: '8px 24px', borderRadius: '6px', border: 'none', 
+              background: activeTab === 'campaign' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'campaign' ? colors.onGold : colors.muted,
+              fontWeight: activeTab === 'campaign' ? 700 : 500,
+              fontSize: '13px', cursor: 'pointer'
+            }}
+          >
+            Campaign & Discount
+          </button>
+          <button 
             onClick={() => setActiveTab('banner')}
             style={{
               padding: '8px 24px', borderRadius: '6px', border: 'none', 
@@ -766,11 +778,55 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : 'Viết bài'}
+          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : 'Viết bài'}
         </button>
       </div>
 
 
+
+      {/* CAMPAIGN CONTENT (MOCKUP) */}
+      {activeTab === 'campaign' && (
+        <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+            <span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−30%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Happy Hour</span></div>
+            <span style={{ color: '#c5c0b6' }}>Club Lumière</span>
+            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/06 – 07/07</span>
+            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−10%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>VIP độc quyền</span></div>
+            <span style={{ color: '#c5c0b6' }}>Akari Lounge</span>
+            <span style={{ color: '#8c8679', fontSize: '12px' }}>15/06 – 15/07</span>
+            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−5%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Ưu đãi khách mới</span></div>
+            <span style={{ color: '#c5c0b6' }}>Toàn hệ thống</span>
+            <span style={{ color: '#8c8679', fontSize: '12px' }}>Luôn áp dụng</span>
+            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>2+1</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Combo phòng VIP</span></div>
+            <span style={{ color: '#c5c0b6' }}>KTV Hoàng Gia</span>
+            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/07 – 31/07</span>
+            <span style={{ textAlign: 'right' }}><span style={{ color: '#818cf8', border: '1px solid rgba(129,140,248,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đã lên lịch</span></span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−20%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Tết Trung Thu</span></div>
+            <span style={{ color: '#c5c0b6' }}>Toàn hệ thống</span>
+            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/09 – 17/09</span>
+            <span style={{ textAlign: 'right' }}><span style={{ color: '#9ca3af', border: '1px solid rgba(156,163,175,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đã kết thúc</span></span>
+          </div>
+        </div>
+      )}
 
       {/* BANNER CONTENT */}
       {activeTab === 'banner' && (
