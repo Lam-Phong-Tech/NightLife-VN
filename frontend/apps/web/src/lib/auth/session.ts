@@ -75,8 +75,9 @@ const isTokenExpired = (token: string) => {
 
 export const getSessionScopePrefix = () => {
   if (typeof window === "undefined") return "";
-  if (window.location.pathname.startsWith("/admin")) return "admin_";
-  if (window.location.pathname.startsWith("/partner")) return "partner_";
+  const pathname = window.location.pathname;
+  if (pathname.startsWith("/admin")) return "admin_";
+  if (pathname.startsWith("/partner") || pathname.startsWith("/dang-nhap-doi-tac")) return "partner_";
   return "";
 };
 
