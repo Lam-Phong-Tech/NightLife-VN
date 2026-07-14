@@ -30,10 +30,9 @@ import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
-  buildBookingTimeSlotGroups,
+  buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
   normalizeStoreOpeningHours,
-  type BookingTimeSlotGroup,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -61,7 +60,6 @@ import {
   categoryLabels,
   formatDateOption,
   mapEmbedUrl,
-  mediaBackground,
   mediaVisualUrl,
   openingText,
   readableName,
@@ -655,7 +653,6 @@ function BookingCard({
   maxDate,
   selectedTime,
   timeOptions,
-  timeOptionGroups,
   guestCount,
   guestName,
   email,
@@ -679,7 +676,6 @@ function BookingCard({
   maxDate: string;
   selectedTime: string;
   timeOptions: string[];
-  timeOptionGroups: BookingTimeSlotGroup[];
   guestCount: number;
   guestName: string;
   email: string;
@@ -796,7 +792,6 @@ function BookingCard({
             dateValue={selectedDateIso}
             timeValue={selectedTime}
             timeOptions={timeOptions}
-            timeOptionGroups={timeOptionGroups}
             minDate={minDate}
             maxDate={maxDate}
             onDateChange={(value) => {
@@ -964,12 +959,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   }, [store.id]);
 
   const displayName = readableName(store.name);
-  const gallery = store.gallery?.filter((item) => item.url) ?? [];
-  const videoGallery = gallery.filter((item) => item.type === "VIDEO");
+  const rawGallery = store.gallery?.filter((item) => item.url) ?? [];
+  const videoGallery = rawGallery.filter((item) => item.type === "VIDEO");
+  const gallery = [...videoGallery, ...rawGallery.filter((item) => item.type !== "VIDEO")];
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
-  const heroMedia = selectedMedia?.type === "IMAGE" ? selectedMedia : heroImage;
-  const heroBackground = mediaBackground(heroMedia);
+  const heroBackground = galleryBackground(selectedMedia, heroImage);
+  const selectedMediaUrl = selectedMedia ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url) : "";
+  const selectedVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMediaUrl) : "";
+  const selectedVideoIndex =
+    selectedMedia?.type === "VIDEO"
+      ? selectedGalleryIndex
+      : gallery.findIndex((item) => item.type === "VIDEO");
+  const shouldShowHeroVideoPreview =
+    selectedMedia?.type === "VIDEO" &&
+    Boolean(selectedVideoUrl) &&
+    !selectedVideoUrl.includes("youtube.com/embed") &&
+    !selectedVideoUrl.includes("player.vimeo.com");
   const galleryTiles = gallery.slice(0, 5);
   const tourMedia = videoGallery;
   const location = localizedStoreParts([store.area?.name, store.district, store.city], activeLanguage);
@@ -1045,16 +1051,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     label: "",
     iso: new Date().toISOString().slice(0, 10),
   };
-  const bookingTimeOptionGroups = useMemo(
+  const bookingTimeOptions = useMemo(
     () =>
-      buildBookingTimeSlotGroups(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
+      buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
         fallback: "empty",
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
-  );
-  const bookingTimeOptions = useMemo(
-    () => bookingTimeOptionGroups.flatMap((group) => group.slots),
-    [bookingTimeOptionGroups],
   );
 
   useEffect(() => {
@@ -1273,6 +1275,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <div className="detail-layout">
           <div className="media-column">
             <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
+              {shouldShowHeroVideoPreview ? (
+                <video
+                  className="hero-video-preview"
+                  src={selectedVideoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-hidden="true"
+                />
+              ) : null}
               <div className="hero-top">
                 <Link
                   className="round-action hero-back"
@@ -1315,14 +1329,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
-              {tourMedia.length ? (
+              {selectedVideoIndex >= 0 ? (
                 <button
                   className="video-badge"
                   type="button"
-                  onClick={() => openGallery(gallery.indexOf(tourMedia[0]!))}
+                  onClick={() => openGallery(selectedVideoIndex)}
                 >
                   <Play size={13} fill="currentColor" />
-                  {translateText("Video quán", activeLanguage)}
+                  {translateText("Xem video", activeLanguage)}
                 </button>
               ) : null}
 
@@ -1499,7 +1513,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
-              timeOptionGroups={bookingTimeOptionGroups}
               guestCount={guestCount}
               guestName={guestName}
               email={email}
@@ -1757,6 +1770,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           position: absolute;
           inset: 0;
           background: linear-gradient(180deg, rgba(12, 12, 15, .08), rgba(12, 12, 15, .15) 36%, rgba(12, 12, 15, .9));
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .hero-video-preview {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
           pointer-events: none;
         }
 
