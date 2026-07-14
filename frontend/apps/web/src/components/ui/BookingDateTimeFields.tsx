@@ -158,11 +158,14 @@ export function BookingDateTimeFields({
   const loadingTimesText = translateText("Đang tải khung giờ...", activeLanguage);
   const selectDateText = translateText("Chọn ngày", activeLanguage);
   const selectTimeText = translateText("Chọn khung giờ", activeLanguage);
+  const hasTimeOptionGroups = Boolean(timeOptionGroups?.length);
   const groups = useMemo(
     () => (timeOptionGroups?.length ? timeOptionGroups : groupBookingTimeSlots(timeOptions)),
     [timeOptionGroups, timeOptions],
   );
-  const selectedTimePeriod = groups.find((group) => group.slots.includes(timeValue))?.key;
+  const selectedTimePeriod = hasTimeOptionGroups
+    ? groups.find((group) => group.slots.includes(timeValue))?.key
+    : undefined;
   const firstAvailablePeriod = groups.find((group) => group.slots.length)?.key ?? "morning";
   const [preferredPeriod, setPreferredPeriod] = useState<BookingTimeSlotPeriod>(
     selectedTimePeriod ?? firstAvailablePeriod,
@@ -176,12 +179,12 @@ export function BookingDateTimeFields({
     groups.find((group) => group.key === activePeriod) ??
     groups.find((group) => group.key === firstAvailablePeriod) ??
     groups[0];
-  const activeTimeOptions = activeGroup?.slots ?? [];
+  const activeTimeOptions = hasTimeOptionGroups ? activeGroup?.slots ?? [] : timeOptions;
   const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
   const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
   const periodTabs = groups;
-  const showPeriodTabs = periodTabs.length > 1;
+  const showPeriodTabs = hasTimeOptionGroups && periodTabs.length > 1;
   const dateFieldClassName = [fieldClassName, "nl-booking-date-field"].filter(Boolean).join(" ");
   const fieldErrorClassName = ["nl-booking-field-error", errorClassName]
     .filter(Boolean)
@@ -255,31 +258,33 @@ export function BookingDateTimeFields({
         <div className={timeFieldClassName}>
           <span className={labelClassName}>{localizedTimeLabel}</span>
           <div className="nl-booking-time-control">
-            <div
-              className="nl-booking-period-tabs"
-              role="tablist"
-              aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
-            >
-              {periodTabs.map((group) => {
-                const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
-                const isDisabled = disabled || loadingTimes || !group.slots.length;
+            {showPeriodTabs ? (
+              <div
+                className="nl-booking-period-tabs"
+                role="tablist"
+                aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
+              >
+                {periodTabs.map((group) => {
+                  const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
+                  const isDisabled = disabled || loadingTimes || !group.slots.length;
 
-                return (
-                  <button
-                    key={group.key}
-                    type="button"
-                    className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
-                    aria-selected={isActive}
-                    aria-disabled={isDisabled}
-                    disabled={isDisabled}
-                    role="tab"
-                    onClick={() => selectPeriod(group.key)}
-                  >
-                    {translateSlotPeriod(group, activeLanguage)}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={group.key}
+                      type="button"
+                      className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
+                      aria-selected={isActive}
+                      aria-disabled={isDisabled}
+                      disabled={isDisabled}
+                      role="tab"
+                      onClick={() => selectPeriod(group.key)}
+                    >
+                      {translateSlotPeriod(group, activeLanguage)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
             <Select
               className="nl-booking-ant-control nl-booking-ant-select"
               disabled={shouldDisableTime}

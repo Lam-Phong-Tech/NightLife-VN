@@ -45,8 +45,12 @@ import {
   MemberCouponIssuesContract,
   MemberFavoriteCastContract,
   MemberFavoriteCastsContract,
+  MemberFavoriteStoreContract,
+  MemberFavoriteStoresContract,
   MemberPointSummaryContract,
   MemberUnfavoriteCastContract,
+  MemberUnfavoriteStoreContract,
+  MemberStoreFavoriteStateContract,
   PartnerBillsContract,
   PartnerBookingsContract,
   PartnerLiteDashboardContract,
@@ -898,6 +902,50 @@ export class NightlifeDataController {
   @Get('member/favorite-casts')
   listMemberFavoriteCasts(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberFavoriteCasts(request.user.id);
+  }
+
+  @MemberFavoriteStoresContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/favorite-stores')
+  listMemberFavoriteStores(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listMemberFavoriteStores(request.user.id);
+  }
+
+  @MemberStoreFavoriteStateContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/favorite-stores/:slug')
+  getMemberStoreFavorite(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.getMemberStoreFavoriteState(
+      request.user.id,
+      slug,
+    );
+  }
+
+  @MemberFavoriteStoreContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/favorite-stores/:slug')
+  favoriteMemberStore(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.favoriteMemberStore(request.user, slug);
+  }
+
+  @MemberUnfavoriteStoreContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('member/favorite-stores/:slug')
+  unfavoriteMemberStore(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.unfavoriteMemberStore(request.user, slug);
   }
 
   @MemberCastFavoriteStateContract()

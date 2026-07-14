@@ -25,15 +25,15 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
-  buildBookingTimeSlotGroups,
+  buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
   normalizeStoreOpeningHours,
-  type BookingTimeSlotGroup,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -54,14 +54,13 @@ import {
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
   categoryLabels,
   formatDateOption,
   mapEmbedUrl,
-  mediaBackground,
   mediaVisualUrl,
   openingText,
   readableName,
@@ -655,7 +654,6 @@ function BookingCard({
   maxDate,
   selectedTime,
   timeOptions,
-  timeOptionGroups,
   guestCount,
   guestName,
   email,
@@ -679,7 +677,6 @@ function BookingCard({
   maxDate: string;
   selectedTime: string;
   timeOptions: string[];
-  timeOptionGroups: BookingTimeSlotGroup[];
   guestCount: number;
   guestName: string;
   email: string;
@@ -796,7 +793,6 @@ function BookingCard({
             dateValue={selectedDateIso}
             timeValue={selectedTime}
             timeOptions={timeOptions}
-            timeOptionGroups={timeOptionGroups}
             minDate={minDate}
             maxDate={maxDate}
             onDateChange={(value) => {
@@ -964,12 +960,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   }, [store.id]);
 
   const displayName = readableName(store.name);
-  const gallery = store.gallery?.filter((item) => item.url) ?? [];
-  const videoGallery = gallery.filter((item) => item.type === "VIDEO");
+  const rawGallery = store.gallery?.filter((item) => item.url) ?? [];
+  const videoGallery = rawGallery.filter((item) => item.type === "VIDEO");
+  const gallery = [...videoGallery, ...rawGallery.filter((item) => item.type !== "VIDEO")];
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
-  const heroMedia = selectedMedia?.type === "IMAGE" ? selectedMedia : heroImage;
-  const heroBackground = mediaBackground(heroMedia);
+  const heroBackground = galleryBackground(selectedMedia, heroImage);
+  const selectedMediaUrl = selectedMedia ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url) : "";
+  const selectedVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMediaUrl) : "";
+  const selectedVideoIndex =
+    selectedMedia?.type === "VIDEO"
+      ? selectedGalleryIndex
+      : gallery.findIndex((item) => item.type === "VIDEO");
+  const shouldShowHeroVideoPreview =
+    selectedMedia?.type === "VIDEO" &&
+    Boolean(selectedVideoUrl) &&
+    !selectedVideoUrl.includes("youtube.com/embed") &&
+    !selectedVideoUrl.includes("player.vimeo.com");
   const galleryTiles = gallery.slice(0, 5);
   const tourMedia = videoGallery;
   const location = localizedStoreParts([store.area?.name, store.district, store.city], activeLanguage);
@@ -986,6 +993,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
   const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
+  const favoriteSnapshot = useMemo(
+    () => ({
+      slug: store.slug,
+      name: displayName,
+      categoryLabel,
+      areaLabel: store.area?.name ?? store.district ?? "",
+      cityLabel: store.cityCode ?? store.city,
+      image: galleryImageUrl(heroImage),
+    }),
+    [categoryLabel, displayName, heroImage, store.area?.name, store.city, store.cityCode, store.district, store.slug],
+  );
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
   const { rates } = useMoneyFormatter(activeLanguage);
   const priceText = priceRangeText(store, activeLanguage, rates);
@@ -1045,16 +1063,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     label: "",
     iso: new Date().toISOString().slice(0, 10),
   };
-  const bookingTimeOptionGroups = useMemo(
+  const bookingTimeOptions = useMemo(
     () =>
-      buildBookingTimeSlotGroups(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
+      buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
         fallback: "empty",
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
-  );
-  const bookingTimeOptions = useMemo(
-    () => bookingTimeOptionGroups.flatMap((group) => group.slots),
-    [bookingTimeOptionGroups],
   );
 
   useEffect(() => {
@@ -1129,29 +1143,63 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxMediaUrl = lightboxMedia ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url) : "";
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMediaUrl) : "";
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      setIsFavorite(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setIsFavorite(isFavoriteStore(favoriteSnapshot.slug));
+    storeFavoriteApi
+      .getState(favoriteSnapshot.slug)
+      .then((state) => {
+        if (ignore) return;
+        setIsFavorite(state.favorited);
+        writeFavoriteStore(favoriteSnapshot, state.favorited);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      ignore = true;
+    };
+  }, [favoriteSnapshot]);
+
   const showPreviousMedia = () =>
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   const showNextMedia = () =>
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!requireMemberFavoriteAccess()) {
       return;
     }
 
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
-    writeFavoriteStore(
-      {
-        slug: store.slug,
-        name: displayName,
-        categoryLabel,
-        areaLabel: store.area?.name ?? store.district ?? "",
-        cityLabel: store.cityCode ?? store.city,
-        image: galleryImageUrl(heroImage),
-      },
-      nextValue,
-    );
+    writeFavoriteStore(favoriteSnapshot, nextValue);
     trackStoreDetailClick(store, "favorite", { favorited: nextValue });
+
+    try {
+      const state = nextValue
+        ? await storeFavoriteApi.favorite(store.slug)
+        : await storeFavoriteApi.unfavorite(store.slug);
+      setIsFavorite(state.favorited);
+      writeFavoriteStore(favoriteSnapshot, state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        setIsFavorite(false);
+        writeFavoriteStore(favoriteSnapshot, false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      setIsFavorite(!nextValue);
+      writeFavoriteStore(favoriteSnapshot, !nextValue);
+    }
   };
   const openGallery = (index: number) => {
     if (!gallery.length) return;
@@ -1273,6 +1321,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <div className="detail-layout">
           <div className="media-column">
             <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
+              {shouldShowHeroVideoPreview ? (
+                <video
+                  className="hero-video-preview"
+                  src={selectedVideoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-hidden="true"
+                />
+              ) : null}
               <div className="hero-top">
                 <Link
                   className="round-action hero-back"
@@ -1315,14 +1375,25 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
-              {tourMedia.length ? (
+              {selectedMedia?.type === "VIDEO" ? (
+                <button
+                  className="hero-video-play"
+                  type="button"
+                  aria-label={translateText("Xem video", activeLanguage)}
+                  onClick={() => openGallery(selectedGalleryIndex)}
+                >
+                  <Play size={34} fill="currentColor" />
+                </button>
+              ) : null}
+
+              {selectedVideoIndex >= 0 ? (
                 <button
                   className="video-badge"
                   type="button"
-                  onClick={() => openGallery(gallery.indexOf(tourMedia[0]!))}
+                  onClick={() => openGallery(selectedVideoIndex)}
                 >
                   <Play size={13} fill="currentColor" />
-                  {translateText("Video quán", activeLanguage)}
+                  {translateText("Xem video", activeLanguage)}
                 </button>
               ) : null}
 
@@ -1499,7 +1570,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
-              timeOptionGroups={bookingTimeOptionGroups}
               guestCount={guestCount}
               guestName={guestName}
               email={email}
@@ -1682,6 +1752,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .store-detail-page {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
+          --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
+          --store-hero-control-bg: transparent;
+          --store-hero-control-bg-strong: transparent;
+          --store-hero-control-border: transparent;
+          --store-hero-control-icon: #f7cf5c;
+          --store-hero-control-shadow: none;
+          --store-hero-control-icon-shadow: none;
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -1689,7 +1766,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding-bottom: 86px;
         }
 
+        html.vy-light .store-detail-page {
+          --store-hero-control-bg: transparent;
+          --store-hero-control-bg-strong: transparent;
+          --store-hero-control-border: transparent;
+          --store-hero-control-icon: #d4a72f;
+          --store-hero-control-shadow: none;
+          --store-hero-control-icon-shadow: none;
+        }
+
         .nl-page-content:has(.store-detail-page) {
+          --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+          --store-mobile-cta-height: 76px;
+          --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
           padding-bottom: 0 !important;
           scroll-padding-bottom: calc(152px + env(safe-area-inset-bottom)) !important;
         }
@@ -1758,11 +1847,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           inset: 0;
           background: linear-gradient(180deg, rgba(12, 12, 15, .08), rgba(12, 12, 15, .15) 36%, rgba(12, 12, 15, .9));
           pointer-events: none;
+          z-index: 1;
+        }
+
+        .hero-video-preview {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          pointer-events: none;
         }
 
         .hero-top,
         .hero-name,
         .hero-media-nav,
+        .hero-video-play,
         .video-badge {
           position: absolute;
           z-index: 2;
@@ -1790,17 +1891,24 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .round-action {
           width: 40px;
           height: 40px;
-          border: 1px solid rgba(182, 146, 74, .54);
+          border: 0;
           border-radius: 50%;
-          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-          color: var(--vy-on-gold);
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          box-shadow: 0 12px 26px rgba(79, 57, 19, .24);
+          box-shadow: var(--store-hero-control-shadow);
           cursor: pointer;
           padding: 0;
+        }
+
+        .round-action svg,
+        .hero-media-nav svg,
+        .hero-video-play svg,
+        .video-badge svg {
+          filter: var(--store-hero-control-icon-shadow);
         }
 
         .round-action.hero-back {
@@ -1808,23 +1916,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .store-favorite-action {
-          color: #4f3710;
+          color: var(--store-hero-control-icon);
         }
 
         .store-favorite-action.is-active {
-          background: linear-gradient(135deg, #ffe99d, #e0b747 54%, #c29636);
-          border-color: rgba(143, 95, 27, .44);
-          color: #7b4c11;
+          background: var(--store-hero-control-bg-strong);
+          border-color: transparent;
+          color: var(--store-hero-control-icon);
         }
 
         .hero-media-nav {
           top: 50%;
           width: 46px;
           height: 64px;
-          border: 1px solid rgba(182, 146, 74, .5);
+          border: 0;
           border-radius: 999px;
-          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-          color: var(--vy-on-gold);
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           display: grid;
           place-items: center;
           transform: translateY(-50%);
@@ -1832,7 +1940,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           animation: none;
           will-change: auto;
           cursor: pointer;
-          box-shadow: 0 14px 28px rgba(79, 57, 19, .22);
+          box-shadow: var(--store-hero-control-shadow);
           text-shadow: none;
         }
 
@@ -1849,22 +1957,42 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           transform: translateY(-50%) !important;
         }
 
+        .hero-video-play {
+          left: 50%;
+          top: 50%;
+          width: 70px;
+          height: 70px;
+          border: 0;
+          border-radius: 50%;
+          background: var(--store-hero-control-bg-strong);
+          color: var(--store-hero-control-icon);
+          display: grid;
+          place-items: center;
+          padding: 0 0 0 5px;
+          transform: translate(-50%, -50%);
+          cursor: pointer;
+          box-shadow: var(--store-hero-control-shadow);
+        }
+
+        .hero-video-play:where(:hover, :focus-visible) {
+          background: transparent;
+        }
+
         .video-badge {
           left: 14px;
           top: 14px;
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(212, 178, 106, .42);
+          border: 0;
           border-radius: 999px;
-          background: rgba(12, 12, 15, .5);
-          color: #f0e6d2;
+          background: var(--store-hero-control-bg);
+          color: var(--store-hero-control-icon);
           font-size: 10px;
           font-weight: 800;
           letter-spacing: 0;
           text-transform: uppercase;
           padding: 7px 12px;
-          backdrop-filter: blur(6px);
           cursor: pointer;
         }
 
@@ -2017,16 +2145,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .secondary-actions a {
           flex: 1;
-          color: #8f6620;
-          background: #fffaf0;
-          border: 1px solid rgba(212, 178, 106, .32);
-          box-shadow: 0 8px 20px rgba(182, 146, 74, .12);
+          color: var(--vy-gold-hi);
+          background: var(--vy-surface-2);
+          border: 1px solid var(--vy-border-gold-32);
+          box-shadow: var(--vy-shadow-card);
         }
 
         .secondary-actions a:first-child {
           color: var(--vy-on-gold);
-          background: linear-gradient(135deg, #fff3ca, #e8c46d 58%, #c89b3f);
-          border-color: rgba(182, 146, 74, .46);
+          background: var(--vy-gold-grad);
+          border-color: var(--vy-border-gold-40);
         }
 
         .thumb-grid {
@@ -2317,9 +2445,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-card,
         .menu-panel {
-          border: 1px solid rgba(212, 178, 106, .28);
+          border: 1px solid var(--vy-border-gold-32);
           border-radius: 8px;
-          background: linear-gradient(135deg, rgba(212, 178, 106, .1), rgba(255, 255, 255, .025));
+          background: linear-gradient(135deg, var(--vy-gold-soft-bg), var(--vy-surface-1));
+          box-shadow: var(--vy-shadow-card);
         }
 
         .booking-card {
@@ -2354,7 +2483,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           justify-content: space-between;
           gap: 14px;
           padding-bottom: 12px;
-          border-bottom: 1px solid rgba(212, 178, 106, .14);
+          border-bottom: 1px solid var(--vy-border-gold-12);
         }
 
         .booking-card-head strong,
@@ -2375,7 +2504,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card-head b {
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 14px;
           white-space: nowrap;
         }
@@ -2395,16 +2524,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           margin: 9px 0 10px;
           padding: 7px 10px;
-          border: 1px solid rgba(212, 178, 106, .28);
+          border: 1px solid var(--vy-border-gold-32);
           border-radius: 8px;
-          background: rgba(212, 178, 106, .1);
+          background: var(--vy-gold-soft-bg);
         }
 
         .member-nudge svg,
         .booking-safe svg,
         .menu-note svg {
           flex: none;
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           margin-top: 2px;
         }
 
@@ -2532,7 +2661,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .slot.active,
         .guest-stepper button {
           color: var(--vy-on-gold);
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          background: var(--vy-gold-grad);
           border-color: transparent;
         }
 
@@ -2540,9 +2669,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: block;
           width: 100%;
           padding: 9px 10px;
-          border: 1px dashed rgba(212, 178, 106, .28);
+          border: 1px dashed var(--vy-border-gold-32);
           border-radius: 8px;
-          color: #b7afa1;
+          color: var(--vy-muted);
           background: var(--vy-surface-1);
           font-size: 12px;
           line-height: 1.45;
@@ -2584,7 +2713,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           max-height: 110px;
           margin-bottom: 0;
           padding: 12px;
-          border: 1px solid rgba(212, 178, 106, .2);
+          border: 1px solid var(--vy-border-gold-22);
           border-radius: 10px;
           background: var(--vy-surface-2);
           color: var(--vy-text);
@@ -2597,8 +2726,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field:focus-within,
         .booking-note-box:focus {
-          border-color: rgba(227, 194, 126, .58);
-          box-shadow: 0 0 0 2px rgba(212, 178, 106, .1);
+          border-color: var(--vy-border-gold-40);
+          box-shadow: 0 0 0 2px var(--vy-gold-soft-bg);
         }
 
         .booking-card .booking-field .nl-booking-ant-control.ant-picker {
@@ -2682,7 +2811,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card .booking-field .nl-booking-ant-select .ant-select-arrow {
-          color: #d4b26a !important;
+          color: var(--vy-gold) !important;
         }
 
         .booking-error {
@@ -2719,7 +2848,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .primary-action {
-          background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
+          background: var(--vy-gold-grad);
           color: var(--vy-on-gold);
           border: 0;
         }
@@ -2734,9 +2863,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .secondary-action {
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           background: var(--vy-surface-2);
-          border: 1px solid rgba(212, 178, 106, .3);
+          border: 1px solid var(--vy-border-gold-32);
         }
 
         .full {
@@ -3294,7 +3423,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .nl-page-content:has(.store-detail-page) {
-            scroll-padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
+            padding-bottom: 0 !important;
+            scroll-padding-bottom: var(--store-mobile-fixed-space) !important;
+          }
+
+          .nl-page-content:has(.store-detail-page) + .nl-site-footer {
+            padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
           }
 
           .detail-shell {
@@ -3339,9 +3473,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .hero-media-nav {
             width: 42px;
             height: 60px;
-            border-color: rgba(182, 146, 74, .5);
-            background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
-            color: var(--vy-on-gold);
+            background: var(--store-hero-control-bg);
+            color: var(--store-hero-control-icon);
           }
 
           .hero-media-nav.previous {
@@ -3494,10 +3627,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             height: var(--store-mobile-cta-height);
             margin: 0 !important;
             padding: 10px 12px;
-            background: color-mix(in srgb, var(--vy-bg) 94%, #f0dda8 6%);
-            border-top: 1px solid rgba(212, 178, 106, .34);
+            background: color-mix(in srgb, var(--vy-surface) 90%, var(--vy-bg) 10%);
+            border-top: 1px solid var(--vy-border-gold-32);
             box-sizing: border-box;
-            box-shadow: 0 -12px 30px rgba(105, 75, 21, .16);
+            box-shadow: var(--vy-shadow);
             backdrop-filter: blur(14px);
             transform: translateZ(0);
           }
@@ -3525,7 +3658,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             padding: 0 14px;
             width: 100%;
             border-radius: 8px;
-            box-shadow: 0 10px 22px rgba(105, 75, 21, .18);
+            box-shadow: var(--vy-shadow-card);
             pointer-events: auto;
           }
 

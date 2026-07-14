@@ -17,11 +17,12 @@ import {
 } from "lucide-react";
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
-import { resolveClientUrl } from "@/lib/api/client";
+import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
@@ -403,6 +404,50 @@ export default function Page() {
   useEffect(() => {
     let cancelled = false;
 
+    if (!hasMemberFavoriteAccess()) {
+      setFavoriteStoreSlugs([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    storeFavoriteApi
+      .list()
+      .then((items) => {
+        if (cancelled) return;
+        items.forEach((item) => {
+          writeFavoriteStore(
+            {
+              slug: item.store.slug,
+              name: item.store.name,
+              categoryLabel: getLocalizedCategoryLabel(item.store.category, activeLanguage),
+              areaLabel: [
+                item.store.area?.name ?? item.store.district,
+                getLocalizedCityLabel(item.store.cityCode ?? "", activeLanguage),
+              ]
+                .filter(Boolean)
+                .join(" Â· "),
+              cityLabel: item.store.city,
+              image: item.store.thumbnailUrl ?? undefined,
+              favoritedAt: item.favoritedAt,
+            },
+            true,
+          );
+        });
+        setFavoriteStoreSlugs(items.map((item) => item.store.slug));
+      })
+      .catch(() => {
+        if (!cancelled) setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     discoveryApi
       .listAreas({ city })
       .then((items) => {
@@ -651,24 +696,45 @@ export default function Page() {
     if (nextValue) setOpenNow(false);
   };
 
-  const toggleVenueFavorite = (venue: VenueView) => {
+  const toggleVenueFavorite = async (venue: VenueView) => {
     if (!requireMemberFavoriteAccess()) {
       return;
     }
 
     const nextValue = !favoriteStoreSlugs.includes(venue.id);
-    writeFavoriteStore(
-      {
-        slug: venue.id,
-        name: venue.name,
-        categoryLabel: venue.categoryLabel,
-        areaLabel: venue.areaLabel,
-        cityLabel: venue.cityLabel,
-        image: venue.image,
-      },
-      nextValue,
-    );
-    setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+    const snapshot = {
+      slug: venue.id,
+      name: venue.name,
+      categoryLabel: venue.categoryLabel,
+      areaLabel: venue.areaLabel,
+      cityLabel: venue.cityLabel,
+      image: venue.image,
+    };
+    const applyFavorite = (favorited: boolean) => {
+      writeFavoriteStore(snapshot, favorited);
+      setFavoriteStoreSlugs((current) =>
+        favorited
+          ? [venue.id, ...current.filter((slug) => slug !== venue.id)]
+          : current.filter((slug) => slug !== venue.id),
+      );
+    };
+
+    applyFavorite(nextValue);
+
+    try {
+      const state = nextValue
+        ? await storeFavoriteApi.favorite(venue.id)
+        : await storeFavoriteApi.unfavorite(venue.id);
+      applyFavorite(state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        applyFavorite(false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      applyFavorite(!nextValue);
+    }
   };
 
   return (

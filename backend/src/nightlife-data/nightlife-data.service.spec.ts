@@ -102,6 +102,12 @@ describe('NightlifeDataService', () => {
       upsert: jest.fn(),
       deleteMany: jest.fn(),
     },
+    memberFavoriteStore: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     booking: {
       create: jest.fn(),
       count: jest.fn(),
@@ -1903,6 +1909,51 @@ describe('NightlifeDataService', () => {
       where: {
         userId: 'user-1',
         castId: 'cast-aya',
+      },
+    });
+  });
+
+  it('saves and removes a store favorite for a member', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-neon',
+      slug: 'neon-club',
+    });
+    prisma.memberFavoriteStore.upsert.mockResolvedValue({
+      id: 'fav-store-1',
+    });
+    prisma.memberFavoriteStore.deleteMany.mockResolvedValue({
+      count: 1,
+    });
+
+    await expect(
+      service.favoriteMemberStore({ id: 'user-1', role: 'USER' }, 'neon'),
+    ).resolves.toEqual({
+      storeId: 'store-neon',
+      storeSlug: 'neon-club',
+      favorited: true,
+    });
+    expect(prisma.memberFavoriteStore.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_storeId: {
+            userId: 'user-1',
+            storeId: 'store-neon',
+          },
+        },
+      }),
+    );
+
+    await expect(
+      service.unfavoriteMemberStore({ id: 'user-1', role: 'USER' }, 'neon'),
+    ).resolves.toEqual({
+      storeId: 'store-neon',
+      storeSlug: 'neon-club',
+      favorited: false,
+    });
+    expect(prisma.memberFavoriteStore.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        storeId: 'store-neon',
       },
     });
   });
