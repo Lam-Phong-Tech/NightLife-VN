@@ -443,7 +443,7 @@ const savedPageCss = `
 
   .saved-copy strong {
     overflow: hidden;
-    color: #fff8e6;
+    color: var(--vy-text);
     font-size: 18px;
     font-weight: 950;
     line-height: 1.15;
@@ -453,7 +453,7 @@ const savedPageCss = `
 
   .saved-copy small {
     overflow: hidden;
-    color: #b6b1a6;
+    color: var(--vy-text-2);
     font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
