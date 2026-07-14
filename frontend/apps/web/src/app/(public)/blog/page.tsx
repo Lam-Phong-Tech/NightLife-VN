@@ -136,7 +136,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             action="/blog"
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(220px, 1fr) minmax(160px, 220px) auto",
+              gridTemplateColumns: "1fr auto",
               gap: "10px",
               alignItems: "center",
             }}
@@ -155,25 +155,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               }}
             />
             {params.category && <input type="hidden" name="category" value={params.category} />}
-            <select
-              name="tag"
-              defaultValue={params.tag ?? ""}
-              style={{
-                minHeight: "42px",
-                border: "1px solid var(--vy-border-gold-22)",
-                borderRadius: "8px",
-                background: "var(--vy-surface)",
-                color: "var(--vy-text)",
-                padding: "0 12px",
-              }}
-            >
-              <option value="">Tất cả tag</option>
-              {tags.map((tag) => (
-                <option key={tag} value={slugifyBlogTerm(tag)}>
-                  {tag}
-                </option>
-              ))}
-            </select>
             <button
               type="submit"
               style={{
