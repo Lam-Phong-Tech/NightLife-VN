@@ -43,11 +43,11 @@ const getPillStyle = (kind: string) => {
 };
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-const DEFAULT_OPENING_SLOT = '19:00 - 02:00';
+const DEFAULT_OPENING_SLOT = '19:00 - 24:00';
 const TIME_OPTIONS = Array.from({ length: 24 }, (_, index) => {
   const hour = index.toString().padStart(2, '0');
   return `${hour}:00`;
-});
+}).concat(['24:00']);
 
 function CustomTimeSelect({ value, onChange, placeholder, hasError }: { value: string; onChange: (val: string) => void; placeholder: string; hasError?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -166,9 +166,9 @@ const parseOpeningHourSlot = (slot: string) => {
   const closeHour = Number(match[3]);
   const closeMinute = Number(match[4]);
 
-  if (openHour > 23 || closeHour > 23 || openMinute > 59 || closeMinute > 59) {
+  if (openHour > 23 || (closeHour > 24 || (closeHour === 24 && closeMinute > 0)) || openMinute > 59 || closeMinute > 59) {
     return {
-      error: 'Giờ phải nằm trong 00:00 - 23:59.',
+      error: 'Giờ kết thúc phải lớn hơn bắt đầu và tối đa là 24:00.',
       normalized: value,
       overnight: false,
     };
@@ -176,9 +176,9 @@ const parseOpeningHourSlot = (slot: string) => {
 
   const openTotal = openHour * 60 + openMinute;
   const closeTotal = closeHour * 60 + closeMinute;
-  if (openTotal === closeTotal && !(openTotal === 0 && closeTotal === 0)) {
+  if (closeTotal <= openTotal && !(openTotal === 0 && closeTotal === 0)) {
     return {
-      error: 'Giờ kết thúc phải khác giờ bắt đầu.',
+      error: 'Giờ kết thúc phải lớn hơn giờ bắt đầu (không hỗ trợ qua đêm).',
       normalized: value,
       overnight: false,
     };
@@ -229,8 +229,7 @@ const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHou
       } else {
         const start = result.openTotal!;
         let end = result.closeTotal!;
-        if (end < start) end += 1440;
-        else if (start === 0 && end === 0) end = 1440;
+        if (start === 0 && end === 0) end = 1440;
         intervals.push({ start, end, index });
       }
       normalizedSlots.push(result.normalized);
@@ -1266,7 +1265,7 @@ function AdminStoresContent() {
                   const setSlotTime = (idx: number, key: 'open' | 'close', val: string) => {
                     const parts = splitOpeningHourSlot(slots[idx] || '');
                     const openTime = key === 'open' ? val : (parts.open || '19:00');
-                    const closeTime = key === 'close' ? val : (parts.close || '02:00');
+                    const closeTime = key === 'close' ? val : (parts.close || '24:00');
                     setSlotVal(idx, openTime && closeTime ? `${openTime} - ${closeTime}` : '');
                   };
                   const addSlot = () => {

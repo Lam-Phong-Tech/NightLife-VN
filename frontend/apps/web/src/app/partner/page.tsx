@@ -408,8 +408,8 @@ const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const listingOpeningDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-const defaultListingOpeningSlot = '19:00 - 02:00';
-const listingTimeOptions = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, '0')}:00`);
+const defaultListingOpeningSlot = '19:00 - 24:00';
+const listingTimeOptions = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, '0')}:00`).concat(['24:00']);
 const listingBirthMonthOptions = Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
   label: `Tháng ${index + 1}`,
@@ -747,7 +747,7 @@ const isValidUrl = (value: string) => {
   }
 };
 
-const openingHourPattern = /^([01]\d|2[0-3]):[0-5]\d\s*[-–]\s*([01]\d|2[0-3]):[0-5]\d$/;
+const openingHourPattern = /^([01]\d|2[0-4]):[0-5]\d\s*[-–]\s*([01]\d|2[0-4]):[0-5]\d$/;
 const phonePattern = /^\+?[0-9\s().-]{8,18}$/;
 const splitOpeningHourSlots = (value?: string | null) =>
   (value ?? '')
@@ -761,11 +761,23 @@ const splitOpeningHourSlot = (slot?: string | null) => {
 };
 
 const formatOpeningHourSlot = (open: string, close: string) =>
-  open || close ? `${open || '19:00'} - ${close || '02:00'}` : '';
+  open || close ? `${open || '19:00'} - ${close || '24:00'}` : '';
 
 const hasValidOpeningHourSlots = (value?: string | null) => {
   const slots = splitOpeningHourSlots(value);
-  return slots.length > 0 && slots.every((slot) => openingHourPattern.test(slot));
+  if (slots.length === 0) return false;
+  return slots.every((slot) => {
+    if (!openingHourPattern.test(slot)) return false;
+    const { open, close } = splitOpeningHourSlot(slot);
+    const [openH, openM] = open.split(':').map(Number);
+    const [closeH, closeM] = close.split(':').map(Number);
+    if (openH > 23 || openM > 59) return false;
+    if (closeH > 24 || (closeH === 24 && closeM > 0) || closeM > 59) return false;
+    const openTotal = (openH || 0) * 60 + (openM || 0);
+    const closeTotal = (closeH || 0) * 60 + (closeM || 0);
+    if (closeTotal <= openTotal && !(openTotal === 0 && closeTotal === 0)) return false;
+    return true;
+  });
 };
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
