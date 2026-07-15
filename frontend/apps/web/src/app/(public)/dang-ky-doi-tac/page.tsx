@@ -297,11 +297,14 @@ function inputStyle(colors: typeof darkColors, tall = false): React.CSSPropertie
     color: colors.text,
     background: colors.surface2,
     fontFamily: fieldFontFamily,
-    fontSize: '13px',
+    fontSize: '16px',
     fontWeight: 400,
     letterSpacing: 0,
-    lineHeight: 1.45,
+    lineHeight: 1.35,
     outline: 'none',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    boxSizing: 'border-box',
     resize: tall ? 'vertical' : undefined,
   };
 }
@@ -333,7 +336,8 @@ function FormControl({
   const sharedProps = {
     id,
     value,
-    autoComplete: autoComplete || 'off',
+    autoComplete: autoComplete ?? 'off',
+    'aria-autocomplete': 'none' as const,
     autoCorrect: 'off',
     autoCapitalize: 'none',
     spellCheck: false,
@@ -832,6 +836,7 @@ function PartnerPageContent({
   return (
     <ThemeContext.Provider value={{ theme, colors }}>
       <main
+        className="nl-auth-page nl-partner-register-page"
         style={{
           minHeight: '100vh',
           background: colors.bg,
@@ -957,7 +962,7 @@ function PartnerPageContent({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    fontSize: '13px',
+                    fontSize: '16px',
                     fontWeight: 700,
                     textDecoration: 'none',
                     background: 'rgba(12,12,15,.45)',
@@ -1067,7 +1072,7 @@ function PartnerPageContent({
                   placeholder="Nhập email của bạn"
                   type="email"
                   wide={!isMobile}
-                  autoComplete="new-password"
+                  autoComplete="off"
                 />
                 <FormControl
                   label="Mật khẩu đăng ký"
@@ -1077,7 +1082,7 @@ function PartnerPageContent({
                   type="password"
                   required
                   wide={!isMobile}
-                  autoComplete="new-password"
+                  autoComplete="off"
                 />
 
                 <FormGroupTitle title="Bổ sung" caption="Menu, cast và album có thể cập nhật chi tiết sau khi được duyệt." />

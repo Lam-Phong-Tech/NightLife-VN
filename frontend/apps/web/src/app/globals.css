@@ -2093,6 +2093,46 @@ html.vy-light .nl-page-content .ranking-filters button.active {
   }
 }
 
+.nl-auth-page {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+.nl-auth-page,
+.nl-auth-page * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nl-auth-page input,
+.nl-auth-page textarea,
+.nl-auth-page select,
+.nl-auth-page button {
+  font-family: var(--nl-font-sans);
+}
+
+.nl-auth-page input,
+.nl-auth-page textarea,
+.nl-auth-page select {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: inherit;
+  box-shadow: none;
+  font-size: 16px !important;
+  line-height: 1.35;
+}
+
+.nl-auth-page button {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.nl-auth-page input:-webkit-autofill {
+  transition:
+    background-color 999999s ease-in-out 0s,
+    color 999999s ease-in-out 0s;
+}
+
 html.vy-light .nl-reset-auth-page {
   background: var(--vy-bg) !important;
   color: var(--vy-text) !important;

@@ -177,7 +177,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="nl-reset-auth-page" style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
+    <main className="nl-auth-page nl-reset-auth-page" style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
       <section
         className="nl-reset-auth-shell"
         style={{
@@ -247,7 +247,15 @@ export default function ResetPasswordPage() {
                 : "Vui lòng xác thực mã email trước khi đặt mật khẩu mới."}
             </p>
 
-            <form onSubmit={submit} style={{ display: "grid", gap: 12, marginTop: 18 }}>
+            <form
+              autoComplete="off"
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              onSubmit={submit}
+              style={{ display: "grid", gap: 12, marginTop: 18 }}
+            >
               <Field
                 icon={<LockKeyhole size={16} />}
                 label="Mật khẩu mới"
@@ -255,7 +263,7 @@ export default function ResetPasswordPage() {
                 onChange={setPassword}
                 placeholder="Vui lòng nhập mật khẩu mới"
                 type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
+                autoComplete="off"
                 action={
                   <button
                     type="button"
@@ -285,7 +293,7 @@ export default function ResetPasswordPage() {
                 onChange={setConfirmPassword}
                 placeholder="Vui lòng nhập lại mật khẩu mới"
                 type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
+                autoComplete="off"
               />
 
               {message ? (
@@ -377,7 +385,15 @@ function Field({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           type={type}
-          autoComplete={autoComplete}
+          autoComplete={autoComplete ?? "off"}
+          aria-autocomplete="none"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
           maxLength={72}
           style={{
             width: "100%",
@@ -387,7 +403,7 @@ function Field({
             background: "transparent",
             color: colors.text,
             padding: "14px 0",
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: 750,
           }}
         />

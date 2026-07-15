@@ -135,6 +135,7 @@ function LoginContent({
 
   return (
     <main
+      className="nl-auth-page nl-partner-login-page"
       data-no-translate="true"
       style={{
         minHeight: '100vh',
@@ -290,6 +291,7 @@ function LoginContent({
                 name="nl-partner-login-email"
                 type="email"
                 autoComplete="off"
+                aria-autocomplete="none"
                 autoCorrect="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -307,7 +309,7 @@ function LoginContent({
                   padding: '0 13px',
                   color: colors.text,
                   background: colors.surface2,
-                  fontSize: '13px',
+                  fontSize: '16px',
                   outline: 'none',
                   transition: 'background 0.2s, border-color 0.2s, color 0.2s',
                 }}
@@ -319,7 +321,8 @@ function LoginContent({
                 <input
                   name="nl-partner-login-passcode"
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
+                  autoComplete="off"
+                  aria-autocomplete="none"
                   autoCorrect="off"
                   autoCapitalize="none"
                   spellCheck={false}
@@ -337,7 +340,7 @@ function LoginContent({
                     padding: '0 48px 0 13px',
                     color: colors.text,
                     background: colors.surface2,
-                    fontSize: '13px',
+                    fontSize: '16px',
                     outline: 'none',
                     transition: 'background 0.2s, border-color 0.2s, color 0.2s',
                   }}

@@ -542,7 +542,7 @@ export default function Page() {
 
   return (
     <main
-      className="nl-login-page"
+      className="nl-auth-page nl-login-page"
       style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}
     >
       <div
@@ -692,6 +692,7 @@ export default function Page() {
                 data-form-type="other"
                 data-lpignore="true"
                 data-1p-ignore="true"
+                data-bwignore="true"
                 onSubmit={submit}
                 style={{ marginTop: 24, display: "grid", gap: 14 }}
               >
@@ -728,7 +729,7 @@ export default function Page() {
                   onChange={setPassword}
                   placeholder={translateText("Vui lòng nhập mật khẩu", activeLanguage)}
                   type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
+                  autoComplete="off"
                   name={isReg ? "nl-register-passcode" : "nl-login-passcode"}
                   required
                   minLength={8}
@@ -763,7 +764,7 @@ export default function Page() {
                     onChange={setConfirmPassword}
                     placeholder={translateText("Vui lòng nhập lại mật khẩu", activeLanguage)}
                     type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
+                    autoComplete="off"
                     name="nl-register-passcode-confirm"
                     required
                     minLength={8}
@@ -1104,7 +1105,8 @@ function Field({
           value={value}
           onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
-          autoComplete={autoComplete}
+          autoComplete={autoComplete ?? "off"}
+          aria-autocomplete="none"
           autoCorrect="off"
           autoCapitalize="none"
           spellCheck={false}
@@ -1124,7 +1126,7 @@ function Field({
             outline: "none",
             background: "transparent",
             color: colors.text,
-            fontSize: 14,
+            fontSize: 16,
           }}
         />
         {action ? (

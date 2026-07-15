@@ -64,7 +64,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="nl-admin-login-page" style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
+    <main className="nl-auth-page nl-admin-login-page" style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
       <div className="nl-admin-login-layout" style={{ minHeight: 'calc(100vh - 68px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <section
           className="nl-admin-login-card"
@@ -90,6 +90,7 @@ export default function AdminLoginPage() {
             data-form-type="other"
             data-lpignore="true"
             data-1p-ignore="true"
+            data-bwignore="true"
             onSubmit={submit}
             style={{ display: 'grid', gap: '20px' }}
           >
@@ -102,6 +103,7 @@ export default function AdminLoginPage() {
                   name="nl-admin-login-email"
                   type="email"
                   autoComplete="off"
+                  aria-autocomplete="none"
                   autoCorrect="off"
                   autoCapitalize="none"
                   spellCheck={false}
@@ -119,7 +121,7 @@ export default function AdminLoginPage() {
                     padding: '0 16px 0 48px',
                     color: colors.text,
                     background: colors.surface2,
-                    fontSize: '15px',
+                    fontSize: '16px',
                     outline: 'none',
                   }}
                 />
@@ -132,7 +134,8 @@ export default function AdminLoginPage() {
                 <input
                   id="password"
                   name="nl-admin-login-passcode"
-                  autoComplete="new-password"
+                  autoComplete="off"
+                  aria-autocomplete="none"
                   autoCorrect="off"
                   autoCapitalize="none"
                   spellCheck={false}
@@ -151,7 +154,7 @@ export default function AdminLoginPage() {
                     padding: '0 52px 0 48px',
                     color: colors.text,
                     background: colors.surface2,
-                    fontSize: '15px',
+                    fontSize: '16px',
                     outline: 'none',
                   }}
                 />
