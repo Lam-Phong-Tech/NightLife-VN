@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
@@ -1038,6 +1038,8 @@ function RelatedStores({
 
 export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const couponId = searchParams.get("couponId") || undefined;
   const activeLanguage = useActiveLanguage();
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
@@ -1284,6 +1286,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     guests: String(guestCount),
     date: selectedDate.iso,
     time: selectedTime,
+    ...(couponId ? { couponId } : {}),
   });
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
@@ -1417,6 +1420,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       scheduledAt,
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
+      ...(couponId ? { couponId } : {}),
     };
 
     try {

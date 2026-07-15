@@ -9816,10 +9816,53 @@ export class NightlifeDataService {
     }
 
     if (couponId) {
+      let targetCouponId = couponId;
+      try {
+        const campaign = await prisma.campaign.findFirst({
+          where: {
+            id: couponId,
+            status: 'ACTIVE',
+          },
+        });
+
+        if (campaign) {
+          const storeId = campaign.targetStoreId ?? input.target.store.id;
+          const expectedCampaignCode = `CAMPAIGN-${campaign.id}`;
+          let campaignCoupon = await prisma.coupon.findFirst({
+            where: {
+              code: expectedCampaignCode,
+              storeId,
+              deletedAt: null,
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          });
+
+          if (!campaignCoupon) {
+            campaignCoupon = await prisma.coupon.create({
+              data: {
+                storeId,
+                code: expectedCampaignCode,
+                name: campaign.name,
+                discountType: campaign.discountType,
+                discountValue: campaign.discountValue,
+                startsAt: campaign.startsAt ?? new Date(),
+                endsAt: campaign.endsAt,
+                status: 'ACTIVE',
+              },
+              select: { id: true },
+            });
+          }
+          targetCouponId = campaignCoupon.id;
+        }
+      } catch (err) {
+        // Fallback
+      }
+
       let isDefaultCouponId = false;
       try {
         const coupon = await prisma.coupon.findFirst({
-          where: { id: couponId, deletedAt: null },
+          where: { id: targetCouponId, deletedAt: null },
           select: { code: true },
         });
         if (coupon) {
@@ -9832,7 +9875,7 @@ export class NightlifeDataService {
       }
 
       const couponWhere: Prisma.CouponWhereInput = {
-        id: couponId,
+        id: targetCouponId,
         status: 'ACTIVE',
         deletedAt: null,
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],

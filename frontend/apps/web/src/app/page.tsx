@@ -531,7 +531,7 @@ function mapCampaignToHomeItem(
       .filter(Boolean)
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
-    href: `/stores/${campaign.targetStore?.slug ?? ""}`,
+    href: `/stores/${campaign.targetStore?.slug ?? ""}?couponId=${campaign.id}`,
   };
 }
 
