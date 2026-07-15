@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfigProvider, DatePicker } from "antd";
+import { ConfigProvider, DatePicker, Select } from "antd";
 import enUS from "antd/locale/en_US";
 import jaJP from "antd/locale/ja_JP";
 import koKR from "antd/locale/ko_KR";
@@ -11,7 +11,6 @@ import "dayjs/locale/ja";
 import "dayjs/locale/ko";
 import "dayjs/locale/vi";
 import "dayjs/locale/zh-cn";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
@@ -64,7 +63,7 @@ const dayjsLocaleByLanguage: Record<LanguageCode, string> = {
   zh: "zh-cn",
 };
 
-const billDatePickerTheme = {
+const billPickerTheme = {
   token: {
     colorPrimary: "var(--vy-gold)",
     colorBgContainer: "var(--vy-surface-3)",
@@ -82,6 +81,13 @@ const billDatePickerTheme = {
       activeBorderColor: "var(--vy-gold)",
       hoverBorderColor: "var(--vy-border-gold-40)",
       cellActiveWithRangeBg: "var(--vy-gold-soft-bg)",
+    },
+    Select: {
+      activeBorderColor: "var(--vy-gold)",
+      hoverBorderColor: "var(--vy-border-gold-40)",
+      optionActiveBg: "var(--vy-gold-soft-bg)",
+      optionSelectedBg: "var(--vy-gold-soft-bg)",
+      optionSelectedColor: "var(--vy-gold-hi)",
     },
   },
 } as const;
@@ -151,37 +157,6 @@ const bookingTitle = (booking: BookingRecord) => {
   const storeName = booking.store?.name ?? "NightLife";
   if (!booking.cast) return storeName;
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
-};
-
-const couponIssueQrPayload = (booking: BookingRecord) => {
-  const issue = booking.couponIssue;
-  if (!issue) return "";
-
-  const metadataPayload =
-    issue.metadata && typeof issue.metadata.qrPayload === "string"
-      ? issue.metadata.qrPayload.trim()
-      : "";
-
-  return issue.qrPayload?.trim() || metadataPayload || issue.code?.trim() || "";
-};
-
-const bookingQrPayload = (booking: BookingRecord) =>
-  couponIssueQrPayload(booking) ||
-  [
-    "NLBOOKING",
-    booking.id,
-    booking.bookingCode,
-    booking.store?.slug ?? "nightlife",
-    booking.scheduledAt,
-  ].join("|");
-
-const bookingQrImageUrl = (booking: BookingRecord) => {
-  const issueQrImage = booking.couponIssue?.qrImageDataUrl || booking.couponIssue?.qrImageUrl;
-  if (issueQrImage) return issueQrImage;
-
-  return `https://api.qrserver.com/v1/create-qr-code/?size=168x168&margin=10&data=${encodeURIComponent(
-    bookingQrPayload(booking),
-  )}`;
 };
 
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
@@ -282,6 +257,48 @@ const couponIssueOptionLabel = (issue: CouponIssue) => {
   const storeName = issue.coupon.store?.name ?? "Coupon";
   const status = issue.statusLabel ?? issue.status;
   return `${issue.coupon.name} - ${storeName} - ${status}`;
+};
+
+type CouponDiscountSource = {
+  discountType?: "PERCENT" | "FIXED_AMOUNT" | string;
+  discountValue?: number;
+  maxDiscountVnd?: number | null;
+  minSpendVnd?: number | null;
+};
+
+const couponDiscountLabel = (
+  coupon: CouponDiscountSource | null | undefined,
+  issue: CouponIssue | null | undefined,
+  formatMoney: (value: number) => string,
+) => {
+  const snapshot = issue?.discountRuleSnapshot;
+  const discountType = snapshot?.type ?? coupon?.discountType;
+  const discountValue =
+    snapshot?.value ??
+    snapshot?.sourceValue ??
+    coupon?.discountValue ??
+    snapshot?.discountPercent ??
+    issue?.discountPercent ??
+    null;
+  const maxDiscountVnd = snapshot?.maxDiscountVnd ?? coupon?.maxDiscountVnd ?? null;
+  const minSpendVnd = snapshot?.minSpendVnd ?? coupon?.minSpendVnd ?? null;
+
+  if (!discountType && !discountValue) return "";
+
+  const mainLabel =
+    discountType === "FIXED_AMOUNT"
+      ? `-${formatMoney(Number(discountValue ?? 0))}`
+      : `-${Number(discountValue ?? 0)}%`;
+  const detailParts = [
+    typeof maxDiscountVnd === "number" && maxDiscountVnd > 0
+      ? `tối đa ${formatMoney(maxDiscountVnd)}`
+      : "",
+    typeof minSpendVnd === "number" && minSpendVnd > 0
+      ? `từ ${formatMoney(minSpendVnd)}`
+      : "",
+  ].filter(Boolean);
+
+  return detailParts.length ? `${mainLabel} (${detailParts.join(", ")})` : mainLabel;
 };
 
 const bookedStoreOptionsFromBookings = (bookings: BookingRecord[]) => {
@@ -545,6 +562,15 @@ export default function Page() {
 
     return stores.find((storeItem) => storeItem.slug === storeSlug) ?? null;
   }, [selectedBooking, selectedCouponIssue, storeSlug, stores]);
+  const linkedCouponDiscount = useMemo(
+    () =>
+      couponDiscountLabel(
+        selectedBooking?.coupon ?? selectedCouponIssue?.coupon,
+        selectedCouponIssue,
+        formatMoney,
+      ),
+    [formatMoney, selectedBooking?.coupon, selectedCouponIssue],
+  );
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
   const visibleSubmittedBills = useMemo(() => {
@@ -689,7 +715,8 @@ export default function Page() {
   };
 
   return (
-    <main className="nl-bill-page" style={{ background: colors.bg, color: colors.text }}>
+    <ConfigProvider locale={antdLocaleByLanguage[activeLanguage]} theme={billPickerTheme}>
+      <main className="nl-bill-page" style={{ background: colors.bg, color: colors.text }}>
       <section className="nl-bill-shell">
         <Link
           href="/tai-khoan"
@@ -717,23 +744,24 @@ export default function Page() {
           <form className="nl-bill-form" noValidate onSubmit={handleSubmit}>
             <div className="nl-field">
               <label htmlFor="bill-store">Quán / cơ sở *</label>
-              <select
+              <Select
+                className="nl-bill-ant-select"
+                disabled={
+                  isLoadingOptions || !stores.length || Boolean(selectedBooking || selectedCouponIssue)
+                }
                 id="bill-store"
+                onChange={(value) => setStoreSlug(value)}
+                options={
+                  stores.length
+                    ? stores.map((storeItem) => ({
+                        label: `${storeItem.name}${storeItem.district ? ` - ${storeItem.district}` : ""}`,
+                        value: storeItem.slug,
+                      }))
+                    : [{ label: "Chưa có quán đã đặt", value: "" }]
+                }
+                popupClassName="nl-bill-select-popup"
                 value={storeSlug}
-                onChange={(event) => setStoreSlug(event.target.value)}
-                disabled={isLoadingOptions || Boolean(selectedBooking || selectedCouponIssue)}
-              >
-                {stores.length ? (
-                  stores.map((storeItem) => (
-                    <option key={storeItem.id} value={storeItem.slug}>
-                      {storeItem.name}
-                      {storeItem.district ? ` - ${storeItem.district}` : ""}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">Chưa có quán đã đặt</option>
-                )}
-              </select>
+              />
               {!isLoadingOptions && !stores.length ? (
                 <span className="nl-field-help">
                   Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.
@@ -744,33 +772,28 @@ export default function Page() {
             {bookings.length ? (
               <div className="nl-field">
                 <label htmlFor="bill-booking">Liên kết booking</label>
-                <select
+                <Select
+                  className="nl-bill-ant-select"
                   id="bill-booking"
+                  onChange={handleBookingChange}
+                  options={[
+                    { label: "Không liên kết booking", value: "" },
+                    ...bookings.map((booking) => ({
+                      label: `${booking.store?.name ?? "Booking"} - ${formatDateTime(
+                        booking.scheduledAt,
+                        activeLanguage,
+                      )}`,
+                      value: booking.id,
+                    })),
+                  ]}
+                  popupClassName="nl-bill-select-popup"
                   value={bookingId}
-                  onChange={(event) => handleBookingChange(event.target.value)}
-                >
-                  <option value="">Không liên kết booking</option>
-                  {bookings.map((booking) => (
-                    <option key={booking.id} value={booking.id}>
-                      {booking.store?.name ?? "Booking"} -{" "}
-                      {formatDateTime(booking.scheduledAt, activeLanguage)}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             ) : null}
 
             {selectedBooking ? (
               <section className="nl-linked-booking" aria-label="Booking đang gắn với hóa đơn">
-                <div className="nl-linked-qr">
-                  <Image
-                    src={bookingQrImageUrl(selectedBooking)}
-                    alt={`QR booking ${selectedBooking.bookingCode}`}
-                    width={132}
-                    height={132}
-                    unoptimized
-                  />
-                </div>
                 <div className="nl-linked-copy">
                   <span>Đơn hàng đang liên kết</span>
                   <strong>{bookingTitle(selectedBooking)}</strong>
@@ -795,6 +818,12 @@ export default function Page() {
                           "QR đặt chỗ"}
                       </dd>
                     </div>
+                    {linkedCouponDiscount ? (
+                      <div>
+                        <dt>Mức giảm</dt>
+                        <dd>{linkedCouponDiscount}</dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </div>
               </section>
@@ -803,18 +832,20 @@ export default function Page() {
             {!selectedBooking && couponIssues.length ? (
               <div className="nl-field">
                 <label htmlFor="bill-coupon-issue">Coupon link</label>
-                <select
+                <Select
+                  className="nl-bill-ant-select"
                   id="bill-coupon-issue"
+                  onChange={handleCouponIssueChange}
+                  options={[
+                    { label: "Không liên kết coupon", value: "" },
+                    ...couponIssues.map((issue) => ({
+                      label: couponIssueOptionLabel(issue),
+                      value: issue.id,
+                    })),
+                  ]}
+                  popupClassName="nl-bill-select-popup"
                   value={couponIssueId}
-                  onChange={(event) => handleCouponIssueChange(event.target.value)}
-                >
-                  <option value="">Khong lien ket coupon</option>
-                  {couponIssues.map((issue) => (
-                    <option key={issue.id} value={issue.id}>
-                      {couponIssueOptionLabel(issue)}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             ) : null}
 
@@ -832,37 +863,32 @@ export default function Page() {
 
               <div className="nl-field">
                 <label htmlFor="bill-used-at">Thời gian sử dụng *</label>
-                <ConfigProvider
-                  locale={antdLocaleByLanguage[activeLanguage]}
-                  theme={billDatePickerTheme}
-                >
-                  <DatePicker
-                    allowClear={false}
-                    className="nl-bill-ant-picker"
-                    disabledDate={(date) =>
-                      date
-                        ? date.isAfter(dayjs(), "day") ||
-                          date.isBefore(dayjs().subtract(10, "day"), "day")
-                        : false
+                <DatePicker
+                  allowClear={false}
+                  className="nl-bill-ant-picker"
+                  disabledDate={(date) =>
+                    date
+                      ? date.isAfter(dayjs(), "day") ||
+                        date.isBefore(dayjs().subtract(10, "day"), "day")
+                      : false
+                  }
+                  format="DD/MM/YYYY HH:mm"
+                  getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                  id="bill-used-at"
+                  inputReadOnly
+                  onChange={(value) => {
+                    if (!value) {
+                      setUsedAt("");
+                      return;
                     }
-                    format="DD/MM/YYYY HH:mm"
-                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
-                    id="bill-used-at"
-                    inputReadOnly
-                    onChange={(value) => {
-                      if (!value) {
-                        setUsedAt("");
-                        return;
-                      }
 
-                      setUsedAt(value.format("YYYY-MM-DDTHH:mm"));
-                    }}
-                    popupClassName="nl-bill-ant-popup"
-                    showNow
-                    showTime={{ format: "HH:mm", minuteStep: 5 }}
-                    value={usedAtPickerValue}
-                  />
-                </ConfigProvider>
+                    setUsedAt(value.format("YYYY-MM-DDTHH:mm"));
+                  }}
+                  popupClassName="nl-bill-ant-popup"
+                  showNow
+                  showTime={{ format: "HH:mm", minuteStep: 5 }}
+                  value={usedAtPickerValue}
+                />
               </div>
             </div>
 
@@ -964,21 +990,15 @@ export default function Page() {
                 {selectedBooking?.coupon?.name ??
                   selectedBooking?.couponIssue?.code ??
                   selectedCouponIssue?.coupon.name ??
-                  "Khong lien ket"}
+                  "Không liên kết"}
               </strong>
             </div>
-            <div className="nl-side-row">
-              <span>Tổng tiền</span>
-              <strong>{amount > 0 ? formatMoney(amount) : "Chưa nhập"}</strong>
-            </div>
-            <div className="nl-side-row">
-              <span>Thời gian sử dụng</span>
-              <strong>
-                {isUsedAtInvalid
-                  ? emptyDateLabel(activeLanguage)
-                  : formatDateTime(usedAtDate.toISOString(), activeLanguage)}
-              </strong>
-            </div>
+            {linkedCouponDiscount ? (
+              <div className="nl-side-row">
+                <span>Mức giảm</span>
+                <strong>{linkedCouponDiscount}</strong>
+              </div>
+            ) : null}
             <div className="nl-side-row">
               <span>Trạng thái deadline</span>
               <strong
@@ -1150,8 +1170,7 @@ export default function Page() {
           min-width: 0;
         }
 
-        input,
-        select {
+        input {
           width: 100%;
           min-width: 0;
           max-width: 100%;
@@ -1167,27 +1186,12 @@ export default function Page() {
           text-overflow: ellipsis;
         }
 
-        select option {
-          background: var(--vy-surface);
-          color: ${colors.text};
-        }
-
-        :global(html.vy-light) select option {
-          background: #fffaf0;
-          color: #261b10;
-        }
-
-        input:focus,
-        select:focus {
+        input:focus {
           border-color: ${colors.borderStrong};
           box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
         }
 
         .nl-linked-booking {
-          display: grid;
-          grid-template-columns: 132px minmax(0, 1fr);
-          gap: 14px;
-          align-items: center;
           margin-top: 14px;
           border: 1px solid rgba(212, 178, 106, 0.26);
           border-radius: 8px;
@@ -1195,24 +1199,6 @@ export default function Page() {
             linear-gradient(135deg, rgba(212, 178, 106, 0.13), rgba(255, 255, 255, 0.035)),
             ${colors.panelStrong};
           padding: 12px;
-        }
-
-        .nl-linked-qr {
-          width: 132px;
-          height: 132px;
-          border: 1px solid ${colors.borderStrong};
-          border-radius: 8px;
-          background: #fff;
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-        }
-
-        .nl-linked-qr img {
-          display: block;
-          width: 118px;
-          height: 118px;
-          object-fit: contain;
         }
 
         .nl-linked-copy {
@@ -1260,7 +1246,71 @@ export default function Page() {
           overflow-wrap: anywhere;
         }
 
-        .nl-bill-ant-picker.ant-picker {
+        :global(.nl-bill-ant-select.ant-select) {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        :global(.nl-bill-ant-select.ant-select .ant-select-selector) {
+          min-height: 48px;
+          border: 1px solid ${colors.border};
+          border-radius: 8px;
+          background: ${colors.panelStrong};
+          color: ${colors.text};
+          padding: 0 12px;
+          box-shadow: none;
+        }
+
+        :global(.nl-bill-ant-select.ant-select:hover .ant-select-selector),
+        :global(.nl-bill-ant-select.ant-select-focused .ant-select-selector) {
+          border-color: ${colors.borderStrong};
+          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+        }
+
+        :global(.nl-bill-ant-select.ant-select-disabled .ant-select-selector) {
+          opacity: 0.68;
+        }
+
+        :global(.nl-bill-ant-select .ant-select-selection-item),
+        :global(.nl-bill-ant-select .ant-select-selection-placeholder) {
+          min-width: 0;
+          color: ${colors.text};
+          font-size: 14px;
+          font-weight: 850;
+          line-height: 46px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        :global(.nl-bill-ant-select .ant-select-selection-placeholder) {
+          color: ${colors.dim};
+        }
+
+        :global(.nl-bill-ant-select .ant-select-arrow),
+        :global(.nl-bill-ant-select .ant-select-clear) {
+          color: ${colors.goldPale};
+        }
+
+        :global(.nl-bill-select-popup) {
+          border: 1px solid var(--vy-border-gold-22);
+          border-radius: 8px;
+          background: var(--vy-surface);
+          box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+        }
+
+        :global(.nl-bill-select-popup .ant-select-item) {
+          color: var(--vy-text-2);
+          font-weight: 760;
+        }
+
+        :global(.nl-bill-select-popup .ant-select-item-option-active),
+        :global(.nl-bill-select-popup .ant-select-item-option-selected) {
+          background: var(--vy-gold-soft-bg);
+          color: var(--vy-gold-hi);
+        }
+
+        :global(.nl-bill-ant-picker.ant-picker) {
           width: 100%;
           min-height: 48px;
           border: 1px solid ${colors.border};
@@ -1271,13 +1321,13 @@ export default function Page() {
           box-shadow: none;
         }
 
-        .nl-bill-ant-picker.ant-picker:hover,
-        .nl-bill-ant-picker.ant-picker-focused {
+        :global(.nl-bill-ant-picker.ant-picker:hover),
+        :global(.nl-bill-ant-picker.ant-picker-focused) {
           border-color: ${colors.borderStrong};
           box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
         }
 
-        .nl-bill-ant-picker .ant-picker-input > input {
+        :global(.nl-bill-ant-picker .ant-picker-input > input) {
           min-height: 46px;
           border: 0;
           background: transparent;
@@ -1286,56 +1336,56 @@ export default function Page() {
           font-weight: 900;
         }
 
-        .nl-bill-ant-picker .ant-picker-input > input::placeholder {
+        :global(.nl-bill-ant-picker .ant-picker-input > input::placeholder) {
           color: ${colors.dim};
         }
 
-        .nl-bill-ant-picker .ant-picker-suffix {
+        :global(.nl-bill-ant-picker .ant-picker-suffix) {
           color: ${colors.goldPale};
         }
 
-        .nl-bill-ant-popup {
+        :global(.nl-bill-ant-popup) {
           color: var(--vy-text);
         }
 
-        .nl-bill-ant-popup .ant-picker-panel-container {
+        :global(.nl-bill-ant-popup .ant-picker-panel-container) {
           border: 1px solid var(--vy-border-gold-22);
           background: var(--vy-surface);
           box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
         }
 
-        .nl-bill-ant-popup .ant-picker-panel,
-        .nl-bill-ant-popup .ant-picker-time-panel-column {
+        :global(.nl-bill-ant-popup .ant-picker-panel),
+        :global(.nl-bill-ant-popup .ant-picker-time-panel-column) {
           background: var(--vy-surface);
         }
 
-        .nl-bill-ant-popup .ant-picker-header,
-        .nl-bill-ant-popup .ant-picker-footer,
-        .nl-bill-ant-popup .ant-picker-time-panel {
+        :global(.nl-bill-ant-popup .ant-picker-header),
+        :global(.nl-bill-ant-popup .ant-picker-footer),
+        :global(.nl-bill-ant-popup .ant-picker-time-panel) {
           border-color: var(--vy-border);
         }
 
-        .nl-bill-ant-popup .ant-picker-content th,
-        .nl-bill-ant-popup .ant-picker-cell,
-        .nl-bill-ant-popup .ant-picker-header button,
-        .nl-bill-ant-popup .ant-picker-time-panel-cell-inner {
+        :global(.nl-bill-ant-popup .ant-picker-content th),
+        :global(.nl-bill-ant-popup .ant-picker-cell),
+        :global(.nl-bill-ant-popup .ant-picker-header button),
+        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-inner) {
           color: var(--vy-text-2);
         }
 
-        .nl-bill-ant-popup .ant-picker-cell-in-view,
-        .nl-bill-ant-popup .ant-picker-header-view,
-        .nl-bill-ant-popup .ant-picker-now-btn {
+        :global(.nl-bill-ant-popup .ant-picker-cell-in-view),
+        :global(.nl-bill-ant-popup .ant-picker-header-view),
+        :global(.nl-bill-ant-popup .ant-picker-now-btn) {
           color: var(--vy-text);
         }
 
-        .nl-bill-ant-popup .ant-picker-cell-disabled::before,
-        .nl-bill-ant-popup .ant-picker-time-panel-cell-disabled .ant-picker-time-panel-cell-inner {
+        :global(.nl-bill-ant-popup .ant-picker-cell-disabled::before),
+        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-disabled .ant-picker-time-panel-cell-inner) {
           background: color-mix(in srgb, var(--vy-surface-2) 70%, transparent);
         }
 
-        .nl-bill-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner,
-        .nl-bill-ant-popup .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner,
-        .nl-bill-ant-popup .ant-btn-primary {
+        :global(.nl-bill-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner),
+        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner),
+        :global(.nl-bill-ant-popup .ant-btn-primary) {
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
           color: var(--vy-on-gold);
         }
@@ -1606,15 +1656,6 @@ export default function Page() {
             grid-template-columns: 1fr;
           }
 
-          .nl-linked-booking {
-            grid-template-columns: 1fr;
-          }
-
-          .nl-linked-qr {
-            width: 118px;
-            height: 118px;
-          }
-
           .nl-linked-copy dl {
             grid-template-columns: 1fr;
           }
@@ -1625,6 +1666,7 @@ export default function Page() {
           }
         }
       `}</style>
-    </main>
+      </main>
+    </ConfigProvider>
   );
 }

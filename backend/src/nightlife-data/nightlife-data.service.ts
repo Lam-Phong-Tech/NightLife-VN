@@ -892,6 +892,10 @@ type CouponSummary = {
   id: string;
   code: string;
   name: string;
+  discountType?: string;
+  discountValue?: number;
+  maxDiscountVnd?: number | null;
+  minSpendVnd?: number | null;
 };
 
 @Injectable()
@@ -4890,7 +4894,17 @@ export class NightlifeDataService {
             },
           },
         },
-        coupon: { select: { id: true, code: true, name: true } },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+          },
+        },
         couponIssue: { select: { id: true, code: true, status: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
@@ -12179,7 +12193,17 @@ export class NightlifeDataService {
       guest: {
         select: { id: true, displayName: true, phone: true, email: true },
       },
-      coupon: { select: { id: true, code: true, name: true } },
+      coupon: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+        },
+      },
       couponIssue: { select: { id: true, code: true, status: true } },
     } satisfies Prisma.BookingSelect;
   }
