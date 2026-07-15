@@ -185,6 +185,7 @@ describe('NightlifeDataService', () => {
       contactName: 'Owner',
       contactPhone: '+84901234567',
       contactEmail: 'owner@example.com',
+      passwordHash: 'hashed-password-123',
       note: 'Please call after 6PM',
       storeDescription: 'Live DJ and private table service',
       storeAddress: '12 Dang Thai Mai',
@@ -5741,15 +5742,12 @@ describe('NightlifeDataService', () => {
         publicState: 'PUBLIC',
       }),
     });
-    expect(passwordService.hash).toHaveBeenCalledWith(
-      expect.stringMatching(/^Partner-/),
-    );
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           email: 'owner@example.com',
           role: 'PARTNER',
-          passwordHash: 'scrypt:test:hash',
+          passwordHash: 'hashed-password-123',
         }),
       }),
     );
