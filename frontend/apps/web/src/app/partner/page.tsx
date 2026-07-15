@@ -4825,7 +4825,7 @@ export default function PartnerPage() {
           </div>
         ) : null}
         {listingDraft.menuGroups.map((group, groupIndex) => (
-          <div key={`${group.name}-${groupIndex}`} className="partner-menu-group-card">
+          <div key={`menu-group-${groupIndex}`} className="partner-menu-group-card">
             <div className="partner-menu-group-head">
               <FormField label="Tên nhóm">
                 <input
@@ -4848,7 +4848,7 @@ export default function PartnerPage() {
               </div>
             </div>
             {group.items.map((item, itemIndex) => (
-              <div key={`${item.name}-${itemIndex}`} className="partner-menu-item-card">
+              <div key={`menu-item-${groupIndex}-${itemIndex}`} className="partner-menu-item-card">
                 <FormField label="Tên món / dịch vụ">
                   <input
                     value={item.name}
