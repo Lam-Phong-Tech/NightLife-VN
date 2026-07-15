@@ -82,11 +82,7 @@ export default function AdminLoginPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>Đăng nhập quản trị</h2>
-              <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 600, letterSpacing: '1.8px', color: colors.muted }}>
-                ADMIN SIGN IN
-              </div>
             </div>
-            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
           </div>
 
           <form
@@ -216,7 +212,7 @@ export default function AdminLoginPage() {
           </form>
 
           <div style={{ marginTop: '24px', color: colors.muted, textAlign: 'center', fontSize: '13px' }}>
-            Khu vực dành riêng cho quản trị viên NightLife.
+            Khu vực dành riêng cho quản trị viên Vietyoru.
           </div>
         </section>
       </div>
