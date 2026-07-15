@@ -580,6 +580,21 @@ export function SupportChatWidget({
   }, [isOpen]);
 
   useEffect(() => {
+    const handleOpenSupportChat = (event: Event) => {
+      const customEvent = event as CustomEvent<{ draft?: string }>;
+      onOpenChange(true);
+      onOpen?.();
+      if (customEvent.detail?.draft) {
+        setDraft(customEvent.detail.draft);
+      }
+    };
+    window.addEventListener("nightlife:support-chat:open", handleOpenSupportChat);
+    return () => {
+      window.removeEventListener("nightlife:support-chat:open", handleOpenSupportChat);
+    };
+  }, [onOpenChange, onOpen]);
+
+  useEffect(() => {
     onOpenChange(false);
   }, [pathname, onOpenChange]);
 

@@ -26,7 +26,6 @@ import {
   mergeBookingHistories,
   rememberLastBooking,
   sortBookingHistories,
-  type BookingChatMessage,
   type BookingRecord,
   type BookingStatusGroup,
 } from "@/lib/api/bookings";
@@ -63,8 +62,6 @@ const missingGuestCancelIdentityMessage =
   "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail để hủy hoặc đổi thông tin.";
 const missingGuestRescheduleIdentityMessage =
   "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail để đổi lịch.";
-const missingGuestContactIdentityMessage =
-  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail.";
 const maxRescheduleReasonLength = 300;
 const minRescheduleReasonLength = 5;
 const reasonContentPattern = /[\p{L}\p{N}]/u;
@@ -313,11 +310,6 @@ export default function Page() {
   const [rescheduleError, setRescheduleError] = useState("");
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [isRescheduleHoursLoading, setRescheduleHoursLoading] = useState(false);
-  const [chatBooking, setChatBooking] = useState<BookingRecord | null>(null);
-  const [chatMessages, setChatMessages] = useState<BookingChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatSending, setChatSending] = useState(false);
   const [message, setMessage] = useState("");
   const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
 
@@ -388,27 +380,7 @@ export default function Page() {
     };
   }, [router]);
 
-  useEffect(() => {
-    if (!socket || !chatBooking) {
-      return;
-    }
 
-    socket.emit("join_room", { bookingId: chatBooking.id });
-    const onMessage = (nextMessage: BookingChatMessage) => {
-      if (nextMessage.bookingId !== chatBooking.id) {
-        return;
-      }
-
-      setChatMessages((current) =>
-        current.some((item) => item.id === nextMessage.id) ? current : [...current, nextMessage],
-      );
-    };
-    socket.on("booking_chat_message_created", onMessage);
-
-    return () => {
-      socket.off("booking_chat_message_created", onMessage);
-    };
-  }, [chatBooking, socket]);
 
   useEffect(() => {
     if (!socket || !memberUserId) {
@@ -774,78 +746,30 @@ export default function Page() {
     }
   };
 
-  const openBookingChat = async (booking: BookingRecord) => {
-    const useMemberApi = shouldUseMemberBookingApi(booking);
-    const guestPhone = booking.guest?.phone?.trim() ?? "";
-    if (!useMemberApi && !guestPhone) {
-      setMessage(missingGuestContactIdentityMessage);
-      return;
+  const openBookingChat = (booking: BookingRecord) => {
+    let draftText = "";
+    switch (activeLanguage) {
+      case "vi":
+        draftText = `Tôi cần hỗ trợ về booking ${booking.bookingCode}`;
+        break;
+      case "ja":
+        draftText = `予約 ${booking.bookingCode} についてサポートが必要です`;
+        break;
+      case "ko":
+        draftText = `예약 ${booking.bookingCode}에 대한 지원이 필요합니다`;
+        break;
+      case "zh":
+        draftText = `我需要关于订单 ${booking.bookingCode} 的支持`;
+        break;
+      default:
+        draftText = `I need support with booking ${booking.bookingCode}`;
+        break;
     }
-
-    setChatBooking(booking);
-    setChatMessages([]);
-    setChatInput("");
-    setChatLoading(true);
-    setMessage("");
-
-    try {
-      const messages = useMemberApi
-        ? await bookingApi.listMemberBookingMessages(booking.id)
-        : await bookingApi.listGuestBookingMessages(booking.id, guestPhone);
-      setChatMessages(messages);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không tải được chat booking.");
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const closeBookingChat = () => {
-    if (chatSending) {
-      return;
-    }
-
-    setChatBooking(null);
-    setChatMessages([]);
-    setChatInput("");
-  };
-
-  const submitChatMessage = async () => {
-    const booking = chatBooking;
-    const body = chatInput.trim();
-    if (!booking || !body) {
-      return;
-    }
-
-    const guestPhone = booking.guest?.phone?.trim() ?? "";
-    const useMemberApi = shouldUseMemberBookingApi(booking);
-    if (!useMemberApi && !guestPhone) {
-      setMessage(missingGuestContactIdentityMessage);
-      return;
-    }
-
-    setChatSending(true);
-
-    try {
-      const sentMessage = useMemberApi
-        ? await bookingApi.sendMemberBookingMessage(booking.id, {
-            message: body,
-            topic: "GENERAL",
-          })
-        : await bookingApi.sendGuestBookingMessage(booking.id, {
-            phone: guestPhone,
-            message: body,
-            topic: "GENERAL",
-          });
-      setChatMessages((current) =>
-        current.some((item) => item.id === sentMessage.id) ? current : [...current, sentMessage],
-      );
-      setChatInput("");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không gửi được tin nhắn.");
-    } finally {
-      setChatSending(false);
-    }
+    window.dispatchEvent(
+      new CustomEvent("nightlife:support-chat:open", {
+        detail: { draft: draftText },
+      })
+    );
   };
 
   return (
@@ -1116,69 +1040,7 @@ export default function Page() {
           </div>
         </div>
       ) : null}
-      {chatBooking ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="booking-chat-title"
-          className={styles.dialogOverlay}
-        >
-          <div className={styles.dialogPanel}>
-            <h2 id="booking-chat-title">Chat với Admin</h2>
-            <p>
-              {bookingTitle(chatBooking)} · {chatBooking.bookingCode}
-            </p>
-            <div className={styles.chatList}>
-              {chatLoading ? <div className={styles.chatEmpty}>Đang tải tin nhắn...</div> : null}
-              {!chatLoading && chatMessages.length === 0 ? (
-                <div className={styles.chatEmpty}>Chưa có tin nhắn nào.</div>
-              ) : null}
-              {chatMessages.map((item) => {
-                const fromCustomer = item.senderType === "GUEST" || item.senderType === "MEMBER";
-                return (
-                  <div
-                    key={item.id}
-                    className={`${styles.chatBubble} ${fromCustomer ? styles.chatBubbleMine : ""}`}
-                  >
-                    <span>{item.senderType}</span>
-                    <p>{item.body}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <label className={styles.dialogField}>
-              <span>Tin nhắn</span>
-              <textarea
-                value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                placeholder="Nhập nội dung cần đổi/hủy booking..."
-                maxLength={800}
-                rows={3}
-                autoComplete="off"
-                className={styles.dialogTextArea}
-              />
-            </label>
-            <div className={styles.dialogActions}>
-              <button
-                type="button"
-                className={styles.ghostCta}
-                onClick={closeBookingChat}
-                disabled={chatSending}
-              >
-                Đóng
-              </button>
-              <button
-                type="button"
-                className={`${styles.primaryCta} ${chatSending ? styles.disabledCta : ""}`}
-                onClick={submitChatMessage}
-                disabled={chatSending || !chatInput.trim()}
-              >
-                {chatSending ? "Đang gửi" : "Gửi tin"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+
     </main>
   );
 }
