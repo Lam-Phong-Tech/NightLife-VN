@@ -533,6 +533,11 @@ const normalizePartnerScanPayload = (
     // Keep falling through to manual coupon code mode.
   }
 
+  // SHA-256 hash from admin panel QR (legacy) – route through POST body endpoint
+  if (/^[0-9a-f]{64}$/i.test(raw)) {
+    return { kind: 'signed', payload: raw, raw, label: 'QR coupon (hash)' };
+  }
+
   return { kind: 'coupon', payload: raw, raw, label: 'mã coupon' };
 };
 

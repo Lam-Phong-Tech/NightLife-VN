@@ -4248,6 +4248,33 @@ export class NightlifeDataService {
     dto: ScanCouponIssueDto,
     user: AuthenticatedUser,
   ) {
+    const cleanPayload = (dto.payload ?? '').trim();
+
+    // Handle raw SHA-256 qrPayloadHash (legacy admin panel QR codes)
+    if (/^[0-9a-f]{64}$/i.test(cleanPayload)) {
+      const standardIssue = await this.prisma.couponIssue.findUnique({
+        where: { qrPayloadHash: cleanPayload },
+      });
+      if (standardIssue) {
+        return this.scanCouponIssueByUnique({ id: standardIssue.id }, user, {
+          source: 'QR_PAYLOAD_HASH',
+          offline: Boolean(dto.offline),
+        });
+      }
+
+      const adminIssue = await this.prisma.adminCouponIssue.findUnique({
+        where: { qrPayloadHash: cleanPayload },
+      });
+      if (adminIssue) {
+        return this.scanAdminCouponIssueByUnique({ id: adminIssue.id }, user, {
+          source: 'QR_PAYLOAD_HASH',
+          offline: Boolean(dto.offline),
+        });
+      }
+
+      throw new NotFoundException('Coupon issue not found');
+    }
+
     const token = this.resolveCouponIssueTokenFromQrPayload(dto.payload);
     if (token.type === 'admin_coupon_issue') {
       return this.scanAdminCouponIssueByUnique({ id: token.issueId }, user, {
