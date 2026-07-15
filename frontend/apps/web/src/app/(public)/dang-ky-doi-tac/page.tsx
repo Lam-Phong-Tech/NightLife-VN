@@ -318,6 +318,7 @@ function FormControl({
   wide,
   tall,
   type = 'text',
+  autoComplete,
 }: {
   label: string;
   value: string;
@@ -327,6 +328,7 @@ function FormControl({
   wide?: boolean;
   tall?: boolean;
   type?: string;
+  autoComplete?: string;
 }) {
   const { theme, colors } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -334,7 +336,7 @@ function FormControl({
   const sharedProps = {
     id,
     value,
-    autoComplete: 'off',
+    autoComplete: autoComplete || 'off',
     autoCorrect: 'off',
     autoCapitalize: 'none',
     spellCheck: false,
@@ -1068,6 +1070,7 @@ function PartnerPageContent({
                   placeholder="Nhập email của bạn"
                   type="email"
                   wide={!isMobile}
+                  autoComplete="new-password"
                 />
                 <FormControl
                   label="Mật khẩu đăng ký"
@@ -1077,6 +1080,7 @@ function PartnerPageContent({
                   type="password"
                   required
                   wide={!isMobile}
+                  autoComplete="new-password"
                 />
 
                 <FormGroupTitle title="Bổ sung" caption="Menu, cast và album có thể cập nhật chi tiết sau khi được duyệt." />
