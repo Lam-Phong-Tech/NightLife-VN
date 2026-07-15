@@ -489,19 +489,17 @@ export default function AdminPartnersPage() {
               
               return (
                 <div style={{ marginBottom: 30 }}>
-                  <div style={{ marginTop: 16 }}>
-                    <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>Ảnh bìa</div>
-                    <div style={{ aspectRatio: '21/9', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', position: 'relative', overflow: 'hidden' }}>
-                      {cover ? (
+                  {cover && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>Ảnh bìa</div>
+                      <div style={{ aspectRatio: '21/9', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', position: 'relative', overflow: 'hidden' }}>
                         <a href={cover} target="_blank" rel="noreferrer">
                           <img src={cover} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </a>
-                      ) : (
-                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: colors.muted, fontSize: 13 }}>Chưa có ảnh bìa</span>
-                      )}
-                      <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.8, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: 5 }}>BÌA</span>
+                        <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.8, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: 5 }}>BÌA</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   {album.length > 0 && (
                     <div style={{ marginTop: 16 }}>
@@ -556,12 +554,7 @@ export default function AdminPartnersPage() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: 16, display: 'flex', gap: 9, padding: '11px 14px', background: 'rgba(111,159,216,.05)', border: '1px solid rgba(111,159,216,.18)', borderRadius: 11 }}>
-                    <Info size={15} color="#8fb6e4" style={{ flex: 'none', marginTop: 1 }} />
-                    <span style={{ fontSize: 11, color: '#a9c4e6', lineHeight: 1.5 }}>
-                      MVP không yêu cầu giấy phép KD. Duyệt → Admin nhập thông tin quán (tạo hồ sơ nháp) rồi bổ sung giá/giờ/ảnh.
-                    </span>
-                  </div>
+
                 </div>
               );
             })()}
@@ -584,24 +577,7 @@ export default function AdminPartnersPage() {
               </Section>
             ) : null}
 
-            <div
-              style={{
-                padding: 16,
-                borderRadius: 12,
-                border: "1px solid rgba(96,165,250,0.3)",
-                background: "rgba(96,165,250,0.05)",
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                marginBottom: selectedRequest.status === "PENDING_REVIEW" ? 30 : 0,
-              }}
-            >
-              <Info size={16} color={colors.blue} />
-              <div style={{ fontSize: 13, color: colors.text2 }}>
-                Dữ liệu đang đọc từ hồ sơ đối tác thật. Khi duyệt, backend sẽ public store/cast/media/menu nháp và tạo tài
-                khoản đối tác nếu đủ email liên hệ.
-              </div>
-            </div>
+
 
             {selectedRequest.status === "PENDING_REVIEW" ? (
               <div style={{ display: "grid", gap: 14 }}>
