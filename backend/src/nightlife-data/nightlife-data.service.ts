@@ -6138,7 +6138,23 @@ export class NightlifeDataService {
         paidVnd: dto.totalVnd,
         usedAt,
         submittedAt: now,
-        discountRuleSnapshot: booking?.discountSnapshot ?? undefined,
+        discountRuleSnapshot:
+          booking?.discountSnapshot ??
+          (couponLink.adminCouponIssue
+            ? {
+                adminCouponIssueId: couponLink.adminCouponIssue.id,
+                adminCouponId: couponLink.adminCouponIssue.adminCoupon.id,
+                discountType: couponLink.adminCouponIssue.adminCoupon.discountType,
+                discountValue: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                type: couponLink.adminCouponIssue.adminCoupon.discountType,
+                value: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                discountPercent:
+                  couponLink.adminCouponIssue.adminCoupon.discountType === 'PERCENT'
+                    ? couponLink.adminCouponIssue.adminCoupon.discountValue
+                    : undefined,
+                code: couponLink.adminCouponIssue.adminCoupon.code,
+              }
+            : undefined),
       },
       select: this.billNotificationSelect(),
     });
@@ -6325,7 +6341,23 @@ export class NightlifeDataService {
         paidVnd: dto.totalVnd,
         usedAt,
         submittedAt: now,
-        discountRuleSnapshot: booking?.discountSnapshot ?? undefined,
+        discountRuleSnapshot:
+          booking?.discountSnapshot ??
+          (couponLink.adminCouponIssue
+            ? {
+                adminCouponIssueId: couponLink.adminCouponIssue.id,
+                adminCouponId: couponLink.adminCouponIssue.adminCoupon.id,
+                discountType: couponLink.adminCouponIssue.adminCoupon.discountType,
+                discountValue: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                type: couponLink.adminCouponIssue.adminCoupon.discountType,
+                value: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                discountPercent:
+                  couponLink.adminCouponIssue.adminCoupon.discountType === 'PERCENT'
+                    ? couponLink.adminCouponIssue.adminCoupon.discountValue
+                    : undefined,
+                code: couponLink.adminCouponIssue.adminCoupon.code,
+              }
+            : undefined),
       },
       select: this.billNotificationSelect(),
     });
@@ -10229,7 +10261,11 @@ export class NightlifeDataService {
         qr?: { usedAt?: Date | string | null } | null;
         couponIssue?: { usedAt?: Date | string | null } | null;
       } | null;
-      couponLink?: { couponIssueId?: string; couponIssueUsedAt?: Date | string | null };
+      couponLink?: {
+        couponIssueId?: string;
+        couponIssueUsedAt?: Date | string | null;
+        adminCouponIssue?: any;
+      };
     },
   ) {
     if (context?.booking?.id) {
@@ -10256,6 +10292,16 @@ export class NightlifeDataService {
       }
 
       return this.parseBillUsedAt(context.couponLink.couponIssueUsedAt);
+    }
+
+    if (context?.couponLink?.adminCouponIssue) {
+      const adminIssue = context.couponLink.adminCouponIssue;
+      if (adminIssue.status !== 'USED') {
+        throw new UnprocessableEntityException(
+          'Admin coupon issue must be checked in before bill submission',
+        );
+      }
+      return this.parseBillUsedAt(adminIssue.usedAt);
     }
 
     return this.parseBillUsedAt(dto.usedAt);
@@ -10650,6 +10696,58 @@ export class NightlifeDataService {
       });
 
       if (!issue) {
+        const adminIssue = await this.prisma.adminCouponIssue.findFirst({
+          where: { id: requestedCouponIssueId },
+          include: { adminCoupon: true },
+        });
+
+        if (adminIssue) {
+          const targetStores = adminIssue.adminCoupon.targetStores || [];
+          if (targetStores.length > 0 && !targetStores.includes(input.store.id)) {
+            throw new UnprocessableEntityException(
+              'Store is not eligible for this admin coupon',
+            );
+          }
+
+          if (input.user?.role === 'USER') {
+            if (adminIssue.userId && adminIssue.userId !== input.user.id) {
+              throw new UnprocessableEntityException(
+                'Coupon issue does not belong to this member',
+              );
+            }
+          }
+
+          if (!['ISSUED', 'USED'].includes(adminIssue.status)) {
+            throw new UnprocessableEntityException(
+              'Coupon issue is not available for bill reconciliation',
+            );
+          }
+
+          if (
+            adminIssue.status === 'ISSUED' &&
+            adminIssue.expiresAt &&
+            adminIssue.expiresAt <= new Date()
+          ) {
+            await this.prisma.adminCouponIssue.update({
+              where: { id: adminIssue.id },
+              data: { status: 'EXPIRED' },
+            });
+            throw new UnprocessableEntityException('Coupon issue has expired');
+          }
+
+          return {
+            couponId: null,
+            couponIssueId: null,
+            couponIssueCode: adminIssue.code,
+            couponIssueStatus: adminIssue.status,
+            couponIssueUsedAt: adminIssue.usedAt,
+            coupon: null,
+            userId: adminIssue.userId,
+            guestId: adminIssue.guestId,
+            adminCouponIssue: adminIssue,
+          };
+        }
+
         throw new NotFoundException('Coupon issue not found');
       }
 
