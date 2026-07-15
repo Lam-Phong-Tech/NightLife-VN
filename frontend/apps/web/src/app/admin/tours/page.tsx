@@ -437,7 +437,7 @@ function AdminToursContent() {
                     </div>
                   </div>
                   <div style={{ color: '#caa765', fontWeight: 500 }}>{getCityLabel(t.city)}</div>
-                  <div style={{ color: '#caa765', fontWeight: 500 }}>{t.stops?.length || 0} stops</div>
+                  <div style={{ color: '#caa765', fontWeight: 500 }}>{t.stops?.length || 0} điểm dừng</div>
                   <div style={{ color: '#caa765', fontWeight: 500 }}>{priceLabel(t.priceTier)}</div>
                   <div>
                     <span style={getPillStyle(meta.style)}>{meta.label}</span>
