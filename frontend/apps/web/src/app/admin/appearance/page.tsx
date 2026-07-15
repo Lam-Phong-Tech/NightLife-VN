@@ -41,7 +41,7 @@ type AppearanceState = {
   quick: AppearanceIconItem[];
   nav: AppearanceIconItem[];
   titles: { id: string; key: string; label: string }[];
-  brand: { name: string; tagline: string };
+  brand: { name: string; tagline: string; logoUrl?: string };
 };
 
 const DEFAULT_ICON_COLOR = '#d4b26a';
@@ -72,7 +72,7 @@ const DEFAULT_STATE: AppearanceState = {
     { id: 't5', key: 'Khối video', label: 'Video Hot' },
     { id: 't6', key: 'Khối cẩm nang', label: 'Tour · Blog · Guide' }
   ],
-  brand: { name: 'Vietyoru', tagline: 'VIETNAM NIGHTLIFE GUIDE' }
+  brand: { name: 'Vietyoru', tagline: 'VIETNAM NIGHTLIFE GUIDE', logoUrl: '' }
 };
 type AppearanceConfigResponse = {
   data?: Partial<AppearanceState> | null;
@@ -290,7 +290,9 @@ export default function AppearancePage() {
   const [logoOpen, setLogoOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const iconUploadInputRef = useRef<HTMLInputElement>(null);
+  const logoUploadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadConfig() {
@@ -364,6 +366,44 @@ export default function AppearancePage() {
       showToast(err instanceof Error ? err.message : 'Lưu cấu hình thất bại!');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadLogoFile = async (file?: File) => {
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isSvg = file.type === 'image/svg+xml' || fileName.endsWith('.svg');
+    const isPng = file.type === 'image/png' || fileName.endsWith('.png');
+    if (!isSvg && !isPng) {
+      showToast('Chỉ nhận file SVG hoặc PNG.');
+      return;
+    }
+
+    if (file.size > 200 * 1024) {
+      showToast('Logo tối đa 200 KB.');
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'APPEARANCE_LOGO');
+      form.append('access', 'PUBLIC');
+      const res = await apiFormDataClient<{ url?: string }>('/storage/upload', form);
+      if (!res?.url) {
+        showToast('Không lấy được URL logo sau khi tải lên.');
+        return;
+      }
+      setBrand(s => ({ ...s, logoUrl: res.url }));
+      showToast('Tải logo thành công. Bấm Lưu thay đổi để áp dụng.');
+    } catch (err) {
+      console.error(err);
+      showToast(err instanceof Error ? err.message : 'Tải logo thất bại.');
+    } finally {
+      setUploadingLogo(false);
+      if (logoUploadInputRef.current) logoUploadInputRef.current.value = '';
     }
   };
 
@@ -538,11 +578,18 @@ export default function AppearancePage() {
             </span>
           </div>
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <div style={{ background: '#0e0d12', border: '1px solid rgba(255,255,255,.08)', borderRadius: '13px', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>{brand.name || 'Vietyoru'}</div>
-                <div style={{ fontSize: '7px', letterSpacing: '2.8px', color: '#8c8679', marginTop: '4px', textTransform: 'uppercase' }}>{brand.tagline}</div>
-              </div>
+            <div style={{ background: '#0e0d12', border: '1px solid rgba(255,255,255,.08)', borderRadius: '13px', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '62px' }}>
+              {brand.logoUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img src={resolveClientUrl(brand.logoUrl) || brand.logoUrl} alt="" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+                  <span onClick={() => setBrand(s => ({ ...s, logoUrl: '' }))} style={{ fontSize: '10px', color: '#ef4444', cursor: 'pointer', border: '1px solid rgba(239,68,68,.3)', borderRadius: '6px', padding: '2px 6px', marginLeft: '6px' }}>Xóa logo</span>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>{brand.name || 'Vietyoru'}</div>
+                  <div style={{ fontSize: '7px', letterSpacing: '2.8px', color: '#8c8679', marginTop: '4px', textTransform: 'uppercase' }}>{brand.tagline}</div>
+                </div>
+              )}
               <span style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1px', color: '#57534b', textTransform: 'uppercase' }}>Xem trước</span>
             </div>
             <div>
@@ -555,9 +602,27 @@ export default function AppearancePage() {
             </div>
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '9px' }}>Hoặc tải file logo</div>
-              <div onClick={() => showToast('Bản demo — khi nối backend sẽ nhận file kéo thả tại đây')} style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '22px', textAlign: 'center', cursor: 'pointer' }}>
+              <input
+                ref={logoUploadInputRef}
+                type="file"
+                accept=".svg,.png,image/svg+xml,image/png"
+                style={{ display: 'none' }}
+                onChange={(event) => uploadLogoFile(event.target.files?.[0])}
+              />
+              <div 
+                onClick={() => !uploadingLogo && logoUploadInputRef.current?.click()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'copy';
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!uploadingLogo) uploadLogoFile(event.dataTransfer.files?.[0]);
+                }}
+                style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '22px', textAlign: 'center', cursor: uploadingLogo ? 'wait' : 'pointer', opacity: uploadingLogo ? .65 : 1 }}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>Kéo thả file .svg / .png vào đây</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingLogo ? 'Đang tải logo...' : 'Kéo thả file .svg / .png vào đây'}</div>
                 <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · &lt; 200 KB</div>
               </div>
             </div>
@@ -597,7 +662,15 @@ export default function AppearancePage() {
               <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6' }}>Logo hiện tại</span>
               {brandChanged && <span style={{ fontSize: '9px', fontWeight: 700, color: '#e0a44e', border: '1px solid rgba(224,164,78,.4)', borderRadius: '6px', padding: '2px 7px' }}>CHƯA ÁP DỤNG</span>}
               <div style={{ flex: 1 }}></div>
-              <span onClick={() => showToast('Đã tải Vietyoru-logo.svg')} style={{ fontSize: '11.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.13)', borderRadius: '9px', padding: '7px 13px', cursor: 'pointer' }}>Tải .svg</span>
+              <span onClick={() => {
+                if (brand.logoUrl) {
+                  window.open(resolveClientUrl(brand.logoUrl) || brand.logoUrl, '_blank');
+                } else {
+                  showToast('Chưa có file logo được tải lên');
+                }
+              }} style={{ fontSize: '11.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.13)', borderRadius: '9px', padding: '7px 13px', cursor: 'pointer' }}>
+                {brand.logoUrl ? 'Tải logo' : 'Tải .svg'}
+              </span>
               <span onClick={() => setLogoOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '9px', padding: '7px 14px', cursor: 'pointer', boxShadow: '0 10px 20px -10px rgba(168,124,60,.6)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4.5l5 5L8 21H3v-5z"/><path d="M12.5 6.5l5 5"/></svg>Thay logo
               </span>
@@ -606,8 +679,14 @@ export default function AppearancePage() {
             <div style={{ border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', background: '#0e0d12', padding: '13px 18px' }}>
                 <div style={{ flex: 'none' }}>
-                  <div style={{ fontWeight: 800, fontSize: '20px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>{brand.name || 'Vietyoru'}</div>
-                  <div style={{ fontSize: '6.5px', letterSpacing: '2.6px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>{brand.tagline}</div>
+                  {brand.logoUrl ? (
+                    <img src={resolveClientUrl(brand.logoUrl) || brand.logoUrl} alt="" style={{ height: '28px', width: 'auto', objectFit: 'contain', display: 'block' }} />
+                  ) : (
+                    <>
+                      <div style={{ fontWeight: 800, fontSize: '20px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>{brand.name || 'Vietyoru'}</div>
+                      <div style={{ fontSize: '6.5px', letterSpacing: '2.6px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>{brand.tagline}</div>
+                    </>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '15px', fontSize: '11.5px', color: '#8c8679' }}>
                   <span>Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Ưu đãi</span>
@@ -617,8 +696,14 @@ export default function AppearancePage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0c0c0f', padding: '10px 15px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '15.5px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{brand.name || 'Vietyoru'}</div>
-                  <div style={{ fontSize: '5.5px', letterSpacing: '2.2px', color: '#8c8679', marginTop: '2px', textTransform: 'uppercase' }}>{brand.tagline}</div>
+                  {brand.logoUrl ? (
+                    <img src={resolveClientUrl(brand.logoUrl) || brand.logoUrl} alt="" style={{ height: '22px', width: 'auto', objectFit: 'contain', display: 'block' }} />
+                  ) : (
+                    <>
+                      <div style={{ fontWeight: 800, fontSize: '15.5px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{brand.name || 'Vietyoru'}</div>
+                      <div style={{ fontSize: '5.5px', letterSpacing: '2.2px', color: '#8c8679', marginTop: '2px', textTransform: 'uppercase' }}>{brand.tagline}</div>
+                    </>
+                  )}
                 </div>
                 <span style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1px', color: '#57534b', textTransform: 'uppercase' }}>Mobile · cao 22px</span>
               </div>

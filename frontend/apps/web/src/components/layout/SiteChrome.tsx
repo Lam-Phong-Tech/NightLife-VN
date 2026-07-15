@@ -29,6 +29,7 @@ import {
   DEFAULT_APPEARANCE_CONFIG,
   getAppearanceConfig,
   type AppearanceItem,
+  type AppearanceBrand,
 } from "@/lib/api/appearance";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
@@ -1164,7 +1165,7 @@ function NotificationOverlay({
   );
 }
 
-function SiteFooter({ isMobile }: { isMobile: boolean }) {
+function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceBrand }) {
   if (isMobile) {
     return (
       <footer
@@ -1188,18 +1189,33 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
               textDecoration: "none",
             }}
           >
-            <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>Vietyoru</span>
-            <span
-              style={{
-                marginTop: "5px",
-                color: colors.goldPale,
-                opacity: 0.64,
-                fontSize: "9px",
-                letterSpacing: "1.2px",
-              }}
-            >
-              VIETNAM NIGHTLIFE GUIDE
-            </span>
+            {brand.logoUrl ? (
+              <img
+                src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
+                alt={brand.name || "Vietyoru"}
+                style={{
+                  height: "28px",
+                  width: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <>
+                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>{brand.name || "Vietyoru"}</span>
+                <span
+                  style={{
+                    marginTop: "5px",
+                    color: colors.goldPale,
+                    opacity: 0.64,
+                    fontSize: "9px",
+                    letterSpacing: "1.2px",
+                  }}
+                >
+                  {brand.tagline || "VIETNAM NIGHTLIFE GUIDE"}
+                </span>
+              </>
+            )}
           </Link>
 
           <p style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}>
@@ -1239,7 +1255,7 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
               lineHeight: 1.55,
             }}
           >
-            © 2026 Vietyoru. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.
+            © 2026 {brand.name || "Vietyoru"}. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.
           </div>
         </div>
       </footer>
@@ -1280,19 +1296,34 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
               textDecoration: "none",
             }}
           >
-            <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
-              Vietyoru
-            </span>
-            <span
-              style={{
-                marginTop: "6px",
-                color: colors.goldPale,
-                opacity: 0.7,
-                letterSpacing: "1.2px",
-              }}
-            >
-              VIETNAM NIGHTLIFE GUIDE
-            </span>
+            {brand.logoUrl ? (
+              <img
+                src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
+                alt={brand.name || "Vietyoru"}
+                style={{
+                  height: isMobile ? "24px" : "32px",
+                  width: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <>
+                <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
+                  {brand.name || "Vietyoru"}
+                </span>
+                <span
+                  style={{
+                    marginTop: "6px",
+                    color: colors.goldPale,
+                    opacity: 0.7,
+                    letterSpacing: "1.2px",
+                  }}
+                >
+                  {brand.tagline || "VIETNAM NIGHTLIFE GUIDE"}
+                </span>
+              </>
+            )}
           </Link>
           <p
             style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}
@@ -1351,7 +1382,7 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
           color: "#8c8679",
         }}
       >
-        <span>© 2026 Vietyoru. Bảo lưu mọi quyền.</span>
+        <span>© 2026 {brand.name || "Vietyoru"}. Bảo lưu mọi quyền.</span>
         <span>18+ · Giá và tình trạng đặt chỗ được xác nhận lại bởi admin.</span>
       </div>
     </footer>
@@ -1363,6 +1394,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldSimulate, setShouldSimulate] = useState(false);
   const [appearanceBottomNav, setAppearanceBottomNav] = useState<BottomNavItem[]>(bottomNav);
+  const [brand, setBrand] = useState<AppearanceBrand>(DEFAULT_APPEARANCE_CONFIG.brand);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -1467,6 +1499,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       .then((config) => {
         if (!cancelled) {
           setAppearanceBottomNav(config.nav.map(mapAppearanceNavItem));
+          if (config.brand) {
+            setBrand(config.brand);
+          }
         }
       })
       .catch(() => {
@@ -1925,40 +1960,55 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               style={{
                 display: "inline-flex",
                 flexDirection: "column",
+                color: colors.goldPale,
                 textDecoration: "none",
-                flex: "none",
                 minWidth: 0,
                 maxWidth: "100%",
               }}
             >
-              <span
-                style={{
-                  fontSize: isMobile ? "22px" : "26px",
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  background: colors.goldGrad,
-                  WebkitBackgroundClip: "text",
-                  color: "transparent",
-                  textShadow: "0 0 22px rgba(247,217,120,.28)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Vietyoru
-              </span>
-              <span
-                style={{
-                  marginTop: "3px",
-                  fontSize: isMobile ? "7px" : "8.5px",
-                  letterSpacing: isMobile ? "1.2px" : "1.6px",
-                  color: colors.goldPale,
-                  opacity: 0.72,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                VIETNAM NIGHTLIFE GUIDE
-              </span>
+              {brand.logoUrl ? (
+                <img
+                  src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
+                  alt={brand.name || "Vietyoru"}
+                  style={{
+                    height: isMobile ? "22px" : "28px",
+                    width: "auto",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <>
+                  <span
+                    style={{
+                      fontSize: isMobile ? "22px" : "26px",
+                      fontWeight: 800,
+                      lineHeight: 1,
+                      background: colors.goldGrad,
+                      WebkitBackgroundClip: "text",
+                      color: "transparent",
+                      textShadow: "0 0 22px rgba(247,217,120,.28)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {brand.name || "Vietyoru"}
+                  </span>
+                  <span
+                    style={{
+                      marginTop: "3px",
+                      fontSize: isMobile ? "7px" : "8.5px",
+                      letterSpacing: isMobile ? "1.2px" : "1.6px",
+                      color: colors.goldPale,
+                      opacity: 0.72,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {brand.tagline || "VIETNAM NIGHTLIFE GUIDE"}
+                  </span>
+                </>
+              )}
             </Link>
             {!isMobile ? (
               <nav
@@ -2156,7 +2206,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           {children}
         </div>
 
-        <SiteFooter isMobile={isMobile} />
+        <SiteFooter isMobile={isMobile} brand={brand} />
 
         <nav
           style={{

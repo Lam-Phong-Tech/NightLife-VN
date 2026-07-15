@@ -16,6 +16,7 @@ export type AppearanceTitle = {
 export type AppearanceBrand = {
   name: string;
   tagline: string;
+  logoUrl?: string;
 };
 
 export type AppearanceConfig = {
@@ -60,7 +61,7 @@ export const DEFAULT_APPEARANCE_CONFIG: AppearanceConfig = {
     { id: "t5", key: "Khối video", label: "Video Hot" },
     { id: "t6", key: "Khối cẩm nang", label: "Tour · Blog · Guide" },
   ],
-  brand: { name: "Vietyoru", tagline: "VIETNAM NIGHTLIFE GUIDE" },
+  brand: { name: "Vietyoru", tagline: "VIETNAM NIGHTLIFE GUIDE", logoUrl: "" },
 };
 
 const mergeAppearanceItems = (
@@ -106,6 +107,7 @@ export function normalizeAppearanceConfig(value?: Partial<AppearanceConfig> | nu
     brand: {
       name: value.brand?.name?.trim() || DEFAULT_APPEARANCE_CONFIG.brand.name,
       tagline: value.brand?.tagline?.trim() || DEFAULT_APPEARANCE_CONFIG.brand.tagline,
+      logoUrl: value.brand?.logoUrl?.trim() || "",
     },
   };
 }
