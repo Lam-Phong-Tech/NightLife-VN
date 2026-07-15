@@ -166,6 +166,29 @@
           </div>
         </div>
 
+        <!-- Departure Time Slots Section -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:12px;border-left:3px solid #d4b26a;padding-left:8px;">Khung giờ khởi hành</div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:24px;">
+          <sc-for list="{{ tf.departureTimes }}" as="dt" hint-placeholder-count="4">
+            <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.22);color:#f0dda8;font-size:12px;font-weight:600;padding:5px 8px 5px 12px;border-radius:8px;">
+              {{ dt.val }}
+              <span onClick="{{ dt.remove }}" title="Xóa giờ" style="width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e88b99;background:rgba(224,105,122,.15);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            </span>
+          </sc-for>
+          
+          <!-- Add new time form inside the block -->
+          <sc-if value="{{ tf.addingTime }}" hint-placeholder-val="{{ false }}">
+            <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);border-radius:8px;padding:3px 4px 3px 10px;">
+              <input value="{{ tf.newTimeVal }}" onInput="{{ tf.setNewTimeVal }}" placeholder="23:00" style="width:48px;background:none;border:none;outline:none;color:#f0dda8;font-size:12.5px;font-weight:600;font-family:inherit;letter-spacing:.3px;">
+              <span onClick="{{ tf.saveNewTime }}" title="Lưu" style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#7fd3a2;cursor:pointer;" style-hover="background:rgba(95,191,134,.15);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span onClick="{{ tf.cancelNewTime }}" title="Hủy" style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#e88b99;cursor:pointer;" style-hover="background:rgba(224,105,122,.15);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            </span>
+          </sc-if>
+          <sc-if value="{{ tf.notAddingTime }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ tf.startAddTime }}" style="display:inline-flex;align-items:center;gap:5px;border:1.5px dashed rgba(212,178,106,.32);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#8c8679;cursor:pointer;white-space:nowrap;" style-hover="color:#caa765;border-color:rgba(212,178,106,.55);"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm giờ</span>
+          </sc-if>
+        </div>
+
         <!-- Tour Stops Section (Selected Venues) -->
         <div style="display:flex;align-items:center;justify-content:between;margin-bottom:12px;">
           <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;border-left:3px solid #d4b26a;padding-left:8px;">Hành trình dừng chân ({{ tf.stopsCount }} điểm)</div>
@@ -266,7 +289,8 @@ class Component extends DCLogic {
         durationHours: 4,
         priceTier: 3,
         status: 'active',
-        stops: ['v2', 'v1', 'v3']
+        stops: ['v2', 'v1', 'v3'],
+        departureTimes: ['19:00', '20:00', '21:00', '22:00']
       },
       {
         id: 't2',
@@ -276,7 +300,8 @@ class Component extends DCLogic {
         durationHours: 5,
         priceTier: 4,
         status: 'active',
-        stops: ['v4', 'v5', 'v2']
+        stops: ['v4', 'v5', 'v2'],
+        departureTimes: ['19:00', '20:00', '21:00', '22:00']
       },
       {
         id: 't3',
@@ -286,7 +311,8 @@ class Component extends DCLogic {
         durationHours: 3,
         priceTier: 2,
         status: 'draft',
-        stops: ['v5', 'v3']
+        stops: ['v5', 'v3'],
+        departureTimes: ['18:00', '20:00']
       },
       {
         id: 't4',
@@ -296,13 +322,16 @@ class Component extends DCLogic {
         durationHours: 4,
         priceTier: 3,
         status: 'active',
-        stops: ['v6', 'v7']
+        stops: ['v6', 'v7'],
+        departureTimes: ['20:00', '21:00', '22:00']
       }
     ],
 
     // Edit form buffer
     editForm: null,
-    venueSearch: ''
+    venueSearch: '',
+    addingTime: false,
+    newTimeVal: ''
   };
 
   // Static list of venues on the system (excluding Spa/Massage according to request)
@@ -396,6 +425,8 @@ class Component extends DCLogic {
           this.setState({
             tourSel: t.id,
             venueSearch: '',
+            addingTime: false,
+            newTimeVal: '',
             editForm: {
               title: t.title,
               subtitle: t.subtitle,
@@ -403,7 +434,8 @@ class Component extends DCLogic {
               durationHours: t.durationHours,
               priceTier: t.priceTier,
               status: t.status,
-              stops: t.stops.slice() // copy array
+              stops: t.stops.slice(), // copy array
+              departureTimes: t.departureTimes ? t.departureTimes.slice() : ['19:00', '20:00', '21:00', '22:00']
             }
           });
         }
@@ -412,11 +444,13 @@ class Component extends DCLogic {
 
     // Drawer state
     o.tourOpen = S.tourSel !== null;
-    o.tClose = () => this.setState({ tourSel: null, editForm: null, venueSearch: '' });
+    o.tClose = () => this.setState({ tourSel: null, editForm: null, venueSearch: '', addingTime: false, newTimeVal: '' });
     o.tAddNew = () => {
       this.setState({
         tourSel: 'new',
         venueSearch: '',
+        addingTime: false,
+        newTimeVal: '',
         editForm: {
           title: '',
           subtitle: '',
@@ -424,7 +458,8 @@ class Component extends DCLogic {
           durationHours: 4,
           priceTier: 3,
           status: 'active',
-          stops: []
+          stops: [],
+          departureTimes: ['19:00', '20:00', '21:00', '22:00']
         }
       });
     };
@@ -453,7 +488,8 @@ class Component extends DCLogic {
           durationHours: Number(form.durationHours),
           priceTier: Number(form.priceTier),
           status: form.status,
-          stops: form.stops
+          stops: form.stops,
+          departureTimes: form.departureTimes
         });
         this.showToast('Đã thêm mới Tour thành công');
       } else {
@@ -467,7 +503,8 @@ class Component extends DCLogic {
               durationHours: Number(form.durationHours),
               priceTier: Number(form.priceTier),
               status: form.status,
-              stops: form.stops
+              stops: form.stops,
+              departureTimes: form.departureTimes
             };
           }
           return t;
@@ -581,6 +618,41 @@ class Component extends DCLogic {
         setStatusActive: () => this.setState({ editForm: { ...form, status: 'active' } }),
         setStatusHidden: () => this.setState({ editForm: { ...form, status: 'hidden' } }),
         setStatusDraft: () => this.setState({ editForm: { ...form, status: 'draft' } }),
+
+        // Departure times list & inline add actions
+        departureTimes: (form.departureTimes || []).map((val, idx) => ({
+          val,
+          remove: () => {
+            const nextTimes = form.departureTimes.filter((_, i) => i !== idx);
+            this.setState({ editForm: { ...form, departureTimes: nextTimes } });
+            this.showToast(`Đã xoá khung giờ ${val}`);
+          }
+        })),
+        addingTime: S.addingTime,
+        notAddingTime: !S.addingTime,
+        newTimeVal: S.newTimeVal,
+        setNewTimeVal: (e) => this.setState({ newTimeVal: e.target.value }),
+        startAddTime: () => this.setState({ addingTime: true, newTimeVal: '' }),
+        cancelNewTime: () => this.setState({ addingTime: false, newTimeVal: '' }),
+        saveNewTime: () => {
+          const val = S.newTimeVal.trim();
+          if (!val) {
+            this.showToast('Vui lòng nhập giờ');
+            return;
+          }
+          // Simple validation for HH:MM format
+          if (!/^\d{1,2}:\d{2}$/.test(val)) {
+            this.showToast('Định dạng giờ không hợp lệ (VD: 23:00)');
+            return;
+          }
+          const nextTimes = (form.departureTimes || []).concat([val]);
+          this.setState({
+            editForm: { ...form, departureTimes: nextTimes },
+            addingTime: false,
+            newTimeVal: ''
+          });
+          this.showToast(`Đã thêm khung giờ ${val}`);
+        },
 
         // Stops bindings
         stops: stopsList,
