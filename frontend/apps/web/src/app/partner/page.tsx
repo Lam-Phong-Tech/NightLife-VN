@@ -3392,6 +3392,76 @@ export default function PartnerPage() {
     </div>
   );
 
+  const renderMenuItemImageControl = (
+    item: PartnerListingMenuItem,
+    groupIndex: number,
+    itemIndex: number,
+  ) => {
+    const uploadKey = `menu-item-image-${groupIndex}-${itemIndex}`;
+    const imageUrl = safeListingText(item.imageUrl).trim();
+    const isBusy = listingUploadKey === uploadKey;
+    const isDisabled = Boolean(listingUploadKey);
+    const uploadClassName = [
+      'partner-menu-image-upload',
+      imageUrl ? 'is-replace' : '',
+      isDisabled ? 'is-disabled' : '',
+    ].filter(Boolean).join(' ');
+
+    const handleFiles = (files: File[]) => {
+      void uploadListingFiles(files, {
+        key: uploadKey,
+        kind: 'image',
+        purpose: 'PARTNER_MENU_ITEM',
+        successLabel: 'ảnh món',
+        onUploaded: ([url]) => {
+          if (!url) return;
+          updateMenuItem(groupIndex, itemIndex, 'imageUrl', url);
+        },
+      });
+    };
+
+    return (
+      <div className="partner-menu-image-field">
+        <span>Ảnh món</span>
+        <div className={imageUrl ? 'partner-menu-image-control has-image' : 'partner-menu-image-control'}>
+          {imageUrl ? (
+            <span
+              className="partner-menu-image-thumb"
+              role="img"
+              aria-label={`Ảnh món ${itemIndex + 1}`}
+              style={{ background: `url("${listingMediaUrl(imageUrl)}") center/cover no-repeat` }}
+            />
+          ) : null}
+          <label className={uploadClassName} aria-disabled={isDisabled}>
+            <ImagePlus size={15} />
+            <span>{isBusy ? 'Đang tải...' : imageUrl ? 'Đổi ảnh' : 'Tải ảnh món từ máy'}</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+              disabled={isDisabled}
+              onChange={(event) => {
+                const files = Array.from(event.currentTarget.files ?? []);
+                event.currentTarget.value = '';
+                handleFiles(files);
+              }}
+            />
+          </label>
+          {imageUrl ? (
+            <button
+              type="button"
+              className="partner-menu-image-remove"
+              aria-label={`Xóa ảnh món ${itemIndex + 1}`}
+              onClick={() => updateMenuItem(groupIndex, itemIndex, 'imageUrl', '')}
+            >
+              <XCircle size={15} />
+            </button>
+          ) : null}
+        </div>
+        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+      </div>
+    );
+  };
+
   const renderListingVideoPreview = (url: string, index: number, onRemove: () => void) => {
     const youtubeThumb = getListingYoutubeThumb(url);
     const source = listingMediaUrl(url);
@@ -4881,32 +4951,8 @@ export default function PartnerPage() {
                   />
                   {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
                 </FormField>
-                <div className="partner-menu-image-field">
-                  <span>Ảnh món</span>
-                  {safeListingText(item.imageUrl).trim()
-                    ? renderListingImagePreview(item.imageUrl ?? '', {
-                        label: `Xóa ảnh món ${itemIndex + 1}`,
-                        minHeight: 78,
-                        aspectRatio: '4 / 3',
-                        onRemove: () => updateMenuItem(groupIndex, itemIndex, 'imageUrl', ''),
-                      })
-                    : renderListingUploadTile({
-                        key: `menu-item-image-${groupIndex}-${itemIndex}`,
-                        label: 'Tải ảnh món từ máy',
-                        loadingLabel: 'Đang tải ảnh món...',
-                        kind: 'image',
-                        purpose: 'PARTNER_MENU_ITEM',
-                        successLabel: 'ảnh món',
-                        minHeight: 78,
-                        aspectRatio: '4 / 3',
-                        onUploaded: ([url]) => {
-                          if (!url) return;
-                          updateMenuItem(groupIndex, itemIndex, 'imageUrl', url);
-                        },
-                      })}
-                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                </div>
-                <div className="partner-menu-actions">
+                {renderMenuItemImageControl(item, groupIndex, itemIndex)}
+                <div className="partner-menu-actions partner-menu-item-actions">
                   <button
                     type="button"
                     onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
@@ -5736,11 +5782,11 @@ export default function PartnerPage() {
           padding-top: 12px;
           display: grid;
           grid-template-columns:
-            minmax(150px, .9fr)
-            minmax(180px, 1fr)
-            minmax(124px, .48fr)
-            minmax(180px, .9fr)
-            minmax(150px, .56fr);
+            minmax(154px, .9fr)
+            minmax(184px, 1fr)
+            minmax(122px, .45fr)
+            minmax(188px, .76fr)
+            minmax(204px, .7fr);
           gap: 12px;
           align-items: start;
         }
@@ -5758,6 +5804,82 @@ export default function PartnerPage() {
           font-weight: 700;
           min-width: 0;
           align-content: start;
+        }
+        .partner-menu-image-control {
+          min-height: 42px;
+          border-radius: 11px;
+          border: 1px dashed ${colors.borderGold32};
+          background: ${colors.surface2};
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0 10px;
+          min-width: 0;
+        }
+        .partner-menu-image-control.has-image {
+          border-style: solid;
+          padding: 5px 6px;
+        }
+        .partner-menu-image-thumb {
+          width: 46px;
+          height: 34px;
+          border-radius: 8px;
+          border: 1px solid ${colors.borderGold22};
+          background-color: ${colors.surface3};
+          flex: 0 0 auto;
+        }
+        .partner-menu-image-upload {
+          min-height: 40px;
+          border-radius: 9px;
+          color: ${colors.gold};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          flex: 1 1 auto;
+          min-width: 0;
+          cursor: pointer;
+          font-weight: 900;
+          text-align: center;
+        }
+        .partner-menu-image-upload.is-replace {
+          min-height: 34px;
+          justify-content: flex-start;
+          padding: 0 8px;
+          background: ${colors.surface3};
+        }
+        .partner-menu-image-upload.is-disabled {
+          cursor: wait;
+          opacity: .56;
+        }
+        .partner-menu-image-upload span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .partner-menu-image-upload input {
+          display: none;
+        }
+        .partner-menu-image-remove {
+          width: 34px;
+          height: 34px;
+          border-radius: 9px;
+          border: 1px solid ${colors.borderGold22};
+          background: ${colors.surface3};
+          color: ${colors.gold};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          flex: 0 0 auto;
+        }
+        .partner-menu-item-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: stretch;
+        }
+        .partner-menu-item-actions > * {
+          width: 100%;
         }
         .partner-menu-hot {
           min-height: 42px;
@@ -6169,6 +6291,9 @@ export default function PartnerPage() {
             flex: 0 1 auto;
           }
           .partner-menu-item-card {
+            grid-template-columns: 1fr;
+          }
+          .partner-menu-item-actions {
             grid-template-columns: 1fr;
           }
           .partner-menu-item-card > .partner-menu-actions {
