@@ -1833,6 +1833,18 @@ html.vy-light .nl-home-section-title {
   text-shadow: none !important;
 }
 
+html.vy-light .nl-home-section-title::before {
+  background: linear-gradient(180deg, #c99628 0%, #a87313 68%, rgba(168, 115, 19, 0.34) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.58),
+    0 6px 14px rgba(126, 83, 12, 0.24);
+}
+
+html.vy-light .nl-home-section-title::after {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(168, 115, 19, 0.86), rgba(201, 150, 40, 0.42), rgba(201, 150, 40, 0));
+}
+
 html.vy-light,
 html.vy-light body,
 html.vy-light .nl-page-content {
