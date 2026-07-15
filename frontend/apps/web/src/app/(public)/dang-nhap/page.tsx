@@ -12,6 +12,8 @@ import {
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 const colors = {
   bg: "#0c0c0f",
@@ -223,6 +225,7 @@ function validateAuthForm({
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
   const [isReg, setIsReg] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -253,11 +256,15 @@ export default function Page() {
     return redirect;
   }, []);
 
-  const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
-  const subtitle = isReg
-    ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ."
-    : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
+  const title = translateText(isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên", activeLanguage);
+  const subtitle = translateText(
+    isReg
+      ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích lũy."
+      : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.",
+    activeLanguage,
+  );
   const visibleMessage = message || queryMessage?.text || "";
+  const visibleMessageText = visibleMessage ? translateText(visibleMessage, activeLanguage) : "";
   const visibleMessageTone = message ? messageTone : (queryMessage?.tone ?? messageTone);
 
   const switchMode = (nextIsReg: boolean) => {
@@ -603,7 +610,7 @@ export default function Page() {
               }}
             >
               <Sparkles size={15} />
-              MEMBER ACCESS
+              {translateText("MEMBER ACCESS", activeLanguage)}
             </span>
             <h1
               className="nl-login-visual-title"
@@ -615,7 +622,7 @@ export default function Page() {
                 fontWeight: 900,
               }}
             >
-              Giữ mọi cuộc hẹn nightlife trong một tài khoản.
+              {translateText("Giữ mọi cuộc hẹn nightlife trong một tài khoản.", activeLanguage)}
             </h1>
           </div>
         </section>
@@ -645,7 +652,7 @@ export default function Page() {
               }}
             >
               <ArrowLeft size={17} />
-              Quay về trang chủ
+              {translateText("Quay về trang chủ", activeLanguage)}
             </Link>
 
             <div
@@ -668,8 +675,8 @@ export default function Page() {
                   padding: 5,
                 }}
               >
-                <Tab active={!isReg} label="Đăng nhập" onClick={() => switchMode(false)} />
-                <Tab active={isReg} label="Đăng ký" onClick={() => switchMode(true)} />
+                <Tab active={!isReg} label={translateText("Đăng nhập", activeLanguage)} onClick={() => switchMode(false)} />
+                <Tab active={isReg} label={translateText("Đăng ký", activeLanguage)} onClick={() => switchMode(true)} />
               </div>
 
               <h2 className="nl-login-title" style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>
@@ -682,10 +689,10 @@ export default function Page() {
               <form noValidate onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
                 {isReg ? (
                   <Field
-                    label="Họ tên"
+                    label={translateText("Họ tên", activeLanguage)}
                     value={displayName}
                     onChange={setDisplayName}
-                    placeholder="Vui lòng nhập họ tên"
+                    placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
                     autoComplete="name"
                     name="name"
                     required
@@ -695,10 +702,10 @@ export default function Page() {
                 ) : null}
                 <Field
                   icon={<Mail size={16} />}
-                  label="Email"
+                  label={translateText("Email", activeLanguage)}
                   value={email}
                   onChange={setEmail}
-                  placeholder="Vui lòng nhập email"
+                  placeholder={translateText("Vui lòng nhập email", activeLanguage)}
                   type="email"
                   autoComplete="email"
                   inputMode="email"
@@ -708,10 +715,10 @@ export default function Page() {
                 />
                 <Field
                   icon={<LockKeyhole size={16} />}
-                  label="Mật khẩu"
+                  label={translateText("Mật khẩu", activeLanguage)}
                   value={password}
                   onChange={setPassword}
-                  placeholder="Vui lòng nhập mật khẩu"
+                  placeholder={translateText("Vui lòng nhập mật khẩu", activeLanguage)}
                   type={showPassword ? "text" : "password"}
                   autoComplete={isReg ? "new-password" : "current-password"}
                   name="password"
@@ -721,7 +728,7 @@ export default function Page() {
                   action={
                     <button
                       type="button"
-                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      aria-label={translateText(showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu", activeLanguage)}
                       onClick={() => setShowPassword((current) => !current)}
                       style={{
                         display: "inline-flex",
@@ -743,10 +750,10 @@ export default function Page() {
                 {isReg ? (
                   <Field
                     icon={<LockKeyhole size={16} />}
-                    label="Nhập lại mật khẩu"
+                    label={translateText("Nhập lại mật khẩu", activeLanguage)}
                     value={confirmPassword}
                     onChange={setConfirmPassword}
-                    placeholder="Vui lòng nhập lại mật khẩu"
+                    placeholder={translateText("Vui lòng nhập lại mật khẩu", activeLanguage)}
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     name="confirmPassword"
@@ -768,12 +775,12 @@ export default function Page() {
                         textDecoration: "none",
                       }}
                     >
-                      Quên mật khẩu?
+                      {translateText("Quên mật khẩu?", activeLanguage)}
                     </Link>
                   </div>
                 ) : null}
 
-                {visibleMessage ? (
+                {visibleMessageText ? (
                   <div
                     style={{
                       color: visibleMessageTone === "success" ? colors.success : colors.danger,
@@ -791,7 +798,7 @@ export default function Page() {
                       lineHeight: 1.5,
                     }}
                   >
-                    {visibleMessage}
+                    {visibleMessageText}
                   </div>
                 ) : null}
 
@@ -811,7 +818,7 @@ export default function Page() {
                     opacity: isSubmitting ? 0.72 : 1,
                   }}
                 >
-                  {isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập"}
+                  {translateText(isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập", activeLanguage)}
                 </button>
 
                 <div
@@ -825,6 +832,7 @@ export default function Page() {
                     logoSrc={googleLogoSrc}
                     logoAlt="Google"
                     label="Google"
+                    ariaLabel={translateText("Đăng nhập bằng Google", activeLanguage)}
                     onClick={startGoogleLogin}
                     disabled={
                       isGoogleSubmitting ||
@@ -837,6 +845,7 @@ export default function Page() {
                     logoSrc={lineLogoSrc}
                     logoAlt="LINE"
                     label="LINE"
+                    ariaLabel={translateText("Đăng nhập bằng LINE", activeLanguage)}
                     onClick={startLineConsent}
                     disabled={isLineConfigLoading}
                   />
@@ -1115,19 +1124,21 @@ function SocialButton({
   logoSrc,
   logoAlt,
   label,
+  ariaLabel,
   onClick,
   disabled = false,
 }: {
   logoSrc: string;
   logoAlt: string;
   label: string;
+  ariaLabel: string;
   onClick: () => void;
   disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      aria-label={`Đăng nhập bằng ${label}`}
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       className="nl-social-button"
