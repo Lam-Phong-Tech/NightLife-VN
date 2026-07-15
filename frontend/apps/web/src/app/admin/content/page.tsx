@@ -687,7 +687,7 @@ export default function AdminContentPage() {
         metadata: {
           tag: bannerTag,
           position: bannerPos,
-          link: bannerLinkedStore ? `/quan/${bannerLinkedStore.slug}` : bannerLink,
+          link: bannerLinkedStore ? `/stores/${bannerLinkedStore.slug}` : (bannerLink.startsWith('/quan/') ? bannerLink.replace(/^\/quan\//, '/stores/') : bannerLink),
           linkedStore: bannerLinkedStore ? { id: bannerLinkedStore.id, name: bannerLinkedStore.name, slug: bannerLinkedStore.slug, category: bannerLinkedStore.category, area: bannerLinkedStore.area } : null,
           imageUrl: finalImageUrl,
           statusLabel: bannerStatusLabel,
@@ -1121,7 +1121,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' ? store.area?.name : store.area) || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as any).name : store.area) || store.city} · {store.category}</div>
                   </div>
                   {featuredItems.find(f => f.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã thêm</span>
@@ -1431,7 +1431,7 @@ export default function AdminContentPage() {
                     {bannerStoreResults.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                         {bannerStoreResults.map((s: any) => (
-                          <div key={s.id} onClick={() => { setBannerLinkedStore(s); setBannerLink(`/quan/${s.slug}`); setBannerStoreSearch(''); setBannerStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
+                          <div key={s.id} onClick={() => { setBannerLinkedStore(s); setBannerLink(`/stores/${s.slug}`); setBannerStoreSearch(''); setBannerStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
                               <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {typeof s.area === 'object' ? s.area?.name : s.area}</div>
