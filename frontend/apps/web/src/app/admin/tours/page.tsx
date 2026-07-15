@@ -424,9 +424,13 @@ function AdminToursContent() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: t.city === 'Hanoi' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'linear-gradient(135deg,#e79ab8,#b0607f)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '12.5px', flexNone: true }}>
-                      {initial}
-                    </div>
+                    {t.coverUrl ? (
+                      <span style={{ width: '38px', height: '38px', borderRadius: '10px', background: `url(${resolveClientUrl(t.coverUrl)}) center/cover no-repeat`, flex: 'none' }} />
+                    ) : (
+                      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: t.city === 'Hanoi' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'linear-gradient(135deg,#e79ab8,#b0607f)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '12.5px', flex: 'none' }}>
+                        {initial}
+                      </div>
+                    )}
                     <div style={{ overflow: 'hidden' }}>
                       <div style={{ fontWeight: 700, color: '#f3f0ea', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{t.title}</div>
                       <div style={{ fontSize: '11px', color: '#8c8679', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', marginTop: '2.5px' }}>{t.subtitle || 'Chưa cấu hình mô tả ngắn'}</div>
@@ -449,7 +453,7 @@ function AdminToursContent() {
 
         <AdminPagination 
           totalItems={filteredList.length}
-          currentPage={currentPage}
+          page={currentPage}
           onPageChange={setCurrentPage}
         />
       </div>
@@ -464,7 +468,7 @@ function AdminToursContent() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.005)' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSpread: 'wide', fontSize: '9px', fontWeight: 700, color: '#8c8679', textTransform: 'uppercase', letterSpacing: '1.2px' }}>QUẢN LÝ TOUR NIGHTLIFE</div>
+                <div style={{ fontSize: '9px', fontWeight: 700, color: '#8c8679', textTransform: 'uppercase', letterSpacing: '1.2px' }}>QUẢN LÝ TOUR NIGHTLIFE</div>
                 <div style={{ fontSize: '16.5px', fontWeight: 700, color: '#f3f0ea', marginTop: '3.5px' }}>{tourSel === 'new' ? 'Thêm hành trình mới' : 'Chỉnh sửa hành trình'}</div>
               </div>
               <span onClick={closeDrawer} style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
@@ -501,7 +505,27 @@ function AdminToursContent() {
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', marginBottom: '12px', borderLeft: '3px solid #d4b26a', paddingLeft: '8px' }}>Ảnh bìa Tour</div>
                 <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', display: 'flex', gap: '14px' }}>
-                  <div style={{ width: '110px', height: '74px', borderRadius: '10px', background: formData.coverUrl ? (formData.coverUrl.startsWith('url(') ? formData.coverUrl : `url('${formData.coverUrl}') center/cover no-repeat`) : 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.08)', flexNone: true, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ 
+                    width: '110px', 
+                    height: '74px', 
+                    borderRadius: '10px', 
+                    background: formData.coverUrl 
+                      ? (formData.coverUrl.startsWith('url(') 
+                          ? formData.coverUrl 
+                          : (formData.coverUrl.startsWith('data:') 
+                              ? `url('${formData.coverUrl}') center/cover no-repeat`
+                              : `url('${resolveClientUrl(formData.coverUrl)}') center/cover no-repeat`
+                            )
+                        )
+                      : 'rgba(255,255,255,.02)', 
+                    border: '1px solid rgba(255,255,255,.08)', 
+                    flex: 'none', 
+                    position: 'relative', 
+                    overflow: 'hidden', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
                     {!formData.coverUrl && (
                       <span style={{ fontSize: '10px', color: '#8c8679', textAlign: 'center', padding: '5px' }}>Chưa có ảnh</span>
                     )}
@@ -727,7 +751,7 @@ function AdminToursContent() {
             </div>
 
             {/* Actions footer */}
-            <div style={{ padding: '15px 26px', background: '#131218', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: '10px', flexNone: true }}>
+            <div style={{ padding: '15px 26px', background: '#131218', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: '10px', flex: 'none' }}>
               {tourSel !== 'new' && (
                 <span onClick={deleteTour} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.32)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
