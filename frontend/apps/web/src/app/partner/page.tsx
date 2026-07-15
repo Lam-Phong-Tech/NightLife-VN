@@ -928,7 +928,7 @@ const validateListingDraft = (
       addFormatError(
         `menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`,
         item.imageUrl,
-        'Ảnh món URL phải bắt đầu bằng http hoặc https.',
+        'Ảnh món chưa hợp lệ. Vui lòng tải lại ảnh từ máy.',
       );
     });
   });
@@ -4881,15 +4881,31 @@ export default function PartnerPage() {
                   />
                   {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
                 </FormField>
-                <FormField label="Ảnh món URL">
-                  <input
-                    value={item.imageUrl ?? ''}
-                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
-                    placeholder="https://..."
-                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                  />
+                <div className="partner-menu-image-field">
+                  <span>Ảnh món</span>
+                  {safeListingText(item.imageUrl).trim()
+                    ? renderListingImagePreview(item.imageUrl ?? '', {
+                        label: `Xóa ảnh món ${itemIndex + 1}`,
+                        minHeight: 78,
+                        aspectRatio: '4 / 3',
+                        onRemove: () => updateMenuItem(groupIndex, itemIndex, 'imageUrl', ''),
+                      })
+                    : renderListingUploadTile({
+                        key: `menu-item-image-${groupIndex}-${itemIndex}`,
+                        label: 'Tải ảnh món từ máy',
+                        loadingLabel: 'Đang tải ảnh món...',
+                        kind: 'image',
+                        purpose: 'PARTNER_MENU_ITEM',
+                        successLabel: 'ảnh món',
+                        minHeight: 78,
+                        aspectRatio: '4 / 3',
+                        onUploaded: ([url]) => {
+                          if (!url) return;
+                          updateMenuItem(groupIndex, itemIndex, 'imageUrl', url);
+                        },
+                      })}
                   {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                </FormField>
+                </div>
                 <div className="partner-menu-actions">
                   <button
                     type="button"
@@ -5733,6 +5749,15 @@ export default function PartnerPage() {
         }
         .partner-menu-item-card > .partner-menu-actions {
           align-self: end;
+        }
+        .partner-menu-image-field {
+          display: grid;
+          gap: 7px;
+          color: ${colors.text2};
+          font-size: 12px;
+          font-weight: 700;
+          min-width: 0;
+          align-content: start;
         }
         .partner-menu-hot {
           min-height: 42px;
