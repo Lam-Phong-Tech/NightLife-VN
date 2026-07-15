@@ -1036,6 +1036,7 @@ model PartnerRequest {
   contactName       String               @map("contact_name")
   contactPhone      String               @map("contact_phone")
   contactEmail      String?              @map("contact_email")
+  passwordHash      String?              @map("password_hash")
   note              String?
   storeDescription  String?              @map("store_description")
   storeAddress      String?              @map("store_address")

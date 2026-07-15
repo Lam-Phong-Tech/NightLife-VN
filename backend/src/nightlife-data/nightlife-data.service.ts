@@ -476,6 +476,7 @@ type PartnerRequestCmsRecord = {
   contactName: string;
   contactPhone: string;
   contactEmail: string | null;
+  passwordHash: string | null;
   note: string | null;
   storeDescription: string | null;
   storeAddress: string | null;
@@ -5765,6 +5766,9 @@ export class NightlifeDataService {
       'contactPhone',
     );
     const contactEmail = this.cleanEmail(dto.contactEmail) || null;
+    const passwordHash = dto.password && this.passwordService
+      ? await this.passwordService.hash(dto.password)
+      : null;
     const businessType = this.cleanText(dto.businessType) || null;
     const note = this.cleanText(dto.note) || null;
     const storeAddress = this.cleanNullableText(dto.storeAddress);
@@ -5894,6 +5898,7 @@ export class NightlifeDataService {
           contactName,
           contactPhone,
           contactEmail,
+          passwordHash,
           note,
           storeDescription,
           storeAddress,
@@ -14748,11 +14753,11 @@ export class NightlifeDataService {
           phone: request.contactPhone,
         })
       : await (async () => {
-          temporaryPassword = `Partner-${randomUUID()}`;
+          temporaryPassword = request.passwordHash ? null : `Partner-${randomUUID()}`;
           return client.user.create({
             data: {
               email,
-              passwordHash: await this.passwordService!.hash(temporaryPassword),
+              passwordHash: request.passwordHash || await this.passwordService!.hash(temporaryPassword!),
               displayName,
               phone: request.contactPhone,
               role: 'PARTNER',

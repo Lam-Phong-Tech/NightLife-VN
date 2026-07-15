@@ -147,6 +147,7 @@ type PartnerFormState = {
   contactName: string;
   contactPhone: string;
   contactEmail: string;
+  password?: string;
   note: string;
 };
 
@@ -185,6 +186,7 @@ const initialPartnerForm: PartnerFormState = {
   contactName: '',
   contactPhone: '',
   contactEmail: '',
+  password: '',
   note: '',
 };
 
@@ -282,6 +284,7 @@ function buildPartnerRequestPayload(
     contactName: form.contactName.trim(),
     contactPhone: form.contactPhone.trim(),
     contactEmail: optionalText(form.contactEmail),
+    password: optionalText(form.password ?? ''),
     note: optionalText(form.note),
   };
 }
@@ -645,9 +648,10 @@ function PartnerPageContent({
           form.storeAddress.trim() &&
           selectedProvince &&
           form.contactName.trim() &&
-          form.contactPhone.trim(),
+          form.contactPhone.trim() &&
+          form.password?.trim(),
       ),
-    [form.businessName, form.businessType, form.contactName, form.contactPhone, form.storeAddress, selectedProvince],
+    [form.businessName, form.businessType, form.contactName, form.contactPhone, form.storeAddress, selectedProvince, form.password],
   );
 
   useEffect(() => {
@@ -725,6 +729,35 @@ function PartnerPageContent({
   const submitPartnerRequest = async () => {
     if (!canSubmit || submitting) {
       return;
+    }
+
+    if (form.password && form.password.trim().length < 6) {
+      setSubmitResult({
+        tone: 'error',
+        message: 'Mật khẩu phải chứa ít nhất 6 ký tự.',
+      });
+      return;
+    }
+
+    const cleanPhone = form.contactPhone.replace(/[\s.\-]/g, '');
+    const isPhoneValid = /^(0|(\+84))[35789]\d{8}$/.test(cleanPhone);
+    if (!isPhoneValid) {
+      setSubmitResult({
+        tone: 'error',
+        message: 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ (ví dụ: 0912345678).',
+      });
+      return;
+    }
+
+    if (form.contactEmail) {
+      const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail.trim());
+      if (!isEmailValid) {
+        setSubmitResult({
+          tone: 'error',
+          message: 'Email liên hệ không hợp lệ. Vui lòng nhập đúng định dạng email (ví dụ: name@example.com).',
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -931,7 +964,7 @@ function PartnerPageContent({
                   label="Tên quán / cơ sở"
                   value={form.businessName}
                   onChange={(value) => updateForm('businessName', value)}
-                  placeholder="Ví dụ: Club Lumière"
+                  placeholder="Vui lòng nhập tên quán"
                   required
                 />
                 <ThemedListingSelect
@@ -998,8 +1031,17 @@ function PartnerPageContent({
                   label="Email liên hệ"
                   value={form.contactEmail}
                   onChange={(value) => updateForm('contactEmail', value)}
-                  placeholder="Ví dụ: owner@example.com"
+                  placeholder="Nhập email của bạn"
                   type="email"
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Mật khẩu đăng ký"
+                  value={form.password || ''}
+                  onChange={(value) => updateForm('password', value)}
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  type="password"
+                  required
                   wide={!isMobile}
                 />
 
@@ -1045,13 +1087,17 @@ function PartnerPageContent({
                 <div
                   style={{
                     marginTop: '12px',
-                    border: `1px solid ${submitResult.tone === 'success' ? 'rgba(127,211,160,.36)' : 'rgba(230,135,152,.4)'}`,
+                    border: `1px solid ${
+                      submitResult.tone === 'success'
+                        ? (theme === 'light' ? 'rgba(31,120,60,.36)' : 'rgba(127,211,160,.36)')
+                        : (theme === 'light' ? 'rgba(173,62,53,.4)' : 'rgba(230,135,152,.4)')
+                    }`,
                     borderRadius: '12px',
                     background:
                       submitResult.tone === 'success'
-                        ? 'rgba(127,211,160,.12)'
-                        : 'rgba(230,135,152,.1)',
-                    color: submitResult.tone === 'success' ? '#a9e7be' : colors.red,
+                        ? (theme === 'light' ? 'rgba(31,120,60,.06)' : 'rgba(127,211,160,.12)')
+                        : (theme === 'light' ? 'rgba(173,62,53,.06)' : 'rgba(230,135,152,.1)'),
+                    color: submitResult.tone === 'success' ? (theme === 'light' ? '#1f783c' : '#a9e7be') : colors.red,
                     padding: '11px 13px',
                     fontSize: '12px',
                     lineHeight: 1.5,

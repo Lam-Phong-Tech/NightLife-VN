@@ -16,6 +16,7 @@ import {
   Min,
   ValidateNested,
   Max,
+  MinLength,
 } from 'class-validator';
 
 export class PartnerRequestCastDto {
@@ -223,6 +224,13 @@ export class CreatePartnerRequestDto {
   @IsEmail()
   @MaxLength(160)
   contactEmail?: string;
+
+  @ApiPropertyOptional({ example: 'securePassword123' })
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  @MaxLength(60)
+  password?: string;
 
   @ApiPropertyOptional({
     example: 'We want to join the booking and coupon program.',

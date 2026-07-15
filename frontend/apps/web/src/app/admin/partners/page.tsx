@@ -440,13 +440,7 @@ export default function AdminPartnersPage() {
                   .filter(Boolean)
                   .join(", ")}
               />
-              <InfoField label="Giờ mở cửa" value={selectedRequest.openingHours} />
-              <InfoField
-                label="Nội dung nháp"
-                value={`${selectedRequest.draftCastCount ?? 0} cast · ${selectedRequest.draftMediaCount ?? 0} media · ${
-                  selectedRequest.draftContentCount ?? 0
-                } menu`}
-              />
+
             </div>
 
             {selectedRequest.note ? (
