@@ -11,7 +11,6 @@ import {
   MapPin,
   Route,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Ticket,
 } from "lucide-react";
@@ -214,7 +213,6 @@ export function TourClient() {
               placeholder={localize("Tìm tour, quán hoặc khu vực...", activeLanguage)}
               autoComplete="off"
             />
-            <SlidersHorizontal size={16} />
           </label>
 
           <div
@@ -461,6 +459,8 @@ const tourDirectoryCss = `
   }
 
   .tour-search-controls {
+    position: relative;
+    z-index: 20;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 160px 108px;
     gap: 12px;
@@ -506,6 +506,7 @@ const tourDirectoryCss = `
   .tour-city-select {
     position: relative;
     min-width: 0;
+    background: #18161c;
   }
 
   .tour-city-trigger {
@@ -513,7 +514,7 @@ const tourDirectoryCss = `
     min-height: 56px;
     border: 0;
     border-radius: 14px;
-    background: transparent;
+    background: #18161c;
     color: var(--vy-gold-pale);
     cursor: pointer;
     font-family: inherit;
@@ -554,13 +555,13 @@ const tourDirectoryCss = `
     top: calc(100% + 8px);
     left: 0;
     right: 0;
-    z-index: 90;
+    z-index: 220;
     display: grid;
     gap: 3px;
     min-width: 100%;
     border: 1px solid var(--vy-border-gold-32);
     border-radius: 12px;
-    background: var(--vy-surface-1);
+    background: #17151b;
     padding: 6px;
     box-shadow: 0 20px 48px -24px rgba(0, 0, 0, 0.9);
   }
@@ -570,7 +571,7 @@ const tourDirectoryCss = `
     min-height: 38px;
     border: 0;
     border-radius: 9px;
-    background: transparent;
+    background: #201d23;
     color: var(--vy-muted);
     padding: 0 10px;
     font-family: inherit;
@@ -582,7 +583,7 @@ const tourDirectoryCss = `
 
   .tour-city-menu button:hover,
   .tour-city-menu button:focus-visible {
-    background: rgba(255, 255, 255, 0.06);
+    background: #29252d;
     color: var(--vy-text);
     outline: none;
   }
@@ -593,13 +594,25 @@ const tourDirectoryCss = `
     font-weight: 900;
   }
 
+  html.vy-light .tour-city-select,
+  html.vy-light .tour-city-trigger {
+    background: #fffaf2;
+  }
+
   html.vy-light .tour-city-menu {
+    background: #fffaf2;
     box-shadow: 0 18px 44px -30px rgba(86, 62, 18, 0.42);
+  }
+
+  html.vy-light .tour-city-menu button {
+    background: #ffffff;
+    color: var(--vy-muted);
   }
 
   html.vy-light .tour-city-menu button:hover,
   html.vy-light .tour-city-menu button:focus-visible {
-    background: rgba(161, 116, 36, 0.09);
+    background: #f3eadb;
+    color: var(--vy-text);
   }
 
   .tour-search-input input::placeholder {
