@@ -58,6 +58,17 @@ describe('NightlifeDataService', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
     },
+    adminCoupon: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    adminCouponIssue: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
     store: {
       create: jest.fn(),
       findMany: jest.fn(),
@@ -4117,6 +4128,91 @@ describe('NightlifeDataService', () => {
     expect(prisma.couponIssue.update).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(prisma.notificationLog.create).not.toHaveBeenCalled();
+  });
+
+  it('scans an AdminCouponIssue successfully', async () => {
+    prisma.couponIssue.findUnique.mockResolvedValue(null);
+    prisma.adminCouponIssue.findUnique.mockResolvedValue({
+      id: 'admin-issue-1',
+      adminCouponId: 'admin-coupon-1',
+      code: 'GLOBAL20-code',
+      userId: 'member-1',
+      status: 'ISSUED',
+      expiresAt: null,
+      metadata: { recipientType: 'MEMBER' },
+      adminCoupon: {
+        id: 'admin-coupon-1',
+        code: 'GLOBAL20',
+        name: 'Global 20%',
+        discountType: 'PERCENT',
+        discountValue: 20,
+        targetStores: [],
+      },
+      store: null,
+    });
+    prisma.adminCouponIssue.findFirst.mockResolvedValue({
+      id: 'admin-issue-1',
+      adminCouponId: 'admin-coupon-1',
+      code: 'GLOBAL20-code',
+      userId: 'member-1',
+      status: 'ISSUED',
+      expiresAt: null,
+      metadata: { recipientType: 'MEMBER' },
+      adminCoupon: {
+        id: 'admin-coupon-1',
+        code: 'GLOBAL20',
+        name: 'Global 20%',
+        discountType: 'PERCENT',
+        discountValue: 20,
+        targetStores: [],
+      },
+      store: null,
+    });
+    accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+    prisma.adminCouponIssue.update.mockResolvedValue({
+      id: 'admin-issue-1',
+      adminCouponId: 'admin-coupon-1',
+      code: 'GLOBAL20-code',
+      userId: 'member-1',
+      status: 'ISSUED',
+      expiresAt: null,
+      metadata: { recipientType: 'MEMBER' },
+      adminCoupon: {
+        id: 'admin-coupon-1',
+        code: 'GLOBAL20',
+        name: 'Global 20%',
+        discountType: 'PERCENT',
+        discountValue: 20,
+        targetStores: [],
+      },
+      store: null,
+    });
+
+    const result = await service.scanCouponIssue('GLOBAL20-code', {
+      id: 'partner-1',
+      role: 'PARTNER',
+    });
+
+    expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'coupon.scan',
+    );
+    expect(prisma.adminCouponIssue.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'admin-issue-1' },
+        data: { scannedByUserId: 'partner-1', storeId: 'store-1' },
+      }),
+    );
+    expect(result).toMatchObject({
+      id: 'admin-issue-1',
+      code: 'GLOBAL20-code',
+      status: 'ISSUED',
+      customer: { type: 'MEMBER', label: 'Hội viên' },
+      coupon: expect.objectContaining({
+        code: 'GLOBAL20',
+        discountValue: 20,
+      }),
+    });
   });
 
   it('marks an expired coupon issue before rejecting QR scan', async () => {

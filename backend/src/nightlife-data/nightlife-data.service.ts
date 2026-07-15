@@ -4206,9 +4206,25 @@ export class NightlifeDataService {
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
-    return this.scanCouponIssueByUnique({ code }, user, {
-      source: 'LEGACY_CODE',
+    const standardIssue = await this.prisma.couponIssue.findUnique({
+      where: { code },
     });
+    if (standardIssue) {
+      return this.scanCouponIssueByUnique({ code }, user, {
+        source: 'LEGACY_CODE',
+      });
+    }
+
+    const adminIssue = await this.prisma.adminCouponIssue.findUnique({
+      where: { code },
+    });
+    if (adminIssue) {
+      return this.scanAdminCouponIssueByUnique({ code }, user, {
+        source: 'LEGACY_CODE',
+      });
+    }
+
+    throw new NotFoundException('Coupon issue not found');
   }
 
   async scanCouponIssuePayload(
@@ -4216,6 +4232,14 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
   ) {
     const token = this.resolveCouponIssueTokenFromQrPayload(dto.payload);
+    if (token.type === 'admin_coupon_issue') {
+      return this.scanAdminCouponIssueByUnique({ id: token.issueId }, user, {
+        source: 'SIGNED_QR_PAYLOAD',
+        offline: Boolean(dto.offline),
+        qrTokenHash: token.tokenHash,
+      });
+    }
+
     return this.scanCouponIssueByUnique({ id: token.issueId }, user, {
       source: 'SIGNED_QR_PAYLOAD',
       offline: Boolean(dto.offline),
@@ -4567,11 +4591,152 @@ export class NightlifeDataService {
     return this.decoratePartnerCouponIssue(scannedIssue);
   }
 
+  private async scanAdminCouponIssueByUnique(
+    where: { id?: string; code?: string },
+    user: AuthenticatedUser,
+    metadata: { source: string; offline?: boolean; qrTokenHash?: string },
+  ) {
+    const issue = await this.prisma.adminCouponIssue.findFirst({
+      where: {
+        OR: [
+          where.id ? { id: where.id } : null,
+          where.code ? { code: where.code } : null,
+        ].filter(Boolean) as Prisma.AdminCouponIssueWhereInput[],
+      },
+      include: {
+        adminCoupon: true,
+        store: true,
+      },
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'coupon.scan');
+    let scanStoreId: string | null = null;
+    if (accessibleStoreIds === undefined) {
+      scanStoreId = issue.storeId ?? null;
+      if (!scanStoreId) {
+        const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+        scanStoreId = firstStore?.id ?? null;
+      }
+    } else {
+      if (accessibleStoreIds.length === 0) {
+        throw new ForbiddenException('Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.');
+      }
+      const targetStores = issue.adminCoupon.targetStores || [];
+      if (targetStores.length > 0) {
+        const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+        if (common.length === 0) {
+          throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+        }
+        scanStoreId = common[0];
+      } else {
+        scanStoreId = accessibleStoreIds[0];
+      }
+    }
+
+    await this.assertAdminIssueCanBeConfirmed(issue);
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'COUPON_ISSUE_SCANNED',
+        targetType: 'AdminCouponIssue',
+        targetId: issue.id,
+        metadata: this.toPrismaJson({
+          source: metadata.source,
+          offline: Boolean(metadata.offline),
+          couponId: issue.adminCouponId,
+          status: issue.status,
+          storeId: scanStoreId,
+        }),
+      },
+    });
+
+    const scannedIssue = await this.prisma.adminCouponIssue.update({
+      where: { id: issue.id },
+      data: {
+        scannedByUserId: user.id,
+        storeId: scanStoreId,
+      },
+      include: {
+        adminCoupon: true,
+        store: true,
+      },
+    });
+
+    return this.decoratePartnerAdminCouponIssue(scannedIssue);
+  }
+
+  private decoratePartnerAdminCouponIssue(issue: any) {
+    const metadata = this.asRecord(issue.metadata);
+    const discountRuleSnapshot = this.asRecord(metadata?.discountRuleSnapshot);
+    const userType = this.partnerCouponUserType(issue, metadata);
+    const discountPercent =
+      this.toNumber(metadata?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.value);
+
+    return {
+      id: issue.id,
+      code: issue.code,
+      status: issue.status,
+      statusLabel: this.couponIssueStatusLabel(issue.status),
+      expiresAt: issue.expiresAt ?? null,
+      usedAt: issue.usedAt ?? null,
+      scannedById: issue.scannedByUserId ?? null,
+      userType,
+      customer: this.partnerCouponCustomerSummary(userType),
+      discountPercent,
+      discountRuleSnapshot: discountRuleSnapshot ?? null,
+      booking: null,
+      coupon: {
+        id: issue.adminCoupon.id,
+        code: issue.adminCoupon.code,
+        name: issue.adminCoupon.name,
+        discountType: issue.adminCoupon.discountType,
+        discountValue: issue.adminCoupon.discountValue,
+        storeId: issue.storeId,
+        store: issue.store ?? null,
+      },
+    };
+  }
+
+  private async assertAdminIssueCanBeConfirmed(issue: {
+    id: string;
+    status: string;
+    expiresAt: Date | null;
+  }) {
+    if (issue.status === 'EXPIRED') {
+      throw new UnprocessableEntityException('Coupon issue has expired');
+    }
+
+    if (issue.status === 'USED') {
+      throw new UnprocessableEntityException(
+        'Coupon issue has already been used',
+      );
+    }
+
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException('Coupon issue is not usable');
+    }
+
+    if (issue.expiresAt && issue.expiresAt <= new Date()) {
+      await this.prisma.adminCouponIssue.update({
+        where: { id: issue.id },
+        data: { status: 'EXPIRED' },
+      });
+      throw new UnprocessableEntityException('Coupon issue has expired');
+    }
+  }
+
   async confirmCouponIssueCheckIn(
     couponIssueId: string,
     user: AuthenticatedUser,
   ) {
-    const issue = await this.prisma.couponIssue.findUnique({
+    let issue = await this.prisma.couponIssue.findUnique({
       where: { id: couponIssueId },
       select: {
         id: true,
@@ -4599,7 +4764,91 @@ export class NightlifeDataService {
     });
 
     if (!issue) {
-      throw new NotFoundException('Coupon issue not found');
+      const adminIssue = await this.prisma.adminCouponIssue.findUnique({
+        where: { id: couponIssueId },
+        include: {
+          adminCoupon: true,
+          store: true,
+        },
+      });
+
+      if (!adminIssue) {
+        throw new NotFoundException('Coupon issue not found');
+      }
+
+      const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'checkin.confirm');
+      let scanStoreId: string | null = null;
+      if (accessibleStoreIds === undefined) {
+        scanStoreId = adminIssue.storeId ?? null;
+        if (!scanStoreId) {
+          const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+          scanStoreId = firstStore?.id ?? null;
+        }
+      } else {
+        if (accessibleStoreIds.length === 0) {
+          throw new ForbiddenException('Bạn không có quyền thực hiện xác nhận ở bất kỳ quán nào.');
+        }
+        const targetStores = adminIssue.adminCoupon.targetStores || [];
+        if (targetStores.length > 0) {
+          const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+          if (common.length === 0) {
+            throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+          }
+          scanStoreId = common[0];
+        } else {
+          scanStoreId = accessibleStoreIds[0];
+        }
+      }
+
+      await this.assertAdminIssueCanBeConfirmed(adminIssue);
+
+      const now = new Date();
+      const usedIssue = await this.prisma.adminCouponIssue.updateMany({
+        where: {
+          id: adminIssue.id,
+          status: 'ISSUED',
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        data: {
+          status: 'USED',
+          usedAt: now,
+          scannedByUserId: user.id,
+          storeId: scanStoreId,
+        },
+      });
+
+      if (usedIssue.count !== 1) {
+        throw new UnprocessableEntityException('Coupon issue has already been used');
+      }
+
+      const updatedIssue = await this.prisma.adminCouponIssue.findUnique({
+        where: { id: adminIssue.id },
+        include: {
+          adminCoupon: true,
+          store: true,
+        },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'COUPON_ISSUE_USED',
+          targetType: 'AdminCouponIssue',
+          targetId: adminIssue.id,
+          metadata: this.toPrismaJson({
+            couponId: adminIssue.adminCouponId,
+            status: 'USED',
+            storeId: scanStoreId,
+          }),
+        },
+      });
+
+      await this.prisma.adminCoupon.update({
+        where: { id: adminIssue.adminCouponId },
+        data: { usedCount: { increment: 1 } },
+      });
+
+      return this.decoratePartnerAdminCouponIssue(updatedIssue);
     }
 
     await this.accessService.ensureStoreAccess(
