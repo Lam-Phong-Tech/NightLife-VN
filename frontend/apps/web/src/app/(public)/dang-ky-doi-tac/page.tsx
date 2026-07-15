@@ -809,7 +809,7 @@ function PartnerPageContent({
       );
       setSubmitResult({
         tone: 'success',
-        message: `Đã gửi hồ sơ ${result.id}. Admin sẽ thấy trong CMS và duyệt trước khi public.`,
+        message: `Đăng ký thành công! Hồ sơ đối tác (Mã: ${result.id}) đã được gửi và đang chờ Ban quản trị phê duyệt trước khi hiển thị công khai.`,
       });
       setForm(initialPartnerForm);
       setSelectedProvince('');
