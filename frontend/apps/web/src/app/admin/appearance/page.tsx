@@ -51,7 +51,7 @@ const DEFAULT_STATE: AppearanceState = {
     { id: 'q1', label: 'Tìm quán', icon: 'pin' },
     { id: 'q2', label: 'Tìm Cast', icon: 'user' },
     { id: 'q3', label: 'Ưu đãi', icon: 'ticket' },
-    { id: 'q4', label: 'Sự kiện', icon: 'calendar' },
+    { id: 'q4', label: 'Tour', icon: 'map' },
     { id: 'q5', label: 'Ranking', icon: 'crown' },
     { id: 'q6', label: 'Spa', icon: 'waves' },
     { id: 'q7', label: 'Nhà hàng', icon: 'dining' },

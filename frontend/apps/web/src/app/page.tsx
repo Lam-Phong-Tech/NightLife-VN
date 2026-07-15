@@ -89,7 +89,7 @@ const categoryItems = [
   { label: "Tìm quán", icon: MapPin, href: "/danh-sach-quan" },
   { label: "Tìm Cast", icon: UserRound, href: "/danh-sach-cast" },
   { label: "Ưu đãi", icon: Ticket, href: "/uu-dai" },
-  { label: "Sự kiện", icon: CalendarDays, href: "/danh-sach-quan" },
+  { label: "Tour", icon: Map, href: "/tour" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
   { label: "Spa", icon: Waves, href: "/spa" },
   { label: "Nhà hàng", icon: Utensils, href: "/nha-hang" },
@@ -135,7 +135,7 @@ const categoryHrefById: Record<string, string> = {
   q1: "/danh-sach-quan",
   q2: "/danh-sach-cast",
   q3: "/uu-dai",
-  q4: "/danh-sach-quan",
+  q4: "/tour",
   q5: "/xep-hang",
   q6: "/spa",
   q7: "/nha-hang",
@@ -153,11 +153,12 @@ function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCatego
     icon: MapPin,
     href: "/danh-sach-quan",
   };
+  const isTourSlot = item.id === "q4";
 
   return {
-    label: item.label || fallback.label,
-    icon: appearanceIconMap[item.icon] ?? fallback.icon,
-    iconUrl: appearanceIconUrl(item.icon),
+    label: isTourSlot ? "Tour" : item.label || fallback.label,
+    icon: isTourSlot ? Map : appearanceIconMap[item.icon] ?? fallback.icon,
+    iconUrl: isTourSlot ? undefined : appearanceIconUrl(item.icon),
     color: item.color,
     href: categoryHrefById[item.id] ?? fallback.href,
     featured: item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured)),

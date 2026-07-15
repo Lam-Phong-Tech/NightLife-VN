@@ -4,9 +4,9 @@ import { absoluteSiteUrl } from "@/lib/site";
 import { TourClient } from "./TourClient";
 
 export const metadata: Metadata = {
-  title: "Tour nightlife và trải nghiệm đêm",
+  title: "Danh sách tour nightlife",
   description:
-    "Gợi ý tour nightlife thật theo dữ liệu quán, ưu đãi và khu vực đang hoạt động trên Vietyoru.",
+    "Danh sách tour nightlife thật theo dữ liệu quán, ưu đãi và khu vực đang hoạt động trên Vietyoru.",
   alternates: {
     canonical: "/tour",
   },
@@ -29,14 +29,7 @@ export default function TourPage() {
   ]);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
-        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
-      }}
-    >
+    <main className="tour-directory-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <TourClient />
     </main>
