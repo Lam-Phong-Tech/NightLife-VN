@@ -354,9 +354,15 @@ type PartnerScanIssue = {
     id: string;
     code: string;
     name: string;
+    discountType?: string | null;
+    discountValue?: number | null;
+    maxDiscountVnd?: number | null;
+    minSpendVnd?: number | null;
     store?: { id: string; name: string; slug: string } | null;
   } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
+  discountPercent?: number | null;
+  discountRuleSnapshot?: any;
 };
 
 type BarcodeDetectorResult = { rawValue?: string };
@@ -1084,10 +1090,12 @@ function SectionHeading({
   eyebrow,
   title,
   action,
+  hideLine,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   action?: React.ReactNode;
+  hideLine?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
@@ -1095,25 +1103,29 @@ function SectionHeading({
         <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>
           {title}
         </h2>
+        {eyebrow && (
+          <div
+            style={{
+              marginTop: '4px',
+              fontSize: '9px',
+              fontWeight: 600,
+              letterSpacing: '1.6px',
+              color: colors.muted,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
+      </div>
+      {!hideLine && (
         <div
           style={{
-            marginTop: '4px',
-            fontSize: '9px',
-            fontWeight: 600,
-            letterSpacing: '1.6px',
-            color: colors.muted,
+            flex: 1,
+            height: '1px',
+            background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)',
           }}
-        >
-          {eyebrow}
-        </div>
-      </div>
-      <div
-        style={{
-          flex: 1,
-          height: '1px',
-          background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)',
-        }}
-      />
+        />
+      )}
       {action}
     </div>
   );
@@ -2014,6 +2026,46 @@ export default function PartnerPage() {
     : scanIssue?.booking?.status
       ? `Booking ${scanIssue.booking.status}`
       : 'Không kèm dữ liệu booking chi tiết';
+  const scannedDiscountLabel = useMemo(() => {
+    if (!scanIssue) return null;
+
+    const coupon = scanIssue.coupon;
+    const snapshot = scanIssue.discountRuleSnapshot;
+
+    const discountType = snapshot?.type ?? snapshot?.discountType ?? coupon?.discountType;
+    const discountValue =
+      snapshot?.value ??
+      snapshot?.sourceValue ??
+      snapshot?.discountPercent ??
+      scanIssue.discountPercent ??
+      coupon?.discountValue ??
+      null;
+
+    const maxDiscountVnd = snapshot?.maxDiscountVnd ?? coupon?.maxDiscountVnd ?? null;
+    const minSpendVnd = snapshot?.minSpendVnd ?? coupon?.minSpendVnd ?? null;
+
+    if (!discountType && !discountValue) return null;
+
+    const mainLabel =
+      discountType === 'FIXED_AMOUNT'
+        ? `-${moneyVnd(Number(discountValue ?? 0))}`
+        : `-${Number(discountValue ?? 0)}%`;
+
+    const detailParts = [
+      typeof maxDiscountVnd === 'number' && maxDiscountVnd > 0
+        ? `tối đa ${moneyVnd(maxDiscountVnd)}`
+        : '',
+      typeof minSpendVnd === 'number' && minSpendVnd > 0
+        ? `từ ${moneyVnd(minSpendVnd)}`
+        : '',
+    ].filter(Boolean);
+
+    return detailParts.length ? `${mainLabel} (${detailParts.join(', ')})` : mainLabel;
+  }, [scanIssue]);
+  const scannedUsedAtLabel = useMemo(() => {
+    if (!scanIssue?.usedAt) return null;
+    return new Date(scanIssue.usedAt).toLocaleString('vi-VN');
+  }, [scanIssue]);
   const canConfirmScan = scanIssue?.status === 'ISSUED';
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
   const listingErrorCount = Object.keys(listingErrors).length;
@@ -4067,12 +4119,14 @@ export default function PartnerPage() {
     <div className="partner-scan-grid">
       <PanelCard>
         <SectionHeading
-          eyebrow="SCAN COUPON"
           title="Quét / nhập mã QR"
+          hideLine
           action={
-            <StatusPill tone={offlineScanQueue.length ? 'gold' : 'neutral'}>
-              {offlineScanQueue.length} offline
-            </StatusPill>
+            offlineScanQueue.length > 0 ? (
+              <StatusPill tone="gold">
+                {offlineScanQueue.length} offline
+              </StatusPill>
+            ) : null
           }
         />
 
@@ -4212,7 +4266,7 @@ export default function PartnerPage() {
       </PanelCard>
 
       <PanelCard>
-        <SectionHeading eyebrow="VALIDATION RESULT" title="Kết quả xác thực" />
+        <SectionHeading title="Kết quả xác thực" hideLine />
         {scanIssue ? (
           <div style={{ display: 'grid', gap: '12px' }}>
             <div style={{ ...softCardStyle, padding: '16px' }}>
@@ -4252,7 +4306,9 @@ export default function PartnerPage() {
             {[
               ['Loại mã', scanIssue.scanType === 'BOOKING_QR' ? 'QR đặt chỗ' : 'Coupon'],
               ['Quán áp dụng', scanIssue.coupon?.store?.name ?? storeName],
+              ...(scannedDiscountLabel ? [['Mức giảm', scannedDiscountLabel]] : []),
               ['Trạng thái', scanIssue.statusLabel ?? scanIssue.status],
+              ...(scannedUsedAtLabel ? [['Ngày giờ quét', scannedUsedAtLabel]] : []),
               ['Hạn sử dụng', scannedExpiryLabel],
               ['Khách hàng', scannedCustomerLabel],
               ['Booking', scannedBookingLabel],
@@ -4290,7 +4346,7 @@ export default function PartnerPage() {
                     ? 'Đang xác nhận'
                     : scanIssue.scanType === 'BOOKING_QR'
                       ? 'Xác nhận check-in'
-                      : 'Xác nhận USED'}
+                      : 'Xác nhận cho tôi'}
               </PrimaryButton>
               <GhostButton onClick={rejectScanResult}>
                 <XCircle size={16} />

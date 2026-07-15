@@ -4397,8 +4397,17 @@ export class NightlifeDataService {
     userId?: string | null;
     guestId?: string | null;
     store: { id: string; name: string; slug: string };
-    coupon?: { id: string; code: string; name: string } | null;
+    coupon?: {
+      id: string;
+      code: string;
+      name: string;
+      discountType?: string | null;
+      discountValue?: number | null;
+      maxDiscountVnd?: number | null;
+      minSpendVnd?: number | null;
+    } | null;
     couponIssue?: { id: string; code: string; status: string } | null;
+    discountSnapshot?: any;
     user?: {
       id: string;
       displayName: string | null;
@@ -4440,13 +4449,25 @@ export class NightlifeDataService {
         status: booking.status,
         scheduledAt: this.toAuditIso(booking.scheduledAt),
       },
-      coupon: {
-        id: booking.coupon?.id ?? booking.id,
-        code: booking.coupon?.code ?? 'BOOKING',
-        name: booking.coupon?.name ?? 'Booking đặt chỗ',
-        store: booking.store,
-      },
+      coupon: booking.coupon
+        ? {
+            id: booking.coupon.id,
+            code: booking.coupon.code,
+            name: booking.coupon.name,
+            discountType: booking.coupon.discountType,
+            discountValue: booking.coupon.discountValue,
+            maxDiscountVnd: booking.coupon.maxDiscountVnd,
+            minSpendVnd: booking.coupon.minSpendVnd,
+            store: booking.store,
+          }
+        : {
+            id: booking.id,
+            code: 'BOOKING',
+            name: 'Booking đặt chỗ',
+            store: booking.store,
+          },
       couponIssue: booking.couponIssue,
+      discountRuleSnapshot: booking.discountSnapshot ?? null,
     };
   }
 
@@ -12370,8 +12391,19 @@ export class NightlifeDataService {
       status: true,
       scheduledAt: true,
       cancelledAt: true,
+      discountSnapshot: true,
       store: { select: { id: true, name: true, slug: true } },
-      coupon: { select: { id: true, code: true, name: true } },
+      coupon: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+        },
+      },
       couponIssue: { select: { id: true, code: true, status: true } },
       user: { select: { id: true, displayName: true, tier: true } },
       guest: { select: { id: true, displayName: true, phone: true } },
