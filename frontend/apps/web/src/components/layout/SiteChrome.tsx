@@ -685,9 +685,15 @@ const bookingPlaceLabel = (notification: MemberNotification) => {
 const normalizeMemberNotification = (notification: MemberNotification): MemberNotification => {
   const key = notification.templateKey;
   const placeLabel = bookingPlaceLabel(notification);
+  const notificationCopy = `${notification.title} ${notification.body}`;
+  const isTourBooking =
+    key === "customer.booking.tour_created.v1" ||
+    /đặt\s+tour/i.test(notificationCopy) ||
+    /(?:^|\|\s*)Tour:\s*[^|]+/i.test(notificationCopy);
   const isCastBooking =
-    notification.title === "Đặt bàn theo cast thành công" ||
-    /^Yêu cầu đặt\s+(?!bàn tại\b)/i.test(notification.body);
+    !isTourBooking &&
+    (notification.title === "Đặt bàn theo cast thành công" ||
+      /^Yêu cầu đặt\s+(?!bàn tại\b)/i.test(notification.body));
 
   if (key === "customer.bill.submitted.v1") {
     return {
@@ -716,6 +722,23 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
       actionLabel: "Xem lý do",
       category: "bill",
       tone: "danger",
+    };
+  }
+
+  if (
+    key === "customer.booking.tour_created.v1" ||
+    ((key === "customer.booking.created.v1" || key === "customer.booking.cast_created.v1") &&
+      isTourBooking)
+  ) {
+    return {
+      ...notification,
+      title: "Đặt tour thành công",
+      body: /đặt\s+tour/i.test(notification.body)
+        ? notification.body
+        : "Yêu cầu đặt tour đã được ghi nhận. Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình.",
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "amber",
     };
   }
 

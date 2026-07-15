@@ -273,6 +273,7 @@ type CustomerNotificationRecord = {
     id: string;
     status: string;
     scheduledAt: Date;
+    note: string | null;
     store: { id: string; name: string; slug: string | null } | null;
     cast: {
       id: string;
@@ -3236,17 +3237,23 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
+    const isTourBooking = this.isTourBookingNote(contact.note);
+    const bookingNotificationTemplateKey = isTourBooking
+      ? 'customer.booking.tour_created.v1'
+      : booking.cast
+        ? 'customer.booking.cast_created.v1'
+        : 'customer.booking.created.v1';
     await this.notifyBookingCustomerTemplate(
       booking,
-      booking.cast
-        ? 'customer.booking.cast_created.v1'
-        : 'customer.booking.created.v1',
+      bookingNotificationTemplateKey,
       {
         scheduledAt: this.toAuditIso(booking.scheduledAt),
         partySize: booking.partySize ?? null,
         storeName: booking.store?.name ?? null,
         storeSlug: booking.store?.slug ?? null,
         castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+        note: contact.note ?? null,
+        tourTitle: this.bookingTourTitle(contact.note),
       },
     );
 
@@ -11748,6 +11755,7 @@ export class NightlifeDataService {
           id: true,
           status: true,
           scheduledAt: true,
+          note: true,
           store: { select: { id: true, name: true, slug: true } },
           cast: {
             select: {
@@ -11819,10 +11827,17 @@ export class NightlifeDataService {
     const rejectReason =
       log.bill?.rejectReason ??
       (typeof payload?.rejectReason === 'string' ? payload.rejectReason : null);
+    const bookingNote =
+      this.payloadString(payload, 'note') ?? log.booking?.note ?? null;
     const note =
-      this.payloadString(payload, 'note') ??
+      bookingNote ??
       this.payloadString(payload, 'reason') ??
       null;
+    const tourTitle =
+      this.payloadString(payload, 'tourTitle') ??
+      this.bookingTourTitle(bookingNote);
+    const isTourBooking =
+      templateKey === 'customer.booking.tour_created.v1' || Boolean(tourTitle);
     const href = log.billId
       ? `/gui-hoa-don?billId=${encodeURIComponent(log.billId)}`
       : log.bookingId
@@ -11856,6 +11871,18 @@ export class NightlifeDataService {
           : ' Vui lòng kiểm tra lại chứng từ.');
       tone = 'danger';
       actionLabel = 'Xem lý do';
+    } else if (
+      templateKey === 'customer.booking.tour_created.v1' ||
+      ((templateKey === 'customer.booking.created.v1' ||
+        templateKey === 'customer.booking.cast_created.v1') &&
+        isTourBooking)
+    ) {
+      title = 'Đặt tour thành công';
+      body =
+        `Yêu cầu đặt tour${tourTitle ? ` ${tourTitle}` : ''}${scheduleSuffix} đã được ghi nhận.` +
+        ' Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình.';
+      tone = 'amber';
+      actionLabel = 'Xem lịch đặt';
     } else if (templateKey === 'customer.booking.created.v1') {
       title = castName
         ? 'Đặt bàn theo cast thành công'
@@ -11955,6 +11982,16 @@ export class NightlifeDataService {
   ): string | null {
     const value = payload[key];
     return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private bookingTourTitle(note: string | null | undefined) {
+    if (!note) return null;
+    const match = note.match(/(?:^|\|\s*)Tour:\s*([^|]+)/i);
+    return match?.[1]?.trim() || null;
+  }
+
+  private isTourBookingNote(note: string | null | undefined) {
+    return Boolean(this.bookingTourTitle(note));
   }
 
   private formatCustomerSchedule(value: unknown) {

@@ -175,18 +175,31 @@ export default function Page() {
           </div>
 
           {booking ? (
-            <section className={styles.summaryCard} aria-label={translateText("Tóm tắt đặt chỗ", activeLanguage)}>
+            <section
+              className={styles.summaryCard}
+              aria-label={translateText("Tóm tắt đặt chỗ", activeLanguage)}
+            >
               <SummaryRow
                 label={translateText("Mã đặt chỗ", activeLanguage)}
                 value={<span className={styles.bookingCode}>{booking.bookingCode}</span>}
               />
+              {booking.tour ? (
+                <TourVenueSummary booking={booking} language={activeLanguage} />
+              ) : (
+                <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
+              )}
               <SummaryRow
-                label={translateText("Quán", activeLanguage)}
-                value={booking.tour ? <TourVenueSummary booking={booking} language={activeLanguage} /> : title}
+                label={translateText("Thời gian", activeLanguage)}
+                value={formatDateTime(booking.scheduledAt, activeLanguage)}
               />
-              <SummaryRow label={translateText("Thời gian", activeLanguage)} value={formatDateTime(booking.scheduledAt, activeLanguage)} />
-              <SummaryRow label={translateText("Số người", activeLanguage)} value={translateText(`${booking.partySize} người`, activeLanguage)} />
-              <SummaryRow label={translateText("Người đặt", activeLanguage)} value={guestLabel(booking, activeLanguage)} />
+              <SummaryRow
+                label={translateText("Số người", activeLanguage)}
+                value={translateText(`${booking.partySize} người`, activeLanguage)}
+              />
+              <SummaryRow
+                label={translateText("Người đặt", activeLanguage)}
+                value={guestLabel(booking, activeLanguage)}
+              />
               {booking.couponIssue ? (
                 <SummaryRow
                   label={translateText("Mã ưu đãi", activeLanguage)}
@@ -195,7 +208,9 @@ export default function Page() {
               ) : null}
             </section>
           ) : (
-            <div className={styles.emptyCard}>{translateText("Chưa tìm thấy booking vừa tạo trong phiên này.", activeLanguage)}</div>
+            <div className={styles.emptyCard}>
+              {translateText("Chưa tìm thấy booking vừa tạo trong phiên này.", activeLanguage)}
+            </div>
           )}
 
           {booking && canShowQr ? (
@@ -257,26 +272,55 @@ function SummaryRow({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
-function TourVenueSummary({ booking, language }: { booking: BookingRecord; language: LanguageCode }) {
+function TourVenueSummary({
+  booking,
+  language,
+}: {
+  booking: BookingRecord;
+  language: LanguageCode;
+}) {
   const stops = booking.tour?.stops ?? [];
 
-  if (!stops.length) return <>{bookingTitle(booking)}</>;
+  if (!stops.length) {
+    return (
+      <div className={styles.tourVenueSection}>
+        <div className={styles.tourVenueHeader}>
+          <span>{translateText("Quán", language)}</span>
+        </div>
+        <strong className={styles.tourVenueFallback}>{bookingTitle(booking)}</strong>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.tourVenueSummary}>
-      {stops.map((stop, index) => (
-        <div key={`${stop.storeId}-${stop.order}`} className={styles.tourVenueItem}>
-          <span className={styles.tourVenueIndex}>{stop.order || index + 1}</span>
-          <span className={styles.tourVenueCopy}>
-            <strong>{stop.storeName}</strong>
-            <small>
-              {stop.casts.length
-                ? stop.casts.map((cast) => cast.name).join(", ")
-                : translateText("Không chọn cast", language)}
-            </small>
-          </span>
-        </div>
-      ))}
+    <div className={styles.tourVenueSection}>
+      <div className={styles.tourVenueHeader}>
+        <span>{translateText("Quán", language)}</span>
+        <strong>{translateText(`${stops.length} điểm dừng`, language)}</strong>
+      </div>
+      <div className={styles.tourVenueSummary}>
+        {stops.map((stop, index) => (
+          <div key={`${stop.storeId}-${stop.order}`} className={styles.tourVenueItem}>
+            <span className={styles.tourVenueIndex}>{stop.order || index + 1}</span>
+            <span className={styles.tourVenueCopy}>
+              <strong>{stop.storeName}</strong>
+              <span className={styles.tourVenueCasts}>
+                {stop.casts.length ? (
+                  stop.casts.map((cast) => (
+                    <span key={cast.id} className={styles.tourCastChip}>
+                      {cast.name}
+                    </span>
+                  ))
+                ) : (
+                  <span className={styles.tourCastEmpty}>
+                    {translateText("Không chọn cast", language)}
+                  </span>
+                )}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

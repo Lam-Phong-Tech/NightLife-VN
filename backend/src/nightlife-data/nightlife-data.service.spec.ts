@@ -5037,6 +5037,53 @@ describe('NightlifeDataService', () => {
     expect(result.data[0].body).toContain('Aoi @ Tokyo Kitchen');
   });
 
+  it('formats tour booking notifications separately for members', async () => {
+    prisma.notificationLog.findMany.mockResolvedValue([
+      {
+        id: 'notification-booking-tour-1',
+        status: 'QUEUED',
+        templateKey: 'customer.booking.tour_created.v1',
+        payload: {
+          storeName: 'Tokyo Kitchen',
+          scheduledAt: '2026-07-09T14:00:00.000Z',
+          note: 'Tour: Bar Hopping VIP | Diem dung: Tokyo Kitchen > Crimson Bar',
+        },
+        createdAt: new Date('2026-07-03T10:00:00.000Z'),
+        sentAt: null,
+        billId: null,
+        bookingId: 'booking-tour-1',
+        store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+        booking: {
+          id: 'booking-tour-1',
+          status: 'REQUESTED',
+          scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
+          note: 'Tour: Bar Hopping VIP | Diem dung: Tokyo Kitchen > Crimson Bar',
+          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          cast: null,
+        },
+        bill: null,
+      },
+    ] as never);
+    prisma.notificationLog.count.mockResolvedValue(1 as never);
+
+    const result = await service.listMemberNotifications(
+      { id: 'member-1', role: 'USER' },
+      { limit: 10 },
+    );
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        title: 'Đặt tour thành công',
+        category: 'booking',
+        tone: 'amber',
+        actionLabel: 'Xem lịch đặt',
+        href: '/lich-su-dat-cho?bookingId=booking-tour-1',
+      }),
+    );
+    expect(result.data[0].body).toContain('Bar Hopping VIP');
+    expect(result.data[0].body).toContain('quán và cast');
+  });
+
   it('marks member notifications as read inside the customer scope', async () => {
     await expect(
       service.markMemberNotificationRead(
