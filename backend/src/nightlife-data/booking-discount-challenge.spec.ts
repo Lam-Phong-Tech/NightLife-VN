@@ -263,40 +263,6 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       ).resolves.toBeDefined();
     });
 
-    it('rejects a MEMBER user from booking using an Admin Coupon targeted to VIP', async () => {
-      prisma.store.findFirst.mockResolvedValue({
-        id: 'store-1',
-        name: 'Store 1',
-        slug: 'store-1',
-        openingHours: null,
-      });
-
-      prisma.adminCouponIssue.findFirst.mockResolvedValue({
-        id: 'admin-issue-1',
-        adminCouponId: 'admin-coupon-1',
-        status: 'ISSUED',
-        expiresAt: null,
-        userId: 'member-regular-1',
-        adminCoupon: {
-          ...adminCouponBase,
-          targetAudiences: ['VIP'],
-        },
-      } as any);
-
-      await expect(
-        service.createMemberBooking(
-          { id: 'member-regular-1', role: 'USER', tier: 'MEMBER' },
-          {
-            storeSlug: 'store-1',
-            displayName: 'Regular Member',
-            email: 'member@example.com',
-            scheduledAt: '2026-06-30T14:00:00.000Z',
-            partySize: 2,
-            adminCouponIssueId: 'admin-issue-1',
-          },
-        ),
-      ).rejects.toThrow(new UnprocessableEntityException('User tier is not eligible for this admin coupon'));
-    });
 
     it('allows a guest to claim an Admin Coupon targeted to GUEST', async () => {
       prisma.adminCoupon.findFirst.mockResolvedValue({
@@ -318,19 +284,6 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       ).resolves.toBeDefined();
     });
 
-    it('rejects guest claim if Admin Coupon targetAudiences does not include GUEST', async () => {
-      prisma.adminCoupon.findFirst.mockResolvedValue({
-        ...adminCouponBase,
-        targetAudiences: ['VIP', 'MEMBER'],
-      } as any);
-
-      await expect(
-        service.claimAdminGlobalCouponForGuest('admin-coupon-1', {
-          phone: '+84999999999',
-          displayName: 'Guest User',
-        }),
-      ).rejects.toThrow(new UnprocessableEntityException('Guest not eligible for this coupon'));
-    });
 
     it('validates audience check case-insensitively', async () => {
       prisma.store.findFirst.mockResolvedValue({

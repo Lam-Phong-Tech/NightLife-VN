@@ -38,8 +38,8 @@ export class CreateAdminCouponDto {
   /** e.g. ["GUEST","MEMBER","VIP"] */
   @IsArray()
   @IsString({ each: true })
-  @ArrayNotEmpty()
-  targetAudiences: string[];
+  @IsOptional()
+  targetAudiences?: string[] = [];
 
   /** Duration in days (7, 14, 30, 90) */
   @Type(() => Number)

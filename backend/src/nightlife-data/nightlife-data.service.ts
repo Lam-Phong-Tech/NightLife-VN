@@ -2772,17 +2772,7 @@ export class NightlifeDataService {
       );
     }
 
-    const userTier = user.tier ?? 'FREE';
-    if (coupon.targetAudiences && coupon.targetAudiences.length > 0) {
-      const hasAudience = coupon.targetAudiences.some(
-        (aud) => aud.toUpperCase() === userTier.toUpperCase(),
-      );
-      if (!hasAudience) {
-        throw new UnprocessableEntityException(
-          'User tier not eligible for this coupon',
-        );
-      }
-    }
+
 
     const existingIssue = await this.prisma.adminCouponIssue.findFirst({
       where: {
@@ -2882,16 +2872,7 @@ export class NightlifeDataService {
       );
     }
 
-    if (coupon.targetAudiences && coupon.targetAudiences.length > 0) {
-      const hasAudience = coupon.targetAudiences.some(
-        (aud) => aud.toUpperCase() === 'GUEST',
-      );
-      if (!hasAudience) {
-        throw new UnprocessableEntityException(
-          'Guest not eligible for this coupon',
-        );
-      }
-    }
+
 
     let guest = await this.prisma.guest.findFirst({
       where: { phone: dto.phone },
@@ -11230,20 +11211,6 @@ export class NightlifeDataService {
             }
           }
 
-          const userTier = input.user?.tier ?? 'GUEST';
-          if (
-            adminCoupon.targetAudiences &&
-            adminCoupon.targetAudiences.length > 0
-          ) {
-            const hasAudience = adminCoupon.targetAudiences.some(
-              (aud) => aud.toUpperCase() === userTier.toUpperCase(),
-            );
-            if (!hasAudience) {
-              throw new UnprocessableEntityException(
-                'User tier is not eligible for this admin coupon',
-              );
-            }
-          }
 
           if (input.userId) {
             if (

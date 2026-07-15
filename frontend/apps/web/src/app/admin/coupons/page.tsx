@@ -218,7 +218,6 @@ export default function AdminCouponsPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
                 <span style={{ background: scopeAll ? 'rgba(212,178,106,.12)' : 'rgba(111,159,216,.12)', color: scopeAll ? '#e3c27e' : '#8fb6e4', fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px', whiteSpace: 'nowrap' }}>{scopeAll ? 'Toàn hệ thống' : `${cp.targetStores.length} quán`}</span>
-                <span style={{ fontSize: '11px', color: '#8c8679' }}>{(cp.targetAudiences || []).join(' · ')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: '10px' }}>
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>HSD {formatTime(cp.endsAt)}</span>
@@ -351,14 +350,13 @@ export default function AdminCouponsPage() {
 
                 <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679', flex: 'none' }}>Phạm vi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500, textAlign: 'right' }}>{scopeFull(vc)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Hạng khách</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{(vc.targetAudiences || []).join(' · ')}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Hạn dùng</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{formatTime(vc.endsAt)}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Đã phát hành</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{vc.usedCount} {vc.usageLimit ? `/ ${vc.usageLimit}` : ''}</span></div>
                 </div>
 
                 <div style={{ marginTop: '14px', display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: 11 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 1 }}><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>
-                  <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>In hoặc chia sẻ QR này tại quán / campaign. Khách quét → nhận coupon theo hạng; nhân viên quán quét lại để xác nhận sử dụng.</span>
+                  <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>In hoặc chia sẻ QR này tại quán / campaign. Khách quét → nhận coupon; nhân viên quán quét lại để xác nhận sử dụng.</span>
                 </div>
 
                 <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '20px' }}>
@@ -532,17 +530,7 @@ export default function AdminCouponsPage() {
                 )}
               </div>
 
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Hạng khách áp dụng</div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['Guest', 'Member', 'VIP'].map(t => {
-                    const checked = tiers.includes(t);
-                    return (
-                      <span key={t} onClick={() => setTiers(p => checked ? p.filter(x => x !== t) : [...p, t])} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: checked ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: checked ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: checked ? '#f0dda8' : '#9b958a', fontWeight: checked ? 600 : 400 }}>{t}</span>
-                    );
-                  })}
-                </div>
-              </div>
+
 
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời hạn</div>
@@ -569,7 +557,7 @@ export default function AdminCouponsPage() {
               </div>
 
               <span onClick={async () => {
-                if (!fName.trim() || tiers.length === 0 || (scope === 'select' && selectedStores.length === 0) || (limit === 'Tự nhập...' && !limitCustom)) {
+                if (!fName.trim() || (scope === 'select' && selectedStores.length === 0) || (limit === 'Tự nhập...' && !limitCustom)) {
                   showToastMsg('Nhập tên ưu đãi, quán áp dụng và số lượng mã');
                   return;
                 }
@@ -583,13 +571,13 @@ export default function AdminCouponsPage() {
                     discountType: discountType === 'pct' ? 'PERCENT' : 'FIXED_AMOUNT',
                     discountValue: discountType === 'amt' ? parsedDiscount * 1000 : parsedDiscount,
                     targetStores: scope === 'all' ? [] : selectedStores,
-                    targetAudiences: tiers.map(t => t.toUpperCase()),
+                    targetAudiences: [],
                     durationDays: durationMap[duration] ?? 30,
                     usageLimit,
                   };
                   await apiClient('/admin/coupons', { method: 'POST', data: payload });
                   setShowCreate(false);
-                  setFName(''); setDiscountVal('10%'); setScope('all'); setSelectedStores([]); setTiers(['Guest','Member','VIP']); setDuration('30 ngày'); setLimit('500 mã'); setLimitCustom('');
+                  setFName(''); setDiscountVal('10%'); setScope('all'); setSelectedStores([]); setDuration('30 ngày'); setLimit('500 mã'); setLimitCustom('');
                   fetchCampaigns();
                   showToastMsg('Tạo coupon thành công! QR sẵn sàng.');
                 } catch (err: any) {
