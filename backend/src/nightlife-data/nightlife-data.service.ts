@@ -14509,6 +14509,7 @@ export class NightlifeDataService {
       contactName: true,
       contactPhone: true,
       contactEmail: true,
+      passwordHash: true,
       note: true,
       storeDescription: true,
       storeAddress: true,
