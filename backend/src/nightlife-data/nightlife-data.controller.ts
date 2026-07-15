@@ -485,6 +485,33 @@ export class NightlifeDataController {
     );
   }
 
+  @Post('admin-coupons/:couponId/member-claims')
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  claimAdminGlobalCouponForMember(
+    @Req() request: RequestWithUser,
+    @Param('couponId') couponId: string,
+  ) {
+    return this.nightlifeDataService.claimAdminGlobalCouponForMember(
+      couponId,
+      request.user,
+      this.couponRequestContext(request),
+    );
+  }
+
+  @Post('admin-coupons/:couponId/guest-claims')
+  claimAdminGlobalCouponForGuest(
+    @Req() request: express.Request,
+    @Param('couponId') couponId: string,
+    @Body() dto: ClaimGuestCouponDto,
+  ) {
+    return this.nightlifeDataService.claimAdminGlobalCouponForGuest(
+      couponId,
+      dto,
+      this.couponRequestContext(request),
+    );
+  }
+
   @PartnerStoresContract()
   @ActionPolicy('canViewPartnerStore')
   @Roles('PARTNER', 'ADMIN')
@@ -1644,7 +1671,9 @@ export class NightlifeDataController {
     return this.nightlifeDataService.updateAdminStore(id, dto);
   }
 
-  @ApiOperation({ summary: 'Admin action: Link or unlink store partner account' })
+  @ApiOperation({
+    summary: 'Admin action: Link or unlink store partner account',
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/stores/:id/partner-account')
@@ -1665,7 +1694,11 @@ export class NightlifeDataController {
     @Param('id') id: string,
     @Query('hard') hard?: string,
   ) {
-    return this.nightlifeDataService.deleteAdminStore(request.user, id, hard === 'true');
+    return this.nightlifeDataService.deleteAdminStore(
+      request.user,
+      id,
+      hard === 'true',
+    );
   }
 
   @ApiOperation({ summary: 'Admin action: Restore a soft-deleted store' })
@@ -1719,10 +1752,7 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/casts/:id')
-  updateAdminCast(
-    @Param('id') id: string,
-    @Body() dto: any,
-  ) {
+  updateAdminCast(@Param('id') id: string, @Body() dto: any) {
     return this.nightlifeDataService.updateAdminCast(id, dto);
   }
 
@@ -1734,7 +1764,11 @@ export class NightlifeDataController {
     @Param('id') id: string,
     @Query('hard') hard?: string,
   ) {
-    return this.nightlifeDataService.deleteAdminCast(request.user, id, hard === 'true');
+    return this.nightlifeDataService.deleteAdminCast(
+      request.user,
+      id,
+      hard === 'true',
+    );
   }
 
   @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })

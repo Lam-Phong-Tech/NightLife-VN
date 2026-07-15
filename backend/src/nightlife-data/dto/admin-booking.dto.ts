@@ -18,17 +18,23 @@ export class AdminBookingQueryDto {
   @Min(1)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ description: 'Filter by status (all, new, completed, cancelled)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (all, new, completed, cancelled)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ description: 'Search term for customer name, phone, or booking ID' })
+  @ApiPropertyOptional({
+    description: 'Search term for customer name, phone, or booking ID',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by timeframe (today, week, month)' })
+  @ApiPropertyOptional({
+    description: 'Filter by timeframe (today, week, month)',
+  })
   @IsOptional()
   @IsString()
   timeframe?: string;
@@ -38,12 +44,16 @@ export class AdminBookingQueryDto {
   @IsString()
   storeId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by source (Telegram, LINE, Web)' })
+  @ApiPropertyOptional({
+    description: 'Filter by source (Telegram, LINE, Web)',
+  })
   @IsOptional()
   @IsString()
   source?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by city (Hanoi, Ho Chi Minh City)' })
+  @ApiPropertyOptional({
+    description: 'Filter by city (Hanoi, Ho Chi Minh City)',
+  })
   @IsOptional()
   @IsString()
   city?: string;

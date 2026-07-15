@@ -13,14 +13,27 @@ export class CampaignsService {
     orderBy?: Prisma.CampaignOrderByWithRelationInput;
   }) {
     const { skip = 0, take = 50, where, orderBy } = params;
-    
+
     const [data, total] = await Promise.all([
       this.prisma.campaign.findMany({
         skip,
         take,
         where,
         orderBy: orderBy || { createdAt: 'desc' },
-        include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true, city: true, district: true, media: true } } }
+        include: {
+          targetStore: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              area: true,
+              slug: true,
+              city: true,
+              district: true,
+              media: true,
+            },
+          },
+        },
       }),
       this.prisma.campaign.count({ where }),
     ]);
@@ -36,7 +49,17 @@ export class CampaignsService {
   async findOne(id: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true } } }
+      include: {
+        targetStore: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            area: true,
+            slug: true,
+          },
+        },
+      },
     });
 
     if (!campaign) {
@@ -49,7 +72,17 @@ export class CampaignsService {
   async create(data: Prisma.CampaignCreateInput) {
     return this.prisma.campaign.create({
       data,
-      include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true } } }
+      include: {
+        targetStore: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            area: true,
+            slug: true,
+          },
+        },
+      },
     });
   }
 
@@ -57,7 +90,17 @@ export class CampaignsService {
     return this.prisma.campaign.update({
       where: { id },
       data,
-      include: { targetStore: { select: { id: true, name: true, category: true, area: true, slug: true } } }
+      include: {
+        targetStore: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            area: true,
+            slug: true,
+          },
+        },
+      },
     });
   }
 

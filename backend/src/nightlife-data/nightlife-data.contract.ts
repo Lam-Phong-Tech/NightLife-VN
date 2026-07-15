@@ -2264,7 +2264,8 @@ export function AdminRevenueReportContract() {
   return applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
-      summary: 'Admin action: P0 revenue report grouped by service date, store, and coupon',
+      summary:
+        'Admin action: P0 revenue report grouped by service date, store, and coupon',
       description:
         'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewRevenueReport). Filters by Bill.usedAt service usage date in the selected timezone and returns P0 revenue totals grouped by date -> store -> discount code. MVP export is disabled by default (`ENABLE_REVENUE_EXPORT=false`) and P2 BI fields are hidden unless `ENABLE_REVENUE_BI=true`.',
     }),
@@ -2523,7 +2524,8 @@ function publicDiscoveryQueries(
       ApiQuery({
         name: 'storeSlug',
         required: false,
-        description: 'Only returns public casts attached to the selected store.',
+        description:
+          'Only returns public casts attached to the selected store.',
         example: 'tokyo-kitchen',
       }),
     );

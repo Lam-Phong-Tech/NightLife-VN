@@ -121,11 +121,7 @@ export class TourService {
     } satisfies Prisma.TourInclude;
   }
 
-  async findPublicAll(params: {
-    skip?: number;
-    take?: number;
-    city?: string;
-  }) {
+  async findPublicAll(params: { skip?: number; take?: number; city?: string }) {
     const { skip = 0, take = 20, city } = params;
     const now = new Date();
     const where: Prisma.TourWhereInput = {

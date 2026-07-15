@@ -17,7 +17,9 @@ export class AdminBillQueryDto {
   @Min(1)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ description: 'Filter by status (pending, approved, rejected)' })
+  @ApiPropertyOptional({
+    description: 'Filter by status (pending, approved, rejected)',
+  })
   @IsOptional()
   @IsString()
   status?: string;
@@ -27,7 +29,9 @@ export class AdminBillQueryDto {
   @IsString()
   storeId?: string;
 
-  @ApiPropertyOptional({ description: 'Search term for store name, bill number, etc.' })
+  @ApiPropertyOptional({
+    description: 'Search term for store name, bill number, etc.',
+  })
   @IsOptional()
   @IsString()
   search?: string;

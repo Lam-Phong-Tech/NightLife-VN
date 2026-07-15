@@ -313,7 +313,9 @@ export class PartnerListingDraftDto {
   @IsUrl({ require_tld: false })
   coverImageUrl?: string;
 
-  @ApiPropertyOptional({ example: ['https://cdn.example.com/store/gallery.jpg'] })
+  @ApiPropertyOptional({
+    example: ['https://cdn.example.com/store/gallery.jpg'],
+  })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(12)

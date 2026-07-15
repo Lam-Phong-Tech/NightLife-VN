@@ -51,10 +51,9 @@ export class TelegramService {
       this.logger.log(`Booking ${booking.id} notification sent to Telegram.`);
     } catch (error) {
       this.logger.error(
-        `Failed to send Telegram notification: ${(error as any).message}`,
-        (error as any).stack,
+        `Failed to send Telegram notification: ${error.message}`,
+        error.stack,
       );
     }
   }
-
 }

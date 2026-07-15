@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupportSenderType, SupportTicketStatus } from '@prisma/client';
 
@@ -18,7 +22,11 @@ export class SupportChatService {
       take: limit,
       include: {
         senderUser: {
-          select: { id: true, displayName: true, profile: { select: { avatar: true } } },
+          select: {
+            id: true,
+            displayName: true,
+            profile: { select: { avatar: true } },
+          },
         },
       },
     };
@@ -38,16 +46,16 @@ export class SupportChatService {
       where: {
         OR: [
           { status: SupportTicketStatus.PENDING },
-          { status: SupportTicketStatus.ACTIVE, assignedAdminId: adminId }
-        ]
+          { status: SupportTicketStatus.ACTIVE, assignedAdminId: adminId },
+        ],
       },
       orderBy: { updatedAt: 'desc' },
       include: {
         user: { select: { id: true, displayName: true, email: true } },
         messages: {
           orderBy: { createdAt: 'desc' },
-          take: 1
-        }
+          take: 1,
+        },
       },
     });
   }
@@ -63,9 +71,12 @@ export class SupportChatService {
   }
 
   async createOrGetTicket(guestSessionId?: string, userId?: string) {
-    if (!guestSessionId && !userId) throw new BadRequestException('Guest session or User ID required');
+    if (!guestSessionId && !userId)
+      throw new BadRequestException('Guest session or User ID required');
 
-    const whereClause = userId ? { userId, status: { in: ['PENDING', 'ACTIVE'] } as any } : { guestSessionId, status: { in: ['PENDING', 'ACTIVE'] } as any };
+    const whereClause = userId
+      ? { userId, status: { in: ['PENDING', 'ACTIVE'] } as any }
+      : { guestSessionId, status: { in: ['PENDING', 'ACTIVE'] } as any };
 
     const existingTicket = await this.prisma.supportTicket.findFirst({
       where: whereClause,
@@ -91,7 +102,12 @@ export class SupportChatService {
     });
   }
 
-  async sendMessage(ticketId: string, senderType: SupportSenderType, content: string, senderId?: string) {
+  async sendMessage(
+    ticketId: string,
+    senderType: SupportSenderType,
+    content: string,
+    senderId?: string,
+  ) {
     return this.prisma.supportMessage.create({
       data: {
         ticketId,
@@ -108,8 +124,14 @@ export class SupportChatService {
   }
 
   async claimTicket(ticketId: string, adminId: string) {
-    const existing = await this.prisma.supportTicket.findUnique({ where: { id: ticketId }});
-    if (existing && existing.status === SupportTicketStatus.ACTIVE && existing.assignedAdminId === adminId) {
+    const existing = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+    });
+    if (
+      existing &&
+      existing.status === SupportTicketStatus.ACTIVE &&
+      existing.assignedAdminId === adminId
+    ) {
       return this.prisma.supportTicket.findUnique({
         where: { id: ticketId },
         include: { user: true },
@@ -129,7 +151,9 @@ export class SupportChatService {
     });
 
     if (result.count === 0) {
-      throw new BadRequestException('Ticket đã được tiếp nhận bởi người khác hoặc không còn tồn tại.');
+      throw new BadRequestException(
+        'Ticket đã được tiếp nhận bởi người khác hoặc không còn tồn tại.',
+      );
     }
 
     return this.prisma.supportTicket.findUnique({
@@ -151,7 +175,9 @@ export class SupportChatService {
     // 2. Find the active ticket to send a system message
     const activeTicket = await this.prisma.supportTicket.findFirst({
       where: { userId, status: SupportTicketStatus.ACTIVE },
-      include: { user: { select: { id: true, displayName: true, email: true } } },
+      include: {
+        user: { select: { id: true, displayName: true, email: true } },
+      },
     });
 
     if (activeTicket) {

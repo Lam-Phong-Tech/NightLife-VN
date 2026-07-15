@@ -29,12 +29,13 @@ export class SystemConfigController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.OPERATOR)
   @Put('admin/system-config/appearance')
-  async updateAppearanceConfig(
-    @Body() body: any,
-    @Req() req: RequestWithUser,
-  ) {
+  async updateAppearanceConfig(@Body() body: any, @Req() req: RequestWithUser) {
     const data = body.value || body;
-    const result = await this.configService.setConfig('appearance', data, req.user.id);
+    const result = await this.configService.setConfig(
+      'appearance',
+      data,
+      req.user.id,
+    );
     return { data: result.value };
   }
 
@@ -44,7 +45,9 @@ export class SystemConfigController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Get('admin/system-config/storage')
   async getStorageConfig() {
-    const config = await this.configService.getConfig('VPS_MAX_STORAGE_GB', { limit: 50 });
+    const config = await this.configService.getConfig('VPS_MAX_STORAGE_GB', {
+      limit: 50,
+    });
     return { data: config };
   }
 
@@ -53,12 +56,13 @@ export class SystemConfigController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Put('admin/system-config/storage')
-  async updateStorageConfig(
-    @Body() body: any,
-    @Req() req: RequestWithUser,
-  ) {
+  async updateStorageConfig(@Body() body: any, @Req() req: RequestWithUser) {
     const data = body.value || body;
-    const result = await this.configService.setConfig('VPS_MAX_STORAGE_GB', data, req.user.id);
+    const result = await this.configService.setConfig(
+      'VPS_MAX_STORAGE_GB',
+      data,
+      req.user.id,
+    );
     return { data: result.value };
   }
 

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { SupportChatService } from './support-chat.service';
 import { SupportChatGateway } from './support-chat.gateway';
 
@@ -8,7 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class SupportChatController {
   constructor(
     private readonly supportChatService: SupportChatService,
-    private readonly supportChatGateway: SupportChatGateway
+    private readonly supportChatGateway: SupportChatGateway,
   ) {}
 
   @Get('history')
@@ -18,7 +26,11 @@ export class SupportChatController {
     @Query('beforeMessageId') beforeMessageId?: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.supportChatService.getHistory(ticketId, limitNum, beforeMessageId);
+    return this.supportChatService.getHistory(
+      ticketId,
+      limitNum,
+      beforeMessageId,
+    );
   }
 
   @Get('pending')
@@ -33,7 +45,7 @@ export class SupportChatController {
   // @UseGuards(JwtAuthGuard) // User must be logged in to merge
   async mergeSession(
     @Body() body: { guestSessionId: string },
-    @Req() req: any
+    @Req() req: any,
   ) {
     // Assuming req.user contains the authenticated user
     const userId = req.user?.id || body['userId']; // fallback for testing without guard
@@ -41,15 +53,22 @@ export class SupportChatController {
       return { success: false, message: 'Missing userId or guestSessionId' };
     }
 
-    const result = await this.supportChatService.mergeSession(body.guestSessionId, userId);
+    const result = await this.supportChatService.mergeSession(
+      body.guestSessionId,
+      userId,
+    );
     if (result) {
       // Broadcast merge event to Admin
-      this.supportChatGateway.server.to(`ticket_${result.ticket.id}`).emit('session_merged', { 
-        ticketId: result.ticket.id, 
-        user: result.ticket.user 
-      });
+      this.supportChatGateway.server
+        .to(`ticket_${result.ticket.id}`)
+        .emit('session_merged', {
+          ticketId: result.ticket.id,
+          user: result.ticket.user,
+        });
       // Broadcast system message
-      this.supportChatGateway.server.to(`ticket_${result.ticket.id}`).emit('receive_message', result.message);
+      this.supportChatGateway.server
+        .to(`ticket_${result.ticket.id}`)
+        .emit('receive_message', result.message);
     }
     return { success: true, ticket: result?.ticket };
   }

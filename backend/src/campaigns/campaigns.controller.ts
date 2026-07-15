@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { Prisma, CampaignStatus, DiscountType } from '@prisma/client';
-import { IsString, IsNumber, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 
 export class CreateCampaignDto {
@@ -78,7 +94,10 @@ export class CampaignsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCampaignDto: UpdateCampaignDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCampaignDto: UpdateCampaignDto,
+  ) {
     const data: Prisma.CampaignUpdateInput = {
       name: updateCampaignDto.name,
       discountType: updateCampaignDto.discountType,

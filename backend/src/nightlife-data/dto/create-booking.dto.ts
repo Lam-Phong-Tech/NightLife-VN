@@ -147,4 +147,24 @@ export class CreateBookingDto {
   @IsString()
   @MaxLength(300)
   note?: string;
+
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440004',
+    description:
+      'Optional admin coupon issue id to attach to this booking for reconciliation.',
+  })
+  @Transform(trimOptionalString)
+  @IsOptional()
+  @IsUUID()
+  adminCouponIssueId?: string;
+
+  @ApiPropertyOptional({
+    example: 'MEMBER-550e8400-e29b-41d4-a716-446655440004',
+    description:
+      'Optional admin coupon issue code to attach to this booking for reconciliation.',
+  })
+  @Transform(trimOptionalString)
+  @IsOptional()
+  @IsString()
+  adminCouponIssueCode?: string;
 }

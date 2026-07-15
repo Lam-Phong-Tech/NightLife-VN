@@ -58,7 +58,12 @@ describe('StorageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new StorageService(configService, prisma, accessService as never, systemConfigService as never);
+    service = new StorageService(
+      configService,
+      prisma,
+      accessService as never,
+      systemConfigService as never,
+    );
   });
 
   it('stores local media metadata with relation ids and public access', async () => {

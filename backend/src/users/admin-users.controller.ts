@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,10 +31,10 @@ export class AdminUsersController {
   @Get('stores/search')
   async searchStores(
     @Query('q') q?: string,
-    @Query('forRole') forRole?: string
+    @Query('forRole') forRole?: string,
   ) {
     const where: any = { deletedAt: null };
-    
+
     if (q) {
       where.name = { contains: q, mode: 'insensitive' };
     }
@@ -43,7 +53,7 @@ export class AdminUsersController {
       },
       take: 20,
     });
-    
+
     return stores;
   }
 
@@ -62,13 +72,14 @@ export class AdminUsersController {
   @ApiOperation({ summary: 'Tạo tài khoản mới' })
   @Post()
   createUser(
-    @Body() dto: {
+    @Body()
+    dto: {
       email: string;
       password?: string;
       displayName?: string;
       role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
       storeId?: string;
-    }
+    },
   ) {
     return this.usersService.createUser({
       email: dto.email,
@@ -83,17 +94,14 @@ export class AdminUsersController {
   @Patch(':id')
   updateUser(
     @Param('id') id: string,
-    @Body() dto: { displayName: string; email: string }
+    @Body() dto: { displayName: string; email: string },
   ) {
     return this.usersService.updateProfile(id, dto);
   }
 
   @ApiOperation({ summary: 'Đổi mật khẩu' })
   @Patch(':id/password')
-  updatePassword(
-    @Param('id') id: string,
-    @Body() dto: { password: string }
-  ) {
+  updatePassword(@Param('id') id: string, @Body() dto: { password: string }) {
     return this.usersService.updatePassword(id, dto.password);
   }
 

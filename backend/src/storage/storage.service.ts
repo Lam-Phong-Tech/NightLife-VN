@@ -82,7 +82,11 @@ export class StorageService implements OnModuleInit {
       options.purpose !== undefined &&
       GLOBAL_PUBLIC_UPLOAD_PURPOSES.has(options.purpose);
 
-    if (options.userRole === 'SUPER_ADMIN' || options.userRole === 'ADMIN' || options.userRole === 'OPERATOR') {
+    if (
+      options.userRole === 'SUPER_ADMIN' ||
+      options.userRole === 'ADMIN' ||
+      options.userRole === 'OPERATOR'
+    ) {
       if (
         access === MediaAccess.PUBLIC &&
         !hasScopedPublicTarget &&
@@ -196,8 +200,13 @@ export class StorageService implements OnModuleInit {
 
     // Check storage quota
     const usage = await this.systemConfigService.getStorageUsage();
-    if (usage.limit > 0 && usage.usedBytes + file.size > usage.limit * 1024 * 1024 * 1024) {
-      throw new PayloadTooLargeException(`Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`);
+    if (
+      usage.limit > 0 &&
+      usage.usedBytes + file.size > usage.limit * 1024 * 1024 * 1024
+    ) {
+      throw new PayloadTooLargeException(
+        `Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`,
+      );
     }
 
     const storageKey = file.filename;
@@ -234,10 +243,7 @@ export class StorageService implements OnModuleInit {
     });
   }
 
-  async saveExternalUrl(
-    url: string,
-    options: SaveLocalFileOptions,
-  ) {
+  async saveExternalUrl(url: string, options: SaveLocalFileOptions) {
     const storageKey = `ext-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const access = this.resolveAccess(options.access);
 
@@ -246,7 +252,9 @@ export class StorageService implements OnModuleInit {
     // Check storage quota
     const usage = await this.systemConfigService.getStorageUsage();
     if (usage.limit > 0 && usage.usedBytes > usage.limit * 1024 * 1024 * 1024) {
-      throw new PayloadTooLargeException(`Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`);
+      throw new PayloadTooLargeException(
+        `Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`,
+      );
     }
 
     const relationIds = this.cleanRelationIds(options);

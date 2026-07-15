@@ -64,7 +64,8 @@ export class VoidBillDto {
 
   @ApiPropertyOptional({
     example: 'REFUND-20260704-001',
-    description: 'Optional refund or reversal reference from payment/admin ops.',
+    description:
+      'Optional refund or reversal reference from payment/admin ops.',
   })
   @IsOptional()
   @IsString()

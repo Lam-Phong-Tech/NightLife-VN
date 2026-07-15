@@ -145,7 +145,8 @@ export class CreatePartnerRequestDto {
   storeCategory?: string;
 
   @ApiPropertyOptional({
-    example: 'Premium lounge with live DJ, private tables, and late-night menu.',
+    example:
+      'Premium lounge with live DJ, private tables, and late-night menu.',
   })
   @IsOptional()
   @IsString()

@@ -585,11 +585,11 @@ describe('AuthService', () => {
     };
 
     usersService.findByEmail.mockResolvedValue(member as never);
-    prisma.passwordResetToken.create.mockResolvedValue(tokenRecord as never);
+    prisma.passwordResetToken.create.mockResolvedValue(tokenRecord);
     prisma.passwordResetToken.update.mockResolvedValue({
       ...tokenRecord,
       usedAt: new Date(),
-    } as never);
+    });
     emailNotificationService.sendPasswordResetCodeEmail.mockRejectedValue(
       new Error('SMTP unavailable'),
     );
@@ -668,7 +668,7 @@ describe('AuthService', () => {
       }),
     });
 
-    prisma.passwordResetToken.findFirst.mockResolvedValue(tokenRecord as never);
+    prisma.passwordResetToken.findFirst.mockResolvedValue(tokenRecord);
     const verifyResponse = await service.verifyPasswordResetCode({
       email: member.email,
       code: resetCode,

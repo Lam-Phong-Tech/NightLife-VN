@@ -9,17 +9,22 @@ export class LineService {
 
   constructor(private configService: ConfigService) {
     this.channelId = this.configService.get<string>('LINE_CHANNEL_ID') || '';
-    this.channelSecret = this.configService.get<string>('LINE_CHANNEL_SECRET') || '';
+    this.channelSecret =
+      this.configService.get<string>('LINE_CHANNEL_SECRET') || '';
   }
 
   async sendBookingConfirmation(guestPhoneOrId: string, bookingDetails: any) {
     if (!this.channelId || !this.channelSecret) {
-      this.logger.warn('LINE OA config is missing. Skipping fallback notification.');
+      this.logger.warn(
+        'LINE OA config is missing. Skipping fallback notification.',
+      );
       return;
     }
 
     // In a real scenario, we would use @line/bot-sdk with a Channel Access Token
     // Here we simulate sending a message to the guest using their phone/ID
-    this.logger.log(`[LINE MOCK] Sending confirmation to Guest ${guestPhoneOrId} for Booking ${bookingDetails.id}`);
+    this.logger.log(
+      `[LINE MOCK] Sending confirmation to Guest ${guestPhoneOrId} for Booking ${bookingDetails.id}`,
+    );
   }
 }

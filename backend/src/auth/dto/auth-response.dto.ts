@@ -43,7 +43,11 @@ export class GoogleConfigResponseDto {
   @ApiProperty({ example: true })
   configured: boolean;
 
-  @ApiProperty({ example: '1234567890-xxx.apps.googleusercontent.com', nullable: true, required: false })
+  @ApiProperty({
+    example: '1234567890-xxx.apps.googleusercontent.com',
+    nullable: true,
+    required: false,
+  })
   clientId: string | null;
 }
 

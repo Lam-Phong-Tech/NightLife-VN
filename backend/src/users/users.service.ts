@@ -229,7 +229,10 @@ export class UsersService {
       where: { userId: assignerId },
       include: { role: true },
     });
-    const assignerMaxLevel = Math.max(...assignerAssignments.map(a => a.role.level), 0);
+    const assignerMaxLevel = Math.max(
+      ...assignerAssignments.map((a) => a.role.level),
+      0,
+    );
 
     const roleToAssign = await this.prisma.role.findUnique({
       where: { id: roleId },
@@ -237,17 +240,24 @@ export class UsersService {
     if (!roleToAssign) throw new NotFoundException('Role not found');
 
     if (roleToAssign.level >= assignerMaxLevel) {
-      throw new UnauthorizedException('You cannot assign a role with a level equal to or higher than your own.');
+      throw new UnauthorizedException(
+        'You cannot assign a role with a level equal to or higher than your own.',
+      );
     }
 
     const targetAssignments = await this.prisma.userRoleAssignment.findMany({
       where: { userId: targetUserId },
       include: { role: true },
     });
-    const targetMaxLevel = Math.max(...targetAssignments.map(a => a.role.level), 0);
+    const targetMaxLevel = Math.max(
+      ...targetAssignments.map((a) => a.role.level),
+      0,
+    );
 
     if (targetMaxLevel >= assignerMaxLevel) {
-       throw new UnauthorizedException('You cannot modify roles of a user with a level equal to or higher than your own.');
+      throw new UnauthorizedException(
+        'You cannot modify roles of a user with a level equal to or higher than your own.',
+      );
     }
 
     return this.prisma.userRoleAssignment.create({
@@ -289,20 +299,20 @@ export class UsersService {
   }) {
     const { skip, take, search, role, status } = params;
     const where: any = {};
-    
+
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
         { displayName: { contains: search, mode: 'insensitive' } },
       ];
     }
-    
+
     if (role) {
       if (role !== 'all') {
         where.role = role.toUpperCase();
       }
     }
-    
+
     if (status === 'disabled') {
       where.status = 'DELETED';
     } else if (status === 'muted') {
@@ -317,11 +327,11 @@ export class UsersService {
     }
 
     if (role === 'disabled') {
-       where.status = 'DELETED';
-       delete where.role;
+      where.status = 'DELETED';
+      delete where.role;
     } else if (role === 'muted') {
-       where.status = 'SUSPENDED';
-       delete where.role;
+      where.status = 'SUSPENDED';
+      delete where.role;
     }
 
     const [items, total] = await Promise.all([

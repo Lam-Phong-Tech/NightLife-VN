@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsInt, IsEnum, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  IsEnum,
+  IsArray,
+  IsBoolean,
+} from 'class-validator';
 import { CastStatus } from '@prisma/client';
 
 export class CreateAdminCastDto {

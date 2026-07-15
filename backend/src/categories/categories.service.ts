@@ -22,7 +22,10 @@ export class CategoriesService {
     });
   }
 
-  async update(id: string, data: { name?: string; slug?: string; type?: string }) {
+  async update(
+    id: string,
+    data: { name?: string; slug?: string; type?: string },
+  ) {
     return this.prisma.category.update({
       where: { id },
       data,

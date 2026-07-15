@@ -223,42 +223,42 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
-    accessService.getAccessibleStoreIds.mockResolvedValue(undefined as never);
-    accessService.ensureStoreAccess.mockResolvedValue(undefined as never);
-    prisma.user.findUnique.mockResolvedValue(null as never);
+    accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
+    accessService.ensureStoreAccess.mockResolvedValue(undefined);
+    prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.create.mockResolvedValue({
       id: 'partner-user-1',
       email: 'owner@example.com',
-    } as never);
+    });
     prisma.user.update.mockResolvedValue({
       id: 'partner-user-1',
       email: 'owner@example.com',
-    } as never);
-    prisma.partnerAccount.findFirst.mockResolvedValue(null as never);
+    });
+    prisma.partnerAccount.findFirst.mockResolvedValue(null);
     prisma.partnerAccount.create.mockResolvedValue({
       id: 'partner-account-1',
-    } as never);
+    });
     prisma.partnerAccount.update.mockResolvedValue({
       id: 'partner-account-1',
-    } as never);
+    });
     prisma.storePermission.upsert.mockResolvedValue({
       id: 'store-permission-1',
-    } as never);
-    prisma.partnerRequest.updateMany.mockResolvedValue({ count: 1 } as never);
+    });
+    prisma.partnerRequest.updateMany.mockResolvedValue({ count: 1 });
     prisma.partnerRequest.update.mockResolvedValue({
       id: 'PARTNER-ABC12345',
-    } as never);
+    });
     prisma.pointLedger.upsert.mockResolvedValue({
       id: 'point-ledger-1',
-    } as never);
-    prisma.pointLedger.findFirst.mockResolvedValue(null as never);
+    });
+    prisma.pointLedger.findFirst.mockResolvedValue(null);
     prisma.pointLedger.findMany.mockResolvedValue([] as never);
-    prisma.pointLedger.updateMany.mockResolvedValue({ count: 0 } as never);
+    prisma.pointLedger.updateMany.mockResolvedValue({ count: 0 });
     prisma.commissionConfig.findMany.mockResolvedValue([] as never);
-    prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue(null);
     prisma.commissionConfig.update.mockResolvedValue({
       id: 'commission-config-1',
-    } as never);
+    });
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
       .spyOn(QRCode, 'toDataURL')
@@ -269,26 +269,26 @@ describe('NightlifeDataService', () => {
       name: 'Neon Club',
       slug: 'neon-club-partner-test',
       status: 'PENDING_REVIEW',
-    } as never);
-    prisma.store.update.mockResolvedValue({ id: 'store-draft-1' } as never);
+    });
+    prisma.store.update.mockResolvedValue({ id: 'store-draft-1' });
     prisma.area.findMany.mockResolvedValue([] as never);
     prisma.cast.count.mockResolvedValue(1);
-    prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' } as never);
-    prisma.cast.updateMany.mockResolvedValue({ count: 1 } as never);
-    prisma.media.create.mockResolvedValue({ id: 'media-draft-1' } as never);
+    prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' });
+    prisma.cast.updateMany.mockResolvedValue({ count: 1 });
+    prisma.media.create.mockResolvedValue({ id: 'media-draft-1' });
     prisma.media.findMany.mockResolvedValue([] as never);
-    prisma.media.updateMany.mockResolvedValue({ count: 1 } as never);
-    prisma.content.create.mockResolvedValue({ id: 'content-draft-1' } as never);
-    prisma.content.updateMany.mockResolvedValue({ count: 1 } as never);
-    prisma.content.findFirst.mockResolvedValue(null as never);
+    prisma.media.updateMany.mockResolvedValue({ count: 1 });
+    prisma.content.create.mockResolvedValue({ id: 'content-draft-1' });
+    prisma.content.updateMany.mockResolvedValue({ count: 1 });
+    prisma.content.findFirst.mockResolvedValue(null);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
-    prisma.rankingConfig.findFirst.mockResolvedValue(null as never);
-    prisma.couponIssue.findFirst.mockResolvedValue(null as never);
-    prisma.couponIssue.count.mockResolvedValue(0 as never);
-    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.rankingConfig.findFirst.mockResolvedValue(null);
+    prisma.couponIssue.findFirst.mockResolvedValue(null);
+    prisma.couponIssue.count.mockResolvedValue(0);
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 });
     prisma.notificationLog.create.mockResolvedValue({
       id: 'notification-1',
-    } as never);
+    });
     prisma.notificationLog.update.mockResolvedValue({
       id: 'notification-1',
       status: 'SENT',
@@ -296,20 +296,20 @@ describe('NightlifeDataService', () => {
       error: null,
       sentAt: null,
       createdAt: new Date('2026-06-30T10:00:00.000Z'),
-    } as never);
-    prisma.notificationLog.updateMany.mockResolvedValue({ count: 1 } as never);
-    prisma.notificationLog.count.mockResolvedValue(0 as never);
+    });
+    prisma.notificationLog.updateMany.mockResolvedValue({ count: 1 });
+    prisma.notificationLog.count.mockResolvedValue(0);
     adminNotificationService.notifyPartnerRequest.mockResolvedValue(
       'notification-1',
     );
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.findMany.mockResolvedValue([] as never);
-    prisma.auditLog.count.mockResolvedValue(0 as never);
-    prisma.booking.count.mockResolvedValue(0 as never);
-    prisma.booking.findFirst.mockResolvedValue(null as never);
-    prisma.bookingQr.count.mockResolvedValue(0 as never);
-    prisma.bill.count.mockResolvedValue(0 as never);
-    prisma.bill.findFirst.mockResolvedValue(null as never);
+    prisma.auditLog.count.mockResolvedValue(0);
+    prisma.booking.count.mockResolvedValue(0);
+    prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.bookingQr.count.mockResolvedValue(0);
+    prisma.bill.count.mockResolvedValue(0);
+    prisma.bill.findFirst.mockResolvedValue(null);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
       messageId: 'smtp-message-1',
     });
@@ -632,7 +632,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('assigns the general province area when admin creates a store', async () => {
-    prisma.store.findUnique.mockResolvedValue(null as never);
+    prisma.store.findUnique.mockResolvedValue(null);
     prisma.area.findMany.mockResolvedValue([
       {
         id: 'area-ninhbinh-general',
@@ -649,7 +649,7 @@ describe('NightlifeDataService', () => {
       slug: 'meo-meo',
       status: 'ACTIVE',
       areaId: 'area-ninhbinh-general',
-    } as never);
+    });
 
     const result = await service.createAdminStore({
       name: 'Meo Meo',
@@ -1189,7 +1189,7 @@ describe('NightlifeDataService', () => {
     const rankingId = '22222222-2222-4222-8222-222222222222';
     const now = new Date('2026-06-30T10:00:00.000Z');
 
-    prisma.store.findFirst.mockResolvedValue({ id: storeId } as never);
+    prisma.store.findFirst.mockResolvedValue({ id: storeId });
     prisma.rankingConfig.create.mockResolvedValue({
       id: rankingId,
       targetType: 'STORE',
@@ -1208,7 +1208,7 @@ describe('NightlifeDataService', () => {
       createdAt: now,
       updatedAt: now,
       area: null,
-    } as never);
+    });
     prisma.store.findMany.mockResolvedValue([
       {
         id: storeId,
@@ -1312,7 +1312,7 @@ describe('NightlifeDataService', () => {
       scope: 'global',
       manualScore: 100,
       pinRank: 1,
-        sponsored: true,
+      sponsored: true,
       status: 'ACTIVE',
       startsAt: null,
       endsAt: null,
@@ -1322,14 +1322,14 @@ describe('NightlifeDataService', () => {
     };
 
     prisma.rankingConfig.findFirst
-      .mockResolvedValueOnce(current as never)
-      .mockResolvedValueOnce(null as never);
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce(null);
     prisma.rankingConfig.update.mockResolvedValue({
       ...current,
       manualScore: 120,
       status: 'PAUSED',
       updatedAt,
-    } as never);
+    });
     prisma.store.findMany.mockResolvedValue([
       {
         id: storeId,
@@ -2024,10 +2024,10 @@ describe('NightlifeDataService', () => {
     };
     prisma.booking.findMany.mockResolvedValueOnce([booking] as never);
     prisma.booking.count
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(0 as never)
-      .mockResolvedValueOnce(0 as never);
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
 
     const result = await service.listAdminBookings({ search: 'BK' });
 
@@ -2307,8 +2307,91 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('automatically resolves and links VIP10 coupon on normal bookings for VIP users', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+    prisma.coupon.findFirst.mockResolvedValueOnce({
+      id: 'vip-coupon-1',
+      code: 'VIP10',
+      name: 'VIP 10%',
+      storeId: 'moonlight-bar',
+      discountType: 'PERCENT',
+      discountValue: 10,
+      maxDiscountVnd: null,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+    });
+    prisma.coupon.findFirst.mockResolvedValueOnce({
+      id: 'vip-coupon-1',
+      code: 'VIP10',
+      name: 'VIP 10%',
+      storeId: 'moonlight-bar',
+      discountType: 'PERCENT',
+      discountValue: 10,
+      maxDiscountVnd: null,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: {
+        id: 'moonlight-bar',
+        name: 'Moonlight Bar',
+        slug: 'moonlight-bar',
+      },
+    });
+
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'vip-issue-1',
+      code: 'MEMBER-vip-issue-1',
+      couponId: 'vip-coupon-1',
+      status: 'ISSUED',
+      metadata: {},
+      coupon: { storeId: 'moonlight-bar' },
+    });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+    });
+
+    await service.createMemberBooking(
+      { id: 'member-1', role: 'USER', tier: 'VIP' },
+      {
+        storeSlug: 'neon-club',
+        displayName: 'VIP Member',
+        phone: '+84901234567',
+        scheduledAt: '2026-06-30T14:00:00.000Z',
+        partySize: 2,
+      },
+    );
+
+    expect(prisma.coupon.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          code: 'VIP10',
+          status: 'ACTIVE',
+        }),
+      }),
+    );
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          couponId: 'vip-coupon-1',
+          couponIssueId: 'vip-issue-1',
+        }),
+      }),
+    );
+  });
+
   it('creates a member booking request for a cast with a contact snapshot', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.coupon.findFirst.mockResolvedValue(null);
     prisma.cast.findFirst.mockResolvedValue({
       id: 'cast-1',
       slug: 'yuna-neon',
@@ -2430,7 +2513,7 @@ describe('NightlifeDataService', () => {
     });
     prisma.booking.findFirst.mockResolvedValueOnce({
       id: 'booking-duplicate',
-    } as never);
+    });
 
     await expect(
       service.createGuestBooking({
@@ -2475,7 +2558,7 @@ describe('NightlifeDataService', () => {
     });
     prisma.booking.findFirst.mockResolvedValueOnce({
       id: 'booking-duplicate',
-    } as never);
+    });
 
     await expect(
       service.createMemberBooking(
@@ -2519,11 +2602,9 @@ describe('NightlifeDataService', () => {
       slug: 'neon-club',
       openingHours: null,
     });
-    prisma.booking.findFirst
-      .mockResolvedValueOnce(null as never)
-      .mockResolvedValueOnce({
-        id: 'booking-duplicate',
-      } as never);
+    prisma.booking.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'booking-duplicate',
+    });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
 
     await expect(
@@ -3058,16 +3139,10 @@ describe('NightlifeDataService', () => {
       { createdAt: new Date('2026-07-01T20:00:00.000Z') },
       { createdAt: new Date('2026-07-03T21:00:00.000Z') },
     ] as never);
-    prisma.booking.count
-      .mockResolvedValueOnce(3 as never)
-      .mockResolvedValueOnce(3 as never);
-    prisma.auditLog.count
-      .mockResolvedValueOnce(5 as never)
-      .mockResolvedValueOnce(5 as never);
-    prisma.couponIssue.count
-      .mockResolvedValueOnce(2 as never)
-      .mockResolvedValueOnce(2 as never);
-    prisma.bill.count.mockResolvedValueOnce(1 as never);
+    prisma.booking.count.mockResolvedValueOnce(3).mockResolvedValueOnce(3);
+    prisma.auditLog.count.mockResolvedValueOnce(5).mockResolvedValueOnce(5);
+    prisma.couponIssue.count.mockResolvedValueOnce(2).mockResolvedValueOnce(2);
+    prisma.bill.count.mockResolvedValueOnce(1);
 
     try {
       const result = await service.getPartnerLiteDashboard(
@@ -3139,16 +3214,10 @@ describe('NightlifeDataService', () => {
     ] as never);
     prisma.cast.findMany.mockResolvedValue([] as never);
     prisma.booking.findMany.mockResolvedValue([] as never);
-    prisma.booking.count
-      .mockResolvedValueOnce(0 as never)
-      .mockResolvedValueOnce(0 as never);
-    prisma.auditLog.count
-      .mockResolvedValueOnce(0 as never)
-      .mockResolvedValueOnce(0 as never);
-    prisma.couponIssue.count.mockResolvedValueOnce(9 as never);
-    prisma.bill.count
-      .mockResolvedValueOnce(4 as never)
-      .mockResolvedValueOnce(4 as never);
+    prisma.booking.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+    prisma.auditLog.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+    prisma.couponIssue.count.mockResolvedValueOnce(9);
+    prisma.bill.count.mockResolvedValueOnce(4).mockResolvedValueOnce(4);
 
     try {
       const result = await service.getPartnerLiteDashboard({
@@ -3175,7 +3244,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('records public profile views without visitor metadata', async () => {
-    prisma.store.findFirst.mockResolvedValue({ id: 'store-a' } as never);
+    prisma.store.findFirst.mockResolvedValue({ id: 'store-a' });
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-profile-1' });
 
     await expect(
@@ -4070,7 +4139,7 @@ describe('NightlifeDataService', () => {
         store: { id: 'store-1', name: 'Store', slug: 'store' },
       },
     });
-    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(
       service.scanCouponIssue('GUEST-code', {
@@ -4136,7 +4205,7 @@ describe('NightlifeDataService', () => {
           store: { id: 'store-1', name: 'Store', slug: 'store' },
         },
       });
-    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 });
     prisma.coupon.update.mockResolvedValue({ id: 'coupon-1' });
     prisma.booking.update.mockResolvedValue({
       id: 'booking-1',
@@ -4273,7 +4342,7 @@ describe('NightlifeDataService', () => {
       coupon: { storeId: 'store-1' },
       booking: null,
     });
-    prisma.couponIssue.updateMany.mockResolvedValue({ count: 0 } as never);
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
       service.confirmCouponIssueCheckIn('issue-1', {
@@ -4342,7 +4411,7 @@ describe('NightlifeDataService', () => {
     const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
     prisma.couponIssue.updateMany.mockResolvedValueOnce({
       count: 3,
-    } as never);
+    });
 
     await expect(service.expireCouponIssuesEveryFiveMinutes()).resolves.toEqual(
       { count: 3 },
@@ -4374,7 +4443,7 @@ describe('NightlifeDataService', () => {
     const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
     prisma.couponIssue.updateMany.mockResolvedValueOnce({
       count: 0,
-    } as never);
+    });
 
     await expect(service.expireCouponIssuesEveryFiveMinutes()).resolves.toEqual(
       { count: 0 },
@@ -4663,7 +4732,7 @@ describe('NightlifeDataService', () => {
     const createdAt = new Date('2026-07-01T10:05:00.000Z');
     prisma.bill.aggregate.mockResolvedValue({
       _sum: { totalVnd: 1800000 },
-    } as never);
+    });
     prisma.bill.findMany.mockResolvedValue([
       {
         id: 'bill-1',
@@ -4686,10 +4755,10 @@ describe('NightlifeDataService', () => {
       { billId: 'bill-1', url: '/storage/files/bill-1.png' },
     ] as never);
     prisma.bill.count
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(0 as never)
-      .mockResolvedValueOnce(0 as never);
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
 
     const result = await service.listAdminBills({
       status: 'pending',
@@ -4750,7 +4819,7 @@ describe('NightlifeDataService', () => {
     const createdAt = new Date('2026-07-01T10:05:00.000Z');
     prisma.bill.aggregate.mockResolvedValue({
       _sum: { totalVnd: 900000 },
-    } as never);
+    });
     prisma.bill.findMany.mockResolvedValue([
       {
         id: 'bill-2',
@@ -4770,10 +4839,10 @@ describe('NightlifeDataService', () => {
     ] as never);
     prisma.media.findMany.mockRejectedValue(new Error('media relation failed'));
     prisma.bill.count
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(1 as never)
-      .mockResolvedValueOnce(0 as never)
-      .mockResolvedValueOnce(0 as never);
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
 
     const result = await service.listAdminBills({
       status: 'pending',
@@ -4798,7 +4867,7 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
     prisma.couponIssue.findFirst.mockResolvedValue({
       id: 'issue-1',
       code: 'MEMBER-code',
@@ -4814,7 +4883,7 @@ describe('NightlifeDataService', () => {
         name: 'Welcome 20%',
         storeId: 'store-1',
       },
-    } as never);
+    });
     prisma.bill.create.mockResolvedValue({
       id: 'bill-1',
       billNumber: 'BILL-20260701-ABC12345',
@@ -4824,7 +4893,7 @@ describe('NightlifeDataService', () => {
       booking: null,
       coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
       couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
-    } as never);
+    });
 
     await service.submitMemberBill(
       { id: 'member-1', role: 'USER' },
@@ -4910,7 +4979,7 @@ describe('NightlifeDataService', () => {
         },
       },
     ] as never);
-    prisma.notificationLog.count.mockResolvedValue(1 as never);
+    prisma.notificationLog.count.mockResolvedValue(1);
 
     const result = await service.listMemberNotifications(
       { id: 'member-1', role: 'USER' },
@@ -4960,7 +5029,11 @@ describe('NightlifeDataService', () => {
           id: 'booking-cast-1',
           status: 'REQUESTED',
           scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
-          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          store: {
+            id: 'store-1',
+            name: 'Tokyo Kitchen',
+            slug: 'tokyo-kitchen',
+          },
           cast: {
             id: 'cast-1',
             slug: 'kotone-tokyo',
@@ -4971,7 +5044,7 @@ describe('NightlifeDataService', () => {
         bill: null,
       },
     ] as never);
-    prisma.notificationLog.count.mockResolvedValue(1 as never);
+    prisma.notificationLog.count.mockResolvedValue(1);
 
     const result = await service.listMemberNotifications(
       { id: 'member-1', role: 'USER' },
@@ -5009,7 +5082,11 @@ describe('NightlifeDataService', () => {
           id: 'booking-legacy-cast-1',
           status: 'REQUESTED',
           scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
-          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          store: {
+            id: 'store-1',
+            name: 'Tokyo Kitchen',
+            slug: 'tokyo-kitchen',
+          },
           cast: {
             id: 'cast-1',
             slug: 'aoi-tokyo',
@@ -5020,7 +5097,7 @@ describe('NightlifeDataService', () => {
         bill: null,
       },
     ] as never);
-    prisma.notificationLog.count.mockResolvedValue(1 as never);
+    prisma.notificationLog.count.mockResolvedValue(1);
 
     const result = await service.listMemberNotifications(
       { id: 'member-1', role: 'USER' },
@@ -5112,12 +5189,12 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       code: 'WELCOME20',
       name: 'Welcome 20%',
-    } as never);
+    });
     prisma.bill.create.mockResolvedValue({
       id: 'bill-direct-coupon',
       billNumber: 'BILL-20260701-DIRECT01',
@@ -5127,7 +5204,7 @@ describe('NightlifeDataService', () => {
       booking: null,
       coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
       couponIssue: null,
-    } as never);
+    });
 
     await service.submitMemberBill(
       { id: 'member-1', role: 'USER' },
@@ -5180,7 +5257,7 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
 
     await expect(
       service.submitMemberBill(
@@ -5202,11 +5279,11 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
     prisma.bill.findFirst.mockResolvedValue({
       id: 'bill-duplicate',
       billNumber: 'BILL-20260701-DUP',
-    } as never);
+    });
 
     await expect(
       service.submitMemberBill(
@@ -5237,8 +5314,8 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
-    prisma.bill.count.mockResolvedValue(5 as never);
+    });
+    prisma.bill.count.mockResolvedValue(5);
 
     await expect(
       service.submitMemberBill(
@@ -5267,12 +5344,12 @@ describe('NightlifeDataService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.partnerAccount.findFirst.mockResolvedValue({
       id: 'partner-account-1',
-    } as never);
+    });
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
     prisma.bill.create.mockResolvedValue({
       id: 'bill-1',
       billNumber: 'BILL-20260701-ABC12345',
@@ -5282,7 +5359,7 @@ describe('NightlifeDataService', () => {
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
       booking: null,
       guest: null,
-    } as never);
+    });
 
     await service.submitPartnerBill(
       { id: 'partner-1', role: 'PARTNER' },
@@ -5347,7 +5424,7 @@ describe('NightlifeDataService', () => {
       id: 'store-other',
       name: 'Other Club',
       slug: 'other-club',
-    } as never);
+    });
     accessService.ensureStoreAccess.mockRejectedValue(
       new ForbiddenException('Forbidden resource'),
     );
@@ -5377,7 +5454,7 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
-    } as never);
+    });
     prisma.couponIssue.findFirst.mockResolvedValue({
       id: 'issue-guest-1',
       code: 'GUEST-code',
@@ -5393,7 +5470,7 @@ describe('NightlifeDataService', () => {
         name: 'Guest 20%',
         storeId: 'store-1',
       },
-    } as never);
+    });
     prisma.bill.create.mockResolvedValue({
       id: 'bill-guest-1',
       billNumber: 'BILL-20260701-GUEST001',
@@ -5405,7 +5482,7 @@ describe('NightlifeDataService', () => {
       guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
       coupon: { id: 'coupon-guest-1', code: 'GUEST20', name: 'Guest 20%' },
       couponIssue: { id: 'issue-guest-1', code: 'GUEST-code', status: 'USED' },
-    } as never);
+    });
 
     await service.submitPartnerBill(
       { id: 'partner-1', role: 'PARTNER' },
@@ -5462,14 +5539,14 @@ describe('NightlifeDataService', () => {
       name: 'Neon Club Tay Ho',
       slug: 'neon-club-tay-ho-partner-abc12345',
       status: 'PENDING_REVIEW',
-    } as never);
-    prisma.cast.create.mockResolvedValueOnce({ id: 'cast-draft-1' } as never);
+    });
+    prisma.cast.create.mockResolvedValueOnce({ id: 'cast-draft-1' });
     prisma.media.create
-      .mockResolvedValueOnce({ id: 'cast-media-1' } as never)
-      .mockResolvedValueOnce({ id: 'store-media-1' } as never);
+      .mockResolvedValueOnce({ id: 'cast-media-1' })
+      .mockResolvedValueOnce({ id: 'store-media-1' });
     prisma.content.create.mockResolvedValueOnce({
       id: 'content-draft-1',
-    } as never);
+    });
     prisma.partnerRequest.create.mockImplementation(
       (args) =>
         Promise.resolve(
@@ -5648,7 +5725,7 @@ describe('NightlifeDataService', () => {
       name: 'Neon Club Tay Ho',
       slug: 'neon-club-tay-ho-partner-abc12345',
       status: 'PENDING_REVIEW',
-    } as never);
+    });
     prisma.partnerRequest.create.mockImplementation(
       (args) =>
         Promise.resolve(
@@ -5702,7 +5779,7 @@ describe('NightlifeDataService', () => {
       name: 'Meo Meo',
       slug: 'meo-meo-partner-abc12345',
       status: 'PENDING_REVIEW',
-    } as never);
+    });
     prisma.partnerRequest.create.mockImplementation(
       (args) =>
         Promise.resolve(
@@ -5793,9 +5870,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('approves a partner request transactionally, publishes drafts, and onboards the partner account', async () => {
-    prisma.partnerRequest.findFirst.mockResolvedValue(
-      partnerRequestRecord() as never,
-    );
+    prisma.partnerRequest.findFirst.mockResolvedValue(partnerRequestRecord());
     prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
       partnerRequestRecord({
         status: 'APPROVED',
@@ -5806,7 +5881,7 @@ describe('NightlifeDataService', () => {
         partnerUserId: 'partner-user-1',
         partnerAccountId: 'partner-account-1',
         store: { status: 'ACTIVE' },
-      }) as never,
+      }),
     );
 
     const result = await service.reviewPartnerRequest(
@@ -5941,9 +6016,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('rejects a partner request with a reason and keeps drafts non-public', async () => {
-    prisma.partnerRequest.findFirst.mockResolvedValue(
-      partnerRequestRecord() as never,
-    );
+    prisma.partnerRequest.findFirst.mockResolvedValue(partnerRequestRecord());
     prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
       partnerRequestRecord({
         status: 'REJECTED',
@@ -5951,7 +6024,7 @@ describe('NightlifeDataService', () => {
         reviewedAt: new Date('2026-06-30T10:05:00.000Z'),
         reviewedById: 'admin-1',
         publicState: 'HIDDEN',
-      }) as never,
+      }),
     );
 
     const result = await service.reviewPartnerRequest(
@@ -6004,12 +6077,10 @@ describe('NightlifeDataService', () => {
   });
 
   it('blocks concurrent double review before publishing any draft content', async () => {
-    prisma.partnerRequest.findFirst.mockResolvedValue(
-      partnerRequestRecord() as never,
-    );
+    prisma.partnerRequest.findFirst.mockResolvedValue(partnerRequestRecord());
     prisma.partnerRequest.updateMany.mockResolvedValueOnce({
       count: 0,
-    } as never);
+    });
 
     await expect(
       service.reviewPartnerRequest('admin-1', 'PARTNER-ABC12345', {
@@ -6026,7 +6097,7 @@ describe('NightlifeDataService', () => {
 
   it('requires contact email before approve can onboard a partner account', async () => {
     prisma.partnerRequest.findFirst.mockResolvedValue(
-      partnerRequestRecord({ contactEmail: null }) as never,
+      partnerRequestRecord({ contactEmail: null }),
     );
 
     await expect(
@@ -6184,14 +6255,14 @@ describe('NightlifeDataService', () => {
       pointsEarned: 18,
       discountRuleSnapshot: null,
       commissionRuleSnapshot: null,
-    } as never);
+    });
     prisma.pointLedger.findFirst.mockResolvedValue({
       id: 'ledger-earn-1',
       userId: 'member-1',
       bookingId: null,
       amountVnd: 1800000,
       points: 18,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-reverse-1',
       billNumber: 'BILL-20260701-VERIFIED',
@@ -6209,7 +6280,7 @@ describe('NightlifeDataService', () => {
       paidVnd: 1800000,
       commissionAmountVnd: 0,
       pointsEarned: 0,
-    } as never);
+    });
 
     await service.reverseSensitiveBill('admin-2', 'bill-reverse-1', {
       reason: 'Duplicate/fake bill confirmed',
@@ -6369,7 +6440,7 @@ describe('NightlifeDataService', () => {
         tier: 'MEMBER',
       },
       guest: null,
-    } as never);
+    });
     prisma.commissionConfig.findFirst.mockResolvedValue({
       id: 'commission-1',
       commissionType: 'PERCENT',
@@ -6381,7 +6452,7 @@ describe('NightlifeDataService', () => {
       },
       activeFrom: new Date('2026-01-01T00:00:00.000Z'),
       activeTo: null,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-revenue-1',
       status: 'VERIFIED',
@@ -6409,7 +6480,7 @@ describe('NightlifeDataService', () => {
         discountPercent: 8,
         commissionVnd: 80000,
       },
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-revenue-1', {
       approve: true,
@@ -6537,8 +6608,8 @@ describe('NightlifeDataService', () => {
         tier: 'MEMBER',
       },
       guest: null,
-    } as never);
-    prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
+    });
+    prisma.commissionConfig.findFirst.mockResolvedValue(null);
 
     expect.assertions(6);
     try {
@@ -6623,7 +6694,7 @@ describe('NightlifeDataService', () => {
       },
       user: null,
       guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
-    } as never);
+    });
     prisma.commissionConfig.findFirst.mockResolvedValue({
       id: 'commission-low',
       commissionType: 'PERCENT',
@@ -6635,7 +6706,7 @@ describe('NightlifeDataService', () => {
       },
       activeFrom: new Date('2026-01-01T00:00:00.000Z'),
       activeTo: null,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-negative-commission',
       status: 'PENDING_PM_BA',
@@ -6662,7 +6733,7 @@ describe('NightlifeDataService', () => {
         commissionVnd: -30000,
         requiresPmBaConfirmation: true,
       },
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-negative-commission', {
       approve: true,
@@ -6742,7 +6813,7 @@ describe('NightlifeDataService', () => {
       },
       user: null,
       guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
-    } as never);
+    });
     prisma.commissionConfig.findFirst.mockResolvedValue({
       id: 'commission-low',
       commissionType: 'PERCENT',
@@ -6751,7 +6822,7 @@ describe('NightlifeDataService', () => {
       ruleSnapshot: {},
       activeFrom: new Date('2026-01-01T00:00:00.000Z'),
       activeTo: null,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-negative-confirm',
       status: 'VERIFIED',
@@ -6770,7 +6841,7 @@ describe('NightlifeDataService', () => {
       pointsEarned: 0,
       discountRuleSnapshot: null,
       commissionRuleSnapshot: {},
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-negative-confirm', {
       approve: true,
@@ -6848,7 +6919,7 @@ describe('NightlifeDataService', () => {
           postedAt: new Date('2026-07-03T10:00:00.000Z'),
         },
       ],
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-void-1',
       status: 'VOIDED',
@@ -6868,7 +6939,7 @@ describe('NightlifeDataService', () => {
       discountRuleSnapshot: null,
       commissionRuleSnapshot: null,
       pointRuleSnapshot: null,
-    } as never);
+    });
 
     await service.voidSensitiveBill('admin-2', 'bill-void-1', {
       reason: 'Refunded',
@@ -6910,13 +6981,13 @@ describe('NightlifeDataService', () => {
       commissionValue: 15,
       ruleSnapshot: { version: 'ba-v3.2' },
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-    } as never);
+    });
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       code: 'WELCOME20',
       name: 'Welcome 20%',
       storeId: 'store-1',
-    } as never);
+    });
     prisma.commissionConfig.update.mockResolvedValue({
       id: 'commission-config-1',
       storeId: 'store-1',
@@ -6925,7 +6996,7 @@ describe('NightlifeDataService', () => {
       ruleSnapshot: {},
       updatedAt: new Date('2026-07-04T10:00:00.000Z'),
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-    } as never);
+    });
 
     await service.createAdminCommissionOverride('admin-1', {
       storeId: 'store-1',
@@ -7075,7 +7146,7 @@ describe('NightlifeDataService', () => {
       booking: { id: 'booking-1', status: 'CONFIRMED' },
       user: { id: 'member-1', displayName: 'Minh', role: 'USER', tier: 'VIP' },
       guest: null,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-member-1',
       status: 'VERIFIED',
@@ -7090,7 +7161,7 @@ describe('NightlifeDataService', () => {
       totalVnd: 2080000,
       commissionAmountVnd: 180000,
       pointsEarned: 18,
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-member-1', {
       approve: true,
@@ -7173,7 +7244,7 @@ describe('NightlifeDataService', () => {
       booking: null,
       user: null,
       guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-guest-1',
       status: 'VERIFIED',
@@ -7187,7 +7258,7 @@ describe('NightlifeDataService', () => {
       totalVnd: 1800000,
       commissionAmountVnd: 180000,
       pointsEarned: 0,
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-guest-1', {
       approve: true,
@@ -7221,7 +7292,7 @@ describe('NightlifeDataService', () => {
       pointsEarned: 0,
       user: { id: 'member-1', displayName: 'Minh', role: 'USER', tier: 'VIP' },
       guest: null,
-    } as never);
+    });
     prisma.bill.update.mockResolvedValue({
       id: 'bill-reject-1',
       status: 'REJECTED',
@@ -7235,7 +7306,7 @@ describe('NightlifeDataService', () => {
       totalVnd: 1800000,
       commissionAmountVnd: 180000,
       pointsEarned: 0,
-    } as never);
+    });
 
     await service.reviewSensitiveBill('admin-1', 'bill-reject-1', {
       approve: false,
@@ -7931,7 +8002,9 @@ describe('NightlifeDataService', () => {
       prisma.booking.findMany.mockResolvedValue([]);
       prisma.notificationLog.findMany.mockResolvedValue([]);
 
-      const result = await service.getAdminDashboardStats({ timeframe: 'today' });
+      const result = await service.getAdminDashboardStats({
+        timeframe: 'today',
+      });
 
       expect(prisma.store.count).toHaveBeenCalledWith({
         where: { status: 'ACTIVE', deletedAt: null },

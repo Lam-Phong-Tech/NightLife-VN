@@ -40,7 +40,7 @@ describe('UsersService', () => {
   });
 
   it('returns the active user when the password matches', async () => {
-    prisma.user.findUnique.mockResolvedValue(activeUser as never);
+    prisma.user.findUnique.mockResolvedValue(activeUser);
     passwordService.verify.mockResolvedValue(true);
 
     await expect(
@@ -49,7 +49,7 @@ describe('UsersService', () => {
   });
 
   it('returns unauthorized instead of leaking password verification failures', async () => {
-    prisma.user.findUnique.mockResolvedValue(activeUser as never);
+    prisma.user.findUnique.mockResolvedValue(activeUser);
     passwordService.verify.mockRejectedValue(new Error('Invalid scrypt hash'));
 
     await expect(
@@ -64,7 +64,7 @@ describe('UsersService', () => {
       ...activeUser,
       email: 'new-member@nightlife.vn',
       tier: 'FREE',
-    } as never);
+    });
 
     await service.createUser({
       email: ' New-Member@Nightlife.vn ',
@@ -88,7 +88,7 @@ describe('UsersService', () => {
     prisma.user.update.mockResolvedValue({
       ...activeUser,
       passwordHash: 'new-hashed-password',
-    } as never);
+    });
 
     await service.updatePassword(activeUser.id, 'NewStr0ngPass!');
 

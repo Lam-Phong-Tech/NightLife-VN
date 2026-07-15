@@ -68,7 +68,10 @@ describe('Public discovery listing API (e2e)', () => {
         languages: ['ja', 'vi'],
         hourlyRateVnd: 430000,
         media: [
-          { url: '/media/admin/casts/mika-gallery.jpg', purpose: 'cast-gallery' },
+          {
+            url: '/media/admin/casts/mika-gallery.jpg',
+            purpose: 'cast-gallery',
+          },
           { url: '/media/admin/casts/mika-avatar.jpg', purpose: 'avatar' },
         ],
         store: {
@@ -392,9 +395,7 @@ describe('Public discovery listing API (e2e)', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           targetType: 'STORE',
-          AND: expect.arrayContaining([
-            { cityCode: 'all' },
-          ]),
+          AND: expect.arrayContaining([{ cityCode: 'all' }]),
         }),
       }),
     );

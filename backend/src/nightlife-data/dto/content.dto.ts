@@ -34,7 +34,16 @@ export class PublicContentQueryDto {
 export class AdminContentQueryDto extends PublicContentQueryDto {
   @IsOptional()
   @IsString()
-  @IsIn(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED', 'draft', 'published', 'archived', 'deleted'])
+  @IsIn([
+    'DRAFT',
+    'PUBLISHED',
+    'ARCHIVED',
+    'DELETED',
+    'draft',
+    'published',
+    'archived',
+    'deleted',
+  ])
   status?: string;
 }
 

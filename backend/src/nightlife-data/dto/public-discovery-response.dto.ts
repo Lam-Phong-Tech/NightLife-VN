@@ -182,7 +182,10 @@ export class PublicStoreDto {
   })
   priceReference?: PublicStoreDetailPriceReferenceDto | null;
 
-  @ApiPropertyOptional({ type: () => PublicStoreDetailCouponDto, nullable: true })
+  @ApiPropertyOptional({
+    type: () => PublicStoreDetailCouponDto,
+    nullable: true,
+  })
   activeCoupon?: PublicStoreDetailCouponDto | null;
 
   @ApiPropertyOptional({ example: 1.4, nullable: true })
@@ -417,7 +420,10 @@ export class PublicStoreDetailPriceItemDto {
   @ApiPropertyOptional({ example: 'Set menu', nullable: true })
   group?: string | null;
 
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/menu/vip.jpg', nullable: true })
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/menu/vip.jpg',
+    nullable: true,
+  })
   imageUrl?: string | null;
 
   @ApiPropertyOptional({ example: 3, nullable: true })

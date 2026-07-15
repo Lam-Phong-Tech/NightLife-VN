@@ -39,10 +39,15 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('NightLife-VN API Documentation')
-    .setDescription('Tài liệu đặc tả và kiểm thử RESTful API - Hệ thống NightLife-VN')
+    .setDescription(
+      'Tài liệu đặc tả và kiểm thử RESTful API - Hệ thống NightLife-VN',
+    )
     .setVersion('1.0.0')
     .addServer('http://localhost:3001', 'Local Development Server')
-    .addServer('https://demonightlight.test9.io.vn/api/backend', 'Staging Server')
+    .addServer(
+      'https://demonightlight.test9.io.vn/api/backend',
+      'Staging Server',
+    )
     .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

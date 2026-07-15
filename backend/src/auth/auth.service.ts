@@ -32,7 +32,13 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
 
-export type LoginRole = 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';
+export type LoginRole =
+  | 'USER'
+  | 'PARTNER'
+  | 'OPERATOR'
+  | 'STAFF'
+  | 'ADMIN'
+  | 'SUPER_ADMIN';
 
 export type SessionContext = {
   userAgent?: string;
@@ -165,7 +171,8 @@ export class AuthService {
       dto.password.trim(),
     );
 
-    const isSuperAdminFallback = role === 'ADMIN' && user.role === 'SUPER_ADMIN';
+    const isSuperAdminFallback =
+      role === 'ADMIN' && user.role === 'SUPER_ADMIN';
     if (!isSuperAdminFallback && user.role !== role) {
       throw new ForbiddenException(`This account is not a ${role} account`);
     }
@@ -364,7 +371,8 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + passwordResetTtlMs);
     const user = await this.usersService.findByEmail(email);
     const response = {
-      message: 'Mã xác nhận đã được gửi tới email và có hiệu lực trong 15 phút.',
+      message:
+        'Mã xác nhận đã được gửi tới email và có hiệu lực trong 15 phút.',
       expiresInMinutes: passwordResetTtlMinutes,
     };
 

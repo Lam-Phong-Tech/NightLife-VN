@@ -166,10 +166,13 @@ describeDb('CouponIssue one-time update with a real database (e2e)', () => {
         },
       },
     });
-    const service = new NightlifeDataService(failingPrisma as never, {
-      ensureStoreAccess: jest.fn(),
-      getAccessibleStoreIds: jest.fn(),
-    } as never);
+    const service = new NightlifeDataService(
+      failingPrisma as never,
+      {
+        ensureStoreAccess: jest.fn(),
+        getAccessibleStoreIds: jest.fn(),
+      } as never,
+    );
 
     await expect(
       service.createGuestBooking({
@@ -177,7 +180,9 @@ describeDb('CouponIssue one-time update with a real database (e2e)', () => {
         couponId: coupon.id,
         displayName: 'Rollback Guest',
         phone,
-        scheduledAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        scheduledAt: new Date(
+          Date.now() + 2 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
         partySize: 2,
       }),
     ).rejects.toThrow('Simulated booking create failure after QR issue');

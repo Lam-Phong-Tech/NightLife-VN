@@ -49,7 +49,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   notifyBookingStatusUpdate(userId: string, booking: any) {
     this.server.to(`user_${userId}`).emit('booking_status_updated', booking);
-    this.logger.log(`Emitted booking_status_updated to user_${userId} for booking ${booking.id}`);
+    this.logger.log(
+      `Emitted booking_status_updated to user_${userId} for booking ${booking.id}`,
+    );
   }
 
   notifyMemberNotificationCreated(userId: string, notification: any) {

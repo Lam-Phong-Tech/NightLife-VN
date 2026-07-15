@@ -17,10 +17,7 @@ export class PublicCampaignsController {
     const where: Prisma.CampaignWhereInput = {
       status: 'ACTIVE',
       targetStoreId: { not: null }, // Only campaigns with a target store
-      OR: [
-        { endsAt: null },
-        { endsAt: { gte: new Date() } }
-      ],
+      OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }],
     };
 
     const result = await this.campaignsService.findAll({ skip, take, where });

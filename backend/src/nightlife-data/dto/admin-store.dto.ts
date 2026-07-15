@@ -15,7 +15,8 @@ import {
 import { Type } from 'class-transformer';
 import { StoreCategory, StoreStatus } from '@prisma/client';
 
-const adminOpeningTimeRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
+const adminOpeningTimeRangePattern =
+  /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -45,7 +46,8 @@ const isValidAdminOpeningHours = (value: unknown) => {
   return Object.values(value).every((entry) => {
     if (!isRecord(entry)) return false;
     if (entry.isOff === true) return true;
-    if (entry.isOff !== undefined && typeof entry.isOff !== 'boolean') return false;
+    if (entry.isOff !== undefined && typeof entry.isOff !== 'boolean')
+      return false;
     if (typeof entry.hours !== 'string') return false;
 
     const slots = entry.hours.split(',').map((slot) => slot.trim());

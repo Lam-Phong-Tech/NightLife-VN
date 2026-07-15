@@ -18,7 +18,9 @@ export class AdminCommissionOverrideQueryDto {
   @IsUUID()
   storeId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter overrides by coupon campaign id.' })
+  @ApiPropertyOptional({
+    description: 'Filter overrides by coupon campaign id.',
+  })
   @IsOptional()
   @IsUUID()
   couponId?: string;

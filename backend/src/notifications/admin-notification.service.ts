@@ -696,8 +696,6 @@ export class AdminNotificationService {
     return 'Mới';
   }
 
-
-
   private customerContact(input: {
     guest?: { phone?: string | null; email?: string | null } | null;
   }) {

@@ -43,7 +43,11 @@ export class MediaResponseDto {
   @ApiProperty({ example: 'PUBLIC' })
   access: string;
 
-  @ApiProperty({ example: 'https://cdn.example.com/storage/public/image-12345.jpg', required: false, nullable: true })
+  @ApiProperty({
+    example: 'https://cdn.example.com/storage/public/image-12345.jpg',
+    required: false,
+    nullable: true,
+  })
   url: string | null;
 
   @ApiProperty()
