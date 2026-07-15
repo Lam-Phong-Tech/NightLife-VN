@@ -4208,35 +4208,42 @@ export class NightlifeDataService {
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
     const clean = code.trim();
-    let queryId: string | undefined;
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
-      queryId = clean;
-    } else if (/^[0-9a-f]{32}$/i.test(clean)) {
-      queryId = `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+    const isUuidNoDashes = /^[0-9a-f]{32}$/i.test(clean);
+
+    let standardIssue: any = null;
+    let adminIssue: any = null;
+
+    if (isUuid || isUuidNoDashes) {
+      const queryId = isUuid
+        ? clean
+        : `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+
+      standardIssue = await this.prisma.couponIssue.findUnique({
+        where: { id: queryId },
+      });
+      if (!standardIssue) {
+        adminIssue = await this.prisma.adminCouponIssue.findUnique({
+          where: { id: queryId },
+        });
+      }
+    } else {
+      standardIssue = await this.prisma.couponIssue.findUnique({
+        where: { code: clean },
+      });
+      if (!standardIssue) {
+        adminIssue = await this.prisma.adminCouponIssue.findUnique({
+          where: { code: clean },
+        });
+      }
     }
 
-    const standardIssue = await this.prisma.couponIssue.findFirst({
-      where: {
-        OR: [
-          { code: clean },
-          queryId ? { id: queryId } : null,
-        ].filter(Boolean) as Prisma.CouponIssueWhereInput[],
-      },
-    });
     if (standardIssue) {
       return this.scanCouponIssueByUnique({ id: standardIssue.id }, user, {
         source: 'LEGACY_CODE',
       });
     }
 
-    const adminIssue = await this.prisma.adminCouponIssue.findFirst({
-      where: {
-        OR: [
-          { code: clean },
-          queryId ? { id: queryId } : null,
-        ].filter(Boolean) as Prisma.AdminCouponIssueWhereInput[],
-      },
-    });
     if (adminIssue) {
       return this.scanAdminCouponIssueByUnique({ id: adminIssue.id }, user, {
         source: 'LEGACY_CODE',
