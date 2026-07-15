@@ -52,12 +52,17 @@ Coordinate the backend integration of booking and discount flows matching the sp
 | Explorer 1 | teamwork_preview_explorer | Explore & Design (R1-R3) | completed | 1c89a659-845d-4730-94f9-3895a4da6614 |
 | Explorer 2 | teamwork_preview_explorer | Explore & Design (R1-R3) | completed | 82544eca-68c5-474f-b014-67001fef6765 |
 | Explorer 3 | teamwork_preview_explorer | Explore & Design (R1-R3) | completed | 33bc6506-02ca-499c-bfae-b65792076787 |
-| Worker 1 | teamwork_preview_worker | Implement R1, R2, R3 | in-progress | 343f048b-de15-4f50-8eab-0341b9de7a6d |
+| Worker 1 | teamwork_preview_worker | Implement R1, R2, R3 | completed | 343f048b-de15-4f50-8eab-0341b9de7a6d |
+| Reviewer 1 | teamwork_preview_reviewer | Verify & inspect R1-R3 | completed | 8c9c82ea-9eef-4857-9b72-8711e8e94e1a |
+| Reviewer 2 | teamwork_preview_reviewer | Verify & inspect R1-R3 | completed | 6ea6218d-5fd3-4a03-85b7-d8d0ad328423 |
+| Challenger 1 | teamwork_preview_challenger | Edge case & load testing | completed | 9a8c52a0-cdde-4b63-b369-81f978c77cd4 |
+| Challenger 2 | teamwork_preview_challenger | Edge case & load testing | completed | 9f27eda1-7786-4fb3-9001-c7f40edf5b01 |
+| Auditor 1 | teamwork_preview_auditor | Forensic Integrity Audit | completed | 9212edbd-1282-45ea-90e6-a79e7a16fffb |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 4 / 16
-- Pending subagents: 343f048b-de15-4f50-8eab-0341b9de7a6d
+- Spawn count: 9 / 16
+- Pending subagents: none
 - Predecessor: none
 - Successor: not yet spawned
 

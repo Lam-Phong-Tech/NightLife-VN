@@ -14,9 +14,9 @@ Integrating three core discount flow requirements in the backend:
 | # | Name | Scope | Dependencies | Status |
 |---|---|---|---|---|
 | 1 | Explore & Design | Locate files and define integration architecture | None | DONE |
-| 2 | Implementation | Integrate R1, R2, and R3 in nightlife-data.service.ts and controller | M1 | IN_PROGRESS |
-| 3 | Verification | Run Jest tests and E2E validation | M2 | PLANNED |
-| 4 | Forensic Audit | Run integrity checks | M3 | PLANNED |
+| 2 | Implementation | Integrate R1, R2, and R3 in nightlife-data.service.ts and controller | M1 | DONE |
+| 3 | Verification | Run Jest tests and E2E validation | M2 | DONE |
+| 4 | Forensic Audit | Run integrity checks | M3 | DONE |
 
 ## Code Layout
 - Backend controllers and services: `backend/src/nightlife-data/`

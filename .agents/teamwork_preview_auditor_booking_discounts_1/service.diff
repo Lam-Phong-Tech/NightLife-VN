@@ -1,0 +1,1314 @@
+﻿diff --git a/backend/src/nightlife-data/nightlife-data.service.ts b/backend/src/nightlife-data/nightlife-data.service.ts
+index 1fb0e25..b713f09 100644
+--- a/backend/src/nightlife-data/nightlife-data.service.ts
++++ b/backend/src/nightlife-data/nightlife-data.service.ts
+@@ -943,7 +943,7 @@ export class NightlifeDataService {
+       select: this.contentSelect(),
+     });
+ 
+-    let result = contents.map((content) => this.mapContent(content));
++    const result = contents.map((content) => this.mapContent(content));
+ 
+     if (type === 'BANNER') {
+       result.sort((a, b) => {
+@@ -1297,7 +1297,7 @@ export class NightlifeDataService {
+       select: this.adminRankingConfigSelect(),
+     });
+ 
+-    return this.mapAdminRankingConfigs(configs as AdminRankingConfigRecord[]);
++    return this.mapAdminRankingConfigs(configs);
+   }
+ 
+   async listAdminRankingTargetOptions(
+@@ -1334,7 +1334,18 @@ export class NightlifeDataService {
+             : {
+                 NOT: {
+                   OR: [
+-                    { city: { in: ['Ho Chi Minh City', 'Hß╗ô Ch├¡ Minh', 'HCM', 'Hanoi', 'H├á Nß╗Öi', 'HN'] } },
++                    {
++                      city: {
++                        in: [
++                          'Ho Chi Minh City',
++                          'Hß╗ô Ch├¡ Minh',
++                          'HCM',
++                          'Hanoi',
++                          'H├á Nß╗Öi',
++                          'HN',
++                        ],
++                      },
++                    },
+                     { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
+                     { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
+                   ],
+@@ -1428,7 +1439,18 @@ export class NightlifeDataService {
+             : {
+                 NOT: {
+                   OR: [
+-                    { city: { in: ['Ho Chi Minh City', 'Hß╗ô Ch├¡ Minh', 'HCM', 'Hanoi', 'H├á Nß╗Öi', 'HN'] } },
++                    {
++                      city: {
++                        in: [
++                          'Ho Chi Minh City',
++                          'Hß╗ô Ch├¡ Minh',
++                          'HCM',
++                          'Hanoi',
++                          'H├á Nß╗Öi',
++                          'HN',
++                        ],
++                      },
++                    },
+                     { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
+                     { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
+                   ],
+@@ -1603,9 +1625,7 @@ export class NightlifeDataService {
+       return created;
+     });
+ 
+-    return (
+-      await this.mapAdminRankingConfigs([config as AdminRankingConfigRecord])
+-    )[0];
++    return (await this.mapAdminRankingConfigs([config]))[0];
+   }
+ 
+   async updateAdminRankingConfig(
+@@ -1747,9 +1767,7 @@ export class NightlifeDataService {
+       return updated;
+     });
+ 
+-    return (
+-      await this.mapAdminRankingConfigs([config as AdminRankingConfigRecord])
+-    )[0];
++    return (await this.mapAdminRankingConfigs([config]))[0];
+   }
+ 
+   async deleteAdminRankingConfig(user: AuthenticatedUser, rankingId: string) {
+@@ -2716,6 +2734,263 @@ export class NightlifeDataService {
+     throw new GoneException(INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE);
+   }
+ 
++  async claimAdminGlobalCouponForMember(
++    couponId: string,
++    user: AuthenticatedUser,
++    context: CouponClaimContext = {},
++  ) {
++    const coupon = await this.prisma.adminCoupon.findFirst({
++      where: {
++        id: couponId,
++        deletedAt: null,
++      },
++    });
++
++    if (!coupon) {
++      throw new NotFoundException('Admin coupon not found');
++    }
++
++    if (coupon.status !== 'ACTIVE') {
++      throw new UnprocessableEntityException('Admin coupon is not active');
++    }
++
++    const now = new Date();
++    if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now)) {
++      throw new UnprocessableEntityException(
++        'Admin coupon is outside of valid timeframe',
++      );
++    }
++
++    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
++      throw new UnprocessableEntityException(
++        'Admin coupon usage limit reached',
++      );
++    }
++
++    const userTier = user.tier ?? 'FREE';
++    if (coupon.targetAudiences && coupon.targetAudiences.length > 0) {
++      const hasAudience = coupon.targetAudiences.some(
++        (aud) => aud.toUpperCase() === userTier.toUpperCase(),
++      );
++      if (!hasAudience) {
++        throw new UnprocessableEntityException(
++          'User tier not eligible for this coupon',
++        );
++      }
++    }
++
++    const existingIssue = await this.prisma.adminCouponIssue.findFirst({
++      where: {
++        adminCouponId: coupon.id,
++        userId: user.id,
++        status: { in: ['ISSUED', 'USED'] },
++      },
++    });
++
++    if (existingIssue) {
++      throw new UnprocessableEntityException(
++        'You have already claimed this coupon',
++      );
++    }
++
++    const recipientType = 'MEMBER';
++    const validityMs = 7 * DAY_MS;
++    const expiresAt = coupon.endsAt
++      ? new Date(Math.min(now.getTime() + validityMs, coupon.endsAt.getTime()))
++      : new Date(now.getTime() + validityMs);
++
++    const issueId = randomUUID();
++    const issueCode = `${recipientType}-${randomUUID()}`;
++    const qrPayload = this.buildAdminCouponQrPayload(issueId);
++    const qrPayloadHash = this.buildCouponQrPayloadHash(qrPayload);
++
++    const issue = await this.prisma.adminCouponIssue.create({
++      data: {
++        id: issueId,
++        adminCouponId: coupon.id,
++        userId: user.id,
++        code: issueCode,
++        qrPayloadHash,
++        status: 'ISSUED',
++        expiresAt,
++        metadata: {
++          sourceFlow: 'ADMIN_COUPON_CLAIM',
++          recipientType,
++          userType: user.tier,
++          qrPayload,
++          qrTokenHash: this.buildCouponQrTokenHashFromPayload(qrPayload),
++          discountRuleSnapshot: {
++            discountType: coupon.discountType,
++            discountValue: coupon.discountValue,
++            discountPercent:
++              coupon.discountType === 'PERCENT'
++                ? coupon.discountValue
++                : undefined,
++            value: coupon.discountValue,
++            code: coupon.code,
++          },
++          campaignSnapshot: {
++            id: coupon.id,
++            code: coupon.code,
++            name: coupon.name,
++            discountType: coupon.discountType,
++            discountValue: coupon.discountValue,
++          },
++          claimContext: context,
++        },
++      },
++    });
++
++    return this.decorateAdminCouponIssue(issue);
++  }
++
++  async claimAdminGlobalCouponForGuest(
++    couponId: string,
++    dto: ClaimGuestCouponDto,
++    context: CouponClaimContext = {},
++  ) {
++    const coupon = await this.prisma.adminCoupon.findFirst({
++      where: {
++        id: couponId,
++        deletedAt: null,
++      },
++    });
++
++    if (!coupon) {
++      throw new NotFoundException('Admin coupon not found');
++    }
++
++    if (coupon.status !== 'ACTIVE') {
++      throw new UnprocessableEntityException('Admin coupon is not active');
++    }
++
++    const now = new Date();
++    if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now)) {
++      throw new UnprocessableEntityException(
++        'Admin coupon is outside of valid timeframe',
++      );
++    }
++
++    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
++      throw new UnprocessableEntityException(
++        'Admin coupon usage limit reached',
++      );
++    }
++
++    if (coupon.targetAudiences && coupon.targetAudiences.length > 0) {
++      const hasAudience = coupon.targetAudiences.some(
++        (aud) => aud.toUpperCase() === 'GUEST',
++      );
++      if (!hasAudience) {
++        throw new UnprocessableEntityException(
++          'Guest not eligible for this coupon',
++        );
++      }
++    }
++
++    let guest = await this.prisma.guest.findFirst({
++      where: { phone: dto.phone },
++      select: { id: true },
++    });
++
++    if (!guest) {
++      guest = await this.prisma.guest.create({
++        data: {
++          phone: dto.phone,
++          displayName: dto.displayName || 'Guest',
++          email: dto.email || '',
++        },
++        select: { id: true },
++      });
++    }
++
++    const existingIssue = await this.prisma.adminCouponIssue.findFirst({
++      where: {
++        adminCouponId: coupon.id,
++        guestId: guest.id,
++        status: { in: ['ISSUED', 'USED'] },
++      },
++    });
++
++    if (existingIssue) {
++      throw new UnprocessableEntityException(
++        'This phone has already claimed this coupon',
++      );
++    }
++
++    const recipientType = 'GUEST';
++    const validityMs = DAY_MS;
++    const expiresAt = coupon.endsAt
++      ? new Date(Math.min(now.getTime() + validityMs, coupon.endsAt.getTime()))
++      : new Date(now.getTime() + validityMs);
++
++    const issueId = randomUUID();
++    const issueCode = `${recipientType}-${randomUUID()}`;
++    const qrPayload = this.buildAdminCouponQrPayload(issueId);
++    const qrPayloadHash = this.buildCouponQrPayloadHash(qrPayload);
++
++    const issue = await this.prisma.adminCouponIssue.create({
++      data: {
++        id: issueId,
++        adminCouponId: coupon.id,
++        guestId: guest.id,
++        code: issueCode,
++        qrPayloadHash,
++        status: 'ISSUED',
++        expiresAt,
++        metadata: {
++          sourceFlow: 'ADMIN_COUPON_CLAIM',
++          recipientType,
++          userType: 'GUEST',
++          qrPayload,
++          qrTokenHash: this.buildCouponQrTokenHashFromPayload(qrPayload),
++          discountRuleSnapshot: {
++            discountType: coupon.discountType,
++            discountValue: coupon.discountValue,
++            discountPercent:
++              coupon.discountType === 'PERCENT'
++                ? coupon.discountValue
++                : undefined,
++            value: coupon.discountValue,
++            code: coupon.code,
++          },
++          campaignSnapshot: {
++            id: coupon.id,
++            code: coupon.code,
++            name: coupon.name,
++            discountType: coupon.discountType,
++            discountValue: coupon.discountValue,
++          },
++          claimContext: context,
++        },
++      },
++    });
++
++    return this.decorateAdminCouponIssue(issue);
++  }
++
++  private buildAdminCouponQrPayload(issueId: string) {
++    const token = this.buildSignedAdminCouponQrToken(issueId);
++    const baseUrl = this.couponQrPartnerUrl();
++    const url = new URL(baseUrl);
++    url.searchParams.set('scanToken', token);
++    return url.toString();
++  }
++
++  private buildSignedAdminCouponQrToken(issueId: string) {
++    const encodedPayload = Buffer.from(
++      JSON.stringify({
++        v: 1,
++        type: 'admin_coupon_issue',
++        issueId,
++        nonce: randomUUID(),
++        iat: Date.now(),
++      }),
++    ).toString('base64url');
++    const signature = this.signCouponQrPayload(encodedPayload);
++    return `${encodedPayload}.${signature}`;
++  }
++
+   async listPartnerStores(user: AuthenticatedUser) {
+     const storeIds = await this.accessService.getAccessibleStoreIds(
+       user,
+@@ -5455,6 +5730,7 @@ export class NightlifeDataService {
+             couponId: true,
+             couponIssueId: true,
+             scheduledAt: true,
++            discountSnapshot: true,
+             store: { select: { id: true, name: true, slug: true } },
+             guest: { select: { id: true, displayName: true, phone: true } },
+             coupon: { select: { id: true, code: true, name: true } },
+@@ -5534,6 +5810,7 @@ export class NightlifeDataService {
+         paidVnd: dto.totalVnd,
+         usedAt,
+         submittedAt: now,
++        discountRuleSnapshot: booking?.discountSnapshot ?? undefined,
+       },
+       select: this.billNotificationSelect(),
+     });
+@@ -5626,6 +5903,7 @@ export class NightlifeDataService {
+             couponId: true,
+             couponIssueId: true,
+             scheduledAt: true,
++            discountSnapshot: true,
+             store: { select: { id: true, name: true, slug: true } },
+             guest: { select: { id: true, displayName: true, phone: true } },
+             coupon: { select: { id: true, code: true, name: true } },
+@@ -5713,6 +5991,7 @@ export class NightlifeDataService {
+         paidVnd: dto.totalVnd,
+         usedAt,
+         submittedAt: now,
++        discountRuleSnapshot: booking?.discountSnapshot ?? undefined,
+       },
+       select: this.billNotificationSelect(),
+     });
+@@ -5797,9 +6076,10 @@ export class NightlifeDataService {
+       }
+     }
+ 
+-    const passwordHash = dto.password && this.passwordService
+-      ? await this.passwordService.hash(dto.password)
+-      : null;
++    const passwordHash =
++      dto.password && this.passwordService
++        ? await this.passwordService.hash(dto.password)
++        : null;
+     const businessType = this.cleanText(dto.businessType) || null;
+     const note = this.cleanText(dto.note) || null;
+     const storeAddress = this.cleanNullableText(dto.storeAddress);
+@@ -5832,7 +6112,13 @@ export class NightlifeDataService {
+           mapUrl,
+           status: 'PENDING_REVIEW',
+         },
+-        select: { id: true, name: true, slug: true, status: true, mapUrl: true },
++        select: {
++          id: true,
++          name: true,
++          slug: true,
++          status: true,
++          mapUrl: true,
++        },
+       });
+ 
+       const draftCastIds: string[] = [];
+@@ -5951,9 +6237,7 @@ export class NightlifeDataService {
+       });
+     });
+ 
+-    await this.notifyPartnerRequestDelivery(
+-      request as unknown as PartnerRequestCmsRecord,
+-    );
++    await this.notifyPartnerRequestDelivery(request);
+ 
+     return {
+       id: request.id,
+@@ -6187,9 +6471,7 @@ export class NightlifeDataService {
+       });
+     });
+ 
+-    return this.mapPartnerRequestRecord(
+-      reviewed as unknown as PartnerRequestCmsRecord,
+-    );
++    return this.mapPartnerRequestRecord(reviewed);
+   }
+ 
+   async listSensitiveBillsForAdmin(
+@@ -6983,6 +7265,41 @@ export class NightlifeDataService {
+         await this.recordBillLoyaltyLedger(tx, loyaltyAward);
+       }
+ 
++      let adminCouponIssueId: string | null = null;
++      const snapObj =
++        revenueApproval?.discountRuleSnapshot ?? bill.discountRuleSnapshot;
++      if (snapObj && typeof snapObj === 'object') {
++        const snap = snapObj as any;
++        if (snap.adminCouponIssueId) {
++          adminCouponIssueId = snap.adminCouponIssueId;
++        }
++      }
++
++      if (
++        adminCouponIssueId &&
++        dto.approve &&
++        nextApproveStatus === 'VERIFIED'
++      ) {
++        const adminIssue = await tx.adminCouponIssue.findFirst({
++          where: { id: adminCouponIssueId },
++        });
++        if (adminIssue && adminIssue.status !== 'USED') {
++          await tx.adminCouponIssue.update({
++            where: { id: adminCouponIssueId },
++            data: {
++              status: 'USED',
++              usedAt: now,
++            },
++          });
++          await tx.adminCoupon.update({
++            where: { id: adminIssue.adminCouponId },
++            data: {
++              usedCount: { increment: 1 },
++            },
++          });
++        }
++      }
++
+       await tx.auditLog.create({
+         data: {
+           actorId: adminId,
+@@ -8346,6 +8663,11 @@ export class NightlifeDataService {
+     let rawDiscountVnd = 0;
+     let skippedReason: string | null = null;
+ 
++    const isFixedAmount =
++      coupon?.discountType === 'FIXED_AMOUNT' ||
++      sourceRule?.discountType === 'FIXED_AMOUNT' ||
++      sourceRule?.type === 'FIXED_AMOUNT';
++
+     if (grossVnd <= 0) {
+       skippedReason = 'ZERO_GROSS_BILL';
+     } else if (minSpendVnd !== null && grossVnd < minSpendVnd) {
+@@ -8354,8 +8676,10 @@ export class NightlifeDataService {
+       rawDiscountVnd = Math.round(
+         grossVnd * this.percentToRate(sourceDiscountPercent),
+       );
+-    } else if (coupon?.discountType === 'FIXED_AMOUNT') {
+-      rawDiscountVnd = this.nonNegativeVnd(coupon.discountValue);
++    } else if (isFixedAmount) {
++      const fixedVal =
++        sourceRule?.discountValue ?? sourceRule?.value ?? coupon?.discountValue;
++      rawDiscountVnd = this.nonNegativeVnd(fixedVal);
+     }
+ 
+     const cappedDiscountVnd =
+@@ -8411,6 +8735,13 @@ export class NightlifeDataService {
+               status: bill.couponIssue.status,
+             }
+           : null,
++        adminCoupon: sourceRule?.adminCouponId
++          ? {
++              id: sourceRule.adminCouponId as string,
++              code: sourceRule.code as string,
++            }
++          : null,
++        adminCouponIssueId: (sourceRule?.adminCouponIssueId as string) ?? null,
+       },
+     };
+   }
+@@ -9273,6 +9604,7 @@ export class NightlifeDataService {
+   private async resolveBookingCouponLink(input: {
+     dto: CreateBookingDto;
+     target: BookingTarget;
++    user?: AuthenticatedUser;
+     userId?: string;
+     phone?: string;
+     prisma?: Prisma.TransactionClient;
+@@ -9280,8 +9612,37 @@ export class NightlifeDataService {
+     const prisma = input.prisma ?? this.prisma;
+     const couponId = this.cleanText(input.dto.couponId);
+     const couponIssueId = this.cleanText(input.dto.couponIssueId);
++    const adminCouponIssueId = this.cleanText(input.dto.adminCouponIssueId);
++    const adminCouponIssueCode = this.cleanText(input.dto.adminCouponIssueCode);
+ 
+-    if (!couponId && !couponIssueId) {
++    if (
++      !couponId &&
++      !couponIssueId &&
++      !adminCouponIssueId &&
++      !adminCouponIssueCode
++    ) {
++      let defaultCode = 'GUEST5';
++      const userTier = input.user?.tier;
++      if (userTier) {
++        if (userTier === 'VIP') {
++          defaultCode = 'VIP10';
++        } else if (userTier === 'MEMBER' || userTier === 'PREMIUM') {
++          defaultCode = 'MEMBER8';
++        } else {
++          defaultCode = 'GUEST5';
++        }
++      }
++      const defaultCoupon = await prisma.coupon.findFirst({
++        where: {
++          code: defaultCode,
++          deletedAt: null,
++          status: 'ACTIVE',
++        },
++        select: { id: true },
++      });
++      if (defaultCoupon) {
++        return { couponId: defaultCoupon.id };
++      }
+       return {};
+     }
+ 
+@@ -9305,12 +9666,22 @@ export class NightlifeDataService {
+             select: {
+               id: true,
+               storeId: true,
++              code: true,
+             },
+           },
+         },
+       });
+ 
+       if (!issue) {
++        // If not found in standard couponIssue, check if it's an AdminCouponIssue before throwing NotFoundException
++        const adminIssue = await prisma.adminCouponIssue.findFirst({
++          where: {
++            OR: [{ id: couponIssueId }, { code: couponIssueId }],
++          },
++        });
++        if (adminIssue) {
++          return {};
++        }
+         throw new NotFoundException('Coupon issue not found');
+       }
+ 
+@@ -9320,7 +9691,10 @@ export class NightlifeDataService {
+         );
+       }
+ 
+-      if (issue.coupon.storeId !== input.target.store.id) {
++      const isDefaultCoupon = ['GUEST5', 'MEMBER8', 'VIP10'].includes(
++        issue.coupon.code,
++      );
++      if (!isDefaultCoupon && issue.coupon.storeId !== input.target.store.id) {
+         throw new UnprocessableEntityException(
+           'Coupon issue does not belong to the booking store',
+         );
+@@ -9370,22 +9744,45 @@ export class NightlifeDataService {
+       };
+     }
+ 
+-    const coupon = await prisma.coupon.findFirst({
+-      where: {
++    if (couponId) {
++      let isDefaultCouponId = false;
++      try {
++        const defaultCoupons = await prisma.coupon.findMany({
++          where: {
++            code: { in: ['GUEST5', 'MEMBER8', 'VIP10'] },
++            deletedAt: null,
++          },
++          select: { id: true },
++        });
++        const defaultCouponIds = defaultCoupons.map((c) => c.id);
++        isDefaultCouponId = defaultCouponIds.includes(couponId);
++      } catch {
++        // Fallback for mocked environment if findMany fails
++      }
++
++      const couponWhere: Prisma.CouponWhereInput = {
+         id: couponId,
+-        storeId: input.target.store.id,
+         status: 'ACTIVE',
+         deletedAt: null,
+         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+-      },
+-      select: { id: true },
+-    });
++      };
++      if (!isDefaultCouponId) {
++        couponWhere.storeId = input.target.store.id;
++      }
+ 
+-    if (!coupon) {
+-      throw new NotFoundException('Coupon not found');
++      const coupon = await prisma.coupon.findFirst({
++        where: couponWhere,
++        select: { id: true },
++      });
++
++      if (!coupon) {
++        throw new NotFoundException('Coupon not found');
++      }
++
++      return { couponId: coupon.id };
+     }
+ 
+-    return { couponId: coupon.id };
++    return {};
+   }
+ 
+   private resolveBillUsedAt(dto: CreateBillDto) {
+@@ -9971,7 +10368,6 @@ export class NightlifeDataService {
+     const coupon = await prisma.coupon.findFirst({
+       where: {
+         id: input.couponId,
+-        storeId: input.target.store.id,
+         status: 'ACTIVE',
+         deletedAt: null,
+         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+@@ -9996,6 +10392,13 @@ export class NightlifeDataService {
+       throw new NotFoundException('Coupon not found');
+     }
+ 
++    const isDefaultCoupon = ['GUEST5', 'MEMBER8', 'VIP10'].includes(
++      coupon.code,
++    );
++    if (!isDefaultCoupon && coupon.storeId !== input.target.store.id) {
++      throw new NotFoundException('Coupon not found');
++    }
++
+     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+       throw new UnprocessableEntityException(
+         'Coupon usage limit has been reached',
+@@ -10139,9 +10542,100 @@ export class NightlifeDataService {
+         dto: input.dto,
+         target: input.target,
+         userId: input.userId,
++        user: input.user,
+         phone: input.phone,
+         prisma,
+       });
++
++      let adminCouponIssue: any = null;
++      if (!couponLink.couponId && !couponLink.couponIssueId) {
++        const adminIssueId =
++          input.dto.adminCouponIssueId ||
++          (input.dto.couponIssueId && input.dto.couponIssueId.length === 36
++            ? input.dto.couponIssueId
++            : undefined);
++        const adminIssueCode =
++          input.dto.adminCouponIssueCode ||
++          (input.dto.couponIssueId && input.dto.couponIssueId.length !== 36
++            ? input.dto.couponIssueId
++            : undefined);
++
++        if (adminIssueId) {
++          adminCouponIssue = await prisma.adminCouponIssue.findFirst({
++            where: { id: adminIssueId },
++            include: { adminCoupon: true },
++          });
++        }
++        if (!adminCouponIssue && adminIssueCode) {
++          adminCouponIssue = await prisma.adminCouponIssue.findFirst({
++            where: { code: adminIssueCode },
++            include: { adminCoupon: true },
++          });
++        }
++
++        if (adminCouponIssue) {
++          if (adminCouponIssue.status !== 'ISSUED') {
++            throw new UnprocessableEntityException(
++              'Admin coupon issue is not available',
++            );
++          }
++          const now = new Date();
++          if (adminCouponIssue.expiresAt && adminCouponIssue.expiresAt <= now) {
++            throw new UnprocessableEntityException(
++              'Admin coupon issue has expired',
++            );
++          }
++          const adminCoupon = adminCouponIssue.adminCoupon;
++          if (
++            adminCoupon.status !== 'ACTIVE' ||
++            adminCoupon.startsAt > now ||
++            (adminCoupon.endsAt && adminCoupon.endsAt <= now)
++          ) {
++            throw new UnprocessableEntityException(
++              'Admin coupon is not active',
++            );
++          }
++
++          if (adminCoupon.targetStores && adminCoupon.targetStores.length > 0) {
++            if (!adminCoupon.targetStores.includes(input.target.store.id)) {
++              throw new UnprocessableEntityException(
++                'Store is not eligible for this admin coupon',
++              );
++            }
++          }
++
++          const userTier = input.user?.tier ?? 'GUEST';
++          if (
++            adminCoupon.targetAudiences &&
++            adminCoupon.targetAudiences.length > 0
++          ) {
++            const hasAudience = adminCoupon.targetAudiences.some(
++              (aud) => aud.toUpperCase() === userTier.toUpperCase(),
++            );
++            if (!hasAudience) {
++              throw new UnprocessableEntityException(
++                'User tier is not eligible for this admin coupon',
++              );
++            }
++          }
++
++          if (input.userId) {
++            if (
++              adminCouponIssue.userId &&
++              adminCouponIssue.userId !== input.userId
++            ) {
++              throw new UnprocessableEntityException(
++                'Admin coupon issue does not belong to this member',
++              );
++            }
++          } else if (adminCouponIssue.userId) {
++            throw new UnprocessableEntityException(
++              'Member admin coupon issue cannot be linked to a guest booking',
++            );
++          }
++        }
++      }
++
+       const bookingCouponIssueId =
+         couponLink.couponIssueId ??
+         (couponLink.couponId
+@@ -10174,10 +10668,24 @@ export class NightlifeDataService {
+           scheduledAt,
+           partySize: input.dto.partySize,
+           note: input.note,
+-          discountSnapshot: {
+-            couponId: couponLink.couponId ?? null,
+-            couponIssueId: bookingCouponIssueId ?? null,
+-          } as Prisma.InputJsonValue,
++          discountSnapshot: adminCouponIssue
++            ? {
++                adminCouponIssueId: adminCouponIssue.id,
++                adminCouponId: adminCouponIssue.adminCoupon.id,
++                discountType: adminCouponIssue.adminCoupon.discountType,
++                discountValue: adminCouponIssue.adminCoupon.discountValue,
++                type: adminCouponIssue.adminCoupon.discountType,
++                value: adminCouponIssue.adminCoupon.discountValue,
++                discountPercent:
++                  adminCouponIssue.adminCoupon.discountType === 'PERCENT'
++                    ? adminCouponIssue.adminCoupon.discountValue
++                    : undefined,
++                code: adminCouponIssue.adminCoupon.code,
++              }
++            : {
++                couponId: couponLink.couponId ?? null,
++                couponIssueId: bookingCouponIssueId ?? null,
++              },
+         },
+         select: this.bookingNotificationSelect(),
+       });
+@@ -10209,7 +10717,9 @@ export class NightlifeDataService {
+       status: true,
+       scheduledAt: true,
+       cancelledAt: true,
+-      store: { select: { bookingCancelCutoffMinutes: true, openingHours: true } },
++      store: {
++        select: { bookingCancelCutoffMinutes: true, openingHours: true },
++      },
+     } satisfies Prisma.BookingSelect;
+   }
+ 
+@@ -10571,8 +11081,8 @@ export class NightlifeDataService {
+ 
+       return Boolean(
+         this.parseBookingTimeRanges(slot.note).length ||
+-          (this.parseBookingTimeToMinutes(slot.open) !== null &&
+-            this.parseBookingTimeToMinutes(slot.close) !== null),
++        (this.parseBookingTimeToMinutes(slot.open) !== null &&
++          this.parseBookingTimeToMinutes(slot.close) !== null),
+       );
+     });
+   }
+@@ -10633,9 +11143,9 @@ export class NightlifeDataService {
+     return this.parseBookingTimeRanges(slot.note);
+   }
+ 
+-  private normalizeBookingOpeningSlot(value: unknown):
+-    | { open?: string; close?: string; closed?: boolean; note?: string }
+-    | null {
++  private normalizeBookingOpeningSlot(
++    value: unknown,
++  ): { open?: string; close?: string; closed?: boolean; note?: string } | null {
+     if (typeof value === 'string') {
+       if (this.isClosedBookingOpeningText(value)) {
+         return { closed: true };
+@@ -10780,7 +11290,9 @@ export class NightlifeDataService {
+     }
+ 
+     const normalized = this.normalizeBookingOpeningText(value);
+-    return normalized === 'nghi' || normalized === 'off' || normalized === 'closed';
++    return (
++      normalized === 'nghi' || normalized === 'off' || normalized === 'closed'
++    );
+   }
+ 
+   private normalizeBookingWeekdayKey(key: string) {
+@@ -10795,11 +11307,15 @@ export class NightlifeDataService {
+     }
+ 
+     if (normalized.includes('monday') || normalized === 'mon') return 'monday';
+-    if (normalized.includes('tuesday') || normalized === 'tue') return 'tuesday';
+-    if (normalized.includes('wednesday') || normalized === 'wed') return 'wednesday';
+-    if (normalized.includes('thursday') || normalized === 'thu') return 'thursday';
++    if (normalized.includes('tuesday') || normalized === 'tue')
++      return 'tuesday';
++    if (normalized.includes('wednesday') || normalized === 'wed')
++      return 'wednesday';
++    if (normalized.includes('thursday') || normalized === 'thu')
++      return 'thursday';
+     if (normalized.includes('friday') || normalized === 'fri') return 'friday';
+-    if (normalized.includes('saturday') || normalized === 'sat') return 'saturday';
++    if (normalized.includes('saturday') || normalized === 'sat')
++      return 'saturday';
+ 
+     const dayNumber = normalized.match(/[2-7]/)?.[0];
+     if (dayNumber === '2') return 'monday';
+@@ -11279,7 +11795,7 @@ export class NightlifeDataService {
+       );
+     }
+ 
+-    const topic = (input.dto.topic ?? 'GENERAL') as BookingChatTopic;
++    const topic = input.dto.topic ?? 'GENERAL';
+     const message = await this.prisma.bookingChatMessage.create({
+       data: {
+         bookingId: input.booking.id,
+@@ -11504,14 +12020,12 @@ export class NightlifeDataService {
+     base: Record<string, unknown>,
+     cancelled: boolean,
+   ) {
+-    const current =
+-      metrics.get(key) ??
+-      ({
+-        ...base,
+-        totalBookings: 0,
+-        cancelledBookings: 0,
+-        cancelRate: 0,
+-      } as CancelAnalyticsMetric);
++    const current = metrics.get(key) ?? {
++      ...base,
++      totalBookings: 0,
++      cancelledBookings: 0,
++      cancelRate: 0,
++    };
+ 
+     current.totalBookings += 1;
+     if (cancelled) {
+@@ -11847,7 +12361,7 @@ export class NightlifeDataService {
+     let title = 'Th├┤ng b├ío mß╗¢i';
+     let body = 'Bß║ín c├│ cß║¡p nhß║¡t mß╗¢i tß╗½ Vietyoru.';
+     let tone: 'gold' | 'green' | 'amber' | 'danger' = 'gold';
+-    let category = this.customerNotificationCategory(templateKey);
++    const category = this.customerNotificationCategory(templateKey);
+     let actionLabel = 'Xem chi tiß║┐t';
+ 
+     if (templateKey === 'customer.bill.submitted.v1') {
+@@ -11884,9 +12398,7 @@ export class NightlifeDataService {
+       tone = 'amber';
+       actionLabel = 'Xem lß╗ïch ─æß║╖t';
+     } else if (templateKey === 'customer.booking.created.v1') {
+-      title = castName
+-        ? '─Éß║╖t b├án theo cast th├ánh c├┤ng'
+-        : '─Éß║╖t b├án th├ánh c├┤ng';
++      title = castName ? '─Éß║╖t b├án theo cast th├ánh c├┤ng' : '─Éß║╖t b├án th├ánh c├┤ng';
+       body = castName
+         ? `Y├¬u cß║ºu ─æß║╖t ${bookingTarget}${scheduleSuffix} ─æ├ú ─æ╞░ß╗úc ghi nhß║¡n. Admin sß║╜ x├íc nhß║¡n sß╗¢m.`
+         : `Y├¬u cß║ºu ─æß║╖t b├án tß║íi ${storeName}${scheduleSuffix} ─æ├ú ─æ╞░ß╗úc ghi nhß║¡n. Admin sß║╜ x├íc nhß║¡n sß╗¢m.`;
+@@ -12110,7 +12622,8 @@ export class NightlifeDataService {
+           partySize: booking.partySize ?? null,
+           storeName: booking.store?.name ?? null,
+           storeSlug: booking.store?.slug ?? null,
+-          castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
++          castName:
++            booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+         },
+       },
+     });
+@@ -12532,7 +13045,13 @@ export class NightlifeDataService {
+       String(record.priceTier ?? record.tierLabel ?? ''),
+     );
+     const valueText = this.cleanNullableText(
+-      String(record.value ?? record.priceText ?? record.priceRange ?? priceTierText ?? ''),
++      String(
++        record.value ??
++          record.priceText ??
++          record.priceRange ??
++          priceTierText ??
++          '',
++      ),
+     );
+     const amountVnd =
+       this.toNumber(record.amountVnd) ??
+@@ -13017,7 +13536,10 @@ export class NightlifeDataService {
+     if (cityCode) {
+       if (cityCode === 'hn') {
+         return {
+-          OR: [{ code: { startsWith: 'hn-' } }, { code: { startsWith: 'hanoi-' } }],
++          OR: [
++            { code: { startsWith: 'hn-' } },
++            { code: { startsWith: 'hanoi-' } },
++          ],
+         };
+       }
+       return { code: { startsWith: `${cityCode}-` } };
+@@ -13550,7 +14072,7 @@ export class NightlifeDataService {
+       throw new BadRequestException('targetType must be CAST or STORE');
+     }
+ 
+-    return token as RankingTargetType;
++    return token;
+   }
+ 
+   private resolveRankingLimit(limit?: string | number) {
+@@ -14177,7 +14699,8 @@ export class NightlifeDataService {
+           items: items
+             .map((item) => ({
+               name: this.cleanText(item.name),
+-              description: this.cleanNullableText(item.description) ?? undefined,
++              description:
++                this.cleanNullableText(item.description) ?? undefined,
+               priceTier: this.cleanNullableText(item.priceTier) ?? undefined,
+               isHot: Boolean(item.isHot),
+               imageUrl: this.cleanNullableText(item.imageUrl) ?? undefined,
+@@ -14388,12 +14911,11 @@ export class NightlifeDataService {
+         draftStoreAddress ??
+         (composedStoreAddress || store.address),
+       phone: this.cleanNullableText(dto.phone) ?? store.phone,
+-      openingHours:
+-        this.partnerListingOpeningHoursSummary(
+-          openingHourItems,
+-          dto.openingHours ??
+-            (openingRecord?.summary ? String(openingRecord.summary) : null),
+-        ),
++      openingHours: this.partnerListingOpeningHoursSummary(
++        openingHourItems,
++        dto.openingHours ??
++          (openingRecord?.summary ? String(openingRecord.summary) : null),
++      ),
+       openingHourItems,
+       priceRange,
+       description: this.cleanNullableText(dto.description) ?? store.description,
+@@ -14423,10 +14945,7 @@ export class NightlifeDataService {
+     const listing = this.asRecord(metadata?.listing);
+ 
+     if (metadata?.kind === PARTNER_LISTING_DRAFT_KIND && listing) {
+-      return this.normalizePartnerListingDraft(
+-        listing as Partial<PartnerListingDraftDto>,
+-        store,
+-      );
++      return this.normalizePartnerListingDraft(listing, store);
+     }
+ 
+     return this.normalizePartnerListingDraft({}, store);
+@@ -16853,7 +17372,7 @@ export class NightlifeDataService {
+         payload: {
+           expiredCount: count,
+           scope: JSON.parse(JSON.stringify(where)) as Prisma.InputJsonValue,
+-        } as Prisma.InputJsonValue,
++        },
+       },
+     });
+   }
+@@ -17323,7 +17842,8 @@ export class NightlifeDataService {
+ 
+     const mappedItems = items.map((bill) => {
+       let guestType = 'Member';
+-      let sender = bill.user?.displayName || bill.guest?.displayName || 'Guest';
++      const sender =
++        bill.user?.displayName || bill.guest?.displayName || 'Guest';
+       if (bill.user) guestType = bill.user.tier || 'Member';
+       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
+       else if (bill.submitterType === 'MEMBER') guestType = 'Member';
+@@ -17385,33 +17905,35 @@ export class NightlifeDataService {
+       .count({ where: { status: 'PENDING' as any } })
+       .catch(() => 0);
+ 
+-    const rawLogs = await this.prisma.notificationLog.findMany({
+-      where: {
+-        templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) as any },
+-      },
+-      take: 10,
+-      orderBy: { createdAt: 'desc' },
+-      include: {
+-        booking: {
+-          select: {
+-            id: true,
+-            partySize: true,
+-            store: { select: { name: true } },
+-          },
++    const rawLogs = await this.prisma.notificationLog
++      .findMany({
++        where: {
++          templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) as any },
+         },
+-        bill: {
+-          select: {
+-            id: true,
+-            totalVnd: true,
+-            store: { select: { name: true } },
++        take: 10,
++        orderBy: { createdAt: 'desc' },
++        include: {
++          booking: {
++            select: {
++              id: true,
++              partySize: true,
++              store: { select: { name: true } },
++            },
++          },
++          bill: {
++            select: {
++              id: true,
++              totalVnd: true,
++              store: { select: { name: true } },
++            },
++          },
++          partnerRequests: {
++            select: { businessName: true, storeCity: true },
++            take: 1,
+           },
+         },
+-        partnerRequests: {
+-          select: { businessName: true, storeCity: true },
+-          take: 1,
+-        },
+-      },
+-    }).catch(() => []);
++      })
++      .catch(() => []);
+ 
+     const notifications = rawLogs.map((log) => ({
+       id: log.id,
+@@ -17492,7 +18014,7 @@ export class NightlifeDataService {
+       ? { store: { is: storeFilter } }
+       : {};
+ 
+-    let startDate = new Date();
++    const startDate = new Date();
+     startDate.setHours(0, 0, 0, 0);
+ 
+     let endDate = new Date(startDate);
+@@ -17511,7 +18033,11 @@ export class NightlifeDataService {
+     today.setHours(0, 0, 0, 0);
+ 
+     const activeStores = await this.prisma.store.count({
+-      where: { ...(storeFilter ?? {}), status: 'ACTIVE' as any, deletedAt: null },
++      where: {
++        ...(storeFilter ?? {}),
++        status: 'ACTIVE' as any,
++        deletedAt: null,
++      },
+     });
+     const activeStoresHn = await this.prisma.store
+       .count({
+@@ -17561,11 +18087,16 @@ export class NightlifeDataService {
+       })
+       .catch(() => 0);
+     const pendingPartners = await this.prisma.partnerRequest
+-      .count({ where: { status: 'PENDING_REVIEW' as any, ...scopedStoreRelation } })
++      .count({
++        where: { status: 'PENDING_REVIEW' as any, ...scopedStoreRelation },
++      })
+       .catch(() => 0);
+ 
+     const todaysBookings = await this.prisma.booking.count({
+-      where: { scheduledAt: { gte: startDate, lt: endDate }, ...scopedStoreRelation },
++      where: {
++        scheduledAt: { gte: startDate, lt: endDate },
++        ...scopedStoreRelation,
++      },
+     });
+     const todaysBookingsCompleted = await this.prisma.booking.count({
+       where: {
+@@ -18024,7 +18555,9 @@ export class NightlifeDataService {
+     id: string,
+     dto: import('./dto/admin-cast.dto').UpdateAdminCastDto,
+   ) {
+-    const existing = await this.prisma.cast.findUniqueOrThrow({ where: { id } });
++    const existing = await this.prisma.cast.findUniqueOrThrow({
++      where: { id },
++    });
+     let slug: string | undefined;
+     if (
+       dto.stageName &&
+@@ -18074,7 +18607,9 @@ export class NightlifeDataService {
+   }
+ 
+   async deleteAdminCast(user: AuthenticatedUser, id: string, hard: boolean) {
+-    const existing = await this.prisma.cast.findUniqueOrThrow({ where: { id } });
++    const existing = await this.prisma.cast.findUniqueOrThrow({
++      where: { id },
++    });
+     if (hard) {
+       if (user.role !== 'SUPER_ADMIN') {
+         throw new Error('Only Super Admin can hard delete casts');
+@@ -18171,8 +18706,8 @@ export class NightlifeDataService {
+         phone: dto.phone,
+         description: dto.description,
+         tags: dto.tags || [],
+-        openingHours: dto.openingHours as any,
+-        pricingInfo: dto.pricingInfo as any,
++        openingHours: dto.openingHours,
++        pricingInfo: dto.pricingInfo,
+         status: dto.status || 'ACTIVE',
+         areaId,
+         ...(dto.mediaIds && dto.mediaIds.length > 0
+@@ -18202,11 +18737,7 @@ export class NightlifeDataService {
+       where: { id },
+     });
+     let slug: string | undefined;
+-    if (
+-      dto.name &&
+-      dto.name !== existing.name &&
+-      existing.status === 'DRAFT'
+-    ) {
++    if (dto.name && dto.name !== existing.name && existing.status === 'DRAFT') {
+       slug = this.generateSlug(dto.name);
+       let counter = 1;
+       while (!(await this.checkAdminStoreSlug(slug, id)).available) {
+@@ -18243,10 +18774,10 @@ export class NightlifeDataService {
+         ...(dto.description !== undefined && { description: dto.description }),
+         ...(dto.tags !== undefined && { tags: dto.tags }),
+         ...(dto.openingHours !== undefined && {
+-          openingHours: dto.openingHours as any,
++          openingHours: dto.openingHours,
+         }),
+         ...(dto.pricingInfo !== undefined && {
+-          pricingInfo: dto.pricingInfo as any,
++          pricingInfo: dto.pricingInfo,
+         }),
+         ...(dto.status && { status: dto.status }),
+         ...(areaId && { areaId }),
+@@ -18336,7 +18867,9 @@ export class NightlifeDataService {
+ 
+       if (hard) {
+         if (user.role !== 'SUPER_ADMIN') {
+-          throw new BadRequestException('Only Super Admin can hard delete stores');
++          throw new BadRequestException(
++            'Only Super Admin can hard delete stores',
++          );
+         }
+ 
+         // --- MANUALLY CASCADE DELETE ---
+@@ -18352,18 +18885,28 @@ export class NightlifeDataService {
+         await tx.booking.deleteMany({ where: { storeId: id } });
+ 
+         // 3. Coupon dependencies
+-        const coupons = await tx.coupon.findMany({ where: { storeId: id }, select: { id: true } });
++        const coupons = await tx.coupon.findMany({
++          where: { storeId: id },
++          select: { id: true },
++        });
+         if (coupons.length > 0) {
+-          const couponIds = coupons.map(c => c.id);
+-          await tx.couponIssue.deleteMany({ where: { couponId: { in: couponIds } } });
++          const couponIds = coupons.map((c) => c.id);
++          await tx.couponIssue.deleteMany({
++            where: { couponId: { in: couponIds } },
++          });
+           await tx.coupon.deleteMany({ where: { storeId: id } });
+         }
+ 
+         // 4. Cast dependencies
+-        const casts = await tx.cast.findMany({ where: { storeId: id }, select: { id: true } });
++        const casts = await tx.cast.findMany({
++          where: { storeId: id },
++          select: { id: true },
++        });
+         if (casts.length > 0) {
+-          const castIds = casts.map(c => c.id);
+-          await tx.memberFavoriteCast.deleteMany({ where: { castId: { in: castIds } } });
++          const castIds = casts.map((c) => c.id);
++          await tx.memberFavoriteCast.deleteMany({
++            where: { castId: { in: castIds } },
++          });
+           await tx.cast.deleteMany({ where: { storeId: id } });
+         }
+ 
+@@ -18416,12 +18959,7 @@ export class NightlifeDataService {
+       });
+ 
+       if (store.partnerAccountId) {
+-        await this.syncStorePartnerAccess(
+-          tx,
+-          id,
+-          store.partnerAccountId,
+-          true,
+-        );
++        await this.syncStorePartnerAccess(tx, id, store.partnerAccountId, true);
+       }
+ 
+       return this.findAdminStoreForResponse(tx, id);
+@@ -18659,7 +19197,7 @@ export class NightlifeDataService {
+     let dateFilter: any = {};
+     if (timeframe) {
+       const now = new Date();
+-      let startDate = new Date();
++      const startDate = new Date();
+       if (timeframe === 'today') {
+         startDate.setHours(0, 0, 0, 0);
+       } else if (timeframe === 'week') {
+@@ -18681,7 +19219,12 @@ export class NightlifeDataService {
+       ...dateFilterCondition,
+       ...(searchTerm && {
+         OR: [
+-          { bookingCode: { contains: searchTerm.replace(/^BK-?/i, ''), mode: 'insensitive' } },
++          {
++            bookingCode: {
++              contains: searchTerm.replace(/^BK-?/i, ''),
++              mode: 'insensitive',
++            },
++          },
+           { id: this.containsInsensitive(searchTerm.replace(/^BK-?/i, '')) },
+           { user: { displayName: this.containsInsensitive(searchTerm) } },
+           { guest: { displayName: this.containsInsensitive(searchTerm) } },
+@@ -18713,9 +19256,15 @@ export class NightlifeDataService {
+           include: { store: true, cast: true, user: true, guest: true },
+         }),
+         this.prisma.booking.count({ where: baseWhere }),
+-        this.prisma.booking.count({ where: { ...baseWhere, status: 'REQUESTED' } }),
+-        this.prisma.booking.count({ where: { ...baseWhere, status: 'COMPLETED' } }),
+-        this.prisma.booking.count({ where: { ...baseWhere, status: 'CANCELLED' } }),
++        this.prisma.booking.count({
++          where: { ...baseWhere, status: 'REQUESTED' },
++        }),
++        this.prisma.booking.count({
++          where: { ...baseWhere, status: 'COMPLETED' },
++        }),
++        this.prisma.booking.count({
++          where: { ...baseWhere, status: 'CANCELLED' },
++        }),
+       ]);
+ 
+     const data = items.map((bk) => ({
+@@ -19337,19 +19886,19 @@ export class NightlifeDataService {
+       .map((id) => medias.find((media) => media.id === id))
+       .filter((media) => !!media);
+     const metrics = await this.getPublicHotVideoMetrics(
+-      sortedMedias.map((media) => media!.id),
++      sortedMedias.map((media) => media.id),
+     );
+ 
+     return sortedMedias.map((item) => ({
+-      id: item!.id,
+-      url: item!.url,
+-      title: item!.originalName,
+-      storeName: item!.store?.name,
+-      storeSlug: item!.store?.slug,
+-      href: item!.store?.slug ? `/stores/${item!.store.slug}` : null,
+-      createdAt: item!.createdAt,
+-      viewCount: metrics.get(item!.id)?.viewCount ?? 0,
+-      likeCount: metrics.get(item!.id)?.likeCount ?? 0,
++      id: item.id,
++      url: item.url,
++      title: item.originalName,
++      storeName: item.store?.name,
++      storeSlug: item.store?.slug,
++      href: item.store?.slug ? `/stores/${item.store.slug}` : null,
++      createdAt: item.createdAt,
++      viewCount: metrics.get(item.id)?.viewCount ?? 0,
++      likeCount: metrics.get(item.id)?.likeCount ?? 0,
+     }));
+   }
+ 
