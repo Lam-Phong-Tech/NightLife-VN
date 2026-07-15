@@ -409,6 +409,138 @@ function SelectControl({
   );
 }
 
+function ThemedListingSelect({
+  label,
+  value,
+  onChange,
+  placeholder,
+  options,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  required?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <div>
+      <label
+        style={{
+          display: 'block',
+          fontSize: '11.5px',
+          fontWeight: 600,
+          color: colors.text2,
+          marginBottom: '6px',
+        }}
+      >
+        {label}
+        {required && <span style={{ color: colors.red, marginLeft: '4px' }}>*</span>}
+      </label>
+      <div
+        onBlur={(event) => {
+          const nextFocus = event.relatedTarget;
+          if (!nextFocus || !event.currentTarget.contains(nextFocus as Node)) {
+            setIsOpen(false);
+          }
+        }}
+        style={{
+          position: 'relative',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setIsOpen((current) => !current)}
+          aria-expanded={isOpen}
+          style={{
+            width: '100%',
+            minHeight: '42px',
+            border: `1px solid ${colors.borderGold22}`,
+            borderRadius: '11px',
+            background: colors.surface2,
+            color: selectedOption ? colors.text : colors.muted,
+            font: 'inherit',
+            fontSize: '13px',
+            fontWeight: 400,
+            padding: '0 12px',
+            outline: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedOption?.label ?? placeholder}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{ flex: '0 0 auto', color: colors.goldBright }}
+          />
+        </button>
+        {isOpen ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              right: 0,
+              zIndex: 180,
+              maxHeight: '280px',
+              overflowY: 'auto',
+              border: `1px solid ${colors.borderGold32}`,
+              borderRadius: '12px',
+              background: 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
+              boxShadow: '0 24px 50px -26px rgba(0,0,0,.86)',
+              padding: '6px',
+            }}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    minHeight: '38px',
+                    border: 0,
+                    borderRadius: '8px',
+                    background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                    color: isSelected ? colors.goldBright : colors.text,
+                    font: 'inherit',
+                    fontSize: '13px',
+                    fontWeight: isSelected ? 700 : 400,
+                    padding: '0 10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textAlign: 'left',
+                    transition: 'background .15s, color .15s',
+                  }}
+                >
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function FormGroupTitle({ title, caption }: { title: string; caption?: string }) {
   return (
     <div style={{ gridColumn: '1 / -1', marginTop: '2px' }}>
@@ -442,12 +574,13 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
     () =>
       Boolean(
         form.businessName.trim() &&
+          form.businessType &&
           form.storeAddress.trim() &&
           selectedProvince &&
           form.contactName.trim() &&
           form.contactPhone.trim(),
       ),
-    [form.businessName, form.contactName, form.contactPhone, form.storeAddress, selectedProvince],
+    [form.businessName, form.businessType, form.contactName, form.contactPhone, form.storeAddress, selectedProvince],
   );
 
   useEffect(() => {
@@ -724,17 +857,24 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   placeholder="Ví dụ: Club Lumière"
                   required
                 />
-                <FormControl
-                  label="Loại hình kinh doanh"
-                  value={form.businessType}
-                  onChange={(value) => updateForm('businessType', value)}
-                  placeholder="Bar / Lounge / KTV / Spa..."
-                />
-                <FormControl
-                  label="Danh mục CMS"
-                  value={form.storeCategory}
-                  onChange={(value) => updateForm('storeCategory', value)}
-                  placeholder="Ví dụ: CLUB, LOUNGE, KARAOKE"
+                <ThemedListingSelect
+                  label="Loại hình"
+                  value={form.storeCategory || form.businessType}
+                  onChange={(value) => {
+                    updateForm('businessType', value);
+                    updateForm('storeCategory', value);
+                  }}
+                  placeholder="-- Chọn loại hình --"
+                  required
+                  options={[
+                    { value: 'CLUB', label: 'Club' },
+                    { value: 'LOUNGE', label: 'Lounge' },
+                    { value: 'BAR', label: 'Bar' },
+                    { value: 'GIRLS_BAR', label: 'Girls Bar' },
+                    { value: 'KARAOKE', label: 'Karaoke' },
+                    { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
+                    { value: 'RESTAURANT', label: 'Nhà hàng' },
+                  ]}
                 />
 
                 <FormGroupTitle title="Địa chỉ" caption="Chọn tỉnh/thành phố rồi chọn phường/xã để Admin xác nhận địa chỉ nhanh hơn." />
