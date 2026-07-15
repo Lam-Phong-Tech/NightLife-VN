@@ -4951,11 +4951,23 @@ export class NightlifeDataService {
             minSpendVnd: true,
           },
         },
-        couponIssue: { select: { id: true, code: true, status: true } },
+        couponIssue: {
+          select: { id: true, code: true, status: true, usedAt: true },
+        },
+        qr: {
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            usedAt: true,
+            expiresAt: true,
+          },
+        },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
         note: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -5790,6 +5802,7 @@ export class NightlifeDataService {
             couponId: true,
             couponIssueId: true,
             scheduledAt: true,
+            updatedAt: true,
             discountSnapshot: true,
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
@@ -5968,6 +5981,7 @@ export class NightlifeDataService {
             couponId: true,
             couponIssueId: true,
             scheduledAt: true,
+            updatedAt: true,
             discountSnapshot: true,
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
@@ -9960,6 +9974,8 @@ export class NightlifeDataService {
     context?: {
       booking?: {
         id: string;
+        status?: string;
+        updatedAt?: Date | string | null;
         qr?: { usedAt?: Date | string | null } | null;
         couponIssue?: { usedAt?: Date | string | null } | null;
       } | null;
@@ -9968,10 +9984,14 @@ export class NightlifeDataService {
   ) {
     if (context?.booking?.id) {
       const confirmedUsageAt =
-        context.booking.qr?.usedAt ?? context.booking.couponIssue?.usedAt ?? null;
+        context.booking.qr?.usedAt ??
+        context.booking.couponIssue?.usedAt ??
+        (this.isBookingAdminConfirmedForBill(context.booking.status)
+          ? context.booking.updatedAt
+          : null);
       if (!confirmedUsageAt) {
         throw new UnprocessableEntityException(
-          'Booking must be checked in by partner QR before bill submission',
+          'Booking must be confirmed by admin or checked in by partner QR before bill submission',
         );
       }
 
@@ -9989,6 +10009,12 @@ export class NightlifeDataService {
     }
 
     return this.parseBillUsedAt(dto.usedAt);
+  }
+
+  private isBookingAdminConfirmedForBill(status: string | null | undefined) {
+    return ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(
+      String(status ?? '').toUpperCase(),
+    );
   }
 
   private parseBillUsedAt(value: Date | string | null | undefined) {

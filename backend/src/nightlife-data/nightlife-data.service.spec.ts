@@ -4737,7 +4737,55 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('rejects a linked member booking bill before partner QR check-in confirms usage time', async () => {
+  it('uses the admin booking confirmation time when QR check-in is not available', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      userId: 'member-1',
+      storeId: 'store-1',
+      guestId: null,
+      couponId: null,
+      couponIssueId: null,
+      scheduledAt: new Date('2026-07-22T13:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T09:30:00.000Z'),
+      qr: { usedAt: null },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: null,
+      coupon: null,
+      couponIssue: null,
+    });
+    prisma.bill.findFirst.mockResolvedValue(null);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-admin-confirmed',
+      billNumber: 'BILL-20260701-ADMIN',
+      status: 'SUBMITTED',
+      totalVnd: 1800000,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      guest: null,
+    });
+
+    await service.submitMemberBill(
+      { id: 'member-1', role: 'USER' },
+      {
+        bookingId: 'booking-1',
+        totalVnd: 1800000,
+        usedAt: '2026-07-22T13:00:00.000Z',
+      },
+    );
+
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: 'booking-1',
+          usedAt: new Date('2026-07-01T09:30:00.000Z'),
+        }),
+      }),
+    );
+  });
+
+  it('rejects a linked member booking bill before admin or partner confirms usage time', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',

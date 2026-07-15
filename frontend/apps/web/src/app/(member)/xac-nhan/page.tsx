@@ -100,7 +100,8 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
     const record = recordValue(snapshot);
     if (!record) return null;
 
-    const type = String(record.discountType ?? record.type ?? "PERCENT");
+    const rawType = record.discountType ?? record.type ?? "PERCENT";
+    const type = typeof rawType === "string" ? rawType : "PERCENT";
     const value = record.discountPercent ?? record.value ?? record.discountValue;
 
     if (type === "PERCENT") {
@@ -112,18 +113,20 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
   };
 
   if (issue) {
-    const p = percentValue(issue.discountPercent);
+    const issueRecord = recordValue(issue);
+    const p = percentValue(issueRecord?.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
-    const snap = discountFromSnapshot(issue.discountRuleSnapshot);
+    const snap = discountFromSnapshot(issueRecord?.discountRuleSnapshot);
     if (snap) return snap;
   }
 
   if (issueMetadata) {
-    const p = percentValue(issueMetadata.discountPercent);
+    const issueMetadataRecord = recordValue(issueMetadata);
+    const p = percentValue(issueMetadataRecord?.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
-    const snap = discountFromSnapshot(issueMetadata.discountRuleSnapshot);
+    const snap = discountFromSnapshot(issueMetadataRecord?.discountRuleSnapshot);
     if (snap) return snap;
   }
 

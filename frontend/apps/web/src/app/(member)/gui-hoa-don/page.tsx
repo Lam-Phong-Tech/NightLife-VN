@@ -141,8 +141,17 @@ const bookingTitle = (booking: BookingRecord) => {
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
 };
 
+const isBookingAdminConfirmedForBill = (booking: BookingRecord | null | undefined) =>
+  ["CONFIRMED", "CHECKED_IN", "COMPLETED"].includes(
+    String(booking?.status ?? "").toUpperCase(),
+  );
+
 const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
-  booking?.qr?.usedAt ?? booking?.couponIssue?.usedAt ?? null;
+  booking?.qr?.usedAt ??
+  booking?.couponIssue?.usedAt ??
+  (isBookingAdminConfirmedForBill(booking)
+    ? booking?.confirmedAt ?? booking?.updatedAt ?? null
+    : null);
 
 const confirmedUsageSourceLabel = (
   booking: BookingRecord | null,
@@ -150,9 +159,12 @@ const confirmedUsageSourceLabel = (
 ) => {
   if (booking?.qr?.usedAt) return "QR booking đã được partner xác nhận";
   if (booking?.couponIssue?.usedAt) return "Coupon gắn booking đã được partner xác nhận";
+  if (isBookingAdminConfirmedForBill(booking) && (booking?.confirmedAt || booking?.updatedAt)) {
+    return "Booking đã được Admin xác nhận";
+  }
   if (couponIssue?.usedAt) return "Coupon đã được partner xác nhận";
-  if (booking || couponIssue) return "Chưa có xác nhận sử dụng từ partner";
-  return "Chọn booking hoặc coupon đã được xác nhận";
+  if (booking || couponIssue) return "Chưa có xác nhận sử dụng từ Admin/partner";
+  return "Chọn booking hoặc coupon đã được Admin/partner xác nhận";
 };
 
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
@@ -214,7 +226,7 @@ const validateBillForm = ({
   }
 
   if (!hasConfirmedUsageSource) {
-    return "Vui lòng liên kết booking hoặc coupon đã được partner quét QR xác nhận.";
+    return "Vui lòng liên kết booking/coupon đã được Admin hoặc partner xác nhận.";
   }
 
   if (!amountInput.trim()) {
@@ -230,7 +242,7 @@ const validateBillForm = ({
   }
 
   if (!usedAt.trim()) {
-    return "Booking/coupon này chưa có thời gian xác nhận sử dụng từ partner.";
+    return "Booking/coupon này chưa có thời gian xác nhận sử dụng từ Admin/partner.";
   }
 
   if (isUsedAtInvalid) {
@@ -417,7 +429,7 @@ export default function Page() {
         tone: preview.requiresManualReview ? "warning" : "success",
         message: preview.requiresManualReview
           ? "AI đọc bill đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi."
-          : "AI đọc bill đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ QR xác nhận.",
+          : "AI đọc bill đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc Admin/partner xác nhận.",
       });
     } catch (error) {
       setNotice({ tone: "danger", message: cleanApiMessage(error) });
@@ -530,7 +542,7 @@ export default function Page() {
       }
       setNotice({
         tone: "success",
-        message: `Đã liên kết booking ${booking.bookingCode}. Thời gian sử dụng sẽ lấy từ QR partner đã xác nhận.`,
+        message: `Đã liên kết booking ${booking.bookingCode}. Thời gian sử dụng sẽ lấy từ mốc Admin/partner xác nhận.`,
       });
       setAppliedBookingId(requestedBookingId);
     });
@@ -831,7 +843,7 @@ export default function Page() {
                       <dd>
                         {bookingConfirmedUsageAt(selectedBooking)
                           ? formatDateTime(bookingConfirmedUsageAt(selectedBooking), activeLanguage)
-                          : "Chưa partner xác nhận"}
+                          : "Chưa Admin/partner xác nhận"}
                       </dd>
                     </div>
                     <div>
@@ -972,7 +984,7 @@ export default function Page() {
             <div className={isPastDeadline || isFutureUsage ? "nl-rule danger" : "nl-rule"}>
               <span>
                 Chỉ nhập tổng tiền bill gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy
-                từ QR partner xác nhận; bill quá 10 ngày sẽ không được nhận.
+                từ mốc Admin/partner xác nhận; bill quá 10 ngày sẽ không được nhận.
               </span>
             </div>
 

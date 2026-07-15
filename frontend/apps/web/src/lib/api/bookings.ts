@@ -34,6 +34,8 @@ export type BookingRecord = {
   discountSnapshot?: BookingDiscountSnapshot | null;
   note?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+  confirmedAt?: string | null;
   cancelledAt?: string | null;
   store?: {
     id: string;
