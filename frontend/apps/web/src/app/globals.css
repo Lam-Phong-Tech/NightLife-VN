@@ -2357,6 +2357,33 @@ html.vy-light .nl-reset-auth-input::placeholder {
   color: var(--vy-text);
 }
 
+.nl-booking-ant-popup .ant-picker-cell:not(.ant-picker-cell-in-view),
+.nl-booking-ant-popup .ant-picker-cell-disabled {
+  color: #817b70 !important;
+  opacity: 1 !important;
+}
+
+.nl-booking-ant-popup .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-cell-inner,
+.nl-booking-ant-popup .ant-picker-cell-disabled .ant-picker-cell-inner {
+  color: #817b70 !important;
+  opacity: 1 !important;
+}
+
+.nl-booking-ant-popup .ant-picker-cell-disabled::before {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+html.vy-light .nl-booking-ant-popup .ant-picker-cell:not(.ant-picker-cell-in-view),
+html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled,
+html.vy-light .nl-booking-ant-popup .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-cell-inner,
+html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled .ant-picker-cell-inner {
+  color: #8b8478 !important;
+}
+
+html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled::before {
+  background: rgba(125, 88, 19, 0.045) !important;
+}
+
 .nl-booking-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner,
 .nl-booking-ant-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
   border-color: var(--vy-gold) !important;

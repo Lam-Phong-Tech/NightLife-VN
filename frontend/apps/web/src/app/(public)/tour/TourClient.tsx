@@ -615,6 +615,12 @@ const tourDirectoryCss = `
     color: var(--vy-text);
   }
 
+  html.vy-light .tour-city-menu button.is-selected {
+    background: var(--vy-gold-grad);
+    color: var(--vy-on-gold);
+    box-shadow: inset 0 0 0 1px rgba(125, 88, 19, 0.16);
+  }
+
   .tour-search-input input::placeholder {
     color: var(--vy-muted);
   }
