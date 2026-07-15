@@ -10642,21 +10642,20 @@ export class NightlifeDataService {
       scheduledAt,
     );
 
+    const couponLink = await this.resolveBookingCouponLink({
+      dto: input.dto,
+      target: input.target,
+      userId: input.userId,
+      user: input.user,
+      phone: input.phone,
+    });
+
     return this.prisma.$transaction(async (prisma) => {
       await this.assertNoDuplicateActiveBooking({
         storeId: input.target.store.id,
         scheduledAt,
         userId: input.userId,
         email: input.email,
-        phone: input.phone,
-        prisma,
-      });
-
-      const couponLink = await this.resolveBookingCouponLink({
-        dto: input.dto,
-        target: input.target,
-        userId: input.userId,
-        user: input.user,
         phone: input.phone,
         prisma,
       });
