@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export type AuthenticatedUser = {
   id: string;
@@ -143,10 +144,22 @@ export class AccessService {
       return true;
     }
 
+    let queryId = target.couponIssueId;
+    if (target.code) {
+      const clean = target.code.trim();
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
+        queryId = clean;
+      } else if (/^[0-9a-f]{32}$/i.test(clean)) {
+        queryId = `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+      }
+    }
+
     const issue = await this.prisma.couponIssue.findFirst({
       where: {
-        ...(target.code ? { code: target.code } : {}),
-        ...(target.couponIssueId ? { id: target.couponIssueId } : {}),
+        OR: [
+          target.code ? { code: target.code } : null,
+          queryId ? { id: queryId } : null,
+        ].filter(Boolean) as Prisma.CouponIssueWhereInput[],
       },
       select: { coupon: { select: { storeId: true } } },
     });
@@ -157,8 +170,10 @@ export class AccessService {
 
     const adminIssue = await this.prisma.adminCouponIssue.findFirst({
       where: {
-        ...(target.code ? { code: target.code } : {}),
-        ...(target.couponIssueId ? { id: target.couponIssueId } : {}),
+        OR: [
+          target.code ? { code: target.code } : null,
+          queryId ? { id: queryId } : null,
+        ].filter(Boolean) as Prisma.AdminCouponIssueWhereInput[],
       },
       include: { adminCoupon: true },
     });

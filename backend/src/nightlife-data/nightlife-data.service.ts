@@ -4207,20 +4207,38 @@ export class NightlifeDataService {
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
-    const standardIssue = await this.prisma.couponIssue.findUnique({
-      where: { code },
+    const clean = code.trim();
+    let queryId: string | undefined;
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
+      queryId = clean;
+    } else if (/^[0-9a-f]{32}$/i.test(clean)) {
+      queryId = `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+    }
+
+    const standardIssue = await this.prisma.couponIssue.findFirst({
+      where: {
+        OR: [
+          { code: clean },
+          queryId ? { id: queryId } : null,
+        ].filter(Boolean) as Prisma.CouponIssueWhereInput[],
+      },
     });
     if (standardIssue) {
-      return this.scanCouponIssueByUnique({ code }, user, {
+      return this.scanCouponIssueByUnique({ id: standardIssue.id }, user, {
         source: 'LEGACY_CODE',
       });
     }
 
-    const adminIssue = await this.prisma.adminCouponIssue.findUnique({
-      where: { code },
+    const adminIssue = await this.prisma.adminCouponIssue.findFirst({
+      where: {
+        OR: [
+          { code: clean },
+          queryId ? { id: queryId } : null,
+        ].filter(Boolean) as Prisma.AdminCouponIssueWhereInput[],
+      },
     });
     if (adminIssue) {
-      return this.scanAdminCouponIssueByUnique({ code }, user, {
+      return this.scanAdminCouponIssueByUnique({ id: adminIssue.id }, user, {
         source: 'LEGACY_CODE',
       });
     }
