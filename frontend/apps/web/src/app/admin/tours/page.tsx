@@ -37,6 +37,17 @@ const ALL_TIME_SLOTS = [
   '22:00', '22:30', '23:00', '23:30', '00:00', '00:30', '01:00', '01:30', '02:00'
 ];
 
+const isSameCity = (c1: string, c2: string) => {
+  const norm = (c: string) => {
+    if (!c) return '';
+    const clean = c.toLowerCase().trim();
+    if (clean === 'hanoi' || clean === 'hn' || clean === 'hà nội') return 'hn';
+    if (clean === 'ho chi minh city' || clean === 'hcm' || clean === 'hồ chí minh' || clean === 'tp.hcm' || clean === 'tp. hồ chí minh') return 'hcm';
+    return clean;
+  };
+  return norm(c1) === norm(c2);
+};
+
 export default function AdminToursPage() {
   return (
     <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
@@ -322,7 +333,7 @@ function AdminToursContent() {
   const selectedStoreIds = formData.stops.map(s => s.storeId);
   const candidates = stores.filter(s => {
     // Chỉ lấy quán cùng thành phố
-    const matchCity = s.city === formData.city;
+    const matchCity = isSameCity(s.city, formData.city);
     const notSelected = !selectedStoreIds.includes(s.id);
     const query = venueSearch.toLowerCase().trim();
     const matchQuery = !query || s.name.toLowerCase().includes(query) || s.district?.toLowerCase().includes(query);
