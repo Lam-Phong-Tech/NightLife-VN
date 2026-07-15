@@ -48,7 +48,7 @@
 }
 
 .heroMedia {
-  min-height: clamp(360px, 46vw, 560px);
+  min-height: clamp(260px, 31vw, 390px);
 }
 
 .heroOverlay {
@@ -316,7 +316,7 @@
 
 .form {
   display: grid;
-  gap: 14px;
+  gap: 13px;
   margin-top: 16px;
 }
 
@@ -402,15 +402,30 @@
   gap: 12px;
 }
 
+.dateTime :global(.nl-booking-date-time) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.dateTime :global(.nl-booking-field-stack) {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
 .dateTime :global(.nl-booking-date-field),
 .dateTime :global(.nl-booking-time-field) {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 .dateTime :global(.nl-booking-ant-control),
 .dateTime :global(.nl-booking-time-control) {
   width: 100%;
+  min-width: 0;
 }
 
 .dateTime :global(.nl-booking-ant-control),
@@ -418,6 +433,20 @@
   border-color: rgba(212, 178, 106, 0.16) !important;
   background: rgba(255, 255, 255, 0.055) !important;
   color: #f3f0ea !important;
+}
+
+.dateTime :global(.ant-picker),
+.dateTime :global(.ant-select-selector) {
+  min-height: 46px !important;
+  border-radius: 12px !important;
+}
+
+.dateTime :global(.ant-select-selection-item),
+.dateTime :global(.ant-select-selection-placeholder),
+.dateTime :global(.ant-picker-input > input) {
+  color: #f3f0ea !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
 }
 
 .dateTime :global(.nl-booking-field-error) {
@@ -494,7 +523,7 @@
   }
 
   .heroMedia {
-    min-height: 430px;
+    min-height: 330px;
   }
 
   .heroOverlay {
@@ -529,6 +558,10 @@
     margin-top: 16px;
     border-width: 1px 0;
     border-radius: 0;
+  }
+
+  .dateTime :global(.nl-booking-date-time) {
+    grid-template-columns: 1fr;
   }
 
   .mobileCta {

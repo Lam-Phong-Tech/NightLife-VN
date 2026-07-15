@@ -27,9 +27,8 @@ import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import type { PublicTour, TourStopStore, TourStoreCast } from "@/lib/api/tours";
 import { getAuthUser } from "@/lib/auth/session";
 import {
-  buildBookingTimeSlotGroups,
+  buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
-  groupBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -189,16 +188,12 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       ).sort(),
     [tour.departureTimes],
   );
-  const bookingTimeOptionGroups = useMemo(
+  const bookingTimeOptions = useMemo(
     () =>
       explicitDepartureTimes.length
-        ? groupBookingTimeSlots(explicitDepartureTimes)
-        : buildBookingTimeSlotGroups(bookingStore?.openingHours, bookingDate, { fallback: "empty" }),
+        ? explicitDepartureTimes
+        : buildBookingTimeSlots(bookingStore?.openingHours, bookingDate, { fallback: "empty" }),
     [bookingDate, bookingStore?.openingHours, explicitDepartureTimes],
-  );
-  const bookingTimeOptions = useMemo(
-    () => bookingTimeOptionGroups.flatMap((group) => group.slots),
-    [bookingTimeOptionGroups],
   );
 
   useEffect(() => {
@@ -545,7 +540,6 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                   timeValue={bookingTime}
                   timeLabel="Khung giờ"
                   timeOptions={bookingTimeOptions}
-                  timeOptionGroups={bookingTimeOptionGroups}
                   minDate={getTodayDate()}
                   maxDate={getMaxBookingDate()}
                   onDateChange={(value) => {
