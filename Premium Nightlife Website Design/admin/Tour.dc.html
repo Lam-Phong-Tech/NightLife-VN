@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="tour" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Quản lý Tour" page-en="Tours" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Tours" style="padding:22px 26px 44px;">
+        <!-- control bar -->
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 12px;width:250px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input value="{{ searchVal }}" onInput="{{ setQuery }}" placeholder="Tìm theo tên tour…" style="width:100%;background:none;border:none;outline:none;color:#f3f0ea;font-size:12.5px;font-family:inherit;">
+          </div>
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ filterAll }}" style="{{ filterTabAll }}">Tất cả</span>
+            <span onClick="{{ filterHN }}" style="{{ filterTabHN }}">Hà Nội</span>
+            <span onClick="{{ filterHCM }}" style="{{ filterTabHCM }}">TP.HCM</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span onClick="{{ tAddNew }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm Tour mới</span>
+        </div>
+
+        <!-- tour statistics summary -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Tổng số Tour</div>
+            <div style="font-size:24px;font-weight:800;color:#f3f0ea;margin-top:9px;">{{ totalTours }}</div>
+            <div style="font-size:11px;color:#caa765;margin-top:4px;">Ghép từ 8 địa điểm nightlife</div>
+          </div>
+          <div style="background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-radius:16px;padding:17px 18px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;">Tour đang hoạt động</div>
+            <div style="font-size:24px;font-weight:800;color:#e3c27e;margin-top:9px;">{{ activeTours }}</div>
+            <div style="font-size:11px;color:#7fd3a2;margin-top:4px;">● Sẵn sàng cho khách đặt bàn</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Lượt đặt Tour tháng này</div>
+            <div style="font-size:24px;font-weight:800;color:#f3f0ea;margin-top:9px;">148 bookings</div>
+            <div style="font-size:11px;color:#8c8679;margin-top:4px;">▲ 24% so với tháng trước</div>
+          </div>
+        </div>
+
+        <!-- tour table list -->
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr 120px 40px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Tour &amp; Hành trình</span><span>Khu vực</span><span>Điểm dừng</span><span>Giá khởi điểm</span><span>Trạng thái</span><span></span>
+          </div>
+          <sc-for list="{{ tourRows }}" as="t" hint-placeholder-count="4">
+            <div onClick="{{ t.open }}" style="display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr 120px 40px;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                <span style="width:38px;height:38px;flex:none;border-radius:10px;background:{{ t.thumbBg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#241a0a;">{{ t.initial }}</span>
+                <div style="min-width:0;">
+                  <div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.title }}</div>
+                  <div style="font-size:11px;color:#57534b;margin-top:1.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.subtitle }}</div>
+                </div>
+              </div>
+              <span><span style="{{ t.cityStyle }}">{{ t.cityLabel }}</span></span>
+              <span style="color:#c5c0b6;display:flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>{{ t.stopsCount }} quán ({{ t.durationHours }}h)</span>
+              <span style="color:#caa765;font-weight:600;">{{ t.priceFormatted }}</span>
+              <span><span style="{{ t.stStyle }}">{{ t.stLabel }}</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noTours }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:40px;text-align:center;color:#8c8679;font-size:13.5px;">Không tìm thấy tour phù hợp. Vui lòng đổi từ khoá tìm kiếm hoặc thêm tour mới.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tour Edit Drawer -->
+  <sc-if value="{{ tourOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;">
+    <div onClick="{{ tClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.65);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:600px;max-width:96vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.85);">
+      
+      <!-- Drawer Header -->
+      <div style="position:sticky;top:0;z-index:2;padding:19px 26px;background:#131218;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:1.4px;color:#caa765;text-transform:uppercase;">{{ tf.modeLabel }}</div>
+          <div style="font-size:19px;font-weight:700;color:#f3f0ea;margin-top:3px;">{{ tf.drawerTitle }}</div>
+        </div>
+        <span onClick="{{ tClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+
+      <!-- Drawer Body -->
+      <div style="padding:22px 26px 30px;">
+        <!-- Basic Info Section -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:14px;border-left:3px solid #d4b26a;padding-left:8px;">Thông tin cơ bản</div>
+        
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px;">
+          <div>
+            <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Tên Tour</div>
+            <input value="{{ tf.title }}" onInput="{{ tf.setTitle }}" placeholder="Nhập tên tour dạo đêm (VD: Tây Hồ Club Crawl)..." style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:#d4b26a;">
+          </div>
+
+          <div>
+            <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Mô tả hành trình / Subtitle</div>
+            <textarea onInput="{{ tf.setSubtitle }}" placeholder="Mô tả trải nghiệm thú vị của tour..." style="width:100%;height:68px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;resize:none;" style-focus="border-color:#d4b26a;">{{ tf.subtitle }}</textarea>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Khu vực (Thành phố)</div>
+              <!-- custom segmented picker instead of browser select -->
+              <div style="display:flex;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+                <span onClick="{{ tf.setCityHN }}" style="{{ tf.cityHNStyle }}flex:1;text-align:center;font-size:12px;padding:8px 0;border-radius:7px;cursor:pointer;font-weight:600;">Hà Nội</span>
+                <span onClick="{{ tf.setCityHCM }}" style="{{ tf.cityHCMStyle }}flex:1;text-align:center;font-size:12px;padding:8px 0;border-radius:7px;cursor:pointer;font-weight:600;">TP. Hồ Chí Minh</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Thời lượng (Giờ)</div>
+              <div style="display:flex;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:2px 6px 2px 14px;">
+                <input type="number" min="1" max="24" value="{{ tf.durationHours }}" onInput="{{ tf.setDuration }}" placeholder="4" style="flex:1;background:none;border:none;outline:none;color:#f3f0ea;font-size:13px;font-family:inherit;padding:10px 0;">
+                <span style="font-size:12.5px;color:#8c8679;padding-right:8px;">tiếng</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Giá khởi điểm (VND)</div>
+              <div style="display:flex;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:2px 6px 2px 14px;">
+                <input type="number" step="50000" min="0" value="{{ tf.priceFromVnd }}" onInput="{{ tf.setPrice }}" placeholder="1200000" style="flex:1;background:none;border:none;outline:none;color:#caa765;font-size:13px;font-weight:600;font-family:inherit;padding:10px 0;">
+                <span style="font-size:12.5px;color:#8c8679;padding-right:8px;">đ</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Trạng thái hiển thị</div>
+              <!-- Custom status picker -->
+              <div style="display:flex;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+                <span onClick="{{ tf.setStatusActive }}" style="{{ tf.stActiveStyle }}flex:1;text-align:center;font-size:11.5px;padding:8px 0;border-radius:7px;cursor:pointer;font-weight:600;">Mở</span>
+                <span onClick="{{ tf.setStatusHidden }}" style="{{ tf.stHiddenStyle }}flex:1;text-align:center;font-size:11.5px;padding:8px 0;border-radius:7px;cursor:pointer;font-weight:600;">Ẩn</span>
+                <span onClick="{{ tf.setStatusDraft }}" style="{{ tf.stDraftStyle }}flex:1;text-align:center;font-size:11.5px;padding:8px 0;border-radius:7px;cursor:pointer;font-weight:600;">Nháp</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tour Stops Section (Selected Venues) -->
+        <div style="display:flex;align-items:center;justify-content:between;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;border-left:3px solid #d4b26a;padding-left:8px;">Hành trình dừng chân ({{ tf.stopsCount }} điểm)</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:28px;">
+          <sc-for list="{{ tf.stops }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(212,178,106,.15);border-radius:12px;padding:10px 14px;">
+              <!-- order index -->
+              <span style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,rgba(212,178,106,.2),rgba(212,178,106,.06));border:1px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#f0dda8;">{{ s.order }}</span>
+              <!-- venue logo -->
+              <span style="width:34px;height:34px;border-radius:8px;background:{{ s.logoBg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#241a0a;flex:none;">{{ s.logo }}</span>
+              <!-- venue info -->
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</div>
+                <div style="font-size:10.5px;color:#8c8679;margin-top:1.5px;">{{ s.typeLabel }} · {{ s.district }}</div>
+              </div>
+              <!-- reorder up/down and remove -->
+              <div style="display:flex;gap:4px;flex-none;">
+                <span onClick="{{ s.up }}" title="Di chuyển lên" style="width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg></span>
+                <span onClick="{{ s.down }}" title="Di chuyển xuống" style="width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                <span onClick="{{ s.remove }}" title="Xoá điểm dừng" style="width:26px;height:26px;border-radius:6px;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.2);display:flex;align-items:center;justify-content:center;color:#e88b99;cursor:pointer;" style-hover="background:rgba(224,105,122,.18);"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ tf.noStops }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px dashed rgba(255,255,255,.06);border-radius:12px;padding:24px;text-align:center;color:#57534b;font-size:12.5px;font-style:italic;">Hành trình chưa có điểm dừng chân. Vui lòng thêm các địa điểm bên dưới.</div>
+          </sc-if>
+        </div>
+
+        <!-- Add/Assign Venues Panel -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:12px;border-left:3px solid #d4b26a;padding-left:8px;">Gán địa điểm mới vào Tour</div>
+        
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;">
+          <!-- Venue search inside drawer -->
+          <div style="display:flex;align-items:center;gap:9px;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 12px;margin-bottom:10px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input value="{{ tf.vQuery }}" onInput="{{ tf.setVQuery }}" placeholder="Tìm quán (Bar, Club, Lounge, Girls bar, Karaoke)..." style="flex:1;background:none;border:none;outline:none;color:#f3f0ea;font-size:12.5px;font-family:inherit;">
+          </div>
+
+          <!-- Candidates List -->
+          <div class="scw" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:2px;">
+            <sc-for list="{{ tf.candidates }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:7px 10px;">
+                <span style="width:30px;height:30px;border-radius:6px;background:{{ c.logoBg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#241a0a;flex:none;">{{ c.logo }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:12.5px;font-weight:600;color:#e8e4db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.name }}</div>
+                  <div style="font-size:10px;color:#8c8679;margin-top:1px;">{{ c.type }} · {{ c.district }}</div>
+                </div>
+                <span onClick="{{ c.add }}" style="font-size:11px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:5px 10px;border-radius:6px;cursor:pointer;" style-hover="opacity:.9;">+ Gán vào Tour</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ tf.noCandidates }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align:center;font-size:11.5px;color:#57534b;padding:12px;">Không tìm thấy quán nào phù hợp hoặc tất cả đã được gán.</div>
+            </sc-if>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Drawer Actions footer -->
+      <div style="position:sticky;bottom:0;padding:15px 26px;background:#131218;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+        <sc-if value="{{ tf.canDelete }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ tf.deleteTour }}" style="flex:none;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:13px 16px;border-radius:11px;cursor:pointer;" style-hover="background:rgba(224,105,122,.14);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>Xoá Tour</span>
+        </sc-if>
+        <span onClick="{{ tClose }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:13px 22px;border-radius:11px;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">Hủy</span>
+        <span onClick="{{ tSave }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;" style-hover="opacity:.9;">Lưu hành trình</span>
+      </div>
+
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- custom toast notifications -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = {
+    toast: null,
+    searchQuery: '',
+    cityFilter: 'all',
+    tourSel: null, // Selected tour ID or 'new'
+    
+    // Core database of tours
+    tours: [
+      {
+        id: 't1',
+        title: 'Dinner & Club Night',
+        subtitle: 'Ăn tối, lounge và kết thúc tại club xập xình xuyên đêm.',
+        city: 'HN',
+        durationHours: 4,
+        priceFromVnd: 1200000,
+        status: 'active',
+        stops: ['v2', 'v1', 'v3']
+      },
+      {
+        id: 't2',
+        title: 'Bar Hopping VIP',
+        subtitle: 'Trải nghiệm cocktail nghệ thuật và các quầy bar náo nhiệt nhất.',
+        city: 'HN',
+        durationHours: 5,
+        priceFromVnd: 1800000,
+        status: 'active',
+        stops: ['v4', 'v5', 'v2']
+      },
+      {
+        id: 't3',
+        title: 'Relax & Supper Late',
+        subtitle: 'Ăn nhẹ thư thái và vui vẻ cùng hội bạn bè thân thiết.',
+        city: 'HN',
+        durationHours: 3,
+        priceFromVnd: 900000,
+        status: 'draft',
+        stops: ['v5', 'v3']
+      },
+      {
+        id: 't4',
+        title: 'Saigon Club Crawl',
+        subtitle: 'Chinh phục những club lớn nhất trung tâm Quận 1 Sài Gòn.',
+        city: 'HCM',
+        durationHours: 4,
+        priceFromVnd: 1500000,
+        status: 'active',
+        stops: ['v6', 'v7']
+      }
+    ],
+
+    // Edit form buffer
+    editForm: null,
+    venueSearch: ''
+  };
+
+  // Static list of venues on the system (excluding Spa/Massage according to request)
+  VENUES = [
+    {id:'v1', name:'Club Lumière', logo:'CL', logoBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)', type:'CLUB', typeLabel:'Club', city:'HN', district:'Tây Hồ'},
+    {id:'v2', name:'Sakura Lounge', logo:'SL', logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)', type:'LOUNGE', typeLabel:'Lounge', city:'HN', district:'Hoàn Kiếm'},
+    {id:'v3', name:'KTV Hoàng Gia', logo:'KH', logoBg:'linear-gradient(135deg,#c9a86a,#8f6b32)', type:'KARAOKE', typeLabel:'Karaoke', city:'HN', district:'Ba Đình'},
+    {id:'v4', name:'Bar Tokyo Night', logo:'TN', logoBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)', type:'BAR', typeLabel:'Bar', city:'HN', district:'Ba Đình'},
+    {id:'v5', name:'Akari Lounge', logo:'AK', logoBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)', type:'GIRLS_BAR', typeLabel:'Girls bar', city:'HN', district:'Tây Hồ'},
+    {id:'v6', name:'Lotus Club Saigon', logo:'LC', logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)', type:'CLUB', typeLabel:'Club', city:'HCM', district:'Quận 1'},
+    {id:'v7', name:'Neon Saigon', logo:'NS', logoBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)', type:'LOUNGE', typeLabel:'Lounge', city:'HCM', district:'Quận 1'},
+    {id:'v8', name:'Ruby Bar', logo:'RB', logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)', type:'BAR', typeLabel:'Bar', city:'HN', district:'Hoàn Kiếm'}
+  ];
+
+  showToast(m){ 
+    this.setState({ toast:m }); 
+    clearTimeout(this._t); 
+    this._t = setTimeout(() => this.setState({ toast:null }), 2600); 
+  }
+
+  chip(kind){ 
+    const m = {
+      success: ['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],
+      info: ['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],
+      warn: ['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],
+      error: ['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],
+      gold: ['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],
+      pink: ['rgba(224,114,158,.1)','rgba(224,114,158,.28)','#e79ab8'],
+      muted: ['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']
+    }; 
+    const c = m[kind] || m.muted; 
+    return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; 
+  }
+
+  pill(kind){ 
+    return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; 
+  }
+
+  money(n){ 
+    return (n||0).toLocaleString('vi-VN')+'\u20ab'; 
+  }
+
+  renderVals(){
+    const S = this.state, o = { toast:S.toast };
+    
+    // City filter active tabs style
+    const tabStyle = (a) => 'font-size:12.5px;padding:7px 14px;border-radius:8px;cursor:pointer;' + (a ? 'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;' : 'color:#9b958a;');
+    o.filterTabAll = tabStyle(S.cityFilter === 'all');
+    o.filterTabHN = tabStyle(S.cityFilter === 'HN');
+    o.filterTabHCM = tabStyle(S.cityFilter === 'HCM');
+
+    o.filterAll = () => this.setState({ cityFilter: 'all' });
+    o.filterHN = () => this.setState({ cityFilter: 'HN' });
+    o.filterHCM = () => this.setState({ cityFilter: 'HCM' });
+
+    o.searchVal = S.searchQuery;
+    o.setQuery = (e) => this.setState({ searchQuery: e.target.value });
+
+    // Filter tours based on search and city filter
+    const queryLower = S.searchQuery.toLowerCase().trim();
+    const filteredTours = S.tours.filter(t => {
+      const matchCity = S.cityFilter === 'all' || t.city === S.cityFilter;
+      const matchQuery = !queryLower || t.title.toLowerCase().includes(queryLower) || t.subtitle.toLowerCase().includes(queryLower);
+      return matchCity && matchQuery;
+    });
+
+    o.noTours = filteredTours.length === 0;
+    o.totalTours = S.tours.length;
+    o.activeTours = S.tours.filter(t => t.status === 'active').length;
+
+    // Map tours to rows
+    o.tourRows = filteredTours.map(t => {
+      const initial = t.title.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const stMeta = {
+        active: ['Hoạt động', 'success'],
+        hidden: ['Đang ẩn', 'muted'],
+        draft: ['Nháp', 'warn']
+      }[t.status] || ['Nháp', 'warn'];
+
+      return {
+        ...t,
+        initial,
+        thumbBg: t.city === 'HN' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'linear-gradient(135deg,#e79ab8,#b0607f)',
+        cityLabel: t.city === 'HN' ? 'Hà Nội' : 'TP.HCM',
+        cityStyle: this.chip(t.city === 'HN' ? 'info' : 'pink') + 'font-size:10.5px;font-weight:600;padding:3.5px 9px;border-radius:7px;',
+        stopsCount: t.stops.length,
+        priceFormatted: this.money(t.priceFromVnd),
+        stStyle: this.pill(stMeta[1]),
+        stLabel: stMeta[0],
+        open: () => {
+          this.setState({
+            tourSel: t.id,
+            venueSearch: '',
+            editForm: {
+              title: t.title,
+              subtitle: t.subtitle,
+              city: t.city,
+              durationHours: t.durationHours,
+              priceFromVnd: t.priceFromVnd,
+              status: t.status,
+              stops: t.stops.slice() // copy array
+            }
+          });
+        }
+      };
+    });
+
+    // Drawer state
+    o.tourOpen = S.tourSel !== null;
+    o.tClose = () => this.setState({ tourSel: null, editForm: null, venueSearch: '' });
+    o.tAddNew = () => {
+      this.setState({
+        tourSel: 'new',
+        venueSearch: '',
+        editForm: {
+          title: '',
+          subtitle: '',
+          city: 'HN',
+          durationHours: 4,
+          priceFromVnd: 1000000,
+          status: 'active',
+          stops: []
+        }
+      });
+    };
+
+    // Save callback
+    o.tSave = () => {
+      const form = S.editForm;
+      if (!form) return;
+      if (!form.title.trim()) {
+        this.showToast('Vui lòng nhập tên Tour');
+        return;
+      }
+      if (form.stops.length === 0) {
+        this.showToast('Tour phải có ít nhất 1 điểm dừng');
+        return;
+      }
+
+      let nextTours = S.tours.slice();
+      if (S.tourSel === 'new') {
+        const newId = 't_' + Date.now();
+        nextTours.push({
+          id: newId,
+          title: form.title,
+          subtitle: form.subtitle,
+          city: form.city,
+          durationHours: Number(form.durationHours),
+          priceFromVnd: Number(form.priceFromVnd),
+          status: form.status,
+          stops: form.stops
+        });
+        this.showToast('Đã thêm mới Tour thành công');
+      } else {
+        nextTours = nextTours.map(t => {
+          if (t.id === S.tourSel) {
+            return {
+              ...t,
+              title: form.title,
+              subtitle: form.subtitle,
+              city: form.city,
+              durationHours: Number(form.durationHours),
+              priceFromVnd: Number(form.priceFromVnd),
+              status: form.status,
+              stops: form.stops
+            };
+          }
+          return t;
+        });
+        this.showToast('Đã lưu thông tin Tour thành công');
+      }
+
+      this.setState({ tours: nextTours, tourSel: null, editForm: null });
+    };
+
+    // Form builder bindings
+    const form = S.editForm;
+    if (form) {
+      const isNew = S.tourSel === 'new';
+      
+      // Segmented city picker style
+      const cityActive = 'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);box-shadow:0 2px 5px rgba(0,0,0,.2);';
+      const cityInactive = 'color:#8c8679;background:none;';
+      
+      // Segmented status picker styles
+      const stActive = (a, type) => {
+        if (!a) return 'color:#8c8679;background:none;';
+        const color = type === 'active' ? '#7fd3a2' : type === 'hidden' ? '#9b958a' : '#e7b869';
+        const bg = type === 'active' ? 'rgba(95,191,134,.15)' : type === 'hidden' ? 'rgba(255,255,255,.08)' : 'rgba(224,164,78,.15)';
+        const bd = type === 'active' ? 'rgba(95,191,134,.35)' : type === 'hidden' ? 'rgba(255,255,255,.15)' : 'rgba(224,164,78,.35)';
+        return `color:${color};background:${bg};border:1px solid ${bd};`;
+      };
+
+      const stopsList = form.stops.map((vid, idx) => {
+        const v = this.VENUES.find(x => x.id === vid) || { name: 'Quán không tìm thấy', typeLabel: 'Lounge', logo: '?', logoBg: '#333', district: '' };
+        return {
+          order: idx + 1,
+          name: v.name,
+          logo: v.logo,
+          logoBg: v.logoBg,
+          typeLabel: v.typeLabel,
+          district: v.district,
+          up: () => {
+            if (idx === 0) return;
+            const nextStops = form.stops.slice();
+            const temp = nextStops[idx];
+            nextStops[idx] = nextStops[idx - 1];
+            nextStops[idx - 1] = temp;
+            this.setState({ editForm: { ...form, stops: nextStops } });
+          },
+          down: () => {
+            if (idx === form.stops.length - 1) return;
+            const nextStops = form.stops.slice();
+            const temp = nextStops[idx];
+            nextStops[idx] = nextStops[idx + 1];
+            nextStops[idx + 1] = temp;
+            this.setState({ editForm: { ...form, stops: nextStops } });
+          },
+          remove: () => {
+            const nextStops = form.stops.filter((_, i) => i !== idx);
+            this.setState({ editForm: { ...form, stops: nextStops } });
+          }
+        };
+      });
+
+      // Filter candidate venues to assign
+      const vQueryLower = S.venueSearch.toLowerCase().trim();
+      const candidates = this.VENUES.filter(v => {
+        // filter by city of the tour
+        const cityMatch = v.city === form.city;
+        // already added
+        const notAdded = !form.stops.includes(v.id);
+        // search query
+        const queryMatch = !vQueryLower || v.name.toLowerCase().includes(vQueryLower) || v.typeLabel.toLowerCase().includes(vQueryLower);
+        return cityMatch && notAdded && queryMatch;
+      });
+
+      o.tf = {
+        modeLabel: isNew ? 'Tạo mới' : 'Chỉnh sửa',
+        drawerTitle: isNew ? 'Tour mới' : form.title,
+        title: form.title,
+        subtitle: form.subtitle,
+        durationHours: form.durationHours,
+        priceFromVnd: form.priceFromVnd,
+        stopsCount: form.stops.length,
+        noStops: form.stops.length === 0,
+        canDelete: !isNew,
+
+        // Input Setters
+        setTitle: (e) => this.setState({ editForm: { ...form, title: e.target.value } }),
+        setSubtitle: (e) => this.setState({ editForm: { ...form, subtitle: e.target.value } }),
+        setDuration: (e) => this.setState({ editForm: { ...form, durationHours: e.target.value } }),
+        setPrice: (e) => this.setState({ editForm: { ...form, priceFromVnd: e.target.value } }),
+
+        // City setters (custom buttons)
+        cityHNStyle: form.city === 'HN' ? cityActive : cityInactive,
+        cityHCMStyle: form.city === 'HCM' ? cityActive : cityInactive,
+        setCityHN: () => this.setState({ editForm: { ...form, city: 'HN', stops: [] } }), // Clear stops when city changes to prevent mismatch
+        setCityHCM: () => this.setState({ editForm: { ...form, city: 'HCM', stops: [] } }),
+
+        // Status setters (custom buttons)
+        stActiveStyle: stActive(form.status === 'active', 'active'),
+        stHiddenStyle: stActive(form.status === 'hidden', 'hidden'),
+        stDraftStyle: stActive(form.status === 'draft', 'draft'),
+        setStatusActive: () => this.setState({ editForm: { ...form, status: 'active' } }),
+        setStatusHidden: () => this.setState({ editForm: { ...form, status: 'hidden' } }),
+        setStatusDraft: () => this.setState({ editForm: { ...form, status: 'draft' } }),
+
+        // Stops bindings
+        stops: stopsList,
+
+        // Candidates list inside drawer
+        vQuery: S.venueSearch,
+        setVQuery: (e) => this.setState({ venueSearch: e.target.value }),
+        candidates: candidates.map(v => ({
+          ...v,
+          type: v.typeLabel,
+          add: () => {
+            const nextStops = form.stops.concat([v.id]);
+            this.setState({ editForm: { ...form, stops: nextStops }, venueSearch: '' });
+            this.showToast(`Đã thêm ${v.name} vào Tour`);
+          }
+        })),
+        noCandidates: candidates.length === 0,
+
+        // Delete tour action
+        deleteTour: () => {
+          const nextTours = S.tours.filter(t => t.id !== S.tourSel);
+          this.setState({ tours: nextTours, tourSel: null, editForm: null });
+          this.showToast('Đã xoá Tour thành công');
+        }
+      };
+    }
+
+    return o;
+  }
+}
+</script>
+</body>
+</html>
