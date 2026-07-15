@@ -901,12 +901,6 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   placeholder="Ví dụ: 12 Trần Phú"
                   required
                 />
-                <FormControl
-                  label="Giờ mở cửa"
-                  value={form.openingHours}
-                  onChange={(value) => updateForm('openingHours', value)}
-                  placeholder="Ví dụ: 18:00 - 02:00"
-                />
 
                 <FormGroupTitle title="Liên hệ" />
                 <FormControl
@@ -938,14 +932,6 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   value={form.storeDescription}
                   onChange={(value) => updateForm('storeDescription', value)}
                   placeholder="Không gian, dịch vụ nổi bật, nhóm khách phù hợp..."
-                  tall
-                  wide={!isMobile}
-                />
-                <FormControl
-                  label="Link ảnh / video quán"
-                  value={form.mediaUrls}
-                  onChange={(value) => updateForm('mediaUrls', value)}
-                  placeholder="Mỗi link một dòng: https://..."
                   tall
                   wide={!isMobile}
                 />
