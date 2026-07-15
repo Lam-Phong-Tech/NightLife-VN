@@ -180,6 +180,14 @@ const footerGroups = [
   },
 ];
 
+const footerReservationNotice: Record<LanguageCode, string> = {
+  vi: "Giá và tình trạng đặt chỗ được xác nhận trước khi phục vụ.",
+  en: "Prices and reservation availability are confirmed before service.",
+  ja: "料金と予約可否はご利用前に確認されます。",
+  ko: "가격과 예약 가능 여부는 이용 전에 확인됩니다.",
+  zh: "价格和预约状态会在服务前确认。",
+};
+
 const mobileFooterLinks = [
   { href: "/danh-sach-quan", label: "Tìm quán" },
   { href: "/uu-dai", label: "Ưu đãi" },
@@ -1228,6 +1236,7 @@ function SiteFooter({
 }) {
   const brandName = brand.name || "Vietyoru";
   const copy = footerCopy[language] ?? footerCopy.vi;
+  const reservationNotice = footerReservationNotice[language] ?? footerReservationNotice.vi;
 
   if (isMobile) {
     return (
@@ -1318,7 +1327,7 @@ function SiteFooter({
               lineHeight: 1.55,
             }}
           >
-            {copy.mobileNotice(brandName)}
+            © 2026 {brandName}. 18+ · {reservationNotice}
           </div>
         </div>
       </footer>
@@ -1446,7 +1455,7 @@ function SiteFooter({
         }}
       >
         <span>{copy.rights(brandName)}</span>
-        <span>{copy.bookingNote}</span>
+        <span>18+ · {reservationNotice}</span>
       </div>
     </footer>
   );

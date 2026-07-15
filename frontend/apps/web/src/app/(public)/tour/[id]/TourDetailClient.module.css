@@ -1,7 +1,21 @@
 .page {
+  --tour-card-bg: var(--vy-surface);
+  --tour-card-soft-bg: var(--vy-surface-1);
+  --tour-control-bg: var(--vy-surface-2);
+  --tour-control-strong-bg: var(--vy-surface-3);
+  --tour-border: var(--vy-border);
+  --tour-border-gold: var(--vy-border-gold-22);
+  --tour-border-gold-strong: var(--vy-border-gold-40);
+  --tour-text: var(--vy-text);
+  --tour-muted: var(--vy-text-2);
+  --tour-faint: var(--vy-muted);
+  --tour-gold: var(--vy-gold);
+  --tour-gold-hi: var(--vy-gold-hi);
+  --tour-gold-pale: var(--vy-gold-pale);
+  --tour-gold-deep: color-mix(in srgb, var(--tour-gold) 72%, black);
   min-height: 100vh;
-  background: #0c0c0f;
-  color: #f3f0ea;
+  background: var(--vy-bg);
+  color: var(--tour-text);
   font-family: var(--nl-font-sans);
 }
 
@@ -16,13 +30,13 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 18px;
-  color: #8c8679;
+  color: var(--tour-faint);
   font-size: 12px;
   font-weight: 720;
 }
 
 .breadcrumb a {
-  color: #c5c0b6;
+  color: var(--tour-muted);
   text-decoration: none;
 }
 
@@ -41,10 +55,10 @@
 
 .hero {
   overflow: hidden;
-  border: 1px solid rgba(212, 178, 106, 0.24);
+  border: 1px solid var(--tour-border-gold);
   border-radius: 18px;
-  background: #131316;
-  box-shadow: 0 28px 70px -38px rgba(0, 0, 0, 0.95);
+  background: var(--tour-card-bg);
+  box-shadow: var(--vy-shadow-card);
 }
 
 .heroMedia {
@@ -72,7 +86,7 @@
   align-items: center;
   gap: 7px;
   color: #241a0a;
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a);
+  background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold));
   border-radius: 999px;
   padding: 6px 11px;
   font-size: 11px;
@@ -100,15 +114,15 @@
 .heroStats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid rgba(212, 178, 106, 0.16);
-  background: rgba(255, 255, 255, 0.035);
+  border-top: 1px solid var(--tour-border-gold);
+  background: var(--tour-card-soft-bg);
 }
 
 .heroStat {
   display: grid;
   gap: 4px;
   padding: 16px 18px;
-  border-right: 1px solid rgba(212, 178, 106, 0.12);
+  border-right: 1px solid var(--vy-border-gold-12);
 }
 
 .heroStat:last-child {
@@ -116,26 +130,26 @@
 }
 
 .heroStat strong {
-  color: #f0dda8;
+  color: var(--tour-gold-pale);
   font-size: 18px;
 }
 
 .heroStat span {
-  color: #8c8679;
+  color: var(--tour-faint);
   font-size: 11px;
   font-weight: 740;
 }
 
 .sectionCard {
-  border: 1px solid rgba(212, 178, 106, 0.18);
+  border: 1px solid var(--tour-border-gold);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--tour-card-soft-bg);
   padding: clamp(18px, 3vw, 24px);
 }
 
 .sectionTitle {
   margin: 14px 0 0;
-  color: #f7f1df;
+  color: var(--tour-text);
   font-size: 24px;
   font-weight: 950;
   line-height: 1.15;
@@ -143,7 +157,7 @@
 
 .sectionText {
   margin: 8px 0 0;
-  color: #a8a097;
+  color: var(--tour-muted);
   line-height: 1.65;
 }
 
@@ -158,9 +172,9 @@
   grid-template-columns: 70px minmax(0, 160px) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
-  border: 1px solid rgba(212, 178, 106, 0.16);
+  border: 1px solid var(--tour-border);
   border-radius: 14px;
-  background: rgba(12, 12, 15, 0.46);
+  background: var(--tour-card-bg);
   padding: 12px;
 }
 
@@ -168,8 +182,8 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: rgba(212, 178, 106, 0.12);
-  color: #f0dda8;
+  background: var(--vy-gold-soft-bg);
+  color: var(--tour-gold-pale);
   font-size: 20px;
   font-weight: 950;
 }
@@ -190,21 +204,21 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  color: #d4b26a;
+  color: var(--tour-gold);
   font-size: 11px;
   font-weight: 850;
 }
 
 .stopTitle {
   margin: 0;
-  color: #fffaf0;
+  color: var(--tour-text);
   font-size: 19px;
   font-weight: 950;
 }
 
 .stopText {
   margin: 0;
-  color: #a8a097;
+  color: var(--tour-muted);
   font-size: 13px;
   line-height: 1.58;
 }
@@ -214,10 +228,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid rgba(212, 178, 106, 0.22);
+  border: 1px solid var(--tour-border-gold);
   border-radius: 999px;
-  background: rgba(212, 178, 106, 0.08);
-  color: #f0dda8;
+  background: var(--vy-gold-soft-bg);
+  color: var(--tour-gold-pale);
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 850;
@@ -235,33 +249,33 @@
   grid-template-columns: 44px minmax(0, 1fr) 20px;
   gap: 10px;
   align-items: center;
-  border: 1px solid rgba(212, 178, 106, 0.16);
+  border: 1px solid var(--tour-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
-  color: #f3f0ea;
+  background: var(--tour-control-bg);
+  color: var(--tour-text);
   padding: 10px;
   text-align: left;
   cursor: pointer;
 }
 
 .castButton[data-selected="true"] {
-  border-color: rgba(212, 178, 106, 0.58);
-  background: rgba(212, 178, 106, 0.12);
+  border-color: var(--tour-border-gold-strong);
+  background: var(--vy-gold-soft-bg);
 }
 
 .castAvatar {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  border: 1px solid rgba(212, 178, 106, 0.24);
-  background: rgba(212, 178, 106, 0.14);
+  border: 1px solid var(--tour-border-gold);
+  background: var(--vy-gold-soft-bg);
   background-position: center;
   background-size: cover;
 }
 
 .castName {
   overflow: hidden;
-  color: #fffaf0;
+  color: var(--tour-text);
   font-size: 13px;
   font-weight: 900;
   text-overflow: ellipsis;
@@ -271,7 +285,7 @@
 .castMeta {
   overflow: hidden;
   margin-top: 2px;
-  color: #8c8679;
+  color: var(--tour-faint);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -280,10 +294,10 @@
 .bookingCard {
   position: sticky;
   top: 96px;
-  border: 1px solid rgba(212, 178, 106, 0.28);
+  border: 1px solid var(--tour-border-gold);
   border-radius: 18px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025));
-  box-shadow: 0 28px 70px -44px rgba(0, 0, 0, 0.95);
+  background: var(--tour-card-bg);
+  box-shadow: var(--vy-shadow-card);
   padding: 18px;
 }
 
@@ -291,25 +305,25 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid rgba(212, 178, 106, 0.14);
+  border-bottom: 1px solid var(--vy-border-gold-12);
   padding-bottom: 14px;
 }
 
 .bookingHeader h2 {
   margin: 0;
-  color: #fffaf0;
+  color: var(--tour-text);
   font-size: 20px;
   font-weight: 950;
 }
 
 .bookingHeader p {
   margin: 4px 0 0;
-  color: #8c8679;
+  color: var(--tour-faint);
   font-size: 12px;
 }
 
 .priceTier {
-  color: #f0dda8;
+  color: var(--tour-gold-pale);
   font-size: 18px;
   font-weight: 950;
 }
@@ -326,7 +340,7 @@
 }
 
 .label {
-  color: #a8a097;
+  color: var(--tour-muted);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -336,10 +350,10 @@
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid rgba(212, 178, 106, 0.16);
+  border: 1px solid var(--tour-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.055);
-  color: #f3f0ea;
+  background: var(--tour-control-bg);
+  color: var(--tour-text);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -359,7 +373,7 @@
 
 .input::placeholder,
 .textarea::placeholder {
-  color: #6f6b62;
+  color: var(--vy-faint);
 }
 
 .guestControl {
@@ -374,7 +388,7 @@
   height: 38px;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a);
+  background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold));
   color: #241a0a;
   display: grid;
   place-items: center;
@@ -392,7 +406,7 @@
 
 .fieldError {
   min-height: 16px;
-  color: #ff9bb7;
+  color: var(--vy-error);
   font-size: 12px;
   font-weight: 720;
 }
@@ -430,9 +444,9 @@
 
 .dateTime :global(.nl-booking-ant-control),
 .dateTime :global(.ant-select-selector) {
-  border-color: rgba(212, 178, 106, 0.16) !important;
-  background: rgba(255, 255, 255, 0.055) !important;
-  color: #f3f0ea !important;
+  border-color: var(--tour-border) !important;
+  background: var(--tour-control-bg) !important;
+  color: var(--tour-text) !important;
 }
 
 .dateTime :global(.ant-picker),
@@ -444,14 +458,14 @@
 .dateTime :global(.ant-select-selection-item),
 .dateTime :global(.ant-select-selection-placeholder),
 .dateTime :global(.ant-picker-input > input) {
-  color: #f3f0ea !important;
+  color: var(--tour-text) !important;
   font-size: 14px !important;
   font-weight: 750 !important;
 }
 
 .dateTime :global(.nl-booking-field-error) {
   min-height: 16px;
-  color: #ff9bb7;
+  color: var(--vy-error);
   font-size: 12px;
   font-weight: 720;
 }
@@ -460,7 +474,7 @@
   min-height: 50px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+  background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold) 55%, var(--tour-gold-deep));
   color: #241a0a;
   display: inline-flex;
   align-items: center;
@@ -478,10 +492,10 @@
 }
 
 .formError {
-  border: 1px solid rgba(255, 155, 183, 0.3);
+  border: 1px solid color-mix(in srgb, var(--vy-error) 36%, transparent);
   border-radius: 12px;
-  background: rgba(255, 155, 183, 0.08);
-  color: #ffb6c8;
+  background: color-mix(in srgb, var(--vy-error) 10%, transparent);
+  color: var(--vy-error);
   padding: 10px 12px;
   font-size: 12px;
   font-weight: 760;
@@ -491,18 +505,14 @@
 .note {
   display: flex;
   gap: 8px;
-  color: #8c8679;
+  color: var(--tour-faint);
   font-size: 11px;
   line-height: 1.55;
 }
 
-.mobileCta {
-  display: none;
-}
-
 @media (max-width: 900px) {
   .shell {
-    padding: 12px 0 calc(104px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(144px + env(safe-area-inset-bottom));
   }
 
   .breadcrumb {
@@ -558,13 +568,14 @@
     margin-top: 16px;
     border-width: 1px 0;
     border-radius: 0;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 
   .dateTime :global(.nl-booking-date-time) {
     grid-template-columns: 1fr;
   }
 
-  .mobileCta {
+  .submitButton {
     position: fixed;
     z-index: 20;
     right: 12px;
@@ -573,7 +584,7 @@
     display: flex;
     min-height: 50px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold) 55%, var(--tour-gold-deep));
     color: #241a0a;
     align-items: center;
     justify-content: center;

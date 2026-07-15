@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
-  Clock3,
   Mail,
   Minus,
   Plus,
@@ -134,7 +133,246 @@ const localizedApiErrorMessage = (
   return translateText(vietnameseMessage, language);
 };
 
-const tourAdminNote = (tour: PublicTour, selectedCast: TourCastOption | null, customerNote: string) => {
+const tourUiCopy = {
+  home: {
+    vi: "Trang chủ",
+    en: "Home",
+    ja: "ホーム",
+    ko: "홈",
+    zh: "首页",
+  },
+  noTourImage: {
+    vi: "Chưa có ảnh tour",
+    en: "No tour image yet",
+    ja: "ツアー画像はまだありません",
+    ko: "투어 이미지가 아직 없습니다",
+    zh: "暂无旅游图片",
+  },
+  experienceTour: {
+    vi: "Tour trải nghiệm",
+    en: "Experience tour",
+    ja: "体験ツアー",
+    ko: "체험 투어",
+    zh: "体验行程",
+  },
+  stopsUnit: {
+    vi: "điểm",
+    en: "stops",
+    ja: "スポット",
+    ko: "장소",
+    zh: "站",
+  },
+  stopStatsLabel: {
+    vi: "Điểm dừng chân",
+    en: "Stops",
+    ja: "立ち寄り先",
+    ko: "방문 장소",
+    zh: "停靠点",
+  },
+  hoursUnit: {
+    vi: "giờ",
+    en: "hours",
+    ja: "時間",
+    ko: "시간",
+    zh: "小时",
+  },
+  durationLabel: {
+    vi: "Tổng thời lượng",
+    en: "Duration",
+    ja: "所要時間",
+    ko: "소요 시간",
+    zh: "总时长",
+  },
+  costTier: {
+    vi: "Mức chi phí",
+    en: "Price tier",
+    ja: "価格帯",
+    ko: "가격대",
+    zh: "价格等级",
+  },
+  route: {
+    vi: "Hành trình",
+    en: "Route",
+    ja: "行程",
+    ko: "동선",
+    zh: "行程",
+  },
+  routeTitle: {
+    vi: "Lịch trình chi tiết các điểm dừng",
+    en: "Detailed route stops",
+    ja: "立ち寄り先の詳細",
+    ko: "상세 방문 일정",
+    zh: "详细停靠行程",
+  },
+  noVenueImage: {
+    vi: "Chưa có ảnh quán",
+    en: "No venue image yet",
+    ja: "店舗画像はまだありません",
+    ko: "매장 이미지가 아직 없습니다",
+    zh: "暂无店铺图片",
+  },
+  companionCast: {
+    vi: "Cast đồng hành",
+    en: "Companion Cast",
+    ja: "同行キャスト",
+    ko: "동행 Cast",
+    zh: "同行 Cast",
+  },
+  chooseCast: {
+    vi: "Chọn cast trong hành trình nếu muốn",
+    en: "Choose a Cast for the tour if you want",
+    ja: "必要に応じて同行キャストを選択",
+    ko: "원하면 동행 Cast를 선택하세요",
+    zh: "可按需选择同行 Cast",
+  },
+  noCast: {
+    vi: "Không chọn cast",
+    en: "No Cast selected",
+    ja: "キャストを選択しない",
+    ko: "Cast 선택 안 함",
+    zh: "不选择 Cast",
+  },
+  freeExperience: {
+    vi: "Trải nghiệm tự do",
+    en: "Free experience",
+    ja: "自由に楽しむ",
+    ko: "자유롭게 이용",
+    zh: "自由体验",
+  },
+  bookThisTour: {
+    vi: "Đặt tour này",
+    en: "Book this tour",
+    ja: "このツアーを予約",
+    ko: "이 투어 예약",
+    zh: "预订此行程",
+  },
+  bookingPoint: {
+    vi: "Điểm đặt tour",
+    en: "Booking point",
+    ja: "予約先",
+    ko: "예약 장소",
+    zh: "预订点",
+  },
+  invalidTour: {
+    vi: "Tour chưa có điểm dừng hợp lệ",
+    en: "This tour has no valid stop yet",
+    ja: "有効な立ち寄り先がまだありません",
+    ko: "유효한 방문 장소가 아직 없습니다",
+    zh: "该行程暂无有效停靠点",
+  },
+  nameLabel: {
+    vi: "Họ tên",
+    en: "Full name",
+    ja: "お名前",
+    ko: "이름",
+    zh: "姓名",
+  },
+  namePlaceholder: {
+    vi: "Vui lòng nhập họ tên",
+    en: "Enter your full name",
+    ja: "お名前を入力してください",
+    ko: "이름을 입력해 주세요",
+    zh: "请输入姓名",
+  },
+  emailPlaceholder: {
+    vi: "Vui lòng nhập email",
+    en: "Enter your email",
+    ja: "メールアドレスを入力してください",
+    ko: "이메일을 입력해 주세요",
+    zh: "请输入邮箱",
+  },
+  dateLabel: {
+    vi: "Ngày",
+    en: "Date",
+    ja: "日付",
+    ko: "날짜",
+    zh: "日期",
+  },
+  timeLabel: {
+    vi: "Khung giờ",
+    en: "Time slot",
+    ja: "時間帯",
+    ko: "시간대",
+    zh: "时间段",
+  },
+  noTimeSlots: {
+    vi: "Tour chưa có khung giờ khả dụng trong ngày này.",
+    en: "No available time slot for this tour on this date.",
+    ja: "この日程で利用できる時間帯はありません。",
+    ko: "이 날짜에 이용 가능한 시간이 없습니다.",
+    zh: "该日期暂无可用时间段。",
+  },
+  guestsLabel: {
+    vi: "Số khách",
+    en: "Guests",
+    ja: "人数",
+    ko: "인원",
+    zh: "人数",
+  },
+  decreaseGuests: {
+    vi: "Giảm số khách",
+    en: "Decrease guests",
+    ja: "人数を減らす",
+    ko: "인원 줄이기",
+    zh: "减少人数",
+  },
+  increaseGuests: {
+    vi: "Tăng số khách",
+    en: "Increase guests",
+    ja: "人数を増やす",
+    ko: "인원 늘리기",
+    zh: "增加人数",
+  },
+  optionalNote: {
+    vi: "Ghi chú tuỳ chọn",
+    en: "Optional note",
+    ja: "任意メモ",
+    ko: "선택 메모",
+    zh: "可选备注",
+  },
+  notePlaceholder: {
+    vi: "Ví dụ: cần bàn yên tĩnh, đi theo nhóm...",
+    en: "Example: quiet table, traveling as a group...",
+    ja: "例: 静かな席希望、グループで利用...",
+    ko: "예: 조용한 자리, 단체 이용...",
+    zh: "例如：需要安静座位、多人同行...",
+  },
+  submitting: {
+    vi: "Đang gửi yêu cầu...",
+    en: "Sending request...",
+    ja: "リクエストを送信中...",
+    ko: "요청 전송 중...",
+    zh: "正在发送请求...",
+  },
+  submitTour: {
+    vi: "Gửi yêu cầu đặt tour",
+    en: "Send tour request",
+    ja: "ツアー予約を送信",
+    ko: "투어 예약 요청",
+    zh: "发送行程预订请求",
+  },
+  noPaymentNote: {
+    vi: "Không thanh toán online. Yêu cầu giữ chỗ sẽ được gửi và QR ưu đãi được gửi sau khi đặt thành công.",
+    en: "No online payment. Your reservation request will be sent and the deal QR will be delivered after successful booking.",
+    ja: "オンライン決済はありません。予約リクエストを送信し、予約完了後に特典QRをお送りします。",
+    ko: "온라인 결제는 없습니다. 예약 요청이 전송되며 예약 완료 후 혜택 QR이 발송됩니다.",
+    zh: "无需在线支付。预约请求将发送，预订成功后会发送优惠二维码。",
+  },
+  bookingFailed: {
+    vi: "Không gửi được yêu cầu đặt tour.",
+    en: "Could not send the tour request.",
+    ja: "ツアー予約を送信できませんでした。",
+    ko: "투어 예약 요청을 보낼 수 없습니다.",
+    zh: "无法发送行程预订请求。",
+  },
+} satisfies Record<string, Record<LanguageCode, string>>;
+
+type TourUiCopyKey = keyof typeof tourUiCopy;
+
+const tourUiText = (key: TourUiCopyKey, language: LanguageCode) =>
+  tourUiCopy[key][language] ?? tourUiCopy[key].vi;
+
+const tourBookingNote = (tour: PublicTour, selectedCast: TourCastOption | null, customerNote: string) => {
   const stopNames = tour.stops.map((stop) => stop.store.name).join(" > ");
   const lines = [
     `Tour: ${tour.title}`,
@@ -149,6 +387,8 @@ const tourAdminNote = (tour: PublicTour, selectedCast: TourCastOption | null, cu
 export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const router = useRouter();
   const activeLanguage = useActiveLanguage();
+  const t = (value: string) => translateText(value, activeLanguage);
+  const tx = (key: TourUiCopyKey) => tourUiText(key, activeLanguage);
   const [guestName, setGuestName] = useState("");
   const [email, setEmail] = useState("");
   const [bookingDate, setBookingDate] = useState(getTodayDate);
@@ -313,7 +553,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
     if (validationError) return;
     if (!bookingStore) {
-      setErrorMessage("Tour này chưa có điểm dừng hợp lệ để đặt.");
+      setErrorMessage(tx("invalidTour"));
       return;
     }
 
@@ -324,7 +564,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       email: normalizedEmail,
       scheduledAt,
       partySize: guests,
-      note: tourAdminNote(tour, selectedCast, trimmedNote),
+      note: tourBookingNote(tour, selectedCast, trimmedNote),
     };
 
     try {
@@ -356,7 +596,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       setErrorMessage(
-        localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt tour."),
+        localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi")),
       );
     } finally {
       setIsSubmitting(false);
@@ -368,7 +608,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
           <Link href="/">
-            Trang chủ
+            {tx("home")}
           </Link>
           <ChevronRight size={14} />
           <Link href="/tour">Tour</Link>
@@ -382,13 +622,13 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <PlaceholderMedia
                 src={tourCover(tour)}
                 alt={tour.title}
-                label="Chưa có ảnh tour"
+                label={tx("noTourImage")}
                 className={styles.heroMedia}
               >
                 <div className={styles.heroOverlay}>
                   <div className={styles.heroCopy}>
                     <span className={styles.eyebrow}>
-                      <Sparkles size={14} /> Tour trải nghiệm
+                      <Sparkles size={14} /> {tx("experienceTour")}
                     </span>
                     <h1 className={styles.heroTitle}>{tour.title}</h1>
                     {tour.subtitle ? <p className={styles.heroText}>{tour.subtitle}</p> : null}
@@ -397,28 +637,25 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               </PlaceholderMedia>
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
-                  <strong>{tour.stops.length} điểm</strong>
-                  <span>Điểm dừng chân</span>
+                  <strong>{tour.stops.length} {tx("stopsUnit")}</strong>
+                  <span>{tx("stopStatsLabel")}</span>
                 </div>
                 <div className={styles.heroStat}>
-                  <strong>{tour.durationHours} giờ</strong>
-                  <span>Tổng thời lượng</span>
+                  <strong>{tour.durationHours} {tx("hoursUnit")}</strong>
+                  <span>{tx("durationLabel")}</span>
                 </div>
                 <div className={styles.heroStat}>
                   <strong>{priceTierLabel(tour.priceTier)}</strong>
-                  <span>Mức chi phí</span>
+                  <span>{tx("costTier")}</span>
                 </div>
               </div>
             </section>
 
             <section className={styles.sectionCard}>
               <span className={styles.sectionEyebrow}>
-                <Route size={14} /> Hành trình
+                <Route size={14} /> {tx("route")}
               </span>
-              <h2 className={styles.sectionTitle}>Lịch trình chi tiết các điểm dừng</h2>
-              <p className={styles.sectionText}>
-                Mỗi điểm dừng lấy từ dữ liệu quán thật trong admin, gồm loại hình, khu vực và ưu đãi đang còn hiệu lực.
-              </p>
+              <h2 className={styles.sectionTitle}>{tx("routeTitle")}</h2>
 
               <div className={styles.timeline}>
                 {tour.stops.map((stop) => (
@@ -427,12 +664,12 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     <PlaceholderMedia
                       src={storeImage(stop.store)}
                       alt={stop.store.name}
-                      label="Chưa có ảnh quán"
+                      label={tx("noVenueImage")}
                       className={styles.stopMedia}
                     />
                     <div className={styles.stopCopy}>
                       <div className={styles.stopMeta}>
-                        <span>{categoryLabels[stop.store.category] ?? stop.store.category}</span>
+                        <span>{t(categoryLabels[stop.store.category] ?? stop.store.category)}</span>
                         <span>{stop.store.area?.name || stop.store.district || formatCity(tour)}</span>
                       </div>
                       <h3 className={styles.stopTitle}>{stop.store.name}</h3>
@@ -451,12 +688,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
             {tourCasts.length ? (
               <section className={styles.sectionCard}>
                 <span className={styles.sectionEyebrow}>
-                  <Users size={14} /> Cast đồng hành
+                  <Users size={14} /> {tx("companionCast")}
                 </span>
-                <h2 className={styles.sectionTitle}>Chọn cast trong hành trình nếu muốn</h2>
-                <p className={styles.sectionText}>
-                  Nếu chọn cast, booking tour sẽ gắn vào đúng quán của cast đó để admin điều phối chính xác.
-                </p>
+                <h2 className={styles.sectionTitle}>{tx("chooseCast")}</h2>
                 <div className={styles.castGrid}>
                   <button
                     type="button"
@@ -466,10 +700,10 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                   >
                     <span className={styles.castAvatar} />
                     <span>
-                      <span className={styles.castName}>Không chọn cast</span>
-                      <span className={styles.castMeta}>Trải nghiệm tự do</span>
+                      <span className={styles.castName}>{tx("noCast")}</span>
+                      <span className={styles.castMeta}>{tx("freeExperience")}</span>
                     </span>
-                    {!selectedCastSlug ? <Check size={17} color="#d4b26a" /> : null}
+                    {!selectedCastSlug ? <Check size={17} color="var(--vy-gold)" /> : null}
                   </button>
                   {tourCasts.map((cast) => (
                     <button
@@ -489,7 +723,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                         <span className={styles.castName}>{castName(cast)}</span>
                         <span className={styles.castMeta}>{cast.storeName}</span>
                       </span>
-                      {selectedCastSlug === cast.slug ? <Check size={17} color="#d4b26a" /> : null}
+                      {selectedCastSlug === cast.slug ? <Check size={17} color="var(--vy-gold)" /> : null}
                     </button>
                   ))}
                 </div>
@@ -500,8 +734,8 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
           <aside className={styles.bookingCard} id="tour-booking">
             <div className={styles.bookingHeader}>
               <div>
-                <h2>Đặt tour này</h2>
-                <p>{targetLabel ? `Điểm điều phối: ${targetLabel}` : "Tour chưa có điểm dừng hợp lệ"}</p>
+                <h2>{tx("bookThisTour")}</h2>
+                <p>{targetLabel ? `${tx("bookingPoint")}: ${targetLabel}` : tx("invalidTour")}</p>
               </div>
               <div className={styles.priceTier}>{priceTierLabel(tour.priceTier)}</div>
             </div>
@@ -514,11 +748,11 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               }}
             >
               <TextField
-                label="Họ tên"
+                label={tx("nameLabel")}
                 value={guestName}
-                placeholder="Vui lòng nhập họ tên"
+                placeholder={tx("namePlaceholder")}
                 icon={<UserRound size={16} />}
-                error={visibleFieldErrors.guestName}
+                error={visibleFieldErrors.guestName ? t(visibleFieldErrors.guestName) : undefined}
                 onChange={(value) => setGuestName(sanitizeBookingDisplayNameInput(value))}
                 onTouched={() => markFieldTouched("guestName")}
               />
@@ -526,9 +760,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <TextField
                 label="Email"
                 value={email}
-                placeholder="Vui lòng nhập email"
+                placeholder={tx("emailPlaceholder")}
                 icon={<Mail size={16} />}
-                error={visibleFieldErrors.email}
+                error={visibleFieldErrors.email ? t(visibleFieldErrors.email) : undefined}
                 onChange={setEmail}
                 onTouched={() => markFieldTouched("email")}
               />
@@ -536,9 +770,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <div className={styles.dateTime}>
                 <BookingDateTimeFields
                   dateValue={bookingDate}
-                  dateLabel="Ngày"
+                  dateLabel={tx("dateLabel")}
                   timeValue={bookingTime}
-                  timeLabel="Khung giờ"
+                  timeLabel={tx("timeLabel")}
                   timeOptions={bookingTimeOptions}
                   minDate={getTodayDate()}
                   maxDate={getMaxBookingDate()}
@@ -550,16 +784,16 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     markFieldTouched("bookingTime");
                     setBookingTime(value);
                   }}
-                  dateError={visibleFieldErrors.bookingDate}
-                  timeError={visibleFieldErrors.bookingTime}
+                  dateError={visibleFieldErrors.bookingDate ? t(visibleFieldErrors.bookingDate) : undefined}
+                  timeError={visibleFieldErrors.bookingTime ? t(visibleFieldErrors.bookingTime) : undefined}
                   errorPlacement="outside"
                   labelClassName={styles.label}
-                  emptyMessage="Tour chưa có khung giờ khả dụng trong ngày này."
+                  emptyMessage={tx("noTimeSlots")}
                 />
               </div>
 
               <div className={styles.field}>
-                <span className={styles.label}>Số khách</span>
+                <span className={styles.label}>{tx("guestsLabel")}</span>
                 <div className={styles.guestControl}>
                   <button
                     type="button"
@@ -569,7 +803,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                       setGuests((value) => clampBookingGuestCount(value - 1));
                     }}
                     disabled={guests <= 1}
-                    aria-label="Giảm số khách"
+                    aria-label={tx("decreaseGuests")}
                   >
                     <Minus size={16} />
                   </button>
@@ -584,7 +818,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                       markFieldTouched("guestCount");
                       setGuests(sanitizeBookingGuestCountInput(event.target.value));
                     }}
-                    aria-label="Số khách"
+                    aria-label={tx("guestsLabel")}
                   />
                   <button
                     type="button"
@@ -594,16 +828,18 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                       setGuests((value) => clampBookingGuestCount(value + 1));
                     }}
                     disabled={guests >= maxGuests}
-                    aria-label="Tăng số khách"
+                    aria-label={tx("increaseGuests")}
                   >
                     <Plus size={16} />
                   </button>
                 </div>
-                <span className={styles.fieldError}>{visibleFieldErrors.guestCount}</span>
+                <span className={styles.fieldError}>
+                  {visibleFieldErrors.guestCount ? t(visibleFieldErrors.guestCount) : ""}
+                </span>
               </div>
 
               <div className={styles.field}>
-                <span className={styles.label}>Ghi chú tuỳ chọn</span>
+                <span className={styles.label}>{tx("optionalNote")}</span>
                 <textarea
                   autoComplete="off"
                   className={styles.textarea}
@@ -613,30 +849,27 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     markFieldTouched("note");
                     setNote(event.target.value);
                   }}
-                  placeholder="Ví dụ: cần bàn yên tĩnh, đi theo nhóm..."
+                  placeholder={tx("notePlaceholder")}
                 />
-                <span className={styles.fieldError}>{visibleFieldErrors.note}</span>
+                <span className={styles.fieldError}>{visibleFieldErrors.note ? t(visibleFieldErrors.note) : ""}</span>
               </div>
 
-              {errorMessage ? <div className={styles.formError}>{errorMessage}</div> : null}
+              {errorMessage ? <div className={styles.formError}>{t(errorMessage)}</div> : null}
 
               <button type="submit" className={styles.submitButton} disabled={!canSubmit || isSubmitting}>
                 <CalendarDays size={17} />
-                {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt tour"}
+                {isSubmitting ? tx("submitting") : tx("submitTour")}
               </button>
 
               <div className={styles.note}>
                 <ShieldCheck size={15} />
-                <span>Không thanh toán online. Admin xác nhận tour và gửi QR ưu đãi theo booking sau khi đặt thành công.</span>
+                <span>{tx("noPaymentNote")}</span>
               </div>
             </form>
           </aside>
         </div>
       </div>
 
-      <a className={styles.mobileCta} href="#tour-booking">
-        <Clock3 size={17} /> Đặt tour này
-      </a>
     </main>
   );
 }
@@ -669,7 +902,7 @@ function TextField({
             left: 13,
             top: "50%",
             transform: "translateY(-50%)",
-            color: "#d4b26a",
+            color: "var(--vy-gold)",
             display: "grid",
             placeItems: "center",
           }}

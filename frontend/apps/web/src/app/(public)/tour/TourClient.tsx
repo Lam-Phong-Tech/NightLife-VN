@@ -63,7 +63,7 @@ export function TourClient() {
       .catch(() => {
         if (!cancelled) {
           setTours([]);
-          setError("Chưa tải được tour từ dữ liệu admin. Vui lòng thử lại sau.");
+          setError("Chưa tải được danh sách tour. Vui lòng thử lại sau.");
         }
       })
       .finally(() => {
@@ -81,7 +81,7 @@ export function TourClient() {
         Lịch trình nightlife theo khu vực
       </h1>
       <p style={{ maxWidth: 720, margin: "16px 0 0", color: "#c5c0b6", fontSize: 16, lineHeight: 1.75 }}>
-        Danh sách tour lấy trực tiếp từ dữ liệu admin, gồm hành trình điểm dừng, giờ khởi hành và ưu đãi tại từng quán.
+        Danh sách tour đang hoạt động, gồm hành trình điểm dừng, giờ khởi hành và ưu đãi tại từng quán.
       </p>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 24 }}>
@@ -115,7 +115,7 @@ export function TourClient() {
         }}
       >
         {isLoading ? (
-          <StatusCard text="Đang tải tour từ dữ liệu admin..." />
+          <StatusCard text="Đang tải danh sách tour..." />
         ) : tours.length ? (
           tours.map((tour) => <TourCard key={tour.id} tour={tour} />)
         ) : (
