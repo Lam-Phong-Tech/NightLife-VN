@@ -164,7 +164,7 @@ export default function Page() {
 
   if (authStatus !== "ready" || !authUser) {
     return (
-      <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+      <main style={{ background: colors.bg, color: colors.text }}>
         <section style={{ maxWidth: 1120, margin: "0 auto", padding: "42px 18px" }}>
           <div style={{ color: colors.muted, fontSize: 14, fontWeight: 800 }}>
             {authStatus === "redirecting" ? "Đang chuyển về trang đăng nhập..." : "Đang kiểm tra phiên đăng nhập..."}
@@ -175,8 +175,8 @@ export default function Page() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 54px" }}>
+    <main style={{ background: colors.bg, color: colors.text }}>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 28px" }}>
         <div className="nl-account-layout">
           <aside style={{ display: "grid", gap: 16 }}>
             <section

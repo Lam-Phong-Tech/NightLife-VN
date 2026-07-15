@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, MessageCircle, Send, X } from "lucide-react";
+import { ChevronLeft, MessageCircle, Send, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -398,9 +398,6 @@ function DesktopSupportChatPanel({
             {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
           </div>
         </div>
-        <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose}>
-          <ChevronDown size={15} strokeWidth={2.2} />
-        </IconCircleButton>
         <IconCircleButton label={translateText("Đóng chat hỗ trợ", activeLanguage)} onClick={onClose}>
           <X size={13} strokeWidth={2.4} />
         </IconCircleButton>
@@ -502,9 +499,6 @@ function MobileSupportChatPanel({
             {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
           </div>
         </div>
-        <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose} size={34}>
-          <ChevronDown size={16} strokeWidth={2.2} />
-        </IconCircleButton>
       </div>
 
       <ChatThread messages={messages} isMobile isLoadingHistory={isLoadingHistory} />
