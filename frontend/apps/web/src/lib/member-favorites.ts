@@ -1,5 +1,7 @@
 "use client";
 
+import { getAuthUser } from "@/lib/auth/session";
+
 export type SavedFavoriteStore = {
   slug: string;
   name: string;
@@ -26,6 +28,23 @@ const storeItemsKey = "nightlife_member_favorite_store_items";
 const castItemsKey = "nightlife_member_favorite_cast_items";
 
 const canUseStorage = () => typeof window !== "undefined" && Boolean(window.localStorage);
+
+function currentMemberStorageSuffix() {
+  const user = getAuthUser();
+  if (user?.role?.toUpperCase() !== "USER") return "anonymous";
+
+  const identity = user.id?.trim() || user.email?.trim().toLowerCase();
+  return identity ? encodeURIComponent(identity) : "anonymous";
+}
+
+function scopedStorageKey(baseKey: string) {
+  return `${baseKey}:${currentMemberStorageSuffix()}`;
+}
+
+const storeSlugsStorageKey = () => scopedStorageKey(storeSlugsKey);
+const castSlugsStorageKey = () => scopedStorageKey(castSlugsKey);
+const storeItemsStorageKey = () => scopedStorageKey(storeItemsKey);
+const castItemsStorageKey = () => scopedStorageKey(castItemsKey);
 
 function readJson<T>(key: string, fallback: T): T {
   if (!canUseStorage()) return fallback;
@@ -88,23 +107,23 @@ function upsertItem<T extends { slug: string; favoritedAt?: string }>(
 }
 
 export function readFavoriteStoreSlugs() {
-  const explicitSlugs = readSlugList(storeSlugsKey);
-  const itemSlugs = readItemList<SavedFavoriteStore>(storeItemsKey).map((item) => item.slug);
+  const explicitSlugs = readSlugList(storeSlugsStorageKey());
+  const itemSlugs = readItemList<SavedFavoriteStore>(storeItemsStorageKey()).map((item) => item.slug);
   return uniqueRecent([...explicitSlugs, ...itemSlugs]);
 }
 
 export function readFavoriteCastSlugs() {
-  const explicitSlugs = readSlugList(castSlugsKey);
-  const itemSlugs = readItemList<SavedFavoriteCast>(castItemsKey).map((item) => item.slug);
+  const explicitSlugs = readSlugList(castSlugsStorageKey());
+  const itemSlugs = readItemList<SavedFavoriteCast>(castItemsStorageKey()).map((item) => item.slug);
   return uniqueRecent([...explicitSlugs, ...itemSlugs]);
 }
 
 export function readFavoriteStoreItems() {
-  return readItemList<SavedFavoriteStore>(storeItemsKey);
+  return readItemList<SavedFavoriteStore>(storeItemsStorageKey());
 }
 
 export function readFavoriteCastItems() {
-  return readItemList<SavedFavoriteCast>(castItemsKey);
+  return readItemList<SavedFavoriteCast>(castItemsStorageKey());
 }
 
 export function isFavoriteStore(slug: string) {
@@ -118,17 +137,33 @@ export function isFavoriteCast(slug: string) {
 export function writeFavoriteStore(item: SavedFavoriteStore, favorited: boolean) {
   const slugs = readFavoriteStoreSlugs();
   writeSlugList(
-    storeSlugsKey,
+    storeSlugsStorageKey(),
     favorited ? [item.slug, ...slugs.filter((slug) => slug !== item.slug)] : slugs.filter((slug) => slug !== item.slug),
   );
-  writeItemList(storeItemsKey, upsertItem(readFavoriteStoreItems(), item, favorited));
+  writeItemList(storeItemsStorageKey(), upsertItem(readFavoriteStoreItems(), item, favorited));
 }
 
 export function writeFavoriteCast(item: SavedFavoriteCast, favorited: boolean) {
   const slugs = readFavoriteCastSlugs();
   writeSlugList(
-    castSlugsKey,
+    castSlugsStorageKey(),
     favorited ? [item.slug, ...slugs.filter((slug) => slug !== item.slug)] : slugs.filter((slug) => slug !== item.slug),
   );
-  writeItemList(castItemsKey, upsertItem(readFavoriteCastItems(), item, favorited));
+  writeItemList(castItemsStorageKey(), upsertItem(readFavoriteCastItems(), item, favorited));
+}
+
+export function replaceFavoriteStores(items: SavedFavoriteStore[]) {
+  writeSlugList(
+    storeSlugsStorageKey(),
+    items.map((item) => item.slug),
+  );
+  writeItemList(storeItemsStorageKey(), items);
+}
+
+export function replaceFavoriteCasts(items: SavedFavoriteCast[]) {
+  writeSlugList(
+    castSlugsStorageKey(),
+    items.map((item) => item.slug),
+  );
+  writeItemList(castItemsStorageKey(), items);
 }

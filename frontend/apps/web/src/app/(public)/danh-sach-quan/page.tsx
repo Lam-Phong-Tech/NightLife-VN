@@ -23,7 +23,7 @@ import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
-import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
+import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 
@@ -576,26 +576,22 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       .list()
       .then((items) => {
         if (cancelled) return;
-        items.forEach((item) => {
-          writeFavoriteStore(
-            {
-              slug: item.store.slug,
-              name: item.store.name,
-              categoryLabel: getLocalizedCategoryLabel(item.store.category, activeLanguage),
-              areaLabel: [
-                item.store.area?.name ?? item.store.district,
-                getLocalizedCityLabel(item.store.cityCode ?? "", activeLanguage),
-              ]
-                .filter(Boolean)
-                .join(" Â· "),
-              cityLabel: item.store.city,
-              image: item.store.thumbnailUrl ?? undefined,
-              favoritedAt: item.favoritedAt,
-            },
-            true,
-          );
-        });
-        setFavoriteStoreSlugs(items.map((item) => item.store.slug));
+        const favoriteSnapshots = items.map((item) => ({
+          slug: item.store.slug,
+          name: item.store.name,
+          categoryLabel: getLocalizedCategoryLabel(item.store.category, activeLanguage),
+          areaLabel: [
+            item.store.area?.name ?? item.store.district,
+            getLocalizedCityLabel(item.store.cityCode ?? "", activeLanguage),
+          ]
+            .filter(Boolean)
+            .join(" Â· "),
+          cityLabel: item.store.city,
+          image: item.store.thumbnailUrl ?? undefined,
+          favoritedAt: item.favoritedAt,
+        }));
+        replaceFavoriteStores(favoriteSnapshots);
+        setFavoriteStoreSlugs(favoriteSnapshots.map((item) => item.slug));
       })
       .catch(() => {
         if (!cancelled) setFavoriteStoreSlugs(readFavoriteStoreSlugs());

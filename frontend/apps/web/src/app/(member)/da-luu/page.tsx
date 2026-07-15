@@ -13,6 +13,8 @@ import {
   readFavoriteCastSlugs,
   readFavoriteStoreItems,
   readFavoriteStoreSlugs,
+  replaceFavoriteCasts,
+  replaceFavoriteStores,
   type SavedFavoriteCast,
   type SavedFavoriteStore,
   writeFavoriteCast,
@@ -134,22 +136,12 @@ export default function Page() {
           : Promise.resolve([] as PublicCast[]),
       ]);
 
-      let serverStoreFavorites = canSyncFavorites
+      const serverStoreFavorites = canSyncFavorites
         ? await withNullableTimeout(storeFavoriteApi.list())
         : null;
-      let serverCastFavorites = canSyncFavorites
+      const serverCastFavorites = canSyncFavorites
         ? await withNullableTimeout(castFavoriteApi.list())
         : null;
-
-      if (canSyncFavorites && serverStoreFavorites && !serverStoreFavorites.length && mergedStoreSlugs.length) {
-        await Promise.allSettled(mergedStoreSlugs.map((slug) => storeFavoriteApi.favorite(slug)));
-        serverStoreFavorites = (await withNullableTimeout(storeFavoriteApi.list())) ?? serverStoreFavorites;
-      }
-
-      if (canSyncFavorites && serverCastFavorites && !serverCastFavorites.length && mergedCastSlugs.length) {
-        await Promise.allSettled(mergedCastSlugs.map((slug) => castFavoriteApi.favorite(slug)));
-        serverCastFavorites = (await withNullableTimeout(castFavoriteApi.list())) ?? serverCastFavorites;
-      }
 
       const serverStoreSlugs = serverStoreFavorites?.map((item) => item.store.slug) ?? [];
       const serverStoreSnapshots = serverStoreFavorites?.map((item, index) => ({
@@ -176,6 +168,14 @@ export default function Page() {
       const nextCastSlugs = serverCastFavorites ? unique(serverCastSlugs) : mergedCastSlugs;
       const mergedStoreSnapshots = serverStoreFavorites ? serverStoreSnapshots : storeSnapshots;
       const mergedCastSnapshots = serverCastFavorites ? serverSnapshots : castSnapshots;
+
+      if (serverStoreFavorites) {
+        replaceFavoriteStores(serverStoreSnapshots);
+      }
+
+      if (serverCastFavorites) {
+        replaceFavoriteCasts(serverSnapshots);
+      }
 
       setStores(nextStoreSlugs.map((slug, index) => mergeStoreItem(slug, storeList, mergedStoreSnapshots, index)));
       setCasts(nextCastSlugs.map((slug, index) => mergeCastItem(slug, castList, mergedCastSnapshots, index)));

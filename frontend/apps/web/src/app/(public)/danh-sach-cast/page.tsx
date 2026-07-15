@@ -30,7 +30,7 @@ import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
-import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
+import { readFavoriteCastSlugs, replaceFavoriteCasts, writeFavoriteCast } from "@/lib/member-favorites";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -427,26 +427,22 @@ export default function Page() {
       .list()
       .then((items) => {
         if (cancelled) return;
-        items.forEach((item) => {
-          writeFavoriteCast(
-            {
-              slug: item.cast.slug,
-              name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
-              storeName: item.cast.store.name,
-              categoryLabel: getCastCategoryLabel(item.cast.store.category, activeLanguage),
-              areaLabel: [
-                item.cast.store.area?.name ?? item.cast.store.district,
-                getCastCityLabel(item.cast.store.cityCode ?? "", activeLanguage),
-              ]
-                .filter(Boolean)
-                .join(" Â· "),
-              image: item.cast.thumbnailUrl ?? undefined,
-              favoritedAt: item.favoritedAt,
-            },
-            true,
-          );
-        });
-        setFavoriteCastSlugs(items.map((item) => item.cast.slug));
+        const favoriteSnapshots = items.map((item) => ({
+          slug: item.cast.slug,
+          name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
+          storeName: item.cast.store.name,
+          categoryLabel: getCastCategoryLabel(item.cast.store.category, activeLanguage),
+          areaLabel: [
+            item.cast.store.area?.name ?? item.cast.store.district,
+            getCastCityLabel(item.cast.store.cityCode ?? "", activeLanguage),
+          ]
+            .filter(Boolean)
+            .join(" Â· "),
+          image: item.cast.thumbnailUrl ?? undefined,
+          favoritedAt: item.favoritedAt,
+        }));
+        replaceFavoriteCasts(favoriteSnapshots);
+        setFavoriteCastSlugs(favoriteSnapshots.map((item) => item.slug));
       })
       .catch(() => {
         if (!cancelled) setFavoriteCastSlugs(readFavoriteCastSlugs());
