@@ -35,6 +35,30 @@ export default function AdminCouponsPage() {
     setTimeout(() => setToast(null), 2600);
   };
 
+  const downloadQR = async (code: string, data: string) => {
+    try {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(data)}`;
+      const res = await fetch(qrUrl);
+      if (!res.ok) throw new Error('Fetch failed');
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `QR_${code}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      showToastMsg(`Đã tải QR ${code}.png`);
+    } catch (err) {
+      console.error('Lỗi khi tải QR:', err);
+      // Fallback: open in new tab
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(data)}`;
+      window.open(qrUrl, '_blank');
+      showToastMsg(`Mở ảnh QR ${code} trong tab mới để lưu về`);
+    }
+  };
+
   useEffect(() => {
     if (showCreate && storesList.length === 0) {
       apiClient<any>('/admin/stores', { params: { limit: 1000 } }).then(res => {
@@ -321,7 +345,7 @@ export default function AdminCouponsPage() {
                 </div>
 
                 <div style={{ marginTop: '14px', display: 'flex', gap: '9px' }}>
-                  <span onClick={() => showToastMsg(`Đã tải QR ${vc.code}.png`)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Tải QR (.png)</span>
+                  <span onClick={() => downloadQR(vc.code, vc.qrPayload || vc.code)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Tải QR (.png)</span>
                   <span onClick={() => { navigator.clipboard.writeText(vc.code); showToastMsg(`Đã sao chép mã ${vc.code}`); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Sao chép mã</span>
                 </div>
 
