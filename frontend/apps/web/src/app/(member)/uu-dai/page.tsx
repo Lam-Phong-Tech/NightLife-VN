@@ -1,20 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowRight,
-  CalendarDays,
   ChevronDown,
-  MapPin,
-  Search,
-  Sparkles,
-  Star,
   Ticket,
 } from "lucide-react";
-import { ApiError, resolveClientUrl } from "@/lib/api/client";
-import { contentApi, type CmsContentItem } from "@/lib/api/content";
+import { ApiError } from "@/lib/api/client";
 import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { translateText } from "@/lib/i18n/client-translations";
@@ -24,17 +17,6 @@ import {
   useActiveLanguage,
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
-
-const categoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls bar",
-  KARAOKE: "Karaoke/KTV",
-  MASSAGE_SPA: "Massage spa",
-  RESTAURANT: "Nhà hàng",
-  CASINO: "Casino lounge",
-};
 
 const categoryImages: Record<string, string> = {
   BAR: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=76",
@@ -55,18 +37,6 @@ const fallbackImages = [
 ];
 
 const campaignPageSize = 4;
-const defaultCouponBannerImage =
-  "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76";
-
-type CouponBannerMetadata = {
-  description?: string;
-  tag?: string;
-  link?: string;
-  statusLabel?: string;
-  subtitle?: string;
-  imageUrl?: string;
-  position?: string;
-};
 
 const formatDiscount = (
   campaign: Pick<CampaignItem, "discountType" | "discountValue">,
@@ -120,55 +90,10 @@ const normalizeText = (value: string) =>
     .toLowerCase()
     .trim();
 
-const getCouponBannerMetadata = (content: CmsContentItem): CouponBannerMetadata =>
-  (content.metadata ?? {}) as CouponBannerMetadata;
-
-const isCouponBanner = (content: CmsContentItem) => {
-  const metadata = getCouponBannerMetadata(content);
-  const haystack = [
-    content.title,
-    content.slug,
-    content.excerpt ?? "",
-    metadata.position ?? "",
-    metadata.tag ?? "",
-    metadata.link ?? "",
-    metadata.statusLabel ?? "",
-    metadata.subtitle ?? "",
-    metadata.description ?? "",
-  ].join(" ");
-  const normalized = normalizeText(haystack);
-
-  return (
-    normalized.includes("uu dai") ||
-    normalized.includes("khuyen mai") ||
-    normalized.includes("campaign") ||
-    normalized.includes("deal") ||
-    normalized.includes("/uu-dai")
-  );
-};
-
 const getCampaignImage = (campaign: CampaignItem, index: number) =>
   campaign.targetStore!.media?.[0]?.url ??
   categoryImages[campaign.targetStore!.category] ??
   fallbackImages[index % fallbackImages.length];
-
-const normalizeDistrictLabel = (value: string, language: LanguageCode) => {
-  const trimmed = value.trim();
-  const districtNumber =
-    trimmed.match(/^Quận\s+(\d+)$/i)?.[1] ?? trimmed.match(/^District\s+(\d+)$/i)?.[1];
-
-  if (districtNumber) {
-    return {
-      vi: `Quận ${districtNumber}`,
-      en: `District ${districtNumber}`,
-      ja: `${districtNumber}区`,
-      ko: `${districtNumber}군`,
-      zh: `${districtNumber}区`,
-    }[language];
-  }
-
-  return translateText(trimmed, language);
-};
 
 const normalizeCityLabel = (value: string, language: LanguageCode) => {
   const normalized = normalizeText(value);
@@ -199,20 +124,6 @@ const normalizeCityLabel = (value: string, language: LanguageCode) => {
 
   return translateText(value, language);
 };
-
-const getStoreLocation = (campaign: CampaignItem, language: LanguageCode) => {
-  const area = [
-    campaign.targetStore!.district ? normalizeDistrictLabel(campaign.targetStore!.district, language) : "",
-    campaign.targetStore!.city ? normalizeCityLabel(campaign.targetStore!.city, language) : "",
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  return area || categoryLabels[campaign.targetStore!.category] || campaign.targetStore!.category;
-};
-
-const getCategoryLabel = (category: string, language: LanguageCode = "vi") =>
-  translateText(categoryLabels[category] ?? category, language);
 
 const campaignCopy = (language: LanguageCode) =>
   ({
@@ -253,6 +164,110 @@ const campaignCopy = (language: LanguageCode) =>
     },
   })[language];
 
+const campaignUiCopy = (language: LanguageCode) =>
+  ({
+    vi: {
+      all: "Tất cả",
+      allStores: "Tất cả quán",
+      bestDiscount: "Ưu đãi tốt nhất",
+      byStore: "Theo quán",
+      claim: "Lấy mã",
+      emptyAction: "Xem tất cả ưu đãi",
+      emptyBody: "Thử đổi bộ lọc hoặc tìm theo tên quán/khu vực khác.",
+      emptyTitle: "Chưa có campaign phù hợp",
+      expiring: "Sắp hết hạn",
+      listLabel: "Danh sách campaign đang có",
+      loadingLabel: "Đang tải ưu đãi",
+      newest: "Mới nhất",
+      sort: "Sắp xếp:",
+      subtitle: (city: string) => `Coupon & khuyến mãi từ các quán đối tác · ${city}`,
+      title: "Ưu đãi đêm nay",
+      urgentSoon: "Sắp hết hạn - còn 2 giờ",
+      used: "Đã dùng",
+      validUntil: "HSD",
+    },
+    en: {
+      all: "All",
+      allStores: "All venues",
+      bestDiscount: "Best deals",
+      byStore: "By venue",
+      claim: "Claim",
+      emptyAction: "View all deals",
+      emptyBody: "Try another filter or search by venue or area.",
+      emptyTitle: "No matching campaigns",
+      expiring: "Expiring soon",
+      listLabel: "Available campaign list",
+      loadingLabel: "Loading deals",
+      newest: "Newest",
+      sort: "Sort:",
+      subtitle: (city: string) => `Coupons and promotions from partner venues · ${city}`,
+      title: "Tonight's deals",
+      urgentSoon: "Expiring soon - 2 hours left",
+      used: "Used",
+      validUntil: "Valid until",
+    },
+    ja: {
+      all: "すべて",
+      allStores: "全店舗",
+      bestDiscount: "お得順",
+      byStore: "店舗別",
+      claim: "取得",
+      emptyAction: "すべての特典を見る",
+      emptyBody: "別のフィルター、店舗名、エリアで検索してください。",
+      emptyTitle: "該当するキャンペーンはありません",
+      expiring: "まもなく終了",
+      listLabel: "利用可能なキャンペーン一覧",
+      loadingLabel: "特典を読み込み中",
+      newest: "新着",
+      sort: "並び替え:",
+      subtitle: (city: string) => `提携店舗のクーポン・キャンペーン · ${city}`,
+      title: "今夜の特典",
+      urgentSoon: "まもなく終了 - 残り2時間",
+      used: "使用済み",
+      validUntil: "有効期限",
+    },
+    ko: {
+      all: "전체",
+      allStores: "전체 매장",
+      bestDiscount: "최고 혜택",
+      byStore: "매장별",
+      claim: "받기",
+      emptyAction: "전체 혜택 보기",
+      emptyBody: "다른 필터를 선택하거나 매장/지역으로 검색해 보세요.",
+      emptyTitle: "일치하는 캠페인이 없습니다",
+      expiring: "곧 만료",
+      listLabel: "이용 가능한 캠페인 목록",
+      loadingLabel: "혜택 불러오는 중",
+      newest: "최신순",
+      sort: "정렬:",
+      subtitle: (city: string) => `제휴 매장의 쿠폰 및 프로모션 · ${city}`,
+      title: "오늘 밤 혜택",
+      urgentSoon: "곧 만료 - 2시간 남음",
+      used: "사용됨",
+      validUntil: "유효 기간",
+    },
+    zh: {
+      all: "全部",
+      allStores: "全部场所",
+      bestDiscount: "最佳优惠",
+      byStore: "按场所",
+      claim: "领取",
+      emptyAction: "查看全部优惠",
+      emptyBody: "尝试切换筛选，或按场所/区域搜索。",
+      emptyTitle: "暂无匹配活动",
+      expiring: "即将结束",
+      listLabel: "可用活动列表",
+      loadingLabel: "正在加载优惠",
+      newest: "最新",
+      sort: "排序:",
+      subtitle: (city: string) => `合作场所的优惠券和促销 · ${city}`,
+      title: "今晚优惠",
+      urgentSoon: "即将结束 - 剩余2小时",
+      used: "已使用",
+      validUntil: "有效期至",
+    },
+  })[language];
+
 const formatCouponPagination = ({
   page,
   totalPages,
@@ -270,11 +285,13 @@ function CampaignDealCard({
   campaign,
   index,
   language,
+  copy,
   rates,
 }: {
   campaign: CampaignItem;
   index: number;
   language: LanguageCode;
+  copy: ReturnType<typeof campaignUiCopy>;
   rates: CurrencyRateMap;
 }) {
   const storeName = readableName(campaign.targetStore!.name);
@@ -310,19 +327,19 @@ function CampaignDealCard({
         
         <div className="coupon-store-info">
           {storeName} · {campaign.targetStore?.district || ""}
-          {campaign.endsAt && ` · HSD ${formatShortDate(campaign.endsAt, language)}`}
+          {campaign.endsAt && ` · ${copy.validUntil} ${formatShortDate(campaign.endsAt, language)}`}
         </div>
 
         {isUrgent && (
           <div className="coupon-status-urgent">
             <span className="dot" />
-            Sắp hết hạn - còn 2 giờ
+            {copy.urgentSoon}
           </div>
         )}
       </div>
 
       <div className="coupon-action-tab">
-        <span className="vertical-text">{isUsed ? "ĐÃ DÙNG" : "LẤY MÃ"}</span>
+        <span className="vertical-text">{isUsed ? copy.used : copy.claim}</span>
       </div>
     </Link>
   );
@@ -330,6 +347,7 @@ function CampaignDealCard({
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const copy = campaignUiCopy(activeLanguage);
   const { rates } = useMoneyFormatter(activeLanguage);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -363,7 +381,9 @@ export default function Page() {
         }
 
         const message =
-          error instanceof ApiError ? error.message : "Không tải được danh sách ưu đãi từ backend.";
+          error instanceof ApiError
+            ? error.message
+            : "Không tải được danh sách ưu đãi từ backend.";
         setLoadError(message);
       })
       .finally(() => {
@@ -431,6 +451,7 @@ export default function Page() {
     if (city?.toLowerCase().includes("ho chi minh") || city?.toLowerCase().includes("hcm")) return "TP.HCM";
     return city || "Hà Nội";
   }, [campaigns]);
+  const firstCampaignCityLabel = normalizeCityLabel(firstCampaignCity, activeLanguage);
 
   const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
@@ -456,14 +477,14 @@ export default function Page() {
     <main className="campaign-page">
       <section className="campaign-shell">
         <header className="campaign-header-simple">
-          <h1>Ưu đãi đêm nay</h1>
-          <p>Coupon & khuyến mãi từ các quán đối tác · {firstCampaignCity}</p>
+          <h1>{copy.title}</h1>
+          <p>{copy.subtitle(firstCampaignCityLabel)}</p>
         </header>
 
         {loadError ? (
           <section className="result error" role="alert">
             <AlertCircle size={20} />
-            <span>{loadError}</span>
+            <span>{translateText(loadError, activeLanguage)}</span>
           </section>
         ) : null}
 
@@ -474,21 +495,21 @@ export default function Page() {
               onClick={() => updateFilter("ALL")}
               type="button"
             >
-              Tất cả
+              {copy.all}
             </button>
             <button
               className={activeFilter === "EXPIRING" ? "active" : ""}
               onClick={() => updateFilter("EXPIRING")}
               type="button"
             >
-              Sắp hết hạn
+              {copy.expiring}
             </button>
             <button
               className={activeFilter === "BY_STORE" ? "active" : ""}
               onClick={() => updateFilter("BY_STORE")}
               type="button"
             >
-              Theo quán
+              {copy.byStore}
             </button>
           </div>
 
@@ -498,7 +519,7 @@ export default function Page() {
               type="button" 
               className="sort-trigger-btn"
             >
-              Sắp xếp: <strong>{sortType === 'NEWEST' ? 'Mới nhất' : 'Ưu đãi tốt nhất'}</strong>
+              {copy.sort} <strong>{sortType === 'NEWEST' ? copy.newest : copy.bestDiscount}</strong>
               <ChevronDown size={14} />
             </button>
             {isSortOpen && (
@@ -510,14 +531,14 @@ export default function Page() {
                     className={sortType === 'NEWEST' ? 'active' : ''}
                     type="button"
                   >
-                    Mới nhất
+                    {copy.newest}
                   </button>
                   <button 
                     onClick={() => { setSortType('DISCOUNT_DESC'); setIsSortOpen(false); }} 
                     className={sortType === 'DISCOUNT_DESC' ? 'active' : ''}
                     type="button"
                   >
-                    Ưu đãi tốt nhất
+                    {copy.bestDiscount}
                   </button>
                 </div>
               </>
@@ -532,7 +553,7 @@ export default function Page() {
               onClick={() => setSelectedStoreId(null)}
               type="button"
             >
-              Tất cả quán
+              {copy.allStores}
             </button>
             {uniqueStores.map(store => (
               <button 
@@ -550,7 +571,7 @@ export default function Page() {
         <section className="campaign-content">
           <section className="campaign-results">
             {isLoading ? (
-              <section className="campaign-grid" aria-label="Đang tải ưu đãi">
+              <section className="campaign-grid" aria-label={copy.loadingLabel}>
                 {[0, 1, 2, 3, 4, 5].map((item) => (
                   <div className="campaign-skeleton" key={item} />
                 ))}
@@ -560,25 +581,26 @@ export default function Page() {
             {!isLoading && !loadError && filteredCampaigns.length === 0 ? (
               <section className="empty-state">
                 <Ticket size={32} />
-                <h2>Chưa có campaign phù hợp</h2>
-                <p>Thử đổi bộ lọc hoặc tìm theo tên quán/khu vực khác.</p>
+                <h2>{copy.emptyTitle}</h2>
+                <p>{copy.emptyBody}</p>
                 <button
                   onClick={clearFilters}
                   type="button"
                 >
-                  Xem tất cả ưu đãi
+                  {copy.emptyAction}
                 </button>
               </section>
             ) : null}
 
             {!isLoading && !loadError && filteredCampaigns.length ? (
-              <section className="campaign-grid" aria-label="Danh sách campaign đang có">
+              <section className="campaign-grid" aria-label={copy.listLabel}>
                 {paginatedCoupons.map((campaign, index) => (
                   <CampaignDealCard
                     campaign={campaign}
                     index={campaignStartIndex + index}
                     key={campaign.id}
                     language={activeLanguage}
+                    copy={copy}
                     rates={rates}
                   />
                 ))}
@@ -586,7 +608,7 @@ export default function Page() {
             ) : null}
 
             {shouldShowPagination ? (
-              <nav aria-label="Phân trang ưu đãi" className="campaign-pagination">
+              <nav aria-label={translateText("Phân trang ưu đãi", activeLanguage)} className="campaign-pagination">
                 <span>
                   {formatCouponPagination({
                     page: currentCouponPage,
@@ -671,6 +693,8 @@ export default function Page() {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
+          min-width: 0;
+          flex-wrap: nowrap;
           border-bottom: 1px solid rgba(255, 255, 255, .08);
           padding-bottom: 16px;
         }
@@ -679,7 +703,15 @@ export default function Page() {
           display: flex;
           align-items: center;
           gap: 10px;
-          flex-wrap: wrap;
+          min-width: 0;
+          flex: 1 1 auto;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .filter-chips::-webkit-scrollbar {
+          display: none;
         }
 
         .filter-chips button {
@@ -696,6 +728,8 @@ export default function Page() {
           padding: 0 16px;
           font-size: 13px;
           font-weight: 600;
+          flex: 0 0 auto;
+          white-space: nowrap;
           transition: background .2s, color .2s, border-color .2s;
         }
 
@@ -751,6 +785,7 @@ export default function Page() {
         .custom-sort-dropdown {
           position: relative;
           z-index: 10;
+          flex: 0 0 auto;
         }
 
         .sort-trigger-btn {
@@ -765,6 +800,7 @@ export default function Page() {
           gap: 6px;
           padding: 6px 12px;
           border-radius: 6px;
+          white-space: nowrap;
         }
 
         .sort-trigger-btn:hover {
@@ -1237,6 +1273,32 @@ export default function Page() {
         @media (max-width: 820px) {
           .campaign-page {
             padding: 24px 16px 40px;
+          }
+
+          .campaign-shell {
+            gap: 22px;
+          }
+
+          .filter-sort-row {
+            gap: 10px;
+            padding-bottom: 12px;
+          }
+
+          .filter-chips {
+            gap: 8px;
+          }
+
+          .filter-chips button {
+            min-height: 34px;
+            border-radius: 17px;
+            padding: 0 12px;
+            font-size: 12px;
+          }
+
+          .sort-trigger-btn {
+            min-height: 34px;
+            padding: 0 2px 0 4px;
+            font-size: 12px;
           }
 
           .campaign-grid {

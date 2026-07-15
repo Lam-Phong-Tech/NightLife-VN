@@ -17,6 +17,7 @@ import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
 import { CastInfo, CastRelatedCasts } from "./CastInfo";
 import { CastProfileStyles } from "./CastProfileStyles";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import {
   buildBookingHref,
   buildCastArea,
@@ -24,6 +25,7 @@ import {
   placeholderGallery,
   profileFromCastDetail,
 } from "./cast-profile.helpers";
+import { getCastProfileCopy, localizeCastText } from "./cast-profile.copy";
 import { personalizeRelatedCasts } from "./cast-profile.recommendations";
 import { buildCastStructuredData } from "./cast-profile.schema";
 import { trackCastDetailClick } from "./cast-profile.tracking";
@@ -34,12 +36,16 @@ type CastProfileClientProps = {
 };
 
 export default function CastProfileClient({ cast }: CastProfileClientProps) {
+  const activeLanguage = useActiveLanguage();
   const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
   const gallery = profile.gallery.length ? profile.gallery : placeholderGallery;
   const area = buildCastArea(profile);
   const storeHref = `/stores/${profile.store.slug}`;
   const bookingHref = buildBookingHref(profile, area);
-  const languageText = profile.languages.map(labelLanguage).join(" · ");
+  const copy = getCastProfileCopy(activeLanguage);
+  const languageText = profile.languages
+    .map((language) => localizeCastText(labelLanguage(language), activeLanguage))
+    .join(" · ");
   const structuredData = useMemo(() => buildCastStructuredData(cast), [cast]);
   const relatedCasts = useMemo(
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
@@ -200,6 +206,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             profile={profile}
             activeMedia={activeMedia}
             area={area}
+            language={activeLanguage}
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
             onOpenGallery={() => openLightbox(activeMediaIndex)}
@@ -211,6 +218,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             gallery={gallery}
             activeIndex={activeMediaIndex}
             variant="mobile"
+            language={activeLanguage}
             isLightboxOpen={isLightboxOpen}
             onSelect={selectMedia}
             onOpenLightbox={openLightbox}
@@ -222,9 +230,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             languageText={languageText}
             storeHref={storeHref}
             variant="mobile"
+            language={activeLanguage}
             onTrack={track}
           />
-          <CastRelatedCasts relatedCasts={relatedCasts} variant="mobile" onTrack={track} />
+          <CastRelatedCasts
+            relatedCasts={relatedCasts}
+            variant="mobile"
+            language={activeLanguage}
+            onTrack={track}
+          />
         </div>
 
         <div className="hidden md:block cast-desktop">
@@ -236,6 +250,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 variant="desktop"
                 isLightboxOpen={isLightboxOpen}
                 isFavorite={isFavorite}
+                language={activeLanguage}
                 onSelect={selectMedia}
                 onOpenLightbox={openLightbox}
                 onCloseLightbox={() => setIsLightboxOpen(false)}
@@ -244,7 +259,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
               <div className="cast-desktop-content">
                 <nav className="cast-desktop-breadcrumb" aria-label="Breadcrumb">
-                  <Link href="/">Trang chủ</Link>
+                  <Link href="/">{copy.home}</Link>
                   <span>/</span>
                   <Link href="/danh-sach-cast">Cast</Link>
                   <span>/</span>
@@ -257,13 +272,14 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                     languageText={languageText}
                     storeHref={storeHref}
                     variant="desktop"
+                    language={activeLanguage}
                     onTrack={track}
                   />
                   <button
                     type="button"
                     className={`cast-desktop-fav${isFavorite ? " is-active" : ""}`}
                     onClick={toggleFavorite}
-                    aria-label={isFavorite ? "Bỏ lưu cast" : "Lưu cast"}
+                    aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
                     aria-pressed={isFavorite}
                   >
                     <Heart
@@ -279,11 +295,17 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                   area={area}
                   bookingHref={bookingHref}
                   variant="desktop"
+                  language={activeLanguage}
                   onTrack={track}
                 />
               </div>
             </div>
-            <CastRelatedCasts relatedCasts={relatedCasts} variant="desktop" onTrack={track} />
+            <CastRelatedCasts
+              relatedCasts={relatedCasts}
+              variant="desktop"
+              language={activeLanguage}
+              onTrack={track}
+            />
           </div>
         </div>
       </main>
@@ -295,6 +317,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
               bookingHref={bookingHref}
               variant="mobile"
               isFavorite={isFavorite}
+              language={activeLanguage}
               onToggleFavorite={toggleFavorite}
               onTrack={track}
             />,

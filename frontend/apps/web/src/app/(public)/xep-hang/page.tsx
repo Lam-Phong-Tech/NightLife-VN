@@ -21,6 +21,7 @@ import {
   type RankingTargetType,
 } from "@/lib/api/rankings";
 import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ranking";
+import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 type RankingKind = "cast" | "quan";
@@ -65,17 +66,6 @@ const rankTones = [
     topBorder: undefined,
   },
 ] as const;
-
-const kindTabs: Array<SelectOption<RankingKind>> = [
-  { key: "cast", label: "Cast" },
-  { key: "quan", label: "Quán" },
-];
-
-const areaOptions: Array<SelectOption<RankingCity>> = [
-  { key: "hn", label: "Hà Nội" },
-  { key: "hcm", label: "TP.HCM" },
-  { key: "all", label: "Tổng hợp" },
-];
 
 const categoryLabels: Partial<Record<RankingCategory, string>> = {
   bar: "Bar",
@@ -144,6 +134,146 @@ const rankingCallCopy = (language: LanguageCode) =>
     },
   })[language];
 
+const rankingPageCopy = (language: LanguageCode) =>
+  ({
+    vi: {
+      apiError: "API ranking đang lỗi",
+      areaSelect: "Chọn khu vực",
+      back: "Quay lại",
+      bookWithCast: "Đặt theo cast",
+      callNow: "Gọi ngay",
+      dateLabel: "Tháng 6 năm 2026",
+      emptyAction: "Xem tổng hợp",
+      emptyBody: "Thử đổi khu vực để xem bảng khác.",
+      emptyTitle: "Chưa có ranking phù hợp",
+      loadError: "Không tải được bảng xếp hạng.",
+      loadedItems: (count: number) => `${count} mục đã tải sẵn`,
+      retry: "Tải lại",
+      showMore: "Xem thêm",
+      sponsored: "Tài trợ",
+      switchRanking: "Chuyển bảng xếp hạng",
+      title: "Bảng xếp hạng",
+      uncategorized: "Chưa phân loại",
+      viewProfile: "Xem profile",
+      viewVenue: "Xem chi tiết",
+    },
+    en: {
+      apiError: "Ranking API error",
+      areaSelect: "Choose area",
+      back: "Back",
+      bookWithCast: "Book with Cast",
+      callNow: "Call now",
+      dateLabel: "June 2026",
+      emptyAction: "View all",
+      emptyBody: "Try another area to see a different ranking.",
+      emptyTitle: "No matching ranking yet",
+      loadError: "Could not load rankings.",
+      loadedItems: (count: number) => `${count} items preloaded`,
+      retry: "Reload",
+      showMore: "Show more",
+      sponsored: "Sponsored",
+      switchRanking: "Switch ranking",
+      title: "Ranking",
+      uncategorized: "Uncategorized",
+      viewProfile: "View profile",
+      viewVenue: "View details",
+    },
+    ja: {
+      apiError: "ランキングAPIエラー",
+      areaSelect: "エリアを選択",
+      back: "戻る",
+      bookWithCast: "キャストで予約",
+      callNow: "電話する",
+      dateLabel: "2026年6月",
+      emptyAction: "総合を見る",
+      emptyBody: "別のエリアに切り替えてランキングを確認してください。",
+      emptyTitle: "該当するランキングはありません",
+      loadError: "ランキングを読み込めませんでした。",
+      loadedItems: (count: number) => `${count}件を読み込み済み`,
+      retry: "再読み込み",
+      showMore: "もっと見る",
+      sponsored: "スポンサー",
+      switchRanking: "ランキングを切り替え",
+      title: "ランキング",
+      uncategorized: "未分類",
+      viewProfile: "プロフィールを見る",
+      viewVenue: "詳細を見る",
+    },
+    ko: {
+      apiError: "랭킹 API 오류",
+      areaSelect: "지역 선택",
+      back: "뒤로",
+      bookWithCast: "Cast와 예약",
+      callNow: "전화하기",
+      dateLabel: "2026년 6월",
+      emptyAction: "전체 보기",
+      emptyBody: "다른 지역으로 변경해 보세요.",
+      emptyTitle: "일치하는 랭킹이 없습니다",
+      loadError: "랭킹을 불러올 수 없습니다.",
+      loadedItems: (count: number) => `${count}개 항목 로드됨`,
+      retry: "다시 불러오기",
+      showMore: "더 보기",
+      sponsored: "스폰서",
+      switchRanking: "랭킹 전환",
+      title: "랭킹",
+      uncategorized: "미분류",
+      viewProfile: "프로필 보기",
+      viewVenue: "상세 보기",
+    },
+    zh: {
+      apiError: "排行榜 API 错误",
+      areaSelect: "选择区域",
+      back: "返回",
+      bookWithCast: "预约 Cast",
+      callNow: "立即致电",
+      dateLabel: "2026年6月",
+      emptyAction: "查看综合",
+      emptyBody: "尝试切换区域查看其他榜单。",
+      emptyTitle: "暂无匹配排名",
+      loadError: "无法加载排行榜。",
+      loadedItems: (count: number) => `已预载 ${count} 项`,
+      retry: "重新加载",
+      showMore: "查看更多",
+      sponsored: "赞助",
+      switchRanking: "切换排行榜",
+      title: "排行榜",
+      uncategorized: "未分类",
+      viewProfile: "查看资料",
+      viewVenue: "查看详情",
+    },
+  })[language];
+
+const rankingKindTabs = (language: LanguageCode): Array<SelectOption<RankingKind>> => [
+  { key: "cast", label: "Cast" },
+  {
+    key: "quan",
+    label:
+      {
+        vi: "Quán",
+        en: "Venues",
+        ja: "店舗",
+        ko: "매장",
+        zh: "场所",
+      }[language] ?? "Quán",
+  },
+];
+
+const rankingAreaOptions = (language: LanguageCode): Array<SelectOption<RankingCity>> => [
+  { key: "hn", label: translateText("Hà Nội", language) },
+  { key: "hcm", label: language === "en" ? "Ho Chi Minh City" : translateText("TP.HCM", language) },
+  {
+    key: "all",
+    label:
+      {
+        vi: "Tổng hợp",
+        en: "All areas",
+        ja: "全エリア",
+        ko: "전체 지역",
+        zh: "全部区域",
+      }[language] ?? "Tổng hợp",
+  },
+];
+
 function getRankTone(rank: number) {
   return rankTones[rank - 1];
 }
@@ -158,31 +288,38 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function formatCategory(value?: string | null) {
-  if (!value) return "Chưa phân loại";
+function formatCategory(value: string | null | undefined, language: LanguageCode) {
+  const copy = rankingPageCopy(language);
+  if (!value) return copy.uncategorized;
   const token = value.toLowerCase() as RankingCategory;
-  return (
+  const label =
     categoryLabels[token] ??
     value
       .toLowerCase()
       .split("_")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ")
-  );
+      .join(" ");
+
+  return translateText(label, language);
 }
 
 function KindTabs({
   rankingType,
+  language,
   onChange,
   testIdPrefix,
 }: {
   rankingType: RankingKind;
+  language: LanguageCode;
   onChange: (value: RankingKind) => void;
   testIdPrefix: string;
 }) {
+  const copy = rankingPageCopy(language);
+  const tabs = rankingKindTabs(language);
+
   return (
-    <div className="vyr-ranking-segment vyr-kind-tabs" aria-label="Chuyển bảng xếp hạng">
-      {kindTabs.map((tab) => (
+    <div className="vyr-ranking-segment vyr-kind-tabs" aria-label={copy.switchRanking}>
+      {tabs.map((tab) => (
         <button
           key={tab.key}
           type="button"
@@ -309,12 +446,15 @@ function LoadingRows() {
 function RankingRow({
   item,
   trackingContext,
+  language,
   onCall,
 }: {
   item: PublicRankingItem;
   trackingContext: RankingClickContext;
+  language: LanguageCode;
   onCall: (notice: CallNotice, options?: CallNoticeOptions) => void;
 }) {
+  const copy = rankingPageCopy(language);
   const tone = getRankTone(item.rank);
   const topRank = item.rank === 1;
   const podiumRank = item.rank <= 3;
@@ -374,7 +514,7 @@ function RankingRow({
           )}
           {item.sponsored ? (
             <span className="vyr-sponsored" data-testid="ranking-sponsored-badge">
-              Tài trợ
+              {copy.sponsored}
             </span>
           ) : null}
         </span>
@@ -382,7 +522,7 @@ function RankingRow({
         <small>
           {areaLine}
           <span aria-hidden="true"> · </span>
-          {formatCategory(item.category)}
+          {formatCategory(item.category, language)}
         </small>
       </span>
 
@@ -393,7 +533,7 @@ function RankingRow({
           onClick={() => trackRankingClick(item, primaryAction, trackingContext)}
         >
           {isStore ? <Store size={15} /> : <UserRound size={15} />}
-          {isStore ? "Xem chi tiết" : "Xem profile"}
+          {isStore ? copy.viewVenue : copy.viewProfile}
         </Link>
         {isStore ? (
           item.phone && itemPhoneHref ? (
@@ -414,12 +554,12 @@ function RankingRow({
               }}
             >
               <Phone size={15} />
-              Gọi ngay
+              {copy.callNow}
             </a>
           ) : (
             <span className="vyr-rank-action is-disabled">
               <Phone size={15} />
-              Gọi ngay
+              {copy.callNow}
             </span>
           )
         ) : (
@@ -429,7 +569,7 @@ function RankingRow({
             onClick={() => trackRankingClick(item, "booking", trackingContext)}
           >
             <CalendarCheck size={15} />
-            Đặt theo cast
+            {copy.bookWithCast}
           </Link>
         )}
       </span>
@@ -440,6 +580,11 @@ function RankingRow({
 export default function Page() {
   const activeLanguage = useActiveLanguage();
   const callCopy = rankingCallCopy(activeLanguage);
+  const copy = rankingPageCopy(activeLanguage);
+  const localizedAreaOptions = useMemo(
+    () => rankingAreaOptions(activeLanguage),
+    [activeLanguage],
+  );
   const [rankingType, setRankingType] = useState<RankingKind>("cast");
   const [selectedArea, setSelectedArea] = useState<RankingCity>("hn");
   const [list, setList] = useState<PublicRankingItem[]>([]);
@@ -496,12 +641,12 @@ export default function Page() {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setList([]);
-        setErrorMessage(error instanceof Error ? error.message : "Không tải được bảng xếp hạng.");
+        setErrorMessage(error instanceof Error ? error.message : copy.loadError);
         setLoadState("error");
       });
 
     return () => controller.abort();
-  }, [query, reloadKey]);
+  }, [copy.loadError, query, reloadKey]);
 
   useEffect(() => {
     if (!showDesktopCallPopup) return;
@@ -515,7 +660,7 @@ export default function Page() {
     setShowDesktopCallPopup(Boolean(options?.desktopBlocked));
   };
 
-  const dateLabel = "Tháng 6 năm 2026";
+  const dateLabel = copy.dateLabel;
   const hasItems = list.length > 0;
   const visibleList = isExpanded ? list : list.slice(0, initialVisibleRankings);
   const hiddenRankingCount = Math.max(0, list.length - visibleList.length);
@@ -535,13 +680,13 @@ export default function Page() {
             <button
               type="button"
               className="vyr-ranking-back"
-              aria-label="Quay lại"
+              aria-label={copy.back}
               onClick={() => window.history.back()}
             >
               <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
             </button>
             <div>
-              <h1 id="vyr-ranking-title">Bảng xếp hạng</h1>
+              <h1 id="vyr-ranking-title">{copy.title}</h1>
               <p>{dateLabel}</p>
             </div>
           </div>
@@ -549,14 +694,15 @@ export default function Page() {
           <div className="vyr-ranking-desktop-controls">
             <RankingSelect
               value={selectedArea}
-              options={areaOptions}
+              options={localizedAreaOptions}
               onChange={changeSelectedArea}
-              label="Chọn khu vực"
+              label={copy.areaSelect}
               icon={<MapPin size={15} strokeWidth={1.8} aria-hidden="true" />}
               testId="ranking-city-select"
             />
             <KindTabs
               rankingType={rankingType}
+              language={activeLanguage}
               onChange={changeRankingType}
               testIdPrefix="ranking-kind"
             />
@@ -566,15 +712,16 @@ export default function Page() {
         <div className="vyr-ranking-mobile-controls">
           <KindTabs
             rankingType={rankingType}
+            language={activeLanguage}
             onChange={changeRankingType}
             testIdPrefix="ranking-kind-mobile"
           />
           <div className="vyr-ranking-mobile-filter-row">
             <RankingSelect
               value={selectedArea}
-              options={areaOptions}
+              options={localizedAreaOptions}
               onChange={changeSelectedArea}
-              label="Chọn khu vực"
+              label={copy.areaSelect}
               icon={<MapPin size={13} strokeWidth={1.8} aria-hidden="true" />}
               testId="ranking-city-select-mobile"
             />
@@ -587,7 +734,7 @@ export default function Page() {
               {callCopy.phoneNumber} {callNotice.name}: <strong>{callNotice.phone}</strong>
             </span>
             <button type="button" onClick={() => setCallNotice(null)}>
-              Đóng
+              {translateText("Đóng", activeLanguage)}
             </button>
           </div>
         ) : null}
@@ -607,19 +754,19 @@ export default function Page() {
 
           {loadState === "error" ? (
             <div className="vyr-ranking-state is-error">
-              <strong>API ranking đang lỗi</strong>
-              <span>{errorMessage}</span>
+              <strong>{copy.apiError}</strong>
+              <span>{translateText(errorMessage, activeLanguage)}</span>
               <button type="button" onClick={retryRanking}>
                 <RefreshCcw size={15} />
-                Tải lại
+                {copy.retry}
               </button>
             </div>
           ) : null}
 
           {loadState === "ready" && !hasItems ? (
             <div className="vyr-ranking-state" data-testid="ranking-empty-state">
-              <strong>Chưa có ranking phù hợp</strong>
-              <span>Thử đổi khu vực để xem bảng khác.</span>
+              <strong>{copy.emptyTitle}</strong>
+              <span>{copy.emptyBody}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -628,7 +775,7 @@ export default function Page() {
                 }}
               >
                 <RefreshCcw size={15} />
-                Xem tổng hợp
+                {copy.emptyAction}
               </button>
             </div>
           ) : null}
@@ -639,6 +786,7 @@ export default function Page() {
                   key={item.targetId}
                   item={item}
                   trackingContext={trackingContext}
+                  language={activeLanguage}
                   onCall={handleCallNotice}
                 />
               ))
@@ -651,8 +799,8 @@ export default function Page() {
                 data-testid="ranking-show-more"
                 onClick={() => setIsExpanded(true)}
               >
-                Xem thêm
-                <span>{hiddenRankingCount} mục đã tải sẵn</span>
+                {copy.showMore}
+                <span>{copy.loadedItems(hiddenRankingCount)}</span>
               </button>
             </div>
           ) : null}
@@ -1302,11 +1450,14 @@ export default function Page() {
           .vyr-ranking-mobile-controls {
             display: flex;
             flex-direction: column;
+            align-items: flex-start;
             gap: 11px;
           }
 
           .vyr-kind-tabs {
-            width: auto;
+            width: max-content;
+            max-width: 100%;
+            align-self: flex-start;
             min-height: 38px;
             flex: none;
             border-radius: 13px;

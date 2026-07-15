@@ -1,4 +1,6 @@
 import type { RelatedCast } from "@/lib/api/cast-detail";
+import type { LanguageCode } from "@/lib/i18n/use-active-language";
+import { localizeCastText } from "./cast-profile.copy";
 import type { CastProfile } from "./cast-profile.types";
 
 type ViewerSignals = {
@@ -77,18 +79,18 @@ export function personalizeRelatedCasts(current: CastProfile, relatedCasts: Rela
     .slice(0, 6);
 }
 
-export function recommendationLabel(cast: RelatedCast) {
-  if (cast.relatedReason === "ranking") return "Đang ranking";
-  if (cast.relatedReason === "same-store") return "Cùng quán";
-  if (cast.relatedReason === "same-area") return "Cùng khu vực";
-  return "Hợp tag";
+export function recommendationLabel(cast: RelatedCast, language: LanguageCode = "vi") {
+  if (cast.relatedReason === "ranking") return localizeCastText("Đang ranking", language);
+  if (cast.relatedReason === "same-store") return localizeCastText("Cùng quán", language);
+  if (cast.relatedReason === "same-area") return localizeCastText("Cùng khu vực", language);
+  return localizeCastText("Hợp tag", language);
 }
 
-export function personalizationBadges(profile: CastProfile) {
+export function personalizationBadges(profile: CastProfile, language: LanguageCode = "vi") {
   const badges: string[] = [];
 
-  if (profile.languages.includes("ja")) badges.push("Hợp khách Nhật");
-  if (profile.languages.length > 1) badges.push("Đa ngôn ngữ");
+  if (profile.languages.includes("ja")) badges.push(localizeCastText("Hợp khách Nhật", language));
+  if (profile.languages.length > 1) badges.push(localizeCastText("Đa ngôn ngữ", language));
   if (profile.tags.some((tag) => tag.includes("vip"))) badges.push("VIP friendly");
 
   return badges.slice(0, 3);

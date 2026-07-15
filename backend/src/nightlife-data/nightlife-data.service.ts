@@ -17802,6 +17802,7 @@ export class NightlifeDataService {
         storeId: dto.storeId,
         publicHeadline: dto.publicHeadline,
         bio: dto.bio,
+        publicBio: dto.bio,
         birthMonth: dto.birthMonth,
         zodiacSign: dto.zodiacSign,
         heightCm: dto.heightCm,
@@ -17852,7 +17853,7 @@ export class NightlifeDataService {
         ...(dto.publicHeadline !== undefined && {
           publicHeadline: dto.publicHeadline,
         }),
-        ...(dto.bio !== undefined && { bio: dto.bio }),
+        ...(dto.bio !== undefined && { bio: dto.bio, publicBio: dto.bio }),
         ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
         ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),
         ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),

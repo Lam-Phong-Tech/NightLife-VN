@@ -187,6 +187,58 @@ const mobileFooterLinks = [
   { href: "/legal/chinh-sach-bao-mat", label: "Chính sách" },
 ];
 
+const footerCopy: Record<
+  LanguageCode,
+  {
+    description: string;
+    legalPlaceholder: string;
+    mobileNotice: (brandName: string) => string;
+    rights: (brandName: string) => string;
+    bookingNote: string;
+  }
+> = {
+  vi: {
+    description: "Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.",
+    legalPlaceholder: "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
+    mobileNotice: (brandName) =>
+      `© 2026 ${brandName}. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.`,
+    rights: (brandName) => `© 2026 ${brandName}. Bảo lưu mọi quyền.`,
+    bookingNote: "18+ · Giá và tình trạng đặt chỗ được xác nhận lại bởi admin.",
+  },
+  en: {
+    description: "Discover venues, Cast, deals, and nightlife guides in Vietnam.",
+    legalPlaceholder: "Legal content is a placeholder until the client provides the official version.",
+    mobileNotice: (brandName) =>
+      `© 2026 ${brandName}. 18+ · Prices and booking availability are confirmed by admin.`,
+    rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
+    bookingNote: "18+ · Prices and booking availability are reconfirmed by admin.",
+  },
+  ja: {
+    description: "ベトナムの店舗、キャスト、特典、ナイトライフガイドを探せます。",
+    legalPlaceholder: "正式版が提供されるまで、法務コンテンツは仮テキストです。",
+    mobileNotice: (brandName) =>
+      `© 2026 ${brandName}. 18+ · 料金と予約状況は管理者が確認します。`,
+    rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
+    bookingNote: "18+ · 料金と予約状況は管理者が再確認します。",
+  },
+  ko: {
+    description: "베트남의 매장, Cast, 혜택과 나이트라이프 가이드를 찾아보세요.",
+    legalPlaceholder: "공식 문구가 제공될 때까지 법적 콘텐츠는 임시 문구입니다.",
+    mobileNotice: (brandName) =>
+      `© 2026 ${brandName}. 18+ · 가격과 예약 가능 여부는 관리자가 확인합니다.`,
+    rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
+    bookingNote: "18+ · 가격과 예약 가능 여부는 관리자가 재확인합니다.",
+  },
+  zh: {
+    description: "探索越南的场所、Cast、优惠和夜生活指南。",
+    legalPlaceholder: "正式内容提供前，法律文本暂为占位内容。",
+    mobileNotice: (brandName) =>
+      `© 2026 ${brandName}. 18+ · 价格和预订状态由管理员确认。`,
+    rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
+    bookingNote: "18+ · 价格和预订状态由管理员再次确认。",
+  },
+};
+
 type NoticeTone = MemberNotificationTone;
 
 type Notice = {
@@ -1165,7 +1217,18 @@ function NotificationOverlay({
   );
 }
 
-function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceBrand }) {
+function SiteFooter({
+  isMobile,
+  brand,
+  language,
+}: {
+  isMobile: boolean;
+  brand: AppearanceBrand;
+  language: LanguageCode;
+}) {
+  const brandName = brand.name || "Vietyoru";
+  const copy = footerCopy[language] ?? footerCopy.vi;
+
   if (isMobile) {
     return (
       <footer
@@ -1192,7 +1255,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
             {brand.logoUrl ? (
               <img
                 src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
-                alt={brand.name || "Vietyoru"}
+                alt={brandName}
                 style={{
                   height: "28px",
                   width: "auto",
@@ -1202,7 +1265,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
               />
             ) : (
               <>
-                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>{brand.name || "Vietyoru"}</span>
+                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>{brandName}</span>
                 <span
                   style={{
                     marginTop: "5px",
@@ -1219,7 +1282,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
           </Link>
 
           <p style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}>
-            Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
+            {copy.description}
           </p>
 
           <nav
@@ -1241,7 +1304,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
                   textDecoration: "none",
                 }}
               >
-                {link.label}
+                {translateText(link.label, language)}
               </Link>
             ))}
           </nav>
@@ -1255,7 +1318,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
               lineHeight: 1.55,
             }}
           >
-            © 2026 {brand.name || "Vietyoru"}. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.
+            {copy.mobileNotice(brandName)}
           </div>
         </div>
       </footer>
@@ -1299,7 +1362,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
             {brand.logoUrl ? (
               <img
                 src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
-                alt={brand.name || "Vietyoru"}
+                alt={brandName}
                 style={{
                   height: isMobile ? "24px" : "32px",
                   width: "auto",
@@ -1310,7 +1373,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
             ) : (
               <>
                 <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
-                  {brand.name || "Vietyoru"}
+                  {brandName}
                 </span>
                 <span
                   style={{
@@ -1328,15 +1391,15 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
           <p
             style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}
           >
-            Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
+            {copy.description}
           </p>
           <p style={{ margin: "12px 0 0", color: "#9a9488", lineHeight: 1.6 }}>
-            Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.
+            {copy.legalPlaceholder}
           </p>
         </div>
 
         {footerGroups.map((group) => (
-          <nav key={group.title} aria-label={group.title}>
+          <nav key={group.title} aria-label={translateText(group.title, language)}>
             <h2
               style={{
                 margin: 0,
@@ -1347,7 +1410,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
                 textTransform: "uppercase",
               }}
             >
-              {group.title}
+              {translateText(group.title, language)}
             </h2>
             <div style={{ display: "grid", gap: "10px", marginTop: "13px" }}>
               {group.links.map((link) => (
@@ -1361,7 +1424,7 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
                     lineHeight: 1.4,
                   }}
                 >
-                  {link.label}
+                  {translateText(link.label, language)}
                 </Link>
               ))}
             </div>
@@ -1382,8 +1445,8 @@ function SiteFooter({ isMobile, brand }: { isMobile: boolean; brand: AppearanceB
           color: "#8c8679",
         }}
       >
-        <span>© 2026 {brand.name || "Vietyoru"}. Bảo lưu mọi quyền.</span>
-        <span>18+ · Giá và tình trạng đặt chỗ được xác nhận lại bởi admin.</span>
+        <span>{copy.rights(brandName)}</span>
+        <span>{copy.bookingNote}</span>
       </div>
     </footer>
   );
@@ -2206,7 +2269,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           {children}
         </div>
 
-        <SiteFooter isMobile={isMobile} brand={brand} />
+        <SiteFooter isMobile={isMobile} brand={brand} language={activeLanguage} />
 
         <nav
           style={{

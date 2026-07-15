@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Play, Star } from "lucide-react";
+import type { LanguageCode } from "@/lib/i18n/use-active-language";
+import { getCastProfileCopy } from "./cast-profile.copy";
 import { mediaBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
@@ -7,6 +9,7 @@ type CastHeroProps = {
   profile: CastProfile;
   activeMedia: CastMedia;
   area: string;
+  language: LanguageCode;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onOpenGallery: () => void;
@@ -28,6 +31,7 @@ export function CastHero({
   profile,
   activeMedia,
   area,
+  language,
   isFavorite,
   onToggleFavorite,
   onOpenGallery,
@@ -37,6 +41,7 @@ export function CastHero({
 }: CastHeroProps) {
   const summary = profileSummary(profile);
   const storeHref = `/stores/${profile.store.slug}`;
+  const copy = getCastProfileCopy(language);
 
   return (
     <section
@@ -47,14 +52,14 @@ export function CastHero({
       }}
     >
       <div className="cast-mobile-topbar">
-        <Link href="/danh-sach-cast" className="cast-icon-link" aria-label="Quay lại danh sách cast">
+        <Link href="/danh-sach-cast" className="cast-icon-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
         <button
           type="button"
           className={`cast-icon-button${isFavorite ? " is-active" : ""}`}
           onClick={onToggleFavorite}
-          aria-label={isFavorite ? "Bỏ lưu cast" : "Lưu cast"}
+          aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
           aria-pressed={isFavorite}
         >
           <Heart size={18} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
@@ -62,17 +67,17 @@ export function CastHero({
       </div>
 
       {activeMedia.type === "VIDEO" ? (
-        <button type="button" className="cast-play" onClick={onOpenGallery} aria-label="Mở video cast">
+        <button type="button" className="cast-play" onClick={onOpenGallery} aria-label={copy.openVideo}>
           <Play size={24} fill="currentColor" />
         </button>
       ) : null}
 
       {showMediaNavigation ? (
-        <div className="cast-hero-media-nav" aria-label="Chuyển ảnh cast">
-          <button type="button" className="previous" onClick={onPreviousMedia} aria-label="Ảnh trước">
+        <div className="cast-hero-media-nav" aria-label={copy.gallery}>
+          <button type="button" className="previous" onClick={onPreviousMedia} aria-label={copy.photoPrevious}>
             <ChevronLeft size={22} strokeWidth={2.2} />
           </button>
-          <button type="button" className="next" onClick={onNextMedia} aria-label="Ảnh tiếp theo">
+          <button type="button" className="next" onClick={onNextMedia} aria-label={copy.photoNext}>
             <ChevronRight size={22} strokeWidth={2.2} />
           </button>
         </div>
@@ -82,11 +87,11 @@ export function CastHero({
         <div className="cast-badge-row">
           <span className="cast-rank-badge">
             <Star size={12} fill="currentColor" />
-            #1 Ranking tháng này
+            {copy.rankingThisMonth}
           </span>
           <span className="cast-live-badge">
             <span />
-            Đang nhận đặt tối nay
+            {copy.acceptingTonight}
           </span>
         </div>
 

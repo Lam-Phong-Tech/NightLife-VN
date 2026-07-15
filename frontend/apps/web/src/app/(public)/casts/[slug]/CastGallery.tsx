@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Heart, Play, Star, X } from "lucide-react";
 import { resolveClientUrl } from "@/lib/api/client";
+import type { LanguageCode } from "@/lib/i18n/use-active-language";
+import { getCastProfileCopy } from "./cast-profile.copy";
 import { mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
 import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
@@ -11,6 +13,7 @@ type CastGalleryProps = {
   gallery: CastMedia[];
   activeIndex: number;
   variant: "mobile" | "desktop";
+  language: LanguageCode;
   isLightboxOpen: boolean;
   isFavorite?: boolean;
   onSelect: (index: number, action?: CastGalleryAction) => void;
@@ -23,6 +26,7 @@ export function CastGallery({
   gallery,
   activeIndex,
   variant,
+  language,
   isLightboxOpen,
   isFavorite = false,
   onSelect,
@@ -33,6 +37,7 @@ export function CastGallery({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
+  const copy = getCastProfileCopy(language);
 
   const showPrevious = useCallback(() => {
     onSelect(activeIndex <= 0 ? gallery.length - 1 : activeIndex - 1, "previous");
@@ -81,6 +86,7 @@ export function CastGallery({
             media={activeMedia}
             count={gallery.length}
             index={activeIndex}
+            language={language}
             onClose={onCloseLightbox}
             onPrevious={showPrevious}
             onNext={showNext}
@@ -97,9 +103,9 @@ export function CastGallery({
       <>
         <section className="cast-section cast-gallery-grid-section" data-testid="cast-gallery-mobile">
           <div className="cast-section-heading">
-            <h2>Thư viện ảnh</h2>
+            <h2>{copy.gallery}</h2>
             <span />
-            <small>{gallery.length} ảnh</small>
+            <small>{copy.galleryCount(gallery.length)}</small>
           </div>
           <div className="cast-mobile-gallery-grid">
             {gallery.map((media, index) => (
@@ -132,24 +138,24 @@ export function CastGallery({
         className="cast-desktop-main-media"
         style={{ background: mediaBg(activeMedia.url) }}
         onClick={() => onOpenLightbox(activeIndex)}
-        aria-label="Mở gallery cast"
+        aria-label={copy.openGallery}
       >
         <span className="cast-media-label">{activeMedia.type === "VIDEO" ? "Video" : "Gallery"}</span>
         {activeMedia.type === "VIDEO" ? <span className="cast-play cast-play-desktop"><Play size={24} fill="currentColor" /></span> : null}
       </button>
         <span className="cast-rank-badge cast-desktop-media-rank">
           <Star size={13} fill="currentColor" />
-          #1 Ranking tháng 6
+          {copy.rankingJune}
         </span>
         <span className="cast-live-badge cast-desktop-media-live">
           <span />
-          Đang nhận đặt tối nay
+          {copy.acceptingTonight}
         </span>
         <button
           type="button"
           className={`cast-desktop-media-fav${isFavorite ? " is-active" : ""}`}
           onClick={onToggleFavorite}
-          aria-label={isFavorite ? "Bá» lÆ°u cast" : "LÆ°u cast"}
+          aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
           aria-pressed={isFavorite}
         >
           <Heart size={17} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
@@ -180,6 +186,7 @@ function CastLightbox({
   media,
   count,
   index,
+  language,
   onClose,
   onPrevious,
   onNext,
@@ -191,6 +198,7 @@ function CastLightbox({
   media: CastMedia;
   count: number;
   index: number;
+  language: LanguageCode;
   onClose: () => void;
   onPrevious: () => void;
   onNext: () => void;
@@ -200,6 +208,7 @@ function CastLightbox({
 }) {
   const mediaUrl = resolveClientUrl(media.url) ?? media.url;
   const embed = media.type === "VIDEO" ? videoEmbedUrl(mediaUrl) : null;
+  const copy = getCastProfileCopy(language);
 
   const onTouchEnd = (clientX: number) => {
     if (touchStartX === null) return;
@@ -216,7 +225,7 @@ function CastLightbox({
       className="cast-lightbox"
       role="dialog"
       aria-modal="true"
-      aria-label="Cast gallery lightbox"
+      aria-label={copy.openGallery}
       onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
       onTouchEnd={(event) => onTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
     >
@@ -224,13 +233,13 @@ function CastLightbox({
         <span>
           {String(index + 1).padStart(2, "0")} <em>/ {count}</em>
         </span>
-        <button className="cast-lightbox-close" type="button" aria-label="Đóng gallery" onClick={onClose}>
+        <button className="cast-lightbox-close" type="button" aria-label={copy.closeGallery} onClick={onClose}>
           <X size={18} strokeWidth={2.2} />
         </button>
       </div>
 
       {count > 1 ? (
-        <button className="cast-lightbox-nav previous" type="button" aria-label="Media trước" onClick={onPrevious}>
+        <button className="cast-lightbox-nav previous" type="button" aria-label={copy.mediaPrevious} onClick={onPrevious}>
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
       ) : null}
@@ -241,7 +250,7 @@ function CastLightbox({
             <iframe title={media.alt} src={embed.url} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
           ) : embed?.kind === "link" ? (
             <a className="cast-booking-button" href={embed.url} target="_blank" rel="noreferrer">
-              Mở video SNS
+              {copy.openSnsVideo}
             </a>
           ) : (
             <video src={embed?.url || mediaUrl} controls autoPlay />
@@ -252,7 +261,7 @@ function CastLightbox({
       </div>
 
       {count > 1 ? (
-        <button className="cast-lightbox-nav next" type="button" aria-label="Media sau" onClick={onNext}>
+        <button className="cast-lightbox-nav next" type="button" aria-label={copy.mediaNext} onClick={onNext}>
           <ChevronRight size={22} strokeWidth={2.2} />
         </button>
       ) : null}

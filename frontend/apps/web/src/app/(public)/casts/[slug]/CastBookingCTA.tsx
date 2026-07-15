@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import type { LanguageCode } from "@/lib/i18n/use-active-language";
+import { getCastProfileCopy } from "./cast-profile.copy";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
 type CastBookingCTAProps = {
@@ -7,6 +9,7 @@ type CastBookingCTAProps = {
   area: string;
   bookingHref: string;
   variant: "mobile" | "desktop";
+  language: LanguageCode;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   onTrack?: CastProfileTrack;
@@ -15,10 +18,13 @@ type CastBookingCTAProps = {
 export function CastBookingCTA({
   bookingHref,
   variant,
+  language,
   isFavorite = false,
   onToggleFavorite,
   onTrack,
 }: CastBookingCTAProps) {
+  const copy = getCastProfileCopy(language);
+
   if (variant === "mobile") {
     return (
       <section
@@ -29,14 +35,14 @@ export function CastBookingCTA({
         <button
           type="button"
           className={`cast-booking-favorite${isFavorite ? " is-active" : ""}`}
-          aria-label={isFavorite ? "Bỏ lưu cast" : "Lưu cast"}
+          aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
           aria-pressed={isFavorite}
           onClick={onToggleFavorite}
         >
           <Heart size={19} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
         </button>
         <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "mobile-sticky" })}>
-          <strong>Đặt cast này</strong>
+          <strong>{copy.bookThisCast}</strong>
         </Link>
       </section>
     );
@@ -46,7 +52,7 @@ export function CastBookingCTA({
     <section className="cast-desktop-booking" data-testid="cast-booking-cta-desktop">
       <div className="cast-desktop-booking-actions">
         <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "desktop-panel" })}>
-          <strong>Đặt cast này</strong>
+          <strong>{copy.bookThisCast}</strong>
         </Link>
       </div>
     </section>

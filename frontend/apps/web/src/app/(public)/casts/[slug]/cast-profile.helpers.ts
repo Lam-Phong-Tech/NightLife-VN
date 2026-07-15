@@ -88,16 +88,9 @@ export function mediaBg(url: string) {
 
 export function buildCastBio(cast: PublicCastDetail) {
   const name = cast.publicAlias ?? cast.name ?? cast.stageName;
-  const tags = cast.tags.slice(0, 3).map(labelTag).join(", ").toLowerCase();
-  const languages = cast.languages.map(labelLanguage).join(", ");
+  const adminBio = cast.publicBio?.trim() || cast.publicHeadline?.trim();
 
-  return (
-    cast.publicBio ??
-    cast.publicHeadline ??
-    `${name} đang hoạt động tại ${cast.store.name}. Phù hợp booking theo cast${
-      tags ? ` với phong cách ${tags}` : ""
-    }. Ngôn ngữ hỗ trợ: ${languages || "Tiếng Việt"}.`
-  );
+  return adminBio || `${name} đang hoạt động tại ${cast.store.name}.`;
 }
 
 export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
