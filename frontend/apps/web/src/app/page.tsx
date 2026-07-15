@@ -2877,7 +2877,7 @@ export default function Page() {
       <div className="hidden md:block nl-home-page nl-home-page-desktop" style={{ ...shellStyle, background: colors.ink }}>
         <div style={{ width: "100%", minHeight: "100vh", ...appStyle, border: 0, boxShadow: "none" }}>
           <HeaderBar desktop />
-          <main style={{ padding: "10px 50px 44px" }}>
+          <main style={{ padding: "10px 50px 0" }}>
             <div>
               <div>
                 <SearchPanel />
