@@ -1338,6 +1338,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     event?.stopPropagation();
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   };
+  const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
   const toggleFavorite = async () => {
     if (!requireMemberFavoriteAccess()) {
       return;
@@ -1532,6 +1535,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     aria-label="Media trước"
                     data-testid="store-hero-media-previous"
+                    onMouseDown={preventHeroControlMouseDown}
                     onClick={showPreviousMedia}
                   >
                     <ChevronLeft size={30} />
@@ -1541,6 +1545,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     aria-label="Media sau"
                     data-testid="store-hero-media-next"
+                    onMouseDown={preventHeroControlMouseDown}
                     onClick={showNextMedia}
                   >
                     <ChevronRight size={30} />
@@ -1553,6 +1558,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   className="hero-video-play"
                   type="button"
                   aria-label={translateText("Xem video", activeLanguage)}
+                  onMouseDown={preventHeroControlMouseDown}
                   onClick={openSelectedVideo}
                 >
                   <Play size={34} fill="currentColor" />
@@ -1852,6 +1858,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             className="lightbox-close"
             type="button"
             aria-label="Đóng gallery"
+            onMouseDown={preventHeroControlMouseDown}
             onClick={() => setIsLightboxOpen(false)}
           >
             <X size={22} />
@@ -1861,6 +1868,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               className="lightbox-nav previous"
               type="button"
               aria-label="Media trước"
+              onMouseDown={preventHeroControlMouseDown}
               onClick={showPreviousMedia}
             >
               <ChevronLeft size={28} />
@@ -1888,6 +1896,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               className="lightbox-nav next"
               type="button"
               aria-label="Media sau"
+              onMouseDown={preventHeroControlMouseDown}
               onClick={showNextMedia}
             >
               <ChevronRight size={28} />
@@ -2054,12 +2063,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           box-shadow: var(--store-hero-control-shadow);
           cursor: pointer;
           padding: 0;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
         }
 
         .round-action svg,
         .hero-media-nav svg,
         .hero-video-play svg {
           filter: var(--store-hero-control-icon-shadow);
+          pointer-events: none;
+        }
+
+        .round-action svg *,
+        .hero-media-nav svg *,
+        .hero-video-play svg * {
+          pointer-events: none;
         }
 
         .round-action.hero-back {
@@ -2093,6 +2111,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
           text-shadow: none;
+          filter: none !important;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
         }
 
         .hero-media-nav.previous {
@@ -2105,6 +2126,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-media-nav:active,
         .hero-media-nav:where(:hover, :focus-visible) {
+          filter: none !important;
           transform: translateY(-50%) !important;
         }
 
@@ -2126,6 +2148,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           will-change: auto;
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
+          filter: none !important;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
         }
 
         .hero-video-play:active,
@@ -3598,6 +3623,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           cursor: pointer;
           display: grid;
           place-items: center;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+        }
+
+        .lightbox-close svg,
+        .lightbox-close svg *,
+        .lightbox-nav svg,
+        .lightbox-nav svg * {
+          pointer-events: none;
         }
 
         .lightbox-close {
@@ -3627,6 +3661,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .lightbox-nav:active,
         .lightbox-nav:where(:hover, :focus-visible) {
+          filter: none !important;
           transform: translateY(-50%) !important;
         }
 
