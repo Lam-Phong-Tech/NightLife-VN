@@ -121,6 +121,7 @@ export function TourClient() {
   const [city, setCity] = useState<CityFilter>("all");
   const [filter, setFilter] = useState<TourFilter>("all");
   const [query, setQuery] = useState("");
+  const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [tours, setTours] = useState<PublicTour[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -180,6 +181,12 @@ export function TourClient() {
     setCity("all");
     setFilter("all");
     setQuery("");
+    setCityMenuOpen(false);
+  };
+
+  const selectCity = (nextCity: CityFilter) => {
+    setCity(nextCity);
+    setCityMenuOpen(false);
   };
 
   return (
@@ -210,21 +217,44 @@ export function TourClient() {
             <SlidersHorizontal size={16} />
           </label>
 
-          <label className="tour-city-select">
-            <MapPin size={15} />
-            <select
+          <div
+            className={`tour-city-select ${isCityMenuOpen ? "is-open" : ""}`}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setCityMenuOpen(false);
+              }
+            }}
+          >
+            <button
+              type="button"
+              className="tour-city-trigger"
               aria-label={localize("Chọn thành phố", activeLanguage)}
-              value={city}
-              onChange={(event) => setCity(event.target.value as CityFilter)}
+              aria-haspopup="listbox"
+              aria-expanded={isCityMenuOpen}
+              onClick={() => setCityMenuOpen((current) => !current)}
             >
-              {cityOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {localize(option.label, activeLanguage)}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} />
-          </label>
+              <MapPin size={15} />
+              <span>{localize(selectedCity.label, activeLanguage)}</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {isCityMenuOpen ? (
+              <div className="tour-city-menu" role="listbox" aria-label={localize("Chọn thành phố", activeLanguage)}>
+                {cityOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="option"
+                    aria-selected={option.id === city}
+                    className={option.id === city ? "is-selected" : ""}
+                    onClick={() => selectCity(option.id)}
+                  >
+                    {localize(option.label, activeLanguage)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <button type="button" className="tour-find-button">
             {localize("Tìm", activeLanguage)}
@@ -448,7 +478,7 @@ const tourDirectoryCss = `
   }
 
   .tour-search-input,
-  .tour-city-select {
+  .tour-city-trigger {
     display: flex;
     align-items: center;
     gap: 14px;
@@ -456,13 +486,12 @@ const tourDirectoryCss = `
   }
 
   .tour-search-input svg,
-  .tour-city-select svg {
+  .tour-city-trigger svg {
     color: var(--vy-gold);
     flex: none;
   }
 
-  .tour-search-input input,
-  .tour-city-select select {
+  .tour-search-input input {
     width: 100%;
     min-width: 0;
     border: 0;
@@ -474,9 +503,103 @@ const tourDirectoryCss = `
     font-weight: 700;
   }
 
-  .tour-city-select select {
-    appearance: none;
+  .tour-city-select {
+    position: relative;
+    min-width: 0;
+  }
+
+  .tour-city-trigger {
+    width: 100%;
+    min-height: 56px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--vy-gold-pale);
     cursor: pointer;
+    font-family: inherit;
+  }
+
+  .tour-city-trigger:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--vy-border-gold-40);
+  }
+
+  .tour-city-trigger span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--vy-text);
+    font-size: 15px;
+    font-weight: 800;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tour-city-trigger svg:last-child {
+    transition: transform 180ms ease;
+  }
+
+  .tour-city-select.is-open {
+    border-color: var(--vy-border-gold-40);
+    box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  }
+
+  .tour-city-select.is-open .tour-city-trigger svg:last-child {
+    transform: rotate(180deg);
+  }
+
+  .tour-city-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 90;
+    display: grid;
+    gap: 3px;
+    min-width: 100%;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 12px;
+    background: var(--vy-surface-1);
+    padding: 6px;
+    box-shadow: 0 20px 48px -24px rgba(0, 0, 0, 0.9);
+  }
+
+  .tour-city-menu button {
+    width: 100%;
+    min-height: 38px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--vy-muted);
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tour-city-menu button:hover,
+  .tour-city-menu button:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--vy-text);
+    outline: none;
+  }
+
+  .tour-city-menu button.is-selected {
+    background: var(--vy-gold-grad);
+    color: var(--vy-on-gold);
+    font-weight: 900;
+  }
+
+  html.vy-light .tour-city-menu {
+    box-shadow: 0 18px 44px -30px rgba(86, 62, 18, 0.42);
+  }
+
+  html.vy-light .tour-city-menu button:hover,
+  html.vy-light .tour-city-menu button:focus-visible {
+    background: rgba(161, 116, 36, 0.09);
   }
 
   .tour-search-input input::placeholder {
@@ -926,10 +1049,36 @@ const tourDirectoryCss = `
     .tour-city-select {
       min-height: 34px;
       border-radius: 8px;
+    }
+
+    .tour-city-trigger {
+      min-height: 34px;
+      gap: 9px;
+      border-radius: 8px;
       padding: 0 11px;
     }
 
-    .tour-city-select select {
+    .tour-city-trigger span {
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .tour-city-trigger svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tour-city-menu {
+      top: calc(100% + 6px);
+      z-index: 120;
+      border-radius: 10px;
+      padding: 5px;
+    }
+
+    .tour-city-menu button {
+      min-height: 36px;
+      border-radius: 8px;
+      padding: 0 9px;
       font-size: 12px;
       font-weight: 800;
     }
