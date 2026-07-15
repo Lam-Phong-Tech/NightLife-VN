@@ -184,7 +184,7 @@ function AdminToursContent() {
       setUploadingCover(true);
       const form = new FormData();
       form.append('file', file);
-      form.append('purpose', 'GENERAL');
+      form.append('purpose', 'BANNER_GLOBAL');
       form.append('access', 'PUBLIC');
       const res = await apiFormDataClient<{ url: string }>('/storage/upload', form);
       if (res && res.url) {
