@@ -382,7 +382,7 @@ type PartnerNotification = {
   icon: LucideIcon;
   unread: boolean;
 };
-type ListingTabKey = 'store' | 'cast' | 'menu' | 'media';
+type ListingTabKey = 'store' | 'cast';
 type PeriodKey = 'today' | 'seven' | 'thirty';
 type OfflineScanQueueItem = {
   payload: string;
@@ -818,21 +818,6 @@ const hasValidOpeningHourSlots = (value?: string | null) => {
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
   if (path.startsWith('castProfiles.')) return 'cast';
-  if (
-    path.startsWith('menuGroups.') ||
-    path.startsWith('pricingItems.') ||
-    path === 'priceRange' ||
-    path === 'menuSummary'
-  ) {
-    return 'menu';
-  }
-  if (
-    path === 'coverImageUrl' ||
-    path.startsWith('galleryUrls.') ||
-    path.startsWith('videoUrls.')
-  ) {
-    return 'media';
-  }
   return 'store';
 };
 
@@ -1023,8 +1008,6 @@ function cleanListingText(value?: string | null) {
 const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'store', label: 'Thông tin quán' },
   { key: 'cast', label: 'Cast' },
-  { key: 'menu', label: 'Menu' },
-  { key: 'media', label: 'Ảnh / Video' },
 ];
 
 const listingUploadLimits = {
@@ -3121,7 +3104,7 @@ export default function PartnerPage() {
           ...counts,
           [tabFromListingErrorPath(path)]: counts[tabFromListingErrorPath(path)] + 1,
         }),
-        { store: 0, cast: 0, menu: 0, media: 0 },
+        { store: 0, cast: 0 },
       ),
     [listingErrors],
   );
@@ -4832,6 +4815,107 @@ export default function PartnerPage() {
     </div>
   );
 
+  const renderMenuGroupsSection = () => (
+    <section className="partner-listing-section">
+      <div className="partner-listing-section-title">Nhóm menu</div>
+      <div className="partner-menu-editor">
+        {!listingDraft.menuGroups.length ? (
+          <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+            Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
+          </div>
+        ) : null}
+        {listingDraft.menuGroups.map((group, groupIndex) => (
+          <div key={`${group.name}-${groupIndex}`} className="partner-menu-group-card">
+            <div className="partner-menu-group-head">
+              <FormField label="Tên nhóm">
+                <input
+                  value={group.name}
+                  onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
+                  placeholder="VD: VIP packages"
+                  style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
+                />
+                {listingErrorText(`menuGroups.${groupIndex}.name`)}
+              </FormField>
+              <div className="partner-menu-actions">
+                <GhostButton onClick={() => addMenuItem(groupIndex)}>
+                  <ReceiptText size={16} />
+                  Thêm món
+                </GhostButton>
+                <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
+                  <XCircle size={16} />
+                  Xóa nhóm
+                </GhostButton>
+              </div>
+            </div>
+            {group.items.map((item, itemIndex) => (
+              <div key={`${item.name}-${itemIndex}`} className="partner-menu-item-card">
+                <FormField label="Tên món / dịch vụ">
+                  <input
+                    value={item.name}
+                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
+                    placeholder="VD: VIP table"
+                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
+                  />
+                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
+                </FormField>
+                <FormField label="Mô tả">
+                  <input
+                    value={item.description ?? ''}
+                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
+                    placeholder="Mô tả ngắn"
+                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
+                  />
+                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
+                </FormField>
+                <FormField label="Mức chi phí">
+                  <ThemedListingSelect
+                    value={item.priceTier ?? '$$'}
+                    onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
+                    placeholder="-- Chọn mức --"
+                    hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
+                    options={[
+                      { value: '$$', label: '$$' },
+                      { value: '$$$', label: '$$$' },
+                      { value: '$$$$', label: '$$$$' },
+                    ]}
+                  />
+                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
+                </FormField>
+                <FormField label="Ảnh món URL">
+                  <input
+                    value={item.imageUrl ?? ''}
+                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
+                    placeholder="https://..."
+                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+                  />
+                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+                </FormField>
+                <div className="partner-menu-actions">
+                  <button
+                    type="button"
+                    onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
+                    className={item.isHot ? 'partner-menu-hot is-active' : 'partner-menu-hot'}
+                    aria-pressed={Boolean(item.isHot)}
+                  >
+                    {item.isHot ? 'HOT' : 'Không HOT'}
+                  </button>
+                  <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
+                    <XCircle size={16} />
+                    Xóa món
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+        <GhostButton onClick={addMenuGroup}>
+          <ReceiptText size={16} />
+          Thêm nhóm menu
+        </GhostButton>
+      </div>
+    </section>
+  );
+
   const renderListingTab = () => {
     if (listingTab === 'cast') {
       const activeCast = activeCastProfileIndex === null
@@ -4843,116 +4927,6 @@ export default function PartnerPage() {
         : renderCastTable();
     }
 
-    if (listingTab === 'menu') {
-      return (
-        <div className="partner-menu-editor">
-          <div className="partner-listing-section" style={{ margin: 0 }}>
-            <div className="partner-listing-section-title">Nhóm menu giống form Admin</div>
-            {!listingDraft.menuGroups.length ? (
-              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-                Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
-              </div>
-            ) : null}
-            {listingDraft.menuGroups.map((group, groupIndex) => (
-              <div key={`${group.name}-${groupIndex}`} className="partner-menu-group-card">
-                <div className="partner-menu-group-head">
-                  <FormField label="Tên nhóm">
-                    <input
-                      value={group.name}
-                      onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
-                      placeholder="VD: VIP packages"
-                      style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
-                    />
-                    {listingErrorText(`menuGroups.${groupIndex}.name`)}
-                  </FormField>
-                  <div className="partner-menu-actions">
-                    <GhostButton onClick={() => addMenuItem(groupIndex)}>
-                      <ReceiptText size={16} />
-                      Thêm món
-                    </GhostButton>
-                    <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
-                      <XCircle size={16} />
-                      Xóa nhóm
-                    </GhostButton>
-                  </div>
-                </div>
-                {group.items.map((item, itemIndex) => (
-                  <div key={`${item.name}-${itemIndex}`} className="partner-menu-item-card">
-                    <FormField label="Tên món / dịch vụ">
-                      <input
-                        value={item.name}
-                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
-                        placeholder="VD: VIP table"
-                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
-                      />
-                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
-                    </FormField>
-                    <FormField label="Mô tả">
-                      <input
-                        value={item.description ?? ''}
-                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
-                        placeholder="Mô tả ngắn"
-                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                      />
-                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                    </FormField>
-                    <FormField label="Mức chi phí">
-                      <ThemedListingSelect
-                        value={item.priceTier ?? '$$'}
-                        onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
-                        placeholder="-- Chọn mức --"
-                        hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
-                        options={[
-                          { value: '$$', label: '$$' },
-                          { value: '$$$', label: '$$$' },
-                          { value: '$$$$', label: '$$$$' },
-                        ]}
-                      />
-                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
-                    </FormField>
-                    <FormField label="Ảnh món URL">
-                      <input
-                        value={item.imageUrl ?? ''}
-                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
-                        placeholder="https://..."
-                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                      />
-                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                    </FormField>
-                    <div className="partner-menu-actions">
-                      <button
-                        type="button"
-                        onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
-                        className={item.isHot ? 'partner-menu-hot is-active' : 'partner-menu-hot'}
-                        aria-pressed={Boolean(item.isHot)}
-                      >
-                        {item.isHot ? 'HOT' : 'Không HOT'}
-                      </button>
-                      <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
-                        <XCircle size={16} />
-                        Xóa món
-                      </GhostButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-            <GhostButton onClick={addMenuGroup}>
-              <ReceiptText size={16} />
-              Thêm nhóm menu
-            </GhostButton>
-          </div>
-        </div>
-      );
-    }
-
-    if (listingTab === 'media') {
-      return (
-        <div className="partner-listing-form">
-          {renderStoreMediaSections()}
-        </div>
-      );
-    }
     const openingRows = listingDraft.openingHourItems.length
       ? listingDraft.openingHourItems
       : defaultListingOpeningHours();
@@ -5248,6 +5222,8 @@ export default function PartnerPage() {
           </div>
         </section>
 
+        {renderStoreMediaSections()}
+        {renderMenuGroupsSection()}
       </div>
     );
   };
