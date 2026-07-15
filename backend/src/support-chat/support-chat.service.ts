@@ -69,7 +69,10 @@ export class SupportChatService {
 
     const existingTicket = await this.prisma.supportTicket.findFirst({
       where: whereClause,
-      include: { assignedAdmin: { select: { id: true, displayName: true } } },
+      include: {
+        assignedAdmin: { select: { id: true, displayName: true } },
+        user: { select: { id: true, displayName: true, email: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -81,7 +84,10 @@ export class SupportChatService {
         userId: userId || null,
         status: SupportTicketStatus.PENDING,
       },
-      include: { assignedAdmin: { select: { id: true, displayName: true } } },
+      include: {
+        assignedAdmin: { select: { id: true, displayName: true } },
+        user: { select: { id: true, displayName: true, email: true } },
+      },
     });
   }
 
