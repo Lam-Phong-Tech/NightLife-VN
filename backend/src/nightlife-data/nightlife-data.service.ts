@@ -4555,6 +4555,7 @@ export class NightlifeDataService {
       orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
       select: {
         id: true,
+        bookingCode: true,
         status: true,
         scheduledAt: true,
         partySize: true,
