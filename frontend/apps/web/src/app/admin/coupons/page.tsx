@@ -335,7 +335,7 @@ export default function AdminCouponsPage() {
                   <div style={{ marginTop: '12px' }}><span style={{ ...getStatusMeta(act ? 'ACTIVE' : 'PAUSED').style, fontSize: '12px', fontWeight: 600, padding: '5px 13px', borderRadius: '20px', display: 'inline-flex' }}>{act ? 'Đang chạy' : 'Tạm dừng'}</span></div>
                 </div>
                 <div style={{ margin: '20px auto 0', width: 184, height: 184, borderRadius: 16, background: '#fff', padding: 14, boxShadow: '0 14px 30px -14px rgba(0,0,0,.6)', position: 'relative' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${vc.qrPayload || vc.code}`} alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: act ? 'none' : 'grayscale(1)', opacity: act ? 1 : 0.5 }} />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(vc.qrPayload || vc.code)}`} alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: act ? 'none' : 'grayscale(1)', opacity: act ? 1 : 0.5 }} />
                   {!act && <span style={{ position: 'absolute', inset: 0, background: 'rgba(20,19,25,.72)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', fontSize: '13px', fontWeight: 700 }}>ĐANG TẠM DỪNG</span>}
                 </div>
                 <div style={{ marginTop: '16px', border: '1.5px dashed rgba(212,178,106,.4)', borderRadius: 11, padding: 12, textAlign: 'center' }}>
@@ -419,7 +419,7 @@ export default function AdminCouponsPage() {
                 </div>
 
                 <div style={{ margin: '20px auto 0', width: 184, height: 184, borderRadius: 16, background: '#fff', padding: 14, boxShadow: '0 14px 30px -14px rgba(0,0,0,.6)', position: 'relative' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${c.qrPayloadHash || formatCode(c)}`} alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: !isHolding ? 'grayscale(1)' : 'none', opacity: !isHolding ? 0.5 : 1 }} />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(c.qrPayload || c.qrImageDataUrl || formatCode(c))}`} alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: !isHolding ? 'grayscale(1)' : 'none', opacity: !isHolding ? 0.5 : 1 }} />
                   {isExpired && <span style={{ position: 'absolute', inset: 0, background: 'rgba(20,19,25,.72)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e88b99', fontSize: '13px', fontWeight: 700 }}>MÃ ĐÃ HẾT HẠN</span>}
                   {isUsed && <span style={{ position: 'absolute', inset: 0, background: 'rgba(20,19,25,.72)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fd3a2', fontSize: '13px', fontWeight: 700 }}>ĐÃ SỬ DỤNG</span>}
                 </div>
