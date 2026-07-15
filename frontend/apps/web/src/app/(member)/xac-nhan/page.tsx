@@ -71,7 +71,12 @@ const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
     booking.guest?.email ?? booking.guest?.phone ?? translateText("Email đã lưu", language)
   }`;
 
-const bookingDiscountText = (booking: BookingRecord) => {
+type BookingDiscountInfo = {
+  type: string;
+  value: number;
+};
+
+const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null => {
   const issue = booking.couponIssue;
   const issueMetadata = issue?.metadata;
 
@@ -91,11 +96,11 @@ const bookingDiscountText = (booking: BookingRecord) => {
       ? (value as Record<string, unknown>)
       : null;
 
-  const discountFromSnapshot = (snapshot: unknown) => {
+  const discountFromSnapshot = (snapshot: unknown): BookingDiscountInfo | null => {
     const record = recordValue(snapshot);
     if (!record) return null;
 
-    const type = record.discountType ?? record.type ?? "PERCENT";
+    const type = String(record.discountType ?? record.type ?? "PERCENT");
     const value = record.discountPercent ?? record.value ?? record.discountValue;
 
     if (type === "PERCENT") {
@@ -107,18 +112,18 @@ const bookingDiscountText = (booking: BookingRecord) => {
   };
 
   if (issue) {
-    const p = percentValue((issue as any).discountPercent);
+    const p = percentValue(issue.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
-    const snap = discountFromSnapshot((issue as any).discountRuleSnapshot);
+    const snap = discountFromSnapshot(issue.discountRuleSnapshot);
     if (snap) return snap;
   }
 
   if (issueMetadata) {
-    const p = percentValue((issueMetadata as any).discountPercent);
+    const p = percentValue(issueMetadata.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
-    const snap = discountFromSnapshot((issueMetadata as any).discountRuleSnapshot);
+    const snap = discountFromSnapshot(issueMetadata.discountRuleSnapshot);
     if (snap) return snap;
   }
 
@@ -142,7 +147,7 @@ const bookingDiscountText = (booking: BookingRecord) => {
   return null;
 };
 
-const formatDiscountText = (discount: { type: string; value: number } | null, language: LanguageCode) => {
+const formatDiscountText = (discount: BookingDiscountInfo | null, language: LanguageCode) => {
   if (!discount) return null;
 
   if (discount.type === "PERCENT") {

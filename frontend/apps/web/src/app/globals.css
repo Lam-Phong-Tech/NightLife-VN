@@ -641,7 +641,7 @@ textarea::placeholder {
 .nl-customer-route-content [role="button"]:active,
 .nl-customer-route-content .btn:active,
 .nl-mobile-bottom-nav a:active {
-  transform: translate3d(0, 1px, 0) scale(0.985);
+  transform: none;
   filter: saturate(1.1) brightness(0.98);
 }
 

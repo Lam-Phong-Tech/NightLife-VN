@@ -39,6 +39,10 @@ import {
   sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import {
+  getBookingDateAfterDays,
+  getTodayBookingDate,
+} from "@/lib/booking-date";
+import {
   buildBookingFieldErrors,
   firstBookingFieldError,
   touchAllBookingFields,
@@ -84,18 +88,9 @@ type TourDetailClientProps = {
 
 const priceTierLabel = (tier: number) => "$".repeat(Math.max(1, Math.min(4, Math.trunc(tier || 3))));
 
-const toDateInputValue = (date: Date) => {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-};
+const getTodayDate = getTodayBookingDate;
 
-const getTodayDate = () => toDateInputValue(new Date());
-
-const getMaxBookingDate = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + bookingDateWindowDays);
-  return toDateInputValue(date);
-};
+const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
 
 const normalizeTimeOption = (value: string) => {
   const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?$/);

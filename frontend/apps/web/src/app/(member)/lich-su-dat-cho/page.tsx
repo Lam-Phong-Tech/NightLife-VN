@@ -44,6 +44,11 @@ import {
   validateBookingTime,
 } from "@/lib/booking-validation";
 import {
+  getBookingDateAfterDays,
+  getTodayBookingDate,
+  toBookingDateInputValue,
+} from "@/lib/booking-date";
+import {
   intlLocaleByLanguage,
   useActiveLanguage,
   type LanguageCode,
@@ -126,18 +131,11 @@ const formatHistoryPagination = (
   }
 };
 
-const toDateInputValue = (date: Date) => {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-};
+const toDateInputValue = toBookingDateInputValue;
 
-const getTodayDate = () => toDateInputValue(new Date());
+const getTodayDate = getTodayBookingDate;
 
-const getMaxBookingDate = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + bookingDateWindowDays);
-  return toDateInputValue(date);
-};
+const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
 
 const clampBookingDate = (value?: string | null) => {
   const today = getTodayDate();
@@ -149,11 +147,7 @@ const clampBookingDate = (value?: string | null) => {
   return value;
 };
 
-const getTomorrowDate = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return toDateInputValue(date);
-};
+const getTomorrowDate = () => getBookingDateAfterDays(1);
 
 
 const bookingTitle = (booking: BookingRecord) => {

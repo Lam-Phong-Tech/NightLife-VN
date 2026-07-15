@@ -66,6 +66,7 @@ export const formatDiscount = (coupon: StoreActiveCoupon) => {
 
 export const formatDateOption = (date: Date) =>
   new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
     weekday: "short",
     day: "2-digit",
     month: "2-digit",

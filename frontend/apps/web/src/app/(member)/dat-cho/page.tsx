@@ -35,6 +35,10 @@ import {
   sanitizeBookingDisplayNameInput,
 } from "@/lib/booking-validation";
 import {
+  getBookingDateAfterDays,
+  getTodayBookingDate,
+} from "@/lib/booking-date";
+import {
   buildBookingFieldErrors,
   firstBookingFieldError,
   touchAllBookingFields,
@@ -101,18 +105,9 @@ const localizedApiErrorMessage = (
   return translateText(vietnameseMessage, language);
 };
 
-const toDateInputValue = (date: Date) => {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-};
+const getTodayDate = getTodayBookingDate;
 
-const getTodayDate = () => toDateInputValue(new Date());
-
-const getMaxBookingDate = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + bookingDateWindowDays);
-  return toDateInputValue(date);
-};
+const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
 
 const clampBookingDate = (value?: string | null) => {
   const today = getTodayDate();

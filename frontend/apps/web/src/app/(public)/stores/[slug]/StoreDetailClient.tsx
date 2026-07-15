@@ -20,7 +20,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
@@ -44,6 +44,11 @@ import {
   sanitizeBookingDisplayNameInput,
   sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
+import {
+  getBookingDateAfterDays,
+  getTodayBookingDate,
+  parseBookingDateInput,
+} from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
   firstBookingFieldError,
@@ -456,18 +461,9 @@ const isStoreOpenAt = (
   return openingRangesFromText(summary).some((range) => isStoreMinuteInRange(minutes, range));
 };
 
-const toDateInputValue = (date: Date) => {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-};
+const getTodayDate = getTodayBookingDate;
 
-const getTodayDate = () => toDateInputValue(new Date());
-
-const getMaxBookingDate = () => {
-  const date = new Date();
-  date.setDate(date.getDate() + bookingDateWindowDays);
-  return toDateInputValue(date);
-};
+const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
 
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
@@ -1199,19 +1195,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const dateOptions = useMemo(
     () =>
       Array.from({ length: bookingDateWindowDays + 1 }, (_, index) => {
-        const date = new Date();
-        date.setDate(date.getDate() + index);
+        const iso = getBookingDateAfterDays(index, statusNow);
+        const date = parseBookingDateInput(iso) ?? new Date();
 
         return {
           label: formatDateOption(date),
-          iso: date.toISOString().slice(0, 10),
+          iso,
         };
       }),
-    [],
+    [statusNow],
   );
   const selectedDate = dateOptions[selectedDateIndex] ?? {
     label: "",
-    iso: new Date().toISOString().slice(0, 10),
+    iso: getTodayDate(),
   };
   const bookingTimeOptions = useMemo(
     () =>
@@ -1332,10 +1328,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     };
   }, [categoryLabel, displayName, favoriteAreaLabel, favoriteCityLabel, heroFavoriteImage, store.slug]);
 
-  const showPreviousMedia = () =>
+  const showPreviousMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
-  const showNextMedia = () =>
+  };
+  const showNextMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  };
   const toggleFavorite = async () => {
     if (!requireMemberFavoriteAccess()) {
       return;
@@ -1364,10 +1366,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       writeFavoriteStore(favoriteSnapshot, !nextValue);
     }
   };
-  const openGallery = (index: number) => {
+  const openGallery = (index: number, event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
     if (!gallery.length) return;
-    setSelectedGalleryIndex(index % gallery.length);
+    setSelectedGalleryIndex(((index % gallery.length) + gallery.length) % gallery.length);
     setIsLightboxOpen(true);
+  };
+  const openSelectedVideo = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const videoIndex = selectedMedia?.type === "VIDEO" ? selectedGalleryIndex : selectedVideoIndex;
+    if (videoIndex < 0) return;
+    openGallery(videoIndex, event);
   };
   const trackBookingClick = (surface: string) =>
     trackStoreDetailClick(store, "booking", {
@@ -1544,7 +1553,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   className="hero-video-play"
                   type="button"
                   aria-label={translateText("Xem video", activeLanguage)}
-                  onClick={() => openGallery(selectedVideoIndex)}
+                  onClick={openSelectedVideo}
                 >
                   <Play size={34} fill="currentColor" />
                 </button>
@@ -1577,7 +1586,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       type="button"
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
                       aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
-                      onClick={() => openGallery(index)}
+                      onClick={(event) => openGallery(index, event)}
                     >
                       {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
                     </button>
@@ -1639,7 +1648,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     style={{ backgroundImage: galleryBackground(item, heroImage) }}
                     aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
-                    onClick={() => openGallery(index)}
+                    onClick={(event) => openGallery(index, event)}
                   >
                     {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
                   </button>
@@ -1657,8 +1666,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       type="button"
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={() =>
-                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                      onClick={(event) =>
+                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index, event)
                       }
                     >
                       <Play size={18} fill="currentColor" />
@@ -1772,8 +1781,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       type="button"
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={() =>
-                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                      onClick={(event) =>
+                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index, event)
                       }
                     >
                       <Play size={18} fill="currentColor" />
