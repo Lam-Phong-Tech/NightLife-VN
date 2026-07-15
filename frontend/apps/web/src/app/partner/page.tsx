@@ -1496,6 +1496,7 @@ export default function PartnerPage() {
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
   const [scanIssue, setScanIssue] = useState<PartnerScanIssue | null>(null);
+  const [scannedTime, setScannedTime] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirmingScan, setIsConfirmingScan] = useState(false);
@@ -1684,6 +1685,7 @@ export default function PartnerPage() {
               );
 
         setScanIssue(issue);
+        setScannedTime(new Date().toLocaleString('vi-VN'));
         setScanMessage(
           `${issue.statusLabel ?? issue.status} - đã đọc ${normalizedPayload.label} ${issue.code} tại ${
             issue.coupon?.store?.name ?? 'quán được phân quyền'
@@ -1849,6 +1851,7 @@ export default function PartnerPage() {
         { data: {} },
       );
       setScanIssue(nextIssue);
+      setScannedTime(new Date().toLocaleString('vi-VN'));
       if (
         scanIssue.scanType !== 'BOOKING_QR' &&
         scanIssue.status !== 'USED' &&
@@ -2063,9 +2066,10 @@ export default function PartnerPage() {
     return detailParts.length ? `${mainLabel} (${detailParts.join(', ')})` : mainLabel;
   }, [scanIssue]);
   const scannedUsedAtLabel = useMemo(() => {
+    if (scannedTime) return scannedTime;
     if (!scanIssue?.usedAt) return null;
     return new Date(scanIssue.usedAt).toLocaleString('vi-VN');
-  }, [scanIssue]);
+  }, [scanIssue, scannedTime]);
   const canConfirmScan = scanIssue?.status === 'ISSUED';
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
   const listingErrorCount = Object.keys(listingErrors).length;
@@ -2630,6 +2634,7 @@ export default function PartnerPage() {
 
   const rejectScanResult = () => {
     setScanIssue(null);
+    setScannedTime(null);
     setScanPayload('');
     setScanMessage('Đã hủy kết quả quét. Partner có thể kiểm tra mã khác.');
   };
