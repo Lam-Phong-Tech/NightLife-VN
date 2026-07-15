@@ -11,7 +11,6 @@ import {
   LockKeyhole,
   QrCode,
   Send,
-  ShieldCheck,
   TicketCheck,
   UsersRound,
   Sun,
@@ -1097,25 +1096,6 @@ function PartnerPageContent({
                   tall
                   wide={!isMobile}
                 />
-              </div>
-
-              <div
-                style={{
-                  marginTop: '14px',
-                  border: `1px solid ${colors.borderGold22}`,
-                  borderRadius: '12px',
-                  background: 'rgba(212,178,106,.08)',
-                  color: colors.text2,
-                  padding: '11px 13px',
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'flex-start',
-                  fontSize: '11.5px',
-                  lineHeight: 1.55,
-                }}
-              >
-                <ShieldCheck size={17} color={colors.gold} style={{ flex: 'none', marginTop: '1px' }} />
-                Không yêu cầu giấy phép kinh doanh khi gửi đăng ký. Nội dung chỉ hiển thị công khai sau khi Admin duyệt.
               </div>
 
               {submitResult ? (
