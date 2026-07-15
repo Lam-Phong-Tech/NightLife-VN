@@ -488,20 +488,16 @@ export default function AppearancePage() {
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', padding: '13px 15px' }}>
               <span style={{ width: '58px', height: '58px', flex: 'none', borderRadius: '16px', background: hexToRgba(previewColor, .12), border: `1px solid ${hexToRgba(previewColor, .46)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 14px 26px -22px ${previewColor}` }}>
-                {isCustomIcon(it.icon) ? (
-                  <span
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      backgroundColor: previewColor,
-                      WebkitMask: `url(${resolveClientUrl(it.icon) || it.icon}) no-repeat center / contain`,
-                      mask: `url(${resolveClientUrl(it.icon) || it.icon}) no-repeat center / contain`,
-                      display: 'block'
-                    }}
-                  />
-                ) : (
-                  <img src={getIconSrc(it.icon, previewColor)} width={26} height={26} alt="" style={{ objectFit: 'contain' }} />
-                )}
+                <span
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    backgroundColor: previewColor,
+                    WebkitMask: `url(${getIconSrc(it.icon, previewColor)}) no-repeat center / contain`,
+                    mask: `url(${getIconSrc(it.icon, previewColor)}) no-repeat center / contain`,
+                    display: 'block'
+                  }}
+                />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '6px' }}>Tên hiển thị</div>
@@ -771,20 +767,16 @@ export default function AppearancePage() {
               return (
                 <div key={t.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                   <span style={{ width: '52px', height: '52px', borderRadius: '15px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isCustomIcon(t.icon) ? (
-                      <span
-                        style={{
-                          width: '22px',
-                          height: '22px',
-                          backgroundColor: color,
-                          WebkitMask: `url(${resolveClientUrl(t.icon) || t.icon}) no-repeat center / contain`,
-                          mask: `url(${resolveClientUrl(t.icon) || t.icon}) no-repeat center / contain`,
-                          display: 'block'
-                        }}
-                      />
-                    ) : (
-                      <img src={getIconSrc(t.icon, color)} width={22} height={22} alt="" style={{ objectFit: 'contain' }} />
-                    )}
+                    <span
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        backgroundColor: color,
+                        WebkitMask: `url(${getIconSrc(t.icon, color)}) no-repeat center / contain`,
+                        mask: `url(${getIconSrc(t.icon, color)}) no-repeat center / contain`,
+                        display: 'block'
+                      }}
+                    />
                   </span>
                   <span style={{ fontSize: '11px', color: '#c5c0b6', whiteSpace: 'nowrap' }}>{t.label}</span>
                 </div>
@@ -801,20 +793,16 @@ export default function AppearancePage() {
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'quick', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {isCustomIcon(r.icon) ? (
-                    <span
-                      style={{
-                        width: '19px',
-                        height: '19px',
-                        backgroundColor: getItemIconColor(r, '#e3c27e'),
-                        WebkitMask: `url(${resolveClientUrl(r.icon) || r.icon}) no-repeat center / contain`,
-                        mask: `url(${resolveClientUrl(r.icon) || r.icon}) no-repeat center / contain`,
-                        display: 'block'
-                      }}
-                    />
-                  ) : (
-                    <img src={getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
-                  )}
+                  <span
+                    style={{
+                      width: '19px',
+                      height: '19px',
+                      backgroundColor: getItemIconColor(r, '#e3c27e'),
+                      WebkitMask: `url(${getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))}) no-repeat center / contain`,
+                      mask: `url(${getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))}) no-repeat center / contain`,
+                      display: 'block'
+                    }}
+                  />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
@@ -843,20 +831,16 @@ export default function AppearancePage() {
               const color = getItemIconColor(t, lc);
               return (
                 <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  {isCustomIcon(t.icon) ? (
-                    <span
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        backgroundColor: color,
-                        WebkitMask: `url(${resolveClientUrl(t.icon) || t.icon}) no-repeat center / contain`,
-                        mask: `url(${resolveClientUrl(t.icon) || t.icon}) no-repeat center / contain`,
-                        display: 'block'
-                      }}
-                    />
-                  ) : (
-                    <img src={getIconSrc(t.icon, color)} width={20} height={20} alt="" style={{ display: 'block', objectFit: 'contain' }} />
-                  )}
+                  <span
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      backgroundColor: color,
+                      WebkitMask: `url(${getIconSrc(t.icon, color)}) no-repeat center / contain`,
+                      mask: `url(${getIconSrc(t.icon, color)}) no-repeat center / contain`,
+                      display: 'block'
+                    }}
+                  />
                   <span style={{ fontSize: '9.5px', fontWeight: fw, color: lc, whiteSpace: 'nowrap' }}>{t.label}</span>
                 </div>
               );
@@ -872,20 +856,16 @@ export default function AppearancePage() {
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'nav', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {isCustomIcon(r.icon) ? (
-                    <span
-                      style={{
-                        width: '19px',
-                        height: '19px',
-                        backgroundColor: getItemIconColor(r, '#e3c27e'),
-                        WebkitMask: `url(${resolveClientUrl(r.icon) || r.icon}) no-repeat center / contain`,
-                        mask: `url(${resolveClientUrl(r.icon) || r.icon}) no-repeat center / contain`,
-                        display: 'block'
-                      }}
-                    />
-                  ) : (
-                    <img src={getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
-                  )}
+                  <span
+                    style={{
+                      width: '19px',
+                      height: '19px',
+                      backgroundColor: getItemIconColor(r, '#e3c27e'),
+                      WebkitMask: `url(${getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))}) no-repeat center / contain`,
+                      mask: `url(${getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))}) no-repeat center / contain`,
+                      display: 'block'
+                    }}
+                  />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
