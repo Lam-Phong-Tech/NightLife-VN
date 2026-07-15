@@ -6,14 +6,12 @@ import {
   BarChart3,
   Camera,
   ChevronDown,
-  Crown,
   FileClock,
   Home,
   LockKeyhole,
   QrCode,
   Send,
   ShieldCheck,
-  Sparkles,
   TicketCheck,
   UsersRound,
   Sun,
@@ -1201,63 +1199,7 @@ function PartnerPageContent({
               </div>
             </section>
 
-            <section style={{ padding: '28px 0 44px' }}>
-              <div
-                style={{
-                  borderRadius: '18px',
-                  background: colors.goldGrad,
-                  color: colors.onGold,
-                  boxShadow: '0 16px 34px -16px rgba(168,124,60,.6)',
-                  padding: '22px 24px',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '24px',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: '-36px',
-                    top: '-58px',
-                    width: '170px',
-                    height: '170px',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle,rgba(255,255,255,.45),transparent 70%)',
-                  }}
-                />
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '15px', fontWeight: 800 }}>
-                    <Crown size={20} />
-                    Đối tác nổi bật
-                  </div>
-                  <p style={{ margin: '8px 0 0', maxWidth: '620px', fontSize: '12.5px', lineHeight: 1.6, opacity: .86 }}>
-                    Quán đạt hiệu quả tốt có thể nâng lên gói hiển thị VIP, xuất hiện trong đề xuất tối nay và bảng xếp hạng theo khu vực.
-                  </p>
-                </div>
-                <div
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    minHeight: '44px',
-                    borderRadius: '11px',
-                    background: colors.onGold,
-                    color: colors.goldPale,
-                    padding: '0 16px',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                  }}
-                >
-                  <Sparkles size={16} />
-                  Tư vấn gói VIP
-                </div>
-              </div>
-            </section>
+
           </>
         ) : null}
       </div>
