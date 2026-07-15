@@ -1504,6 +1504,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+  const hideFooter = pathname === "/xac-nhan";
   const customerRouteMotionEnabled =
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/partner") &&
@@ -2301,7 +2302,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           {children}
         </div>
 
-        <SiteFooter isMobile={isMobile} brand={brand} language={activeLanguage} />
+        {hideFooter ? null : (
+          <SiteFooter isMobile={isMobile} brand={brand} language={activeLanguage} />
+        )}
 
         <nav
           style={{

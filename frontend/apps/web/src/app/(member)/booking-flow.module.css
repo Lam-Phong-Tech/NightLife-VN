@@ -5,6 +5,10 @@
   font-family: var(--nl-font-sans);
 }
 
+.confirmPage {
+  min-height: auto;
+}
+
 .bookingFormPage {
   min-height: auto;
 }
@@ -18,6 +22,10 @@
   margin: 0 auto;
   padding: 32px 24px calc(108px + env(safe-area-inset-bottom));
   display: block;
+}
+
+.confirmViewport {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
 }
 
 .bookingFormViewport {
@@ -1163,6 +1171,46 @@
   letter-spacing: 0.04em;
 }
 
+.discountValue {
+  color: var(--vy-gold-hi);
+  font-weight: 880;
+}
+
+.guestConfirmNotice {
+  min-height: 48px;
+  border: 1px solid var(--vy-border-gold-22);
+  border-radius: 14px;
+  background: var(--vy-gold-soft-bg);
+  color: var(--vy-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
+.guestConfirmNotice svg {
+  flex: none;
+  color: var(--vy-gold-hi);
+}
+
+.guestConfirmNotice span {
+  color: var(--vy-text-2);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
+}
+
+:global(html.vy-light) .guestConfirmNotice {
+  border-color: rgba(168, 124, 52, 0.24);
+  background: rgba(255, 248, 232, 0.86);
+}
+
+:global(html.vy-light) .guestConfirmNotice span {
+  color: #5f5548;
+}
+
 .timeline {
   display: flex;
   align-items: flex-start;
@@ -1823,7 +1871,7 @@
   }
 
   .confirmFrame .bottomActions {
-    padding: 16px 24px 24px;
+    padding: 14px 24px 18px;
     background: rgba(255, 255, 255, 0.018);
     backdrop-filter: none;
   }
@@ -1881,12 +1929,20 @@
     gap: 0;
   }
 
+  .confirmViewport {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+
   .bookingFrame {
     min-height: calc(100vh - 56px);
     border-right: 0;
     border-left: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .confirmFrame {
+    min-height: auto;
   }
 
   .bookingSidePanel {

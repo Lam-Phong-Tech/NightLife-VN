@@ -71,6 +71,62 @@ const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
     booking.guest?.email ?? booking.guest?.phone ?? translateText("Email đã lưu", language)
   }`;
 
+const toNumber = (value: unknown) => {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const percentValue = (value: unknown) => {
+  const parsed = toNumber(value);
+  if (parsed === null || parsed <= 0) return null;
+  return parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
+};
+
+const recordValue = (value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const percentFromSnapshot = (snapshot: unknown) => {
+  const record = recordValue(snapshot);
+  if (!record) return null;
+
+  const directPercent = percentValue(record.discountPercent);
+  if (directPercent !== null) return directPercent;
+
+  const isPercentRule =
+    record.type === "PERCENT" ||
+    record.discountType === "PERCENT" ||
+    record.sourceType === "PERCENT";
+
+  return isPercentRule
+    ? percentValue(record.value ?? record.discountValue ?? record.sourceValue)
+    : null;
+};
+
+const bookingDiscountPercent = (booking: BookingRecord) => {
+  const issue = booking.couponIssue;
+  const issueMetadata = issue?.metadata;
+
+  return (
+    percentValue(issue?.discountPercent) ??
+    percentFromSnapshot(issue?.discountRuleSnapshot) ??
+    percentValue(issueMetadata?.discountPercent) ??
+    percentFromSnapshot(issueMetadata?.discountRuleSnapshot) ??
+    percentFromSnapshot(booking.discountSnapshot) ??
+    (booking.coupon?.discountType === "PERCENT" ? percentValue(booking.coupon.discountValue) : null)
+  );
+};
+
+const formatDiscountPercent = (value: number, language: LanguageCode) => {
+  const rounded = Math.round(value * 100) / 100;
+  const formatted = new Intl.NumberFormat(intlLocaleByLanguage[language], {
+    maximumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
+  }).format(rounded);
+
+  return `-${formatted}%`;
+};
+
 export default function Page() {
   const activeLanguage = useActiveLanguage();
   const [booking, setBooking] = useState<BookingRecord | null>(null);
@@ -88,6 +144,14 @@ export default function Page() {
   const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
+  const isGuestBooking = Boolean(booking && !booking.user?.id);
+  const discountPercent = booking ? bookingDiscountPercent(booking) : null;
+  const guestEmailLabel =
+    booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
+  const guestConfirmationMessage = `${translateText(
+    "Thông tin đặt chỗ và mã QR đã được gửi về",
+    activeLanguage,
+  )} ${guestEmailLabel}. ${translateText("Vui lòng kiểm tra email trước khi tới quán.", activeLanguage)}`;
   const heroTitle = translateText(
     !booking
       ? "Chưa tìm thấy booking"
@@ -159,8 +223,8 @@ export default function Page() {
   };
 
   return (
-    <main className={styles.bookingPage}>
-      <section className={styles.bookingViewport}>
+    <main className={`${styles.bookingPage} ${styles.confirmPage}`}>
+      <section className={`${styles.bookingViewport} ${styles.confirmViewport}`}>
         <div className={`${styles.bookingFrame} ${styles.confirmFrame}`}>
           <div className={styles.confirmHero}>
             <span className={styles.heroMark}>
@@ -201,10 +265,22 @@ export default function Page() {
                 value={guestLabel(booking, activeLanguage)}
               />
               {booking.couponIssue ? (
-                <SummaryRow
-                  label={translateText("Mã ưu đãi", activeLanguage)}
-                  value={<span className={styles.bookingCode}>{booking.couponIssue.code}</span>}
-                />
+                <>
+                  <SummaryRow
+                    label={translateText("Mã ưu đãi", activeLanguage)}
+                    value={<span className={styles.bookingCode}>{booking.couponIssue.code}</span>}
+                  />
+                  {discountPercent !== null ? (
+                    <SummaryRow
+                      label={translateText("Mức giảm", activeLanguage)}
+                      value={
+                        <span className={styles.discountValue}>
+                          {formatDiscountPercent(discountPercent, activeLanguage)}
+                        </span>
+                      }
+                    />
+                  ) : null}
+                </>
               ) : null}
             </section>
           ) : (
@@ -253,9 +329,16 @@ export default function Page() {
           </div>
 
           <div className={styles.bottomActions}>
-            <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
-              <strong>{translateText("Xem đặt chỗ của tôi", activeLanguage)}</strong>
-            </Link>
+            {booking && isGuestBooking ? (
+              <div className={styles.guestConfirmNotice}>
+                <Check size={16} />
+                <span>{guestConfirmationMessage}</span>
+              </div>
+            ) : (
+              <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
+                <strong>{translateText("Xem đặt chỗ của tôi", activeLanguage)}</strong>
+              </Link>
+            )}
           </div>
         </div>
       </section>

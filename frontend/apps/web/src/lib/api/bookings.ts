@@ -10,6 +10,16 @@ export type BookingStatus =
 
 export type BookingStatusGroup = "Mới" | "Hoàn tất" | "Đã hủy";
 
+type BookingDiscountSnapshot = {
+  type?: "PERCENT" | "FIXED_AMOUNT" | string;
+  value?: number | null;
+  discountType?: "PERCENT" | "FIXED_AMOUNT" | string | null;
+  discountValue?: number | null;
+  discountPercent?: number | null;
+  sourceValue?: number | null;
+  [key: string]: unknown;
+};
+
 export type BookingRecord = {
   id: string;
   bookingCode: string;
@@ -21,6 +31,7 @@ export type BookingRecord = {
   subtotalVnd?: number;
   discountVnd?: number;
   totalVnd?: number;
+  discountSnapshot?: BookingDiscountSnapshot | null;
   note?: string | null;
   createdAt?: string;
   cancelledAt?: string | null;
@@ -61,8 +72,12 @@ export type BookingRecord = {
     qrPayload?: string | null;
     qrImageUrl?: string | null;
     qrImageDataUrl?: string | null;
+    discountPercent?: number | null;
+    discountRuleSnapshot?: BookingDiscountSnapshot | null;
     metadata?: {
       qrPayload?: string | null;
+      discountPercent?: number | null;
+      discountRuleSnapshot?: BookingDiscountSnapshot | null;
     } | null;
   } | null;
   tour?: {

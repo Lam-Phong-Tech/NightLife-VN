@@ -3409,8 +3409,18 @@ export class NightlifeDataService {
             publicAlias: true,
           },
         },
-        coupon: { select: { id: true, code: true, name: true } },
-        couponIssue: { select: { id: true, code: true, status: true } },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+          },
+        },
+        couponIssue: {
+          select: { id: true, code: true, status: true, metadata: true },
+        },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
         note: true,
@@ -12246,7 +12256,9 @@ export class NightlifeDataService {
           minSpendVnd: true,
         },
       },
-      couponIssue: { select: { id: true, code: true, status: true } },
+      couponIssue: {
+        select: { id: true, code: true, status: true, metadata: true },
+      },
     } satisfies Prisma.BookingSelect;
   }
 
