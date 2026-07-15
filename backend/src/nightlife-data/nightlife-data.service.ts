@@ -10262,7 +10262,7 @@ export class NightlifeDataService {
         couponIssue?: { usedAt?: Date | string | null } | null;
       } | null;
       couponLink?: {
-        couponIssueId?: string;
+        couponIssueId?: string | null;
         couponIssueUsedAt?: Date | string | null;
         adminCouponIssue?: any;
       };
