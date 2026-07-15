@@ -3174,6 +3174,7 @@ export class NightlifeDataService {
       target,
       note: contact.note,
       guestId: guest.id,
+      email: contact.email,
       phone: contact.phone,
       context,
     });
@@ -3201,6 +3202,8 @@ export class NightlifeDataService {
       storeId: target.store.id,
       scheduledAt,
       userId: user.id,
+      email: contact.email || user.email,
+      phone: contact.phone,
     });
     const guest = await this.prisma.guest.create({
       data: {
@@ -3221,6 +3224,7 @@ export class NightlifeDataService {
       user,
       userId: user.id,
       guestId: guest.id,
+      email: contact.email || user.email,
       phone: contact.phone,
       context: {
         ...context,
@@ -9196,16 +9200,16 @@ export class NightlifeDataService {
     prisma?: Prisma.TransactionClient | PrismaService;
   }) {
     const prisma = input.prisma ?? this.prisma;
-    const identityConditions: Prisma.BookingWhereInput[] = input.userId
-      ? [{ userId: input.userId }]
-      : [
-          ...(input.email
-            ? [{ guest: { is: { email: input.email } } }]
-            : []),
-          ...(input.phone
-            ? [{ guest: { is: { phone: input.phone } } }]
-            : []),
-        ];
+    const identityConditions: Prisma.BookingWhereInput[] = [
+      ...(input.userId
+        ? [
+            { userId: input.userId },
+            { guest: { is: { convertedUserId: input.userId } } },
+          ]
+        : []),
+      ...(input.email ? [{ guest: { is: { email: input.email } } }] : []),
+      ...(input.phone ? [{ guest: { is: { phone: input.phone } } }] : []),
+    ];
 
     if (!identityConditions.length) {
       return;
@@ -10071,6 +10075,7 @@ export class NightlifeDataService {
     user?: AuthenticatedUser;
     userId?: string;
     guestId: string;
+    email?: string;
     phone?: string;
     note?: string;
     context?: CouponClaimContext;
@@ -10082,6 +10087,15 @@ export class NightlifeDataService {
     );
 
     return this.prisma.$transaction(async (prisma) => {
+      await this.assertNoDuplicateActiveBooking({
+        storeId: input.target.store.id,
+        scheduledAt,
+        userId: input.userId,
+        email: input.email,
+        phone: input.phone,
+        prisma,
+      });
+
       const couponLink = await this.resolveBookingCouponLink({
         dto: input.dto,
         target: input.target,

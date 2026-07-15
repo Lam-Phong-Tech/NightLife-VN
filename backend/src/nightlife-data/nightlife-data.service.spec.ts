@@ -2477,11 +2477,57 @@ describe('NightlifeDataService', () => {
         scheduledAt: new Date(scheduledAt),
         deletedAt: null,
         status: { in: ['REQUESTED', 'CONFIRMED', 'CHECKED_IN'] },
-        OR: [{ userId: 'member-1' }],
+        OR: [
+          { userId: 'member-1' },
+          { guest: { is: { convertedUserId: 'member-1' } } },
+          { guest: { is: { email: 'member@example.com' } } },
+        ],
       },
       select: { id: true },
     });
     expect(prisma.guest.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('rechecks duplicate booking inside the create transaction', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    const scheduledAt = '2026-06-30T14:00:00.000Z';
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+      openingHours: null,
+    });
+    prisma.booking.findFirst
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce({
+        id: 'booking-duplicate',
+      } as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+
+    await expect(
+      service.createGuestBooking({
+        storeSlug: 'neon-club',
+        displayName: 'Guest Name',
+        email: 'guest@example.com',
+        scheduledAt,
+        partySize: 4,
+      }),
+    ).rejects.toThrow(
+      'You already have an active booking at this store for this time slot.',
+    );
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.findFirst).toHaveBeenLastCalledWith({
+      where: {
+        storeId: 'store-1',
+        scheduledAt: new Date(scheduledAt),
+        deletedAt: null,
+        status: { in: ['REQUESTED', 'CONFIRMED', 'CHECKED_IN'] },
+        OR: [{ guest: { is: { email: 'guest@example.com' } } }],
+      },
+      select: { id: true },
+    });
     expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
