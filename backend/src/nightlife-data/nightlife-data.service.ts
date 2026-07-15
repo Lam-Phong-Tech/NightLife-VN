@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   GoneException,
   HttpException,
   HttpStatus,
@@ -17206,12 +17207,17 @@ export class NightlifeDataService {
         Buffer.from(encodedPayload, 'base64url').toString('utf8'),
       ) as { type?: string; issueId?: string };
 
-      if (parsed.type !== 'coupon_issue' || !parsed.issueId) {
+      if (
+        (parsed.type !== 'coupon_issue' &&
+          parsed.type !== 'admin_coupon_issue') ||
+        !parsed.issueId
+      ) {
         throw new Error('Invalid QR token payload');
       }
 
       return {
         issueId: parsed.issueId,
+        type: parsed.type,
         tokenHash: this.buildCouponQrTokenHash(token),
       };
     } catch {
