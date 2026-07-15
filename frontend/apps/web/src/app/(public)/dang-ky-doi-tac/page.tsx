@@ -16,11 +16,17 @@ import {
   Sparkles,
   TicketCheck,
   UsersRound,
+  Sun,
+  Moon,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext, useCallback } from 'react';
 import { ApiError, apiClient } from '@/lib/api/client';
 
-const colors = {
+type PartnerTheme = 'dark' | 'light';
+
+const partnerThemeStorageKey = 'vy-user-theme';
+
+const darkColors = {
   bg: '#0c0c0f',
   bezel: '#000000',
   surface1: 'rgba(255,255,255,.035)',
@@ -45,6 +51,54 @@ const colors = {
   red: '#e68798',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
 };
+
+const lightColors = {
+  bg: '#f4eddf',
+  bezel: '#000000',
+  surface1: 'rgba(255,255,255,.86)',
+  surface2: 'rgba(255,255,255,.78)',
+  surface3: 'rgba(255,255,255,.92)',
+  navBg: 'rgba(255,250,241,.96)',
+  borderSoft: 'rgba(112,82,34,.12)',
+  borderHair: 'rgba(112,82,34,.14)',
+  borderGold12: 'rgba(166,119,38,.18)',
+  borderGold22: 'rgba(166,119,38,.26)',
+  borderGold32: 'rgba(166,119,38,.34)',
+  borderGold40: 'rgba(166,119,38,.42)',
+  text: '#241d14',
+  text2: '#5f5547',
+  muted: '#8b7d6a',
+  tertiary: '#8b7d6a',
+  onGold: '#23180a',
+  gold: '#a67425',
+  goldBright: '#b98735',
+  goldPale: '#75511b',
+  neonPink: '#d9548b',
+  red: '#ad3e35',
+  goldGrad: 'linear-gradient(135deg,#f8e8b2,#d7ab50 55%,#b98931)',
+};
+
+const colors = darkColors;
+
+const readStoredPartnerTheme = (): PartnerTheme => {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  const storedTheme = window.localStorage.getItem(partnerThemeStorageKey);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    return storedTheme;
+  }
+
+  return document.documentElement.classList.contains('vy-light') ? 'light' : 'dark';
+};
+
+const ThemeContext = React.createContext<{ theme: PartnerTheme; colors: typeof darkColors }>({
+  theme: 'dark',
+  colors: darkColors,
+});
+
+const useTheme = () => useContext(ThemeContext);
 
 const fieldFontFamily = 'Inter, "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 
@@ -143,6 +197,7 @@ const bottomNav = [
 ];
 
 function SectionTitle({ title, en }: { title: string; en: string }) {
+  const { colors } = useTheme();
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
       <div>
@@ -153,7 +208,7 @@ function SectionTitle({ title, en }: { title: string; en: string }) {
           {en}
         </div>
       </div>
-      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+      <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${colors.borderGold40}, transparent)` }} />
     </div>
   );
 }
@@ -231,7 +286,7 @@ function buildPartnerRequestPayload(
   };
 }
 
-function inputStyle(tall = false): React.CSSProperties {
+function inputStyle(colors: typeof darkColors, tall = false): React.CSSProperties {
   return {
     width: '100%',
     minHeight: tall ? '72px' : '42px',
@@ -269,6 +324,7 @@ function FormControl({
   tall?: boolean;
   type?: string;
 }) {
+  const { colors } = useTheme();
   const id = label.replace(/\s+/g, '-').toLowerCase();
   const sharedProps = {
     id,
@@ -288,7 +344,7 @@ function FormControl({
     ) => onChange(event.target.value),
     placeholder,
     required,
-    style: inputStyle(tall),
+    style: inputStyle(colors, tall),
   };
 
   return (
@@ -331,6 +387,7 @@ function SelectControl({
   required?: boolean;
   disabled?: boolean;
 }) {
+  const { theme, colors } = useTheme();
   const id = label.replace(/\s+/g, '-').toLowerCase();
   const selectedLabel = options.find((option) => option.code.toString() === value)?.name ?? '';
 
@@ -356,7 +413,7 @@ function SelectControl({
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
           style={{
-            ...inputStyle(false),
+            ...inputStyle(colors, false),
             appearance: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
             color: 'transparent',
@@ -369,11 +426,11 @@ function SelectControl({
             letterSpacing: 0,
           }}
         >
-          <option value="" style={{ color: colors.text, background: '#17161a' }}>
+          <option value="" style={{ color: colors.text, background: theme === 'light' ? '#fff' : '#17161a' }}>
             {placeholder}
           </option>
           {options.map((option) => (
-            <option key={option.code} value={option.code.toString()} style={{ color: colors.text, background: '#17161a' }}>
+            <option key={option.code} value={option.code.toString()} style={{ color: colors.text, background: theme === 'light' ? '#fff' : '#17161a' }}>
               {option.name}
             </option>
           ))}
@@ -424,6 +481,7 @@ function ThemedListingSelect({
   options: { value: string; label: string }[];
   required?: boolean;
 }) {
+  const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value);
 
@@ -542,6 +600,7 @@ function ThemedListingSelect({
 }
 
 function FormGroupTitle({ title, caption }: { title: string; caption?: string }) {
+  const { colors } = useTheme();
   return (
     <div style={{ gridColumn: '1 / -1', marginTop: '2px' }}>
       <div style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
@@ -556,7 +615,15 @@ function FormGroupTitle({ title, caption }: { title: string; caption?: string })
   );
 }
 
-function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
+function PartnerPageContent({
+  mode,
+  theme,
+  onToggleTheme,
+}: {
+  mode: 'mobile' | 'desktop';
+  theme: PartnerTheme;
+  onToggleTheme: () => void;
+}) {
   const isMobile = mode === 'mobile';
   const [form, setForm] = useState<PartnerFormState>(initialPartnerForm);
   const [provinces, setProvinces] = useState<AddressOption[]>([]);
@@ -694,16 +761,20 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
     }
   };
 
+  const colors = theme === 'light' ? lightColors : darkColors;
+
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: colors.bg,
-        color: colors.text,
-        fontFamily: "var(--nl-font-sans)",
-        paddingBottom: isMobile ? '76px' : 0,
-      }}
-    >
+    <ThemeContext.Provider value={{ theme, colors }}>
+      <main
+        style={{
+          minHeight: '100vh',
+          background: colors.bg,
+          color: colors.text,
+          fontFamily: "var(--nl-font-sans)",
+          paddingBottom: isMobile ? '76px' : 0,
+          transition: 'background 0.2s, color 0.2s',
+        }}
+      >
       <div
         style={{
         maxWidth: isMobile ? 'none' : 'none',
@@ -734,25 +805,50 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               justifyContent: 'space-between',
             }}
           >
-            <div
-              style={{
-                alignSelf: 'flex-start',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                border: `1px solid ${colors.borderGold40}`,
-                borderRadius: '999px',
-                padding: '7px 11px',
-                background: 'rgba(12,12,15,.45)',
-                backdropFilter: 'blur(4px)',
-                color: colors.gold,
-                fontSize: '9.5px',
-                fontWeight: 700,
-                letterSpacing: '1.5px',
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors.neonPink }} />
-              HỢP TÁC CÙNG VIETYORU
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: `1px solid ${darkColors.borderGold40}`,
+                  borderRadius: '999px',
+                  padding: '7px 11px',
+                  background: 'rgba(12,12,15,.45)',
+                  backdropFilter: 'blur(4px)',
+                  color: darkColors.gold,
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  letterSpacing: '1.5px',
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: darkColors.neonPink }} />
+                HỢP TÁC CÙNG VIETYORU
+              </div>
+
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                title="Chuyển giao diện sáng/tối"
+                aria-label="Chuyển giao diện sáng/tối"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: `1px solid ${darkColors.borderGold32}`,
+                  color: darkColors.gold,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(12,12,15,.45)',
+                  backdropFilter: 'blur(4px)',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s, border-color 0.2s, color 0.2s',
+                }}
+              >
+                {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
+              </button>
             </div>
 
             <div>
@@ -776,7 +872,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                 style={{
                   maxWidth: isMobile ? '300px' : '430px',
                   margin: '13px 0 0',
-                  color: colors.text2,
+                  color: darkColors.text2,
                   fontSize: isMobile ? '12.5px' : '13.5px',
                   lineHeight: 1.65,
                 }}
@@ -809,8 +905,8 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                     minHeight: '44px',
                     borderRadius: '11px',
                     padding: '0 16px',
-                    border: `1px solid ${colors.borderGold32}`,
-                    color: colors.goldPale,
+                    border: `1px solid ${darkColors.borderGold32}`,
+                    color: darkColors.goldPale,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
@@ -911,7 +1007,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   required
                 />
                 <FormControl
-                  label="Số điện thoại / Telegram"
+                  label="Số điện thoại"
                   value={form.contactPhone}
                   onChange={(value) => updateForm('contactPhone', value)}
                   placeholder="Ví dụ: 0912 345 678"
@@ -996,7 +1092,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   marginTop: '14px',
                   border: 0,
                   borderRadius: '11px',
-                  background: !canSubmit || submitting ? 'rgba(212,178,106,.34)' : colors.goldGrad,
+                  background: !canSubmit || submitting ? (theme === 'light' ? 'rgba(166,119,38,.34)' : 'rgba(212,178,106,.34)') : colors.goldGrad,
                   color: colors.onGold,
                   fontSize: '14px',
                   fontWeight: 800,
@@ -1218,18 +1314,34 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
           </div>
         </footer>
       )}
-    </main>
+      </main>
+    </ThemeContext.Provider>
   );
 }
 
 export default function Page() {
+  const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>('dark');
+
+  useEffect(() => {
+    setPartnerTheme(readStoredPartnerTheme());
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('vy-light', partnerTheme === 'light');
+    window.localStorage.setItem(partnerThemeStorageKey, partnerTheme);
+  }, [partnerTheme]);
+
+  const toggleTheme = useCallback(() => {
+    setPartnerTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }, []);
+
   return (
     <React.Fragment>
       <div className="block md:hidden">
-        <PartnerPageContent mode="mobile" />
+        <PartnerPageContent mode="mobile" theme={partnerTheme} onToggleTheme={toggleTheme} />
       </div>
       <div className="hidden md:block">
-        <PartnerPageContent mode="desktop" />
+        <PartnerPageContent mode="desktop" theme={partnerTheme} onToggleTheme={toggleTheme} />
       </div>
     </React.Fragment>
   );
