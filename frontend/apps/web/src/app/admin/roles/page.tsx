@@ -105,7 +105,7 @@ export default function AdminRolesPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await getAdminUsers({ take: 500 });
+      const res = await getAdminUsers({ take: 500, status: 'all' });
       console.log('API RES:', res);
       
       if (!res || !res.items) {
@@ -124,7 +124,7 @@ export default function AdminRolesPage() {
       };
       const mapped = res.items.map(u => {
         const kind = (u.role || '').toLowerCase();
-        const nm = u.displayName || (u.email ? u.email.split('@')[0] : 'Unknown');
+        const nm = (u.displayName || (u.email ? u.email.split('@')[0] : 'Unknown')) as string;
         const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
         const roleData = kmap[kind] || ['Khác', 'linear-gradient(135deg,#9b958a,#57534b)'];
         return {
@@ -164,7 +164,7 @@ export default function AdminRolesPage() {
   const pg = Math.min(accPage, pages - 1);
   const pagedAccs = accF.slice(pg * PER, pg * PER + PER);
 
-  const roleCount = (kind: string) => kind === 'all' ? S_allAcc.length : kind === 'disabled' ? S_allAcc.filter(a => a.disabled).length : S_allAcc.filter(a => a.kind === kind).length;
+  const roleCount = (kind: string) => kind === 'all' ? S_allAcc.length : kind === 'disabled' ? S_allAcc.filter(a => a.disabled).length : S_allAcc.filter(a => !a.disabled && a.kind === kind).length;
 
   const showToast = (msg: string) => {
     setToast(msg);

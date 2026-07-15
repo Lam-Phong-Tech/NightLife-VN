@@ -309,6 +309,8 @@ export class UsersService {
       where.status = 'SUSPENDED';
     } else if (status === 'active') {
       where.status = 'ACTIVE';
+    } else if (status === 'all') {
+      // Do not filter by status to return all (active, deleted, suspended)
     } else if (role !== 'disabled' && role !== 'muted') {
       // By default if filtering by active roles, don't show deleted
       where.status = 'ACTIVE';
