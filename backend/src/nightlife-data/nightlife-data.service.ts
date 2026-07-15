@@ -14153,6 +14153,110 @@ export class NightlifeDataService {
       .slice(0, 12);
   }
 
+  private extractWardFromStoreAddress(address?: string | null) {
+    const parts =
+      this.cleanNullableText(address)
+        ?.split(',')
+        .map((part) => this.cleanText(part))
+        .filter(Boolean) ?? [];
+
+    return parts.find((part) => this.isWardAddressPart(part)) ?? null;
+  }
+
+  private isWardAddressPart(part: string) {
+    const token = this.normalizeToken(part);
+    return (
+      token === 'phuong' ||
+      token.startsWith('phuong-') ||
+      token === 'xa' ||
+      token.startsWith('xa-') ||
+      token === 'thi-tran' ||
+      token.startsWith('thi-tran-')
+    );
+  }
+
+  private isProvinceAddressPart(part: string) {
+    const token = this.normalizeToken(part);
+    return (
+      token === 'tinh' ||
+      token.startsWith('tinh-') ||
+      token === 'thanh-pho' ||
+      token.startsWith('thanh-pho-') ||
+      token === 'tp' ||
+      token.startsWith('tp-')
+    );
+  }
+
+  private extractStreetFromStoreAddress(
+    address?: string | null,
+    ward?: string | null,
+    city?: string | null,
+  ) {
+    const normalizedAddress = this.cleanNullableText(address);
+    if (!normalizedAddress) return null;
+
+    const parts = normalizedAddress
+      .split(',')
+      .map((part) => this.cleanText(part))
+      .filter(Boolean);
+    if (!parts.length) return normalizedAddress;
+
+    const wardToken = this.normalizeToken(ward);
+    const cityToken = this.normalizeToken(city);
+    const stopIndex = parts.findIndex((part) => {
+      const token = this.normalizeToken(part);
+      return (
+        (wardToken && token === wardToken) ||
+        (cityToken && token === cityToken) ||
+        this.isProvinceAddressPart(part)
+      );
+    });
+
+    if (stopIndex <= 0) return normalizedAddress;
+
+    const streetParts = parts.slice(0, stopIndex);
+    return streetParts.join(', ') || normalizedAddress;
+  }
+
+  private mergeWardIntoStoreAddress(
+    address?: string | null,
+    ward?: string | null,
+    city?: string | null,
+  ) {
+    const normalizedAddress = this.cleanNullableText(address);
+    const normalizedWard = this.cleanNullableText(ward);
+    if (!normalizedAddress || !normalizedWard) return normalizedAddress;
+
+    const wardToken = this.normalizeToken(normalizedWard);
+    const cityToken = this.normalizeToken(city);
+    const parts = normalizedAddress
+      .split(',')
+      .map((part) => this.cleanText(part))
+      .filter(Boolean);
+
+    if (parts.some((part) => this.normalizeToken(part) === wardToken)) {
+      return normalizedAddress;
+    }
+
+    const insertIndex = parts.findIndex((part) => {
+      const token = this.normalizeToken(part);
+      return (
+        (cityToken && token === cityToken) || this.isProvinceAddressPart(part)
+      );
+    });
+
+    const nextParts =
+      insertIndex > 0
+        ? [
+            ...parts.slice(0, insertIndex),
+            normalizedWard,
+            ...parts.slice(insertIndex),
+          ]
+        : [...parts, normalizedWard];
+
+    return nextParts.join(', ');
+  }
+
   private normalizePartnerListingDraft(
     dto: Partial<PartnerListingDraftDto>,
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
@@ -14160,6 +14264,32 @@ export class NightlifeDataService {
     const openingRecord = this.asRecord(store.openingHours);
     const pricingRecord = this.asRecord(store.pricingInfo);
     const storeArea = [store.district, store.city].filter(Boolean).join(', ');
+    const draftStoreAddress = this.cleanNullableText(dto.storeAddress);
+    const dtoWard =
+      this.cleanNullableText(dto.ward) ??
+      this.cleanNullableText(
+        (dto as Partial<PartnerListingDraftDto> & { wardName?: string })
+          .wardName,
+      );
+    const storeWard =
+      dtoWard ??
+      this.extractWardFromStoreAddress(draftStoreAddress) ??
+      this.extractWardFromStoreAddress(store.address);
+    const draftStreetAddress = this.extractStreetFromStoreAddress(
+      dto.streetAddress,
+      storeWard,
+      dto.storeCity ?? store.city,
+    );
+    const draftAddressStreet = this.extractStreetFromStoreAddress(
+      draftStoreAddress,
+      storeWard,
+      dto.storeCity ?? store.city,
+    );
+    const storeStreetAddress = this.extractStreetFromStoreAddress(
+      store.address,
+      storeWard,
+      store.city,
+    );
     const requestedOpeningHourItems =
       this.normalizePartnerListingOpeningHourItems(dto.openingHourItems);
     const openingHourItems = requestedOpeningHourItems.length
@@ -14195,12 +14325,9 @@ export class NightlifeDataService {
       .filter((url): url is string => Boolean(url))
       .filter((url, index, list) => list.indexOf(url) === index)
       .slice(0, 20);
-    const composedStoreAddress = [
-      this.cleanNullableText(dto.streetAddress),
-      this.cleanNullableText(dto.ward),
-    ]
-      .filter(Boolean)
-      .join(', ');
+    const composedStoreAddress = draftStreetAddress
+      ? [draftStreetAddress, storeWard].filter(Boolean).join(', ')
+      : '';
 
     return {
       storeName:
@@ -14213,13 +14340,15 @@ export class NightlifeDataService {
       storeCity: this.cleanNullableText(dto.storeCity) ?? store.city,
       storeDistrict:
         this.cleanNullableText(dto.storeDistrict) ?? store.district,
-      ward: this.cleanNullableText(dto.ward),
+      ward: storeWard,
       streetAddress:
-        this.cleanNullableText(dto.streetAddress) ??
-        this.cleanNullableText(dto.storeAddress) ??
+        draftStreetAddress ??
+        draftAddressStreet ??
+        storeStreetAddress ??
+        draftStoreAddress ??
         store.address,
       storeAddress:
-        this.cleanNullableText(dto.storeAddress) ??
+        draftStoreAddress ??
         (composedStoreAddress || store.address),
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours:
@@ -17986,8 +18115,13 @@ export class NightlifeDataService {
       slug = `${this.generateSlug(dto.name)}-${counter++}`;
     }
 
+    const storeAddress = this.mergeWardIntoStoreAddress(
+      dto.address,
+      dto.ward,
+      dto.city,
+    );
     let areaId: string | undefined;
-    areaId = await this.inferAreaFromAddress(dto.address || '', dto.city);
+    areaId = await this.inferAreaFromAddress(storeAddress || '', dto.city);
 
     const newStore = await this.prisma.store.create({
       data: {
@@ -17995,7 +18129,7 @@ export class NightlifeDataService {
         slug,
         category: dto.category,
         city: dto.city,
-        address: dto.address,
+        address: storeAddress,
         mapUrl: dto.mapUrl,
         phone: dto.phone,
         description: dto.description,
@@ -18043,10 +18177,18 @@ export class NightlifeDataService {
       }
     }
 
+    const storeAddress =
+      dto.address !== undefined || dto.ward !== undefined
+        ? this.mergeWardIntoStoreAddress(
+            dto.address ?? existing.address,
+            dto.ward,
+            dto.city ?? existing.city,
+          )
+        : undefined;
     let areaId: string | undefined;
-    if (dto.address !== undefined || dto.city) {
+    if (storeAddress !== undefined || dto.city) {
       areaId = await this.inferAreaFromAddress(
-        dto.address || existing.address || '',
+        (storeAddress ?? existing.address) || '',
         dto.city || existing.city,
       );
     }
@@ -18058,7 +18200,7 @@ export class NightlifeDataService {
         ...(slug && { slug }),
         ...(dto.category && { category: dto.category }),
         ...(dto.city && { city: dto.city }),
-        ...(dto.address && { address: dto.address }),
+        ...(storeAddress && { address: storeAddress }),
         ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.description !== undefined && { description: dto.description }),

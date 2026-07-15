@@ -115,6 +115,10 @@ export class CreateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  ward?: string;
+
+  @IsOptional()
+  @IsString()
   mapUrl?: string;
 
   @IsOptional()
@@ -169,6 +173,10 @@ export class UpdateAdminStoreDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  ward?: string;
 
   @IsOptional()
   @IsString()

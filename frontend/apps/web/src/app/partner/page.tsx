@@ -173,6 +173,7 @@ type PartnerStore = {
   category?: string;
   city?: string;
   district?: string | null;
+  ward?: string | null;
 };
 
 type PartnerListingPricing = {
@@ -2595,6 +2596,7 @@ export default function PartnerPage() {
       area: safeListingText(draft.area),
       storeCity: safeListingText(draft.storeCity),
       storeDistrict: safeListingText(draft.storeDistrict),
+      ward: safeListingText(draft.ward || draft.wardName),
       wardName: safeListingText(draft.wardName),
       streetAddress: safeListingText(draft.streetAddress),
       phone: safeListingText(draft.phone),

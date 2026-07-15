@@ -3004,6 +3004,45 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('loads partner listing ward from existing store address data', async () => {
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: 'store-a',
+      name: 'Partner A Store',
+      slug: 'partner-a-store',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Night club',
+      address: '123 Nguyen Hue, Xã Ngọc Đường, Tỉnh Tuyên Quang',
+      city: 'Tỉnh Tuyên Quang',
+      district: null,
+      phone: '0978654578',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: [],
+      partnerAccountId: null,
+      ownerId: null,
+    } as never);
+    prisma.content.findFirst.mockResolvedValueOnce(null as never);
+    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null as never);
+
+    await expect(
+      service.getPartnerListingDraft(
+        { id: 'partner-a', role: 'PARTNER' },
+        '11111111-1111-4111-8111-111111111111',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          storeCity: 'Tỉnh Tuyên Quang',
+          ward: 'Xã Ngọc Đường',
+          streetAddress: '123 Nguyen Hue',
+          storeAddress: '123 Nguyen Hue, Xã Ngọc Đường, Tỉnh Tuyên Quang',
+        }),
+      }),
+    );
+  });
+
   it('returns a lite partner dashboard with scoped aggregate metrics only', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
     const previousArrivalSource = process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;

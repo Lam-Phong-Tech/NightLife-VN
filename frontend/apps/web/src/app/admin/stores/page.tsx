@@ -582,12 +582,14 @@ function AdminStoresContent() {
       if (pName) {
          if (pName.includes('Hồ Chí Minh')) finalCity = 'Ho Chi Minh City';
          else if (pName.includes('Hà Nội')) finalCity = 'Hanoi';
+         else finalCity = pName;
       }
 
       const payload = {
         ...formData,
         address: finalAddress,
         city: finalCity,
+        ward: wName || undefined,
         tags,
         partnerAccountId: partnerAccountId || null,
         openingHours: openingHourValidation.normalizedHours,
@@ -1236,7 +1238,7 @@ function AdminStoresContent() {
                   </div>
                   <div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Tỉnh/Thành phố</div>
-                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={selProvince} onChange={e => { setSelProvince(e.target.value); updateForm('city', e.target.value === '79' ? 'Ho Chi Minh City' : e.target.value === '1' ? 'Hanoi' : formData.city); }}>
+                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={selProvince} onChange={e => { const nextProvince = provinces.find(p => p.code.toString() === e.target.value); setSelProvince(e.target.value); updateForm('city', e.target.value === '79' ? 'Ho Chi Minh City' : e.target.value === '1' ? 'Hanoi' : nextProvince?.name || formData.city); }}>
                       <option value="" style={optS}>-- Chọn Tỉnh/Thành --</option>
                       {provinces.map(p => <option key={p.code} value={p.code.toString()} style={optS}>{p.name}</option>)}
                     </select>
