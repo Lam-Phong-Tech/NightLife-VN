@@ -963,7 +963,11 @@ function BookingCard({
         />
         <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} reserveSpace />
 
-        {errorMessage ? <div className="booking-error">{translateText(errorMessage, activeLanguage)}</div> : null}
+        {errorMessage ? (
+          <div className="booking-error" role="alert" aria-live="polite">
+            {translateText(errorMessage, activeLanguage)}
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -3021,10 +3025,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         :global(html.vy-light) .booking-error {
-          border-color: rgba(194, 69, 92, .34);
-          background: rgba(194, 69, 92, .12);
-          color: #8f1f33;
-          font-weight: 760;
+          border-color: rgba(172, 32, 55, .5);
+          background: #fff1f2;
+          color: #7f1025;
+          box-shadow: 0 10px 22px rgba(127, 16, 37, .12);
+          font-size: 13px;
+          font-weight: 850;
         }
 
         :global(html.vy-light) .booking-field-error,
