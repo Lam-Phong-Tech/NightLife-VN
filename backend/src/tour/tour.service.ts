@@ -8,6 +8,169 @@ import { UpdateTourDto } from './dto/update-tour.dto';
 export class TourService {
   constructor(private prisma: PrismaService) {}
 
+  private publicTourStoreSelect(now: Date) {
+    return {
+      id: true,
+      name: true,
+      slug: true,
+      category: true,
+      description: true,
+      address: true,
+      city: true,
+      district: true,
+      openingHours: true,
+      pricingInfo: true,
+      area: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          city: true,
+          district: true,
+          ward: true,
+        },
+      },
+      media: {
+        where: {
+          deletedAt: null,
+          access: 'PUBLIC',
+          status: 'READY',
+          type: 'IMAGE',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          url: true,
+          purpose: true,
+        },
+      },
+      coupons: {
+        where: {
+          status: 'ACTIVE',
+          deletedAt: null,
+          startsAt: { lte: now },
+          OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+        },
+        orderBy: { startsAt: 'desc' },
+        take: 2,
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          description: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+        },
+      },
+      casts: {
+        where: {
+          status: 'ACTIVE',
+          isPublic: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 4,
+        select: {
+          id: true,
+          stageName: true,
+          slug: true,
+          publicAlias: true,
+          publicHeadline: true,
+          zodiacSign: true,
+          heightCm: true,
+          languages: true,
+          tags: true,
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              url: true,
+              purpose: true,
+            },
+          },
+        },
+      },
+    } satisfies Prisma.StoreSelect;
+  }
+
+  private publicTourInclude(now: Date) {
+    return {
+      stops: {
+        where: {
+          store: {
+            status: 'ACTIVE',
+            deletedAt: null,
+          },
+        },
+        orderBy: { order: 'asc' },
+        include: {
+          store: {
+            select: this.publicTourStoreSelect(now),
+          },
+        },
+      },
+    } satisfies Prisma.TourInclude;
+  }
+
+  async findPublicAll(params: {
+    skip?: number;
+    take?: number;
+    city?: string;
+  }) {
+    const { skip = 0, take = 20, city } = params;
+    const now = new Date();
+    const where: Prisma.TourWhereInput = {
+      status: 'ACTIVE',
+      deletedAt: null,
+      ...(city ? { city } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.tour.findMany({
+        skip,
+        take,
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: this.publicTourInclude(now),
+      }),
+      this.prisma.tour.count({ where }),
+    ]);
+
+    return {
+      data: data.filter((tour) => tour.stops.length > 0),
+      total,
+      page: Math.floor(skip / take) + 1,
+      limit: take,
+    };
+  }
+
+  async findPublicOne(id: string) {
+    const now = new Date();
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        id,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      include: this.publicTourInclude(now),
+    });
+
+    if (!tour || tour.stops.length === 0) {
+      throw new NotFoundException(`Tour with ID ${id} not found`);
+    }
+
+    return tour;
+  }
+
   async findAll(params: {
     skip?: number;
     take?: number;

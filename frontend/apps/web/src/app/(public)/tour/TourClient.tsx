@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronRight, MapPin, Route, Sparkles } from "lucide-react";
-import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
-import { contentApi, type PublicTourItem } from "@/lib/api/content";
-import { resolveClientUrl } from "@/lib/api/client";
-import { getHomeBehaviorSignals, trackHomeVenueSignal } from "@/lib/analytics/home";
-import { useActiveLanguage } from "@/lib/i18n/use-active-language";
+import { tourApi, type PublicTour } from "@/lib/api/tours";
 
 const cityTabs = [
-  { id: "all", label: "Tất cả" },
-  { id: "hn", label: "Hà Nội" },
-  { id: "hcm", label: "TP.HCM" },
+  { id: "all", label: "Tất cả", city: "" },
+  { id: "hn", label: "Hà Nội", city: "Hanoi" },
+  { id: "hcm", label: "TP.HCM", city: "Ho Chi Minh City" },
 ] as const;
 
 type CityTab = (typeof cityTabs)[number]["id"];
@@ -29,32 +25,45 @@ const categoryLabels: Record<string, string> = {
   CASINO: "Casino",
 };
 
+const priceTierLabel = (tier: number) => "$".repeat(Math.max(1, Math.min(4, Math.trunc(tier || 3))));
+
+const tourImage = (tour: PublicTour) =>
+  tour.coverUrl || tour.stops.find((stop) => stop.store.media[0])?.store.media[0]?.url || "";
+
+const tourArea = (tour: PublicTour) =>
+  tour.stops[0]?.store.area?.city || tour.city || "NightLife";
+
 export function TourClient() {
   const [activeCity, setActiveCity] = useState<CityTab>("all");
-  const [tours, setTours] = useState<PublicTourItem[]>([]);
+  const [tours, setTours] = useState<PublicTour[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const behavior = useMemo(() => getHomeBehaviorSignals(), []);
+
+  const activeCityMeta = useMemo(
+    () => cityTabs.find((tab) => tab.id === activeCity) ?? cityTabs[0],
+    [activeCity],
+  );
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError("");
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError("");
+    });
 
-    contentApi
-      .tours({
-        cityCode: activeCity,
-        limit: 6,
-        categories: behavior.categories.join(","),
-        storeSlugs: behavior.storeSlugs.join(","),
+    tourApi
+      .list({
+        city: activeCityMeta.city || undefined,
+        limit: 12,
       })
-      .then((items) => {
-        if (!cancelled) setTours(items);
+      .then((response) => {
+        if (!cancelled) setTours(response.data);
       })
       .catch(() => {
         if (!cancelled) {
           setTours([]);
-          setError("Chưa tải được tour từ API. Vui lòng thử lại sau.");
+          setError("Chưa tải được tour từ dữ liệu admin. Vui lòng thử lại sau.");
         }
       })
       .finally(() => {
@@ -64,7 +73,7 @@ export function TourClient() {
     return () => {
       cancelled = true;
     };
-  }, [activeCity, behavior.categories, behavior.storeSlugs]);
+  }, [activeCityMeta.city]);
 
   return (
     <section style={{ maxWidth: 1180, margin: "0 auto" }}>
@@ -72,7 +81,7 @@ export function TourClient() {
         Lịch trình nightlife theo khu vực
       </h1>
       <p style={{ maxWidth: 720, margin: "16px 0 0", color: "#c5c0b6", fontSize: 16, lineHeight: 1.75 }}>
-        Hệ thống ghép tour từ các quán đang hoạt động, ưu đãi hiện có và tín hiệu bạn vừa xem trên Vietyoru.
+        Danh sách tour lấy trực tiếp từ dữ liệu admin, gồm hành trình điểm dừng, giờ khởi hành và ưu đãi tại từng quán.
       </p>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 24 }}>
@@ -106,7 +115,7 @@ export function TourClient() {
         }}
       >
         {isLoading ? (
-          <StatusCard text="Đang tải tour từ API..." />
+          <StatusCard text="Đang tải tour từ dữ liệu admin..." />
         ) : tours.length ? (
           tours.map((tour) => <TourCard key={tour.id} tour={tour} />)
         ) : (
@@ -117,10 +126,7 @@ export function TourClient() {
   );
 }
 
-function TourCard({ tour }: { tour: PublicTourItem }) {
-  const activeLanguage = useActiveLanguage();
-  const { formatMoney } = useMoneyFormatter(activeLanguage);
-
+function TourCard({ tour }: { tour: PublicTour }) {
   return (
     <article
       style={{
@@ -130,44 +136,38 @@ function TourCard({ tour }: { tour: PublicTourItem }) {
         background: "rgba(255,255,255,.035)",
       }}
     >
-      <PlaceholderMedia
-        src={resolveClientUrl(tour.thumbnailUrl) ? `url(${JSON.stringify(resolveClientUrl(tour.thumbnailUrl))}) center/cover` : undefined}
-        alt={tour.title}
-        label="Tour"
-        style={{ minHeight: 190, position: "relative" }}
-      >
-        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(12,12,15,.02),rgba(12,12,15,.62))" }} />
-        <span style={{ position: "absolute", left: 16, bottom: 16, display: "inline-flex", alignItems: "center", gap: 7, color: "#f0dda8", fontWeight: 900, fontSize: 12 }}>
-          <Route size={16} /> {tour.stops.length} điểm dừng
-        </span>
-      </PlaceholderMedia>
+      <Link href={`/tour/${tour.id}`} style={{ display: "block", color: "inherit", textDecoration: "none" }}>
+        <PlaceholderMedia
+          src={tourImage(tour)}
+          alt={tour.title}
+          label="Chưa có ảnh tour"
+          style={{ minHeight: 190, position: "relative" }}
+        >
+          <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(12,12,15,.02),rgba(12,12,15,.68))" }} />
+          <span style={{ position: "absolute", left: 16, bottom: 16, display: "inline-flex", alignItems: "center", gap: 7, color: "#f0dda8", fontWeight: 900, fontSize: 12 }}>
+            <Route size={16} /> {tour.stops.length} điểm dừng
+          </span>
+        </PlaceholderMedia>
+      </Link>
       <div style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#d4b26a", fontSize: 12, fontWeight: 900 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <MapPin size={14} /> {tour.area}
+            <MapPin size={14} /> {tourArea(tour)}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <CalendarDays size={14} /> {tour.durationHours} giờ
           </span>
         </div>
         <h2 style={{ margin: "10px 0 0", fontSize: 22, lineHeight: 1.25, fontWeight: 950 }}>{tour.title}</h2>
-        <p style={{ margin: "8px 0 0", color: "#c5c0b6", lineHeight: 1.6 }}>{tour.subtitle}</p>
+        {tour.subtitle ? <p style={{ margin: "8px 0 0", color: "#c5c0b6", lineHeight: 1.6 }}>{tour.subtitle}</p> : null}
         <div style={{ marginTop: 10, color: "#f0dda8", fontSize: 14, fontWeight: 900 }}>
-          Từ {formatMoney(tour.priceFromVnd)} / nhóm
+          Mức chi phí {priceTierLabel(tour.priceTier)}
         </div>
         <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
-          {tour.stops.map((stop) => (
+          {tour.stops.slice(0, 3).map((stop) => (
             <Link
               key={stop.id}
-              href={stop.href}
-              onClick={() =>
-                trackHomeVenueSignal({
-                  storeId: stop.id,
-                  storeSlug: stop.slug,
-                  category: stop.category,
-                  source: "tour_module",
-                })
-              }
+              href={`/stores/${stop.store.slug}`}
               style={{
                 display: "grid",
                 gridTemplateColumns: "44px 1fr auto",
@@ -185,10 +185,10 @@ function TourCard({ tour }: { tour: PublicTourItem }) {
                 {stop.order}
               </span>
               <span style={{ minWidth: 0 }}>
-                <strong style={{ display: "block", fontSize: 14 }}>{stop.name}</strong>
+                <strong style={{ display: "block", fontSize: 14 }}>{stop.store.name}</strong>
                 <span style={{ display: "block", marginTop: 3, color: "#a8a097", fontSize: 12 }}>
-                  {categoryLabels[stop.category] ?? stop.category}
-                  {stop.activeCouponName ? ` · ${stop.activeCouponName}` : ""}
+                  {categoryLabels[stop.store.category] ?? stop.store.category}
+                  {stop.store.coupons[0]?.name ? ` · ${stop.store.coupons[0].name}` : ""}
                 </span>
               </span>
               <ChevronRight size={18} color="#d4b26a" />
@@ -196,7 +196,7 @@ function TourCard({ tour }: { tour: PublicTourItem }) {
           ))}
         </div>
         <Link
-          href="/danh-sach-quan"
+          href={`/tour/${tour.id}`}
           style={{
             minHeight: 42,
             borderRadius: 8,
@@ -212,7 +212,7 @@ function TourCard({ tour }: { tour: PublicTourItem }) {
             textDecoration: "none",
           }}
         >
-          <Sparkles size={16} /> Đặt bàn theo tour
+          <Sparkles size={16} /> Xem chi tiết tour
         </Link>
       </div>
     </article>
