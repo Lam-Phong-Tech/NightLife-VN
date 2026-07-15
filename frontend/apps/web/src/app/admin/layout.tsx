@@ -78,6 +78,11 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         label: 'Ranking', 
         href: '/admin/ranking' 
       },
+      { 
+        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h4.5a3.5 3.5 0 0 0 0-7h-3a3.5 3.5 0 0 1 0-7H15"/></svg>, 
+        label: 'Tour', 
+        href: '/admin/tours' 
+      },
     ],
   },
   {

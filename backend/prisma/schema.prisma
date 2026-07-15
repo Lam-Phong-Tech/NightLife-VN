@@ -521,6 +521,7 @@ model Store {
   bookingChatMessages        BookingChatMessage[]
   userPermissions            StorePermission[]
   memberFavorites            MemberFavoriteStore[]
+  tourStops                  TourStop[]
   createdAt                  DateTime               @default(now()) @map("created_at")
   updatedAt                  DateTime               @updatedAt @map("updated_at")
   deletedAt                  DateTime?              @map("deleted_at")
@@ -1356,3 +1357,39 @@ model Campaign {
   @@index([startsAt, endsAt])
   @@map("campaigns")
 }
+
+model Tour {
+  id             String          @id @default(uuid()) @db.Uuid
+  title          String
+  subtitle       String?
+  city           String          @default("Hanoi")
+  durationHours  Int             @default(4)       @map("duration_hours")
+  priceTier      Int             @default(3)       @map("price_tier")
+  coverUrl       String?         @map("cover_url")
+  status         ProfileStatus   @default(ACTIVE)
+  stops          TourStop[]
+  departureTimes String[]        @default([])      @map("departure_times")
+  createdAt      DateTime        @default(now())   @map("created_at")
+  updatedAt      DateTime        @updatedAt        @map("updated_at")
+  deletedAt      DateTime?       @map("deleted_at")
+
+  @@index([status])
+  @@index([city])
+  @@map("tours")
+}
+
+model TourStop {
+  id        String   @id @default(uuid()) @db.Uuid
+  tourId    String   @map("tour_id") @db.Uuid
+  storeId   String   @map("store_id") @db.Uuid
+  order     Int      @default(1)
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())   @map("created_at")
+
+  @@unique([tourId, storeId])
+  @@index([tourId])
+  @@index([storeId])
+  @@map("tour_stops")
+}
+
