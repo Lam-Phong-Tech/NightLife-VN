@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   uploadEvidence: vi.fn(),
   listMemberBookings: vi.fn(),
   listMemberCouponIssues: vi.fn(),
-  listStores: vi.fn(),
   searchParams: "",
 }));
 
@@ -72,12 +71,6 @@ vi.mock("@/lib/api/coupons", () => ({
   },
 }));
 
-vi.mock("@/lib/api/discovery", () => ({
-  discoveryApi: {
-    listStores: mocks.listStores,
-  },
-}));
-
 const publicStore = {
   id: "store-public",
   name: "Public Neon",
@@ -87,11 +80,20 @@ const publicStore = {
   district: "Tay Ho",
 };
 
+const defaultBooking = {
+  id: "550e8400-e29b-41d4-a716-446655440020",
+  bookingCode: "BK-PUBLIC",
+  status: "COMPLETED",
+  scheduledAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  partySize: 4,
+  store: publicStore,
+  user: { id: "member-1", displayName: "Minh Tu", tier: "GOLD" },
+};
+
 describe("Bill submit page", () => {
   beforeEach(() => {
     mocks.searchParams = "";
-    mocks.listStores.mockResolvedValue([publicStore]);
-    mocks.listMemberBookings.mockResolvedValue([]);
+    mocks.listMemberBookings.mockResolvedValue([defaultBooking]);
     mocks.listMemberCouponIssues.mockResolvedValue([]);
     mocks.listMemberBills.mockResolvedValue([]);
     mocks.previewBillOcr.mockResolvedValue({
@@ -125,7 +127,7 @@ describe("Bill submit page", () => {
     render(<BillSubmitPage />);
 
     await waitFor(() => {
-      expect(mocks.listStores).toHaveBeenCalledWith({ city: "all", limit: 80 });
+      expect(mocks.listMemberBookings).toHaveBeenCalled();
     });
     expect(screen.queryByText("Chủ quán")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Gui bill vai tro partner" })).not.toBeInTheDocument();

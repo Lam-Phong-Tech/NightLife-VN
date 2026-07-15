@@ -25,7 +25,6 @@ import {
 import { bookingApi, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
-import { discoveryApi } from "@/lib/api/discovery";
 import {
   intlLocaleByLanguage,
   useActiveLanguage,
@@ -206,6 +205,7 @@ const validateEvidenceFile = (file: File | null) => {
 
 const validateBillForm = ({
   isLoadingOptions,
+  hasBookedStores,
   hasStore,
   amountInput,
   amount,
@@ -217,6 +217,7 @@ const validateBillForm = ({
   timeReady,
 }: {
   isLoadingOptions: boolean;
+  hasBookedStores: boolean;
   hasStore: boolean;
   amountInput: string;
   amount: number;
@@ -229,6 +230,10 @@ const validateBillForm = ({
 }) => {
   if (isLoadingOptions) {
     return "Đang tải danh sách quán, vui lòng thử lại sau vài giây.";
+  }
+
+  if (!hasBookedStores) {
+    return "Bạn cần có ít nhất một lịch đặt chỗ trước khi gửi hóa đơn.";
   }
 
   if (!hasStore) {
@@ -277,6 +282,23 @@ const couponIssueOptionLabel = (issue: CouponIssue) => {
   const storeName = issue.coupon.store?.name ?? "Coupon";
   const status = issue.statusLabel ?? issue.status;
   return `${issue.coupon.name} - ${storeName} - ${status}`;
+};
+
+const bookedStoreOptionsFromBookings = (bookings: BookingRecord[]) => {
+  const storesBySlug = new Map<string, BillStoreOption>();
+
+  bookings.forEach((booking) => {
+    const store = booking.store;
+    if (!store?.slug || storesBySlug.has(store.slug)) return;
+
+    storesBySlug.set(store.slug, {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+    });
+  });
+
+  return Array.from(storesBySlug.values());
 };
 
 const cleanApiMessage = (error: unknown) => {
@@ -399,8 +421,7 @@ export default function Page() {
     const loadOptions = async () => {
       setIsLoadingOptions(true);
       try {
-        const [storeItems, bookingItems, couponIssueItems, billItems] = await Promise.all([
-          discoveryApi.listStores({ city: "all", limit: 80 }),
+        const [bookingItems, couponIssueItems, billItems] = await Promise.all([
           bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
           couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
           billApi.listMemberBills().catch(() => [] as BillRecord[]),
@@ -416,22 +437,33 @@ export default function Page() {
           ? mergedBookingItems.find((booking) => booking.id === requestedBookingId) ?? null
           : null;
         const preferredStoreSlug = requestedBooking?.store?.slug || requestedStoreSlug;
+        const bookedStoreItems = bookedStoreOptionsFromBookings(mergedBookingItems);
+        const bookedStoreSlugs = new Set(bookedStoreItems.map((storeItem) => storeItem.slug));
 
-        setStores(storeItems);
+        setStores(bookedStoreItems);
         setBookings(mergedBookingItems);
-        setCouponIssues(couponIssueItems.filter(canAttachCouponIssueToBill));
+        setCouponIssues(
+          couponIssueItems.filter((issue) => {
+            const issueStoreSlug = issue.coupon.store?.slug;
+            return Boolean(
+              canAttachCouponIssueToBill(issue) &&
+                issueStoreSlug &&
+                bookedStoreSlugs.has(issueStoreSlug),
+            );
+          }),
+        );
         setSubmittedBills(billItems);
         setStoreSlug((current) => {
           if (
             preferredStoreSlug &&
-            storeItems.some((storeItem) => storeItem.slug === preferredStoreSlug)
+            bookedStoreItems.some((storeItem) => storeItem.slug === preferredStoreSlug)
           ) {
             return preferredStoreSlug;
           }
 
-          return current && storeItems.some((storeItem) => storeItem.slug === current)
+          return current && bookedStoreItems.some((storeItem) => storeItem.slug === current)
             ? current
-            : storeItems[0]?.slug || "";
+            : bookedStoreItems[0]?.slug || "";
         });
       } catch (error) {
         if (!active) return;
@@ -540,6 +572,7 @@ export default function Page() {
     () =>
       validateBillForm({
         isLoadingOptions,
+        hasBookedStores: stores.length > 0,
         hasStore: Boolean(bookingId || storeSlug),
         amountInput,
         amount,
@@ -560,6 +593,7 @@ export default function Page() {
       isPastDeadline,
       isUsedAtInvalid,
       storeSlug,
+      stores.length,
       timeWindow.nowMs,
       usedAt,
     ],
@@ -689,13 +723,22 @@ export default function Page() {
                 onChange={(event) => setStoreSlug(event.target.value)}
                 disabled={isLoadingOptions || Boolean(selectedBooking || selectedCouponIssue)}
               >
-                {stores.map((storeItem) => (
-                  <option key={storeItem.id} value={storeItem.slug}>
-                    {storeItem.name}
-                    {storeItem.district ? ` - ${storeItem.district}` : ""}
-                  </option>
-                ))}
+                {stores.length ? (
+                  stores.map((storeItem) => (
+                    <option key={storeItem.id} value={storeItem.slug}>
+                      {storeItem.name}
+                      {storeItem.district ? ` - ${storeItem.district}` : ""}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Chưa có quán đã đặt</option>
+                )}
               </select>
+              {!isLoadingOptions && !stores.length ? (
+                <span className="nl-field-help">
+                  Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.
+                </span>
+              ) : null}
             </div>
 
             {bookings.length ? (
@@ -1089,6 +1132,13 @@ export default function Page() {
           font-weight: 900;
         }
 
+        .nl-field-help {
+          color: ${colors.muted};
+          font-size: 12.5px;
+          font-weight: 750;
+          line-height: 1.45;
+        }
+
         .nl-form-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -1118,8 +1168,13 @@ export default function Page() {
         }
 
         select option {
-          background: #17171b;
+          background: var(--vy-surface);
           color: ${colors.text};
+        }
+
+        :global(html.vy-light) select option {
+          background: #fffaf0;
+          color: #261b10;
         }
 
         input:focus,
