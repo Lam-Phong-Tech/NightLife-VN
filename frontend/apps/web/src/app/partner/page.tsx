@@ -202,6 +202,7 @@ type PartnerListingMenuGroup = {
 
 type PartnerListingCast = {
   stageName: string;
+  storeName?: string | null;
   publicHeadline?: string | null;
   bio?: string | null;
   tags?: string[];
@@ -224,6 +225,7 @@ type PartnerListingDraft = {
   storeCity: string;
   storeDistrict: string;
   ward: string;
+  wardName: string;
   streetAddress: string;
   storeAddress: string;
   phone: string;
@@ -380,7 +382,7 @@ type PartnerNotification = {
   icon: LucideIcon;
   unread: boolean;
 };
-type ListingTabKey = 'store' | 'cast' | 'pricing' | 'media';
+type ListingTabKey = 'store' | 'cast' | 'menu' | 'media';
 type PeriodKey = 'today' | 'seven' | 'thirty';
 type OfflineScanQueueItem = {
   payload: string;
@@ -746,6 +748,41 @@ const isValidUrl = (value: string) => {
   }
 };
 
+const buildListingMenuSummary = (
+  menuGroups: PartnerListingMenuGroup[],
+  pricingItems: PartnerListingPricing[],
+) => {
+  const groupLines = menuGroups.flatMap((group) => {
+    const groupName = group.name.trim();
+    const itemLines = group.items
+      .filter((item) => hasText(item.name) || hasText(item.description) || hasText(item.imageUrl))
+      .map((item) => {
+        const details = [
+          item.description?.trim(),
+          item.priceTier ? `Cost tier: ${item.priceTier}` : null,
+          item.isHot ? 'HOT' : null,
+          item.imageUrl?.trim() && isValidUrl(item.imageUrl.trim())
+            ? `Image: ${item.imageUrl.trim()}`
+            : null,
+        ].filter(Boolean);
+
+        return `- ${item.name.trim() || 'Menu item'}${details.length ? ` - ${details.join(' | ')}` : ''}`;
+      });
+
+    return groupName || itemLines.length
+      ? [`[${groupName || 'Menu'}]`, ...itemLines]
+      : [];
+  });
+  const pricingLines = pricingItems
+    .filter((item) => hasText(item.label) || hasText(item.value) || hasText(item.note))
+    .map((item) => {
+      const details = [item.value?.trim(), item.note?.trim()].filter(Boolean);
+      return `- ${item.label.trim() || 'Price item'}${details.length ? ` - ${details.join(' | ')}` : ''}`;
+    });
+
+  return [...groupLines, ...pricingLines].join('\n');
+};
+
 const openingHourPattern = /^([01]\d|2[0-4]):[0-5]\d\s*[-–]\s*([01]\d|2[0-4]):[0-5]\d$/;
 const phonePattern = /^\+?[0-9\s().-]{8,18}$/;
 const splitOpeningHourSlots = (value?: string | null) =>
@@ -768,8 +805,8 @@ const hasValidOpeningHourSlots = (value?: string | null) => {
   return slots.every((slot) => {
     if (!openingHourPattern.test(slot)) return false;
     const { open, close } = splitOpeningHourSlot(slot);
-    const [openH, openM] = open.split(':').map(Number);
-    const [closeH, closeM] = close.split(':').map(Number);
+    const [openH = Number.NaN, openM = Number.NaN] = open.split(':').map(Number);
+    const [closeH = Number.NaN, closeM = Number.NaN] = close.split(':').map(Number);
     if (openH > 23 || openM > 59) return false;
     if (closeH > 24 || (closeH === 24 && closeM > 0) || closeM > 59) return false;
     const openTotal = (openH || 0) * 60 + (openM || 0);
@@ -781,6 +818,21 @@ const hasValidOpeningHourSlots = (value?: string | null) => {
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
   if (path.startsWith('castProfiles.')) return 'cast';
+  if (
+    path.startsWith('menuGroups.') ||
+    path.startsWith('pricingItems.') ||
+    path === 'priceRange' ||
+    path === 'menuSummary'
+  ) {
+    return 'menu';
+  }
+  if (
+    path === 'coverImageUrl' ||
+    path.startsWith('galleryUrls.') ||
+    path.startsWith('videoUrls.')
+  ) {
+    return 'media';
+  }
   return 'store';
 };
 
@@ -872,18 +924,6 @@ const validateListingDraft = (
     });
   });
 
-  requireOnSubmit('priceRange', draft.priceRange, 'Nhập khoảng giá tổng quan.');
-  draft.pricingItems.forEach((item, index) => {
-    const rowHasData = hasText(item.label) || hasText(item.value) || hasText(item.note);
-    if (!rowHasData) return;
-    if (isBlank(item.label)) {
-      errors[`pricingItems.${index}.label`] = 'Nhập tên gói.';
-    }
-    if (isBlank(item.value)) {
-      errors[`pricingItems.${index}.value`] = 'Nhập mức giá.';
-    }
-  });
-
   draft.menuGroups.forEach((group, groupIndex) => {
     const groupHasData =
       hasText(group.name) ||
@@ -940,6 +980,7 @@ const emptyListingDraft: PartnerListingDraft = {
   storeCity: '',
   storeDistrict: '',
   ward: '',
+  wardName: '',
   streetAddress: '',
   storeAddress: '',
   phone: '',
@@ -982,6 +1023,8 @@ function cleanListingText(value?: string | null) {
 const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'store', label: 'Thông tin quán' },
   { key: 'cast', label: 'Cast' },
+  { key: 'menu', label: 'Menu' },
+  { key: 'media', label: 'Ảnh / Video' },
 ];
 
 const listingUploadLimits = {
@@ -2857,36 +2900,6 @@ export default function PartnerPage() {
     }));
   };
 
-  const updatePricingItem = (
-    index: number,
-    key: keyof PartnerListingPricing,
-    value: string,
-  ) => {
-    clearListingErrorsFor(`pricingItems.${index}.${String(key)}`);
-    setListingDraft((current) => ({
-      ...current,
-      pricingItems: current.pricingItems.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      ),
-    }));
-  };
-
-  const addPricingItem = () => {
-    clearListingErrorsFor('pricingItems');
-    setListingDraft((current) => ({
-      ...current,
-      pricingItems: [...current.pricingItems, { label: '', value: '', note: '' }],
-    }));
-  };
-
-  const removePricingItem = (index: number) => {
-    clearListingErrorsFor('pricingItems');
-    setListingDraft((current) => ({
-      ...current,
-      pricingItems: current.pricingItems.filter((_, itemIndex) => itemIndex !== index),
-    }));
-  };
-
   const updateMenuGroupName = (index: number, value: string) => {
     clearListingErrorsFor(`menuGroups.${index}.name`);
     setListingDraft((current) => ({
@@ -3065,23 +3078,26 @@ export default function PartnerPage() {
     ]
       .filter(Boolean)
       .filter((url, index, list) => list.indexOf(url) === index);
+    const menuGroups = listingDraft.menuGroups
+      .filter((group) => group.name.trim())
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.name.trim()),
+      }));
+    const pricingItems: PartnerListingPricing[] = [];
+    const menuSummary = buildListingMenuSummary(menuGroups, pricingItems);
 
     return {
       ...listingDraft,
+      priceRange: '',
+      menuSummary,
       tags: listingDraft.tags.filter(Boolean),
       openingHourItems: (listingDraft.openingHourItems.length
         ? listingDraft.openingHourItems
         : defaultListingOpeningHours()
       ).filter((item) => item.day.trim() && (item.isOff || item.hours?.trim())),
-      pricingItems: listingDraft.pricingItems.filter(
-        (item) => item.label.trim() && item.value.trim(),
-      ),
-      menuGroups: listingDraft.menuGroups
-        .filter((group) => group.name.trim())
-        .map((group) => ({
-          ...group,
-          items: group.items.filter((item) => item.name.trim()),
-        })),
+      pricingItems,
+      menuGroups,
       castProfiles: listingDraft.castProfiles
         .filter((item) => item.stageName.trim())
         .map((item) => ({
@@ -3105,7 +3121,7 @@ export default function PartnerPage() {
           ...counts,
           [tabFromListingErrorPath(path)]: counts[tabFromListingErrorPath(path)] + 1,
         }),
-        { store: 0, cast: 0, pricing: 0, media: 0 },
+        { store: 0, cast: 0, menu: 0, media: 0 },
       ),
     [listingErrors],
   );
@@ -4827,27 +4843,9 @@ export default function PartnerPage() {
         : renderCastTable();
     }
 
-    if (listingTab === 'pricing') {
+    if (listingTab === 'menu') {
       return (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          <FormField label="Khoảng giá tổng quan">
-            <input
-              value={listingDraft.priceRange}
-              onChange={(event) => updateListingField('priceRange', event.target.value)}
-              placeholder="VD: 500.000đ - 3.000.000đ"
-              style={listingInputStyle('priceRange')}
-            />
-            {listingErrorText('priceRange')}
-          </FormField>
-          <FormField label="Tóm tắt thực đơn / mức giá">
-            <textarea
-              value={listingDraft.menuSummary}
-              onChange={(event) => updateListingField('menuSummary', event.target.value)}
-              placeholder="VD: Bottle service, cocktail, set VIP..."
-              style={listingInputStyle('menuSummary', { minHeight: '88px', resize: 'vertical', padding: '12px' })}
-            />
-            {listingErrorText('menuSummary')}
-          </FormField>
+        <div className="partner-menu-editor">
           <div className="partner-listing-section" style={{ margin: 0 }}>
             <div className="partner-listing-section-title">Nhóm menu giống form Admin</div>
             {!listingDraft.menuGroups.length ? (
@@ -4856,8 +4854,8 @@ export default function PartnerPage() {
               </div>
             ) : null}
             {listingDraft.menuGroups.map((group, groupIndex) => (
-              <div key={`${group.name}-${groupIndex}`} style={{ ...softCardStyle, padding: '14px', display: 'grid', gap: '10px' }}>
-                <div className="partner-listing-grid">
+              <div key={`${group.name}-${groupIndex}`} className="partner-menu-group-card">
+                <div className="partner-menu-group-head">
                   <FormField label="Tên nhóm">
                     <input
                       value={group.name}
@@ -4867,7 +4865,7 @@ export default function PartnerPage() {
                     />
                     {listingErrorText(`menuGroups.${groupIndex}.name`)}
                   </FormField>
-                  <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                  <div className="partner-menu-actions">
                     <GhostButton onClick={() => addMenuItem(groupIndex)}>
                       <ReceiptText size={16} />
                       Thêm món
@@ -4879,7 +4877,7 @@ export default function PartnerPage() {
                   </div>
                 </div>
                 {group.items.map((item, itemIndex) => (
-                  <div key={`${item.name}-${itemIndex}`} className="partner-listing-grid" style={{ borderTop: `1px solid ${colors.borderHair}`, paddingTop: '10px' }}>
+                  <div key={`${item.name}-${itemIndex}`} className="partner-menu-item-card">
                     <FormField label="Tên món / dịch vụ">
                       <input
                         value={item.name}
@@ -4921,11 +4919,12 @@ export default function PartnerPage() {
                       />
                       {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
                     </FormField>
-                    <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                    <div className="partner-menu-actions">
                       <button
                         type="button"
                         onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
-                        className="partner-toggle-button"
+                        className={item.isHot ? 'partner-menu-hot is-active' : 'partner-menu-hot'}
+                        aria-pressed={Boolean(item.isHot)}
                       >
                         {item.isHot ? 'HOT' : 'Không HOT'}
                       </button>
@@ -4943,52 +4942,6 @@ export default function PartnerPage() {
               Thêm nhóm menu
             </GhostButton>
           </div>
-          {!listingDraft.pricingItems.length ? (
-            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              Chưa có dòng giá trong bản nháp. Bấm Thêm dòng giá để nhập bảng giá thật.
-            </div>
-          ) : null}
-          {listingDraft.pricingItems.map((item, index) => (
-            <div key={`${item.label}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-              <FormField label="Tên gói">
-                <input
-                  value={item.label}
-                  onChange={(event) => updatePricingItem(index, 'label', event.target.value)}
-                  placeholder="VD: Phòng VIP"
-                  style={listingInputStyle(`pricingItems.${index}.label`)}
-                />
-                {listingErrorText(`pricingItems.${index}.label`)}
-              </FormField>
-              <FormField label="Mức giá">
-                <input
-                  value={item.value}
-                  onChange={(event) => updatePricingItem(index, 'value', event.target.value)}
-                  placeholder="VD: 2.500.000đ - 6.000.000đ"
-                  style={listingInputStyle(`pricingItems.${index}.value`)}
-                />
-                {listingErrorText(`pricingItems.${index}.value`)}
-              </FormField>
-              <FormField label="Ghi chú">
-                <input
-                  value={item.note ?? ''}
-                  onChange={(event) => updatePricingItem(index, 'note', event.target.value)}
-                  placeholder="VD: Ưu tiên khách VIP"
-                  style={listingInputStyle(`pricingItems.${index}.note`)}
-                />
-                {listingErrorText(`pricingItems.${index}.note`)}
-              </FormField>
-              <div style={{ display: 'flex', alignItems: 'end' }}>
-                <GhostButton onClick={() => removePricingItem(index)}>
-                  <XCircle size={16} />
-                  Xóa
-                </GhostButton>
-              </div>
-            </div>
-          ))}
-          <GhostButton onClick={addPricingItem}>
-            <ReceiptText size={16} />
-            Thêm dòng giá
-          </GhostButton>
         </div>
       );
     }
@@ -5295,186 +5248,6 @@ export default function PartnerPage() {
           </div>
         </section>
 
-        {renderStoreMediaSections()}
-
-        <section className="partner-listing-section">
-          <div className="partner-listing-section-title">Thực đơn & mức giá</div>
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <FormField label="Khoảng giá tổng quan">
-              <input
-                value={listingDraft.priceRange}
-                onChange={(event) => updateListingField('priceRange', event.target.value)}
-                placeholder="VD: 500.000đ - 3.000.000đ"
-                style={listingInputStyle('priceRange')}
-              />
-              {listingErrorText('priceRange')}
-            </FormField>
-            <FormField label="Tóm tắt thực đơn / mức giá">
-              <textarea
-                value={listingDraft.menuSummary}
-                onChange={(event) => updateListingField('menuSummary', event.target.value)}
-                placeholder="VD: Bottle service, cocktail, set VIP..."
-                style={listingInputStyle('menuSummary', { minHeight: '88px', resize: 'vertical', padding: '12px' })}
-              />
-              {listingErrorText('menuSummary')}
-            </FormField>
-            <div className="partner-listing-section" style={{ margin: 0 }}>
-              <div className="partner-listing-section-title">Nhóm menu</div>
-              {!listingDraft.menuGroups.length ? (
-                <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-                  Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
-                </div>
-              ) : null}
-              {listingDraft.menuGroups.map((group, groupIndex) => (
-                <div key={`${group.name}-${groupIndex}`} style={{ ...softCardStyle, padding: '14px', display: 'grid', gap: '10px' }}>
-                  <div className="partner-listing-grid">
-                    <FormField label="Tên nhóm">
-                      <input
-                        value={group.name}
-                        onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
-                        placeholder="VD: VIP packages"
-                        style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
-                      />
-                      {listingErrorText(`menuGroups.${groupIndex}.name`)}
-                    </FormField>
-                    <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
-                      <GhostButton onClick={() => addMenuItem(groupIndex)}>
-                        <ReceiptText size={16} />
-                        Thêm món
-                      </GhostButton>
-                      <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
-                        <XCircle size={16} />
-                        Xóa nhóm
-                      </GhostButton>
-                    </div>
-                  </div>
-                  {group.items.map((item, itemIndex) => (
-                    <div key={`${item.name}-${itemIndex}`} className="partner-listing-grid" style={{ borderTop: `1px solid ${colors.borderHair}`, paddingTop: '10px' }}>
-                      <FormField label="Tên món / dịch vụ">
-                        <input
-                          value={item.name}
-                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
-                          placeholder="VD: VIP table"
-                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
-                        />
-                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
-                      </FormField>
-                      <FormField label="Mô tả">
-                        <input
-                          value={item.description ?? ''}
-                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
-                          placeholder="Mô tả ngắn"
-                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                        />
-                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                      </FormField>
-                      <FormField label="Mức chi phí">
-                        <ThemedListingSelect
-                          value={item.priceTier ?? '$$'}
-                          onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
-                          placeholder="-- Chọn mức --"
-                          hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
-                          options={[
-                            { value: '$$', label: '$$' },
-                            { value: '$$$', label: '$$$' },
-                            { value: '$$$$', label: '$$$$' },
-                          ]}
-                        />
-                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
-                      </FormField>
-                      <FormField label="Ảnh món URL">
-                        <input
-                          value={item.imageUrl ?? ''}
-                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
-                          placeholder="https://..."
-                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                        />
-                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                          {renderListingUploadButton({
-                            key: `menu-item-image-${groupIndex}-${itemIndex}`,
-                            label: 'Tải ảnh món từ máy',
-                            loadingLabel: 'Đang tải ảnh...',
-                            kind: 'image',
-                            purpose: 'PARTNER_MENU_ITEM_IMAGE',
-                            successLabel: 'ảnh món',
-                            onUploaded: ([url]) => {
-                              if (!url) return;
-                              updateMenuItem(groupIndex, itemIndex, 'imageUrl', url);
-                            },
-                          })}
-                        </div>
-                      </FormField>
-                      <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
-                          className="partner-toggle-button"
-                        >
-                          {item.isHot ? 'HOT' : 'Không HOT'}
-                        </button>
-                        <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
-                          <XCircle size={16} />
-                          Xóa món
-                        </GhostButton>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <GhostButton onClick={addMenuGroup}>
-                <ReceiptText size={16} />
-                Thêm nhóm menu
-              </GhostButton>
-            </div>
-            {!listingDraft.pricingItems.length ? (
-              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-                Chưa có dòng giá trong bản nháp. Bấm Thêm dòng giá để nhập bảng giá thật.
-              </div>
-            ) : null}
-            {listingDraft.pricingItems.map((item, index) => (
-              <div key={`${item.label}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-                <FormField label="Tên gói">
-                  <input
-                    value={item.label}
-                    onChange={(event) => updatePricingItem(index, 'label', event.target.value)}
-                    placeholder="VD: Phòng VIP"
-                    style={listingInputStyle(`pricingItems.${index}.label`)}
-                  />
-                  {listingErrorText(`pricingItems.${index}.label`)}
-                </FormField>
-                <FormField label="Mức giá">
-                  <input
-                    value={item.value}
-                    onChange={(event) => updatePricingItem(index, 'value', event.target.value)}
-                    placeholder="VD: 2.500.000đ - 6.000.000đ"
-                    style={listingInputStyle(`pricingItems.${index}.value`)}
-                  />
-                  {listingErrorText(`pricingItems.${index}.value`)}
-                </FormField>
-                <FormField label="Ghi chú">
-                  <input
-                    value={item.note ?? ''}
-                    onChange={(event) => updatePricingItem(index, 'note', event.target.value)}
-                    placeholder="VD: Ưu tiên khách VIP"
-                    style={listingInputStyle(`pricingItems.${index}.note`)}
-                  />
-                  {listingErrorText(`pricingItems.${index}.note`)}
-                </FormField>
-                <div style={{ display: 'flex', alignItems: 'end' }}>
-                  <GhostButton onClick={() => removePricingItem(index)}>
-                    <XCircle size={16} />
-                    Xóa
-                  </GhostButton>
-                </div>
-              </div>
-            ))}
-            <GhostButton onClick={addPricingItem}>
-              <ReceiptText size={16} />
-              Thêm dòng giá
-            </GhostButton>
-          </div>
-        </section>
       </div>
     );
   };
@@ -5938,6 +5711,70 @@ export default function PartnerPage() {
           letter-spacing: 1.2px;
           text-transform: uppercase;
         }
+        .partner-menu-editor,
+        .partner-menu-group-card {
+          display: grid;
+          gap: 12px;
+        }
+        .partner-menu-group-card {
+          border: 1px solid ${colors.borderSoft};
+          border-radius: 14px;
+          background: ${colors.surface2};
+          padding: 14px;
+        }
+        .partner-menu-group-head,
+        .partner-menu-actions {
+          display: flex;
+          align-items: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+          min-width: 0;
+        }
+        .partner-menu-group-head {
+          justify-content: space-between;
+        }
+        .partner-menu-group-head > label {
+          flex: 1 1 260px;
+        }
+        .partner-menu-actions {
+          justify-content: flex-end;
+        }
+        .partner-menu-item-card {
+          border-top: 1px solid ${colors.borderHair};
+          padding-top: 12px;
+          display: grid;
+          grid-template-columns:
+            minmax(150px, .9fr)
+            minmax(180px, 1fr)
+            minmax(124px, .48fr)
+            minmax(180px, .9fr)
+            minmax(150px, .56fr);
+          gap: 12px;
+          align-items: start;
+        }
+        .partner-menu-item-card > * {
+          min-width: 0;
+        }
+        .partner-menu-item-card > .partner-menu-actions {
+          align-self: end;
+        }
+        .partner-menu-hot {
+          min-height: 42px;
+          border-radius: 11px;
+          border: 1px solid ${colors.borderGold22};
+          background: ${colors.surface2};
+          color: ${colors.gold};
+          padding: 0 14px;
+          font: inherit;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .partner-menu-hot.is-active {
+          border-color: ${colors.borderGold40};
+          background: ${colors.goldGrad};
+          color: ${colors.onGold};
+        }
         .partner-hour-list {
           display: grid;
           gap: 8px;
@@ -6253,6 +6090,12 @@ export default function PartnerPage() {
           .partner-store-scope-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          .partner-menu-item-card {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .partner-menu-item-card > .partner-menu-actions {
+            grid-column: 1 / -1;
+          }
           .partner-listing-toolbar {
             grid-template-columns: 1fr;
             max-width: none;
@@ -6311,6 +6154,24 @@ export default function PartnerPage() {
           .partner-settlement-filter-grid,
           .partner-bill-form-grid {
             grid-template-columns: 1fr !important;
+          }
+          .partner-menu-group-head,
+          .partner-menu-actions {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .partner-menu-group-head > label,
+          .partner-menu-actions > * {
+            width: 100%;
+          }
+          .partner-menu-group-head > label {
+            flex: 0 1 auto;
+          }
+          .partner-menu-item-card {
+            grid-template-columns: 1fr;
+          }
+          .partner-menu-item-card > .partner-menu-actions {
+            grid-column: auto;
           }
           .partner-field-span-2 {
             grid-column: 1 / -1;

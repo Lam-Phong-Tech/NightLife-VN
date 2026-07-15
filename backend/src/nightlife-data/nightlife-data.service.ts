@@ -502,6 +502,7 @@ type PartnerRequestCmsRecord = {
     slug: string;
     status: string;
     category: StoreCategory;
+    mapUrl: string | null;
   };
   notificationLog: {
     id: string;
@@ -5751,6 +5752,7 @@ export class NightlifeDataService {
       this.cleanNullableText(dto.storeDescription) ??
       this.cleanNullableText(dto.note);
     const openingHours = this.cleanNullableText(dto.openingHours);
+    const mapUrl = this.cleanNullableText(dto.mapUrl);
     const menuSummary = this.cleanNullableText(dto.menuSummary);
     const mediaUrls = this.cleanStringArray(dto.mediaUrls, 12);
     const castProfiles = this.normalizePartnerRequestCasts(dto.castProfiles);
@@ -5792,9 +5794,10 @@ export class NightlifeDataService {
           openingHours: openingHours
             ? this.toPrismaJson({ summary: openingHours })
             : undefined,
+          mapUrl,
           status: 'PENDING_REVIEW',
         },
-        select: { id: true, name: true, slug: true, status: true },
+        select: { id: true, name: true, slug: true, status: true, mapUrl: true },
       });
 
       const draftCastIds: string[] = [];
@@ -14500,6 +14503,7 @@ export class NightlifeDataService {
           slug: true,
           status: true,
           category: true,
+          mapUrl: true,
         },
       },
       notificationLog: {
@@ -14612,6 +14616,7 @@ export class NightlifeDataService {
       storeAddress: request.storeAddress,
       storeCity: request.storeCity,
       storeDistrict: request.storeDistrict,
+      mapUrl: request.store.mapUrl,
       openingHours: request.openingHours,
       menuSummary: request.menuSummary,
       mediaUrls: request.mediaUrls,
@@ -14646,6 +14651,7 @@ export class NightlifeDataService {
       storeAddress: request.storeAddress,
       storeCity: request.storeCity,
       storeDistrict: request.storeDistrict,
+      mapUrl: request.store.mapUrl,
       openingHours: request.openingHours,
       menuSummary: request.menuSummary,
       mediaUrls: request.mediaUrls,
@@ -14699,6 +14705,7 @@ export class NightlifeDataService {
       storeAddress: request.storeAddress,
       storeCity: request.storeCity,
       storeDistrict: request.storeDistrict,
+      mapUrl: request.store.mapUrl,
       openingHours: request.openingHours,
       menuSummary: request.menuSummary,
       mediaUrls: request.mediaUrls,

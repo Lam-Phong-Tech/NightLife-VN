@@ -352,6 +352,11 @@ type AdminPartnerRequest = {
   contactEmail: string | null;
   note: string | null;
   storeDescription: string | null;
+  storeAddress: string | null;
+  storeCity: string | null;
+  storeDistrict: string | null;
+  mapUrl: string | null;
+  openingHours: string | null;
   menuSummary: string | null;
   mediaUrls: string[];
 };
@@ -3335,6 +3340,16 @@ export default function AdminConsole({ section }: { section?: string }) {
               <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
                 {request.note ?? request.menuSummary ?? request.contactEmail ?? "-"}
               </span>
+              {request.mapUrl ? (
+                <a
+                  href={request.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: "block", marginTop: 3, color: colors.goldBright, fontSize: 11, fontWeight: 700 }}
+                >
+                  Google Maps
+                </a>
+              ) : null}
             </span>
             <span style={{ display: "grid", gap: 6, justifyItems: "start" }}>
               <Badge tone={request.status}>{request.status}</Badge>

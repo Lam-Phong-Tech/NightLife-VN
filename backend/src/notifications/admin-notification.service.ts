@@ -119,6 +119,7 @@ export type PartnerRequestAdminNotification = {
   storeAddress?: string | null;
   storeCity?: string | null;
   storeDistrict?: string | null;
+  mapUrl?: string | null;
   openingHours?: string | null;
   menuSummary?: string | null;
   mediaUrls?: string[];
@@ -301,6 +302,7 @@ export class AdminNotificationService {
         ['Quán / cơ sở', request.draftStoreName ?? request.businessName],
         ['Loại hình', request.businessType],
         ['Khu vực', request.area],
+        ['Maps', request.mapUrl],
         ['Liên hệ', `${request.contactName} - ${request.contactPhone}`],
         ['Email', request.contactEmail],
         ['Draft store', request.draftStoreId],
@@ -332,6 +334,7 @@ export class AdminNotificationService {
         storeAddress: request.storeAddress ?? null,
         storeCity: request.storeCity ?? null,
         storeDistrict: request.storeDistrict ?? null,
+        mapUrl: request.mapUrl ?? null,
         openingHours: request.openingHours ?? null,
         menuSummary: request.menuSummary ?? null,
         mediaUrls: request.mediaUrls ?? [],

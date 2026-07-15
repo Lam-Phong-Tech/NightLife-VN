@@ -169,6 +169,12 @@ export class CreatePartnerRequestDto {
   @MaxLength(120)
   storeDistrict?: string;
 
+  @ApiPropertyOptional({ example: 'https://maps.google.com/?q=Neon+Club' })
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  @MaxLength(500)
+  mapUrl?: string;
+
   @ApiPropertyOptional({ example: '18:00 - 02:00 daily' })
   @IsOptional()
   @IsString()
