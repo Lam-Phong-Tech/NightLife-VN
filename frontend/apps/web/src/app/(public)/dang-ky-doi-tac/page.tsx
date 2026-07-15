@@ -214,7 +214,7 @@ function buildPartnerRequestPayload(
     businessName: form.businessName.trim(),
     businessType: optionalText(form.businessType),
     area: optionalText(area),
-    storeName: optionalText(form.storeName),
+    storeName: form.businessName.trim(),
     storeCategory: optionalText(form.storeCategory),
     storeDescription: optionalText(form.storeDescription),
     storeAddress: optionalText(storeAddressParts.length > 0 ? storeAddressParts.join(', ') : form.storeAddress),
@@ -723,12 +723,6 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   onChange={(value) => updateForm('businessName', value)}
                   placeholder="Ví dụ: Club Lumière"
                   required
-                />
-                <FormControl
-                  label="Tên hiển thị public"
-                  value={form.storeName}
-                  onChange={(value) => updateForm('storeName', value)}
-                  placeholder="Nếu khác tên pháp lý"
                 />
                 <FormControl
                   label="Loại hình kinh doanh"
