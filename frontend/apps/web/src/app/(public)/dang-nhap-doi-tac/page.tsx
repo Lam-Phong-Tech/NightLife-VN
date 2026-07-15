@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowLeft, BadgeCheck, Building2, Eye, EyeOff, LockKeyhole, LogIn, QrCode, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LogIn, Sun, Moon } from 'lucide-react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { loginPartner } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
@@ -100,8 +100,8 @@ function LoginContent({
   onToggleTheme: () => void;
 }) {
   const isMobile = mode === 'mobile';
-  const [email, setEmail] = useState(testAccount.email);
-  const [password, setPassword] = useState(testAccount.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -400,36 +400,6 @@ function LoginContent({
             {isSubmitting ? 'Đang xác thực...' : 'Vào cổng đối tác'}
           </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginTop: '14px' }}>
-            {[
-              { icon: Building2, text: testAccount.store },
-              { icon: QrCode, text: 'Quét mã và đối soát' },
-              { icon: ShieldCheck, text: 'Không xem dữ liệu khách chi tiết' },
-              { icon: LockKeyhole, text: 'Role PARTNER qua JWT backend' },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.text}
-                  style={{
-                    border: `1px solid ${colors.borderGold12}`,
-                    borderRadius: '12px',
-                    padding: '10px',
-                    background: colors.surface2,
-                    color: colors.muted,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '11.5px',
-                    transition: 'background 0.2s, border-color 0.2s, color 0.2s',
-                  }}
-                >
-                  <Icon size={15} color={colors.gold} />
-                  {item.text}
-                </div>
-              );
-            })}
-          </div>
         </div>
       </section>
     </main>
