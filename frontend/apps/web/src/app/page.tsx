@@ -632,6 +632,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: string;
       rowShadow: string;
       labelColor: string;
+      metaColor: string;
     }
   > = {
     1: {
@@ -642,6 +643,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: "rgba(255,220,112,.72)",
       rowShadow: "0 0 0 1px rgba(255,220,112,.22) inset, 0 24px 58px rgba(224,158,22,.32), 0 18px 38px rgba(0,0,0,.34)",
       labelColor: "#ffd76a",
+      metaColor: "#fff4c7",
     },
     2: {
       badgeBackground: "linear-gradient(140deg, #f8fafc 0%, #cbd5e1 56%, #64748b 100%)",
@@ -651,6 +653,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: "rgba(226,232,240,.66)",
       rowShadow: "0 0 0 1px rgba(226,232,240,.18) inset, 0 24px 58px rgba(148,163,184,.26), 0 18px 38px rgba(0,0,0,.34)",
       labelColor: "#dbe7f5",
+      metaColor: "#f4f8ff",
     },
     3: {
       badgeBackground: "linear-gradient(140deg, #ffd7a8 0%, #f59e45 56%, #a84c12 100%)",
@@ -660,6 +663,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: "rgba(251,146,60,.62)",
       rowShadow: "0 0 0 1px rgba(251,146,60,.18) inset, 0 24px 58px rgba(180,83,9,.26), 0 18px 38px rgba(0,0,0,.34)",
       labelColor: "#ffb06b",
+      metaColor: "#ffe4c7",
     },
     4: {
       badgeBackground: "linear-gradient(140deg, #a7f3d0, #22c55e)",
@@ -668,6 +672,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: "rgba(255,255,255,.12)",
       rowShadow: "0 16px 30px rgba(0,0,0,.14)",
       labelColor: "#047857",
+      metaColor: colors.muted,
     },
     5: {
       badgeBackground: "linear-gradient(140deg, #bfdbfe, #3b82f6)",
@@ -676,6 +681,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBorder: "rgba(255,255,255,.12)",
       rowShadow: "0 16px 30px rgba(0,0,0,.14)",
       labelColor: "#1d4ed8",
+      metaColor: colors.muted,
     },
   };
 
@@ -686,6 +692,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
     rowBorder: "var(--vy-border)",
     rowShadow: "var(--vy-shadow-card)",
     labelColor: "#8a5a00",
+    metaColor: colors.muted,
   };
 }
 
@@ -1849,7 +1856,18 @@ function RankingRow({ item }: { item: RankedItem }) {
           </span>
         </div>
         <div style={{ fontSize: isPodium ? "18px" : "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
-        <div style={{ marginTop: "5px", color: colors.muted, fontSize: "13px", lineHeight: 1.25 }}>{item.area}</div>
+        <div
+          style={{
+            marginTop: "5px",
+            color: rankingVisual.metaColor,
+            fontSize: "13px",
+            fontWeight: isPodium ? 760 : 650,
+            lineHeight: 1.25,
+            textShadow: isPodium ? "0 1px 8px rgba(0,0,0,.42)" : "none",
+          }}
+        >
+          {item.area}
+        </div>
       </div>
       <span
         aria-hidden="true"
