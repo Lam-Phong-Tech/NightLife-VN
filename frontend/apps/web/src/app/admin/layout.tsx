@@ -497,16 +497,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const markAsRead = (id: string) => {
     try {
-      const readIds = localStorage.getItem('vy-read-notifications');
-      let next: string[] = [];
-      if (readIds) {
-        next = JSON.parse(readIds);
+      const email = currentUser?.email;
+      
+      if (email) {
+        const key = `vy-read-notifications-${email}`;
+        const readIds = localStorage.getItem(key);
+        let next: string[] = [];
+        if (readIds) {
+          next = JSON.parse(readIds);
+        }
+        if (!next.includes(id)) {
+          next.push(id);
+          localStorage.setItem(key, JSON.stringify(next));
+        }
       }
-      if (!next.includes(id)) {
-        next.push(id);
-        localStorage.setItem('vy-read-notifications', JSON.stringify(next));
+      
+      const legacyKey = 'vy-read-notifications';
+      const legacyReadIds = localStorage.getItem(legacyKey);
+      let legacyNext: string[] = [];
+      if (legacyReadIds) {
+        legacyNext = JSON.parse(legacyReadIds);
       }
-      setReadNotificationIds(next);
+      if (!legacyNext.includes(id)) {
+        legacyNext.push(id);
+        localStorage.setItem(legacyKey, JSON.stringify(legacyNext));
+      }
+
+      setReadNotificationIds(prev => prev.includes(id) ? prev : [...prev, id]);
     } catch (e) {}
   };
 
@@ -514,13 +531,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const now = Date.now();
     setReadAllTimestamp(now);
     try {
-      localStorage.setItem('vy-notifications-read-all-time', String(now));
+      const email = currentUser?.email;
       const currentIds = getNotificationItems().map(item => item.id);
-      setReadNotificationIds(prev => {
-        const next = Array.from(new Set([...prev, ...currentIds]));
-        localStorage.setItem('vy-read-notifications', JSON.stringify(next));
-        return next;
-      });
+      
+      if (email) {
+        localStorage.setItem(`vy-notifications-read-all-time-${email}`, String(now));
+        const key = `vy-read-notifications-${email}`;
+        const readIds = localStorage.getItem(key);
+        let next: string[] = [];
+        if (readIds) {
+          next = JSON.parse(readIds);
+        }
+        const combined = Array.from(new Set([...next, ...currentIds]));
+        localStorage.setItem(key, JSON.stringify(combined));
+      }
+      
+      localStorage.setItem('vy-notifications-read-all-time', String(now));
+      const legacyKey = 'vy-read-notifications';
+      const legacyReadIds = localStorage.getItem(legacyKey);
+      let legacyNext: string[] = [];
+      if (legacyReadIds) {
+        legacyNext = JSON.parse(legacyReadIds);
+      }
+      const combinedLegacy = Array.from(new Set([...legacyNext, ...currentIds]));
+      localStorage.setItem(legacyKey, JSON.stringify(combinedLegacy));
+
+      setReadNotificationIds(prev => Array.from(new Set([...prev, ...currentIds])));
     } catch (e) {}
   };
 
@@ -543,22 +579,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         document.documentElement.classList.toggle('vy-admin-light', storedTheme === 'light');
       }
     } catch (e) {}
-    try {
-      const readIds = localStorage.getItem('vy-read-notifications');
-      if (readIds) {
-        setReadNotificationIds(JSON.parse(readIds));
-      }
-      const readTime = localStorage.getItem('vy-notifications-read-all-time');
-      if (readTime) {
-        setReadAllTimestamp(Number(readTime));
-      }
-    } catch (e) {}
     const user = getAuthUser();
     if (user) setCurrentUser(user);
     if (user?.role === 'SUPER_ADMIN') {
       setIsSuperAdmin(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    try {
+      const email = currentUser?.email;
+      const readIdsKey = email ? `vy-read-notifications-${email}` : 'vy-read-notifications';
+      const readTimeKey = email ? `vy-notifications-read-all-time-${email}` : 'vy-notifications-read-all-time';
+
+      const readIds = localStorage.getItem(readIdsKey);
+      if (readIds) {
+        setReadNotificationIds(JSON.parse(readIds));
+      } else {
+        const legacyReadIds = localStorage.getItem('vy-read-notifications');
+        if (legacyReadIds) {
+          setReadNotificationIds(JSON.parse(legacyReadIds));
+        } else {
+          setReadNotificationIds([]);
+        }
+      }
+
+      const readTime = localStorage.getItem(readTimeKey);
+      if (readTime) {
+        setReadAllTimestamp(Number(readTime));
+      } else {
+        const legacyReadTime = localStorage.getItem('vy-notifications-read-all-time');
+        if (legacyReadTime) {
+          setReadAllTimestamp(Number(legacyReadTime));
+        } else {
+          setReadAllTimestamp(0);
+        }
+      }
+    } catch (e) {}
+  }, [isMounted, currentUser]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 767px)');
