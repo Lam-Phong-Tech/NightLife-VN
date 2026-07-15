@@ -45,7 +45,7 @@ export type BookingAdminNotification = {
   status: string;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
-  discountRuleSnapshot?: unknown;
+  discountSnapshot?: unknown;
   note?: string | null;
   storeId?: string | null;
   user?: {
@@ -66,6 +66,10 @@ export type BookingAdminNotification = {
     slug: string;
     stageName: string;
     publicAlias?: string | null;
+  } | null;
+  coupon?: {
+    discountType?: string | null;
+    discountValue?: number | null;
   } | null;
 };
 
@@ -650,14 +654,37 @@ export class AdminNotificationService {
 
   private bookingDiscountLabel(input: {
     user?: { tier?: string | null } | null;
-    discountRuleSnapshot?: unknown;
+    discountSnapshot?: unknown;
+    coupon?: {
+      discountType?: string | null;
+      discountValue?: number | null;
+    } | null;
   }) {
-    const discountPercent = this.discountPercentFromSnapshot(
-      input.discountRuleSnapshot,
-    );
+    if (input.coupon) {
+      const type = input.coupon.discountType;
+      const value = input.coupon.discountValue;
+      if (typeof value === 'number' && value > 0) {
+        if (type === 'PERCENT') {
+          return `${value}%`;
+        }
+        if (type === 'FIXED_AMOUNT') {
+          return value >= 1000 ? `${value / 1000}K` : `${value} VND`;
+        }
+      }
+    }
 
-    if (typeof discountPercent === 'number' && discountPercent > 0) {
-      return `${discountPercent}%`;
+    if (input.discountSnapshot && typeof input.discountSnapshot === 'object') {
+      const record = input.discountSnapshot as Record<string, unknown>;
+      const type = record.discountType || record.type;
+      const value = record.discountPercent ?? record.value;
+      if (typeof value === 'number' && value > 0) {
+        if (type === 'PERCENT' || !type) {
+          return `${value}%`;
+        }
+        if (type === 'FIXED_AMOUNT') {
+          return value >= 1000 ? `${value / 1000}K` : `${value} VND`;
+        }
+      }
     }
 
     const customerType = this.customerType(input);

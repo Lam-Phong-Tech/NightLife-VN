@@ -71,60 +71,93 @@ const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
     booking.guest?.email ?? booking.guest?.phone ?? translateText("Email đã lưu", language)
   }`;
 
-const toNumber = (value: unknown) => {
-  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const percentValue = (value: unknown) => {
-  const parsed = toNumber(value);
-  if (parsed === null || parsed <= 0) return null;
-  return parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
-};
-
-const recordValue = (value: unknown) =>
-  value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-
-const percentFromSnapshot = (snapshot: unknown) => {
-  const record = recordValue(snapshot);
-  if (!record) return null;
-
-  const directPercent = percentValue(record.discountPercent);
-  if (directPercent !== null) return directPercent;
-
-  const isPercentRule =
-    record.type === "PERCENT" ||
-    record.discountType === "PERCENT" ||
-    record.sourceType === "PERCENT";
-
-  return isPercentRule
-    ? percentValue(record.value ?? record.discountValue ?? record.sourceValue)
-    : null;
-};
-
-const bookingDiscountPercent = (booking: BookingRecord) => {
+const bookingDiscountText = (booking: BookingRecord) => {
   const issue = booking.couponIssue;
   const issueMetadata = issue?.metadata;
 
-  return (
-    percentValue(issue?.discountPercent) ??
-    percentFromSnapshot(issue?.discountRuleSnapshot) ??
-    percentValue(issueMetadata?.discountPercent) ??
-    percentFromSnapshot(issueMetadata?.discountRuleSnapshot) ??
-    percentFromSnapshot(booking.discountSnapshot) ??
-    (booking.coupon?.discountType === "PERCENT" ? percentValue(booking.coupon.discountValue) : null)
-  );
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const percentValue = (value: unknown) => {
+    const parsed = toNumber(value);
+    if (parsed === null || parsed <= 0) return null;
+    return parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
+  };
+
+  const recordValue = (value: unknown) =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+
+  const discountFromSnapshot = (snapshot: unknown) => {
+    const record = recordValue(snapshot);
+    if (!record) return null;
+
+    const type = record.discountType ?? record.type ?? "PERCENT";
+    const value = record.discountPercent ?? record.value ?? record.discountValue;
+
+    if (type === "PERCENT") {
+      const p = percentValue(value);
+      return p !== null ? { type, value: p } : null;
+    }
+    const val = toNumber(value);
+    return val !== null && val > 0 ? { type, value: val } : null;
+  };
+
+  if (issue) {
+    const p = percentValue((issue as any).discountPercent);
+    if (p !== null) return { type: "PERCENT", value: p };
+
+    const snap = discountFromSnapshot((issue as any).discountRuleSnapshot);
+    if (snap) return snap;
+  }
+
+  if (issueMetadata) {
+    const p = percentValue((issueMetadata as any).discountPercent);
+    if (p !== null) return { type: "PERCENT", value: p };
+
+    const snap = discountFromSnapshot((issueMetadata as any).discountRuleSnapshot);
+    if (snap) return snap;
+  }
+
+  if (booking.discountSnapshot) {
+    const snap = discountFromSnapshot(booking.discountSnapshot);
+    if (snap) return snap;
+  }
+
+  if (booking.coupon) {
+    const type = booking.coupon.discountType ?? "PERCENT";
+    const value = booking.coupon.discountValue;
+    if (type === "PERCENT") {
+      const p = percentValue(value);
+      if (p !== null) return { type, value: p };
+    } else {
+      const val = toNumber(value);
+      if (val !== null && val > 0) return { type, value: val };
+    }
+  }
+
+  return null;
 };
 
-const formatDiscountPercent = (value: number, language: LanguageCode) => {
-  const rounded = Math.round(value * 100) / 100;
-  const formatted = new Intl.NumberFormat(intlLocaleByLanguage[language], {
-    maximumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
-  }).format(rounded);
+const formatDiscountText = (discount: { type: string; value: number } | null, language: LanguageCode) => {
+  if (!discount) return null;
 
-  return `-${formatted}%`;
+  if (discount.type === "PERCENT") {
+    const rounded = Math.round(discount.value * 100) / 100;
+    const formatted = new Intl.NumberFormat(intlLocaleByLanguage[language], {
+      maximumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
+    }).format(rounded);
+    return `-${formatted}%`;
+  }
+
+  if (discount.type === "FIXED_AMOUNT") {
+    return `-${discount.value.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} VND`;
+  }
+
+  return null;
 };
 
 export default function Page() {
@@ -145,7 +178,8 @@ export default function Page() {
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
   const isGuestBooking = Boolean(booking && !booking.user?.id);
-  const discountPercent = booking ? bookingDiscountPercent(booking) : null;
+  const discountInfo = booking ? bookingDiscountText(booking) : null;
+  const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
   const guestEmailLabel =
     booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
   const guestConfirmationMessage = `${translateText(
@@ -270,12 +304,12 @@ export default function Page() {
                     label={translateText("Mã ưu đãi", activeLanguage)}
                     value={<span className={styles.bookingCode}>{booking.couponIssue.code}</span>}
                   />
-                  {discountPercent !== null ? (
+                  {discountLabelText !== null ? (
                     <SummaryRow
                       label={translateText("Mức giảm", activeLanguage)}
                       value={
                         <span className={styles.discountValue}>
-                          {formatDiscountPercent(discountPercent, activeLanguage)}
+                          {discountLabelText}
                         </span>
                       }
                     />
