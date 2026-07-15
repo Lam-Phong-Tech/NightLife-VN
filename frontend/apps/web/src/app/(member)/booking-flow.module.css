@@ -286,6 +286,7 @@
 }
 
 .selectInput {
+  display: none;
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -302,6 +303,152 @@
 .selectInput option {
   background: #1d1b22;
   color: #f3f0ea;
+}
+
+.castSelect {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.castSelectTrigger,
+.castSelectOption {
+  width: 100%;
+  border: 1px solid var(--vy-border);
+  color: var(--vy-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.castSelectTrigger {
+  min-height: 54px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(212, 178, 106, 0.1), transparent 44%),
+    var(--vy-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.castSelectTrigger:hover,
+.castSelectTrigger[aria-expanded="true"] {
+  border-color: rgba(212, 178, 106, 0.55);
+  background:
+    linear-gradient(135deg, rgba(212, 178, 106, 0.16), transparent 46%),
+    var(--vy-surface-2);
+}
+
+.castSelectTrigger:focus-visible,
+.castSelectOption:focus-visible {
+  outline: 2px solid rgba(212, 178, 106, 0.55);
+  outline-offset: 2px;
+}
+
+.castSelectValue {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.castAvatar,
+.castAvatarEmpty {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.castAvatar {
+  border: 1px solid rgba(212, 178, 106, 0.38);
+  background: linear-gradient(135deg, #f4e3b4, #d4b26a 62%, #b6924a);
+  color: #211606;
+}
+
+.castAvatarEmpty {
+  border: 1px solid rgba(212, 178, 106, 0.22);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--vy-gold-hi);
+}
+
+.castSelectText {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.castSelectText strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--vy-text);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.castSelectText small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--vy-text-2);
+  font-size: 11.5px;
+  font-weight: 560;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.castSelectChevron,
+.castSelectCheck {
+  flex: none;
+  color: var(--vy-gold-hi);
+}
+
+.castSelectTrigger[aria-expanded="true"] .castSelectChevron {
+  transform: rotate(180deg);
+}
+
+.castSelectMenu {
+  max-height: 238px;
+  overflow-y: auto;
+  border: 1px solid rgba(212, 178, 106, 0.32);
+  border-radius: 14px;
+  background: var(--vy-surface);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.36);
+  padding: 6px;
+}
+
+.castSelectOption {
+  min-height: 48px;
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+
+.castSelectOption:hover,
+.castSelectOption[aria-selected="true"] {
+  border-color: rgba(212, 178, 106, 0.22);
+  background: rgba(212, 178, 106, 0.11);
+}
+
+.castSelectCheck {
+  margin-left: auto;
 }
 
 .input::placeholder,

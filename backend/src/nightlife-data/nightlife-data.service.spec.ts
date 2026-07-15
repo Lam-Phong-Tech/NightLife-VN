@@ -1092,6 +1092,7 @@ describe('NightlifeDataService', () => {
 
     expect(result.slug).toBe('tokyo-kitchen');
     expect(result.seo.canonicalPath).toBe('/stores/tokyo-kitchen');
+    expect(result.priceReference.note).toBeNull();
     expect(result.priceReference.items).toEqual([]);
     expect(prisma.store.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({

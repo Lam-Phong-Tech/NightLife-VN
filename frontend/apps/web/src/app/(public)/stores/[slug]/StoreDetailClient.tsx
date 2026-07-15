@@ -578,6 +578,13 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const { formatMoney } = useMoneyFormatter(activeLanguage);
   const items = store.priceReference.items;
+  const menuNote = items.length
+    ? store.priceReference.note ||
+      translateText(
+        "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ.",
+        activeLanguage,
+      )
+    : null;
   const menuGroups = Array.from(
     new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
   );
@@ -638,16 +645,12 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
         )}
       </div>
 
-      <div className="menu-note">
-        <Info size={15} />
-        <span>
-          {store.priceReference.note ||
-            translateText(
-              "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ.",
-              activeLanguage,
-            )}
-        </span>
-      </div>
+      {menuNote ? (
+        <div className="menu-note">
+          <Info size={15} />
+          <span>{menuNote}</span>
+        </div>
+      ) : null}
     </section>
   );
 }

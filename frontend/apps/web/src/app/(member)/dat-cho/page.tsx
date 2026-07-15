@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Check,
+  ChevronDown,
   ChevronLeft,
   Mail,
   Minus,
@@ -915,11 +917,89 @@ function CastSelectField({
   onChange: (value: string) => void;
   activeLanguage: LanguageCode;
 }) {
+  const [isOpen, setOpen] = useState(false);
+  const selectedOption = options.find((option) => option.slug === value);
+  const fallbackOption = {
+    slug: "",
+    label: translateText("Không chọn cast", activeLanguage),
+    meta: undefined,
+  };
+  const selected = selectedOption ?? fallbackOption;
+  const optionList = [fallbackOption, ...options];
+  const initial = selected.label.trim().charAt(0).toUpperCase() || "C";
+
+  const chooseCast = (slug: string) => {
+    onChange(slug);
+    setOpen(false);
+  };
+
   return (
     <label className={styles.field}>
       <span className={styles.fieldLabel}>{label}</span>
-      <span className={styles.selectWrap}>
+      <span
+        className={styles.castSelect}
+        onBlur={(event) => {
+          const nextTarget = event.relatedTarget;
+          if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+            setOpen(false);
+          }
+        }}
+      >
+        <button
+          type="button"
+          className={styles.castSelectTrigger}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span className={styles.castSelectValue}>
+            <span className={value ? styles.castAvatar : styles.castAvatarEmpty} aria-hidden="true">
+              {value ? initial : <UserRound size={16} />}
+            </span>
+            <span className={styles.castSelectText}>
+              <strong>{selected.label}</strong>
+              {selected.meta ? <small>{selected.meta}</small> : null}
+            </span>
+          </span>
+          <ChevronDown size={18} className={styles.castSelectChevron} aria-hidden="true" />
+        </button>
+        {isOpen ? (
+          <div className={styles.castSelectMenu} role="listbox">
+            {optionList.map((option) => {
+              const isSelected = option.slug === value;
+              const optionInitial = option.label.trim().charAt(0).toUpperCase() || "C";
+
+              return (
+                <button
+                  key={option.slug || "none"}
+                  type="button"
+                  className={styles.castSelectOption}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseCast(option.slug)}
+                >
+                  <span
+                    className={option.slug ? styles.castAvatar : styles.castAvatarEmpty}
+                    aria-hidden="true"
+                  >
+                    {option.slug ? optionInitial : <UserRound size={15} />}
+                  </span>
+                  <span className={styles.castSelectText}>
+                    <strong>{option.label}</strong>
+                    {option.meta ? <small>{option.meta}</small> : null}
+                  </span>
+                  {isSelected ? (
+                    <Check size={16} className={styles.castSelectCheck} aria-hidden="true" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <select
+          aria-hidden="true"
+          tabIndex={-1}
           name="nl-booking-selected-cast"
           value={value}
           autoComplete="off"

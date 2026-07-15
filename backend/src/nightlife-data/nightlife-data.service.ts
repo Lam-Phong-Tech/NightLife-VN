@@ -12415,7 +12415,7 @@ export class NightlifeDataService {
     return {
       currency: 'VND',
       startingFromVnd: castStartingFromVnd,
-      note: 'Thực đơn do admin cập nhật sẽ hiển thị tại đây.',
+      note: null,
       items: [],
     };
   }
