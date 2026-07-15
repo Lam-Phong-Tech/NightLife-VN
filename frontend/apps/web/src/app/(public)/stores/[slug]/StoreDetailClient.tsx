@@ -28,7 +28,7 @@ import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
-import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
+import type { PublicStoreDetail, RelatedStore, StoreGalleryItem, StoreOpeningHour } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlots,
@@ -339,10 +339,129 @@ const priceRangeText = (store: PublicStoreDetail) => {
   return formatPriceTierRange(values, store.priceReference.startingFromVnd);
 };
 
-const todayKey = () =>
-  ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    new Date().getDay()
-  ];
+const storeTimeZone = "Asia/Bangkok";
+const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+type WeekdayKey = (typeof weekdayKeys)[number];
+
+const weekdayByShortName: Record<string, WeekdayKey> = {
+  sun: "sunday",
+  mon: "monday",
+  tue: "tuesday",
+  wed: "wednesday",
+  thu: "thursday",
+  fri: "friday",
+  sat: "saturday",
+};
+
+const todayKey = (date = new Date()) => {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: storeTimeZone,
+    weekday: "short",
+  })
+    .format(date)
+    .toLowerCase();
+
+  return weekdayByShortName[weekday] ?? weekdayKeys[date.getDay()] ?? "monday";
+};
+
+const currentStoreMinutes = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: storeTimeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0") % 24;
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+
+  return hour * 60 + minute;
+};
+
+const parseOpeningTime = (value?: string | null) => {
+  if (!value) return null;
+
+  const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2] ?? "0");
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+
+  return hours * 60 + minutes;
+};
+
+type OpeningRange = {
+  openMinutes: number;
+  closeMinutes: number;
+};
+
+const openingRangesFromText = (value?: string | null): OpeningRange[] => {
+  if (!value) return [];
+
+  return [...value.matchAll(/(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/g)]
+    .map((match) => {
+      const openMinutes = parseOpeningTime(`${match[1]}:${match[2] ?? "00"}`);
+      const closeMinutes = parseOpeningTime(`${match[3]}:${match[4] ?? "00"}`);
+
+      return openMinutes === null || closeMinutes === null ? null : { openMinutes, closeMinutes };
+    })
+    .filter((range): range is OpeningRange => Boolean(range));
+};
+
+const openingRangesFromSlot = (slot?: StoreOpeningHour | null): OpeningRange[] => {
+  if (!slot || slot.closed) return [];
+
+  const openMinutes = parseOpeningTime(slot.open);
+  const closeMinutes = parseOpeningTime(slot.close);
+  if (openMinutes !== null && closeMinutes !== null) {
+    return [{ openMinutes, closeMinutes }];
+  }
+
+  return openingRangesFromText(slot.note);
+};
+
+const isOvernightRange = (range: OpeningRange) => range.closeMinutes <= range.openMinutes;
+
+const isStoreMinuteInRange = (minute: number, range: OpeningRange) => {
+  if (range.openMinutes === range.closeMinutes) return true;
+
+  if (isOvernightRange(range)) {
+    return minute >= range.openMinutes || minute < range.closeMinutes;
+  }
+
+  return minute >= range.openMinutes && minute < range.closeMinutes;
+};
+
+const previousWeekdayKey = (weekday: WeekdayKey) => {
+  const index = weekdayKeys.indexOf(weekday);
+  return weekdayKeys[(index + weekdayKeys.length - 1) % weekdayKeys.length] ?? "monday";
+};
+
+const isStoreOpenAt = (
+  openingHours: Record<string, StoreOpeningHour> | null | undefined,
+  summary: string | null,
+  date: Date,
+) => {
+  const currentWeekday = todayKey(date);
+  const minutes = currentStoreMinutes(date);
+  const previousRanges = openingRangesFromSlot(openingHours?.[previousWeekdayKey(currentWeekday)])
+    .filter(isOvernightRange);
+
+  if (previousRanges.some((range) => isStoreMinuteInRange(minutes, range))) {
+    return true;
+  }
+
+  const todaySlot = openingHours?.[currentWeekday];
+  if (todaySlot?.closed) return false;
+
+  const todayRanges = openingRangesFromSlot(todaySlot);
+  if (todayRanges.length) {
+    return todayRanges.some((range) => isStoreMinuteInRange(minutes, range));
+  }
+
+  return openingRangesFromText(summary).some((range) => isStoreMinuteInRange(minutes, range));
+};
 
 const toDateInputValue = (date: Date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -924,6 +1043,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
+  const [statusNow, setStatusNow] = useState(() => new Date());
   const [guestName, setGuestName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
@@ -952,6 +1072,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setStatusNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -1004,7 +1132,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
-  const today = todayKey() ?? "monday";
+  const today = todayKey(statusNow);
   const normalizedOpeningHours = useMemo(
     () => normalizeStoreOpeningHours(store.openingHours),
     [store.openingHours],
@@ -1012,7 +1140,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const openingSummary = rawOpeningSummary(store);
   const rawTodayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
-  const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
+  const openNow = isStoreOpenAt(normalizedOpeningHours, openingSummary, statusNow);
   const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
   const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
   const favoriteCityLabel = store.cityCode ?? store.city;
@@ -1570,7 +1698,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
               <b className={openNow ? "open-pill" : "closed-pill"}>
                 <i />
-                {translateText(openNow ? "Đang mở" : "Đang nghỉ", activeLanguage)}
+                {translateText(openNow ? "Đang mở" : "Đang đóng", activeLanguage)}
               </b>
             </div>
 
@@ -2089,9 +2217,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-name b.closed,
         .closed-pill {
-          color: #bfb7aa;
-          background: var(--vy-surface-2);
-          border: 1px solid var(--vy-border);
+          color: #7b4d05;
+          background: linear-gradient(135deg, rgba(255, 236, 168, .96), rgba(226, 174, 58, .88));
+          border: 1px solid rgba(188, 130, 22, .46);
+          box-shadow: 0 8px 20px rgba(188, 130, 22, .16);
         }
 
         .hero-name i,

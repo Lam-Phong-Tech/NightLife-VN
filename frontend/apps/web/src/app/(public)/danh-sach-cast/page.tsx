@@ -993,7 +993,7 @@ export default function Page() {
             ))}
             <button
               type="button"
-              className="cast-chip cast-filter-chip"
+              className={`cast-chip cast-filter-chip ${activeFilterCount ? "is-active" : ""}`}
               aria-expanded={isFilterOpen}
               aria-controls={isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"}
               onClick={() => setFilterOpen((current) => !current)}
@@ -2885,6 +2885,28 @@ html.vy-light .cast-chip,
 html.vy-light .cast-card,
 html.vy-light .cast-suggestions {
   box-shadow: 0 18px 42px -32px rgba(68, 48, 18, 0.42);
+}
+
+html.vy-light .cast-chip.is-active,
+html.vy-light .cast-filter-chip[aria-expanded="true"],
+html.vy-light .cast-sheet-group button.is-active {
+  border-color: rgba(150, 116, 52, 0.46);
+  background: linear-gradient(135deg, #fff0b8 0%, #e4c06a 48%, #c99b3e 100%);
+  color: #211607;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    0 16px 30px -22px rgba(120, 78, 14, 0.62);
+}
+
+html.vy-light .cast-chip.is-active .cast-live-dot {
+  background: #d22d72;
+  box-shadow: 0 0 8px rgba(210, 45, 114, 0.78);
+}
+
+html.vy-light .cast-filter-chip.is-active b,
+html.vy-light .cast-filter-chip[aria-expanded="true"] b {
+  background: #241a0a;
+  color: #f7e5a7;
 }
 
 html.vy-light .cast-search-input input,
