@@ -935,6 +935,9 @@ function DesktopNotificationDropdown({
           overflow: "hidden",
           color: colors.text,
           fontFamily: "var(--nl-font-sans)",
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "min(78vh, calc(100vh - 92px))",
         }}
       >
         <div
@@ -981,24 +984,33 @@ function DesktopNotificationDropdown({
           activeFilter={activeFilter}
           onFilterChange={onFilterChange}
         />
-        {visibleNotices.length ? (
-          <>
-            <NoticeGroup
-              label="Hôm nay"
-              notices={todayNotices}
-              isMobile={false}
-              onSelect={onNoticeSelect}
-            />
-            <NoticeGroup
-              label="Trước đó"
-              notices={previousNotices}
-              isMobile={false}
-              onSelect={onNoticeSelect}
-            />
-          </>
-        ) : (
-          <NotificationEmptyState isLoading={isLoading} error={error} />
-        )}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+          }}
+        >
+          {visibleNotices.length ? (
+            <>
+              <NoticeGroup
+                label="Hôm nay"
+                notices={todayNotices}
+                isMobile={false}
+                onSelect={onNoticeSelect}
+              />
+              <NoticeGroup
+                label="Trước đó"
+                notices={previousNotices}
+                isMobile={false}
+                onSelect={onNoticeSelect}
+              />
+            </>
+          ) : (
+            <NotificationEmptyState isLoading={isLoading} error={error} />
+          )}
+        </div>
 
         <div
           style={{
@@ -1078,7 +1090,7 @@ function MobileNotificationPanel({
         right: "10px",
         left: "10px",
         zIndex: 101,
-        maxHeight: "min(68vh, 560px)",
+        maxHeight: "min(calc(100dvh - 96px), 620px)",
         background: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: "18px",
@@ -1141,25 +1153,6 @@ function MobileNotificationPanel({
           </div>
         </div>
 
-        <button
-          type="button"
-          aria-label="Cài đặt thông báo"
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            border: `1px solid ${colors.border}`,
-            background: colors.surface2,
-            color: colors.muted,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: "none",
-            cursor: "pointer",
-          }}
-        >
-          <Settings size={17} strokeWidth={1.7} />
-        </button>
       </div>
 
       <div
@@ -1209,7 +1202,9 @@ function MobileNotificationPanel({
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
+          overscrollBehavior: "contain",
           paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
         }}
       >
@@ -1834,6 +1829,24 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     const closeTimer = window.setTimeout(() => setIsNotificationOpen(false), 0);
     return () => window.clearTimeout(closeTimer);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isNotificationOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    if (scrollbarGap > 0) {
+      document.body.style.paddingRight = `${scrollbarGap}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isNotificationOpen]);
 
   useEffect(() => {
     if (!isNotificationOpen) return;
