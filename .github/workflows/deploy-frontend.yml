@@ -63,10 +63,50 @@ jobs:
             SSH_HOST="${SSH_HOST%:*}"
           fi
           KNOWN_HOSTS="$HOME/.ssh/known_hosts"
-          ssh-keyscan -T 30 -p "$SSH_PORT" -H "$SSH_HOST" >> "$KNOWN_HOSTS" || echo "::warning::ssh-keyscan khong lay duoc host key, tiep tuc voi StrictHostKeyChecking=accept-new."
-          SSH_CMD="ssh -i $HOME/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=30 -o ServerAliveInterval=15"
-          $SSH_CMD "$USER@$SSH_HOST" "mkdir -p /var/www/demonightlight.test9.io.vn"
-          rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:/var/www/demonightlight.test9.io.vn"
+          touch "$KNOWN_HOSTS"
+          KEYSCAN_LOG="$(mktemp)"
+          set +e
+          timeout 25s ssh-keyscan -T 8 -t rsa,ecdsa,ed25519 -p "$SSH_PORT" -H "$SSH_HOST" >> "$KNOWN_HOSTS" 2>"$KEYSCAN_LOG"
+          KEYSCAN_STATUS=$?
+          set -e
+          if [ "$KEYSCAN_STATUS" -ne 0 ]; then
+            echo "::warning::ssh-keyscan khong lay duoc day du host key trong 25s, tiep tuc voi StrictHostKeyChecking=accept-new."
+            cat "$KEYSCAN_LOG" || true
+          fi
+
+          SSH_CMD="ssh -i $HOME/.ssh/id_rsa -p $SSH_PORT -o BatchMode=yes -o PreferredAuthentications=publickey -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=20 -o ConnectionAttempts=3 -o ServerAliveInterval=10 -o ServerAliveCountMax=6 -o TCPKeepAlive=yes -o IPQoS=none -o LogLevel=ERROR"
+          retry_ssh() {
+            ssh_status=0
+            for attempt in 1 2 3; do
+              if $SSH_CMD "$USER@$SSH_HOST" "$@"; then
+                return 0
+              fi
+              ssh_status=$?
+              if [ "$attempt" -lt 3 ]; then
+                echo "::warning::SSH attempt $attempt/3 failed with exit $ssh_status. Retrying..."
+                sleep $((attempt * 10))
+              fi
+            done
+            return "$ssh_status"
+          }
+
+          retry_rsync() {
+            rsync_status=0
+            for attempt in 1 2 3; do
+              if rsync -avz --delete --timeout=120 -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:/var/www/demonightlight.test9.io.vn"; then
+                return 0
+              fi
+              rsync_status=$?
+              if [ "$attempt" -lt 3 ]; then
+                echo "::warning::rsync attempt $attempt/3 failed with exit $rsync_status. Retrying..."
+                sleep $((attempt * 10))
+              fi
+            done
+            return "$rsync_status"
+          }
+
+          retry_ssh "mkdir -p /var/www/demonightlight.test9.io.vn"
+          retry_rsync
 
       - name: Restart PM2 & Update DB
         uses: appleboy/ssh-action@v1.2.5
