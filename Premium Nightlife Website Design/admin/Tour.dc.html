@@ -176,17 +176,24 @@
             </span>
           </sc-for>
           
-          <!-- Add new time form inside the block -->
-          <sc-if value="{{ tf.addingTime }}" hint-placeholder-val="{{ false }}">
-            <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);border-radius:8px;padding:3px 4px 3px 10px;">
-              <input value="{{ tf.newTimeVal }}" onInput="{{ tf.setNewTimeVal }}" placeholder="23:00" style="width:48px;background:none;border:none;outline:none;color:#f0dda8;font-size:12.5px;font-weight:600;font-family:inherit;letter-spacing:.3px;">
-              <span onClick="{{ tf.saveNewTime }}" title="Lưu" style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#7fd3a2;cursor:pointer;" style-hover="background:rgba(95,191,134,.15);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-              <span onClick="{{ tf.cancelNewTime }}" title="Hủy" style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#e88b99;cursor:pointer;" style-hover="background:rgba(224,105,122,.15);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+          <!-- Custom Dropdown select trigger -->
+          <div style="position:relative;display:inline-block;">
+            <span onClick="{{ tf.toggleTimeDropdown }}" style="display:inline-flex;align-items:center;gap:5px;border:1.5px dashed rgba(212,178,106,.32);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#8c8679;cursor:pointer;white-space:nowrap;" style-hover="color:#caa765;border-color:rgba(212,178,106,.55);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm giờ
             </span>
-          </sc-if>
-          <sc-if value="{{ tf.notAddingTime }}" hint-placeholder-val="{{ true }}">
-            <span onClick="{{ tf.startAddTime }}" style="display:inline-flex;align-items:center;gap:5px;border:1.5px dashed rgba(212,178,106,.32);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#8c8679;cursor:pointer;white-space:nowrap;" style-hover="color:#caa765;border-color:rgba(212,178,106,.55);"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm giờ</span>
-          </sc-if>
+            
+            <sc-if value="{{ tf.addingTime }}" hint-placeholder-val="{{ false }}">
+              <!-- Dropdown options list absolute -->
+              <div style="position:absolute;top:28px;left:0;z-index:100;background:#15131a;border:1px solid rgba(212,178,106,.4);border-radius:10px;width:130px;max-height:180px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.65);margin-top:4px;" class="hs">
+                <sc-for list="{{ tf.timeOptions }}" as="opt" hint-placeholder-count="5">
+                  <div onClick="{{ opt.select }}" style="padding:9px 12px;font-size:12.5px;color:#f3f0ea;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03);" style-hover="background:rgba(212,178,106,.15);color:#d4b26a;">{{ opt.val }}</div>
+                </sc-for>
+                <sc-if value="{{ tf.noOptions }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:12px;font-size:11.5px;color:#8c8679;text-align:center;">Hết giờ để chọn</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
         </div>
 
         <!-- Tour Stops Section (Selected Venues) -->
@@ -629,30 +636,33 @@ class Component extends DCLogic {
           }
         })),
         addingTime: S.addingTime,
-        notAddingTime: !S.addingTime,
-        newTimeVal: S.newTimeVal,
-        setNewTimeVal: (e) => this.setState({ newTimeVal: e.target.value }),
-        startAddTime: () => this.setState({ addingTime: true, newTimeVal: '' }),
-        cancelNewTime: () => this.setState({ addingTime: false, newTimeVal: '' }),
-        saveNewTime: () => {
-          const val = S.newTimeVal.trim();
-          if (!val) {
-            this.showToast('Vui lòng nhập giờ');
-            return;
+        toggleTimeDropdown: () => this.setState({ addingTime: !S.addingTime }),
+        timeOptions: [
+          '17:00', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
+          '21:00', '21:30', '22:00', '22:30', '23:00', '23:30', '00:00',
+          '00:30', '01:00', '01:30', '02:00'
+        ].filter(t => !(form.departureTimes || []).includes(t)).map(t => ({
+          val: t,
+          select: () => {
+            const nextTimes = (form.departureTimes || []).concat([t]);
+            const slots = [
+              '17:00', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
+              '21:00', '21:30', '22:00', '22:30', '23:00', '23:30', '00:00',
+              '00:30', '01:00', '01:30', '02:00'
+            ];
+            nextTimes.sort((a, b) => slots.indexOf(a) - slots.indexOf(b));
+            this.setState({
+              editForm: { ...form, departureTimes: nextTimes },
+              addingTime: false
+            });
+            this.showToast(`Đã thêm khung giờ ${t}`);
           }
-          // Simple validation for HH:MM format
-          if (!/^\d{1,2}:\d{2}$/.test(val)) {
-            this.showToast('Định dạng giờ không hợp lệ (VD: 23:00)');
-            return;
-          }
-          const nextTimes = (form.departureTimes || []).concat([val]);
-          this.setState({
-            editForm: { ...form, departureTimes: nextTimes },
-            addingTime: false,
-            newTimeVal: ''
-          });
-          this.showToast(`Đã thêm khung giờ ${val}`);
-        },
+        })),
+        noOptions: [
+          '17:00', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
+          '21:00', '21:30', '22:00', '22:30', '23:00', '23:30', '00:00',
+          '00:30', '01:00', '01:30', '02:00'
+        ].filter(t => !(form.departureTimes || []).includes(t)).length === 0,
 
         // Stops bindings
         stops: stopsList,
