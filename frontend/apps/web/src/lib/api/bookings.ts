@@ -61,6 +61,21 @@ export type BookingRecord = {
       qrPayload?: string | null;
     } | null;
   } | null;
+  tour?: {
+    id: string;
+    title: string;
+    stops: Array<{
+      order: number;
+      storeId: string;
+      storeSlug: string;
+      storeName: string;
+      casts: Array<{
+        id: string;
+        slug: string;
+        name: string;
+      }>;
+    }>;
+  };
 };
 
 export type CreateBookingPayload = {

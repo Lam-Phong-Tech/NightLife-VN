@@ -13,7 +13,6 @@ import {
   Minus,
   Plus,
   Route,
-  ShieldCheck,
   Sparkles,
   Tag,
   UserRound,
@@ -118,6 +117,8 @@ const tourCover = (tour: PublicTour) =>
 const storeImage = (store: TourStopStore) => store.media[0]?.url || "";
 
 const castName = (cast: TourStoreCast) => cast.publicAlias || cast.stageName;
+
+const castOptionKey = (cast: Pick<TourCastOption, "storeId" | "id">) => `${cast.storeId}:${cast.id}`;
 
 const localizedApiErrorMessage = (
   error: unknown,
@@ -304,21 +305,21 @@ const tourUiCopy = {
     zh: "该日期暂无可用时间段。",
   },
   guestsLabel: {
-    vi: "Số khách",
+    vi: "Số người",
     en: "Guests",
     ja: "人数",
     ko: "인원",
     zh: "人数",
   },
   decreaseGuests: {
-    vi: "Giảm số khách",
+    vi: "Giảm số người",
     en: "Decrease guests",
     ja: "人数を減らす",
     ko: "인원 줄이기",
     zh: "减少人数",
   },
   increaseGuests: {
-    vi: "Tăng số khách",
+    vi: "Tăng số người",
     en: "Increase guests",
     ja: "人数を増やす",
     ko: "인원 늘리기",
@@ -352,20 +353,6 @@ const tourUiCopy = {
     ko: "투어 예약 요청",
     zh: "发送行程预订请求",
   },
-  noPaymentNote: {
-    vi: "Không thanh toán online. Yêu cầu giữ chỗ sẽ được gửi và QR ưu đãi được gửi sau khi đặt thành công.",
-    en: "No online payment. Your reservation request will be sent and the deal QR will be delivered after successful booking.",
-    ja: "オンライン決済はありません。予約リクエストを送信し、予約完了後に特典QRをお送りします。",
-    ko: "온라인 결제는 없습니다. 예약 요청이 전송되며 예약 완료 후 혜택 QR이 발송됩니다.",
-    zh: "无需在线支付。预约请求将发送，预订成功后会发送优惠二维码。",
-  },
-  noPaymentShort: {
-    vi: "Gửi yêu cầu · không thu cọc",
-    en: "Send request · no deposit",
-    ja: "リクエスト送信・デポジットなし",
-    ko: "요청 전송 · 보증금 없음",
-    zh: "发送请求 · 无需押金",
-  },
   bookingFailed: {
     vi: "Không gửi được yêu cầu đặt tour.",
     en: "Could not send the tour request.",
@@ -380,12 +367,37 @@ type TourUiCopyKey = keyof typeof tourUiCopy;
 const tourUiText = (key: TourUiCopyKey, language: LanguageCode) =>
   tourUiCopy[key][language] ?? tourUiCopy[key].vi;
 
-const tourBookingNote = (tour: PublicTour, selectedCast: TourCastOption | null, customerNote: string) => {
+const tourBookingSummary = (tour: PublicTour, selectedCasts: TourCastOption[]) =>
+  tour.stops.map((stop, index) => {
+    const casts = selectedCasts
+      .filter((cast) => cast.storeId === stop.store.id)
+      .map((cast) => ({
+        id: cast.id,
+        slug: cast.slug,
+        name: castName(cast),
+      }));
+
+    return {
+      order: stop.order || index + 1,
+      storeId: stop.store.id,
+      storeSlug: stop.store.slug,
+      storeName: stop.store.name,
+      casts,
+    };
+  });
+
+const tourBookingNote = (tour: PublicTour, selectedCasts: TourCastOption[], customerNote: string) => {
   const stopNames = tour.stops.map((stop) => stop.store.name).join(" > ");
+  const castByStop = tourBookingSummary(tour, selectedCasts)
+    .map((stop) => {
+      const castText = stop.casts.length ? stop.casts.map((cast) => cast.name).join(", ") : "khong chon cast";
+      return `${stop.order}. ${stop.storeName}: ${castText}`;
+    })
+    .join("; ");
   const lines = [
     `Tour: ${tour.title}`,
     stopNames ? `Diem dung: ${stopNames}` : "",
-    selectedCast ? `Cast dong hanh: ${castName(selectedCast)} @ ${selectedCast.storeName}` : "",
+    castByStop ? `Cast theo quan: ${castByStop}` : "",
     customerNote ? `Ghi chu khach: ${customerNote}` : "",
   ].filter(Boolean);
 
@@ -403,7 +415,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const [bookingTime, setBookingTime] = useState("");
   const [guests, setGuests] = useState(2);
   const [note, setNote] = useState("");
-  const [selectedCastSlug, setSelectedCastSlug] = useState("");
+  const [selectedCastKeys, setSelectedCastKeys] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
@@ -425,10 +437,14 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       ),
     [tour.stops],
   );
-  const selectedCast = tourCasts.find((cast) => cast.slug === selectedCastSlug) ?? null;
+  const selectedCasts = useMemo(
+    () => selectedCastKeys.map((key) => tourCasts.find((cast) => castOptionKey(cast) === key)).filter(Boolean) as TourCastOption[],
+    [selectedCastKeys, tourCasts],
+  );
+  const singleSelectedCast = selectedCasts.length === 1 ? selectedCasts[0] : null;
   const bookingStore =
-    selectedCast && tour.stops.find((stop) => stop.store.slug === selectedCast.storeSlug)?.store
-      ? tour.stops.find((stop) => stop.store.slug === selectedCast.storeSlug)!.store
+    singleSelectedCast && tour.stops.find((stop) => stop.store.slug === singleSelectedCast.storeSlug)?.store
+      ? tour.stops.find((stop) => stop.store.slug === singleSelectedCast.storeSlug)!.store
       : firstStore;
   const explicitDepartureTimes = useMemo(
     () =>
@@ -446,9 +462,25 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   );
 
   useEffect(() => {
-    setPortalTarget(document.body);
-    return () => setPortalTarget(null);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setPortalTarget(document.body);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    const validCastKeys = new Set(tourCasts.map(castOptionKey));
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setSelectedCastKeys((current) => current.filter((key) => validCastKeys.has(key)));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tourCasts]);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -530,7 +562,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     setErrorMessage("");
   };
 
-  const targetLabel = selectedCast ? `${castName(selectedCast)} @ ${selectedCast.storeName}` : firstStore?.name;
+  const targetLabel = tour.title || firstStore?.name;
   const canSubmit = Boolean(firstStore && bookingStore && bookingTimeOptions.length);
 
   const submitBooking = async () => {
@@ -573,12 +605,12 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
     const payload: CreateBookingPayload = {
       storeSlug: bookingStore.slug,
-      ...(selectedCast ? { castSlug: selectedCast.slug } : {}),
+      ...(singleSelectedCast ? { castSlug: singleSelectedCast.slug } : {}),
       displayName,
       email: normalizedEmail,
       scheduledAt,
       partySize: guests,
-      note: tourBookingNote(tour, selectedCast, trimmedNote),
+      note: tourBookingNote(tour, selectedCasts, trimmedNote),
     };
 
     try {
@@ -603,7 +635,15 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
         booking = await bookingApi.createGuestBooking(payload);
       }
 
-      rememberLastBooking(booking, savedAsMemberBooking ? undefined : { guestHistory: true });
+      const tourBooking = {
+        ...booking,
+        tour: {
+          id: tour.id,
+          title: tour.title,
+          stops: tourBookingSummary(tour, selectedCasts),
+        },
+      };
+      rememberLastBooking(tourBooking, savedAsMemberBooking ? undefined : { guestHistory: true });
       if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }
@@ -709,37 +749,46 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                   <button
                     type="button"
                     className={styles.castButton}
-                    data-selected={!selectedCastSlug}
-                    onClick={() => setSelectedCastSlug("")}
+                    data-selected={selectedCastKeys.length === 0}
+                    onClick={() => setSelectedCastKeys([])}
                   >
                     <span className={styles.castAvatar} />
                     <span>
                       <span className={styles.castName}>{tx("noCast")}</span>
                       <span className={styles.castMeta}>{tx("freeExperience")}</span>
                     </span>
-                    {!selectedCastSlug ? <Check size={17} color="var(--vy-gold)" /> : null}
+                    {selectedCastKeys.length === 0 ? <Check size={17} color="var(--vy-gold)" /> : null}
                   </button>
-                  {tourCasts.map((cast) => (
-                    <button
-                      type="button"
-                      key={`${cast.storeId}-${cast.id}`}
-                      className={styles.castButton}
-                      data-selected={selectedCastSlug === cast.slug}
-                      onClick={() => setSelectedCastSlug(cast.slug)}
-                    >
-                      <span
-                        className={styles.castAvatar}
-                        role={cast.thumbnailUrl ? "img" : undefined}
-                        aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
-                        style={cast.thumbnailUrl ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` } : undefined}
-                      />
-                      <span>
-                        <span className={styles.castName}>{castName(cast)}</span>
-                        <span className={styles.castMeta}>{cast.storeName}</span>
-                      </span>
-                      {selectedCastSlug === cast.slug ? <Check size={17} color="var(--vy-gold)" /> : null}
-                    </button>
-                  ))}
+                  {tourCasts.map((cast) => {
+                    const key = castOptionKey(cast);
+                    const isSelected = selectedCastKeys.includes(key);
+
+                    return (
+                      <button
+                        type="button"
+                        key={key}
+                        className={styles.castButton}
+                        data-selected={isSelected}
+                        onClick={() =>
+                          setSelectedCastKeys((current) =>
+                            current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+                          )
+                        }
+                      >
+                        <span
+                          className={styles.castAvatar}
+                          role={cast.thumbnailUrl ? "img" : undefined}
+                          aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
+                          style={cast.thumbnailUrl ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` } : undefined}
+                        />
+                        <span>
+                          <span className={styles.castName}>{castName(cast)}</span>
+                          <span className={styles.castMeta}>{cast.storeName}</span>
+                        </span>
+                        {isSelected ? <Check size={17} color="var(--vy-gold)" /> : null}
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             ) : null}
@@ -879,11 +928,6 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                 <CalendarDays size={17} />
                 {isSubmitting ? tx("submitting") : tx("submitTour")}
               </button>
-
-              <div className={styles.note}>
-                <ShieldCheck size={15} />
-                <span>{tx("noPaymentNote")}</span>
-              </div>
             </form>
           </aside>
         </div>
@@ -901,7 +945,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                 <CalendarDays size={17} />
                 <span>
                   <strong>{isSubmitting ? tx("submitting") : tx("submitTour")}</strong>
-                  <small>{tx("noPaymentShort")}</small>
+                  <small>{tx("bookThisTour")}</small>
                 </span>
               </button>
             </div>,

@@ -533,7 +533,7 @@
 
 @media (max-width: 900px) {
   .shell {
-    padding: 12px 0 calc(136px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(86px + env(safe-area-inset-bottom));
   }
 
   .breadcrumb {

@@ -59,6 +59,7 @@ const bookingQrImageUrl = (booking: BookingRecord) => {
 
 const bookingTitle = (booking: BookingRecord | null) => {
   if (!booking) return "Booking NightLife";
+  if (booking.tour) return booking.tour.title;
   if (booking.cast) {
     return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${booking.store?.name ?? "NightLife"}`;
   }
@@ -86,14 +87,19 @@ export default function Page() {
   const canShowQr = booking ? !isCancelled : false;
   const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
+  const isTourBooking = Boolean(booking?.tour);
   const heroTitle = translateText(
     !booking
       ? "Chưa tìm thấy booking"
       : isCancelled
         ? "Đặt chỗ đã hủy"
         : isConfirmed
-          ? "Đặt chỗ đã xác nhận"
-          : "Đã gửi yêu cầu đặt bàn",
+          ? isTourBooking
+            ? "Đặt tour đã xác nhận"
+            : "Đặt chỗ đã xác nhận"
+          : isTourBooking
+            ? "Đã gửi yêu cầu đặt tour"
+            : "Đã gửi yêu cầu đặt bàn",
     activeLanguage,
   );
   const heroText = translateText(
@@ -103,7 +109,9 @@ export default function Page() {
         ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
         : isConfirmed
           ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
-          : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.",
+          : isTourBooking
+            ? "Yêu cầu đặt tour đã gửi thành công. Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình."
+            : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.",
     activeLanguage,
   );
   const statusText = translateText(
@@ -172,7 +180,10 @@ export default function Page() {
                 label={translateText("Mã đặt chỗ", activeLanguage)}
                 value={<span className={styles.bookingCode}>{booking.bookingCode}</span>}
               />
-              <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
+              <SummaryRow
+                label={translateText("Quán", activeLanguage)}
+                value={booking.tour ? <TourVenueSummary booking={booking} language={activeLanguage} /> : title}
+              />
               <SummaryRow label={translateText("Thời gian", activeLanguage)} value={formatDateTime(booking.scheduledAt, activeLanguage)} />
               <SummaryRow label={translateText("Số người", activeLanguage)} value={translateText(`${booking.partySize} người`, activeLanguage)} />
               <SummaryRow label={translateText("Người đặt", activeLanguage)} value={guestLabel(booking, activeLanguage)} />
@@ -240,8 +251,32 @@ export default function Page() {
 function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className={styles.summaryRow}>
-      <span>{label}</span>
-      <span>{value}</span>
+      <span className={styles.summaryLabel}>{label}</span>
+      <span className={styles.summaryValue}>{value}</span>
+    </div>
+  );
+}
+
+function TourVenueSummary({ booking, language }: { booking: BookingRecord; language: LanguageCode }) {
+  const stops = booking.tour?.stops ?? [];
+
+  if (!stops.length) return <>{bookingTitle(booking)}</>;
+
+  return (
+    <div className={styles.tourVenueSummary}>
+      {stops.map((stop, index) => (
+        <div key={`${stop.storeId}-${stop.order}`} className={styles.tourVenueItem}>
+          <span className={styles.tourVenueIndex}>{stop.order || index + 1}</span>
+          <span className={styles.tourVenueCopy}>
+            <strong>{stop.storeName}</strong>
+            <small>
+              {stop.casts.length
+                ? stop.casts.map((cast) => cast.name).join(", ")
+                : translateText("Không chọn cast", language)}
+            </small>
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
