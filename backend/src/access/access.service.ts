@@ -151,9 +151,37 @@ export class AccessService {
       select: { coupon: { select: { storeId: true } } },
     });
 
-    return issue
-      ? this.hasStoreAccess(user, issue.coupon.storeId, 'coupon.scan')
-      : false;
+    if (issue) {
+      return this.hasStoreAccess(user, issue.coupon.storeId, 'coupon.scan');
+    }
+
+    const adminIssue = await this.prisma.adminCouponIssue.findFirst({
+      where: {
+        ...(target.code ? { code: target.code } : {}),
+        ...(target.couponIssueId ? { id: target.couponIssueId } : {}),
+      },
+      include: { adminCoupon: true },
+    });
+
+    if (adminIssue) {
+      if (adminIssue.storeId) {
+        return this.hasStoreAccess(user, adminIssue.storeId, 'coupon.scan');
+      }
+      const targetStores = adminIssue.adminCoupon.targetStores || [];
+      const accessibleStoreIds = await this.getAccessibleStoreIds(user, 'coupon.scan');
+      if (!accessibleStoreIds) {
+        return true;
+      }
+      if (accessibleStoreIds.length === 0) {
+        return false;
+      }
+      if (targetStores.length > 0) {
+        return accessibleStoreIds.some((id) => targetStores.includes(id));
+      }
+      return true;
+    }
+
+    return false;
   }
 
   async canConfirmCheckIn(
@@ -177,9 +205,34 @@ export class AccessService {
       select: { coupon: { select: { storeId: true } } },
     });
 
-    return issue
-      ? this.hasStoreAccess(user, issue.coupon.storeId, 'checkin.confirm')
-      : false;
+    if (issue) {
+      return this.hasStoreAccess(user, issue.coupon.storeId, 'checkin.confirm');
+    }
+
+    const adminIssue = await this.prisma.adminCouponIssue.findFirst({
+      where: { id: target.couponIssueId },
+      include: { adminCoupon: true },
+    });
+
+    if (adminIssue) {
+      if (adminIssue.storeId) {
+        return this.hasStoreAccess(user, adminIssue.storeId, 'checkin.confirm');
+      }
+      const targetStores = adminIssue.adminCoupon.targetStores || [];
+      const accessibleStoreIds = await this.getAccessibleStoreIds(user, 'checkin.confirm');
+      if (!accessibleStoreIds) {
+        return true;
+      }
+      if (accessibleStoreIds.length === 0) {
+        return false;
+      }
+      if (targetStores.length > 0) {
+        return accessibleStoreIds.some((id) => targetStores.includes(id));
+      }
+      return true;
+    }
+
+    return false;
   }
 
   async hasRolePermission(user: AuthenticatedUser, permissionKey: string) {
