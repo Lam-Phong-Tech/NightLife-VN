@@ -199,7 +199,7 @@ const bottomNav = [
   { href: '/tai-khoan', label: 'Tài khoản', icon: LockKeyhole },
 ];
 
-function SectionTitle({ title, en }: { title: string; en: string }) {
+function SectionTitle({ title }: { title: string }) {
   const { colors } = useTheme();
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -207,9 +207,6 @@ function SectionTitle({ title, en }: { title: string; en: string }) {
         <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600, lineHeight: 1.15 }}>
           {title}
         </h2>
-        <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>
-          {en}
-        </div>
       </div>
       <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${colors.borderGold40}, transparent)` }} />
     </div>
@@ -983,7 +980,7 @@ function PartnerPageContent({
                 padding: isMobile ? '16px' : '20px',
               }}
             >
-              <SectionTitle title="Đăng ký hợp tác" en="PARTNER APPLICATION" />
+              <SectionTitle title="Đăng ký hợp tác" />
               <p style={{ margin: '0 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.55 }}>
                 Điền thông tin tối thiểu để Admin kiểm duyệt và liên hệ cấp tài khoản đối tác.
               </p>
@@ -1044,7 +1041,7 @@ function PartnerPageContent({
                   label="Số nhà, tên đường"
                   value={form.storeAddress}
                   onChange={(value) => updateForm('storeAddress', value)}
-                  placeholder="Ví dụ: 12 Trần Phú"
+                  placeholder="Vui lòng nhập địa chỉ chi tiết"
                   required
                 />
 
@@ -1162,7 +1159,7 @@ function PartnerPageContent({
         {!isMobile ? (
           <>
             <section style={{ padding: '28px 0 0' }}>
-              <SectionTitle title="Quyền lợi đối tác" en="PARTNER BENEFITS" />
+              <SectionTitle title="Quyền lợi đối tác" />
               <div
                 style={{
                   display: 'grid',
@@ -1214,7 +1211,7 @@ function PartnerPageContent({
             </section>
 
             <section style={{ padding: '28px 0 0' }}>
-              <SectionTitle title="Cổng quản lý" en="PORTAL MODULES" />
+              <SectionTitle title="Cổng quản lý" />
               <div
                 style={{
                   display: 'grid',
