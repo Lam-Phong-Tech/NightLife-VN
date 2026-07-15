@@ -448,7 +448,6 @@ export default function AppearancePage() {
 
       try {
         setUploadingIcon(true);
-        const dominantColor = await detectIconDominantColor(file);
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'APPEARANCE_ICON');
@@ -458,8 +457,8 @@ export default function AppearancePage() {
           showToast('Không lấy được URL icon sau khi tải lên.');
           return;
         }
-        setIcon(res.url, dominantColor);
-        showToast(`Đã tải icon lên và tự nhận màu ${dominantColor}. Bấm Lưu thay đổi để áp dụng.`);
+        setIcon(res.url, '#e3c27e');
+        showToast('Đã tải icon lên thành công (áp dụng màu mặc định #e3c27e). Bấm Lưu thay đổi để áp dụng.');
       } catch (err) {
         console.error(err);
         showToast(err instanceof Error ? err.message : 'Tải icon thất bại.');
