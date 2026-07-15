@@ -41,6 +41,11 @@ export class PublicDiscoveryQueryDto {
   tag?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  storeSlug?: string;
+
+  @IsOptional()
   @Matches(decimalNumberPattern)
   lat?: string;
 

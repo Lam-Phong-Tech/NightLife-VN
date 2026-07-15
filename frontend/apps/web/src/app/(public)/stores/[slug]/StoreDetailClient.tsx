@@ -1533,20 +1533,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   className="hero-video-play"
                   type="button"
                   aria-label={translateText("Xem video", activeLanguage)}
-                  onClick={() => openGallery(selectedGalleryIndex)}
-                >
-                  <Play size={34} fill="currentColor" />
-                </button>
-              ) : null}
-
-              {selectedVideoIndex >= 0 ? (
-                <button
-                  className="video-badge"
-                  type="button"
                   onClick={() => openGallery(selectedVideoIndex)}
                 >
-                  <Play size={13} fill="currentColor" />
-                  {translateText("Xem video", activeLanguage)}
+                  <Play size={34} fill="currentColor" />
                 </button>
               ) : null}
 
@@ -2007,8 +1996,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-top,
         .hero-name,
         .hero-media-nav,
-        .hero-video-play,
-        .video-badge {
+        .hero-video-play {
           position: absolute;
           z-index: 2;
         }
@@ -2050,8 +2038,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .round-action svg,
         .hero-media-nav svg,
-        .hero-video-play svg,
-        .video-badge svg {
+        .hero-video-play svg {
           filter: var(--store-hero-control-icon-shadow);
         }
 
@@ -2114,30 +2101,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           place-items: center;
           padding: 0 0 0 5px;
           transform: translate(-50%, -50%);
+          transition: none;
+          animation: none;
+          will-change: auto;
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
         }
 
+        .hero-video-play:active,
         .hero-video-play:where(:hover, :focus-visible) {
-          background: transparent;
-        }
-
-        .video-badge {
-          left: 14px;
-          top: 14px;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          border: 0;
-          border-radius: 999px;
-          background: var(--store-hero-control-bg);
-          color: var(--store-hero-control-icon);
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0;
-          text-transform: uppercase;
-          padding: 7px 12px;
-          cursor: pointer;
+          background: var(--store-hero-control-bg-strong);
+          filter: none !important;
+          transform: translate(-50%, -50%) !important;
         }
 
         .hero-name {
@@ -3214,6 +3189,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-text);
           text-align: center;
           text-decoration: none;
+          transition: none;
+          animation: none;
+          will-change: auto;
+        }
+
+        .cast-bubble:active,
+        .cast-bubble:where(:hover, :focus-visible) {
+          filter: none !important;
+          transform: none !important;
         }
 
         .cast-avatar {
@@ -3690,10 +3674,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .hero-media-nav.next {
             right: 10px;
-          }
-
-          .video-badge {
-            display: none;
           }
 
           .hero-name {

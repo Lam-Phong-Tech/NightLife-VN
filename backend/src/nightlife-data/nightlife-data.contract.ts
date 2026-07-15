@@ -200,9 +200,12 @@ const storeDetailExample = {
     note: 'Reference price only; admin confirms final pricing by guest count and time slot.',
     items: [
       {
-        label: 'Cast hourly rate',
-        amountVnd: 600000,
-        unit: 'hour',
+        label: 'Sushi omakase',
+        note: 'Admin menu item shown on the public store menu.',
+        group: 'Food',
+        displayPrice: '$$',
+        tier: 2,
+        hot: true,
       },
     ],
   },
@@ -2516,6 +2519,12 @@ function publicDiscoveryQueries(
         required: false,
         description: 'Cast tag/keyword filter, for example ktv or vip.',
         example: 'ktv',
+      }),
+      ApiQuery({
+        name: 'storeSlug',
+        required: false,
+        description: 'Only returns public casts attached to the selected store.',
+        example: 'tokyo-kitchen',
       }),
     );
   }

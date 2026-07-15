@@ -844,6 +844,13 @@ describe('NightlifeDataService', () => {
                 hot: true,
                 thumb: 'https://example.com/menu-vip.jpg',
               },
+              {
+                name: 'Sushi omakase',
+                description: 'Partner listing menu item',
+                priceTier: '$$',
+                isHot: true,
+                imageUrl: 'https://example.com/menu-sushi.jpg',
+              },
             ],
           },
         ],
@@ -964,6 +971,15 @@ describe('NightlifeDataService', () => {
               hot: true,
               displayPrice: '$$$',
             }),
+            expect.objectContaining({
+              label: 'Sushi omakase',
+              note: 'Partner listing menu item',
+              group: 'Set menu',
+              imageUrl: 'https://example.com/menu-sushi.jpg',
+              tier: 2,
+              hot: true,
+              displayPrice: '$$',
+            }),
           ]),
         }),
         activeCoupons: [
@@ -1076,6 +1092,7 @@ describe('NightlifeDataService', () => {
 
     expect(result.slug).toBe('tokyo-kitchen');
     expect(result.seo.canonicalPath).toBe('/stores/tokyo-kitchen');
+    expect(result.priceReference.items).toEqual([]);
     expect(prisma.store.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -1512,6 +1529,7 @@ describe('NightlifeDataService', () => {
       city: 'hcm',
       category: 'ktv',
       language: 'ja',
+      storeSlug: 'golden-voice-ktv-quan-7',
       tag: 'ktv',
       lat: '10.738',
       lng: '106.722',
@@ -1547,6 +1565,7 @@ describe('NightlifeDataService', () => {
             deletedAt: null,
             status: 'ACTIVE',
             category: 'KARAOKE',
+            slug: 'golden-voice-ktv-quan-7',
           }),
           OR: expect.arrayContaining([
             { stageName: { contains: 'mika', mode: 'insensitive' } },

@@ -11,6 +11,7 @@ export type DiscoveryParams = {
   category?: string;
   language?: string;
   tag?: string;
+  storeSlug?: string;
   lat?: number;
   lng?: number;
   limit?: number;
@@ -479,6 +480,12 @@ const matchesTag = (tag: string | undefined, cast: PublicCast) => {
   return !normalizedTag || cast.tags.some((item) => normalize(item) === normalizedTag);
 };
 
+const matchesStoreSlug = (storeSlug: string | undefined, store: PublicStore) => {
+  const normalizedStoreSlug = normalize(storeSlug);
+
+  return !normalizedStoreSlug || normalize(store.slug) === normalizedStoreSlug;
+};
+
 const distanceKm = (from: Required<Pick<DiscoveryParams, "lat" | "lng">>, store: PublicStore) => {
   if (typeof store.latitude !== "number" || typeof store.longitude !== "number") {
     return null;
@@ -583,6 +590,7 @@ const getFallbackCasts = (params: DiscoveryParams = {}) => {
     .filter((cast) => matchesCity(params.city, cast.store))
     .filter((cast) => matchesCategory(params.category, cast.store))
     .filter((cast) => matchesArea(params.area, cast.store))
+    .filter((cast) => matchesStoreSlug(params.storeSlug, cast.store))
     .filter((cast) => !params.hasActiveCoupon || demoActiveCouponStoreSlugs.has(cast.store.slug))
     .filter((cast) => matchesLanguage(params.language, cast))
     .filter((cast) => matchesTag(params.tag, cast))
@@ -705,4 +713,8 @@ export const discoveryApi = {
         }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
       () => getFallbackCasts(params),
     ),
+  listCastsStrict: (params?: DiscoveryParams) =>
+    apiClient<PublicCast[] | PublicDiscoveryListResponse<PublicCast>>("/casts", {
+      params: toParams(params),
+    }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
 };

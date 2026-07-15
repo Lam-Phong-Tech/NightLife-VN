@@ -16,8 +16,9 @@ import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
+import { discoveryApi, type PublicCast } from "@/lib/api/discovery";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
-import { getStoreDetail } from "@/lib/api/store-detail";
+import { getStoreDetail, type StoreDetailCast } from "@/lib/api/store-detail";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlotGroups,
@@ -136,6 +137,47 @@ const fallbackCastNameFromSlug = (slug: string) => {
   return name || "Cast đã chọn";
 };
 
+const castOptionLabel = (cast: Pick<StoreDetailCast, "publicAlias" | "stageName">) =>
+  cast.publicAlias || cast.stageName;
+
+const castOptionMeta = (cast: Pick<StoreDetailCast, "publicHeadline" | "languages">) =>
+  [cast.publicHeadline, cast.languages?.filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
+
+const publicCastToStoreCast = (cast: PublicCast): StoreDetailCast => ({
+  id: cast.id,
+  slug: cast.slug,
+  stageName: cast.stageName,
+  publicAlias: cast.publicAlias,
+  publicHeadline: cast.publicHeadline,
+  thumbnailUrl: cast.thumbnailUrl,
+  tags: cast.tags,
+  languages: cast.languages,
+  hourlyRateVnd: cast.hourlyRateVnd,
+});
+
+const loadStoreCastOptions = async (storeSlug: string) => {
+  try {
+    const filteredCasts = await discoveryApi.listCastsStrict({
+      city: "all",
+      limit: 100,
+      storeSlug,
+    });
+
+    if (filteredCasts.length) {
+      return filteredCasts.map(publicCastToStoreCast);
+    }
+  } catch {
+    // Production can lag behind this backend filter; fall back to the broad public list.
+  }
+
+  const allCasts = await discoveryApi.listCasts({ city: "all", limit: 100 });
+  return allCasts
+    .filter((cast) => cast.store.slug === storeSlug)
+    .map(publicCastToStoreCast);
+};
+
 const parseContext = () => {
   const params = new URLSearchParams(window.location.search);
   const castSlug = params.get("castSlug") || undefined;
@@ -177,6 +219,7 @@ export default function Page() {
   const [guestInput, setGuestInput] = useState("4");
   const [note, setNote] = useState("");
   const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
+  const [storeCasts, setStoreCasts] = useState<StoreDetailCast[]>([]);
   const [storeHoursResolved, setStoreHoursResolved] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -259,6 +302,7 @@ export default function Page() {
       queueMicrotask(() => {
         if (cancelled) return;
         setStoreOpeningHours(null);
+        setStoreCasts([]);
         setStoreHoursResolved(true);
       });
       return () => {
@@ -268,28 +312,66 @@ export default function Page() {
 
     let cancelled = false;
     queueMicrotask(() => {
-      if (!cancelled) setStoreHoursResolved(false);
+      if (!cancelled) {
+        setStoreCasts([]);
+        setStoreHoursResolved(false);
+      }
     });
 
     getStoreDetail(context.storeSlug)
       .then((store) => {
         if (cancelled) return;
         setStoreOpeningHours(store.openingHours ?? null);
+        setStoreCasts(store.casts ?? []);
         setContext((current) => {
           if (current.storeSlug !== store.slug) return current;
+          const selectedCast = store.casts.find((cast) => cast.slug === current.castSlug);
 
           return {
             ...current,
             storeName: current.storeName || store.name,
             area: current.area ?? store.area?.name ?? store.district ?? undefined,
+            castName: selectedCast ? castOptionLabel(selectedCast) : current.castName,
           };
         });
       })
       .catch(() => {
-        if (!cancelled) setStoreOpeningHours(null);
+        if (!cancelled) {
+          setStoreOpeningHours(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setStoreHoursResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [context.storeSlug]);
+
+  useEffect(() => {
+    if (!context.storeSlug) return;
+
+    let cancelled = false;
+
+    loadStoreCastOptions(context.storeSlug)
+      .then((casts) => {
+        if (cancelled || !casts.length) return;
+        setStoreCasts(casts);
+        setContext((current) => {
+          if (current.storeSlug !== context.storeSlug) return current;
+          const selectedCast = casts.find((cast) => cast.slug === current.castSlug);
+
+          return selectedCast
+            ? {
+                ...current,
+                castName: castOptionLabel(selectedCast),
+              }
+            : current;
+        });
+      })
+      .catch(() => {
+        // Store detail cast data remains as the fallback option source.
       });
 
     return () => {
@@ -364,9 +446,42 @@ export default function Page() {
     () => visibleBookingFieldErrors(fieldErrors, touchedFields, submitAttempted),
     [fieldErrors, submitAttempted, touchedFields],
   );
+  const castOptions = useMemo(() => {
+    const options = storeCasts.map((cast) => ({
+      slug: cast.slug,
+      label: castOptionLabel(cast),
+      meta: castOptionMeta(cast),
+    }));
+
+    if (context.castSlug && !options.some((option) => option.slug === context.castSlug)) {
+      options.unshift({
+        slug: context.castSlug,
+        label: context.castName ?? fallbackCastNameFromSlug(context.castSlug),
+        meta: context.storeName,
+      });
+    }
+
+    return options;
+  }, [context.castName, context.castSlug, context.storeName, storeCasts]);
   const markFieldTouched = (field: BookingValidationField) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
     setErrorMessage("");
+  };
+  const updateSelectedCast = (castSlug: string) => {
+    const nextCast = storeCasts.find((cast) => cast.slug === castSlug);
+
+    setContext((current) => ({
+      ...current,
+      castSlug: castSlug || undefined,
+      castName: castSlug
+        ? nextCast
+          ? castOptionLabel(nextCast)
+          : current.castName ?? fallbackCastNameFromSlug(castSlug)
+        : undefined,
+      fromHref: castSlug
+        ? `/casts/${castSlug}`
+        : `/stores/${current.storeSlug ?? defaultContext.storeSlug}`,
+    }));
   };
 
   const memberLoginPath = useMemo(() => {
@@ -390,9 +505,6 @@ export default function Page() {
   const targetLabel = context.castName
     ? `${context.castName} @ ${context.storeName}`
     : context.storeName;
-  const castDisplayName = context.castSlug
-    ? (context.castName ?? "Đang tải cast...")
-    : "Không chọn cast";
   const isMemberMode = mode === "member";
   const parsedGuestInput = Number(guestInput);
   const stepperGuestCount =
@@ -677,7 +789,13 @@ export default function Page() {
                 labelClassName={styles.fieldLabel}
               />
 
-              <ReadOnlyTextField label="Cast đã chọn" value={castDisplayName} />
+              <CastSelectField
+                label="Cast đã chọn"
+                value={context.castSlug ?? ""}
+                options={castOptions}
+                onChange={updateSelectedCast}
+                activeLanguage={activeLanguage}
+              />
 
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>
@@ -784,20 +902,37 @@ function FieldError({
   );
 }
 
-function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
+function CastSelectField({
+  label,
+  value,
+  options,
+  onChange,
+  activeLanguage,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ slug: string; label: string; meta?: string }>;
+  onChange: (value: string) => void;
+  activeLanguage: LanguageCode;
+}) {
   return (
     <label className={styles.field}>
       <span className={styles.fieldLabel}>{label}</span>
-      <span className={`${styles.inputWrap} ${styles.readOnlyInputWrap}`}>
-        <input
-          type="text"
+      <span className={styles.selectWrap}>
+        <select
           name="nl-booking-selected-cast"
           value={value}
-          readOnly
-          aria-readonly="true"
           autoComplete="off"
-          className={`${styles.input} ${styles.readOnlyInput}`}
-        />
+          className={styles.selectInput}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <option value="">{translateText("Không chọn cast", activeLanguage)}</option>
+          {options.map((option) => (
+            <option key={option.slug} value={option.slug}>
+              {option.meta ? `${option.label} - ${option.meta}` : option.label}
+            </option>
+          ))}
+        </select>
       </span>
     </label>
   );

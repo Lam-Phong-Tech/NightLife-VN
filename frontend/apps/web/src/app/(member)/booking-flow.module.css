@@ -235,6 +235,7 @@
 .phoneInput,
 .stepper,
 .dateInput,
+.selectWrap,
 .noteArea {
   border: 1px solid var(--vy-border);
   border-radius: 12px;
@@ -244,6 +245,7 @@
 
 .inputWrap,
 .phoneInput,
+.selectWrap,
 .dateInput {
   min-height: 46px;
   display: flex;
@@ -277,6 +279,29 @@
   height: 44px;
   font-size: 14px;
   font-weight: 650;
+}
+
+.selectWrap {
+  padding: 0 12px;
+}
+
+.selectInput {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #f3f0ea;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  outline: 0;
+  cursor: pointer;
+}
+
+.selectInput option {
+  background: #1d1b22;
+  color: #f3f0ea;
 }
 
 .input::placeholder,

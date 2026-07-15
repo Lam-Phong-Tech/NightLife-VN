@@ -12415,25 +12415,8 @@ export class NightlifeDataService {
     return {
       currency: 'VND',
       startingFromVnd: castStartingFromVnd,
-      note: 'Reference price only; admin confirms final pricing by guest count, room type, and time slot.',
-      items: [
-        ...(castStartingFromVnd
-          ? [
-              {
-                label: 'Cast hourly rate',
-                amountVnd: castStartingFromVnd,
-                unit: 'hour',
-                note: 'Lowest active public cast rate for this store.',
-              },
-            ]
-          : []),
-        {
-          label: 'Table or room package',
-          amountVnd: null,
-          unit: null,
-          note: 'Confirmed by admin after the booking request.',
-        },
-      ],
+      note: 'Thực đơn do admin cập nhật sẽ hiển thị tại đây.',
+      items: [],
     };
   }
 
@@ -12484,15 +12467,21 @@ export class NightlifeDataService {
       return null;
     }
 
+    const priceTierText = this.cleanNullableText(
+      String(record.priceTier ?? record.tierLabel ?? ''),
+    );
     const valueText = this.cleanNullableText(
-      String(record.value ?? record.priceText ?? record.priceRange ?? ''),
+      String(record.value ?? record.priceText ?? record.priceRange ?? priceTierText ?? ''),
     );
     const amountVnd =
       this.toNumber(record.amountVnd) ??
       this.toNumber(record.priceVnd) ??
       this.toNumber(record.price) ??
       this.parseVndAmountFromText(valueText);
-    const tier = this.toNumber(record.tier);
+    const tier =
+      this.toNumber(record.tier) ??
+      this.toNumber(record.priceTier) ??
+      this.priceTierNumberFromText(priceTierText);
     const imageUrl = this.normalizePublicImageUrl(
       this.cleanNullableText(
         String(record.thumb ?? record.imageUrl ?? record.url ?? ''),
@@ -12514,9 +12503,22 @@ export class NightlifeDataService {
       group: groupName,
       imageUrl,
       tier: tier && tier > 0 ? Math.trunc(tier) : null,
-      hot: record.hot === true,
+      hot: record.hot === true || record.isHot === true,
       displayPrice,
     };
+  }
+
+  private priceTierNumberFromText(value: string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const dollarCount = (value.match(/\$/g) ?? []).length;
+    if (dollarCount > 0) {
+      return Math.min(Math.max(dollarCount, 1), 4);
+    }
+
+    return null;
   }
 
   private normalizePublicImageUrl(value: string | null) {
@@ -12856,6 +12858,7 @@ export class NightlifeDataService {
     const area = this.cleanText(query.area);
     const areaCode = this.normalizeToken(area);
     const category = this.normalizeCategory(query.category, { strict: true });
+    const storeSlug = this.normalizeStoreSlug(query.storeSlug);
     const hasActiveCoupon = this.parseBooleanFlag(query.hasActiveCoupon);
     const and: Prisma.StoreWhereInput[] = [];
 
@@ -12943,6 +12946,7 @@ export class NightlifeDataService {
     return {
       deletedAt: null,
       status: 'ACTIVE',
+      ...(storeSlug ? { slug: storeSlug } : {}),
       ...(category ? { category } : {}),
       ...(and.length ? { AND: and } : {}),
     };
