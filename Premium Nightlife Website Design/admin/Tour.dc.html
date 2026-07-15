@@ -123,7 +123,43 @@
 
           <div>
             <div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Mô tả hành trình / Subtitle</div>
-            <textarea onInput="{{ tf.setSubtitle }}" placeholder="Mô tả trải nghiệm thú vị của tour..." style="width:100%;height:68px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;resize:none;" style-focus="border-color:#d4b26a;">{{ tf.subtitle }}</textarea>
+            <textarea value="{{ tf.subtitle }}" onInput="{{ tf.setSubtitle }}" placeholder="Mô tả trải nghiệm thú vị của tour..." style="width:100%;height:68px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;resize:none;" style-focus="border-color:#d4b26a;"></textarea>
+          </div>
+
+          <!-- Tour Cover Image Section -->
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:12px;border-left:3px solid #d4b26a;padding-left:8px;">Ảnh bìa Tour</div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;display:flex;gap:14px;">
+              <!-- Image preview card on the left -->
+              <div style="width:110px;height:74px;border-radius:10px;background:{{ tf.coverBg }};border:1px solid rgba(255,255,255,.08);flex:none;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                <sc-if value="{{ tf.noCover }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:10px;color:#8c8679;text-align:center;padding:5px;">Chưa có ảnh</span>
+                </sc-if>
+              </div>
+              
+              <!-- Control actions on the right -->
+              <div style="flex:1;display:flex;flex-direction:column;gap:10px;justify-content:center;">
+                <!-- Paste link input -->
+                <div>
+                  <div style="font-size:10.5px;color:#8c8679;margin-bottom:4px;">Gán liên kết hình ảnh (URL)</div>
+                  <input value="{{ tf.coverUrl }}" onInput="{{ tf.setCoverUrl }}" placeholder="https://images.unsplash.com/..." style="width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;color:#f3f0ea;font-size:12px;font-family:inherit;outline:none;" style-focus="border-color:#d4b26a;">
+                </div>
+
+                <!-- Upload button & clear -->
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="position:relative;display:inline-block;">
+                    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);border-radius:8px;padding:7px 14px;cursor:pointer;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                      Tải ảnh từ máy
+                    </span>
+                    <input type="file" accept="image/*" onChange="{{ tf.uploadCover }}" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;" title="Tải ảnh bìa">
+                  </div>
+                  <sc-if value="{{ tf.hasCover }}" hint-placeholder-val="{{ true }}">
+                    <span onClick="{{ tf.clearCover }}" style="font-size:11.5px;color:#e88b99;cursor:pointer;font-weight:600;" style-hover="text-decoration:underline;">Xoá ảnh bìa</span>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -297,7 +333,8 @@ class Component extends DCLogic {
         priceTier: 3,
         status: 'active',
         stops: ['v2', 'v1', 'v3'],
-        departureTimes: ['19:00', '20:00', '21:00', '22:00']
+        departureTimes: ['19:00', '20:00', '21:00', '22:00'],
+        coverUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80'
       },
       {
         id: 't2',
@@ -308,7 +345,8 @@ class Component extends DCLogic {
         priceTier: 4,
         status: 'active',
         stops: ['v4', 'v5', 'v2'],
-        departureTimes: ['19:00', '20:00', '21:00', '22:00']
+        departureTimes: ['19:00', '20:00', '21:00', '22:00'],
+        coverUrl: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=800&q=80'
       },
       {
         id: 't3',
@@ -319,7 +357,8 @@ class Component extends DCLogic {
         priceTier: 2,
         status: 'draft',
         stops: ['v5', 'v3'],
-        departureTimes: ['18:00', '20:00']
+        departureTimes: ['18:00', '20:00'],
+        coverUrl: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80'
       },
       {
         id: 't4',
@@ -330,7 +369,8 @@ class Component extends DCLogic {
         priceTier: 3,
         status: 'active',
         stops: ['v6', 'v7'],
-        departureTimes: ['20:00', '21:00', '22:00']
+        departureTimes: ['20:00', '21:00', '22:00'],
+        coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80'
       }
     ],
 
@@ -442,7 +482,8 @@ class Component extends DCLogic {
               priceTier: t.priceTier,
               status: t.status,
               stops: t.stops.slice(), // copy array
-              departureTimes: t.departureTimes ? t.departureTimes.slice() : ['19:00', '20:00', '21:00', '22:00']
+              departureTimes: t.departureTimes ? t.departureTimes.slice() : ['19:00', '20:00', '21:00', '22:00'],
+              coverUrl: t.coverUrl || ''
             }
           });
         }
@@ -466,7 +507,8 @@ class Component extends DCLogic {
           priceTier: 3,
           status: 'active',
           stops: [],
-          departureTimes: ['19:00', '20:00', '21:00', '22:00']
+          departureTimes: ['19:00', '20:00', '21:00', '22:00'],
+          coverUrl: ''
         }
       });
     };
@@ -496,7 +538,8 @@ class Component extends DCLogic {
           priceTier: Number(form.priceTier),
           status: form.status,
           stops: form.stops,
-          departureTimes: form.departureTimes
+          departureTimes: form.departureTimes,
+          coverUrl: form.coverUrl
         });
         this.showToast('Đã thêm mới Tour thành công');
       } else {
@@ -511,7 +554,8 @@ class Component extends DCLogic {
               priceTier: Number(form.priceTier),
               status: form.status,
               stops: form.stops,
-              departureTimes: form.departureTimes
+              departureTimes: form.departureTimes,
+              coverUrl: form.coverUrl
             };
           }
           return t;
@@ -663,6 +707,29 @@ class Component extends DCLogic {
           '21:00', '21:30', '22:00', '22:30', '23:00', '23:30', '00:00',
           '00:30', '01:00', '01:30', '02:00'
         ].filter(t => !(form.departureTimes || []).includes(t)).length === 0,
+
+        // Cover image bindings
+        coverUrl: form.coverUrl || '',
+        setCoverUrl: (e) => this.setState({ editForm: { ...form, coverUrl: e.target.value } }),
+        hasCover: !!form.coverUrl,
+        noCover: !form.coverUrl,
+        coverBg: form.coverUrl ? (form.coverUrl.startsWith('url(') ? form.coverUrl : `url('${form.coverUrl}') center/cover no-repeat`) : 'rgba(255,255,255,.02)',
+        clearCover: () => {
+          this.setState({ editForm: { ...form, coverUrl: '' } });
+          this.showToast('Đã xoá ảnh bìa Tour');
+        },
+        uploadCover: (e) => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => {
+            this.setState({
+              editForm: { ...form, coverUrl: 'url(' + r.result + ') center/cover no-repeat' }
+            });
+            this.showToast('Đã tải ảnh lên thành công');
+          };
+          r.readAsDataURL(f);
+        },
 
         // Stops bindings
         stops: stopsList,
