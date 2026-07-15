@@ -26,7 +26,6 @@ import {
   RefreshCcw,
   Save,
   Send,
-  Settings,
   ShieldCheck,
   Sun,
   TicketCheck,
@@ -365,7 +364,7 @@ type BarcodeDetectorConstructor = new (options: { formats: string[] }) => Barcod
 type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstructor };
 type VietnamProvince = { code: number; name: string };
 type VietnamWard = { code: number; name: string };
-const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'settings', 'bill'] as const;
+const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'bill'] as const;
 type PanelKey = (typeof panelKeys)[number];
 type PartnerNotificationTone = 'gold' | 'success' | 'warning' | 'danger' | 'info';
 type PartnerNotification = {
@@ -811,7 +810,6 @@ const validateListingDraft = (
   requireOnSubmit('storeCategory', category, 'Chọn loại hình quán.');
   requireOnSubmit('area', draft.area, 'Nhập khu vực hiển thị.');
   requireOnSubmit('storeCity', draft.storeCity, 'Nhập tỉnh/thành phố.');
-  requireOnSubmit('storeDistrict', draft.storeDistrict, 'Nhập quận/khu.');
   requireOnSubmit('streetAddress', draft.streetAddress, 'Nhập số nhà, tên đường.');
   requireOnSubmit('description', draft.description, 'Nhập mô tả quán.');
 
@@ -823,7 +821,7 @@ const validateListingDraft = (
   const openingItems = draft.openingHourItems.length ? draft.openingHourItems : defaultListingOpeningHours();
   const openDays = openingItems.filter((item) => !item.isOff);
   if (mode === 'submit' && !openDays.length) {
-    errors.openingHours = 'Cần có ít nhất một ngày mở cửa.';
+    errors['openingHourItems.0.hours'] = 'Cần có ít nhất một ngày mở cửa.';
   }
   openingItems.forEach((item, index) => {
     const path = `openingHourItems.${index}.hours`;
@@ -836,10 +834,6 @@ const validateListingDraft = (
       errors[path] = 'Định dạng giờ phải là HH:mm - HH:mm, có thể thêm nhiều khung bằng dấu phẩy.';
     }
   });
-  if (hasText(draft.openingHours) && !hasValidOpeningHourSlots(draft.openingHours)) {
-    errors.openingHours = 'Tóm tắt giờ mở cửa phải là HH:mm - HH:mm.';
-  }
-
   draft.castProfiles.forEach((cast, index) => {
     const rowHasData = Boolean(
       cast.stageName.trim() ||
@@ -1014,7 +1008,6 @@ const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'overview', label: 'Tổng quan', icon: Home },
   { key: 'settlement', label: 'Đối soát', icon: FileClock },
   { key: 'listing', label: 'Đăng thông tin', icon: Camera },
-  { key: 'settings', label: 'Cài đặt', icon: Settings },
   { key: 'bill', label: 'Gửi hóa đơn', icon: ReceiptText },
 ];
 
@@ -1029,7 +1022,6 @@ const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
   scan: { eyebrow: 'SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
   settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
   listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
-  settings: { eyebrow: 'ACCESS CONTROL', title: 'Cài đặt đối tác' },
   bill: { eyebrow: 'PARTNER BILL', title: 'Gửi hóa đơn cho chủ quán' },
 };
 
@@ -1429,7 +1421,7 @@ export default function PartnerPage() {
   const [listingDraft, setListingDraft] = useState<PartnerListingDraft>(emptyListingDraft);
   const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
   const [listingContentId, setListingContentId] = useState<string | null>(null);
-  const [listingNotice, setListingNotice] = useState('');
+  const [, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
@@ -2243,8 +2235,8 @@ export default function PartnerPage() {
         title: 'Tài khoản chưa được gán quán',
         message: 'Partner cần được Admin cấp quyền một quán trước khi quét QR, gửi bill hoặc đăng thông tin.',
         meta: 'Liên hệ Admin',
-        actionLabel: 'Xem cài đặt',
-        panel: 'settings',
+        actionLabel: 'Xem tổng quan',
+        panel: 'overview',
         tone: 'danger',
         icon: ShieldCheck,
       });
@@ -2255,8 +2247,8 @@ export default function PartnerPage() {
         title: 'Tài khoản đang có nhiều hơn 1 quán',
         message: 'Mỗi tài khoản partner chỉ nên quản lý một quán. Kiểm tra phạm vi để Admin thu gọn quyền nếu cần.',
         meta: `${scopedStoreCount} quán trong scope`,
-        actionLabel: 'Xem cài đặt',
-        panel: 'settings',
+        actionLabel: 'Xem tổng quan',
+        panel: 'overview',
         tone: 'warning',
         icon: ShieldCheck,
       });
@@ -5103,15 +5095,6 @@ export default function PartnerPage() {
               />
               {listingErrorText('storeCity')}
             </FormField>
-            <FormField label="Quận / khu">
-              <input
-                value={listingDraft.storeDistrict}
-                onChange={(event) => updateListingField('storeDistrict', event.target.value)}
-                placeholder="VD: Quận 1"
-                style={listingInputStyle('storeDistrict')}
-              />
-              {listingErrorText('storeDistrict')}
-            </FormField>
             <FormField label="Phường/Xã">
               <ThemedListingSelect
                 value={selectedWardCode || (listingDraft.ward ? '__current' : '')}
@@ -5136,15 +5119,6 @@ export default function PartnerPage() {
               />
               {listingErrorText('ward')}
             </FormField>
-            <FormField label="Số nhà, tên đường">
-              <input
-                value={listingDraft.streetAddress}
-                onChange={(event) => updateListingField('streetAddress', event.target.value)}
-                placeholder="VD: 12 Nguyễn Huệ"
-                style={listingInputStyle('streetAddress')}
-              />
-              {listingErrorText('streetAddress')}
-            </FormField>
             <FormField label="Số điện thoại">
               <input
                 value={listingDraft.phone}
@@ -5153,6 +5127,15 @@ export default function PartnerPage() {
                 style={listingInputStyle('phone')}
               />
               {listingErrorText('phone')}
+            </FormField>
+            <FormField label="Số nhà, tên đường" className="partner-field-span-2">
+              <input
+                value={listingDraft.streetAddress}
+                onChange={(event) => updateListingField('streetAddress', event.target.value)}
+                placeholder="VD: 12 Nguyễn Huệ"
+                style={listingInputStyle('streetAddress')}
+              />
+              {listingErrorText('streetAddress')}
             </FormField>
             <FormField label="Link Google Maps">
               <input
@@ -5234,15 +5217,6 @@ export default function PartnerPage() {
               );
             })}
           </div>
-          <FormField label="Tóm tắt giờ mở cửa" style={{ marginTop: '12px' }}>
-            <input
-              value={listingDraft.openingHours}
-              onChange={(event) => updateListingField('openingHours', event.target.value)}
-              placeholder="VD: 19:00 - 04:00"
-              style={listingInputStyle('openingHours')}
-            />
-            {listingErrorText('openingHours')}
-          </FormField>
         </section>
 
         <section className="partner-listing-section">
@@ -5534,45 +5508,6 @@ export default function PartnerPage() {
         action={<StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>}
       />
 
-      <div className="partner-listing-toolbar">
-        <FormField label="Quán cần cập nhật">
-          <ThemedListingSelect
-            value={listingStoreId}
-            onChange={setListingStoreId}
-            disabled={isListingBusy || !stores.length}
-            placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
-            options={stores.map((store) => ({
-              value: store.id,
-              label: `${store.name} - ${store.district ?? store.city ?? store.status}`,
-            }))}
-          />
-        </FormField>
-        <div
-          style={{
-            ...softCardStyle,
-            minHeight: '64px',
-            padding: '12px',
-            color: colors.text2,
-            fontSize: '12px',
-            lineHeight: 1.5,
-            display: 'grid',
-            alignContent: 'center',
-          }}
-        >
-          {listingNotice || 'Nhập nội dung, lưu nháp hoặc gửi Admin duyệt để public sau khi được xác nhận.'}
-          {listingErrorCount ? (
-            <div style={{ marginTop: '4px', color: colors.danger, fontWeight: 900 }}>
-              Còn {listingErrorCount} trường cần kiểm tra.
-            </div>
-          ) : null}
-          {listingReview?.submittedAt ? (
-            <div style={{ marginTop: '4px', color: colors.muted }}>
-              Gửi gần nhất: {formatDateTime(listingReview.submittedAt)}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {contentTabs.map((tab) => (
           <button
@@ -5638,83 +5573,6 @@ export default function PartnerPage() {
         </PrimaryButton>
       </div>
     </PanelCard>
-  );
-
-  const renderSettingsPanel = () => (
-    <div className="partner-settings-grid">
-      <PanelCard>
-        <SectionHeading eyebrow="STORE ACCESS" title="Quán trong phạm vi" />
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {stores.length ? (
-            stores.map((store) => (
-              <div
-                key={store.id}
-                style={{
-                  ...softCardStyle,
-                  padding: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                }}
-              >
-                <div>
-                  <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>
-                    {store.name}
-                  </div>
-                  <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
-                    /{store.slug}
-                  </div>
-                </div>
-                <StatusPill tone="gold">{store.status}</StatusPill>
-              </div>
-            ))
-          ) : (
-            <div
-              style={{
-                ...softCardStyle,
-                padding: '14px',
-                color: colors.text2,
-                fontSize: '12px',
-                lineHeight: 1.6,
-              }}
-            >
-              Chưa có quán nào trong phạm vi tài khoản partner.
-            </div>
-          )}
-        </div>
-      </PanelCard>
-
-      <PanelCard>
-        <SectionHeading eyebrow="PRIVACY" title="Quy tắc dữ liệu" />
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {[
-            'Partner chỉ thấy dữ liệu theo quán được cấp quyền.',
-            'Coupon scan kiểm tra đúng quán, còn hạn và chưa USED trước khi xác nhận.',
-            'Usage log được ghi khi mã chuyển USED.',
-            'Thông tin khách chi tiết không hiển thị trên portal partner.',
-          ].map((item) => (
-            <div
-              key={item}
-              style={{
-                display: 'flex',
-                gap: '10px',
-                color: colors.text2,
-                fontSize: '12.5px',
-                lineHeight: 1.6,
-              }}
-            >
-              <CheckCircle2
-                size={16}
-                color={colors.gold}
-                style={{ marginTop: '2px', flex: '0 0 auto' }}
-              />
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-      </PanelCard>
-    </div>
   );
 
   const renderBillPanel = () => (
@@ -6000,9 +5858,6 @@ export default function PartnerPage() {
     if (activePanel === 'listing') {
       return renderListingPanel();
     }
-    if (activePanel === 'settings') {
-      return renderSettingsPanel();
-    }
     if (activePanel === 'bill') {
       return renderBillPanel();
     }
@@ -6035,7 +5890,6 @@ export default function PartnerPage() {
         }
         .partner-overview-grid,
         .partner-scan-grid,
-        .partner-settings-grid,
         .partner-bill-panel-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.28fr) minmax(340px, .72fr);
@@ -6180,6 +6034,9 @@ export default function PartnerPage() {
         }
         .partner-field-wide {
           grid-column: 1 / -1;
+        }
+        .partner-field-span-2 {
+          grid-column: span 2;
         }
         .partner-admin-tag-suggestions {
           display: flex;
@@ -6402,7 +6259,6 @@ export default function PartnerPage() {
           }
           .partner-overview-grid,
           .partner-scan-grid,
-          .partner-settings-grid,
           .partner-bill-panel-grid {
             grid-template-columns: 1fr;
           }
@@ -6455,6 +6311,9 @@ export default function PartnerPage() {
           .partner-settlement-filter-grid,
           .partner-bill-form-grid {
             grid-template-columns: 1fr !important;
+          }
+          .partner-field-span-2 {
+            grid-column: 1 / -1;
           }
           .partner-cast-toolbar,
           .partner-cast-form-header {
