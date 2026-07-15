@@ -30,7 +30,6 @@ import {
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
-  sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import {
   buildBookingFieldErrors,
@@ -45,6 +44,8 @@ import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-lang
 import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
+
+const sanitizeGuestCountDraftInput = (value: string) => value.replace(/\D/g, "");
 
 const bookingAutofillBlockProps = {
   autoComplete: "new-password",
@@ -173,6 +174,7 @@ export default function Page() {
   const [bookingDate, setBookingDate] = useState(getTodayDate);
   const [bookingTime, setBookingTime] = useState("21:00");
   const [guests, setGuests] = useState(4);
+  const [guestInput, setGuestInput] = useState("4");
   const [note, setNote] = useState("");
   const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
   const [storeHoursResolved, setStoreHoursResolved] = useState(false);
@@ -191,9 +193,11 @@ export default function Page() {
       setContext(parsed.context);
       setBookingDate(parsed.date);
       setBookingTime(parsed.time || "21:00");
-      setGuests(
-        Number.isFinite(parsed.guests) ? Math.min(maxGuests, Math.max(1, parsed.guests)) : 4,
-      );
+      const initialGuests = Number.isFinite(parsed.guests)
+        ? clampBookingGuestCount(parsed.guests)
+        : 4;
+      setGuests(initialGuests);
+      setGuestInput(String(initialGuests));
 
       if (authUser) {
         setGuestName(authUser.displayName ?? authUser.email ?? "");
@@ -390,6 +394,39 @@ export default function Page() {
     ? (context.castName ?? "Đang tải cast...")
     : "Không chọn cast";
   const isMemberMode = mode === "member";
+  const parsedGuestInput = Number(guestInput);
+  const stepperGuestCount =
+    guestInput.trim() && Number.isFinite(parsedGuestInput)
+      ? clampBookingGuestCount(parsedGuestInput)
+      : guests;
+
+  const applyGuestCount = (value: number) => {
+    const nextGuests = clampBookingGuestCount(value);
+    setGuests(nextGuests);
+    setGuestInput(String(nextGuests));
+  };
+
+  const updateGuestInput = (value: string) => {
+    const digits = sanitizeGuestCountDraftInput(value);
+    setGuestInput(digits);
+
+    const parsed = Number(digits);
+    if (digits && Number.isFinite(parsed) && parsed >= 1 && parsed <= maxGuests) {
+      setGuests(parsed);
+    }
+  };
+
+  const commitGuestInput = () => {
+    const parsed = Number(guestInput);
+    const nextGuests =
+      guestInput.trim() && Number.isFinite(parsed)
+        ? clampBookingGuestCount(parsed)
+        : clampBookingGuestCount(guests);
+
+    setGuests(nextGuests);
+    setGuestInput(String(nextGuests));
+    return nextGuests;
+  };
 
   const submit = async () => {
     setErrorMessage("");
@@ -398,6 +435,7 @@ export default function Page() {
     const displayName = normalizeBookingDisplayName(guestName);
     const normalizedEmail = normalizeBookingEmail(email);
     const trimmedNote = normalizeBookingNote(note);
+    const partySize = commitGuestInput();
 
     const scheduledAt = buildScheduledAtFromBookingSlot(
       bookingDate,
@@ -408,7 +446,7 @@ export default function Page() {
     const validationError = firstBookingFieldError(buildBookingFieldErrors({
       displayName,
       email: normalizedEmail,
-      guestCount: guests,
+      guestCount: partySize,
       bookingDate,
       bookingTime,
       availableTimes: bookingTimeOptions,
@@ -447,7 +485,7 @@ export default function Page() {
       displayName,
       email: normalizedEmail,
       scheduledAt,
-      partySize: guests,
+      partySize,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };
 
@@ -566,10 +604,10 @@ export default function Page() {
                         className={styles.stepButton}
                         onClick={() => {
                           markFieldTouched("guestCount");
-                          setGuests((value) => clampBookingGuestCount(value - 1));
+                          applyGuestCount(stepperGuestCount - 1);
                         }}
                         aria-label="Giảm số người"
-                        disabled={guests <= 1}
+                        disabled={stepperGuestCount <= 1}
                       >
                         <Minus size={15} />
                       </button>
@@ -580,16 +618,19 @@ export default function Page() {
                           inputMode="numeric"
                           pattern="[0-9]*"
                           name="nl-booking-guests"
-                          value={String(guests)}
-                          style={{ width: `${String(guests).length}ch` }}
-                          onBlur={() => markFieldTouched("guestCount")}
+                          value={guestInput}
+                          style={{ width: `${Math.max(1, guestInput.length)}ch` }}
+                          onBlur={() => {
+                            markFieldTouched("guestCount");
+                            commitGuestInput();
+                          }}
                           onKeyDown={(event) => {
                             if (event.ctrlKey || event.metaKey || event.altKey) return;
                             if (event.key.length === 1 && !/\d/.test(event.key)) event.preventDefault();
                           }}
                           onChange={(event) => {
                             markFieldTouched("guestCount");
-                            setGuests(sanitizeBookingGuestCountInput(event.target.value));
+                            updateGuestInput(event.target.value);
                           }}
                           aria-label="Số người"
                         />
@@ -600,10 +641,10 @@ export default function Page() {
                         className={`${styles.stepButton} ${styles.stepButtonActive}`}
                         onClick={() => {
                           markFieldTouched("guestCount");
-                          setGuests((value) => clampBookingGuestCount(value + 1));
+                          applyGuestCount(stepperGuestCount + 1);
                         }}
                         aria-label="Tăng số người"
-                        disabled={guests >= maxGuests}
+                        disabled={stepperGuestCount >= maxGuests}
                       >
                         <Plus size={15} />
                       </button>
@@ -616,7 +657,6 @@ export default function Page() {
                 }
                 timeValue={bookingTime}
                 timeOptions={bookingTimeOptions}
-                timeOptionGroups={bookingTimeOptionGroups}
                 minDate={getTodayDate()}
                 maxDate={getMaxBookingDate()}
                 onDateChange={(value) => {
