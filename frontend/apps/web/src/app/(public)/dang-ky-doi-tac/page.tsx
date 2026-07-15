@@ -48,6 +48,7 @@ const darkColors = {
   neonPink: '#e0729e',
   red: '#e68798',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
+  popoverBg: 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
 };
 
 const lightColors = {
@@ -74,6 +75,7 @@ const lightColors = {
   neonPink: '#d9548b',
   red: '#ad3e35',
   goldGrad: 'linear-gradient(135deg,#f8e8b2,#d7ab50 55%,#b98931)',
+  popoverBg: 'linear-gradient(180deg,rgba(255,252,247,.98),rgba(245,237,224,.98))',
 };
 
 const colors = darkColors;
@@ -552,7 +554,7 @@ function ThemedListingSelect({
               overflowY: 'auto',
               border: `1px solid ${colors.borderGold32}`,
               borderRadius: '12px',
-              background: 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
+              background: colors.popoverBg,
               boxShadow: '0 24px 50px -26px rgba(0,0,0,.86)',
               padding: '6px',
             }}
@@ -572,7 +574,7 @@ function ThemedListingSelect({
                     minHeight: '38px',
                     border: 0,
                     borderRadius: '8px',
-                    background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                    background: isSelected ? colors.borderGold12 : 'transparent',
                     color: isSelected ? colors.goldBright : colors.text,
                     font: 'inherit',
                     fontSize: '13px',
@@ -879,25 +881,6 @@ function PartnerPageContent({
               </p>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '18px' }}>
                 <Link
-                  href="#partner-form"
-                  style={{
-                    minHeight: '44px',
-                    borderRadius: '11px',
-                    padding: '0 18px',
-                    background: colors.goldGrad,
-                    color: colors.onGold,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    textDecoration: 'none',
-                  }}
-                >
-                  <Send size={16} />
-                  Gửi đăng ký
-                </Link>
-                <Link
                   href="/dang-nhap-doi-tac?redirect=/partner"
                   style={{
                     minHeight: '44px',
@@ -1008,7 +991,7 @@ function PartnerPageContent({
                   label="Số điện thoại"
                   value={form.contactPhone}
                   onChange={(value) => updateForm('contactPhone', value)}
-                  placeholder="Ví dụ: 0912 345 678"
+                  placeholder="Nhập số điện thoại"
                   required
                 />
                 <FormControl
