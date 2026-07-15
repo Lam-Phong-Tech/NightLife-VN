@@ -1050,12 +1050,15 @@ function CategoryGrid({
               }}
             >
               {item.iconUrl ? (
-                <img
-                  src={item.iconUrl}
-                  alt=""
-                  width={desktop ? 26 : 22}
-                  height={desktop ? 26 : 22}
-                  style={{ display: "block", objectFit: "contain" }}
+                <span
+                  style={{
+                    width: desktop ? "26px" : "22px",
+                    height: desktop ? "26px" : "22px",
+                    backgroundColor: accentColor,
+                    WebkitMask: `url(${item.iconUrl}) no-repeat center / contain`,
+                    mask: `url(${item.iconUrl}) no-repeat center / contain`,
+                    display: "block",
+                  }}
                 />
               ) : (
                 <Icon size={desktop ? 26 : 22} />

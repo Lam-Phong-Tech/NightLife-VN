@@ -2255,7 +2255,16 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 }}
               >
                 {item.iconUrl ? (
-                  <img src={item.iconUrl} alt="" width={21} height={21} style={{ display: "block", objectFit: "contain" }} />
+                  <span
+                    style={{
+                      width: "21px",
+                      height: "21px",
+                      backgroundColor: active ? activeColor : "#6f6b62",
+                      WebkitMask: `url(${item.iconUrl}) no-repeat center / contain`,
+                      mask: `url(${item.iconUrl}) no-repeat center / contain`,
+                      display: "block",
+                    }}
+                  />
                 ) : (
                   <Icon size={21} />
                 )}
