@@ -246,7 +246,14 @@ type HomeBannerMetadata = {
 };
 
 function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
-  return content.metadata ?? {};
+  const metadata = (content.metadata ?? {}) as HomeBannerMetadata;
+  if (metadata.link && metadata.link.startsWith("/quan/")) {
+    return {
+      ...metadata,
+      link: metadata.link.replace(/^\/quan\//, "/stores/"),
+    };
+  }
+  return metadata;
 }
 
 function getHomeBannerImageUrl(content: CmsContentItem) {
