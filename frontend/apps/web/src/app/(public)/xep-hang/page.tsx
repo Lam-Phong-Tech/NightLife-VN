@@ -1448,39 +1448,40 @@ export default function Page() {
           }
 
           .vyr-ranking-mobile-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 11px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: stretch;
+            gap: 10px;
+            width: 100%;
           }
 
           .vyr-kind-tabs {
-            width: max-content;
-            max-width: 100%;
-            align-self: flex-start;
-            min-height: 38px;
-            flex: none;
+            width: 100%;
+            min-width: 0;
+            min-height: 40px;
             border-radius: 13px;
           }
 
           .vyr-kind-tabs button {
-            min-width: 58px;
-            min-height: 30px;
-            flex: 0 0 auto;
-            padding: 0 13px;
+            min-width: 0;
+            min-height: 32px;
+            flex: 1 1 0;
+            padding: 0 10px;
             font-size: 12.5px;
           }
 
           .vyr-ranking-mobile-filter-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            justify-content: stretch;
+            width: 100%;
+            min-width: 0;
           }
 
           .vyr-ranking-select {
-            min-width: 112px;
-            min-height: 38px;
+            width: 100%;
+            min-width: 0;
+            min-height: 40px;
             border: 1px solid var(--vy-border-gold-22);
             border-radius: 13px;
             padding: 0 12px;
@@ -1490,16 +1491,25 @@ export default function Page() {
           }
 
           .vyr-ranking-select-trigger {
-            min-height: 36px;
+            min-height: 38px;
             width: 100%;
             justify-content: space-between;
             color: var(--vy-muted);
             font-size: 11.5px;
+            min-width: 0;
+          }
+
+          .vyr-ranking-select-trigger span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .vyr-ranking-select-menu {
             top: calc(100% + 6px);
-            min-width: 112px;
+            width: max-content;
+            min-width: 100%;
+            max-width: min(220px, calc(100vw - 32px));
           }
 
           .vyr-ranking-select-menu button {
