@@ -186,13 +186,6 @@ const localizedStoreParts = (parts: Array<string | null | undefined>, language: 
 const formatStoreCastCount = (count: number, language: LanguageCode) =>
   translateText(`${count} cast`, language);
 
-const formatStoreReviewSummary = (language: LanguageCode) => {
-  if (language === "ja") return "4.8 (18件の評価)";
-  if (language === "ko") return "4.8 (리뷰 18개)";
-  if (language === "zh") return "4.8 (18条评价)";
-  return `4.8 (18 ${translateText("đánh giá", language)})`;
-};
-
 const markerToIntroKey = (marker: string) => {
   const normalized = marker.toUpperCase();
   if (marker === "🇯🇵" || normalized === "JP") return "ja";
@@ -1691,10 +1684,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <div className="desktop-title">
               <div>
                 <h1>{displayName}</h1>
-                <p>
-                  <Star size={15} fill="currentColor" />
-                  {formatStoreReviewSummary(activeLanguage)} · {[categoryLabel, location].filter(Boolean).join(" · ")}
-                </p>
+                <p>{[categoryLabel, location].filter(Boolean).join(" · ")}</p>
               </div>
               <b className={openNow ? "open-pill" : "closed-pill"}>
                 <i />

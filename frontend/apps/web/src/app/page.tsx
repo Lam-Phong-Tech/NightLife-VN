@@ -29,7 +29,6 @@ import {
   Sparkles,
   Star,
   Ticket,
-  Trophy,
   UserRound,
   Utensils,
   Waves,
@@ -48,7 +47,8 @@ import {
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
-import { resolveClientUrl } from "@/lib/api/client";
+import { ApiError, resolveClientUrl } from "@/lib/api/client";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import {
   DEFAULT_APPEARANCE_CONFIG,
   findAppearanceTitle,
@@ -70,6 +70,8 @@ import { storeImageForSlug } from "@/lib/demo-media";
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -275,6 +277,7 @@ type HomeStoreCard = {
   category: string;
   cityCode: string;
   img?: string;
+  image?: string;
   href: string;
   badgeText: string;
   priceLabel: string;
@@ -334,8 +337,12 @@ function firstContentImage(...values: Array<string | null | undefined>) {
   return values.find((value) => isUsableContentImage(value));
 }
 
+function storeCardImage(store: Pick<PublicStore, "slug" | "thumbnailUrl">, index: number) {
+  return resolveClientUrl(store.thumbnailUrl) || storeImageForSlug(store.slug, index);
+}
+
 function storeImage(store: PublicStore, index: number) {
-  const backendImage = resolveClientUrl(store.thumbnailUrl) || storeImageForSlug(store.slug, index);
+  const backendImage = storeCardImage(store, index);
   return backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : undefined;
 }
 
@@ -393,6 +400,7 @@ function storeAreaLabel(store: PublicStore) {
 
 function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
+  const image = storeCardImage(store, index);
 
   return {
     id: store.id,
@@ -402,7 +410,8 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
     catLabel: categoryLabel,
     category: store.category,
     cityCode: store.cityCode ?? "",
-    img: storeImage(store, index),
+    img: image ? `url(${JSON.stringify(image)}) center/cover` : undefined,
+    image: image ?? undefined,
     href: `/stores/${store.slug}`,
     badgeText: index < 2 ? "Đặt bàn nhanh" : categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[store.category] ?? "từ 900.000đ"),
@@ -415,6 +424,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
   const readableArea = areaLabels[areaName] ?? areaName;
   const readableCity = cityLabels[item.cityCode ?? ""] ?? item.city;
   const activeCouponName = item.activeCoupon?.name;
+  const image = resolveClientUrl(item.thumbnailUrl);
 
   return {
     id: item.id,
@@ -425,6 +435,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
     category: item.category,
     cityCode: item.cityCode ?? "",
     img: backgroundFromUrl(item.thumbnailUrl),
+    image: image ?? undefined,
     href: item.href || `/stores/${item.slug}`,
     badgeText: activeCouponName || item.reason || (index < 2 ? "Gợi ý hợp gu" : categoryLabel),
     priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
@@ -444,6 +455,7 @@ function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
 function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStoreCard {
   void index;
   const categoryLabel = categoryLabels[item.category] ?? item.category;
+  const image = resolveClientUrl(item.image);
 
   return {
     id: item.targetId,
@@ -454,6 +466,7 @@ function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStore
     category: item.category,
     cityCode: item.cityCode ?? "",
     img: backgroundFromUrl(item.image),
+    image: image ?? undefined,
     href: item.href || `/stores/${item.slug}`,
     badgeText: item.sponsored ? "Nổi bật" : categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
@@ -1584,7 +1597,28 @@ function HomeCardCarousel<T>({
   );
 }
 
-function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact?: boolean }) {
+function favoriteSnapshotFromHomeCard(item: HomeStoreCard): SavedFavoriteStore {
+  return {
+    slug: item.slug,
+    name: item.name,
+    categoryLabel: item.catLabel,
+    areaLabel: item.area,
+    cityLabel: item.cityCode,
+    image: item.image,
+  };
+}
+
+function VenueMiniCard({
+  item,
+  compact = false,
+  isFavorite = false,
+  onToggleFavorite,
+}: {
+  item: HomeStoreCard;
+  compact?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (item: HomeStoreCard) => void;
+}) {
   return (
     <Link
       href={item.href}
@@ -1613,9 +1647,32 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
         label="Ảnh quán"
         style={{ height: compact ? "112px" : "156px", position: "relative" }}
       >
-        <span style={{ position: "absolute", top: 10, right: 10, width: 30, height: 30, borderRadius: "50%", background: "rgba(12,12,15,.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Heart size={15} color="#fff" />
-        </span>
+        <button
+          type="button"
+          aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleFavorite?.(item);
+          }}
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            width: 30,
+            height: 30,
+            border: 0,
+            borderRadius: "50%",
+            background: "rgba(12,12,15,.7)",
+            color: isFavorite ? colors.rose : "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <Heart size={15} fill={isFavorite ? "currentColor" : "none"} />
+        </button>
       </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
@@ -2402,6 +2459,9 @@ export default function Page() {
   const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
   const [homeContentError, setHomeContentError] = useState("");
+  const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
+  );
   const homeCategoryItems = useMemo(
     () => homeAppearance.quick.map(mapAppearanceQuickItem),
     [homeAppearance.quick],
@@ -2449,6 +2509,50 @@ export default function Page() {
       style.remove();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      queueMicrotask(() => {
+        if (!cancelled) setFavoriteStoreSlugs([]);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    storeFavoriteApi
+      .list()
+      .then((items) => {
+        if (cancelled) return;
+
+        const favoriteSnapshots = items.map((item) => ({
+          slug: item.store.slug,
+          name: item.store.name,
+          categoryLabel: translateText(categoryLabels[item.store.category] ?? item.store.category, activeLanguage),
+          areaLabel: [
+            item.store.area?.name ?? item.store.district,
+            cityLabels[item.store.cityCode ?? ""] ?? item.store.city,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          cityLabel: item.store.city,
+          image: resolveClientUrl(item.store.thumbnailUrl) ?? storeImageForSlug(item.store.slug),
+          favoritedAt: item.favoritedAt,
+        }));
+
+        replaceFavoriteStores(favoriteSnapshots);
+        setFavoriteStoreSlugs(favoriteSnapshots.map((item) => item.slug));
+      })
+      .catch(() => {
+        if (!cancelled) setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2736,6 +2840,46 @@ export default function Page() {
       .catch(() => undefined);
   };
 
+  const toggleHomeStoreFavorite = async (item: HomeStoreCard) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const snapshot = favoriteSnapshotFromHomeCard(item);
+    const nextValue = !favoriteStoreSlugs.includes(item.slug);
+    const applyFavorite = (favorited: boolean) => {
+      writeFavoriteStore(snapshot, favorited);
+      setFavoriteStoreSlugs((current) =>
+        favorited
+          ? [item.slug, ...current.filter((slug) => slug !== item.slug)]
+          : current.filter((slug) => slug !== item.slug),
+      );
+    };
+
+    applyFavorite(nextValue);
+    trackHomeVenueSignal({
+      storeId: item.id,
+      storeSlug: item.slug,
+      category: item.category,
+      source: "home_favorite",
+    });
+
+    try {
+      const state = nextValue
+        ? await storeFavoriteApi.favorite(item.slug)
+        : await storeFavoriteApi.unfavorite(item.slug);
+      applyFavorite(state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        applyFavorite(false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      applyFavorite(!nextValue);
+    }
+  };
+
   return (
     <React.Fragment>
       <div className="block md:hidden nl-home-page nl-home-page-mobile" style={shellStyle}>
@@ -2766,7 +2910,14 @@ export default function Page() {
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={2}
-                    renderItem={(item) => <VenueMiniCard item={item} compact />}
+                    renderItem={(item) => (
+                      <VenueMiniCard
+                        item={item}
+                        compact
+                        isFavorite={favoriteStoreSlugs.includes(item.slug)}
+                        onToggleFavorite={toggleHomeStoreFavorite}
+                      />
+                    )}
                   />
                 ) : (
                   <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} compact />
@@ -2913,7 +3064,13 @@ export default function Page() {
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={4}
-                    renderItem={(item) => <VenueMiniCard item={item} />}
+                    renderItem={(item) => (
+                      <VenueMiniCard
+                        item={item}
+                        isFavorite={favoriteStoreSlugs.includes(item.slug)}
+                        onToggleFavorite={toggleHomeStoreFavorite}
+                      />
+                    )}
                   />
                 ) : (
                   <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} />
@@ -2961,7 +3118,6 @@ export default function Page() {
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>
-                  <Trophy size={24} color={colors.gold} />
                   {homeSectionTitles.featured}
                 </h2>
               </div>

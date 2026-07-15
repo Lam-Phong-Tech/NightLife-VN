@@ -5,13 +5,12 @@ import type {
   StoreOpeningHour,
 } from "@/lib/api/store-detail";
 
-export type StoreTab = "overview" | "pricing" | "casts" | "reviews" | "map";
+export type StoreTab = "overview" | "pricing" | "casts" | "map";
 
 export const storeDetailTabs: Array<{ id: StoreTab; label: string }> = [
   { id: "overview", label: "Giới thiệu" },
   { id: "pricing", label: "Bảng giá" },
   { id: "casts", label: "Cast" },
-  { id: "reviews", label: "Đánh giá" },
   { id: "map", label: "Bản đồ" },
 ];
 

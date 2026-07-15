@@ -79,7 +79,7 @@ export const rankListCast: Cast[] = [
 export const svcData: Venue[] = [
   { name: 'Sakura Teppanyaki', area: 'Tây Hồ · Nhà hàng Nhật', price: 'từ 800K', badgeText: 'Đặt bàn nhanh', grad: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover" },
   { name: 'Yakitori Hanoi', area: 'Ba Đình · BBQ Nhật', price: 'từ 600K', badgeText: 'Mới', grad: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=480&q=70') center/cover" },
-  { name: 'Sushi Lava', area: 'Quận 1 · Omakase', price: 'từ 1.2tr', badgeText: 'Đánh giá cao', grad: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover" },
+  { name: 'Sushi Lava', area: 'Quận 1 · Omakase', price: 'từ 1.2tr', badgeText: 'Nổi bật', grad: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover" },
   { name: 'Wagyu House', area: 'Hoàn Kiếm · Steak', price: 'từ 1.5tr', badgeText: 'Hot', grad: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=480&q=70') center/cover" }
 ];
 

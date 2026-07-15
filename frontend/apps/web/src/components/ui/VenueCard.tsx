@@ -31,9 +31,8 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onClick, onFavClick
       <div style={{ padding: '12px', flex: '1', minWidth: '0' }}>
         <div style={{ fontWeight: '700', fontSize: '14px' }}>{venue.name}</div>
         <div style={{ fontSize: '11.5px', color: 'var(--vy-muted)', marginTop: '3px' }}>{venue.area} - {venue.catLabel}</div>
-        <div style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--vy-gold)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>* {venue.rating} {venue.reviews ? <span style={{ color: 'var(--vy-faint)' }}>({venue.reviews})</span> : null}</span>
-          <span style={{ color: 'var(--vy-text)', fontWeight: '700' }}>{formatPriceTier(venue.price)}</span>
+        <div style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--vy-gold)', fontWeight: '700' }}>
+          {formatPriceTier(venue.price)}
         </div>
       </div>
     </div>
