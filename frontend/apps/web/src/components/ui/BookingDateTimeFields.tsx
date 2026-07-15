@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfigProvider, DatePicker, Select } from "antd";
+import { ConfigProvider, DatePicker } from "antd";
 import enUS from "antd/locale/en_US";
 import jaJP from "antd/locale/ja_JP";
 import koKR from "antd/locale/ko_KR";
@@ -13,6 +13,7 @@ import "dayjs/locale/ko";
 import "dayjs/locale/vi";
 import "dayjs/locale/zh-cn";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -149,6 +150,7 @@ export function BookingDateTimeFields({
 }: BookingDateTimeFieldsProps) {
   const activeLanguage = useActiveLanguage();
   const [isDatePickerOpen, setDatePickerOpen] = useState(false);
+  const [isTimeMenuOpen, setTimeMenuOpen] = useState(false);
   const currentDate = parseDate(dateValue) ?? parseDate(minDate) ?? dayjs();
   const min = parseDate(minDate) ?? dayjs();
   const max = parseDate(maxDate) ?? min.add(14, "day");
@@ -185,6 +187,7 @@ export function BookingDateTimeFields({
   const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
   const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
+  const selectedTimeLabel = options.find((option) => option.value === selectedTimeValue)?.label;
   const periodTabs = groups;
   const showPeriodTabs = hasTimeOptionGroups && periodTabs.length > 1;
   const dateFieldClassName = [fieldClassName, "nl-booking-date-field"].filter(Boolean).join(" ");
@@ -202,6 +205,10 @@ export function BookingDateTimeFields({
   useEffect(() => {
     dayjs.locale(dayjsLocales[activeLanguage]);
   }, [activeLanguage]);
+
+  useEffect(() => {
+    setTimeMenuOpen(false);
+  }, [activeLanguage, disabled, loadingTimes, selectedTimeValue, activeTimeOptions.length]);
 
   const selectPeriod = (period: BookingTimeSlotPeriod) => {
     const nextGroup = groups.find((group) => group.key === period);
@@ -296,18 +303,55 @@ export function BookingDateTimeFields({
             })}
           </div>
         ) : null}
-        <Select
-          className="nl-booking-ant-control nl-booking-ant-select"
-          disabled={shouldDisableTime}
-          getPopupContainer={getDocumentBodyPopupContainer}
-          loading={loadingTimes}
-          notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
-          onChange={onTimeChange}
-          options={options}
-          placeholder={loadingTimes ? loadingTimesText : selectTimeText}
-          popupClassName="nl-booking-select-popup"
-          value={selectedTimeValue}
-        />
+        <div
+          className={`nl-booking-time-select${isTimeMenuOpen ? " is-open" : ""}`}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setTimeMenuOpen(false);
+            }
+          }}
+        >
+          <button
+            type="button"
+            className="nl-booking-time-trigger"
+            aria-haspopup="listbox"
+            aria-expanded={isTimeMenuOpen}
+            disabled={shouldDisableTime}
+            onClick={() => {
+              if (shouldDisableTime) return;
+              setTimeMenuOpen((current) => !current);
+            }}
+          >
+            <span className={selectedTimeLabel ? "" : "is-placeholder"}>
+              {selectedTimeLabel ?? (loadingTimes ? loadingTimesText : selectTimeText)}
+            </span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+
+          {isTimeMenuOpen ? (
+            <div className="nl-booking-time-menu" role="listbox" aria-label={selectTimeText}>
+              {options.length ? (
+                options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={option.value === selectedTimeValue ? "is-selected" : ""}
+                    role="option"
+                    aria-selected={option.value === selectedTimeValue}
+                    onClick={() => {
+                      onTimeChange(option.value);
+                      setTimeMenuOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))
+              ) : (
+                <span className="nl-booking-time-empty">{localizedEmptyMessage}</span>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
       {!timeError && !loadingTimes && !activeTimeOptions.length ? (
         <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>

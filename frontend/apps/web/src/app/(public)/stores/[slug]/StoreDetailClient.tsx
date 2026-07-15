@@ -2943,6 +2943,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-top: 0;
         }
 
+        .booking-card .booking-field .nl-booking-time-select {
+          min-height: 28px;
+          margin-top: 0;
+        }
+
+        .booking-card .booking-field .nl-booking-time-trigger {
+          min-height: 28px;
+          height: 28px;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 0;
+          box-shadow: none;
+        }
+
         .booking-card .booking-field .nl-booking-time-control {
           gap: 5px;
           margin-top: 7px;
@@ -2977,13 +2992,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select:hover .ant-select-selector,
-        .booking-card .booking-field .nl-booking-ant-select.ant-select-focused .ant-select-selector {
+        .booking-card .booking-field .nl-booking-ant-select.ant-select-focused .ant-select-selector,
+        .booking-card .booking-field .nl-booking-time-trigger:hover,
+        .booking-card .booking-field .nl-booking-time-trigger:focus-visible {
           border: 0 !important;
           box-shadow: none !important;
         }
 
         .booking-card .booking-field .nl-booking-ant-select .ant-select-selection-item,
-        .booking-card .booking-field .nl-booking-ant-select .ant-select-selection-placeholder {
+        .booking-card .booking-field .nl-booking-ant-select .ant-select-selection-placeholder,
+        .booking-card .booking-field .nl-booking-time-trigger span {
           color: var(--vy-text) !important;
           font-size: 13px;
           font-weight: 850;
@@ -2991,7 +3009,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 28px !important;
         }
 
-        .booking-card .booking-field .nl-booking-ant-select .ant-select-arrow {
+        .booking-card .booking-field .nl-booking-ant-select .ant-select-arrow,
+        .booking-card .booking-field .nl-booking-time-trigger svg {
           color: var(--vy-gold) !important;
         }
 

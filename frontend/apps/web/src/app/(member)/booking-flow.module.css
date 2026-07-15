@@ -546,6 +546,17 @@
   height: 42px;
 }
 
+.dateTimeFields :global(.nl-booking-time-select) {
+  min-height: 42px;
+}
+
+.dateTimeFields :global(.nl-booking-time-trigger) {
+  min-height: 42px;
+  border-color: rgba(212, 178, 106, 0.24);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
 .dateTimeFields :global(.nl-booking-ant-select.ant-select .ant-select-selector) {
   min-height: 42px !important;
   height: 42px !important;
@@ -1134,6 +1145,12 @@
   margin-top: 10px;
 }
 
+.summaryCard .summaryRow:has(.tourVenueSummary) + .summaryRow {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vy-border);
+}
+
 .summaryCard .summaryRow:first-child {
   padding-bottom: 11px;
   margin-bottom: 12px;
@@ -1678,7 +1695,8 @@
 }
 
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select .ant-select-selector) {
+:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select .ant-select-selector),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger) {
   border-color: rgba(168, 124, 52, 0.28) !important;
   background: rgba(255, 255, 255, 0.76) !important;
   color: #241a0a !important;
@@ -1687,20 +1705,24 @@
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker:hover),
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker-focused),
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select:hover .ant-select-selector),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select-focused .ant-select-selector) {
+:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select-focused .ant-select-selector),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:hover),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:focus-visible) {
   border-color: rgba(168, 124, 52, 0.5) !important;
   box-shadow: 0 0 0 3px rgba(168, 124, 52, 0.12) !important;
 }
 
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker .ant-picker-input > input),
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select .ant-select-selection-item),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select .ant-select-selection-placeholder) {
+:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select .ant-select-selection-placeholder),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger span) {
   color: #241a0a !important;
 }
 
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker .ant-picker-suffix),
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker .ant-picker-clear),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select .ant-select-arrow) {
+:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select .ant-select-arrow),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger svg) {
   color: #8a641f !important;
 }
 
