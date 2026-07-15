@@ -6298,36 +6298,89 @@ export default function PartnerPage() {
         @media (max-width: 860px) {
           .partner-shell {
             padding-left: 0;
+            padding-bottom: 80px !important;
           }
           .partner-sidebar {
-            position: static !important;
-            inset: auto !important;
-            width: auto !important;
-            height: auto !important;
-            min-height: auto !important;
-            overflow: visible !important;
-            border-right: 0 !important;
-            border-bottom: 1px solid ${colors.borderGold12};
-          }
-          .partner-nav {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            display: grid !important;
+            display: none !important;
           }
           .partner-content {
             padding: 20px 18px 28px;
           }
+          .partner-mobile-page-title {
+            display: block !important;
+          }
           .partner-header {
-            padding: 16px 18px !important;
-            min-height: auto !important;
-            align-items: flex-start !important;
-            flex-direction: column !important;
+            padding: 0 16px !important;
+            height: 60px !important;
+            min-height: 60px !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+          }
+          .partner-header-status-pill {
+            display: none !important;
+          }
+          .partner-logout-btn {
+            width: 38px !important;
+            padding: 0 !important;
+            justify-content: center !important;
+            border-radius: 50% !important;
+          }
+          .partner-logout-btn .logout-text {
+            display: none !important;
+          }
+          .partner-desktop-header-title {
+            display: none !important;
+          }
+          .partner-mobile-header-store {
+            display: flex !important;
           }
           .partner-notification-popover {
-            top: 86px !important;
+            top: 70px !important;
             left: 18px !important;
             right: 18px !important;
             width: auto !important;
             max-height: calc(100vh - 116px) !important;
+          }
+          .partner-mobile-bottom-nav {
+            display: flex !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: ${colors.navBg};
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid ${colors.borderGold12};
+            z-index: 100;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+          }
+          .partner-mobile-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            border: 0;
+            color: ${colors.text2};
+            cursor: pointer;
+            gap: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+          }
+          .partner-mobile-nav-btn.active {
+            color: ${colors.goldBright};
+          }
+          .partner-mobile-nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
           }
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -6525,23 +6578,61 @@ export default function PartnerPage() {
               backdropFilter: 'blur(14px)',
             }}
           >
-            <div>
+            <div className="partner-header-left">
+              {/* Desktop-only Page Title */}
+              <div className="partner-desktop-header-title">
+                <div
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '1.7px',
+                    color: colors.gold,
+                  }}
+                >
+                  {panelTitles[activePanel].eyebrow}
+                </div>
+                <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>
+                  {panelTitles[activePanel].title}
+                </h1>
+              </div>
+
+              {/* Mobile-only Store Name & Status Dot */}
               <div
+                className="partner-mobile-header-store"
                 style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '1.7px',
-                  color: colors.gold,
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                {panelTitles[activePanel].eyebrow}
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: activeStoreStatus.toUpperCase() === 'ACTIVE' ? colors.success : colors.gold,
+                    boxShadow: `0 0 8px ${activeStoreStatus.toUpperCase() === 'ACTIVE' ? colors.success : colors.gold}`,
+                    flex: '0 0 auto',
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 800,
+                    color: colors.text,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '180px',
+                  }}
+                >
+                  {storeName}
+                </span>
               </div>
-              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>
-                {panelTitles[activePanel].title}
-              </h1>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div className="partner-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span
+                className="partner-header-status-pill"
                 style={{
                   height: '38px',
                   borderRadius: '19px',
@@ -6837,6 +6928,7 @@ export default function PartnerPage() {
               <button
                 type="button"
                 onClick={logout}
+                className="partner-logout-btn"
                 style={{
                   height: '38px',
                   borderRadius: '11px',
@@ -6854,12 +6946,26 @@ export default function PartnerPage() {
                 }}
               >
                 <LogOut size={15} />
-                Đăng xuất
+                <span className="logout-text">Đăng xuất</span>
               </button>
             </div>
           </header>
 
           <div className="partner-content">
+            {/* Mobile-only page title */}
+            <h1
+              className="partner-mobile-page-title"
+              style={{
+                display: 'none',
+                margin: '0 0 16px',
+                fontSize: '20px',
+                fontWeight: 800,
+                color: colors.text,
+              }}
+            >
+              {panelTitles[activePanel].title}
+            </h1>
+
             <PanelCard
               style={{
                 marginBottom: '14px',
@@ -6912,6 +7018,31 @@ export default function PartnerPage() {
             {renderActivePanel()}
           </div>
         </section>
+
+        {/* Bottom Navigation for Mobile */}
+        <nav
+          className="partner-mobile-bottom-nav"
+          style={{
+            display: 'none',
+          }}
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = activePanel === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActivePanel(item.key)}
+                className={`partner-mobile-nav-btn ${active ? 'active' : ''}`}
+                aria-pressed={active}
+              >
+                <Icon size={20} strokeWidth={active ? 2.2 : 1.7} />
+                <span className="partner-mobile-nav-label">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </main>
   );

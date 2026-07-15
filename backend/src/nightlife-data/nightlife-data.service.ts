@@ -4191,6 +4191,7 @@ export class NightlifeDataService {
     const clean = code.trim();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
     const isUuidNoDashes = /^[0-9a-f]{32}$/i.test(clean);
+    const isSha256 = /^[0-9a-f]{64}$/i.test(clean);
 
     let standardIssue: any = null;
     let adminIssue: any = null;
@@ -4206,6 +4207,15 @@ export class NightlifeDataService {
       if (!standardIssue) {
         adminIssue = await this.prisma.adminCouponIssue.findUnique({
           where: { id: queryId },
+        });
+      }
+    } else if (isSha256) {
+      standardIssue = await this.prisma.couponIssue.findUnique({
+        where: { qrPayloadHash: clean },
+      });
+      if (!standardIssue) {
+        adminIssue = await this.prisma.adminCouponIssue.findUnique({
+          where: { qrPayloadHash: clean },
         });
       }
     } else {

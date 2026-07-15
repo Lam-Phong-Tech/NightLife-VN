@@ -145,12 +145,15 @@ export class AccessService {
     }
 
     let queryId = target.couponIssueId;
+    let queryHash: string | undefined;
     if (target.code) {
       const clean = target.code.trim();
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
         queryId = clean;
       } else if (/^[0-9a-f]{32}$/i.test(clean)) {
         queryId = `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
+      } else if (/^[0-9a-f]{64}$/i.test(clean)) {
+        queryHash = clean;
       }
     }
 
@@ -159,6 +162,7 @@ export class AccessService {
         OR: [
           target.code ? { code: target.code } : null,
           queryId ? { id: queryId } : null,
+          queryHash ? { qrPayloadHash: queryHash } : null,
         ].filter(Boolean) as Prisma.CouponIssueWhereInput[],
       },
       select: { coupon: { select: { storeId: true } } },
@@ -173,6 +177,7 @@ export class AccessService {
         OR: [
           target.code ? { code: target.code } : null,
           queryId ? { id: queryId } : null,
+          queryHash ? { qrPayloadHash: queryHash } : null,
         ].filter(Boolean) as Prisma.AdminCouponIssueWhereInput[],
       },
       include: { adminCoupon: true },
