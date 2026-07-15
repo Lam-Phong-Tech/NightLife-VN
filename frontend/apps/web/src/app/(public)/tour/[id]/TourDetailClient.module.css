@@ -491,6 +491,27 @@
   opacity: 0.64;
 }
 
+.mobileCtaBar {
+  display: none;
+}
+
+.mobileSubmitButton span {
+  display: grid;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.mobileSubmitButton strong {
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.mobileSubmitButton small {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.82;
+}
+
 .formError {
   border: 1px solid color-mix(in srgb, var(--vy-error) 36%, transparent);
   border-radius: 12px;
@@ -512,7 +533,7 @@
 
 @media (max-width: 900px) {
   .shell {
-    padding: 12px 0 calc(144px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(136px + env(safe-area-inset-bottom));
   }
 
   .breadcrumb {
@@ -568,30 +589,45 @@
     margin-top: 16px;
     border-width: 1px 0;
     border-radius: 0;
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    padding-bottom: 18px;
   }
 
   .dateTime :global(.nl-booking-date-time) {
     grid-template-columns: 1fr;
   }
 
-  .submitButton {
+  .formSubmitButton {
+    display: none;
+  }
+
+  .mobileCtaBar {
     position: fixed;
-    z-index: 20;
-    right: 12px;
-    bottom: calc(78px + env(safe-area-inset-bottom));
-    left: 12px;
+    z-index: 35;
+    right: 0;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    left: 0;
+    display: block;
+    border-top: 1px solid var(--vy-border-gold-12);
+    background: linear-gradient(180deg, transparent 0%, var(--vy-bg) 30%, var(--vy-bg) 100%);
+    padding: 10px 12px 12px;
+  }
+
+  .mobileSubmitButton {
     display: flex;
-    min-height: 50px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold) 55%, var(--tour-gold-deep));
+    width: 100%;
+    min-height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(
+      135deg,
+      var(--vy-gold-hi),
+      var(--vy-gold) 55%,
+      color-mix(in srgb, var(--vy-gold) 72%, black)
+    );
     color: #241a0a;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    font-size: 14px;
-    font-weight: 950;
     text-decoration: none;
-    box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 16px 34px -18px rgba(0, 0, 0, 0.85);
   }
 }

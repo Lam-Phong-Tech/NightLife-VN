@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CalendarDays,
   Check,
@@ -358,6 +359,13 @@ const tourUiCopy = {
     ko: "온라인 결제는 없습니다. 예약 요청이 전송되며 예약 완료 후 혜택 QR이 발송됩니다.",
     zh: "无需在线支付。预约请求将发送，预订成功后会发送优惠二维码。",
   },
+  noPaymentShort: {
+    vi: "Gửi yêu cầu · không thu cọc",
+    en: "Send request · no deposit",
+    ja: "リクエスト送信・デポジットなし",
+    ko: "요청 전송 · 보증금 없음",
+    zh: "发送请求 · 无需押金",
+  },
   bookingFailed: {
     vi: "Không gửi được yêu cầu đặt tour.",
     en: "Could not send the tour request.",
@@ -400,6 +408,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   const firstStop = tour.stops[0];
   const firstStore = firstStop?.store;
@@ -435,6 +444,11 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
         : buildBookingTimeSlots(bookingStore?.openingHours, bookingDate, { fallback: "empty" }),
     [bookingDate, bookingStore?.openingHours, explicitDepartureTimes],
   );
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+    return () => setPortalTarget(null);
+  }, []);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -741,6 +755,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
             </div>
 
             <form
+              id="tour-booking-form"
               className={styles.form}
               onSubmit={(event) => {
                 event.preventDefault();
@@ -856,7 +871,11 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
               {errorMessage ? <div className={styles.formError}>{t(errorMessage)}</div> : null}
 
-              <button type="submit" className={styles.submitButton} disabled={!canSubmit || isSubmitting}>
+              <button
+                type="submit"
+                className={`${styles.submitButton} ${styles.formSubmitButton}`}
+                disabled={!canSubmit || isSubmitting}
+              >
                 <CalendarDays size={17} />
                 {isSubmitting ? tx("submitting") : tx("submitTour")}
               </button>
@@ -870,6 +889,25 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
         </div>
       </div>
 
+      {portalTarget
+        ? createPortal(
+            <div className={styles.mobileCtaBar} data-no-scroll-reveal>
+              <button
+                type="submit"
+                form="tour-booking-form"
+                className={`${styles.submitButton} ${styles.mobileSubmitButton}`}
+                disabled={!canSubmit || isSubmitting}
+              >
+                <CalendarDays size={17} />
+                <span>
+                  <strong>{isSubmitting ? tx("submitting") : tx("submitTour")}</strong>
+                  <small>{tx("noPaymentShort")}</small>
+                </span>
+              </button>
+            </div>,
+            portalTarget,
+          )
+        : null}
     </main>
   );
 }
