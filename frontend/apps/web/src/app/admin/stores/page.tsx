@@ -290,6 +290,20 @@ function AdminStoresContent() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  const categories = [
+    { value: 'CLUB', label: 'Club' },
+    { value: 'LOUNGE', label: 'Lounge' },
+    { value: 'BAR', label: 'Bar' },
+    { value: 'GIRLS_BAR', label: 'Girls Bar' },
+    { value: 'KARAOKE', label: 'Karaoke' },
+    { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
+    { value: 'RESTAURANT', label: 'Nhà hàng' },
+    { value: 'CASINO', label: 'Casino' },
+  ];
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
@@ -386,6 +400,9 @@ function AdminStoresContent() {
     const handleClickOutside = (event: MouseEvent) => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setStatusDropdownOpen(false);
+      }
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1140,14 +1157,82 @@ function AdminStoresContent() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Loại hình</div>
-                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={formData.category} onChange={e => updateForm('category', e.target.value)}>
-                      <option value="CLUB" style={optS}>Club</option>
-                      <option value="LOUNGE" style={optS}>Lounge</option>
-                      <option value="BAR" style={optS}>Bar</option>
-                      <option value="GIRLS_BAR" style={optS}>Girls Bar</option>
-                      <option value="KARAOKE" style={optS}>Karaoke</option>
-                      <option value="MASSAGE_SPA" style={optS}>Massage & Spa</option>
-                    </select>
+                    <div ref={categoryDropdownRef} style={{ position: 'relative' }}>
+                      <div
+                        onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                        style={{
+                          ...inputS,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <span>
+                          {categories.find(c => c.value === formData.category)?.label || formData.category}
+                        </span>
+                        <svg
+                          style={{
+                            marginLeft: '4px',
+                            transform: categoryDropdownOpen ? 'rotate(180deg)' : 'none',
+                            transition: 'transform 0.2s',
+                          }}
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#8c8679"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
+
+                      {categoryDropdownOpen && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            marginTop: '8px',
+                            background: '#17161c',
+                            border: '1px solid rgba(255,255,255,.08)',
+                            borderRadius: '12px',
+                            padding: '6px',
+                            zIndex: 100,
+                            maxHeight: '250px',
+                            overflowY: 'auto',
+                            boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)',
+                          }}
+                        >
+                          {categories.map(c => (
+                            <div
+                              key={c.value}
+                              onClick={() => {
+                                updateForm('category', c.value);
+                                setCategoryDropdownOpen(false);
+                              }}
+                              style={{
+                                padding: '9px 12px',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: formData.category === c.value ? '#241a0a' : '#c5c0b6',
+                                background: formData.category === c.value ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                marginBottom: '2px',
+                              }}
+                            >
+                              {c.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Tỉnh/Thành phố</div>
