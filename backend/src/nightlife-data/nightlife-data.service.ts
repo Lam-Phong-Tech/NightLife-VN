@@ -3419,7 +3419,22 @@ export class NightlifeDataService {
           },
         },
         couponIssue: {
-          select: { id: true, code: true, status: true, metadata: true },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            metadata: true,
+            usedAt: true,
+          },
+        },
+        qr: {
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            usedAt: true,
+            expiresAt: true,
+          },
         },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
@@ -5758,7 +5773,12 @@ export class NightlifeDataService {
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
             coupon: { select: { id: true, code: true, name: true } },
-            couponIssue: { select: { id: true, code: true, status: true } },
+            couponIssue: {
+              select: { id: true, code: true, status: true, usedAt: true },
+            },
+            qr: {
+              select: { id: true, status: true, usedAt: true, expiresAt: true },
+            },
           },
         })
       : null;
@@ -5802,7 +5822,7 @@ export class NightlifeDataService {
       user,
     });
     const now = new Date();
-    const usedAt = this.resolveBillUsedAt(dto);
+    const usedAt = this.resolveBillUsedAt(dto, { booking, couponLink });
     this.assertBillSubmissionWindow(usedAt, now);
     await this.assertBillSubmissionRateLimitAndDuplicate({
       submitterType: 'MEMBER',
@@ -5931,7 +5951,12 @@ export class NightlifeDataService {
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
             coupon: { select: { id: true, code: true, name: true } },
-            couponIssue: { select: { id: true, code: true, status: true } },
+            couponIssue: {
+              select: { id: true, code: true, status: true, usedAt: true },
+            },
+            qr: {
+              select: { id: true, status: true, usedAt: true, expiresAt: true },
+            },
           },
         })
       : null;
@@ -5981,7 +6006,7 @@ export class NightlifeDataService {
     });
 
     const now = new Date();
-    const usedAt = this.resolveBillUsedAt(dto);
+    const usedAt = this.resolveBillUsedAt(dto, { booking, couponLink });
     this.assertBillSubmissionWindow(usedAt, now);
     const submitter = await this.resolvePartnerBillSubmitter(user);
     await this.assertBillSubmissionRateLimitAndDuplicate({
@@ -9909,8 +9934,56 @@ export class NightlifeDataService {
     return {};
   }
 
-  private resolveBillUsedAt(dto: CreateBillDto) {
-    const usedAt = new Date(dto.usedAt);
+  private resolveBillUsedAt(
+    dto: CreateBillDto,
+    context?: {
+      booking?: {
+        id: string;
+        qr?: { usedAt?: Date | string | null } | null;
+        couponIssue?: { usedAt?: Date | string | null } | null;
+      } | null;
+      couponLink?: { couponIssueId?: string; couponIssueUsedAt?: Date | string | null };
+    },
+  ) {
+    if (context?.booking?.id) {
+      const confirmedUsageAt =
+        context.booking.qr?.usedAt ?? context.booking.couponIssue?.usedAt ?? null;
+      if (!confirmedUsageAt) {
+        throw new UnprocessableEntityException(
+          'Booking must be checked in by partner QR before bill submission',
+        );
+      }
+
+      return this.parseBillUsedAt(confirmedUsageAt);
+    }
+
+    if (context?.couponLink?.couponIssueId) {
+      if (!context.couponLink.couponIssueUsedAt) {
+        throw new UnprocessableEntityException(
+          'Coupon issue must be checked in before bill submission',
+        );
+      }
+
+      return this.parseBillUsedAt(context.couponLink.couponIssueUsedAt);
+    }
+
+    return this.parseBillUsedAt(dto.usedAt);
+  }
+
+  private parseBillUsedAt(value: Date | string | null | undefined) {
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) {
+        throw new BadRequestException('usedAt must be a valid ISO date');
+      }
+
+      return value;
+    }
+
+    if (!value) {
+      throw new BadRequestException('usedAt must be a valid ISO date');
+    }
+
+    const usedAt = new Date(value);
     if (Number.isNaN(usedAt.getTime())) {
       throw new BadRequestException('usedAt must be a valid ISO date');
     }
@@ -10212,7 +10285,13 @@ export class NightlifeDataService {
       couponId: string | null;
       couponIssueId: string | null;
       coupon?: CouponSummary | null;
-      couponIssue?: { id: string; code: string; status: string } | null;
+      couponIssue?: {
+        id: string;
+        code: string;
+        status: string;
+        usedAt?: Date | string | null;
+      } | null;
+      qr?: { usedAt?: Date | string | null } | null;
     } | null;
     store: StoreSummary;
     user?: AuthenticatedUser;
@@ -10223,6 +10302,7 @@ export class NightlifeDataService {
     let couponIssueId = input.booking?.couponIssueId ?? undefined;
     let couponIssueCode = input.booking?.couponIssue?.code;
     let couponIssueStatus = input.booking?.couponIssue?.status;
+    let couponIssueUsedAt = input.booking?.couponIssue?.usedAt ?? null;
     let coupon = input.booking?.coupon ?? null;
     let userId: string | null | undefined;
     let guestId: string | null | undefined;
@@ -10258,6 +10338,7 @@ export class NightlifeDataService {
           userId: true,
           guestId: true,
           status: true,
+          usedAt: true,
           expiresAt: true,
           bill: { select: { id: true } },
           coupon: {
@@ -10330,6 +10411,7 @@ export class NightlifeDataService {
       couponIssueId = issue.id;
       couponIssueCode = issue.code;
       couponIssueStatus = issue.status;
+      couponIssueUsedAt = issue.usedAt;
       userId = issue.userId;
       guestId = issue.guestId;
       coupon = {
@@ -10388,6 +10470,7 @@ export class NightlifeDataService {
       couponIssueId,
       couponIssueCode,
       couponIssueStatus,
+      couponIssueUsedAt,
       coupon,
       userId,
       guestId,
@@ -12257,7 +12340,22 @@ export class NightlifeDataService {
         },
       },
       couponIssue: {
-        select: { id: true, code: true, status: true, metadata: true },
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          metadata: true,
+          usedAt: true,
+        },
+      },
+      qr: {
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          usedAt: true,
+          expiresAt: true,
+        },
       },
     } satisfies Prisma.BookingSelect;
   }

@@ -69,6 +69,7 @@ export type BookingRecord = {
     id: string;
     code: string;
     status: string;
+    usedAt?: string | null;
     qrPayload?: string | null;
     qrImageUrl?: string | null;
     qrImageDataUrl?: string | null;
@@ -79,6 +80,13 @@ export type BookingRecord = {
       discountPercent?: number | null;
       discountRuleSnapshot?: BookingDiscountSnapshot | null;
     } | null;
+  } | null;
+  qr?: {
+    id: string;
+    code: string;
+    status: string;
+    usedAt?: string | null;
+    expiresAt?: string | null;
   } | null;
   tour?: {
     id: string;

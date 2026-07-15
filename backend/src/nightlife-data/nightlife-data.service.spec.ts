@@ -4638,9 +4638,18 @@ describe('NightlifeDataService', () => {
       couponId: 'coupon-1',
       couponIssueId: 'issue-1',
       scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      qr: {
+        usedAt: new Date('2026-06-30T14:00:00.000Z'),
+      },
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
       guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
       coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+      couponIssue: {
+        id: 'issue-1',
+        code: 'MEMBER-code',
+        status: 'USED',
+        usedAt: new Date('2026-06-30T14:00:00.000Z'),
+      },
     });
     prisma.bill.findFirst.mockResolvedValue(null);
     prisma.bill.create.mockResolvedValue({
@@ -4726,6 +4735,39 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+  });
+
+  it('rejects a linked member booking bill before partner QR check-in confirms usage time', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      userId: 'member-1',
+      storeId: 'store-1',
+      guestId: null,
+      couponId: null,
+      couponIssueId: null,
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      qr: { usedAt: null },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: null,
+      coupon: null,
+      couponIssue: null,
+    });
+    prisma.bill.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
+          bookingId: 'booking-1',
+          totalVnd: 1800000,
+          usedAt: '2026-06-30T14:00:00.000Z',
+        },
+      ),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
   it('shows submitted member bills in the admin pending bill queue', async () => {
@@ -4875,6 +4917,7 @@ describe('NightlifeDataService', () => {
       userId: 'member-1',
       guestId: null,
       status: 'USED',
+      usedAt: new Date('2026-06-30T14:00:00.000Z'),
       expiresAt: null,
       bill: null,
       coupon: {
@@ -5462,6 +5505,7 @@ describe('NightlifeDataService', () => {
       userId: null,
       guestId: 'guest-1',
       status: 'USED',
+      usedAt: new Date('2026-06-30T14:00:00.000Z'),
       expiresAt: null,
       bill: null,
       coupon: {

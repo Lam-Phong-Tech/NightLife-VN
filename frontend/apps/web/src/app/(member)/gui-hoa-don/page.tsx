@@ -1,16 +1,11 @@
 "use client";
 
-import { ConfigProvider, DatePicker, Select } from "antd";
+import { ConfigProvider, Select } from "antd";
 import enUS from "antd/locale/en_US";
 import jaJP from "antd/locale/ja_JP";
 import koKR from "antd/locale/ko_KR";
 import viVN from "antd/locale/vi_VN";
 import zhCN from "antd/locale/zh_CN";
-import dayjs from "dayjs";
-import "dayjs/locale/ja";
-import "dayjs/locale/ko";
-import "dayjs/locale/vi";
-import "dayjs/locale/zh-cn";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
@@ -55,14 +50,6 @@ const antdLocaleByLanguage: Record<LanguageCode, typeof viVN> = {
   zh: zhCN,
 };
 
-const dayjsLocaleByLanguage: Record<LanguageCode, string> = {
-  vi: "vi",
-  en: "en",
-  ja: "ja",
-  ko: "ko",
-  zh: "zh-cn",
-};
-
 const billPickerTheme = {
   token: {
     colorPrimary: "var(--vy-gold)",
@@ -77,11 +64,6 @@ const billPickerTheme = {
     fontFamily: "inherit",
   },
   components: {
-    DatePicker: {
-      activeBorderColor: "var(--vy-gold)",
-      hoverBorderColor: "var(--vy-border-gold-40)",
-      cellActiveWithRangeBg: "var(--vy-gold-soft-bg)",
-    },
     Select: {
       activeBorderColor: "var(--vy-gold)",
       hoverBorderColor: "var(--vy-border-gold-40)",
@@ -159,6 +141,20 @@ const bookingTitle = (booking: BookingRecord) => {
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
 };
 
+const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
+  booking?.qr?.usedAt ?? booking?.couponIssue?.usedAt ?? null;
+
+const confirmedUsageSourceLabel = (
+  booking: BookingRecord | null,
+  couponIssue: CouponIssue | null,
+) => {
+  if (booking?.qr?.usedAt) return "QR booking đã được partner xác nhận";
+  if (booking?.couponIssue?.usedAt) return "Coupon gắn booking đã được partner xác nhận";
+  if (couponIssue?.usedAt) return "Coupon đã được partner xác nhận";
+  if (booking || couponIssue) return "Chưa có xác nhận sử dụng từ partner";
+  return "Chọn booking hoặc coupon đã được xác nhận";
+};
+
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
 
 const validateEvidenceFile = (file: File | null) => {
@@ -182,6 +178,7 @@ const validateBillForm = ({
   isLoadingOptions,
   hasBookedStores,
   hasStore,
+  hasConfirmedUsageSource,
   amountInput,
   amount,
   usedAt,
@@ -194,6 +191,7 @@ const validateBillForm = ({
   isLoadingOptions: boolean;
   hasBookedStores: boolean;
   hasStore: boolean;
+  hasConfirmedUsageSource: boolean;
   amountInput: string;
   amount: number;
   usedAt: string;
@@ -215,6 +213,10 @@ const validateBillForm = ({
     return "Vui lòng chọn quán/cơ sở.";
   }
 
+  if (!hasConfirmedUsageSource) {
+    return "Vui lòng liên kết booking hoặc coupon đã được partner quét QR xác nhận.";
+  }
+
   if (!amountInput.trim()) {
     return "Vui lòng nhập tổng tiền bill gốc.";
   }
@@ -228,7 +230,7 @@ const validateBillForm = ({
   }
 
   if (!usedAt.trim()) {
-    return "Vui lòng chọn thời gian sử dụng.";
+    return "Booking/coupon này chưa có thời gian xác nhận sử dụng từ partner.";
   }
 
   if (isUsedAtInvalid) {
@@ -251,7 +253,7 @@ const validateBillForm = ({
 };
 
 const canAttachCouponIssueToBill = (issue: CouponIssue) =>
-  issue.status === "ISSUED" || issue.status === "USED";
+  issue.status === "USED" && Boolean(issue.usedAt);
 
 const couponIssueOptionLabel = (issue: CouponIssue) => {
   const storeName = issue.coupon.store?.name ?? "Coupon";
@@ -348,7 +350,6 @@ export default function Page() {
   const [bookingId, setBookingId] = useState("");
   const [couponIssueId, setCouponIssueId] = useState("");
   const [amountInput, setAmountInput] = useState("");
-  const [usedAt, setUsedAt] = useState(() => toDatetimeLocalValue(new Date()));
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [ocrPreview, setOcrPreview] = useState<BillOcrPreview | null>(null);
   const [notice, setNotice] = useState<FormNotice | null>(null);
@@ -360,10 +361,6 @@ export default function Page() {
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
-
-  useEffect(() => {
-    dayjs.locale(dayjsLocaleByLanguage[activeLanguage]);
-  }, [activeLanguage]);
 
   const handleEvidenceFileChange = (input: HTMLInputElement) => {
     const file = input.files?.[0] ?? null;
@@ -416,14 +413,11 @@ export default function Page() {
       if (preview.suggestions.totalVnd) {
         setAmountInput(preview.suggestions.totalVnd.toLocaleString("vi-VN"));
       }
-      if (preview.suggestions.usedAt) {
-        setUsedAt(toDatetimeLocalValue(new Date(preview.suggestions.usedAt)));
-      }
       setNotice({
         tone: preview.requiresManualReview ? "warning" : "success",
         message: preview.requiresManualReview
           ? "AI đọc bill đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi."
-          : "AI đọc bill đã điền tổng tiền và thời gian sử dụng.",
+          : "AI đọc bill đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ QR xác nhận.",
       });
     } catch (error) {
       setNotice({ tone: "danger", message: cleanApiMessage(error) });
@@ -534,10 +528,9 @@ export default function Page() {
       if (booking.store?.slug) {
         setStoreSlug(booking.store.slug);
       }
-      setUsedAt(toDatetimeLocalValue(new Date(booking.scheduledAt)));
       setNotice({
         tone: "success",
-        message: `Đã tự điền thông tin từ booking ${booking.bookingCode}. Vui lòng nhập tổng tiền bill gốc trước khi gửi.`,
+        message: `Đã liên kết booking ${booking.bookingCode}. Thời gian sử dụng sẽ lấy từ QR partner đã xác nhận.`,
       });
       setAppliedBookingId(requestedBookingId);
     });
@@ -546,6 +539,24 @@ export default function Page() {
   const selectedCouponIssue = useMemo(
     () => couponIssues.find((issue) => issue.id === couponIssueId) ?? null,
     [couponIssueId, couponIssues],
+  );
+
+  const confirmedUsageAt = useMemo(() => {
+    if (selectedBooking) return bookingConfirmedUsageAt(selectedBooking);
+    if (selectedCouponIssue) return selectedCouponIssue.usedAt ?? null;
+    return null;
+  }, [selectedBooking, selectedCouponIssue]);
+  const usedAt = useMemo(
+    () => {
+      if (!confirmedUsageAt) return "";
+      const date = new Date(confirmedUsageAt);
+      return Number.isNaN(date.getTime()) ? "" : toDatetimeLocalValue(date);
+    },
+    [confirmedUsageAt],
+  );
+  const confirmedUsageLabel = useMemo(
+    () => confirmedUsageSourceLabel(selectedBooking, selectedCouponIssue),
+    [selectedBooking, selectedCouponIssue],
   );
 
   const selectedStore = useMemo(() => {
@@ -583,10 +594,6 @@ export default function Page() {
     return focusedBill ? [focusedBill, ...topBills].slice(0, 6) : topBills;
   }, [focusedBillId, submittedBills]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
-  const usedAtPickerValue = useMemo(() => {
-    const value = dayjs(usedAt);
-    return value.isValid() ? value : null;
-  }, [usedAt]);
   const isUsedAtInvalid = Number.isNaN(usedAtDate.getTime());
   const isFutureUsage =
     Boolean(timeWindow.nowMs) && !isUsedAtInvalid && usedAtDate.getTime() > timeWindow.nowMs;
@@ -594,12 +601,27 @@ export default function Page() {
     Boolean(timeWindow.nowMs) &&
     !isUsedAtInvalid &&
     timeWindow.nowMs - usedAtDate.getTime() > tenDaysMs;
+  const isMissingUsageConfirmation = !usedAt.trim();
+  const deadlineStatusLabel = isMissingUsageConfirmation
+    ? "Chưa xác nhận"
+    : isFutureUsage
+      ? "Sai thời gian"
+      : isPastDeadline
+        ? "Quá hạn"
+        : "Hợp lệ";
+  const deadlineStatusColor =
+    isFutureUsage || isPastDeadline
+      ? colors.danger
+      : isMissingUsageConfirmation
+        ? colors.warning
+        : colors.success;
   const billValidationMessage = useMemo(
     () =>
       validateBillForm({
         isLoadingOptions,
         hasBookedStores: stores.length > 0,
         hasStore: Boolean(bookingId || storeSlug),
+        hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue),
         amountInput,
         amount,
         usedAt,
@@ -620,6 +642,8 @@ export default function Page() {
       isUsedAtInvalid,
       storeSlug,
       stores.length,
+      selectedBooking,
+      selectedCouponIssue,
       timeWindow.nowMs,
       usedAt,
     ],
@@ -636,9 +660,6 @@ export default function Page() {
     const booking = bookings.find((item) => item.id === value);
     if (booking?.store?.slug) {
       setStoreSlug(booking.store.slug);
-    }
-    if (booking?.scheduledAt) {
-      setUsedAt(toDatetimeLocalValue(new Date(booking.scheduledAt)));
     }
   };
 
@@ -706,7 +727,6 @@ export default function Page() {
       setCouponIssueId("");
       setEvidenceFile(null);
       setOcrPreview(null);
-      setUsedAt(toDatetimeLocalValue(new Date()));
     } catch (error) {
       setNotice({ tone: "danger", message: cleanApiMessage(error) });
     } finally {
@@ -803,8 +823,16 @@ export default function Page() {
                       <dd>{selectedBooking.bookingCode}</dd>
                     </div>
                     <div>
-                      <dt>Thời gian</dt>
+                      <dt>Giờ hẹn</dt>
                       <dd>{formatDateTime(selectedBooking.scheduledAt, activeLanguage)}</dd>
+                    </div>
+                    <div>
+                      <dt>Xác nhận sử dụng</dt>
+                      <dd>
+                        {bookingConfirmedUsageAt(selectedBooking)
+                          ? formatDateTime(bookingConfirmedUsageAt(selectedBooking), activeLanguage)
+                          : "Chưa partner xác nhận"}
+                      </dd>
                     </div>
                     <div>
                       <dt>Số người</dt>
@@ -862,33 +890,18 @@ export default function Page() {
               </div>
 
               <div className="nl-field">
-                <label htmlFor="bill-used-at">Thời gian sử dụng *</label>
-                <DatePicker
-                  allowClear={false}
-                  className="nl-bill-ant-picker"
-                  disabledDate={(date) =>
-                    date
-                      ? date.isAfter(dayjs(), "day") ||
-                        date.isBefore(dayjs().subtract(10, "day"), "day")
-                      : false
-                  }
-                  format="DD/MM/YYYY HH:mm"
-                  getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                <label htmlFor="bill-used-at">Thời gian xác nhận sử dụng *</label>
+                <div
+                  className={usedAt ? "nl-confirmed-time" : "nl-confirmed-time pending"}
                   id="bill-used-at"
-                  inputReadOnly
-                  onChange={(value) => {
-                    if (!value) {
-                      setUsedAt("");
-                      return;
-                    }
-
-                    setUsedAt(value.format("YYYY-MM-DDTHH:mm"));
-                  }}
-                  popupClassName="nl-bill-ant-popup"
-                  showNow
-                  showTime={{ format: "HH:mm", minuteStep: 5 }}
-                  value={usedAtPickerValue}
-                />
+                >
+                  <strong>
+                    {usedAt
+                      ? formatDateTime(confirmedUsageAt, activeLanguage)
+                      : "Chưa có thời gian xác nhận"}
+                  </strong>
+                  <span>{confirmedUsageLabel}</span>
+                </div>
               </div>
             </div>
 
@@ -943,11 +956,12 @@ export default function Page() {
                       : "cần nhập tay"}
                   </span>
                   <span>
-                    Thời gian:{" "}
+                    Thời gian trên bill:{" "}
                     {ocrPreview.suggestions.usedAt
                       ? formatDateTime(ocrPreview.suggestions.usedAt, activeLanguage)
-                      : "cần nhập tay"}
+                      : "không đọc được"}
                   </span>
+                  <em>Thời gian gửi hệ thống lấy từ QR partner xác nhận.</em>
                   {ocrPreview.warnings.length ? (
                     <em>{ocrPreview.warnings.slice(0, 2).join(" ")}</em>
                   ) : null}
@@ -957,8 +971,8 @@ export default function Page() {
 
             <div className={isPastDeadline || isFutureUsage ? "nl-rule danger" : "nl-rule"}>
               <span>
-                Chỉ nhập tổng tiền bill gốc, không nhập chi tiết món/dịch vụ. Bill quá 10 ngày sẽ
-                không được nhận.
+                Chỉ nhập tổng tiền bill gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy
+                từ QR partner xác nhận; bill quá 10 ngày sẽ không được nhận.
               </span>
             </div>
 
@@ -985,6 +999,10 @@ export default function Page() {
               </strong>
             </div>
             <div className="nl-side-row">
+              <span>Thời gian xác nhận</span>
+              <strong>{usedAt ? formatDateTime(confirmedUsageAt, activeLanguage) : "Chưa xác nhận"}</strong>
+            </div>
+            <div className="nl-side-row">
               <span>Coupon link</span>
               <strong>
                 {selectedBooking?.coupon?.name ??
@@ -1001,10 +1019,8 @@ export default function Page() {
             ) : null}
             <div className="nl-side-row">
               <span>Trạng thái deadline</span>
-              <strong
-                style={{ color: isPastDeadline || isFutureUsage ? colors.danger : colors.success }}
-              >
-                {isFutureUsage ? "Sai thời gian" : isPastDeadline ? "Quá hạn" : "Hợp lệ"}
+              <strong style={{ color: deadlineStatusColor }}>
+                {deadlineStatusLabel}
               </strong>
             </div>
 
@@ -1310,84 +1326,37 @@ export default function Page() {
           color: var(--vy-gold-hi);
         }
 
-        :global(.nl-bill-ant-picker.ant-picker) {
-          width: 100%;
+        .nl-confirmed-time {
           min-height: 48px;
-          border: 1px solid ${colors.border};
+          display: grid;
+          align-content: center;
+          gap: 3px;
+          border: 1px solid rgba(129, 216, 157, 0.32);
           border-radius: 8px;
-          background: ${colors.panelStrong};
+          background: rgba(129, 216, 157, 0.08);
           color: ${colors.text};
-          padding: 0 12px;
-          box-shadow: none;
+          padding: 9px 12px;
         }
 
-        :global(.nl-bill-ant-picker.ant-picker:hover),
-        :global(.nl-bill-ant-picker.ant-picker-focused) {
-          border-color: ${colors.borderStrong};
-          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+        .nl-confirmed-time.pending {
+          border-color: rgba(212, 178, 106, 0.3);
+          background: rgba(212, 178, 106, 0.08);
         }
 
-        :global(.nl-bill-ant-picker .ant-picker-input > input) {
-          min-height: 46px;
-          border: 0;
-          background: transparent;
-          color: ${colors.text};
-          padding: 0;
-          font-weight: 900;
-        }
-
-        :global(.nl-bill-ant-picker .ant-picker-input > input::placeholder) {
-          color: ${colors.dim};
-        }
-
-        :global(.nl-bill-ant-picker .ant-picker-suffix) {
+        .nl-confirmed-time strong {
           color: ${colors.goldPale};
+          font-size: 14px;
+          font-weight: 950;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
         }
 
-        :global(.nl-bill-ant-popup) {
-          color: var(--vy-text);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-panel-container) {
-          border: 1px solid var(--vy-border-gold-22);
-          background: var(--vy-surface);
-          box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-panel),
-        :global(.nl-bill-ant-popup .ant-picker-time-panel-column) {
-          background: var(--vy-surface);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-header),
-        :global(.nl-bill-ant-popup .ant-picker-footer),
-        :global(.nl-bill-ant-popup .ant-picker-time-panel) {
-          border-color: var(--vy-border);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-content th),
-        :global(.nl-bill-ant-popup .ant-picker-cell),
-        :global(.nl-bill-ant-popup .ant-picker-header button),
-        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-inner) {
-          color: var(--vy-text-2);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-cell-in-view),
-        :global(.nl-bill-ant-popup .ant-picker-header-view),
-        :global(.nl-bill-ant-popup .ant-picker-now-btn) {
-          color: var(--vy-text);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-cell-disabled::before),
-        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-disabled .ant-picker-time-panel-cell-inner) {
-          background: color-mix(in srgb, var(--vy-surface-2) 70%, transparent);
-        }
-
-        :global(.nl-bill-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner),
-        :global(.nl-bill-ant-popup .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner),
-        :global(.nl-bill-ant-popup .ant-btn-primary) {
-          background: linear-gradient(135deg, #f0dda8, #d4b26a);
-          color: var(--vy-on-gold);
+        .nl-confirmed-time span {
+          color: ${colors.muted};
+          font-size: 11.5px;
+          font-weight: 800;
+          line-height: 1.35;
+          overflow-wrap: anywhere;
         }
 
         .nl-upload-row {
