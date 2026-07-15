@@ -127,7 +127,7 @@ function LoginContent({
       window.location.href = redirectTo;
     } catch (error) {
       const detail = error instanceof ApiError ? error.message : 'Không kết nối được API đăng nhập.';
-      setMessage(`${detail} Tài khoản seed: partner@nightlife.vn / Str0ngPass!`);
+      setMessage(detail);
     } finally {
       setIsSubmitting(false);
     }

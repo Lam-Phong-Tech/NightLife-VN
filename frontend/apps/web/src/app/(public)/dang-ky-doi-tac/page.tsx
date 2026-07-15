@@ -16,6 +16,8 @@ import {
   UsersRound,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState, useContext, useCallback } from 'react';
 import { ApiError, apiClient } from '@/lib/api/client';
@@ -327,7 +329,8 @@ function FormControl({
   tall?: boolean;
   type?: string;
 }) {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
   const id = label.replace(/\s+/g, '-').toLowerCase();
   const sharedProps = {
     id,
@@ -347,8 +350,13 @@ function FormControl({
     ) => onChange(event.target.value),
     placeholder,
     required,
-    style: inputStyle(colors, tall),
+    style: {
+      ...inputStyle(colors, tall),
+      paddingRight: type === 'password' ? '44px' : undefined,
+    },
   };
+
+  const isPassword = type === 'password';
 
   return (
     <div style={{ gridColumn: wide ? 'span 2' : undefined }}>
@@ -367,7 +375,34 @@ function FormControl({
       {tall ? (
         <textarea {...sharedProps} rows={3} />
       ) : (
-        <input {...sharedProps} type={type} />
+        <div style={{ position: 'relative', width: '100%' }}>
+          <input {...sharedProps} type={isPassword ? (showPassword ? 'text' : 'password') : type} />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              style={{
+                position: 'absolute',
+                right: '7px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '34px',
+                height: '34px',
+                border: 0,
+                borderRadius: '999px',
+                color: colors.gold,
+                background: theme === 'light' ? 'rgba(166,119,38,.12)' : 'rgba(212,178,106,.12)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background 0.2s, color 0.2s',
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

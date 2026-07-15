@@ -105,8 +105,22 @@ const formatSubmittedAt = (value?: string | null) => {
 };
 
 const joinTypeAndArea = (request: ApiPartnerRequest) => {
-  const parts = [request.businessType, request.draftStoreCategory, request.area].map((part) => part?.trim()).filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Chưa có loại hình";
+  const type = request.businessType || request.draftStoreCategory;
+  if (!type) return "Chưa có loại hình";
+  
+  const mapping: Record<string, string> = {
+    CLUB: "club",
+    LOUNGE: "lounge",
+    BAR: "bar",
+    GIRLS_BAR: "girls bar",
+    KARAOKE: "karaoke",
+    MASSAGE_SPA: "massage & spa",
+    RESTAURANT: "nhà hàng",
+    CASINO: "casino",
+  };
+  
+  const label = mapping[type.toUpperCase()] || type.toLowerCase();
+  return `Loại hình: ${label}`;
 };
 
 const requestDescription = (request: ApiPartnerRequest) =>
