@@ -686,15 +686,23 @@ export default function Page() {
                 {subtitle}
               </p>
 
-              <form noValidate onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
+              <form
+                noValidate
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                onSubmit={submit}
+                style={{ marginTop: 24, display: "grid", gap: 14 }}
+              >
                 {isReg ? (
                   <Field
                     label={translateText("Họ tên", activeLanguage)}
                     value={displayName}
                     onChange={setDisplayName}
                     placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
-                    autoComplete="name"
-                    name="name"
+                    autoComplete="off"
+                    name="nl-register-display-name"
                     required
                     minLength={2}
                     maxLength={80}
@@ -707,9 +715,9 @@ export default function Page() {
                   onChange={setEmail}
                   placeholder={translateText("Vui lòng nhập email", activeLanguage)}
                   type="email"
-                  autoComplete="email"
+                  autoComplete="off"
                   inputMode="email"
-                  name="email"
+                  name={isReg ? "nl-register-email" : "nl-login-email"}
                   required
                   maxLength={254}
                 />
@@ -720,8 +728,8 @@ export default function Page() {
                   onChange={setPassword}
                   placeholder={translateText("Vui lòng nhập mật khẩu", activeLanguage)}
                   type={showPassword ? "text" : "password"}
-                  autoComplete={isReg ? "new-password" : "current-password"}
-                  name="password"
+                  autoComplete="new-password"
+                  name={isReg ? "nl-register-passcode" : "nl-login-passcode"}
                   required
                   minLength={8}
                   maxLength={72}
@@ -756,7 +764,7 @@ export default function Page() {
                     placeholder={translateText("Vui lòng nhập lại mật khẩu", activeLanguage)}
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    name="confirmPassword"
+                    name="nl-register-passcode-confirm"
                     required
                     minLength={8}
                     maxLength={72}
@@ -1097,6 +1105,13 @@ function Field({
           onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
           inputMode={inputMode}
           required={required}
           minLength={minLength}

@@ -273,6 +273,14 @@ function FormControl({
   const sharedProps = {
     id,
     value,
+    autoComplete: 'off',
+    autoCorrect: 'off',
+    autoCapitalize: 'none',
+    spellCheck: false,
+    'data-form-type': 'other',
+    'data-lpignore': 'true',
+    'data-1p-ignore': 'true',
+    'data-bwignore': 'true',
     onChange: (
       event:
         | React.ChangeEvent<HTMLInputElement>
@@ -465,8 +473,6 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
 
   useEffect(() => {
     if (!selectedProvince) {
-      setWards([]);
-      setSelectedWard('');
       return;
     }
 
@@ -498,6 +504,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
 
     setSelectedProvince(value);
     setSelectedWard('');
+    setWards([]);
     setForm((current) => ({
       ...current,
       storeCity: provinceName,

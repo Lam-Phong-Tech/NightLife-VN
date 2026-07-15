@@ -236,6 +236,16 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
             <label style={{ display: 'grid', gap: '7px', color: colors.text2, fontSize: '11.5px', fontWeight: 600 }}>
               Tài khoản quán
               <input
+                name="nl-partner-login-email"
+                type="email"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 style={{
@@ -255,7 +265,16 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               Mật khẩu
               <span style={{ position: 'relative', display: 'block' }}>
                 <input
+                  name="nl-partner-login-passcode"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={{

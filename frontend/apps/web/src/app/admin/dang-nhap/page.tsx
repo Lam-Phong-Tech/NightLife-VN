@@ -1,15 +1,11 @@
 "use client";
 
-import Link from 'next/link';
 import {
-  BarChart3,
   Eye,
   EyeOff,
   LockKeyhole,
   LogIn,
   Mail,
-  ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { loginAdmin } from '@/lib/api/auth';
@@ -93,16 +89,30 @@ export default function AdminLoginPage() {
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
           </div>
 
-          <form onSubmit={submit} style={{ display: 'grid', gap: '20px' }}>
+          <form
+            autoComplete="off"
+            data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            onSubmit={submit}
+            style={{ display: 'grid', gap: '20px' }}
+          >
             <label style={{ display: 'grid', gap: '8px', color: colors.text2, fontSize: '14px', fontWeight: 600 }}>
               Email
               <span style={{ position: 'relative', display: 'block' }}>
                 <Mail size={20} color={colors.gold} style={{ position: 'absolute', left: 16, top: 16 }} />
                 <input
                   id="email"
-                  name="email"
+                  name="nl-admin-login-email"
                   type="email"
-                  autoComplete="username"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   style={{
@@ -125,8 +135,15 @@ export default function AdminLoginPage() {
                 <LockKeyhole size={20} color={colors.gold} style={{ position: 'absolute', left: 16, top: 16 }} />
                 <input
                   id="password"
-                  name="password"
-                  autoComplete="current-password"
+                  name="nl-admin-login-passcode"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
