@@ -383,12 +383,6 @@ function RankingRow({
           {areaLine}
           <span aria-hidden="true"> · </span>
           {formatCategory(item.category)}
-          {item.pinRank ? (
-            <>
-              <span aria-hidden="true"> · </span>
-              Pin #{item.pinRank}
-            </>
-          ) : null}
         </small>
       </span>
 
