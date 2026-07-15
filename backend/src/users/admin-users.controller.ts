@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
 import { Roles } from '../auth/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -93,14 +92,9 @@ export class AdminUsersController {
   @Patch(':id/password')
   updatePassword(
     @Param('id') id: string,
-    @Body() dto: { password: string; oldPassword?: string },
-    @Req() request: Request & { user?: { id: string } }
+    @Body() dto: { password: string }
   ) {
-    const currentUser = request.user;
-    if (currentUser && currentUser.id === id && !dto.oldPassword) {
-      throw new UnauthorizedException('Vui lòng nhập mật khẩu cũ để xác nhận.');
-    }
-    return this.usersService.updatePassword(id, dto.password, dto.oldPassword);
+    return this.usersService.updatePassword(id, dto.password);
   }
 
   @ApiOperation({ summary: 'Vô hiệu hóa tài khoản' })

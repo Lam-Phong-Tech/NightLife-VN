@@ -95,8 +95,6 @@ export default function AdminRolesPage() {
   const [cpEmail, setCpEmail] = useState('');
   const [cpPw, setCpPw] = useState('');
   const [cpPwShow, setCpPwShow] = useState(false);
-  const [cpOldPw, setCpOldPw] = useState('');
-  const [cpOldPwShow, setCpOldPwShow] = useState(false);
 
   // Delete states
   const [hdOpen, setHdOpen] = useState(false);
@@ -279,7 +277,7 @@ export default function AdminRolesPage() {
                   <span onClick={() => { setEdOrig(a.id); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                     <Edit2 size={12} strokeWidth={1.9} />
                   </span>
-                  <span onClick={() => { setHdKey(a.id); setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOldPw(''); setCpOldPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                  <span onClick={() => { setHdKey(a.id); setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                     <Key size={12} strokeWidth={1.9} />
                   </span>
                   {!a.disabled ? (
@@ -469,9 +467,6 @@ export default function AdminRolesPage() {
         const cb2 = cps>=2?cCol:pOff;
         const cb3 = cps>=3?cCol:pOff;
 
-        const isSelf = getAuthUser()?.id === hdKey;
-        const canSubmit = cpPw.length >= 8 && (!isSelf || cpOldPw.length > 0);
-
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 82, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
             <div style={{ width: '480px', maxWidth: '94vw', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
@@ -492,19 +487,6 @@ export default function AdminRolesPage() {
                     <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cpEmail}</div>
                   </div>
                 </div>
-
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Mật khẩu cũ{isSelf && <span style={{ color: '#e08a7e' }}> *</span>}
-                  </div>
-                  <div style={{ position: 'relative' }}>
-                    <input value={cpOldPw} onChange={e => setCpOldPw(e.target.value)} type={cpOldPwShow ? 'text' : 'password'} placeholder={isSelf ? "Bắt buộc nhập mật khẩu hiện tại" : "Không bắt buộc"} autoComplete="new-password" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
-                    <span onClick={() => setCpOldPwShow(!cpOldPwShow)} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
-                      {cpOldPwShow ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </span>
-                  </div>
-                </div>
-
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mật khẩu mới</div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -543,15 +525,7 @@ export default function AdminRolesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
                 <span style={{ flex: 1 }}></span>
                 <span onClick={() => setCpOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-                <span onClick={async () => { 
-                  try { 
-                    await changeAdminUserPassword(hdKey, { password: cpPw, oldPassword: cpOldPw || undefined }); 
-                    setCpOpen(false); 
-                    showToast('Đã đổi mật khẩu cho ' + cpName); 
-                  } catch (e: any) { 
-                    showToast(e?.response?.data?.message || 'Lỗi đổi mật khẩu'); 
-                  } 
-                }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: canSubmit ? 1 : 0.45, pointerEvents: canSubmit ? 'auto' : 'none' }}>
+                <span onClick={async () => { try { await changeAdminUserPassword(hdKey, { password: cpPw }); setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); } catch (e) { showToast('Lỗi đổi mật khẩu'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: cpPw.length >= 8 ? 1 : 0.45, pointerEvents: cpPw.length >= 8 ? 'auto' : 'none' }}>
                   Đổi mật khẩu
                 </span>
               </div>

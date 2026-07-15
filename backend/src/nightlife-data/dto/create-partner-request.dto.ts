@@ -225,12 +225,12 @@ export class CreatePartnerRequestDto {
   @MaxLength(160)
   contactEmail?: string;
 
-  @ApiPropertyOptional({ example: 'securePassword123' })
-  @IsOptional()
+  @ApiProperty({ example: 'securePassword123' })
+  @IsNotEmpty()
   @IsString()
   @MinLength(6)
   @MaxLength(60)
-  password?: string;
+  password: string;
 
   @ApiPropertyOptional({
     example: 'We want to join the booking and coupon program.',

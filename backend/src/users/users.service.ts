@@ -67,17 +67,7 @@ export class UsersService {
     });
   }
 
-  async updatePassword(id: string, password: string, oldPassword?: string) {
-    const user = await this.findByIdOrThrow(id);
-    if (oldPassword) {
-      const passwordMatches = await this.passwordService.verify(
-        oldPassword,
-        user.passwordHash,
-      );
-      if (!passwordMatches) {
-        throw new UnauthorizedException('Mật khẩu cũ không chính xác');
-      }
-    }
+  async updatePassword(id: string, password: string) {
     return this.prisma.user.update({
       where: { id },
       data: {

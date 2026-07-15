@@ -41,7 +41,7 @@ export const updateAdminUser = async (id: string, data: { displayName: string; e
   return apiClient<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', data });
 };
 
-export const changeAdminUserPassword = async (id: string, data: { password: string; oldPassword?: string }) => {
+export const changeAdminUserPassword = async (id: string, data: { password: string }) => {
   return apiClient(`/admin/users/${id}/password`, { method: 'PATCH', data });
 };
 

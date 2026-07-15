@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   GoneException,
   HttpException,
   HttpStatus,
@@ -5766,6 +5767,29 @@ export class NightlifeDataService {
       'contactPhone',
     );
     const contactEmail = this.cleanEmail(dto.contactEmail) || null;
+
+    if (contactEmail) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: contactEmail },
+        select: { id: true },
+      });
+      if (existingUser) {
+        throw new ConflictException(
+          'Email này đã được đăng ký trong hệ thống. Vui lòng sử dụng email khác.',
+        );
+      }
+
+      const existingRequest = await this.prisma.partnerRequest.findFirst({
+        where: { contactEmail, status: 'PENDING_REVIEW' },
+        select: { id: true },
+      });
+      if (existingRequest) {
+        throw new ConflictException(
+          'Yêu cầu đăng ký hợp tác với email này đang chờ duyệt. Vui lòng không gửi lại nhiều lần.',
+        );
+      }
+    }
+
     const passwordHash = dto.password && this.passwordService
       ? await this.passwordService.hash(dto.password)
       : null;
@@ -14738,6 +14762,12 @@ export class NightlifeDataService {
       );
     }
 
+    if (!request.passwordHash) {
+      throw new UnprocessableEntityException(
+        'Không thể duyệt yêu cầu này vì tài khoản đăng ký thiếu thông tin mật khẩu.',
+      );
+    }
+
     const displayName = request.contactName || request.businessName;
     const existingUser = await client.user.findUnique({
       where: { email },
@@ -14750,27 +14780,24 @@ export class NightlifeDataService {
       },
     });
 
-    let temporaryPassword: string | null = null;
-    const user = existingUser
-      ? await this.activateExistingPartnerUser(client, existingUser, {
-          displayName,
-          phone: request.contactPhone,
-        })
-      : await (async () => {
-          temporaryPassword = request.passwordHash ? null : `Partner-${randomUUID()}`;
-          return client.user.create({
-            data: {
-              email,
-              passwordHash: request.passwordHash || await this.passwordService!.hash(temporaryPassword!),
-              displayName,
-              phone: request.contactPhone,
-              role: 'PARTNER',
-              tier: UserTier.FREE,
-              status: 'ACTIVE',
-            },
-            select: { id: true, email: true },
-          });
-        })();
+    if (existingUser) {
+      throw new UnprocessableEntityException(
+        'Email này đã tồn tại trên hệ thống. Không thể duyệt yêu cầu hợp tác.',
+      );
+    }
+
+    const user = await client.user.create({
+      data: {
+        email,
+        passwordHash: request.passwordHash,
+        displayName,
+        phone: request.contactPhone,
+        role: 'PARTNER',
+        tier: UserTier.FREE,
+        status: 'ACTIVE',
+      },
+      select: { id: true, email: true },
+    });
 
     const existingAccount = await client.partnerAccount.findFirst({
       where: { userId: user.id, deletedAt: null },
@@ -14823,7 +14850,7 @@ export class NightlifeDataService {
     return {
       userId: user.id,
       partnerAccountId: partnerAccount.id,
-      temporaryPassword,
+      temporaryPassword: null,
     };
   }
 
