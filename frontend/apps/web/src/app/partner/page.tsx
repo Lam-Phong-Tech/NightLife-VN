@@ -4346,7 +4346,7 @@ export default function PartnerPage() {
                     ? 'Đang xác nhận'
                     : scanIssue.scanType === 'BOOKING_QR'
                       ? 'Xác nhận check-in'
-                      : 'Xác nhận cho tôi'}
+                      : 'Xác nhận'}
               </PrimaryButton>
               <GhostButton onClick={rejectScanResult}>
                 <XCircle size={16} />
