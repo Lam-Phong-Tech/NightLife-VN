@@ -424,45 +424,7 @@ export function AdminSupportDashboard() {
             )}
           </div>
 
-          <div 
-            className="p-3 flex items-center gap-2"
-            style={{
-              borderTop: '1px solid rgba(255,255,255,.05)'
-            }}
-          >
-            <span 
-              className="w-1.5 h-1.5 rounded-full"
-              style={{
-                background: '#5fbf86',
-                boxShadow: '0 0 7px #5fbf86',
-                animation: 'pulse 2s infinite'
-              }}
-            />
-            <span 
-              className="leading-tight flex-1"
-              style={{
-                fontSize: '10px',
-                color: '#8c8679'
-              }}
-            >
-              Chat realtime trong hệ thống — không dùng ứng dụng ngoài
-            </span>
-            <span 
-              className="flex-none"
-              style={{
-                fontSize: '9px',
-                fontWeight: 700,
-                letterSpacing: '1px',
-                color: '#8c8679',
-                background: 'rgba(255,255,255,.04)',
-                border: '1px solid rgba(255,255,255,.1)',
-                padding: '4px 7px',
-                borderRadius: '6px'
-              }}
-            >
-              P1
-            </span>
-          </div>
+
         </div>
 
         {/* Cột phải: Active Chat Thread */}
