@@ -4241,6 +4241,22 @@ export class NightlifeDataService {
       });
     }
 
+    // Fallback: check if this is a campaign code or campaign qrPayloadHash
+    const adminCoupon = await this.prisma.adminCoupon.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          { code: clean },
+          isSha256 ? { qrPayloadHash: clean } : null,
+        ].filter(Boolean) as Prisma.AdminCouponWhereInput[],
+      },
+    });
+    if (adminCoupon) {
+      return this.scanAdminCouponCampaignQr(adminCoupon, user, {
+        source: 'CAMPAIGN_CODE_SCAN',
+      });
+    }
+
     throw new NotFoundException('Coupon issue not found');
   }
 
@@ -4268,6 +4284,18 @@ export class NightlifeDataService {
       if (adminIssue) {
         return this.scanAdminCouponIssueByUnique({ id: adminIssue.id }, user, {
           source: 'QR_PAYLOAD_HASH',
+          offline: Boolean(dto.offline),
+        });
+      }
+
+      // Check if this is a CAMPAIGN-level QR (AdminCoupon.qrPayloadHash)
+      // → auto-create anonymous issue for walk-in guest and scan immediately
+      const adminCoupon = await this.prisma.adminCoupon.findUnique({
+        where: { qrPayloadHash: cleanPayload },
+      });
+      if (adminCoupon) {
+        return this.scanAdminCouponCampaignQr(adminCoupon, user, {
+          source: 'CAMPAIGN_QR_HASH',
           offline: Boolean(dto.offline),
         });
       }
@@ -4712,6 +4740,133 @@ export class NightlifeDataService {
     });
 
     return this.decoratePartnerAdminCouponIssue(scannedIssue);
+  }
+
+  /**
+   * Partner scans the CAMPAIGN QR directly (AdminCoupon.qrPayloadHash).
+   * Auto-create an anonymous AdminCouponIssue for walk-in guest and scan it.
+   */
+  private async scanAdminCouponCampaignQr(
+    coupon: import('@prisma/client').AdminCoupon,
+    user: AuthenticatedUser,
+    metadata: { source: string; offline?: boolean },
+  ) {
+    // Validate campaign is active
+    if (coupon.status !== 'ACTIVE') {
+      throw new UnprocessableEntityException('Chiến dịch coupon đang tạm dừng.');
+    }
+    if (coupon.deletedAt) {
+      throw new NotFoundException('Chiến dịch coupon không tồn tại.');
+    }
+
+    const now = new Date();
+    if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now)) {
+      throw new UnprocessableEntityException('Chiến dịch coupon ngoài thời gian áp dụng.');
+    }
+
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      throw new UnprocessableEntityException('Chiến dịch coupon đã hết lượt sử dụng.');
+    }
+
+    // Resolve partner store access
+    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'coupon.scan');
+    let scanStoreId: string | null = null;
+    if (accessibleStoreIds === undefined) {
+      // Platform admin – pick any store
+      const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+      scanStoreId = firstStore?.id ?? null;
+    } else {
+      if (accessibleStoreIds.length === 0) {
+        throw new ForbiddenException('Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.');
+      }
+      const targetStores = coupon.targetStores || [];
+      if (targetStores.length > 0) {
+        const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+        if (common.length === 0) {
+          throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+        }
+        scanStoreId = common[0];
+      } else {
+        scanStoreId = accessibleStoreIds[0];
+      }
+    }
+
+    // Create anonymous admin coupon issue
+    const issueId = randomUUID();
+    const issueCode = `WALKIN-${randomUUID()}`;
+    const qrPayload = this.buildAdminCouponQrPayload(issueId);
+    const qrPayloadHash = this.buildCouponQrPayloadHash(qrPayload);
+    const validityMs = 24 * 60 * 60 * 1000; // 1 day
+    const expiresAt = coupon.endsAt
+      ? new Date(Math.min(now.getTime() + validityMs, coupon.endsAt.getTime()))
+      : new Date(now.getTime() + validityMs);
+
+    const issue = await this.prisma.adminCouponIssue.create({
+      data: {
+        id: issueId,
+        adminCouponId: coupon.id,
+        code: issueCode,
+        qrPayloadHash,
+        status: 'ISSUED',
+        expiresAt,
+        storeId: scanStoreId,
+        scannedByUserId: user.id,
+        metadata: {
+          sourceFlow: 'PARTNER_CAMPAIGN_SCAN',
+          recipientType: 'WALKIN_GUEST',
+          userType: 'WALKIN',
+          qrPayload,
+          qrTokenHash: this.buildCouponQrTokenHashFromPayload(qrPayload),
+          discountRuleSnapshot: {
+            discountType: coupon.discountType,
+            discountValue: coupon.discountValue,
+            discountPercent:
+              coupon.discountType === 'PERCENT'
+                ? coupon.discountValue
+                : undefined,
+            value: coupon.discountValue,
+            code: coupon.code,
+          },
+          campaignSnapshot: {
+            id: coupon.id,
+            code: coupon.code,
+            name: coupon.name,
+            discountType: coupon.discountType,
+            discountValue: coupon.discountValue,
+          },
+        },
+      },
+      include: {
+        adminCoupon: true,
+        store: true,
+      },
+    });
+
+    // Increment campaign used count
+    await this.prisma.adminCoupon.update({
+      where: { id: coupon.id },
+      data: { usedCount: { increment: 1 } },
+    });
+
+    // Audit log
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'COUPON_ISSUE_SCANNED',
+        targetType: 'AdminCouponIssue',
+        targetId: issue.id,
+        metadata: this.toPrismaJson({
+          source: metadata.source,
+          offline: Boolean(metadata.offline),
+          couponId: coupon.id,
+          campaignCode: coupon.code,
+          anonymousWalkIn: true,
+          storeId: scanStoreId,
+        }),
+      },
+    });
+
+    return this.decoratePartnerAdminCouponIssue(issue);
   }
 
   private decoratePartnerAdminCouponIssue(issue: any) {
