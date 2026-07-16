@@ -1189,11 +1189,13 @@ function PrimaryButton({
   disabled,
   onClick,
   type = 'button',
+  style,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit';
+  style?: React.CSSProperties;
 }) {
   return (
     <button
@@ -1214,6 +1216,7 @@ function PrimaryButton({
         fontWeight: 800,
         cursor: disabled ? 'not-allowed' : 'pointer',
         whiteSpace: 'nowrap',
+        ...style,
       }}
     >
       {children}
@@ -1226,11 +1229,13 @@ function GhostButton({
   disabled,
   onClick,
   type = 'button',
+  style,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit';
+  style?: React.CSSProperties;
 }) {
   return (
     <button
@@ -1251,6 +1256,7 @@ function GhostButton({
         fontWeight: 800,
         cursor: disabled ? 'not-allowed' : 'pointer',
         whiteSpace: 'nowrap',
+        ...style,
       }}
     >
       {children}
@@ -1497,6 +1503,7 @@ export default function PartnerPage() {
   } | null>(null);
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
   const [billNowMs, setBillNowMs] = useState(0);
+  const [billSubView, setBillSubView] = useState<'list' | 'form'>('list');
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -2523,6 +2530,7 @@ export default function PartnerPage() {
       tone: 'gold',
       message: `Đã điền thông tin từ hóa đơn ${bill.billNumber ?? bill.id.slice(0, 8)} lên form.`,
     });
+    setBillSubView('form');
   };
 
   const submitPartnerBill = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -5454,278 +5462,312 @@ export default function PartnerPage() {
     </PanelCard>
   );
 
-  const renderBillPanel = () => (
-    <div className="partner-bill-panel-grid">
-      <PanelCard>
-        <SectionHeading
-          eyebrow="SUBMIT BILL"
-          title="Form gửi hóa đơn"
-          action={
-            <StatusPill tone={stores.length === 1 ? 'success' : 'gold'}>
-              {stores.length ? `${stores.length} quán thuộc partner` : 'Đang tải quán'}
-            </StatusPill>
-          }
-        />
-        <form
-          onSubmit={submitPartnerBill}
-          style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
-        >
-          <FormField label="Quán thuộc partner *">
-            <ThemedListingSelect
-              value={billStoreId}
-              disabled={!stores.length}
-              onChange={(value) => {
-                setBillStoreId(value);
-                setSelectedBillId(null);
-                setBillNotice(null);
-              }}
-              placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
-              options={stores.map((store) => ({
-                value: store.id,
-                label: `${store.name}${store.district ? ` - ${store.district}` : ''}`,
-              }))}
+  const renderBillPanel = () => {
+    if (billSubView === 'list') {
+      return (
+        <div style={{ marginTop: '14px' }}>
+          <PanelCard>
+            <SectionHeading
+              eyebrow="STORE BILLS"
+              title="Hóa đơn của quán"
+              action={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <StatusPill tone="gold">{scopedBillRows.length} hóa đơn</StatusPill>
+                  <PrimaryButton
+                    onClick={() => {
+                      setBillAmountInput('');
+                      setBillUsedAt(toDateTimeLocalValue(new Date()));
+                      setBillBookingId('');
+                      setBillEvidenceFile(null);
+                      setBillNotice(null);
+                      setSelectedBillId(null);
+                      setBillSubView('form');
+                    }}
+                    style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
+                  >
+                    <Plus size={14} /> Gửi hóa đơn mới
+                  </PrimaryButton>
+                </div>
+              }
             />
-          </FormField>
+            <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
+            </p>
+            <div
+              className="partner-bill-table-scroll"
+              style={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${colors.borderHair}` }}
+            >
+              <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
+                    {['STT', 'Mã hóa đơn', 'Quán', 'Tổng tiền', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
+                      <th
+                        key={header}
+                        style={{
+                          padding: '12px',
+                          borderBottom: `1px solid ${colors.borderHair}`,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {scopedBillRows.length ? (
+                    scopedBillRows.map((bill, index) => {
+                      const active = selectedBillId === bill.id;
+                      const billCode = bill.billNumber ?? bill.id.slice(0, 8);
 
-          <div className="partner-bill-form-grid">
-            <FormField label="Tổng tiền bill gốc *">
-              <input
-                inputMode="numeric"
-                placeholder="VD: 1.800.000"
-                value={billAmountInput}
-                onChange={(event) => handleBillAmountChange(event.target.value)}
-                style={inputStyle}
-              />
-            </FormField>
-            <FormField label="Thời gian sử dụng *">
-              <input
-                type="datetime-local"
-                value={billUsedAt}
-                onInput={(event) => setBillUsedAt(event.currentTarget.value)}
-                onChange={(event) => setBillUsedAt(event.target.value)}
-                style={inputStyle}
-              />
-            </FormField>
-          </div>
+                      return (
+                        <tr
+                          key={bill.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => fillBillFormFromRow(bill)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              fillBillFormFromRow(bill);
+                            }
+                          }}
+                          style={{
+                            cursor: 'pointer',
+                            background: active ? 'rgba(212,178,106,.12)' : 'transparent',
+                          }}
+                        >
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
+                            {billCode}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
+                            {bill.store?.name ?? selectedBillStore?.name ?? 'Quán'}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldPale, fontSize: '12.5px', fontWeight: 900 }}>
+                            {moneyVnd(bill.totalVnd ?? 0)}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                            {formatDateTime(bill.usedAt ?? bill.submittedAt)}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                            {bill.booking ? `${bill.booking.status} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
+                          </td>
+                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                            <StatusPill tone={bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                              {bill.status}
+                            </StatusPill>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        style={{
+                          padding: '18px 12px',
+                          color: colors.text2,
+                          fontSize: '13px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Chưa có hóa đơn trong quán đang chọn.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </PanelCard>
+        </div>
+      );
+    }
 
-          <FormField label="Liên kết booking">
-            <ThemedListingSelect
-              value={billBookingId}
-              onChange={setBillBookingId}
-              placeholder="Không liên kết booking"
-              options={[
-                { value: '', label: 'Không liên kết booking' },
-                ...billBookingOptions.map((booking) => ({
-                  value: booking.id,
-                  label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,
-                })),
-              ]}
-            />
-          </FormField>
-
-          <FormField label="Ảnh / chứng từ">
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <label
-                style={{
-                  minHeight: '42px',
-                  borderRadius: '11px',
-                  border: `1px solid ${colors.borderGold22}`,
-                  background: colors.surface2,
-                  color: colors.gold,
-                  padding: '0 14px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
+    return (
+      <div style={{ marginTop: '14px', maxWidth: '800px', marginInline: 'auto' }}>
+        <PanelCard>
+          <SectionHeading
+            eyebrow="SUBMIT BILL"
+            title="Form gửi hóa đơn"
+            action={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <StatusPill tone={stores.length === 1 ? 'success' : 'gold'}>
+                  {stores.length ? `${stores.length} quán thuộc partner` : 'Đang tải quán'}
+                </StatusPill>
+                <GhostButton
+                  onClick={() => setBillSubView('list')}
+                  style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
+                >
+                  <ArrowLeft size={14} /> Quay lại
+                </GhostButton>
+              </div>
+            }
+          />
+          <form
+            onSubmit={submitPartnerBill}
+            style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
+          >
+            <FormField label="Quán thuộc partner *">
+              <ThemedListingSelect
+                value={billStoreId}
+                disabled={!stores.length}
+                onChange={(value) => {
+                  setBillStoreId(value);
+                  setSelectedBillId(null);
+                  setBillNotice(null);
                 }}
-              >
-                <ImagePlus size={16} />
-                {billEvidenceFile ? 'Đổi file' : 'Chọn file'}
+                placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
+                options={stores.map((store) => ({
+                  value: store.id,
+                  label: `${store.name}${store.district ? ` - ${store.district}` : ''}`,
+                }))}
+              />
+            </FormField>
+
+            <div className="partner-bill-form-grid">
+              <FormField label="Tổng tiền bill gốc *">
                 <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onInput={(event) => handleBillFileChange(event.currentTarget)}
-                  onChange={(event) => handleBillFileChange(event.currentTarget)}
-                  style={{ display: 'none' }}
+                  inputMode="numeric"
+                  placeholder="VD: 1.800.000"
+                  value={billAmountInput}
+                  onChange={(event) => handleBillAmountChange(event.target.value)}
+                  style={inputStyle}
                 />
-              </label>
-              {billEvidenceFile ? (
-                <span
+              </FormField>
+              <FormField label="Thời gian sử dụng *">
+                <input
+                  type="datetime-local"
+                  value={billUsedAt}
+                  onInput={(event) => setBillUsedAt(event.currentTarget.value)}
+                  onChange={(event) => setBillUsedAt(event.target.value)}
+                  style={inputStyle}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Liên kết booking">
+              <ThemedListingSelect
+                value={billBookingId}
+                onChange={setBillBookingId}
+                placeholder="Không liên kết booking"
+                options={[
+                  { value: '', label: 'Không liên kết booking' },
+                  ...billBookingOptions.map((booking) => ({
+                    value: booking.id,
+                    label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,
+                  })),
+                ]}
+              />
+            </FormField>
+
+            <FormField label="Ảnh / chứng từ">
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <label
                   style={{
-                    ...softCardStyle,
-                    minHeight: '38px',
-                    padding: '0 11px',
+                    minHeight: '42px',
+                    borderRadius: '11px',
+                    border: `1px solid ${colors.borderGold22}`,
+                    background: colors.surface2,
+                    color: colors.gold,
+                    padding: '0 14px',
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
-                    color: colors.text2,
-                    fontSize: '12px',
-                    minWidth: 0,
-                    maxWidth: '100%',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <FileText size={14} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {billEvidenceFile.name}
+                  <ImagePlus size={16} />
+                  {billEvidenceFile ? 'Đổi file' : 'Chọn file'}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onInput={(event) => handleBillFileChange(event.currentTarget)}
+                    onChange={(event) => handleBillFileChange(event.currentTarget)}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                {billEvidenceFile ? (
+                  <span
+                    style={{
+                      ...softCardStyle,
+                      minHeight: '38px',
+                      padding: '0 11px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: colors.text2,
+                      fontSize: '12px',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                    }}
+                  >
+                    <FileText size={14} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {billEvidenceFile.name}
+                    </span>
                   </span>
-                </span>
-              ) : (
-                <span style={{ color: colors.muted, fontSize: '12px', lineHeight: 1.5 }}>
-                  Upload chứng từ sau khi bill tạo sẽ gắn media PROTECTED.
-                </span>
-              )}
-            </div>
-          </FormField>
+                ) : (
+                  <span style={{ color: colors.muted, fontSize: '12px', lineHeight: 1.5 }}>
+                    Upload chứng từ sau khi bill tạo sẽ gắn media PROTECTED.
+                  </span>
+                )}
+              </div>
+            </FormField>
 
-          <div
-            style={{
-              ...softCardStyle,
-              padding: '12px',
-              display: 'flex',
-              gap: '10px',
-              alignItems: 'flex-start',
-              color: isBillFutureUsage || isBillPastDeadline ? colors.danger : colors.goldPale,
-              fontSize: '12px',
-              fontWeight: 800,
-              lineHeight: 1.55,
-            }}
-          >
-            <AlertTriangle size={16} style={{ marginTop: '2px', flex: '0 0 auto' }} />
-            <span>
-              Chỉ nhập tổng tiền bill gốc. Bill quá 10 ngày hoặc thời gian tương lai sẽ không được nhận.
-            </span>
-          </div>
-
-          {billNotice ? (
             <div
               style={{
                 ...softCardStyle,
                 padding: '12px',
-                color:
-                  billNotice.tone === 'success'
-                    ? colors.success
-                    : billNotice.tone === 'danger'
-                      ? colors.danger
-                      : colors.goldPale,
-                fontSize: '12.5px',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'flex-start',
+                color: isBillFutureUsage || isBillPastDeadline ? colors.danger : colors.goldPale,
+                fontSize: '12px',
                 fontWeight: 800,
                 lineHeight: 1.55,
               }}
             >
-              {billNotice.message}
+              <AlertTriangle size={16} style={{ marginTop: '2px', flex: '0 0 auto' }} />
+              <span>
+                Chỉ nhập tổng tiền bill gốc. Bill quá 10 ngày hoặc thời gian tương lai sẽ không được nhận.
+              </span>
             </div>
-          ) : null}
 
-          <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
-            {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
-            {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
-          </PrimaryButton>
-        </form>
-      </PanelCard>
+            {billNotice ? (
+              <div
+                style={{
+                  ...softCardStyle,
+                  padding: '12px',
+                  color:
+                    billNotice.tone === 'success'
+                      ? colors.success
+                      : billNotice.tone === 'danger'
+                        ? colors.danger
+                        : colors.goldPale,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                {billNotice.message}
+              </div>
+            ) : null}
 
-      <PanelCard>
-        <SectionHeading
-          eyebrow="STORE BILLS"
-          title="Hóa đơn của quán"
-          action={<StatusPill tone="gold">{scopedBillRows.length} hóa đơn</StatusPill>}
-        />
-        <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-          Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
-        </p>
-        <div
-          className="partner-bill-table-scroll"
-          style={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${colors.borderHair}` }}
-        >
-          <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
-                {['STT', 'Mã hóa đơn', 'Quán', 'Tổng tiền', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
-                  <th
-                    key={header}
-                    style={{
-                      padding: '12px',
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {scopedBillRows.length ? (
-                scopedBillRows.map((bill, index) => {
-                  const active = selectedBillId === bill.id;
-                  const billCode = bill.billNumber ?? bill.id.slice(0, 8);
-
-                  return (
-                    <tr
-                      key={bill.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => fillBillFormFromRow(bill)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          fillBillFormFromRow(bill);
-                        }
-                      }}
-                      style={{
-                        cursor: 'pointer',
-                        background: active ? 'rgba(212,178,106,.12)' : 'transparent',
-                      }}
-                    >
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
-                        {index + 1}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
-                        {billCode}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
-                        {bill.store?.name ?? selectedBillStore?.name ?? 'Quán'}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldPale, fontSize: '12.5px', fontWeight: 900 }}>
-                        {moneyVnd(bill.totalVnd ?? 0)}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                        {formatDateTime(bill.usedAt ?? bill.submittedAt)}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                        {bill.booking ? `${bill.booking.status} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
-                      </td>
-                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
-                        <StatusPill tone={bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold'}>
-                          {bill.status}
-                        </StatusPill>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{
-                      padding: '18px 12px',
-                      color: colors.text2,
-                      fontSize: '13px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Chưa có hóa đơn trong quán đang chọn.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </PanelCard>
-    </div>
-  );
+            <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
+              {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
+              {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
+            </PrimaryButton>
+          </form>
+        </PanelCard>
+      </div>
+    );
+  };
 
   const renderActivePanel = () => {
     if (activePanel === 'scan') {
