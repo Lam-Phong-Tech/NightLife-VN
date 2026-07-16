@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -17,6 +19,7 @@ import {
   ShieldCheck,
   Star,
   Users,
+  UserRound,
   WalletCards,
   X,
 } from "lucide-react";
@@ -97,6 +100,7 @@ type BookingCastOption = {
   slug: string;
   label: string;
   meta: string;
+  thumbnailUrl?: string | null;
 };
 
 type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
@@ -857,7 +861,6 @@ function BookingCard({
   onSubmit: () => void;
 }) {
   const bookingPriceText = priceRangeText(store);
-  const selectedCast = castOptions.find((option) => option.slug === selectedCastSlug);
 
   return (
     <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
@@ -1004,26 +1007,12 @@ function BookingCard({
 
         {castOptions.length ? (
           <div className="booking-form-grid booking-cast-grid">
-            <label className="booking-field booking-cast-field">
-              <span>{translateText("Cast đã chọn", activeLanguage)}</span>
-              <select
-                {...bookingInputAutofillBlockProps}
-                name={storeBookingFieldNames.selectedCast}
-                value={selectedCastSlug}
-                aria-label={translateText("Cast đã chọn", activeLanguage)}
-                onChange={(event) => onCastSelect(event.target.value)}
-              >
-                <option value="">{translateText("Không chọn cast", activeLanguage)}</option>
-                {castOptions.map((option) => (
-                  <option key={option.slug} value={option.slug}>
-                    {option.meta ? `${option.label} - ${option.meta}` : option.label}
-                  </option>
-                ))}
-              </select>
-              <small className="booking-cast-meta">
-                {selectedCast?.meta || translateText("Không chọn cast", activeLanguage)}
-              </small>
-            </label>
+            <StoreBookingCastSelect
+              activeLanguage={activeLanguage}
+              options={castOptions}
+              value={selectedCastSlug}
+              onChange={onCastSelect}
+            />
           </div>
         ) : null}
 
@@ -1074,6 +1063,137 @@ function BookingCard({
         </div>
       </form>
     </aside>
+  );
+}
+
+function StoreBookingCastSelect({
+  activeLanguage,
+  options,
+  value,
+  onChange,
+}: {
+  activeLanguage: LanguageCode;
+  options: BookingCastOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setOpen] = useState(false);
+  const fallbackOption: BookingCastOption = {
+    slug: "",
+    label: translateText("Không chọn cast", activeLanguage),
+    meta: "",
+    thumbnailUrl: null,
+  };
+  const selected = options.find((option) => option.slug === value) ?? fallbackOption;
+  const optionList = [fallbackOption, ...options];
+
+  const chooseCast = (slug: string) => {
+    onChange(slug);
+    setOpen(false);
+  };
+
+  return (
+    <div className="booking-field booking-cast-field">
+      <span className="booking-cast-label">{translateText("Cast đã chọn", activeLanguage)}</span>
+      <div
+        className="booking-cast-select"
+        onBlur={(event) => {
+          const nextTarget = event.relatedTarget;
+          if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+            setOpen(false);
+          }
+        }}
+      >
+        <button
+          type="button"
+          className="booking-cast-trigger"
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <StoreBookingCastAvatar option={selected} active={!selected.slug} size={34} />
+          <span className="booking-cast-copy">
+            <strong>{selected.label}</strong>
+            {selected.meta ? <small>{selected.meta}</small> : null}
+          </span>
+          <ChevronDown size={18} className="booking-cast-chevron" aria-hidden="true" />
+        </button>
+
+        {isOpen ? (
+          <div className="booking-cast-menu" role="listbox">
+            {optionList.map((option) => {
+              const isSelected = option.slug === value;
+
+              return (
+                <button
+                  key={option.slug || "none"}
+                  type="button"
+                  className="booking-cast-option"
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseCast(option.slug)}
+                >
+                  <StoreBookingCastAvatar option={option} active={!option.slug} size={30} />
+                  <span className="booking-cast-copy">
+                    <strong>{option.label}</strong>
+                    {option.meta ? <small>{option.meta}</small> : null}
+                  </span>
+                  {isSelected ? <Check size={16} className="booking-cast-check" aria-hidden="true" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        <select
+          aria-hidden="true"
+          tabIndex={-1}
+          name={storeBookingFieldNames.selectedCast}
+          value={value}
+          autoComplete="off"
+          className="booking-cast-native-select"
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <option value="">{translateText("Không chọn cast", activeLanguage)}</option>
+          {options.map((option) => (
+            <option key={option.slug} value={option.slug}>
+              {option.meta ? `${option.label} - ${option.meta}` : option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function StoreBookingCastAvatar({
+  active,
+  option,
+  size,
+}: {
+  active: boolean;
+  option: BookingCastOption;
+  size: number;
+}) {
+  const initial = option.label.trim().charAt(0).toUpperCase() || "C";
+
+  return (
+    <span
+      className={[
+        "booking-cast-avatar",
+        active ? "is-empty" : "",
+        option.thumbnailUrl ? "has-image" : "",
+      ].filter(Boolean).join(" ")}
+      style={{
+        width: size,
+        height: size,
+        ...(option.thumbnailUrl ? { backgroundImage: `url("${option.thumbnailUrl}")` } : {}),
+      }}
+      aria-hidden="true"
+    >
+      {option.slug ? option.thumbnailUrl ? null : initial : <UserRound size={15} />}
+    </span>
   );
 }
 
@@ -1246,6 +1366,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         slug: cast.slug,
         label: storeCastOptionLabel(cast),
         meta: storeCastOptionMeta(cast, activeLanguage),
+        thumbnailUrl: cast.thumbnailUrl,
       })),
     [activeLanguage, store.casts],
   );
@@ -2938,41 +3059,161 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-cast-field {
           position: relative;
           min-height: 72px;
-          padding-right: 36px;
+          align-content: start;
+          padding: 10px 10px 12px;
+          overflow: visible;
         }
 
-        .booking-cast-field::after {
-          content: "";
-          position: absolute;
-          top: 39px;
-          right: 15px;
-          width: 8px;
-          height: 8px;
-          border-right: 2px solid var(--vy-gold);
-          border-bottom: 2px solid var(--vy-gold);
-          transform: rotate(45deg);
-          pointer-events: none;
-          opacity: .9;
+        .booking-cast-label {
+          display: block;
+          color: var(--vy-muted);
+          font-size: 10px;
+          font-weight: 900;
+          line-height: 1.1;
         }
 
-        .booking-cast-field select {
-          padding-right: 2px;
+        .booking-cast-select {
+          position: relative;
+          margin-top: 8px;
+        }
+
+        .booking-cast-trigger,
+        .booking-cast-option {
+          width: 100%;
+          border: 0;
+          background: transparent;
+          color: var(--vy-text);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font: inherit;
+          text-align: left;
+        }
+
+        .booking-cast-trigger {
+          min-height: 38px;
+          padding: 0 2px 0 0;
+          cursor: pointer;
+        }
+
+        .booking-cast-avatar {
+          flex: none;
+          border-radius: 999px;
+          border: 1px solid var(--vy-border-gold-32);
+          background: var(--vy-gold-soft-bg);
+          color: var(--vy-gold-hi);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          font-size: 12px;
+          font-weight: 950;
+          background-position: center;
+          background-size: cover;
+        }
+
+        .booking-cast-avatar.has-image {
+          border-color: rgba(212, 178, 106, .45);
+          background-color: rgba(15, 14, 18, .5);
+        }
+
+        .booking-cast-avatar.is-empty {
+          color: var(--vy-gold);
+          background: rgba(212, 178, 106, .12);
+        }
+
+        .booking-cast-copy {
+          min-width: 0;
+          flex: 1;
+          display: block;
+        }
+
+        .booking-field .booking-cast-copy strong,
+        .booking-field .booking-cast-copy small {
+          display: block;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .booking-cast-meta {
-          display: block;
-          max-width: 100%;
-          margin-top: 4px;
-          overflow: hidden;
+        .booking-field .booking-cast-copy strong {
+          margin: 0;
+          color: var(--vy-text);
+          font-size: 13px;
+          font-weight: 900;
+          line-height: 1.2;
+        }
+
+        .booking-field .booking-cast-copy small {
+          margin-top: 3px;
           color: var(--vy-muted);
           font-size: 10.5px;
           font-weight: 750;
           line-height: 1.25;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        }
+
+        .booking-cast-chevron {
+          flex: none;
+          color: var(--vy-gold);
+        }
+
+        .booking-cast-menu {
+          position: absolute;
+          z-index: 30;
+          top: calc(100% + 8px);
+          left: -2px;
+          right: -2px;
+          max-height: 220px;
+          overflow-y: auto;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 12px;
+          background: var(--vy-surface-2);
+          box-shadow: 0 18px 42px rgba(0, 0, 0, .32);
+          padding: 6px;
+        }
+
+        .booking-cast-option {
+          min-height: 46px;
+          border-radius: 9px;
+          padding: 7px 9px;
+          cursor: pointer;
+        }
+
+        .booking-cast-option:hover,
+        .booking-cast-option:focus-visible,
+        .booking-cast-option[aria-selected="true"] {
+          background: var(--vy-gold-soft-bg);
+          outline: none;
+        }
+
+        .booking-cast-check {
+          flex: none;
+          color: var(--vy-gold-hi);
+        }
+
+        .booking-cast-native-select {
+          position: absolute;
+          width: 1px !important;
+          height: 1px !important;
+          margin: -1px !important;
+          padding: 0 !important;
+          border: 0 !important;
+          overflow: hidden !important;
+          clip: rect(0 0 0 0) !important;
+          white-space: nowrap !important;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        html.vy-light .booking-cast-menu {
+          background: #fffdf8;
+          box-shadow: 0 18px 38px rgba(98, 73, 25, .18);
+        }
+
+        html.vy-light .booking-cast-option:hover,
+        html.vy-light .booking-cast-option:focus-visible,
+        html.vy-light .booking-cast-option[aria-selected="true"] {
+          background: #fff4cc;
         }
 
         .slot-row {
