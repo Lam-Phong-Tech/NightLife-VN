@@ -140,9 +140,16 @@ const readStoredPartnerTheme = (): PartnerTheme => {
     return 'dark';
   }
 
-  const storedTheme = window.localStorage.getItem(partnerThemeStorageKey);
-  if (storedTheme === 'light' || storedTheme === 'dark') {
-    return storedTheme;
+  try {
+    const storedTheme =
+      typeof window.localStorage !== 'undefined'
+        ? window.localStorage.getItem(partnerThemeStorageKey)
+        : null;
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      return storedTheme;
+    }
+  } catch {
+    // Ignore error in non-browser envs
   }
 
   return document.documentElement.classList.contains('vy-light') ? 'light' : 'dark';
@@ -1688,7 +1695,11 @@ export default function PartnerPage() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('vy-light', partnerTheme === 'light');
-    window.localStorage.setItem(partnerThemeStorageKey, partnerTheme);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(partnerThemeStorageKey, partnerTheme);
+      }
+    } catch {}
   }, [partnerTheme]);
 
   const togglePartnerTheme = useCallback(() => {

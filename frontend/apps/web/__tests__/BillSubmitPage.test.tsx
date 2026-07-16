@@ -85,6 +85,7 @@ const defaultBooking = {
   bookingCode: "BK-PUBLIC",
   status: "COMPLETED",
   scheduledAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  confirmedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
   partySize: 4,
   store: publicStore,
   user: { id: "member-1", displayName: "Minh Tu", tier: "GOLD" },
@@ -136,7 +137,7 @@ describe("Bill submit page", () => {
   it("prefills bill total and used time from OCR preview", async () => {
     render(<BillSubmitPage />);
 
-    await screen.findByText("Public Neon");
+    await screen.findAllByText("Public Neon");
 
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
     const usedAtInput = document.querySelector<HTMLInputElement>("#bill-used-at");
@@ -159,9 +160,11 @@ describe("Bill submit page", () => {
         text: "Tong cong: 1.800.000 VND\nNgay: 03/07/2026 21:30",
       });
     });
-    expect(amountInput).toHaveValue("1.800.000");
-    expect(usedAtInput?.value).toMatch(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
-    expect(screen.getByText(/86%/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(amountInput).toHaveValue("1.800.000");
+      expect(screen.getByText("03/07/2026 21:30")).toBeInTheDocument();
+      expect(screen.getByText(/86%/)).toBeInTheDocument();
+    });
   });
 
   it("prefills store, booking, QR summary, and used time from bookingId in the URL", async () => {
@@ -171,8 +174,10 @@ describe("Bill submit page", () => {
     mocks.listMemberBookings.mockResolvedValue([
       {
         id: bookingId,
+        bookingCode: "BK-550E8400",
         status: "COMPLETED",
         scheduledAt,
+        confirmedAt: scheduledAt,
         partySize: 4,
         store: publicStore,
         user: { id: "member-1", displayName: "Minh Tú", tier: "GOLD" },
@@ -216,7 +221,7 @@ describe("Bill submit page", () => {
     mocks.uploadEvidence.mockRejectedValue(new Error("upload failed"));
     render(<BillSubmitPage />);
 
-    await screen.findByText("Public Neon");
+    await screen.findAllByText("Public Neon");
 
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');

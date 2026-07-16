@@ -18876,8 +18876,29 @@ export class NightlifeDataService {
             rejectReason: true,
             createdAt: true,
             submittedAt: true,
+            subtotalVnd: true,
+            discountRuleSnapshot: true,
+            coupon: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                discountType: true,
+                discountValue: true,
+                maxDiscountVnd: true,
+                minSpendVnd: true,
+              },
+            },
+            couponIssue: {
+              select: {
+                id: true,
+                code: true,
+                status: true,
+                metadata: true,
+              },
+            },
             store: { select: { name: true, slug: true } },
-            user: { select: { id: true, displayName: true, tier: true } },
+            user: { select: { id: true, displayName: true, tier: true, role: true } },
             guest: { select: { id: true, displayName: true } },
           },
         }),
@@ -18918,28 +18939,48 @@ export class NightlifeDataService {
       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
       else if (bill.submitterType === 'MEMBER') guestType = 'Member';
 
+      let discount = bill.discountVnd || 0;
+      let discountPercent = 0;
+      let pointsEarned = bill.pointsEarned || 0;
+
+      const grossVnd = bill.subtotalVnd || bill.totalVnd || 0;
+
+      if (bill.status === 'SUBMITTED' || bill.status === 'PENDING_PM_BA') {
+        const discountInfo = this.resolveBillApprovalDiscount(
+          bill,
+          grossVnd,
+          new Date(),
+        );
+        discount = discountInfo.discountVnd;
+        discountPercent = discountInfo.effectiveDiscountPercent;
+        
+        if (bill.user && bill.user.role === 'USER') {
+          pointsEarned = Math.floor(grossVnd / 100000);
+        }
+      } else {
+        const gross = bill.subtotalVnd || (bill.totalVnd + (bill.discountVnd || 0)) || 1;
+        discountPercent = Math.round(((bill.discountVnd || 0) / gross) * 100);
+      }
+
       return {
         id: bill.id,
         billNumber: bill.billNumber,
         store: bill.store?.name || 'Unknown Store',
         location: bill.store?.slug || '',
-        amount: bill.totalVnd || 0,
+        amount: grossVnd,
         date: (bill.submittedAt ?? bill.createdAt).toISOString(),
         sender,
         hasImage: (mediaByBillId.get(bill.id)?.length ?? 0) > 0,
         images: mediaByBillId.get(bill.id) ?? [],
         status: bill.status,
         guestType,
-        discount: bill.discountVnd || 0,
-        discountPercent:
-          bill.totalVnd && bill.discountVnd
-            ? Math.round((bill.discountVnd / bill.totalVnd) * 100)
-            : 0,
+        discount,
+        discountPercent,
         commissionPercent: bill.commissionAmountVnd
           ? Math.round((bill.commissionAmountVnd / (bill.totalVnd || 1)) * 100)
           : 0,
         adminCommission: bill.commissionAmountVnd || 0,
-        points: bill.pointsEarned ? `+${bill.pointsEarned} điểm` : '+0 điểm',
+        points: pointsEarned ? `+${pointsEarned} điểm` : '+0 điểm',
         rejectReason: bill.rejectReason || '',
       };
     });

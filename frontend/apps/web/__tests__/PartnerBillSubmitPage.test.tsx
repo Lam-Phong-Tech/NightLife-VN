@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PartnerPage from "../src/app/partner/page";
+import { SystemFeedbackProvider } from "../src/components/ui/SystemFeedback";
 
 const mocks = vi.hoisted(() => ({
   apiClient: vi.fn(),
@@ -38,6 +39,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/auth/session", () => ({
   clearAuthSession: vi.fn(),
+  getAuthUser: () => ({ role: "PARTNER", displayName: "Partner Demo" }),
 }));
 
 vi.mock("@/lib/api/bills", () => ({
@@ -186,9 +188,13 @@ describe("Partner bill submit page", () => {
   });
 
   it("renders inside the partner shell and submits through the partner bill API", async () => {
-    render(<PartnerPage />);
+    render(
+      <SystemFeedbackProvider>
+        <PartnerPage />
+      </SystemFeedbackProvider>,
+    );
 
-    await screen.findByText("2 quán thuộc partner");
+    await screen.findByText("2 quán trong scope");
     expect(mocks.apiClient).toHaveBeenCalledWith("/partner/stores");
     expect(mocks.listPartnerStores).not.toHaveBeenCalled();
     expect(mocks.listStores).not.toHaveBeenCalled();
@@ -225,7 +231,11 @@ describe("Partner bill submit page", () => {
   });
 
   it("shows partner bill table filtered by store and fills the form from a selected bill", async () => {
-    render(<PartnerPage />);
+    render(
+      <SystemFeedbackProvider>
+        <PartnerPage />
+      </SystemFeedbackProvider>,
+    );
 
     await screen.findByText("BILL-NEON");
     expect(screen.queryByText("BILL-VELVET")).not.toBeInTheDocument();

@@ -285,24 +285,6 @@ export default function AdminBillsPage() {
         </div>
       </div>
 
-      {/* INFO BANNER */}
-      <div style={{ 
-        background: colors.blueBg, 
-        border: `1px solid rgba(96,165,250,0.2)`, 
-        borderRadius: '8px', 
-        padding: '12px 16px',
-        marginBottom: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        color: colors.blue,
-        fontSize: '13px'
-      }}>
-        <Info size={16} />
-        <span>
-          Duyệt thủ công bằng mắt. <strong>Hoa hồng = Bill gốc × (% hoa hồng - % giảm giá)</strong> - Điểm = 1.000.000đ = 10 điểm trên bill gốc. Bill mờ/sai → từ chối kèm lý do.
-        </span>
-      </div>
 
       {/* TABLE */}
       <div className="nl-admin-data-list nl-admin-bill-table-wrap" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
@@ -568,18 +550,7 @@ export default function AdminBillsPage() {
                   <span style={{ color: colors.text2, fontSize: '14px' }}>Giảm giá ({selectedBill.discountPercent}%)</span>
                   <span style={{ color: colors.red, fontSize: '14px', fontWeight: 700 }}>– {(selectedBill.discount || 0).toLocaleString('vi-VN')}đ</span>
                 </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                  <span style={{ color: colors.text2, fontSize: '14px' }}>% hoa hồng thỏa thuận</span>
-                  <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBill.commissionPercent}%</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                  <div>
-                    <div style={{ color: colors.gold, fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>Hoa hồng Admin</div>
-                    <div style={{ color: colors.muted, fontSize: '11px' }}>= {(selectedBill.amount || 0).toLocaleString('vi-VN')}đ × ({selectedBill.commissionPercent}% – {selectedBill.discountPercent}%)</div>
-                  </div>
-                  <span style={{ color: colors.gold, fontSize: '18px', fontWeight: 700 }}>{(selectedBill.adminCommission || 0).toLocaleString('vi-VN')}đ</span>
-                </div>
+
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: colors.text2, fontSize: '14px' }}>Điểm tích lũy</span>
