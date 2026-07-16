@@ -28,12 +28,32 @@ export class AuditLogsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          actor: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
       }),
       this.prisma.auditLog.count({ where }),
     ]);
 
+    const mappedItems = items.map((item) => ({
+      ...item,
+      actorName:
+        item.actorName ||
+        item.actor?.displayName ||
+        item.actor?.email ||
+        undefined,
+      actorRole: item.actorRole || item.actor?.role || undefined,
+    }));
+
     return {
-      items,
+      items: mappedItems,
       meta: {
         total,
         page,
@@ -46,10 +66,28 @@ export class AuditLogsService {
   async getAuditLogById(id: string) {
     const log = await this.prisma.auditLog.findUnique({
       where: { id },
+      include: {
+        actor: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
     });
     if (!log) {
       throw new NotFoundException('Audit log not found');
     }
-    return log;
+    return {
+      ...log,
+      actorName:
+        log.actorName ||
+        log.actor?.displayName ||
+        log.actor?.email ||
+        undefined,
+      actorRole: log.actorRole || log.actor?.role || undefined,
+    };
   }
 }
