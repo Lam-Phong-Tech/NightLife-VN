@@ -117,6 +117,45 @@ const normalizeTimeOption = (value: string) => {
 
 const formatCity = (tour: PublicTour) => tour.stops[0]?.store.area?.city || tour.city || "NightLife";
 
+const decodeHtmlEntity = (entity: string) => {
+  const namedEntities: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: " ",
+    quot: '"',
+  };
+  const normalized = entity.slice(1, -1).toLowerCase();
+
+  if (namedEntities[normalized] !== undefined) return namedEntities[normalized];
+
+  if (normalized.startsWith("#x")) {
+    const codePoint = Number.parseInt(normalized.slice(2), 16);
+    return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+      ? String.fromCodePoint(codePoint)
+      : entity;
+  }
+
+  if (normalized.startsWith("#")) {
+    const codePoint = Number.parseInt(normalized.slice(1), 10);
+    return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+      ? String.fromCodePoint(codePoint)
+      : entity;
+  }
+
+  return entity;
+};
+
+const cleanRichText = (value?: string | null) =>
+  (value ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(nbsp|amp|lt|gt|quot|apos|#\d+|#x[\da-f]+);/gi, decodeHtmlEntity)
+    .replace(/\s+/g, " ")
+    .trim();
+
 const tourCover = (tour: PublicTour) =>
   tour.coverUrl || tour.stops.find((stop) => stop.store.media[0])?.store.media[0]?.url || "";
 
@@ -430,6 +469,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
   const firstStop = tour.stops[0];
   const firstStore = firstStop?.store;
+  const cleanSubtitle = cleanRichText(tour.subtitle);
   const tourCasts = useMemo<TourCastOption[]>(
     () =>
       tour.stops.flatMap((stop) =>
@@ -691,7 +731,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                       <Sparkles size={14} /> {tx("experienceTour")}
                     </span>
                     <h1 className={styles.heroTitle}>{tour.title}</h1>
-                    {tour.subtitle ? <p className={styles.heroText}>{tour.subtitle}</p> : null}
+                    {cleanSubtitle ? <p className={styles.heroText}>{cleanSubtitle}</p> : null}
                   </div>
                 </div>
               </PlaceholderMedia>
@@ -718,30 +758,35 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <h2 className={styles.sectionTitle}>{tx("routeTitle")}</h2>
 
               <div className={styles.timeline}>
-                {tour.stops.map((stop) => (
-                  <article key={stop.id} className={styles.stopCard}>
-                    <div className={styles.stopIndex}>{stop.order}</div>
-                    <PlaceholderMedia
-                      src={storeImage(stop.store)}
-                      alt={stop.store.name}
-                      label={tx("noVenueImage")}
-                      className={styles.stopMedia}
-                    />
-                    <div className={styles.stopCopy}>
-                      <div className={styles.stopMeta}>
-                        <span>{t(categoryLabels[stop.store.category] ?? stop.store.category)}</span>
-                        <span>{stop.store.area?.name || stop.store.district || formatCity(tour)}</span>
+                {tour.stops.map((stop) => {
+                  const stopDescription = cleanRichText(stop.store.description);
+                  const couponName = cleanRichText(stop.store.coupons[0]?.name);
+
+                  return (
+                    <article key={stop.id} className={styles.stopCard}>
+                      <div className={styles.stopIndex}>{stop.order}</div>
+                      <PlaceholderMedia
+                        src={storeImage(stop.store)}
+                        alt={stop.store.name}
+                        label={tx("noVenueImage")}
+                        className={styles.stopMedia}
+                      />
+                      <div className={styles.stopCopy}>
+                        <div className={styles.stopMeta}>
+                          <span>{t(categoryLabels[stop.store.category] ?? stop.store.category)}</span>
+                          <span>{stop.store.area?.name || stop.store.district || formatCity(tour)}</span>
+                        </div>
+                        <h3 className={styles.stopTitle}>{stop.store.name}</h3>
+                        {stopDescription ? <p className={styles.stopText}>{stopDescription}</p> : null}
+                        {couponName ? (
+                          <span className={styles.couponPill}>
+                            <Tag size={13} /> <span className={styles.couponText}>{couponName}</span>
+                          </span>
+                        ) : null}
                       </div>
-                      <h3 className={styles.stopTitle}>{stop.store.name}</h3>
-                      {stop.store.description ? <p className={styles.stopText}>{stop.store.description}</p> : null}
-                      {stop.store.coupons[0] ? (
-                        <span className={styles.couponPill}>
-                          <Tag size={13} /> {stop.store.coupons[0].name}
-                        </span>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             </section>
 
@@ -759,7 +804,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     onClick={() => setSelectedCastKeys([])}
                   >
                     <span className={styles.castAvatar} />
-                    <span>
+                    <span className={styles.castCopy}>
                       <span className={styles.castName}>{tx("noCast")}</span>
                       <span className={styles.castMeta}>{tx("freeExperience")}</span>
                     </span>
@@ -787,7 +832,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                           aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
                           style={cast.thumbnailUrl ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` } : undefined}
                         />
-                        <span>
+                        <span className={styles.castCopy}>
                           <span className={styles.castName}>{castName(cast)}</span>
                           <span className={styles.castMeta}>{cast.storeName}</span>
                         </span>

@@ -1477,15 +1477,35 @@
   white-space: nowrap;
 }
 
+.historyActions .primaryCta,
 .historyActions .secondaryCta,
 .historyActions .ghostCta,
 .historyActions .dangerCta {
-  min-height: 36px;
-  border-radius: 11px;
-  padding: 8px 10px;
+  min-height: 34px;
+  border-radius: 10px;
+  padding: 7px 10px;
   font-size: 12px;
   gap: 6px;
+  line-height: 1.1;
   white-space: nowrap;
+}
+
+.historyActions .primaryCta {
+  flex-direction: row;
+}
+
+.historyActions .primaryCta strong,
+.historyActions .secondaryCta strong {
+  font-size: 12.5px;
+  line-height: 1.1;
+}
+
+.historyActions .primaryCta svg,
+.historyActions .secondaryCta svg,
+.historyActions .ghostCta svg,
+.historyActions .dangerCta svg {
+  width: 13px;
+  height: 13px;
 }
 
 .historyActions .dangerCta,
@@ -2089,6 +2109,23 @@
 
   .historyActions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .historyActions .primaryCta,
+  .historyActions .secondaryCta,
+  .historyActions .ghostCta,
+  .historyActions .dangerCta {
+    min-height: 32px;
+    padding: 6px 8px;
+    border-radius: 9px;
+    font-size: 11.5px;
+  }
+
+  .historyActions .primaryCta strong,
+  .historyActions .secondaryCta strong {
+    font-size: 12px;
   }
 
   .loginNudge,
