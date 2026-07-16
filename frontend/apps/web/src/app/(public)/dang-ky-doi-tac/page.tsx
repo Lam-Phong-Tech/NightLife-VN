@@ -79,8 +79,6 @@ const lightColors = {
   popoverBg: 'linear-gradient(180deg,rgba(255,252,247,.98),rgba(245,237,224,.98))',
 };
 
-const colors = darkColors;
-
 const readStoredPartnerTheme = (): PartnerTheme => {
   if (typeof window === 'undefined') {
     return 'dark';
@@ -169,6 +167,37 @@ type AddressOption = {
   code: number;
   name: string;
 };
+
+const foreignAddressNameMap: Record<string, string> = {
+  '\u30cf\u30ce\u30a4': 'Hà Nội',
+  '\u30cf\u30a4\u30d5\u30a9\u30f3': 'Hải Phòng',
+  '\u30db\u30fc\u30c1\u30df\u30f3': 'Hồ Chí Minh',
+};
+
+function normalizeAddressName(name: string) {
+  let normalized = name.trim();
+
+  Object.entries(foreignAddressNameMap).forEach(([source, target]) => {
+    normalized = normalized.replaceAll(source, target);
+  });
+
+  return normalized
+    .replace(/^Ward\s+/i, 'Phường ')
+    .replace(/^Commune\s+/i, 'Xã ')
+    .replace(/^Town\s+/i, 'Thị trấn ')
+    .replace(/^Province\s+/i, 'Tỉnh ')
+    .replace(/^City\s+/i, 'Thành phố ')
+    .replace(/[\u3040-\u30ff\u31f0-\u31ff]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeAddressOptions(options: AddressOption[]) {
+  return options.map((option) => ({
+    ...option,
+    name: normalizeAddressName(option.name),
+  }));
+}
 
 const initialPartnerForm: PartnerFormState = {
   businessName: '',
@@ -427,9 +456,11 @@ function SelectControl({
   required?: boolean;
   disabled?: boolean;
 }) {
-  const { theme, colors } = useTheme();
+  const { colors } = useTheme();
+  const [isOpen, setIsOpen] = useState(false);
   const id = label.replace(/\s+/g, '-').toLowerCase();
   const selectedLabel = options.find((option) => option.code.toString() === value)?.name ?? '';
+  const canOpen = !disabled && options.length > 0;
 
   return (
     <div>
@@ -444,63 +475,117 @@ function SelectControl({
         }}
       >
         {label}
+        {required && <span style={{ color: colors.red, marginLeft: '4px' }}>*</span>}
       </label>
-      <div style={{ position: 'relative' }}>
-        <select
+      <div
+        onBlur={(event) => {
+          const nextFocus = event.relatedTarget;
+          if (!nextFocus || !event.currentTarget.contains(nextFocus as Node)) {
+            setIsOpen(false);
+          }
+        }}
+        style={{ position: 'relative' }}
+      >
+        <button
           id={id}
-          value={value}
-          required={required}
           disabled={disabled}
-          onChange={(event) => onChange(event.target.value)}
-          style={{
-            ...inputStyle(colors, false),
-            appearance: 'none',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            color: 'transparent',
-            WebkitTextFillColor: 'transparent',
-            textShadow: 'none',
-            paddingRight: '38px',
-            opacity: disabled ? 0.62 : 1,
-            fontFamily: fieldFontFamily,
-            fontWeight: 400,
-            letterSpacing: 0,
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() => {
+            if (canOpen) {
+              setIsOpen((current) => !current);
+            }
           }}
-        >
-          <option value="" style={{ color: colors.text, background: theme === 'light' ? '#fff' : '#17161a' }}>
-            {placeholder}
-          </option>
-          {options.map((option) => (
-            <option key={option.code} value={option.code.toString()} style={{ color: colors.text, background: theme === 'light' ? '#fff' : '#17161a' }}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-        <span
           style={{
-            position: 'absolute',
-            left: '12px',
-            right: '36px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: selectedLabel ? colors.text2 : colors.muted,
-            fontFamily: fieldFontFamily,
+            width: '100%',
+            minHeight: '42px',
+            border: `1px solid ${colors.borderGold22}`,
+            borderRadius: '11px',
+            background: colors.surface2,
+            color: selectedLabel ? colors.text : colors.muted,
+            font: 'inherit',
             fontSize: '13px',
             fontWeight: 400,
+            padding: '0 12px',
+            outline: 'none',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+            textAlign: 'left',
+            opacity: disabled ? 0.62 : 1,
+            fontFamily: fieldFontFamily,
             letterSpacing: 0,
-            lineHeight: 1.25,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            pointerEvents: 'none',
           }}
         >
-          {selectedLabel || placeholder}
-        </span>
-        <ChevronDown
-          size={15}
-          color={disabled ? colors.muted : colors.gold}
-          style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-        />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedLabel || placeholder}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{
+              flex: '0 0 auto',
+              color: disabled ? colors.muted : colors.goldBright,
+              transform: isOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform .15s',
+            }}
+          />
+        </button>
+        {isOpen ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              right: 0,
+              zIndex: 180,
+              maxHeight: '280px',
+              overflowY: 'auto',
+              border: `1px solid ${colors.borderGold32}`,
+              borderRadius: '12px',
+              background: colors.popoverBg,
+              boxShadow: '0 24px 50px -26px rgba(0,0,0,.86)',
+              padding: '6px',
+            }}
+          >
+            {options.map((option) => {
+              const optionValue = option.code.toString();
+              const isSelected = optionValue === value;
+
+              return (
+                <button
+                  key={option.code}
+                  type="button"
+                  onClick={() => {
+                    onChange(optionValue);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    minHeight: '38px',
+                    border: 0,
+                    borderRadius: '8px',
+                    background: isSelected ? colors.borderGold12 : 'transparent',
+                    color: isSelected ? colors.goldBright : colors.text,
+                    font: 'inherit',
+                    fontSize: '13px',
+                    fontWeight: isSelected ? 700 : 400,
+                    padding: '0 10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textAlign: 'left',
+                    transition: 'background .15s, color .15s',
+                  }}
+                >
+                  <span>{option.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -698,7 +783,7 @@ function PartnerPageContent({
       .then((response) => response.json())
       .then((data) => {
         if (isMounted && Array.isArray(data)) {
-          setProvinces(data);
+          setProvinces(normalizeAddressOptions(data));
         }
       })
       .catch(() => {
@@ -723,7 +808,7 @@ function PartnerPageContent({
       .then((response) => response.json())
       .then((data) => {
         if (isMounted) {
-          setWards(Array.isArray(data?.wards) ? data.wards : []);
+          setWards(Array.isArray(data?.wards) ? normalizeAddressOptions(data.wards) : []);
         }
       })
       .catch(() => {
