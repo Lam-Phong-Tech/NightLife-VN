@@ -652,7 +652,7 @@ export class AdminNotificationService {
     if (input.user.tier === 'VIP' || input.user.tier === 'PREMIUM') {
       return 'VIP';
     }
-    if (input.user.tier === 'MEMBER') {
+    if (input.user.tier === 'MEMBER' || input.user.tier === 'FREE') {
       return 'Member';
     }
     return 'Guest';

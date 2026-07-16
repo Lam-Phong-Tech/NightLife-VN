@@ -57,13 +57,13 @@ describe('UsersService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('creates regular member accounts with the legacy FREE tier', async () => {
+  it('creates regular member accounts with the MEMBER tier', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     passwordService.hash.mockResolvedValue('hashed-password');
     prisma.user.create.mockResolvedValue({
       ...activeUser,
       email: 'new-member@nightlife.vn',
-      tier: 'FREE',
+      tier: 'MEMBER',
     });
 
     await service.createUser({
@@ -78,7 +78,7 @@ describe('UsersService', () => {
         displayName: 'New Member',
         passwordHash: 'hashed-password',
         role: 'USER',
-        tier: 'FREE',
+        tier: 'MEMBER',
       }),
     });
   });

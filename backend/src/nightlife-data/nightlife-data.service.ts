@@ -10253,7 +10253,7 @@ export class NightlifeDataService {
       if (userTier) {
         if (userTier === 'VIP' || userTier === 'PREMIUM') {
           defaultCode = 'VIP10';
-        } else if (userTier === 'MEMBER') {
+        } else if (userTier === 'MEMBER' || userTier === 'FREE') {
           defaultCode = 'MEMBER8';
         } else {
           defaultCode = 'GUEST5';
@@ -17531,7 +17531,7 @@ export class NightlifeDataService {
     if (user.tier === 'VIP' || user.tier === 'PREMIUM') {
       return 'VIP';
     }
-    if (user.tier === 'MEMBER') {
+    if (user.tier === 'MEMBER' || user.tier === 'FREE') {
       return 'MEMBER';
     }
     return 'GUEST';
