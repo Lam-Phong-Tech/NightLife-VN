@@ -223,6 +223,12 @@ export default function AdminCastsPage() {
       return null;
     }
 
+    const targetStore = stores.find(s => s.id === formData.storeId);
+    if (targetStore && (targetStore.category === 'MASSAGE_SPA' || targetStore.category === 'RESTAURANT')) {
+      showToast('Không thể thêm Cast vào Massage & Spa hoặc Nhà hàng!');
+      return null;
+    }
+
     const draft = await apiClient<any>('/admin/casts', {
       method: 'POST',
       data: {
@@ -249,6 +255,12 @@ export default function AdminCastsPage() {
       }
       if (!formData.storeId) {
         showToast('Vui lòng chọn quán trực thuộc!');
+        return;
+      }
+
+      const targetStore = stores.find(s => s.id === formData.storeId);
+      if (targetStore && (targetStore.category === 'MASSAGE_SPA' || targetStore.category === 'RESTAURANT')) {
+        showToast('Không thể thêm Cast vào Massage & Spa hoặc Nhà hàng!');
         return;
       }
 
@@ -428,9 +440,11 @@ export default function AdminCastsPage() {
   const currentLabel = isAddingCast ? 'Tạo mới' : (selectedCast ? getStatusLabel(selectedCast.status, selectedCast.isPublic) : '');
 
   const selectedStore = stores.find((store) => store.id === formData.storeId);
-  const filteredStores = stores.filter((store) =>
-    !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase())
-  );
+  const filteredStores = stores.filter((store) => {
+    const isExcluded = store.category === 'MASSAGE_SPA' || store.category === 'RESTAURANT';
+    const matchesSearch = !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase());
+    return matchesSearch && !isExcluded;
+  });
   const statusOptions = [
     { value: 'ACTIVE', label: 'Hoạt động', description: 'Cast có thể hiển thị khi bật public', tone: colors.green },
     { value: 'DRAFT', label: 'Bản nháp / Chờ duyệt', description: 'Giữ lại để hoàn thiện hoặc kiểm duyệt', tone: colors.gold },

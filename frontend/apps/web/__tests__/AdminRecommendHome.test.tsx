@@ -78,6 +78,7 @@ vi.mock("@/lib/api/categories", () => ({
   categoriesApi: {
     list: vi.fn().mockResolvedValue([]),
     listBannerTags: vi.fn().mockResolvedValue([]),
+    adminList: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -90,6 +91,7 @@ vi.mock("@/lib/api/content", () => ({
 vi.mock("@/lib/api/campaigns", () => ({
   campaignsApi: {
     list: vi.fn().mockResolvedValue([]),
+    adminList: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -217,13 +219,16 @@ describe("Admin Recommend Home content page UI verification", () => {
     // Verify adminRankingsApi.update is called for both currentItem and swapItem
     // swapRank for currentItem (Club Two, index 1) will be 1 (Lounge One's rank)
     // currentRank for swapItem (Lounge One, index 0) will be 2 (Club Two's rank)
-    expect(mockUpdate).toHaveBeenCalledTimes(2);
-    expect(mockUpdate).toHaveBeenCalledWith('rec-2', expect.objectContaining({
-      targetId: 'store-2',
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledTimes(3);
+    });
+    expect(mockUpdate).toHaveBeenNthCalledWith(1, 'rec-1', expect.objectContaining({
+      pinRank: null
+    }));
+    expect(mockUpdate).toHaveBeenNthCalledWith(2, 'rec-2', expect.objectContaining({
       pinRank: 1
     }));
-    expect(mockUpdate).toHaveBeenCalledWith('rec-1', expect.objectContaining({
-      targetId: 'store-1',
+    expect(mockUpdate).toHaveBeenNthCalledWith(3, 'rec-1', expect.objectContaining({
       pinRank: 2
     }));
   });
