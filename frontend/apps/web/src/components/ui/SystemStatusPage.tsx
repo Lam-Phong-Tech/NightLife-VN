@@ -12,6 +12,8 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 type StatusKind = "not-found" | "server-error" | "forbidden" | "maintenance";
 
@@ -74,7 +76,7 @@ const statusContent: Record<
   },
   forbidden: {
     code: "403",
-    badge: "Forbidden",
+    badge: "Không có quyền",
     title: "Bạn không có quyền truy cập",
     description: "Trang này dành cho tài khoản đã đăng nhập hoặc có quyền phù hợp. Vui lòng đăng nhập đúng tài khoản.",
     icon: ShieldAlert,
@@ -109,10 +111,22 @@ export function SystemStatusPage({
   secondaryHref,
   secondaryLabel,
 }: SystemStatusPageProps) {
+  const activeLanguage = useActiveLanguage();
   const content = statusContent[kind];
   const Icon = content.icon;
   const incidentCode =
     kind === "server-error" ? `NL-500-${digest ? digest.slice(0, 8).toUpperCase() : "20260629"}` : null;
+  const translatedBadge = translateText(content.badge, activeLanguage);
+  const translatedTitle = translateText(contextTitle ?? content.title, activeLanguage);
+  const translatedDescription = translateText(
+    contextDescription ?? content.description,
+    activeLanguage,
+  );
+  const translatedPrimaryLabel = translateText(primaryLabel ?? content.primaryLabel, activeLanguage);
+  const translatedSecondaryLabel = translateText(
+    secondaryLabel ?? content.secondaryLabel,
+    activeLanguage,
+  );
 
   const handleRetry = () => {
     if (onRetry) {
@@ -127,18 +141,18 @@ export function SystemStatusPage({
       <section className="nl-system-status-hero">
         <div className={`nl-system-status-badge nl-system-status-${content.tone}`}>
           <Icon size={14} strokeWidth={2} />
-          {content.badge}
+          {translatedBadge}
         </div>
 
         {content.code ? <div className="nl-system-status-code">{content.code}</div> : <StatusIcon icon={Icon} />}
 
-        <h1>{contextTitle ?? content.title}</h1>
-        <p>{contextDescription ?? content.description}</p>
+        <h1>{translatedTitle}</h1>
+        <p>{translatedDescription}</p>
 
         {content.search ? (
           <Link href="/danh-sach-quan" className="nl-system-status-search">
             <Search size={17} strokeWidth={2} />
-            <span>Tìm quán hoặc cast...</span>
+            <span>{translateText("Tìm quán hoặc cast...", activeLanguage)}</span>
           </Link>
         ) : null}
 
@@ -146,22 +160,26 @@ export function SystemStatusPage({
           {content.retry ? (
             <button type="button" className="nl-system-status-primary" onClick={handleRetry}>
               <RefreshCw size={16} strokeWidth={2.2} />
-              {primaryLabel ?? content.primaryLabel}
+              {translatedPrimaryLabel}
             </button>
           ) : (
             <Link href={primaryHref ?? content.primaryHref} className="nl-system-status-primary">
               {kind === "forbidden" ? <Lock size={16} strokeWidth={2.2} /> : <Home size={16} strokeWidth={2.2} />}
-              {primaryLabel ?? content.primaryLabel}
+              {translatedPrimaryLabel}
             </Link>
           )}
 
           <Link href={secondaryHref ?? content.secondaryHref} className="nl-system-status-secondary">
             {content.line ? <MessageCircle size={16} strokeWidth={2} /> : <Search size={16} strokeWidth={2} />}
-            {secondaryLabel ?? content.secondaryLabel}
+            {translatedSecondaryLabel}
           </Link>
         </div>
 
-        {incidentCode ? <div className="nl-system-status-incident">Mã sự cố: {incidentCode}</div> : null}
+        {incidentCode ? (
+          <div className="nl-system-status-incident">
+            {translateText("Mã sự cố:", activeLanguage)} {incidentCode}
+          </div>
+        ) : null}
       </section>
 
       <style>{statusStyles}</style>
