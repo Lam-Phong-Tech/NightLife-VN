@@ -2,16 +2,79 @@
 
 import { getAuthUser } from "@/lib/auth/session";
 
+const favoriteLoginPromptId = "nl-favorite-login-prompt";
+
 export function hasMemberFavoriteAccess() {
   return getAuthUser()?.role?.toUpperCase() === "USER";
 }
 
-export function redirectToLoginForFavorite() {
-  if (typeof window === "undefined") return;
-
+function favoriteLoginHref() {
   const currentPath =
     `${window.location.pathname}${window.location.search}${window.location.hash}` || "/";
-  window.location.href = `/dang-nhap?redirect=${encodeURIComponent(currentPath)}`;
+  return `/dang-nhap?redirect=${encodeURIComponent(currentPath)}`;
+}
+
+function closeFavoriteLoginPrompt() {
+  document.getElementById(favoriteLoginPromptId)?.remove();
+  document.removeEventListener("keydown", handleFavoriteLoginPromptKeydown);
+}
+
+function handleFavoriteLoginPromptKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") closeFavoriteLoginPrompt();
+}
+
+export function redirectToLoginForFavorite() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (hasMemberFavoriteAccess()) return;
+
+  closeFavoriteLoginPrompt();
+
+  const overlay = document.createElement("div");
+  overlay.id = favoriteLoginPromptId;
+  overlay.className = "nl-favorite-login-overlay";
+  overlay.setAttribute("role", "presentation");
+
+  const dialog = document.createElement("section");
+  dialog.className = "nl-favorite-login-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "nl-favorite-login-title");
+  dialog.setAttribute("aria-describedby", "nl-favorite-login-description");
+
+  const title = document.createElement("h2");
+  title.id = "nl-favorite-login-title";
+  title.textContent = "Cần đăng nhập để lưu yêu thích";
+
+  const description = document.createElement("p");
+  description.id = "nl-favorite-login-description";
+  description.textContent =
+    "Bạn vẫn có thể tiếp tục xem nội dung, nhưng cần đăng nhập hoặc đăng ký thành viên để tim và lưu quán hoặc Cast yêu thích.";
+
+  const actions = document.createElement("div");
+  actions.className = "nl-favorite-login-actions";
+
+  const continueButton = document.createElement("button");
+  continueButton.type = "button";
+  continueButton.className = "nl-favorite-login-secondary";
+  continueButton.textContent = "Tiếp tục";
+  continueButton.addEventListener("click", closeFavoriteLoginPrompt);
+
+  const loginLink = document.createElement("a");
+  loginLink.className = "nl-favorite-login-primary";
+  loginLink.href = favoriteLoginHref();
+  loginLink.textContent = "Đăng nhập / đăng ký";
+
+  actions.append(continueButton, loginLink);
+  dialog.append(title, description, actions);
+  overlay.append(dialog);
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeFavoriteLoginPrompt();
+  });
+
+  document.addEventListener("keydown", handleFavoriteLoginPromptKeydown);
+  document.body.append(overlay);
+  continueButton.focus();
 }
 
 export function requireMemberFavoriteAccess() {

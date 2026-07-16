@@ -139,6 +139,77 @@ body {
   font-family: var(--nl-font-sans);
 }
 
+.nl-favorite-login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.nl-favorite-login-dialog {
+  width: min(360px, 100%);
+  border: 1px solid var(--vy-border-gold-22);
+  border-radius: 16px;
+  background: var(--vy-notification-panel-bg, var(--vy-surface));
+  color: var(--vy-text);
+  box-shadow: var(--vy-shadow);
+  padding: 22px;
+  font-family: var(--nl-font-sans);
+}
+
+.nl-favorite-login-dialog h2 {
+  margin: 0;
+  color: var(--vy-text);
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.nl-favorite-login-dialog p {
+  margin: 10px 0 0;
+  color: var(--vy-text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.nl-favorite-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.nl-favorite-login-secondary,
+.nl-favorite-login-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-family: var(--nl-font-sans);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nl-favorite-login-secondary {
+  border: 1px solid var(--vy-border);
+  background: var(--vy-notification-row-bg, var(--vy-surface-2));
+  color: var(--vy-text-2);
+}
+
+.nl-favorite-login-primary {
+  border: 0;
+  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+  color: var(--vy-on-gold);
+}
+
 @theme inline {
   --font-heading: var(--nl-font-sans);
   --font-sans: var(--nl-font-sans);
