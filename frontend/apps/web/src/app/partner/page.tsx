@@ -4691,13 +4691,6 @@ export default function PartnerPage() {
             />
             {listingErrorText(`castProfiles.${index}.stageName`)}
           </FormField>
-          <FormField label="Quán trực thuộc">
-            <input
-              value={listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý'}
-              readOnly
-              style={{ ...listingInputStyle(`castProfiles.${index}.storeName`), color: colors.goldPale }}
-            />
-          </FormField>
           <FormField label="Lời chào (greeting)">
             <input
               value={cast.publicHeadline ?? ''}
