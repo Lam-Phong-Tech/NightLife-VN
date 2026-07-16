@@ -107,6 +107,60 @@ export type BookingRecord = {
   };
 };
 
+const parseTourMetadataFromNote = (booking: BookingRecord): BookingRecord["tour"] | null => {
+  const note = booking.note?.trim();
+  if (!note || !/^Tour:/i.test(note)) return null;
+
+  const title = note.match(/(?:^|\|)\s*Tour:\s*([^|]+)/i)?.[1]?.trim();
+  if (!title) return null;
+
+  const stopsText = note.match(/(?:^|\|)\s*Diem dung:\s*([^|]+)/i)?.[1]?.trim() ?? "";
+  const parsedStops = stopsText
+    .split(">")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const fallbackStoreName = booking.store?.name?.trim();
+  const storeNames = parsedStops.length ? parsedStops : fallbackStoreName ? [fallbackStoreName] : [];
+
+  return {
+    id: `note-tour-${booking.id}`,
+    title,
+    stops: storeNames.map((storeName, index) => ({
+      order: index + 1,
+      storeId: index === 0 && booking.store?.id ? booking.store.id : `tour-stop-${booking.id}-${index + 1}`,
+      storeSlug: index === 0 && booking.store?.slug ? booking.store.slug : "",
+      storeName,
+      casts: [],
+    })),
+  };
+};
+
+const normalizeBookingRecord = (booking: BookingRecord): BookingRecord => {
+  if (booking.tour) return booking;
+
+  const tour = parseTourMetadataFromNote(booking);
+  return tour ? { ...booking, tour } : booking;
+};
+
+const mergeBookingRecord = (base: BookingRecord, incoming: BookingRecord): BookingRecord => {
+  const current = normalizeBookingRecord(base);
+  const next = normalizeBookingRecord(incoming);
+
+  return {
+    ...next,
+    ...current,
+    store: current.store ?? next.store,
+    cast: current.cast ?? next.cast,
+    guest: current.guest ?? next.guest,
+    user: current.user ?? next.user,
+    coupon: current.coupon ?? next.coupon,
+    couponIssue: current.couponIssue ?? next.couponIssue,
+    qr: current.qr ?? next.qr,
+    discountSnapshot: current.discountSnapshot ?? next.discountSnapshot,
+    tour: current.tour ?? next.tour,
+  };
+};
+
 export type CreateBookingPayload = {
   storeId?: string;
   storeSlug?: string;
@@ -377,11 +431,15 @@ export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
 
   for (const source of sources) {
     for (const booking of source) {
-      if (!booking?.id || bookingsById.has(booking.id)) {
+      if (!booking?.id) {
         continue;
       }
 
-      bookingsById.set(booking.id, booking);
+      const existing = bookingsById.get(booking.id);
+      bookingsById.set(
+        booking.id,
+        existing ? mergeBookingRecord(existing, booking) : normalizeBookingRecord(booking),
+      );
     }
   }
 
@@ -447,7 +505,7 @@ export const getLastBooking = (bookingId?: string | null) => {
     return lastBooking;
   }
 
-  return null;
+  return readStoredBookings().find((booking) => booking.id === bookingId) ?? null;
 };
 
 export const getGuestBookingHistory = readStoredBookings;

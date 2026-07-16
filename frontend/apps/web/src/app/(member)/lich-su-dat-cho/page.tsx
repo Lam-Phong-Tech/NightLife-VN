@@ -21,6 +21,7 @@ import {
   bookingRecordStatusGroup,
   bookingRecordStatusLabel,
   canCancelBooking,
+  getGuestBookingHistory,
   getLastBooking,
   isBookingPastDue,
   mergeBookingHistories,
@@ -150,10 +151,29 @@ const clampBookingDate = (value?: string | null) => {
 const getTomorrowDate = () => getBookingDateAfterDays(1);
 
 
+const isTourBooking = (booking: BookingRecord) => Boolean(booking.tour);
+
 const bookingTitle = (booking: BookingRecord) => {
+  if (booking.tour) return booking.tour.title;
   const storeName = booking.store?.name ?? "NightLife";
   if (!booking.cast) return storeName;
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
+};
+
+const tourStopCountText = (booking: BookingRecord, language: LanguageCode) => {
+  const count = booking.tour?.stops.length ?? 0;
+  if (!count) return translateText("Tour", language);
+  return translateText(`${count} điểm dừng`, language);
+};
+
+const tourStopsPreview = (booking: BookingRecord, language: LanguageCode) => {
+  const stops = booking.tour?.stops ?? [];
+  if (!stops.length) return translateText("Admin đang điều phối lịch trình tour", language);
+
+  const names = stops.map((stop) => stop.storeName).filter(Boolean);
+  return names.length
+    ? `${tourStopCountText(booking, language)} · ${names.slice(0, 3).join(" > ")}`
+    : tourStopCountText(booking, language);
 };
 
 const bookingTimeValue = (value: string) => {
@@ -237,6 +257,8 @@ const validateRescheduleRequest = ({
 };
 
 const rebookHref = (booking: BookingRecord) => {
+  if (booking.tour) return tourDetailHref(booking);
+
   const params = new URLSearchParams({
     ...(booking.store?.slug ? { storeSlug: booking.store.slug } : {}),
     ...(booking.store?.name ? { storeName: booking.store.name } : {}),
@@ -248,6 +270,13 @@ const rebookHref = (booking: BookingRecord) => {
   });
 
   return `/dat-cho?${params.toString()}`;
+};
+
+const tourDetailHref = (booking: BookingRecord) => {
+  const tourId = booking.tour?.id;
+  return tourId && !tourId.startsWith("note-tour-")
+    ? `/tour/${encodeURIComponent(tourId)}`
+    : "/tour";
 };
 
 const billSubmitHref = (booking: BookingRecord) => {
@@ -264,6 +293,22 @@ const bookingConfirmHref = (booking: BookingRecord) =>
   `/xac-nhan?bookingId=${encodeURIComponent(booking.id)}`;
 
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
+  if (booking.tour) {
+    if (isBookingPastDue(booking)) {
+      return `${booking.bookingCode} · ${translateText("Đã qua giờ tour, vui lòng liên hệ Admin nếu cần điều phối lại.", language)}`;
+    }
+
+    if (group === "Hoàn tất") {
+      return translateText("Hoàn tất tour · admin đối soát theo lịch trình", language);
+    }
+
+    if (group === "Đã hủy") {
+      return translateText("Đã hủy yêu cầu tour · không thu cọc", language);
+    }
+
+    return `${booking.bookingCode} · ${translateText("Admin đang điều phối tour", language)}`;
+  }
+
   if (isBookingPastDue(booking)) {
     return `${booking.bookingCode} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
   }
@@ -358,13 +403,22 @@ export default function Page() {
             };
           };
           const memberBookings = items.map(attachCurrentMemberUser);
+          const localBookingById = new Map(
+            getGuestBookingHistory()
+              .filter((booking) => booking.id)
+              .map((booking) => [booking.id, booking] as const),
+          );
+          const enrichedMemberBookings = memberBookings.map((booking) => {
+            const localBooking = localBookingById.get(booking.id);
+            return localBooking ? mergeBookingHistories([booking], [localBooking])[0] ?? booking : booking;
+          });
           const normalizedLastBooking = lastBooking
             ? attachCurrentMemberUser(lastBooking)
             : null;
           if (alive) {
             const mergedBookings = normalizedLastBooking
-              ? mergeBookingHistories(memberBookings, [normalizedLastBooking])
-              : memberBookings;
+              ? mergeBookingHistories(enrichedMemberBookings, [normalizedLastBooking])
+              : enrichedMemberBookings;
             setMemberUserId(resolvedMemberUserId);
             setBookings(sortBookingHistories(mergedBookings, Date.now()));
           }
@@ -1073,6 +1127,7 @@ function BookingCard({
 }) {
   const group = bookingRecordStatusGroup(booking);
   const isOpenBooking = group === "Mới";
+  const tourBooking = isTourBooking(booking);
   const hasQr = isConfirmedStatus(booking.status);
   const isMemberActionBooking =
     isMember && Boolean(booking.user?.id) && (!memberUserId || booking.user?.id === memberUserId);
@@ -1080,15 +1135,17 @@ function BookingCard({
   const cancelAllowed = isOpenBooking && canCancelBooking(booking) && hasCancelIdentity;
   const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
   const canSubmitBill =
+    !tourBooking &&
     isMemberActionBooking &&
     group === "Hoàn tất" &&
     !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());
+  const canReschedule = !tourBooking && cancelAllowed;
   const itemClass =
     group === "Mới"
-      ? `${styles.historyItem} ${styles.historyItemOpen}`
+      ? `${styles.historyItem} ${styles.historyItemOpen} ${tourBooking ? styles.historyItemTour : ""}`
       : group === "Đã hủy"
-        ? `${styles.historyItem} ${styles.historyItemMuted}`
-        : styles.historyItem;
+        ? `${styles.historyItem} ${styles.historyItemMuted} ${tourBooking ? styles.historyItemTour : ""}`
+        : `${styles.historyItem} ${tourBooking ? styles.historyItemTour : ""}`;
 
   return (
     <article className={itemClass}>
@@ -1113,9 +1170,13 @@ function BookingCard({
             ) : null}
           </div>
           <div className={styles.historyMeta}>
+            {tourBooking ? <span className={styles.historyTypePill}>Tour</span> : null}
             {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
             {formatGuestCount(booking.partySize, activeLanguage)}
           </div>
+          {tourBooking ? (
+            <div className={styles.historyTourMeta}>{tourStopsPreview(booking, activeLanguage)}</div>
+          ) : null}
           <div
             className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}
           >
@@ -1131,7 +1192,25 @@ function BookingCard({
               <MessageCircle size={14} />
               Chat Admin
             </button>
-            {cancelAllowed ? (
+            {tourBooking ? (
+              <>
+                <Link
+                  href={bookingConfirmHref(booking)}
+                  onClick={() => rememberLastBooking(booking)}
+                  className={styles.ghostCta}
+                >
+                  <MessageCircle size={14} />
+                  Xem yêu cầu
+                </Link>
+                <Link
+                  href={tourDetailHref(booking)}
+                  onClick={() => rememberLastBooking(booking)}
+                  className={styles.ghostCta}
+                >
+                  Chi tiết tour
+                </Link>
+              </>
+            ) : canReschedule ? (
               <button
                 type="button"
                 onClick={() => onReschedule(booking)}
@@ -1141,7 +1220,7 @@ function BookingCard({
                 Đổi lịch
               </button>
             ) : null}
-            {hasQr ? (
+            {!tourBooking && hasQr ? (
               <Link
                 href={bookingConfirmHref(booking)}
                 onClick={() => rememberLastBooking(booking)}
@@ -1150,7 +1229,7 @@ function BookingCard({
                 <QrCode size={14} />
                 Xem QR
               </Link>
-            ) : !cancelAllowed ? (
+            ) : !tourBooking && !cancelAllowed ? (
               <Link
                 href={bookingConfirmHref(booking)}
                 onClick={() => rememberLastBooking(booking)}
@@ -1165,19 +1244,45 @@ function BookingCard({
                 type="button"
                 onClick={() => onCancel(booking)}
                 disabled={cancelDisabled}
-                title={cancelAllowed ? "Hủy đặt chỗ" : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"}
+                title={
+                  cancelAllowed
+                    ? tourBooking
+                      ? "Hủy tour"
+                      : "Hủy đặt chỗ"
+                    : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"
+                }
                 className={`${styles.dangerCta} ${cancelDisabled ? styles.disabledCta : ""}`}
               >
                 <XCircle size={14} />
                 {cancelingId === booking.id
                   ? "Đang hủy"
                   : cancelAllowed
-                    ? "Hủy đặt chỗ"
+                    ? tourBooking
+                      ? "Hủy tour"
+                      : "Hủy đặt chỗ"
                     : "Quá giờ"}
               </button>
             ) : null}
           </>
         ) : group === "Hoàn tất" ? (
+          tourBooking ? (
+            <>
+              <Link
+                href={bookingConfirmHref(booking)}
+                onClick={() => rememberLastBooking(booking)}
+                className={styles.primaryCta}
+              >
+                <strong>Xem yêu cầu tour</strong>
+              </Link>
+              <Link
+                href={tourDetailHref(booking)}
+                onClick={() => rememberLastBooking(booking)}
+                className={styles.secondaryCta}
+              >
+                <strong>Chi tiết tour</strong>
+              </Link>
+            </>
+          ) : (
           <>
             {canSubmitBill ? (
               <Link
@@ -1193,12 +1298,13 @@ function BookingCard({
               <strong>{translateText("Đặt lại", activeLanguage)}</strong>
             </Link>
           </>
+          )
         ) : (
           <>
             <StatusBadge booking={booking} activeLanguage={activeLanguage} />
             <Link href={rebookHref(booking)} className={styles.secondaryCta}>
               <RotateCcw size={14} />
-              {translateText("Đặt lại", activeLanguage)}
+              {tourBooking ? "Chi tiết tour" : translateText("Đặt lại", activeLanguage)}
             </Link>
           </>
         )}

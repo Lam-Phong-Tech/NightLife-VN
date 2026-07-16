@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bookingRecordStatusGroup,
   bookingRecordStatusLabel,
+  mergeBookingHistories,
   sortBookingHistories,
   type BookingRecord,
 } from "../src/lib/api/bookings";
@@ -12,7 +13,10 @@ const baseBooking = (overrides: Partial<BookingRecord>): BookingRecord => ({
   status: overrides.status ?? "REQUESTED",
   scheduledAt: overrides.scheduledAt ?? "2026-07-09T14:00:00.000Z",
   partySize: overrides.partySize ?? 4,
+  note: overrides.note,
   createdAt: overrides.createdAt,
+  store: overrides.store,
+  tour: overrides.tour,
 });
 
 describe("booking history status helpers", () => {
@@ -102,5 +106,60 @@ describe("booking history status helpers", () => {
         nowMs,
       ).map((booking) => booking.id),
     ).toEqual(["active", "completed", "overdue", "cancelled"]);
+  });
+
+  it("keeps tour metadata when API booking data is merged with the local tour overlay", () => {
+    const apiBooking = baseBooking({
+      id: "tour-booking",
+      bookingCode: "BK-TOUR1",
+      store: {
+        id: "tokyo-kitchen",
+        name: "Tokyo Kitchen",
+        slug: "tokyo-kitchen",
+        media: [],
+      },
+    });
+    const localTourBooking = baseBooking({
+      ...apiBooking,
+      tour: {
+        id: "tour-1",
+        title: "Busy Night Tour",
+        stops: [
+          {
+            order: 1,
+            storeId: "tokyo-kitchen",
+            storeSlug: "tokyo-kitchen",
+            storeName: "Tokyo Kitchen",
+            casts: [],
+          },
+        ],
+      },
+    });
+
+    expect(mergeBookingHistories([apiBooking], [localTourBooking])[0]?.tour?.title).toBe(
+      "Busy Night Tour",
+    );
+  });
+
+  it("recognizes API tour bookings from the booking note when structured tour metadata is absent", () => {
+    const apiBooking = baseBooking({
+      id: "tour-note-booking",
+      bookingCode: "BK-TOUR2",
+      note: "Tour: Hanoi Night Tour | Diem dung: Tokyo Kitchen > Crimson Bar | Cast theo quan: 1. Tokyo Kitchen: Aoi",
+      store: {
+        id: "tokyo-kitchen",
+        name: "Tokyo Kitchen",
+        slug: "tokyo-kitchen",
+        media: [],
+      },
+    });
+
+    const [booking] = mergeBookingHistories([apiBooking]);
+
+    expect(booking?.tour?.title).toBe("Hanoi Night Tour");
+    expect(booking?.tour?.stops.map((stop) => stop.storeName)).toEqual([
+      "Tokyo Kitchen",
+      "Crimson Bar",
+    ]);
   });
 });

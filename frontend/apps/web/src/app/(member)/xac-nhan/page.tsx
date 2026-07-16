@@ -181,19 +181,21 @@ export default function Page() {
 
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
-  const canShowQr = booking ? !isCancelled : false;
-  const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
+  const canShowQr = booking ? !isCancelled && !isTourBooking : false;
+  const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
   const guestEmailLabel =
     booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
-  const guestConfirmationMessage = `${translateText(
-    "Thông tin đặt chỗ và mã QR đã được gửi về",
-    activeLanguage,
-  )} ${guestEmailLabel}. ${translateText("Vui lòng kiểm tra email trước khi tới quán.", activeLanguage)}`;
+  const guestConfirmationMessage = isTourBooking
+    ? `${translateText("Thông tin đặt tour đã được gửi về", activeLanguage)} ${guestEmailLabel}. ${translateText("Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.", activeLanguage)}`
+    : `${translateText(
+        "Thông tin đặt chỗ và mã QR đã được gửi về",
+        activeLanguage,
+      )} ${guestEmailLabel}. ${translateText("Vui lòng kiểm tra email trước khi tới quán.", activeLanguage)}`;
   const heroTitle = translateText(
     !booking
       ? "Chưa tìm thấy booking"
@@ -214,7 +216,9 @@ export default function Page() {
       : isCancelled
         ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
         : isConfirmed
-          ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
+          ? isTourBooking
+            ? "Admin đã xác nhận yêu cầu tour. Lịch trình sẽ được điều phối theo từng điểm dừng."
+            : "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
           : isTourBooking
             ? "Yêu cầu đặt tour đã gửi thành công. Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình."
             : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.",
@@ -226,8 +230,12 @@ export default function Page() {
       : isCancelled
         ? "Đã hủy"
         : isConfirmed
-          ? "Đã xác nhận · QR đã cấp"
-          : "Mới · QR đã cấp",
+          ? isTourBooking
+            ? "Đã xác nhận tour"
+            : "Đã xác nhận · QR đã cấp"
+          : isTourBooking
+            ? "Mới · chờ điều phối tour"
+            : "Mới · QR đã cấp",
     activeLanguage,
   );
 
@@ -283,14 +291,17 @@ export default function Page() {
           {booking ? (
             <section
               className={styles.summaryCard}
-              aria-label={translateText("Tóm tắt đặt chỗ", activeLanguage)}
+              aria-label={translateText(isTourBooking ? "Tóm tắt đặt tour" : "Tóm tắt đặt chỗ", activeLanguage)}
             >
               <SummaryRow
-                label={translateText("Mã đặt chỗ", activeLanguage)}
+                label={translateText(isTourBooking ? "Mã đặt tour" : "Mã đặt chỗ", activeLanguage)}
                 value={<span className={styles.bookingCode}>{booking.bookingCode}</span>}
               />
               {booking.tour ? (
-                <TourVenueSummary booking={booking} language={activeLanguage} />
+                <>
+                  <SummaryRow label={translateText("Tour", activeLanguage)} value={title} />
+                  <TourVenueSummary booking={booking} language={activeLanguage} />
+                </>
               ) : (
                 <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
               )}
@@ -362,7 +373,9 @@ export default function Page() {
             <Clock3 size={15} />
             <span>
               {translateText(
-                canShowQr
+                isTourBooking
+                  ? "Tour sẽ được admin điều phối theo từng điểm dừng. Nếu cần đổi lịch trình, hãy chat Admin hoặc hủy yêu cầu tour cũ trước giờ hẹn."
+                  : canShowQr
                   ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
                   : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
                 activeLanguage,
@@ -378,7 +391,7 @@ export default function Page() {
               </div>
             ) : (
               <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
-                <strong>{translateText("Xem đặt chỗ của tôi", activeLanguage)}</strong>
+                <strong>{translateText(isTourBooking ? "Xem đơn tour của tôi" : "Xem đặt chỗ của tôi", activeLanguage)}</strong>
               </Link>
             )}
           </div>
@@ -410,7 +423,7 @@ function TourVenueSummary({
     return (
       <div className={styles.tourVenueSection}>
         <div className={styles.tourVenueHeader}>
-          <span>{translateText("Quán", language)}</span>
+          <span>{translateText("Lịch trình tour", language)}</span>
         </div>
         <strong className={styles.tourVenueFallback}>{bookingTitle(booking)}</strong>
       </div>
@@ -420,7 +433,7 @@ function TourVenueSummary({
   return (
     <div className={styles.tourVenueSection}>
       <div className={styles.tourVenueHeader}>
-        <span>{translateText("Quán", language)}</span>
+        <span>{translateText("Lịch trình tour", language)}</span>
         <strong>{translateText(`${stops.length} điểm dừng`, language)}</strong>
       </div>
       <div className={styles.tourVenueSummary}>

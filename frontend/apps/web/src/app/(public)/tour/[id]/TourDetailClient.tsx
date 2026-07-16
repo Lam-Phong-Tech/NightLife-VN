@@ -689,7 +689,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
           stops: tourBookingSummary(tour, selectedCasts),
         },
       };
-      rememberLastBooking(tourBooking, savedAsMemberBooking ? undefined : { guestHistory: true });
+      rememberLastBooking(tourBooking, { history: true });
       if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }

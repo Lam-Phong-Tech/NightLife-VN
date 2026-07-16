@@ -1382,6 +1382,13 @@
   border-color: rgba(212, 178, 106, 0.28);
 }
 
+.historyItemTour {
+  border-color: rgba(212, 178, 106, 0.36);
+  background:
+    linear-gradient(135deg, rgba(212, 178, 106, 0.08), transparent 38%),
+    var(--vy-surface-1);
+}
+
 .historyItemMuted {
   opacity: 0.92;
 }
@@ -1443,6 +1450,30 @@
 
 .historyMeta {
   margin-top: 4px;
+}
+
+.historyTypePill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-right: 6px;
+  border: 1px solid rgba(212, 178, 106, 0.36);
+  border-radius: 999px;
+  background: rgba(212, 178, 106, 0.14);
+  color: #f0dda8;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.historyTourMeta {
+  margin-top: 3px;
+  color: #d8c28d;
+  font-size: 11.5px;
+  font-weight: 720;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .historySubMeta {
