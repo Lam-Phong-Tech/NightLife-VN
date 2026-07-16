@@ -5076,15 +5076,7 @@ export default function PartnerPage() {
               />
               {listingErrorText('storeCategory')}
             </FormField>
-            <FormField label="Khu vực hiển thị">
-              <input
-                value={listingDraft.area}
-                onChange={(event) => updateListingField('area', event.target.value)}
-                placeholder="VD: Quận 1, TP.HCM"
-                style={listingInputStyle('area')}
-              />
-              {listingErrorText('area')}
-            </FormField>
+
           </div>
         </section>
 
@@ -5316,15 +5308,7 @@ export default function PartnerPage() {
               />
               {listingErrorText('description')}
             </FormField>
-            <FormField label="Ghi chú gửi Admin" className="partner-field-wide">
-              <textarea
-                value={listingDraft.note}
-                onChange={(event) => updateListingField('note', event.target.value)}
-                placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
-                style={listingInputStyle('note', { minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 })}
-              />
-              {listingErrorText('note')}
-            </FormField>
+
           </div>
         </section>
 
