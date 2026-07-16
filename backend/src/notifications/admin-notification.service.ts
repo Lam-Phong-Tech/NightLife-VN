@@ -649,7 +649,13 @@ export class AdminNotificationService {
       return 'Guest';
     }
 
-    return input.user.tier === 'VIP' ? 'VIP' : 'Member';
+    if (input.user.tier === 'VIP' || input.user.tier === 'PREMIUM') {
+      return 'VIP';
+    }
+    if (input.user.tier === 'MEMBER') {
+      return 'Member';
+    }
+    return 'Guest';
   }
 
   private bookingDiscountLabel(input: {

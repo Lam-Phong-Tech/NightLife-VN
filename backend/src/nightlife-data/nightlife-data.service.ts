@@ -10251,9 +10251,9 @@ export class NightlifeDataService {
       let defaultCode = 'GUEST5';
       const userTier = input.user?.tier;
       if (userTier) {
-        if (userTier === 'VIP') {
+        if (userTier === 'VIP' || userTier === 'PREMIUM') {
           defaultCode = 'VIP10';
-        } else if (userTier === 'MEMBER' || userTier === 'PREMIUM' || userTier === 'FREE') {
+        } else if (userTier === 'MEMBER') {
           defaultCode = 'MEMBER8';
         } else {
           defaultCode = 'GUEST5';
@@ -17528,7 +17528,13 @@ export class NightlifeDataService {
   }
 
   private resolveCouponUserType(user: AuthenticatedUser): CouponUserType {
-    return user.tier === 'VIP' ? 'VIP' : 'MEMBER';
+    if (user.tier === 'VIP' || user.tier === 'PREMIUM') {
+      return 'VIP';
+    }
+    if (user.tier === 'MEMBER') {
+      return 'MEMBER';
+    }
+    return 'GUEST';
   }
 
   private buildCouponDiscountRuleSnapshot(
