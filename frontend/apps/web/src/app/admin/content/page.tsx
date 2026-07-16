@@ -1351,6 +1351,50 @@ export default function AdminContentPage() {
       {/* RECOMMEND HOME CONTENT */}
       {activeTab === 'recommend' && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input 
+                id="recommend-search-input" 
+                value={searchRecommendQuery} 
+                onChange={e => setSearchRecommendQuery(e.target.value)} 
+                placeholder="Tìm quán hoạt động để ghim đề xuất tối nay…" 
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+              {isSearchingRecommend ? (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Đang tìm...</div>
+              ) : searchRecommendItems.map(store => (
+                <div key={store.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                  <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                    {store.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={resolveClientUrl(store.image as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : null}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
+                  </div>
+                  {recommendItems.find(r => r.targetId === store.id) ? (
+                    <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã ghim</span>
+                  ) : (
+                    <span 
+                      onClick={() => handleAddRecommend(store)} 
+                      style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}
+                    >
+                      + Ghim đề xuất
+                    </span>
+                  )}
+                </div>
+              ))}
+              {searchRecommendQuery.trim() !== '' && searchRecommendItems.length === 0 && !isSearchingRecommend && (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Không tìm thấy quán nào phù hợp</div>
+              )}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
             <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
@@ -1409,50 +1453,6 @@ export default function AdminContentPage() {
             {isLoadingRecommend && (
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>
             )}
-          </div>
-
-          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              <input 
-                id="recommend-search-input" 
-                value={searchRecommendQuery} 
-                onChange={e => setSearchRecommendQuery(e.target.value)} 
-                placeholder="Tìm quán hoạt động để ghim đề xuất tối nay…" 
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
-              {isSearchingRecommend ? (
-                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Đang tìm...</div>
-              ) : searchRecommendItems.map(store => (
-                <div key={store.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                  <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
-                    {store.image ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={resolveClientUrl(store.image as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : null}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
-                  </div>
-                  {recommendItems.find(r => r.targetId === store.id) ? (
-                    <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã ghim</span>
-                  ) : (
-                    <span 
-                      onClick={() => handleAddRecommend(store)} 
-                      style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}
-                    >
-                      + Ghim đề xuất
-                    </span>
-                  )}
-                </div>
-              ))}
-              {searchRecommendQuery.trim() !== '' && searchRecommendItems.length === 0 && !isSearchingRecommend && (
-                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Không tìm thấy quán nào phù hợp</div>
-              )}
-            </div>
           </div>
         </div>
       )}

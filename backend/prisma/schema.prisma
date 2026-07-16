@@ -236,6 +236,7 @@ enum ContentType {
   BANNER
   POLICY
   FAQ
+  VIDEO
 }
 
 enum NotificationChannel {
