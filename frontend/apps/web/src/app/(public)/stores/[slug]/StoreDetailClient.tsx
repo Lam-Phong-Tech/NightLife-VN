@@ -1192,7 +1192,13 @@ function StoreBookingCastAvatar({
       }}
       aria-hidden="true"
     >
-      {option.slug ? option.thumbnailUrl ? null : initial : <UserRound size={15} />}
+      {option.slug ? (
+        option.thumbnailUrl ? null : initial
+      ) : (
+        <span className="booking-cast-empty-icon">
+          <UserRound size={18} strokeWidth={2.1} />
+        </span>
+      )}
     </span>
   );
 }
@@ -3105,6 +3111,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-gold-hi);
           display: inline-grid;
           place-items: center;
+          position: relative;
           overflow: hidden;
           font-size: 12px;
           font-weight: 950;
@@ -3113,12 +3120,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background-size: cover;
         }
 
-        .booking-cast-avatar svg {
+        .booking-cast-empty-icon {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          line-height: 0;
+        }
+
+        .booking-cast-empty-icon svg {
           display: block;
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
           margin: 0;
-          transform: none;
+          transform: translateY(1px);
         }
 
         .booking-cast-avatar.has-image {
