@@ -55,20 +55,33 @@ const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
 const sanitizeGuestCountDraftInput = (value: string) => value.replace(/\D/g, "");
 
 const bookingAutofillBlockProps = {
-  autoComplete: "new-password",
+  autoComplete: "one-time-code",
+  "aria-autocomplete": "none",
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  "data-1p-ignore": "true",
+  "data-bwignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+  spellCheck: false,
+} as const;
+
+const bookingNoteAutofillBlockProps = {
+  autoComplete: "one-time-code",
   "aria-autocomplete": "none",
   "data-1p-ignore": "true",
   "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
+  spellCheck: false,
 } as const;
 
-const bookingNoteAutofillBlockProps = {
-  autoComplete: "off",
-  "aria-autocomplete": "none",
-  "data-1p-ignore": "true",
-  "data-form-type": "other",
-  "data-lpignore": "true",
+const bookingFieldNames = {
+  guestCount: "nlbf-dc-f3",
+  guestEmail: "nlbf-dc-f2",
+  guestName: "nlbf-dc-f1",
+  note: "nlbf-dc-f4",
+  selectedCast: "nlbf-dc-f5",
 } as const;
 
 type BookingContext = {
@@ -752,6 +765,7 @@ export default function Page() {
                 placeholder="Vui lòng nhập họ tên"
                 icon={<UserRound size={16} />}
                 error={visibleFieldErrors.guestName}
+                name={bookingFieldNames.guestName}
                 activeLanguage={activeLanguage}
               />
 
@@ -760,6 +774,7 @@ export default function Page() {
                 onChange={setEmail}
                 onTouched={() => markFieldTouched("email")}
                 error={visibleFieldErrors.email}
+                name={bookingFieldNames.guestEmail}
                 activeLanguage={activeLanguage}
               />
 
@@ -787,7 +802,7 @@ export default function Page() {
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
-                          name="nl-booking-guests"
+                          name={bookingFieldNames.guestCount}
                           value={guestInput}
                           style={{ width: `${Math.max(1, guestInput.length)}ch` }}
                           onBlur={() => {
@@ -862,7 +877,7 @@ export default function Page() {
                 </span>
                 <textarea
                   {...bookingNoteAutofillBlockProps}
-                  name="nl-booking-cast-note"
+                  name={bookingFieldNames.note}
                   value={note}
                   onBlur={() => markFieldTouched("note")}
                   onChange={(event) => {
@@ -1080,7 +1095,7 @@ function CastSelectField({
         <select
           aria-hidden="true"
           tabIndex={-1}
-          name="nl-booking-selected-cast"
+          name={bookingFieldNames.selectedCast}
           value={value}
           autoComplete="off"
           className={styles.selectInput}
@@ -1100,6 +1115,7 @@ function CastSelectField({
 
 function TextField({
   label,
+  name,
   value,
   onChange,
   onTouched,
@@ -1109,6 +1125,7 @@ function TextField({
   activeLanguage,
 }: {
   label: string;
+  name: string;
   value: string;
   onChange: (value: string) => void;
   onTouched: () => void;
@@ -1125,7 +1142,7 @@ function TextField({
         <input
           type="text"
           {...bookingAutofillBlockProps}
-          name="nl-booking-cast-display"
+          name={name}
           value={value}
           placeholder={placeholder}
           onBlur={onTouched}
@@ -1142,12 +1159,14 @@ function TextField({
 }
 
 function EmailField({
+  name,
   value,
   onChange,
   onTouched,
   error,
   activeLanguage,
 }: {
+  name: string;
   value: string;
   onChange: (value: string) => void;
   onTouched: () => void;
@@ -1162,7 +1181,7 @@ function EmailField({
         <input
           type="text"
           {...bookingAutofillBlockProps}
-          name="nl-booking-cast-mailbox"
+          name={name}
           value={value}
           placeholder="Vui lòng nhập email"
           onBlur={onTouched}

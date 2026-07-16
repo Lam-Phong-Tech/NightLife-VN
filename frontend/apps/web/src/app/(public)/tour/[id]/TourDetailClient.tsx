@@ -57,12 +57,22 @@ import styles from "./TourDetailClient.module.css";
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
 
 const bookingAutofillBlockProps = {
-  autoComplete: "new-password",
+  autoComplete: "one-time-code",
   "aria-autocomplete": "none",
+  autoCapitalize: "none",
+  autoCorrect: "off",
   "data-1p-ignore": "true",
   "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
+  spellCheck: false,
+} as const;
+
+const tourBookingFieldNames = {
+  guestCount: "nlbf-tour-f3",
+  guestEmail: "nlbf-tour-f2",
+  guestName: "nlbf-tour-f1",
+  note: "nlbf-tour-f4",
 } as const;
 
 const categoryLabels: Record<string, string> = {
@@ -815,6 +825,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
             >
               <TextField
                 label={tx("nameLabel")}
+                name={tourBookingFieldNames.guestName}
                 value={guestName}
                 placeholder={tx("namePlaceholder")}
                 icon={<UserRound size={16} />}
@@ -825,6 +836,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
               <TextField
                 label="Email"
+                name={tourBookingFieldNames.guestEmail}
                 value={email}
                 placeholder={tx("emailPlaceholder")}
                 icon={<Mail size={16} />}
@@ -878,6 +890,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     className={`${styles.input} ${styles.guestInput}`}
                     type="text"
                     inputMode="numeric"
+                    name={tourBookingFieldNames.guestCount}
                     value={String(guests)}
                     onBlur={() => markFieldTouched("guestCount")}
                     onChange={(event) => {
@@ -907,8 +920,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <div className={styles.field}>
                 <span className={styles.label}>{tx("optionalNote")}</span>
                 <textarea
-                  autoComplete="off"
+                  {...bookingAutofillBlockProps}
                   className={styles.textarea}
+                  name={tourBookingFieldNames.note}
                   value={note}
                   onBlur={() => markFieldTouched("note")}
                   onChange={(event) => {
@@ -960,6 +974,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
 function TextField({
   label,
+  name,
   value,
   placeholder,
   icon,
@@ -968,6 +983,7 @@ function TextField({
   onTouched,
 }: {
   label: string;
+  name: string;
   value: string;
   placeholder: string;
   icon: ReactNode;
@@ -996,6 +1012,7 @@ function TextField({
         <input
           {...bookingAutofillBlockProps}
           className={styles.input}
+          name={name}
           value={value}
           onBlur={onTouched}
           onChange={(event) => onChange(event.target.value)}

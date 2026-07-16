@@ -133,7 +133,8 @@ const nationalityLabels: Record<string, string> = {
 const { bookingDateWindowDays, maxGuests: maxBookingGuests } = bookingValidationLimits;
 
 const bookingFormAutofillBlockProps = {
-  autoComplete: "off",
+  autoComplete: "one-time-code",
+  "aria-autocomplete": "none",
   "data-1p-ignore": "true",
   "data-bwignore": "true",
   "data-form-type": "other",
@@ -141,20 +142,32 @@ const bookingFormAutofillBlockProps = {
 } as const;
 
 const bookingInputAutofillBlockProps = {
-  autoComplete: "new-password",
+  autoComplete: "one-time-code",
+  "aria-autocomplete": "none",
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  "data-1p-ignore": "true",
+  "data-bwignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+  spellCheck: false,
+} as const;
+
+const bookingNoteAutofillBlockProps = {
+  autoComplete: "one-time-code",
   "aria-autocomplete": "none",
   "data-1p-ignore": "true",
   "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
+  spellCheck: false,
 } as const;
 
-const bookingNoteAutofillBlockProps = {
-  autoComplete: "off",
-  "aria-autocomplete": "none",
-  "data-1p-ignore": "true",
-  "data-form-type": "other",
-  "data-lpignore": "true",
+const storeBookingFieldNames = {
+  guestCount: "nlbf-sd-f3",
+  guestEmail: "nlbf-sd-f2",
+  guestName: "nlbf-sd-f1",
+  note: "nlbf-sd-f4",
 } as const;
 
 const emptyMediaBackground =
@@ -829,7 +842,7 @@ function BookingCard({
               <span>{translateText("Họ tên", activeLanguage)}</span>
               <input
                 {...bookingInputAutofillBlockProps}
-                name="nl-booking-store-display"
+                name={storeBookingFieldNames.guestName}
                 value={guestName}
                 onBlur={() => onFieldTouched("guestName")}
                 onChange={(event) => {
@@ -851,7 +864,7 @@ function BookingCard({
               <input
                 {...bookingInputAutofillBlockProps}
                 type="text"
-                name="nl-booking-store-mailbox"
+                name={storeBookingFieldNames.guestEmail}
                 value={email}
                 onBlur={() => onFieldTouched("email")}
                 onChange={(event) => {
@@ -891,7 +904,7 @@ function BookingCard({
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    name="nl-booking-store-guests"
+                    name={storeBookingFieldNames.guestCount}
                     value={String(guestCount)}
                     style={{ width: `${String(guestCount).length}ch` }}
                     onBlur={() => onFieldTouched("guestCount")}
@@ -953,7 +966,7 @@ function BookingCard({
         <textarea
           {...bookingNoteAutofillBlockProps}
           className="booking-note-box"
-          name="nl-booking-store-note"
+          name={storeBookingFieldNames.note}
           value={note}
           onBlur={() => onFieldTouched("note")}
           onChange={(event) => {
