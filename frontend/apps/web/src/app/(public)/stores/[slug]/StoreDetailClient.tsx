@@ -3582,12 +3582,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-error {
           margin-top: 8px;
-          padding: 8px 10px;
+          padding: 10px 12px;
           border: 1px solid rgba(248, 113, 113, .3);
           border-radius: 8px;
           background: rgba(127, 29, 29, .16);
           color: #fecaca;
-          font-size: 12px;
+          font-size: 13px;
+          font-weight: 850;
           line-height: 1.45;
         }
 
@@ -3609,17 +3610,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           visibility: hidden;
         }
 
-        :global(html.vy-light) .booking-error {
-          border-color: rgba(172, 32, 55, .5);
-          background: #fff1f2;
-          color: #7f1025;
-          box-shadow: 0 10px 22px rgba(127, 16, 37, .12);
-          font-size: 13px;
-          font-weight: 850;
+        html.vy-light .store-detail-page .booking-error {
+          border-color: rgba(190, 18, 60, .52);
+          background: linear-gradient(180deg, #fff1f2, #ffe4e9);
+          color: #8f1230;
+          box-shadow: 0 12px 26px rgba(143, 18, 48, .14);
         }
 
-        :global(html.vy-light) .booking-field-error,
-        :global(html.vy-light) .booking-card .nl-booking-field-error {
+        html.vy-light .store-detail-page .booking-field-error,
+        html.vy-light .store-detail-page .booking-card .nl-booking-field-error {
           color: #b01632;
         }
 

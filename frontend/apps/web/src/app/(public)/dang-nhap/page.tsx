@@ -949,11 +949,15 @@ export default function Page() {
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
+            max-width: 100vw;
           }
 
           .nl-login-page .nl-login-shell {
             display: block !important;
             min-height: 100vh !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
           }
 
           .nl-login-page .nl-login-visual {
@@ -971,12 +975,24 @@ export default function Page() {
 
           .nl-login-page .nl-login-form-section {
             min-height: auto !important;
-            padding: 20px clamp(16px, 5vw, 22px) 28px !important;
+            width: 100% !important;
+            padding: 20px max(20px, env(safe-area-inset-right)) 30px max(20px, env(safe-area-inset-left)) !important;
             align-items: flex-start !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+          }
+
+          .nl-login-page .nl-login-form-section > div {
+            width: 100% !important;
+            max-width: 430px !important;
+            min-width: 0 !important;
+            margin-inline: auto !important;
           }
 
           .nl-login-page .nl-login-card {
             width: 100% !important;
+            min-width: 0 !important;
             padding: clamp(18px, 5vw, 24px) !important;
             border-radius: 16px !important;
             background: rgba(255, 255, 255, 0.055) !important;
@@ -1011,8 +1027,8 @@ export default function Page() {
           }
 
           .nl-login-page .nl-login-form-section {
-            padding-left: 14px !important;
-            padding-right: 14px !important;
+            padding-left: max(18px, env(safe-area-inset-left)) !important;
+            padding-right: max(18px, env(safe-area-inset-right)) !important;
           }
 
           .nl-login-page .nl-login-card {
