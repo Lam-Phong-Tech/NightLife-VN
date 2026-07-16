@@ -1500,7 +1500,6 @@ export default function PartnerPage() {
   const [staffDisplayName, setStaffDisplayName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
-  const [staffStoreId, setStaffStoreId] = useState('');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [staffPermissions, setStaffPermissions] = useState<string[]>(['coupon.scan', 'checkin.confirm']);
   const [settingsStoreId, setSettingsStoreId] = useState('');
@@ -1582,7 +1581,7 @@ export default function PartnerPage() {
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staffDisplayName || !staffEmail || !staffPassword || !staffStoreId) {
+    if (!staffDisplayName || !staffEmail || !staffPassword || !settingsStoreId) {
       feedback.showToast({
         tone: 'error',
         title: 'Lỗi nhập liệu',
@@ -1604,7 +1603,7 @@ export default function PartnerPage() {
       await apiClient('/partner/staff', {
         method: 'POST',
         data: {
-          storeId: staffStoreId,
+          storeId: settingsStoreId,
           email: staffEmail,
           password: staffPassword,
           displayName: staffDisplayName,
@@ -1620,9 +1619,7 @@ export default function PartnerPage() {
       setStaffEmail('');
       setStaffPassword('');
       setStaffPermissions(['coupon.scan', 'checkin.confirm']);
-      if (staffStoreId === settingsStoreId) {
-        fetchStaffList(settingsStoreId);
-      }
+      fetchStaffList(settingsStoreId);
     } catch (err: any) {
       feedback.showToast({
         tone: 'error',
@@ -2065,7 +2062,6 @@ export default function PartnerPage() {
         setListingStoreId((current) => current || storeData[0]?.id || '');
         setBillStoreId((current) => current || storeData[0]?.id || '');
         setSettingsStoreId((current) => current || storeData[0]?.id || '');
-        setStaffStoreId((current) => current || storeData[0]?.id || '');
         setStatusMessage(
           storeData.length
             ? 'Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.'
@@ -6238,6 +6234,7 @@ export default function PartnerPage() {
                     onChange={(e) => setStaffEmail(e.target.value)}
                     style={inputStyle}
                     placeholder="staff@example.com"
+                    autoComplete="new-password"
                   />
                 </FormField>
                 <FormField label="Mật khẩu (tối thiểu 8 ký tự)">
@@ -6247,14 +6244,7 @@ export default function PartnerPage() {
                     onChange={(e) => setStaffPassword(e.target.value)}
                     style={inputStyle}
                     placeholder="Nhập mật khẩu"
-                  />
-                </FormField>
-                <FormField label="Cửa hàng quản lý">
-                  <ThemedListingSelect
-                    value={staffStoreId}
-                    onChange={setStaffStoreId}
-                    placeholder="Chọn cửa hàng"
-                    options={stores.map((s) => ({ value: s.id, label: s.name }))}
+                    autoComplete="new-password"
                   />
                 </FormField>
                 <FormField label="Quyền hạn">
