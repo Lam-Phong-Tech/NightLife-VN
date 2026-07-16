@@ -265,6 +265,7 @@ type PartnerListingDraftResponse = {
   publishedAt: string | null;
   review: PartnerListingReview;
   draft: PartnerListingDraft;
+  live?: PartnerListingDraft | null;
 };
 
 type StorageUploadResponse = {
@@ -318,6 +319,7 @@ type PartnerBill = {
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
+  rejectReason?: string | null;
 };
 
 type DiscountRuleSnapshot = {
@@ -1551,7 +1553,10 @@ export default function PartnerPage() {
   );
   const [listingTab, setListingTab] = useState<ListingTabKey>('store');
   const [listingStoreId, setListingStoreId] = useState('');
-  const [listingDraft, setListingDraft] = useState<PartnerListingDraft>(emptyListingDraft);
+  const [isViewingLive, setIsViewingLive] = useState<boolean>(false);
+  const [liveData, setLiveData] = useState<PartnerListingDraft | null>(null);
+  const [draftState, setListingDraft] = useState<PartnerListingDraft>(emptyListingDraft);
+  const listingDraft = isViewingLive && liveData ? liveData : draftState;
   const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
   const [listingContentId, setListingContentId] = useState<string | null>(null);
   const [, setListingNotice] = useState('');
@@ -2765,54 +2770,59 @@ export default function PartnerPage() {
   };
 
   const applyListingDraftResponse = useCallback((response: PartnerListingDraftResponse) => {
-    const draft = response.draft;
+    const parseDraft = (d: any): PartnerListingDraft => {
+      if (!d) return emptyListingDraft;
+      return {
+        ...emptyListingDraft,
+        ...d,
+        storeName: safeListingText(d.storeName),
+        businessType: safeListingText(d.businessType),
+        storeCategory: safeListingText(d.storeCategory),
+        area: safeListingText(d.area),
+        storeCity: safeListingText(d.storeCity),
+        storeDistrict: safeListingText(d.storeDistrict),
+        ward: safeListingText(d.ward || d.wardName),
+        wardName: safeListingText(d.wardName),
+        streetAddress: safeListingText(d.streetAddress),
+        phone: safeListingText(d.phone),
+        mapUrl: safeListingText(d.mapUrl),
+        openingHours: safeListingText(d.openingHours),
+        priceRange: safeListingText(d.priceRange),
+        menuSummary: safeListingText(d.menuSummary),
+        coverImageUrl: safeListingText(d.coverImageUrl),
+        description: cleanListingText(d.description),
+        note: safeListingText(d.note),
+        openingHourItems: d.openingHourItems?.length
+          ? d.openingHourItems
+          : defaultListingOpeningHours(),
+        tags: normalizeListingTextList(d.tags),
+        menuGroups: d.menuGroups ?? [],
+        galleryUrls: normalizeListingUrlList(d.galleryUrls),
+        videoUrls: normalizeListingUrlList(d.videoUrls),
+        pricingItems: d.pricingItems ?? [],
+        castProfiles: (d.castProfiles ?? []).map((cast: any) => ({
+          ...cast,
+          stageName: safeListingText(cast.stageName),
+          storeName: safeListingText(cast.storeName),
+          publicHeadline: safeListingText(cast.publicHeadline),
+          bio: safeListingText(cast.bio),
+          zodiacSign: safeListingText(cast.zodiacSign),
+          measurements: safeListingText(cast.measurements),
+          tags: normalizeListingTextList(cast.tags),
+          languages: normalizeListingTextList(cast.languages),
+          hobbies: normalizeListingTextList(cast.hobbies),
+          mediaUrls: normalizeListingUrlList(cast.mediaUrls),
+          youtubeLinks: normalizeListingUrlList(cast.youtubeLinks),
+        })),
+        mediaUrls: normalizeListingUrlList(d.mediaUrls),
+      };
+    };
+
     setListingContentId(response.contentId);
     setListingReview(response.review);
     setListingErrors({});
-    setListingDraft({
-      ...emptyListingDraft,
-      ...draft,
-      storeName: safeListingText(draft.storeName),
-      businessType: safeListingText(draft.businessType),
-      storeCategory: safeListingText(draft.storeCategory),
-      area: safeListingText(draft.area),
-      storeCity: safeListingText(draft.storeCity),
-      storeDistrict: safeListingText(draft.storeDistrict),
-      ward: safeListingText(draft.ward || draft.wardName),
-      wardName: safeListingText(draft.wardName),
-      streetAddress: safeListingText(draft.streetAddress),
-      phone: safeListingText(draft.phone),
-      mapUrl: safeListingText(draft.mapUrl),
-      openingHours: safeListingText(draft.openingHours),
-      priceRange: safeListingText(draft.priceRange),
-      menuSummary: safeListingText(draft.menuSummary),
-      coverImageUrl: safeListingText(draft.coverImageUrl),
-      description: cleanListingText(draft.description),
-      note: safeListingText(draft.note),
-      openingHourItems: draft.openingHourItems?.length
-        ? draft.openingHourItems
-        : defaultListingOpeningHours(),
-      tags: normalizeListingTextList(draft.tags),
-      menuGroups: draft.menuGroups ?? [],
-      galleryUrls: normalizeListingUrlList(draft.galleryUrls),
-      videoUrls: normalizeListingUrlList(draft.videoUrls),
-      pricingItems: draft.pricingItems ?? [],
-      castProfiles: (draft.castProfiles ?? []).map((cast) => ({
-        ...cast,
-        stageName: safeListingText(cast.stageName),
-        storeName: safeListingText(cast.storeName),
-        publicHeadline: safeListingText(cast.publicHeadline),
-        bio: safeListingText(cast.bio),
-        zodiacSign: safeListingText(cast.zodiacSign),
-        measurements: safeListingText(cast.measurements),
-        tags: normalizeListingTextList(cast.tags),
-        languages: normalizeListingTextList(cast.languages),
-        hobbies: normalizeListingTextList(cast.hobbies),
-        mediaUrls: normalizeListingUrlList(cast.mediaUrls),
-        youtubeLinks: normalizeListingUrlList(cast.youtubeLinks),
-      })),
-      mediaUrls: normalizeListingUrlList(draft.mediaUrls),
-    });
+    setListingDraft(parseDraft(response.draft));
+    setLiveData(response.live ? parseDraft(response.live) : null);
     setListingNotice(response.message);
   }, []);
 
@@ -4728,59 +4738,62 @@ export default function PartnerPage() {
             {cast.stageName.trim() || 'Thông tin cast mới'}
           </h3>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {!isAddingCastProfile ? (
-            <GhostButton onClick={() => removeCastProfile(index)}>
-              <XCircle size={16} />
-              Xóa cast
-            </GhostButton>
-          ) : null}
-          <PrimaryButton onClick={saveCastProfileForm}>
-            <Save size={16} />
-            Lưu cast
-          </PrimaryButton>
-        </div>
+        {!isViewingLive && (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {!isAddingCastProfile ? (
+              <GhostButton onClick={() => removeCastProfile(index)}>
+                <XCircle size={16} />
+                Xóa cast
+              </GhostButton>
+            ) : null}
+            <PrimaryButton onClick={saveCastProfileForm}>
+              <Save size={16} />
+              Lưu cast
+            </PrimaryButton>
+          </div>
+        )}
       </div>
 
-      <section className="partner-listing-section">
-        <div className="partner-listing-section-title">Thông tin cơ bản</div>
-        <div className="partner-listing-grid">
-          <FormField label="Tên cast">
-            <input
-              value={cast.stageName}
-              onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
-              placeholder="VD: Yuki"
-              style={listingInputStyle(`castProfiles.${index}.stageName`)}
-            />
-            {listingErrorText(`castProfiles.${index}.stageName`)}
-          </FormField>
-          <FormField label="Lời chào (greeting)">
-            <input
-              value={cast.publicHeadline ?? ''}
-              onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
-              placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
-              style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
-            />
-            {listingErrorText(`castProfiles.${index}.publicHeadline`)}
-          </FormField>
-          <FormField label="Ngôn ngữ">
-            <input
-              value={cast.languages?.join(', ') ?? ''}
-              onChange={(event) => updateCastProfile(index, 'languages', splitInlineList(event.target.value))}
-              placeholder="vi, en, ja"
-              style={listingInputStyle(`castProfiles.${index}.languages`)}
-            />
-            {listingErrorText(`castProfiles.${index}.languages`)}
-          </FormField>
-          <FormField label="Tags / từ khóa">
-            <input
-              value={cast.tags?.join(', ') ?? ''}
-              onChange={(event) => updateCastProfile(index, 'tags', splitInlineList(event.target.value))}
-              placeholder="spa, gentle, quiet, 20s"
-              style={listingInputStyle(`castProfiles.${index}.tags`)}
-            />
-            {listingErrorText(`castProfiles.${index}.tags`)}
-          </FormField>
+      <div style={isViewingLive ? { pointerEvents: 'none', opacity: 0.8 } : undefined}>
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Thông tin cơ bản</div>
+          <div className="partner-listing-grid">
+            <FormField label="Tên cast">
+              <input
+                value={cast.stageName}
+                onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
+                placeholder="VD: Yuki"
+                style={listingInputStyle(`castProfiles.${index}.stageName`)}
+              />
+              {listingErrorText(`castProfiles.${index}.stageName`)}
+            </FormField>
+            <FormField label="Lời chào (greeting)">
+              <input
+                value={cast.publicHeadline ?? ''}
+                onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
+                placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
+                style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
+              />
+              {listingErrorText(`castProfiles.${index}.publicHeadline`)}
+            </FormField>
+            <FormField label="Ngôn ngữ">
+              <input
+                value={cast.languages?.join(', ') ?? ''}
+                onChange={(event) => updateCastProfile(index, 'languages', splitInlineList(event.target.value))}
+                placeholder="vi, en, ja"
+                style={listingInputStyle(`castProfiles.${index}.languages`)}
+              />
+              {listingErrorText(`castProfiles.${index}.languages`)}
+            </FormField>
+            <FormField label="Tags / từ khóa">
+              <input
+                value={cast.tags?.join(', ') ?? ''}
+                onChange={(event) => updateCastProfile(index, 'tags', splitInlineList(event.target.value))}
+                placeholder="spa, gentle, quiet, 20s"
+                style={listingInputStyle(`castProfiles.${index}.tags`)}
+              />
+              {listingErrorText(`castProfiles.${index}.tags`)}
+            </FormField>
           <FormField label="Sở thích">
             <input
               value={cast.hobbies?.join(', ') ?? ''}
@@ -4915,6 +4928,7 @@ export default function PartnerPage() {
           </FormField>
         </div>
       </section>
+      </div>
     </div>
   );
 
@@ -4926,10 +4940,12 @@ export default function PartnerPage() {
           <StatusPill tone="success">Đã nhập {listingDraft.castProfiles.filter((cast) => cast.stageName.trim()).length}</StatusPill>
           <StatusPill>Thiếu tên {listingDraft.castProfiles.filter((cast) => !cast.stageName.trim()).length}</StatusPill>
         </div>
-        <PrimaryButton onClick={addCastProfile}>
-          <Plus size={16} />
-          Thêm cast
-        </PrimaryButton>
+        {!isViewingLive && (
+          <PrimaryButton onClick={addCastProfile}>
+            <Plus size={16} />
+            Thêm cast
+          </PrimaryButton>
+        )}
       </div>
 
       {!listingDraft.castProfiles.length ? (
@@ -5232,7 +5248,7 @@ export default function PartnerPage() {
       : defaultListingOpeningHours();
 
     return (
-      <div className="partner-listing-form">
+      <div className="partner-listing-form" style={isViewingLive ? { pointerEvents: 'none', opacity: 0.8 } : undefined}>
         <section className="partner-listing-section">
           <div className="partner-listing-section-title">Thông tin cơ bản</div>
           <div className="partner-listing-grid">
@@ -5538,7 +5554,45 @@ export default function PartnerPage() {
       <SectionHeading
         eyebrow="DRAFT & APPROVAL"
         title="Thông tin hiển thị trên trang quán"
-        action={<StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>}
+        action={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {liveData && (
+              <div style={{ display: 'flex', gap: '8px', borderRight: `1px solid ${colors.borderSoft}`, paddingRight: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsViewingLive(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    color: isViewingLive ? colors.goldBright : colors.text2,
+                    fontWeight: isViewingLive ? 'bold' : 'bold',
+                  }}
+                >
+                  [Xem bản đang Go Live]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsViewingLive(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    color: !isViewingLive ? colors.goldBright : colors.text2,
+                    fontWeight: !isViewingLive ? 'bold' : 'bold',
+                  }}
+                >
+                  [Xem bản chỉnh sửa]
+                </button>
+              </div>
+            )}
+            <StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>
+          </div>
+        }
       />
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -5587,24 +5641,26 @@ export default function PartnerPage() {
 
       {renderListingTab()}
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          flexWrap: 'wrap',
-          marginTop: '18px',
-        }}
-      >
-        <GhostButton disabled={!canWriteListing} onClick={saveListingDraft}>
-          <Save size={16} />
-          {isSavingListing ? 'Đang lưu...' : 'Lưu nháp'}
-        </GhostButton>
-        <PrimaryButton disabled={!canWriteListing} onClick={submitListingDraft}>
-          <Send size={16} />
-          {isSubmittingListing ? 'Đang gửi...' : 'Gửi duyệt'}
-        </PrimaryButton>
-      </div>
+      {!isViewingLive && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+            flexWrap: 'wrap',
+            marginTop: '18px',
+          }}
+        >
+          <GhostButton disabled={!canWriteListing} onClick={saveListingDraft}>
+            <Save size={16} />
+            {isSavingListing ? 'Đang lưu...' : 'Lưu nháp'}
+          </GhostButton>
+          <PrimaryButton disabled={!canWriteListing} onClick={submitListingDraft}>
+            <Send size={16} />
+            {isSubmittingListing ? 'Đang gửi...' : 'Gửi duyệt'}
+          </PrimaryButton>
+        </div>
+      )}
     </PanelCard>
   );
 

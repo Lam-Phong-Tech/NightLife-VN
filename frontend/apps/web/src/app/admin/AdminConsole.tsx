@@ -341,6 +341,10 @@ type AdminPartnerRequest = {
   draftStoreId: string | null;
   draftStoreName: string | null;
   draftStoreSlug: string | null;
+  draftStoreCategory?: string | null;
+  draftStoreAddress?: string | null;
+  draftStoreMenuSummary?: string | null;
+  draftStoreMediaUrls?: string[];
   draftCastCount: number;
   draftMediaCount: number;
   draftContentCount: number;
@@ -359,6 +363,23 @@ type AdminPartnerRequest = {
   openingHours: string | null;
   menuSummary: string | null;
   mediaUrls: string[];
+  originalStore: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+    category: string;
+    description: string | null;
+    address: string | null;
+    city: string;
+    district: string | null;
+    phone: string | null;
+    openingHours: any;
+    pricingInfo: any;
+    tags: string[];
+    media: { url: string }[];
+    mapUrl: string | null;
+  } | null;
 };
 
 type AdminCouponIssue = {
@@ -1720,6 +1741,10 @@ export default function AdminConsole({ section }: { section?: string }) {
   );
   const [partnerReviewReasons, setPartnerReviewReasons] = useState<Record<string, string>>({});
   const [reviewingPartnerRequestId, setReviewingPartnerRequestId] = useState<string | null>(null);
+  const [partnerRequestTab, setPartnerRequestTab] = useState<"registration" | "modification">("registration");
+  const [selectedRequestForDiff, setSelectedRequestForDiff] = useState<AdminPartnerRequest | null>(null);
+  const [diffModalReason, setDiffModalReason] = useState<string>("");
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<boolean>(false);
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
@@ -1903,6 +1928,16 @@ export default function AdminConsole({ section }: { section?: string }) {
     () => prioritizeById(partnerRequests, focusedRequestId),
     [focusedRequestId, partnerRequests],
   );
+  const filteredRequestsByTab = useMemo(() => {
+    return orderedPartnerRequests.filter((req) => {
+      const isListing = req.id.startsWith("LISTING-");
+      if (partnerRequestTab === "modification") {
+        return isListing;
+      } else {
+        return !isListing;
+      }
+    });
+  }, [orderedPartnerRequests, partnerRequestTab]);
   const visibleCouponIssues = useMemo(
     () =>
       couponIssues.filter((issue) =>
@@ -2554,8 +2589,9 @@ export default function AdminConsole({ section }: { section?: string }) {
     }
   };
 
-  const reviewPartnerRequest = async (requestId: string, approve: boolean) => {
+  const reviewPartnerRequest = async (requestId: string, approve: boolean, customReason?: string) => {
     const reason =
+      customReason?.trim() ||
       partnerReviewReasons[requestId]?.trim() ||
       (approve
         ? "Ho so hop le, duyet public noi dung partner."
@@ -2576,11 +2612,78 @@ export default function AdminConsole({ section }: { section?: string }) {
       setStatusMessage(approve ? "Da duyet partner request va public draft." : "Da tu choi partner request va giu noi dung an.");
       setPartnerReviewReasons((current) => ({ ...current, [requestId]: "" }));
       await loadAdminData();
+      setSelectedRequestForDiff(null);
     } catch (error) {
       setStatusMessage(error instanceof ApiError ? error.message : "Khong review duoc partner request.");
     } finally {
       setReviewingPartnerRequestId(null);
     }
+  };
+
+  const renderDiffRow = (label: string, currentValue: string | null | undefined, proposedValue: string | null | undefined, isChanged: boolean) => {
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+          padding: "12px 16px",
+          borderBottom: `1px solid ${colors.borderSoft}`,
+          background: isChanged ? "rgba(212, 178, 106, 0.05)" : "transparent",
+          border: isChanged ? `1px solid ${colors.borderGold32}` : "none",
+          borderRadius: isChanged ? 8 : 0,
+          margin: isChanged ? "4px 0" : 0,
+        }}
+      >
+        <div style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 10, color: colors.muted, fontWeight: 900, textTransform: "uppercase" }}>{label} (Hiện tại)</span>
+          <div style={{ color: colors.text2, fontSize: 13 }}>{currentValue || "-"}</div>
+        </div>
+        <div style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 10, color: isChanged ? colors.goldBright : colors.muted, fontWeight: 900, textTransform: "uppercase" }}>
+            {label} (Đề xuất) {isChanged && "✨ Thay đổi"}
+          </span>
+          <div style={{ color: isChanged ? colors.goldBright : colors.text, fontSize: 13, fontWeight: isChanged ? 700 : 400 }}>{proposedValue || "-"}</div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMediaDiffRow = (label: string, currentUrls: string[], proposedUrls: string[], isChanged: boolean) => {
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+          padding: "12px 16px",
+          borderBottom: `1px solid ${colors.borderSoft}`,
+          background: isChanged ? "rgba(212, 178, 106, 0.05)" : "transparent",
+          border: isChanged ? `1px solid ${colors.borderGold32}` : "none",
+          borderRadius: isChanged ? 8 : 0,
+          margin: isChanged ? "4px 0" : 0,
+        }}
+      >
+        <div style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 10, color: colors.muted, fontWeight: 900, textTransform: "uppercase" }}>{label} (Hiện tại)</span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            {currentUrls.length === 0 ? "-" : currentUrls.map((url, i) => (
+              <img key={i} src={url} alt="current" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4, border: `1px solid ${colors.borderSoft}` }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 10, color: isChanged ? colors.goldBright : colors.muted, fontWeight: 900, textTransform: "uppercase" }}>
+            {label} (Đề xuất) {isChanged && "✨ Thay đổi"}
+          </span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            {proposedUrls.length === 0 ? "-" : proposedUrls.map((url, i) => (
+              <img key={i} src={url} alt="proposed" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4, border: `1px solid ${isChanged ? colors.gold : colors.borderSoft}` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const openCancelBookingDialog = (booking: AdminBooking) => {
@@ -3207,19 +3310,69 @@ export default function AdminConsole({ section }: { section?: string }) {
           {hasPartnerRequestFilters ? <Badge tone="PENDING">Đang lọc</Badge> : null}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, alignItems: "end" }}>
-          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800, position: "relative" }}>
             Status
-            <select
-              aria-label="Partner request status filter"
-              value={partnerRequestFilterDraft.status}
-              onChange={(event) => updatePartnerRequestFilterDraft("status", event.target.value)}
-              style={inputStyle({ minHeight: 38 })}
-            >
-              <option value="all">Tất cả</option>
-              <option value="PENDING_REVIEW">PENDING_REVIEW</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                style={{
+                  ...inputStyle({ minHeight: 38 }),
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  background: colors.shell,
+                  color: colors.text,
+                }}
+              >
+                <span>{partnerRequestFilterDraft.status === "all" ? "Tất cả" : partnerRequestFilterDraft.status}</span>
+                <span style={{ fontSize: 10 }}>▼</span>
+              </button>
+              {statusDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    zIndex: 100,
+                    background: colors.shell,
+                    border: `1px solid ${colors.borderSoft}`,
+                    borderRadius: 4,
+                    marginTop: 4,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {[
+                    { value: "all", label: "Tất cả" },
+                    { value: "PENDING_REVIEW", label: "PENDING_REVIEW" },
+                    { value: "APPROVED", label: "APPROVED" },
+                    { value: "REJECTED", label: "REJECTED" },
+                  ].map((opt) => (
+                    <div
+                      key={opt.value}
+                      onClick={() => {
+                        updatePartnerRequestFilterDraft("status", opt.value);
+                        setStatusDropdownOpen(false);
+                      }}
+                      style={{
+                        padding: "10px 12px",
+                        cursor: "pointer",
+                        background: partnerRequestFilterDraft.status === opt.value ? "rgba(212,178,106,.15)" : "transparent",
+                        color: partnerRequestFilterDraft.status === opt.value ? colors.goldBright : colors.text,
+                        fontSize: 12,
+                      }}
+                    >
+                      {opt.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </label>
           <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
             Keyword
@@ -3277,6 +3430,40 @@ export default function AdminConsole({ section }: { section?: string }) {
 
   const partnerTable = () => (
     <Panel testId="admin-partner-requests-panel">
+      <div style={{ display: "flex", borderBottom: `1px solid ${colors.borderSoft}`, padding: "10px 18px", gap: 16 }}>
+        <button
+          type="button"
+          onClick={() => setPartnerRequestTab("registration")}
+          style={{
+            background: "none",
+            border: "none",
+            color: partnerRequestTab === "registration" ? colors.goldBright : colors.text2,
+            fontWeight: partnerRequestTab === "registration" ? "bold" : "normal",
+            borderBottom: partnerRequestTab === "registration" ? `2px solid ${colors.goldBright}` : "none",
+            padding: "8px 12px",
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          Yêu cầu Đăng ký mới
+        </button>
+        <button
+          type="button"
+          onClick={() => setPartnerRequestTab("modification")}
+          style={{
+            background: "none",
+            border: "none",
+            color: partnerRequestTab === "modification" ? colors.goldBright : colors.text2,
+            fontWeight: partnerRequestTab === "modification" ? "bold" : "normal",
+            borderBottom: partnerRequestTab === "modification" ? `2px solid ${colors.goldBright}` : "none",
+            padding: "8px 12px",
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          Yêu cầu Sửa đổi
+        </button>
+      </div>
       <div style={{ minWidth: 900, overflowX: "auto" }}>
         <div
           style={{
@@ -3298,7 +3485,7 @@ export default function AdminConsole({ section }: { section?: string }) {
           <span>Status</span>
           <span>Duyá»‡t</span>
         </div>
-        {orderedPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
+        {filteredRequestsByTab.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
           <div
             key={request.id}
             style={{
@@ -3374,6 +3561,18 @@ export default function AdminConsole({ section }: { section?: string }) {
                 </span>
               ) : null}
               <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {request.id.startsWith("LISTING-") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRequestForDiff(request);
+                      setDiffModalReason(partnerReviewReasons[request.id] ?? "");
+                    }}
+                    style={buttonStyle("secondary")}
+                  >
+                    Xem thay đổi
+                  </button>
+                )}
                 <button
                   type="button"
                   disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
@@ -5316,6 +5515,171 @@ export default function AdminConsole({ section }: { section?: string }) {
           <div style={{ padding: "24px 28px 38px", display: "grid", gap: 18 }}>{renderActiveView()}</div>
         </div>
       </div>
+
+      {selectedRequestForDiff ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-diff-modal-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 90,
+            display: "grid",
+            placeItems: "center",
+            padding: 18,
+            background: "rgba(0,0,0,.75)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(100%, 860px)",
+              maxHeight: "90vh",
+              border: `1px solid ${colors.borderGold32}`,
+              borderRadius: 14,
+              background: "#121216",
+              boxShadow: "0 24px 70px rgba(0,0,0,.55)",
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: 12 }}>
+              <h2 id="admin-diff-modal-title" style={{ margin: 0, color: colors.goldBright, fontSize: 19 }}>
+                So sánh thay đổi hồ sơ: {selectedRequestForDiff.businessName}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSelectedRequestForDiff(null)}
+                style={{ background: "none", border: "none", color: colors.text, fontSize: 20, cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "grid", gap: 10, paddingRight: 6 }}>
+              {renderDiffRow(
+                "Tên cơ sở",
+                selectedRequestForDiff.originalStore?.name,
+                selectedRequestForDiff.businessName,
+                selectedRequestForDiff.businessName !== selectedRequestForDiff.originalStore?.name
+              )}
+              {renderDiffRow(
+                "Loại hình (Category)",
+                selectedRequestForDiff.originalStore?.category,
+                selectedRequestForDiff.businessType,
+                selectedRequestForDiff.businessType !== selectedRequestForDiff.originalStore?.category
+              )}
+              {renderDiffRow(
+                "Khu vực",
+                selectedRequestForDiff.originalStore
+                  ? [selectedRequestForDiff.originalStore.district, selectedRequestForDiff.originalStore.city].filter(Boolean).join(", ")
+                  : "",
+                selectedRequestForDiff.area,
+                selectedRequestForDiff.area !== (selectedRequestForDiff.originalStore
+                  ? [selectedRequestForDiff.originalStore.district, selectedRequestForDiff.originalStore.city].filter(Boolean).join(", ")
+                  : "")
+              )}
+              {renderDiffRow(
+                "Mô tả cơ sở",
+                selectedRequestForDiff.originalStore?.description,
+                selectedRequestForDiff.storeDescription,
+                selectedRequestForDiff.storeDescription !== selectedRequestForDiff.originalStore?.description
+              )}
+              {renderDiffRow(
+                "Địa chỉ chi tiết",
+                selectedRequestForDiff.originalStore?.address,
+                selectedRequestForDiff.storeAddress,
+                selectedRequestForDiff.storeAddress !== selectedRequestForDiff.originalStore?.address
+              )}
+              {renderDiffRow(
+                "Thành phố",
+                selectedRequestForDiff.originalStore?.city,
+                selectedRequestForDiff.storeCity,
+                selectedRequestForDiff.storeCity !== selectedRequestForDiff.originalStore?.city
+              )}
+              {renderDiffRow(
+                "Quận/Huyện",
+                selectedRequestForDiff.originalStore?.district,
+                selectedRequestForDiff.storeDistrict,
+                selectedRequestForDiff.storeDistrict !== selectedRequestForDiff.originalStore?.district
+              )}
+              {renderDiffRow(
+                "Số điện thoại liên hệ",
+                selectedRequestForDiff.originalStore?.phone,
+                selectedRequestForDiff.contactPhone,
+                selectedRequestForDiff.contactPhone !== selectedRequestForDiff.originalStore?.phone
+              )}
+              {renderDiffRow(
+                "Giờ mở cửa",
+                typeof selectedRequestForDiff.originalStore?.openingHours === "object"
+                  ? JSON.stringify(selectedRequestForDiff.originalStore?.openingHours)
+                  : String(selectedRequestForDiff.originalStore?.openingHours || ""),
+                selectedRequestForDiff.openingHours,
+                selectedRequestForDiff.openingHours !== (typeof selectedRequestForDiff.originalStore?.openingHours === "object"
+                  ? JSON.stringify(selectedRequestForDiff.originalStore?.openingHours)
+                  : String(selectedRequestForDiff.originalStore?.openingHours || ""))
+              )}
+              {renderDiffRow(
+                "Menu Summary",
+                typeof selectedRequestForDiff.originalStore?.pricingInfo === "object"
+                  ? JSON.stringify(selectedRequestForDiff.originalStore?.pricingInfo)
+                  : String(selectedRequestForDiff.originalStore?.pricingInfo || ""),
+                selectedRequestForDiff.menuSummary,
+                selectedRequestForDiff.menuSummary !== (typeof selectedRequestForDiff.originalStore?.pricingInfo === "object"
+                  ? JSON.stringify(selectedRequestForDiff.originalStore?.pricingInfo)
+                  : String(selectedRequestForDiff.originalStore?.pricingInfo || ""))
+              )}
+              {renderMediaDiffRow(
+                "Hình ảnh (Media)",
+                selectedRequestForDiff.originalStore?.media?.map((m) => m.url) || [],
+                selectedRequestForDiff.mediaUrls || [],
+                JSON.stringify(selectedRequestForDiff.mediaUrls) !== JSON.stringify(selectedRequestForDiff.originalStore?.media?.map((m) => m.url) || [])
+              )}
+            </div>
+
+            <div style={{ borderTop: `1px solid ${colors.borderSoft}`, paddingTop: 16, display: "grid", gap: 12 }}>
+              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+                Lý do duyệt / từ chối
+                <input
+                  value={diffModalReason}
+                  onChange={(e) => setDiffModalReason(e.target.value)}
+                  placeholder="Nhập lý do review..."
+                  style={inputStyle({ minHeight: 38 })}
+                />
+              </label>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRequestForDiff(null)}
+                  style={buttonStyle("secondary")}
+                >
+                  Quay lại
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedRequestForDiff.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === selectedRequestForDiff.id}
+                  onClick={() => void reviewPartnerRequest(selectedRequestForDiff.id, false, diffModalReason)}
+                  style={buttonStyle("danger")}
+                >
+                  Từ chối
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedRequestForDiff.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === selectedRequestForDiff.id}
+                  onClick={() => void reviewPartnerRequest(selectedRequestForDiff.id, true, diffModalReason)}
+                  style={buttonStyle("primary")}
+                >
+                  Duyệt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {cancelBookingTarget ? (
         <div

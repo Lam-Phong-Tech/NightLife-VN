@@ -507,6 +507,15 @@ type PartnerRequestCmsRecord = {
     status: string;
     category: StoreCategory;
     mapUrl: string | null;
+    description: string | null;
+    address: string | null;
+    city: string;
+    district: string | null;
+    phone: string | null;
+    openingHours: Prisma.JsonValue | null;
+    pricingInfo: Prisma.JsonValue | null;
+    tags: string[];
+    media: { url: string }[];
   };
   notificationLog: {
     id: string;
@@ -6878,7 +6887,8 @@ export class NightlifeDataService {
         );
       }
 
-      const onboarding = dto.approve
+      const isPartnerRegistration = request.id.startsWith('PARTNER-');
+      const onboarding = (dto.approve && isPartnerRegistration)
         ? await this.ensurePartnerOnboarding(tx, request)
         : null;
       const listingStoreUpdate = dto.approve
@@ -6891,8 +6901,10 @@ export class NightlifeDataService {
           data: {
             ...listingStoreUpdate,
             status: 'ACTIVE',
-            ownerId: onboarding?.userId,
-            partnerAccountId: onboarding?.partnerAccountId,
+            ...(onboarding ? {
+              ownerId: onboarding.userId,
+              partnerAccountId: onboarding.partnerAccountId,
+            } : {}),
           },
           select: { id: true },
         });
@@ -6915,11 +6927,13 @@ export class NightlifeDataService {
           });
         }
       } else {
-        await tx.store.update({
-          where: { id: request.store.id },
-          data: { status: 'DRAFT' },
-          select: { id: true },
-        });
+        if (isPartnerRegistration) {
+          await tx.store.update({
+            where: { id: request.store.id },
+            data: { status: 'DRAFT' },
+            select: { id: true },
+          });
+        }
         if (request.draftCastIds.length) {
           await tx.cast.updateMany({
             where: { id: { in: request.draftCastIds } },
@@ -15333,6 +15347,33 @@ export class NightlifeDataService {
         tags: true,
         partnerAccountId: true,
         ownerId: true,
+        media: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            url: true,
+            purpose: true,
+            type: true,
+          },
+        },
+        casts: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            stageName: true,
+            bio: true,
+            tags: true,
+            youtubeLinks: true,
+            languages: true,
+            birthMonth: true,
+            zodiacSign: true,
+            heightCm: true,
+            measurements: true,
+            hobbies: true,
+            hourlyRateVnd: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -15799,6 +15840,7 @@ export class NightlifeDataService {
       publishedAt: draft?.publishedAt?.toISOString() ?? null,
       review: options.review ?? null,
       draft: payload,
+      live: this.normalizePartnerListingDraft({}, store),
     };
   }
 
@@ -15907,6 +15949,33 @@ export class NightlifeDataService {
         tags: true,
         partnerAccountId: true,
         ownerId: true,
+        media: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            url: true,
+            purpose: true,
+            type: true,
+          },
+        },
+        casts: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            stageName: true,
+            bio: true,
+            tags: true,
+            youtubeLinks: true,
+            languages: true,
+            birthMonth: true,
+            zodiacSign: true,
+            heightCm: true,
+            measurements: true,
+            hobbies: true,
+            hourlyRateVnd: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -16046,6 +16115,19 @@ export class NightlifeDataService {
           status: true,
           category: true,
           mapUrl: true,
+          description: true,
+          address: true,
+          city: true,
+          district: true,
+          phone: true,
+          openingHours: true,
+          pricingInfo: true,
+          tags: true,
+          media: {
+            select: {
+              url: true,
+            },
+          },
         },
       },
       notificationLog: {
@@ -16229,7 +16311,10 @@ export class NightlifeDataService {
       draftStoreId: request.store.id,
       draftStoreName: request.store.name,
       draftStoreSlug: request.store.slug,
-      draftStoreCategory: request.store.category,
+      draftStoreCategory: request.businessType || request.store.category,
+      draftStoreAddress: request.storeAddress,
+      draftStoreMenuSummary: request.menuSummary,
+      draftStoreMediaUrls: request.mediaUrls,
       draftCastIds: request.draftCastIds,
       draftMediaIds: request.draftMediaIds,
       draftContentIds: request.draftContentIds,
@@ -16251,6 +16336,23 @@ export class NightlifeDataService {
       openingHours: request.openingHours,
       menuSummary: request.menuSummary,
       mediaUrls: request.mediaUrls,
+      originalStore: request.store ? {
+        id: request.store.id,
+        name: request.store.name,
+        slug: request.store.slug,
+        status: request.store.status,
+        category: request.store.category,
+        description: request.store.description,
+        address: request.store.address,
+        city: request.store.city,
+        district: request.store.district,
+        phone: request.store.phone,
+        openingHours: request.store.openingHours,
+        pricingInfo: request.store.pricingInfo,
+        tags: request.store.tags,
+        media: request.store.media,
+        mapUrl: request.store.mapUrl,
+      } : null,
     };
   }
 
