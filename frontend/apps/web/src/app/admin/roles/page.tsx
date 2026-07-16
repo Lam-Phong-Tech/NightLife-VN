@@ -72,11 +72,13 @@ export default function AdminRolesPage() {
   const [afStoreId, setAfStoreId] = useState<string>('');
   const [afStoreName, setAfStoreName] = useState<string>('');
   
-  const handleSearchStores = async (q: string) => {
+  const handleSearchStores = async (q: string, targetOverride?: 'add' | 'edit') => {
      setStoreSearchQ(q);
      try {
-       const kind = storeSearchTarget === 'edit' ? edKind : afKind;
-       const res = await searchStoresForAdmin(q, kind);
+       const activeTarget = targetOverride || storeSearchTarget;
+       const kind = activeTarget === 'edit' ? edKind : afKind;
+       const userId = activeTarget === 'edit' ? edOrig : undefined;
+       const res = await searchStoresForAdmin(q, kind, userId);
        setStoreSearchResults(res || []);
      } catch (e) {
        console.error(e);
@@ -445,7 +447,7 @@ export default function AdminRolesPage() {
               {(afKind === 'partner' || afKind === 'staff') && (
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Quán liên kết</div>
-                  <div onClick={() => { setStoreSearchOpen(true); handleSearchStores(''); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: afStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div onClick={() => { setStoreSearchTarget('add'); setStoreSearchOpen(true); handleSearchStores('', 'add'); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: afStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {afStoreName || 'Bấm để tìm và chọn quán...'}
                     <Search size={14} />
                   </div>
@@ -501,7 +503,7 @@ export default function AdminRolesPage() {
                       <span onClick={() => { setEdStoreId(''); setEdStoreName(''); }} style={{ color: '#e88b99', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>Gỡ liên kết</span>
                     )}
                   </div>
-                  <div onClick={() => { setStoreSearchTarget('edit'); setStoreSearchOpen(true); handleSearchStores(''); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: edStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div onClick={() => { setStoreSearchTarget('edit'); setStoreSearchOpen(true); handleSearchStores('', 'edit'); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: edStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {edStoreName || 'Bấm để tìm và chọn quán...'}
                     <Search size={14} />
                   </div>

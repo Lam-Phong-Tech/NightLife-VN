@@ -32,6 +32,7 @@ export class AdminUsersController {
   async searchStores(
     @Query('q') q?: string,
     @Query('forRole') forRole?: string,
+    @Query('userId') userId?: string,
   ) {
     const where: any = { deletedAt: null };
 
@@ -40,7 +41,14 @@ export class AdminUsersController {
     }
 
     if (forRole === 'partner' || forRole === 'PARTNER') {
-      where.ownerId = null; // Quán chưa có chủ
+      if (userId) {
+        where.OR = [
+          { ownerId: null },
+          { ownerId: userId },
+        ];
+      } else {
+        where.ownerId = null; // Quán chưa có chủ
+      }
     }
 
     const stores = await this.prisma.store.findMany({

@@ -57,9 +57,10 @@ export const hardDeleteAdminUser = async (id: string) => {
   return apiClient(`/admin/users/${id}/hard`, { method: 'DELETE' });
 };
 
-export const searchStoresForAdmin = async (q?: string, forRole?: string) => {
+export const searchStoresForAdmin = async (q?: string, forRole?: string, userId?: string) => {
   const query = new URLSearchParams();
   if (q) query.set('q', q);
   if (forRole) query.set('forRole', forRole);
+  if (userId) query.set('userId', userId);
   return apiClient<any[]>(`/admin/users/stores/search?${query.toString()}`);
 };
