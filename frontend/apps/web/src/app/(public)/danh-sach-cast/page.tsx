@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -82,38 +82,38 @@ type CastSearchCopy = {
 };
 
 const cityOptions: Option[] = [
-  { value: "hn", label: "HÃ  Ná»™i" },
+  { value: "hn", label: "Hà Nội" },
   { value: "hcm", label: "TP.HCM" },
-  { value: "", label: "Táº¥t cáº£" },
+  { value: "", label: "Tất cả" },
 ];
 
 const categoryOptions: Option[] = [
-  { value: "", label: "Táº¥t cáº£" },
+  { value: "", label: "Tất cả" },
   { value: "GIRLS_BAR", label: "Girls Bar" },
   { value: "LOUNGE", label: "Lounge" },
   { value: "CLUB", label: "Club" },
   { value: "BAR", label: "Bar" },
   { value: "KARAOKE", label: "Karaoke / KTV" },
   { value: "MASSAGE_SPA", label: "Massage / Spa" },
-  { value: "RESTAURANT", label: "NhÃ  hÃ ng" },
+  { value: "RESTAURANT", label: "Nhà hàng" },
   { value: "CASINO", label: "Casino" },
 ];
 
 const languageOptions: Option[] = [
-  { value: "", label: "Táº¥t cáº£" },
-  { value: "ja", label: "æ—¥æœ¬èªž" },
+  { value: "", label: "Tất cả" },
+  { value: "ja", label: "日本語" },
   { value: "en", label: "English" },
-  { value: "vi", label: "Tiáº¿ng Viá»‡t" },
+  { value: "vi", label: "Tiếng Việt" },
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "newest", label: "Má»›i nháº¥t" },
-  { value: "priority", label: "Phá»• biáº¿n" },
-  { value: "nearest", label: "Gáº§n nháº¥t" },
+  { value: "newest", label: "Mới nhất" },
+  { value: "priority", label: "Phổ biến" },
+  { value: "nearest", label: "Gần nhất" },
 ];
 
 const priceRangeOptions: Array<{ value: PriceRange; label: string }> = [
-  { value: "", label: "Táº¥t cáº£" },
+  { value: "", label: "Tất cả" },
   { value: "under400", label: "< 400k" },
   { value: "400600", label: "400 - 600k" },
   { value: "6001000", label: "600k - 1tr" },
@@ -127,29 +127,24 @@ const categoryLabels: Record<string, string> = {
   GIRLS_BAR: "Girls Bar",
   KARAOKE: "Karaoke / KTV",
   MASSAGE_SPA: "Massage / Spa",
-  RESTAURANT: "NhÃ  hÃ ng",
+  RESTAURANT: "Nhà hàng",
   CASINO: "Casino",
 };
 
 const cityLabels: Record<string, string> = {
-  hn: "HÃ  Ná»™i",
+  hn: "Hà Nội",
   hcm: "TP.HCM",
 };
 
 const compactLanguageLabels: Record<string, string> = {
   vi: "VI",
-  ja: "æ—¥æœ¬èªž",
+  ja: "日本語",
   en: "EN",
   ko: "KR",
 };
 
-const recentSearches = ["Yuki", "Mei", "Cast HoÃ n Kiáº¿m"];
-const popularKeywords = [
-  "NÃ³i tiáº¿ng Nháº­t",
-  "Top ranking",
-  "CÃ²n lá»‹ch tá»‘i nay",
-  "æ—¥æœ¬èªž N1",
-];
+const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
+const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
 const ageRangeMin = 20;
 const ageRangeMax = 40;
 const ageRangeStep = 1;
@@ -159,35 +154,35 @@ const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
 
 const castCopyVi: CastSearchCopy = {
-  all: "Táº¥t cáº£",
+  all: "Tất cả",
   applyLabel: (count) => `Xem ${count} cast`,
-  area: "Khu vá»±c",
-  category: "Loáº¡i hÃ¬nh",
-  city: "ThÃ nh phá»‘",
-  closeFilters: "ÄÃ³ng bá»™ lá»c",
-  emptyDescription: "Äá»•i khu vá»±c, ngÃ´n ngá»¯ hoáº·c khoáº£ng giÃ¡ Ä‘á»ƒ xem thÃªm.",
-  emptyTitle: "ChÆ°a cÃ³ cast phÃ¹ há»£p",
-  filterIntro: "Lá»c cast theo nhu cáº§u",
-  filterTitle: "Bá»™ lá»c",
-  find: "TÃ¬m",
-  findCast: "TÃ¬m cast",
-  filterLocation: "Äá»‹a Ä‘iá»ƒm",
-  filterNeeds: "Nhu cáº§u",
-  filterOther: "KhÃ¡c",
-  hasDeals: "CÃ³ Æ°u Ä‘Ã£i",
-  language: "NgÃ´n ngá»¯",
-  age: "Äá»™ tuá»•i",
-  listAria: "Danh sÃ¡ch cast",
-  locating: "Äang láº¥y vá»‹ trÃ­",
-  openFilters: "Má»Ÿ bá»™ lá»c",
-  priceRange: "Khoáº£ng giÃ¡",
-  priceRangeNote: "/ 60 phÃºt",
-  resetFilters: "Äáº·t láº¡i bá»™ lá»c",
-  searchAria: "TÃ¬m vÃ  lá»c cast",
-  searchPlaceholder: "TÃ¬m cast theo tÃªn, quÃ¡n hoáº·c ngÃ´n ngá»¯...",
-  sortLabel: "Sáº¯p xáº¿p:",
-  speaksJapanese: "NÃ³i tiáº¿ng Nháº­t",
-  store: "QuÃ¡n",
+  area: "Khu vực",
+  category: "Loại hình",
+  city: "Thành phố",
+  closeFilters: "Đóng bộ lọc",
+  emptyDescription: "Đổi khu vực, ngôn ngữ hoặc khoảng giá để xem thêm.",
+  emptyTitle: "Chưa có cast phù hợp",
+  filterIntro: "Lọc cast theo nhu cầu",
+  filterTitle: "Bộ lọc",
+  find: "Tìm",
+  findCast: "Tìm cast",
+  filterLocation: "Địa điểm",
+  filterNeeds: "Nhu cầu",
+  filterOther: "Khác",
+  hasDeals: "Có ưu đãi",
+  language: "Ngôn ngữ",
+  age: "Độ tuổi",
+  listAria: "Danh sách cast",
+  locating: "Đang lấy vị trí",
+  openFilters: "Mở bộ lọc",
+  priceRange: "Khoảng giá",
+  priceRangeNote: "/ 60 phút",
+  resetFilters: "Đặt lại bộ lọc",
+  searchAria: "Tìm và lọc cast",
+  searchPlaceholder: "Tìm cast theo tên, quán hoặc ngôn ngữ...",
+  sortLabel: "Sắp xếp:",
+  speaksJapanese: "Nói tiếng Nhật",
+  store: "Quán",
   topRanking: "Top ranking",
 };
 
@@ -306,7 +301,7 @@ const localizeCastOption = (
 };
 
 const getCastCityLabel = (cityCode: string, language: LanguageCode) => {
-  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Viá»‡t Nam", language);
+  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Việt Nam", language);
   if (language === "en") return englishCastCityLabels[cityCode] ?? cityCode;
   return translateText(cityLabels[cityCode] ?? cityCode, language);
 };
@@ -324,7 +319,7 @@ const getCastCategoryLabel = (category: string, language: LanguageCode) =>
 const formatCastActiveFilters = (count: number, language: LanguageCode) =>
   language === "en"
     ? `${count} ${count === 1 ? "filter" : "filters"} active`
-    : `${count} ${translateText("bá»™ lá»c Ä‘ang báº­t", language)}`;
+    : `${count} ${translateText("bộ lọc đang bật", language)}`;
 
 const matchesPriceRange = (range: PriceRange, value?: number | null) => {
   if (!range) return true;
@@ -456,7 +451,7 @@ export default function Page() {
         .catch(() => {
           if (!cancelled) {
             setCasts([]);
-            setError("ChÆ°a káº¿t ná»‘i Ä‘Æ°á»£c dá»¯ liá»‡u cast.");
+            setError("Chưa kết nối được dữ liệu cast.");
           }
         })
         .finally(() => {
@@ -690,7 +685,7 @@ export default function Page() {
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
-      setError("Thiáº¿t bá»‹ chÆ°a há»— trá»£ láº¥y vá»‹ trÃ­.");
+      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
       return;
     }
 
@@ -705,7 +700,7 @@ export default function Page() {
         setIsLocating(false);
       },
       () => {
-        setError("ChÆ°a láº¥y Ä‘Æ°á»£c vá»‹ trÃ­ hiá»‡n táº¡i.");
+        setError("Chưa lấy được vị trí hiện tại.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 },
@@ -722,7 +717,7 @@ export default function Page() {
   };
 
   const setPopularKeyword = (keyword: string) => {
-    if (keyword.includes("Nháº­t") || keyword.includes("æ—¥æœ¬èªž")) {
+    if (keyword.includes("Nhật") || keyword.includes("日本語")) {
       setLanguage("ja");
       return;
     }
@@ -743,7 +738,7 @@ export default function Page() {
         <header className="cast-mobile-topbar">
           <Link
             href="/"
-            aria-label={translateText("Quay láº¡i trang chá»§", activeLanguage)}
+            aria-label={translateText("Quay lại trang chủ", activeLanguage)}
             className="cast-round-icon"
           >
             <ArrowLeft size={17} />
@@ -760,7 +755,7 @@ export default function Page() {
             </h1>
             <p>
               {translateText(
-                "LÆ°á»›i chÃ¢n dung theo máº«u Vietyoru, Æ°u tiÃªn áº£nh, ngÃ´n ngá»¯ vÃ  quÃ¡n lÃ m viá»‡c.",
+                "Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.",
                 activeLanguage,
               )}
             </p>
@@ -779,7 +774,7 @@ export default function Page() {
               {query ? (
                 <button
                   type="button"
-                  aria-label={translateText("XÃ³a tÃ¬m kiáº¿m", activeLanguage)}
+                  aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
                   className="cast-input-clear"
                   onClick={() => setQuery("")}
                 >
@@ -870,7 +865,7 @@ export default function Page() {
 
           <nav
             className="cast-chip-row hscroll"
-            aria-label={translateText("Bá»™ lá»c nhanh", activeLanguage)}
+            aria-label={translateText("Bộ lọc nhanh", activeLanguage)}
           >
             <button
               type="button"
@@ -926,7 +921,7 @@ export default function Page() {
           <div className="cast-results-head">
             <span>
               <b>{isResultsLoading ? "..." : visibleCasts.length} cast</b>
-              <span> Â· {cityLabel}</span>
+              <span> · {cityLabel}</span>
             </span>
 
             <CastDropdown
@@ -1085,7 +1080,7 @@ function SearchSuggestions({
   onRecent: (value: string) => void;
 }) {
   return (
-    <div className="cast-suggestions" role="listbox" aria-label="Gá»£i Ã½ tÃ¬m kiáº¿m">
+    <div className="cast-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
       <div className="cast-suggestion-searchline">
         <Search size={18} />
         <span>
@@ -1096,7 +1091,7 @@ function SearchSuggestions({
 
       {casts.length ? (
         <>
-          <div className="cast-suggestion-label">Gá»£i Ã½ cast</div>
+          <div className="cast-suggestion-label">Gợi ý cast</div>
           {casts.map((cast, index) => (
             <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
               <PlaceholderMedia
@@ -1108,7 +1103,7 @@ function SearchSuggestions({
               <span>
                 <b>{highlightMatch(cast.name, query)}</b>
                 <small>
-                  {cast.store.name} Â·{" "}
+                  {cast.store.name} ·{" "}
                   {index < 3
                     ? `#${index + 1} Ranking`
                     : (cast.store.area?.name ?? cast.store.district)}
@@ -1119,12 +1114,12 @@ function SearchSuggestions({
           ))}
         </>
       ) : (
-        <div className="cast-suggestion-empty">KhÃ´ng cÃ³ gá»£i Ã½ trÃ¹ng khá»›p.</div>
+        <div className="cast-suggestion-empty">Không có gợi ý trùng khớp.</div>
       )}
 
       <div className="cast-suggestion-split">
-        <span>TÃ¬m gáº§n Ä‘Ã¢y</span>
-        <button type="button">XÃ³a lá»‹ch sá»­</button>
+        <span>Tìm gần đây</span>
+        <button type="button">Xóa lịch sử</button>
       </div>
       <div className="cast-suggestion-tags">
         {recentSearches.map((item) => (
@@ -1140,7 +1135,7 @@ function SearchSuggestions({
         ))}
       </div>
 
-      <div className="cast-suggestion-label">Tá»« khÃ³a phá»• biáº¿n</div>
+      <div className="cast-suggestion-label">Từ khóa phổ biến</div>
       <div className="cast-suggestion-tags is-gold">
         {popularKeywords.map((item) => (
           <button
@@ -1172,19 +1167,19 @@ function CastDiscoveryCard({
     getCastCityLabel(cast.store.cityCode ?? "", language),
   ]
     .filter(Boolean)
-    .join(" Â· ");
+    .join(" · ");
   const langText =
-    cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" Â· ") ||
+    cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" · ") ||
     "VI";
   const categoryLabel = getCastCategoryLabel(cast.store.category, language);
-  const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tá»‘i nay" : "Má»›i";
+  const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tối nay" : "Mới";
   const isRanked = index < 3;
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
       <PlaceholderMedia
         src={image}
-        label={translateText("ChÆ°a cÃ³ áº£nh cast", language)}
+        label={translateText("Chưa có ảnh cast", language)}
         tone="dark"
         className="cast-card-media"
       >
@@ -1200,7 +1195,7 @@ function CastDiscoveryCard({
         <span className="cast-card-place">
           <MapPin size={12} />
           <b>{cast.store.name}</b>
-          {areaLabel ? <small>Â· {areaLabel}</small> : null}
+          {areaLabel ? <small>· {areaLabel}</small> : null}
         </span>
       </PlaceholderMedia>
 
@@ -1214,7 +1209,7 @@ function CastDiscoveryCard({
 
         <div className="cast-card-foot">
           <span className="cast-card-cta">
-            {translateText("Äáº·t", language)}
+            {translateText("Đặt", language)}
             <ChevronRight size={13} />
           </span>
         </div>
@@ -1473,7 +1468,7 @@ function AgeRangeFilter({
           max={ageRangeMax - ageRangeStep}
           step={ageRangeStep}
           value={value.min}
-          aria-label={`${label} tá»‘i thiá»ƒu`}
+          aria-label={`${label} tối thiểu`}
           onChange={(event) => updateMin(Number(event.target.value))}
         />
         <input
@@ -1482,7 +1477,7 @@ function AgeRangeFilter({
           max={ageRangeMax}
           step={ageRangeStep}
           value={value.max}
-          aria-label={`${label} tá»‘i Ä‘a`}
+          aria-label={`${label} tối đa`}
           onChange={(event) => updateMax(Number(event.target.value))}
         />
       </div>
@@ -2022,6 +2017,10 @@ const castSearchCss = `
 }
 
 .cast-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 11px 13px 13px;
 }
 
@@ -2033,7 +2032,9 @@ const castSearchCss = `
 }
 
 .cast-card-meta {
+  flex: 1 1 auto;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .cast-language-pill {
@@ -2041,7 +2042,7 @@ const castSearchCss = `
   align-items: center;
   gap: 5px;
   min-width: 0;
-  max-width: 66%;
+  max-width: 100%;
   border: 1px solid rgba(212, 178, 106, 0.24);
   border-radius: 7px;
   background: rgba(212, 178, 106, 0.1);
@@ -2055,8 +2056,8 @@ const castSearchCss = `
 }
 
 .cast-card-foot {
+  flex: 0 0 auto;
   justify-content: flex-end;
-  margin-top: 11px;
 }
 
 .cast-card-foot span:first-child {
@@ -2071,6 +2072,7 @@ const castSearchCss = `
   border-radius: 10px;
   padding: 8px 12px;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .cast-suggestions {
