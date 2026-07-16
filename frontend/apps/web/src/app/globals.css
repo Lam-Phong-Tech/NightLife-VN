@@ -139,20 +139,13 @@ body {
   font-family: var(--nl-font-sans);
 }
 
-.nl-favorite-login-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: transparent;
-  pointer-events: none;
-}
-
 .nl-favorite-login-dialog {
-  width: min(360px, 100%);
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 10000;
+  width: min(360px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   border: 1px solid var(--vy-border-gold-22);
   border-radius: 16px;
   background: var(--vy-notification-panel-bg, var(--vy-surface));
@@ -160,7 +153,9 @@ body {
   box-shadow: var(--vy-shadow);
   padding: 22px;
   font-family: var(--nl-font-sans);
+  box-sizing: border-box;
   pointer-events: auto;
+  transform: translate(-50%, -50%);
 }
 
 .nl-favorite-login-dialog h2 {
@@ -214,10 +209,6 @@ body {
 }
 
 @media (max-width: 520px) {
-  .nl-favorite-login-overlay {
-    padding: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
-  }
-
   .nl-favorite-login-dialog {
     width: min(342px, calc(100vw - 32px));
     padding: 20px;

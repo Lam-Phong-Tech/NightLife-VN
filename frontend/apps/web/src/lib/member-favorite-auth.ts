@@ -29,12 +29,8 @@ export function redirectToLoginForFavorite() {
 
   closeFavoriteLoginPrompt();
 
-  const overlay = document.createElement("div");
-  overlay.id = favoriteLoginPromptId;
-  overlay.className = "nl-favorite-login-overlay";
-  overlay.setAttribute("role", "presentation");
-
   const dialog = document.createElement("section");
+  dialog.id = favoriteLoginPromptId;
   dialog.className = "nl-favorite-login-dialog";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-modal", "false");
@@ -66,14 +62,9 @@ export function redirectToLoginForFavorite() {
 
   actions.append(continueButton, loginLink);
   dialog.append(title, description, actions);
-  overlay.append(dialog);
-
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) closeFavoriteLoginPrompt();
-  });
 
   document.addEventListener("keydown", handleFavoriteLoginPromptKeydown);
-  document.body.append(overlay);
+  document.body.append(dialog);
 }
 
 export function requireMemberFavoriteAccess() {

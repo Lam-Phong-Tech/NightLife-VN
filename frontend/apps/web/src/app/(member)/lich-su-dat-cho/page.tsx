@@ -74,9 +74,9 @@ const reasonContentPattern = /[\p{L}\p{N}]/u;
 const hasOpeningHours = (openingHours: OpeningHoursInput) =>
   Boolean(
     openingHours &&
-      typeof openingHours === "object" &&
-      !Array.isArray(openingHours) &&
-      Object.keys(openingHours).length,
+    typeof openingHours === "object" &&
+    !Array.isArray(openingHours) &&
+    Object.keys(openingHours).length,
   );
 
 const thumbnails = {
@@ -149,7 +149,6 @@ const clampBookingDate = (value?: string | null) => {
 };
 
 const getTomorrowDate = () => getBookingDateAfterDays(1);
-
 
 const isTourBooking = (booking: BookingRecord) => Boolean(booking.tour);
 
@@ -403,22 +402,25 @@ export default function Page() {
             };
           };
           const memberBookings = items.map(attachCurrentMemberUser);
+          const localHistory = getGuestBookingHistory().map(attachCurrentMemberUser);
           const localBookingById = new Map(
-            getGuestBookingHistory()
+            localHistory
               .filter((booking) => booking.id)
               .map((booking) => [booking.id, booking] as const),
           );
           const enrichedMemberBookings = memberBookings.map((booking) => {
             const localBooking = localBookingById.get(booking.id);
-            return localBooking ? mergeBookingHistories([booking], [localBooking])[0] ?? booking : booking;
+            return localBooking
+              ? (mergeBookingHistories([booking], [localBooking])[0] ?? booking)
+              : booking;
           });
-          const normalizedLastBooking = lastBooking
-            ? attachCurrentMemberUser(lastBooking)
-            : null;
+          const normalizedLastBooking = lastBooking ? attachCurrentMemberUser(lastBooking) : null;
           if (alive) {
-            const mergedBookings = normalizedLastBooking
-              ? mergeBookingHistories(enrichedMemberBookings, [normalizedLastBooking])
-              : enrichedMemberBookings;
+            const mergedBookings = mergeBookingHistories(
+              enrichedMemberBookings,
+              localHistory,
+              normalizedLastBooking ? [normalizedLastBooking] : [],
+            );
             setMemberUserId(resolvedMemberUserId);
             setBookings(sortBookingHistories(mergedBookings, Date.now()));
           }
@@ -440,8 +442,6 @@ export default function Page() {
       alive = false;
     };
   }, [router]);
-
-
 
   useEffect(() => {
     if (!socket || !memberUserId) {
@@ -495,9 +495,7 @@ export default function Page() {
   );
   const historyTotalPages = Math.max(1, Math.ceil(visibleBookings.length / historyPageSize));
   const safeHistoryPage = Math.min(currentHistoryPage, historyTotalPages);
-  const historyPageStart = visibleBookings.length
-    ? (safeHistoryPage - 1) * historyPageSize + 1
-    : 0;
+  const historyPageStart = visibleBookings.length ? (safeHistoryPage - 1) * historyPageSize + 1 : 0;
   const historyPageEnd = Math.min(visibleBookings.length, safeHistoryPage * historyPageSize);
   const paginatedBookings = useMemo(() => {
     const startIndex = (safeHistoryPage - 1) * historyPageSize;
@@ -519,7 +517,9 @@ export default function Page() {
       return [];
     }
 
-    return buildBookingTimeSlotGroups(rescheduleOpeningHours, rescheduleDate, { fallback: "empty" });
+    return buildBookingTimeSlotGroups(rescheduleOpeningHours, rescheduleDate, {
+      fallback: "empty",
+    });
   }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
   const rescheduleTimeOptions = useMemo(
     () => rescheduleTimeOptionGroups.flatMap((group) => group.slots),
@@ -569,9 +569,7 @@ export default function Page() {
             },
           };
         });
-        setRescheduleTime((current) =>
-          slots.includes(current) ? current : (slots[0] ?? ""),
-        );
+        setRescheduleTime((current) => (slots.includes(current) ? current : (slots[0] ?? "")));
 
         if (!hasOpeningHours(openingHours)) {
           setRescheduleError("Quán chưa có cấu hình khung giờ đặt bàn trên admin.");
@@ -829,7 +827,7 @@ export default function Page() {
     window.dispatchEvent(
       new CustomEvent("nightlife:support-chat:open", {
         detail: { draft: draftText },
-      })
+      }),
     );
   };
 
@@ -843,7 +841,7 @@ export default function Page() {
             </Link>
             <div className={styles.headerCopy}>
               <h1 className={styles.headerTitle}>Đặt chỗ của tôi</h1>
-              <p className={styles.headerSubtitle}>Lịch sử & trạng thái đặt bàn</p>
+              <p className={styles.headerSubtitle}>Lịch sử đặt bàn & tour</p>
             </div>
           </header>
 
@@ -892,14 +890,14 @@ export default function Page() {
             <div className={styles.emptyCard}>
               <EmptyState
                 variant="bookings"
-                title={
-                  translateText(
-                    activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này",
-                    activeLanguage,
-                  )
-                }
+                title={translateText(
+                  activeTab === tabs[0]
+                    ? "Chưa có đặt chỗ nào"
+                    : "Chưa có đặt chỗ ở trạng thái này",
+                  activeLanguage,
+                )}
                 description={translateText(
-                  "Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây.",
+                  "Khi bạn đặt bàn, đặt cast hoặc đặt tour, lịch sử sẽ hiển thị tại đây.",
                   activeLanguage,
                 )}
                 ctaLabel={translateText("Khám phá quán", activeLanguage)}
@@ -1101,7 +1099,6 @@ export default function Page() {
           </div>
         </div>
       ) : null}
-
     </main>
   );
 }
@@ -1174,7 +1171,12 @@ function BookingCard({
             {formatGuestCount(booking.partySize, activeLanguage)}
           </div>
           {tourBooking ? (
-            <div className={styles.historyTourMeta}>{tourStopsPreview(booking, activeLanguage)}</div>
+            <div className={styles.historyTourMeta}>
+              {tourStopsPreview(booking, activeLanguage)}
+            </div>
+          ) : null}
+          {tourBooking ? (
+            <TourStopsPreview booking={booking} activeLanguage={activeLanguage} />
           ) : null}
           <div
             className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}
@@ -1220,6 +1222,16 @@ function BookingCard({
                 Chi tiết
               </Link>
             ) : null}
+            {tourBooking ? (
+              <Link
+                href={bookingConfirmHref(booking)}
+                onClick={() => rememberLastBooking(booking)}
+                className={styles.ghostCta}
+              >
+                <ReceiptText size={14} />
+                Chi tiết tour
+              </Link>
+            ) : null}
             {cancelAllowed ? (
               <button
                 type="button"
@@ -1257,8 +1269,13 @@ function BookingCard({
                 <strong>{translateText("Gửi hóa đơn", activeLanguage)}</strong>
               </Link>
             ) : null}
-            <Link href={rebookHref(booking)} className={canSubmitBill ? styles.secondaryCta : styles.primaryCta}>
-              <strong>{translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}</strong>
+            <Link
+              href={rebookHref(booking)}
+              className={canSubmitBill ? styles.secondaryCta : styles.primaryCta}
+            >
+              <strong>
+                {translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}
+              </strong>
             </Link>
           </>
         ) : (
@@ -1272,6 +1289,38 @@ function BookingCard({
         )}
       </div>
     </article>
+  );
+}
+
+function TourStopsPreview({
+  booking,
+  activeLanguage,
+}: {
+  booking: BookingRecord;
+  activeLanguage: LanguageCode;
+}) {
+  const stops = booking.tour?.stops ?? [];
+  if (!stops.length) return null;
+
+  return (
+    <div
+      className={styles.historyTourStops}
+      aria-label={translateText("Lịch trình tour", activeLanguage)}
+    >
+      {stops.slice(0, 4).map((stop, index) => (
+        <div key={`${stop.storeId}-${stop.order}-${index}`} className={styles.historyTourStop}>
+          <span className={styles.historyTourStopIndex}>{stop.order || index + 1}</span>
+          <span className={styles.historyTourStopCopy}>
+            <strong>{stop.storeName}</strong>
+            <small>
+              {stop.casts.length
+                ? stop.casts.map((cast) => cast.name).join(" · ")
+                : translateText("Admin chọn cast theo từng điểm", activeLanguage)}
+            </small>
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
