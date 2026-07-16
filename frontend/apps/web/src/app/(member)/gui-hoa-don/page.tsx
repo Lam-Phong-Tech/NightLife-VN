@@ -167,7 +167,12 @@ const confirmedUsageSourceLabel = (
   return "Chọn booking hoặc coupon đã được Admin/partner xác nhận";
 };
 
-const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
+const sanitizeMoneyInput = (value: string) => value.replace(/[^\d]/g, "");
+const parseMoneyInput = (value: string) => Number(sanitizeMoneyInput(value));
+const formatMoneyInput = (value: string) => {
+  const digits = sanitizeMoneyInput(value);
+  return digits ? Number(digits).toLocaleString("vi-VN") : "";
+};
 
 const validateEvidenceFile = (file: File | null) => {
   if (!file) return "";
@@ -684,8 +689,7 @@ export default function Page() {
   };
 
   const handleAmountChange = (value: string) => {
-    const parsed = parseMoneyInput(value);
-    setAmountInput(parsed ? parsed.toLocaleString("vi-VN") : "");
+    setAmountInput(sanitizeMoneyInput(value));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -898,6 +902,8 @@ export default function Page() {
                   placeholder="VD: 1.800.000"
                   value={amountInput}
                   onChange={(event) => handleAmountChange(event.target.value)}
+                  onBlur={() => setAmountInput((current) => formatMoneyInput(current))}
+                  onFocus={() => setAmountInput((current) => sanitizeMoneyInput(current))}
                 />
               </div>
 

@@ -296,6 +296,10 @@ type PartnerBooking = {
   partySize: number;
   totalVnd: number | null;
   store: { id?: string; name: string };
+  confirmedAt?: string | null;
+  updatedAt?: string | null;
+  qr?: { usedAt?: string | null } | null;
+  couponIssue?: { usedAt?: string | null } | null;
 };
 
 type PartnerBill = {
@@ -306,6 +310,7 @@ type PartnerBill = {
   totalVnd: number | null;
   discountVnd: number | null;
   submittedAt: string | null;
+  rejectReason?: string | null;
   usedAt?: string | null;
   submitterType?: string | null;
   store?: { id?: string | null; name: string; slug?: string | null } | null;
@@ -313,6 +318,16 @@ type PartnerBill = {
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
+};
+
+type DiscountRuleSnapshot = {
+  type?: string | null;
+  discountType?: string | null;
+  value?: number | null;
+  sourceValue?: number | null;
+  discountPercent?: number | null;
+  maxDiscountVnd?: number | null;
+  minSpendVnd?: number | null;
 };
 
 type PartnerLiteDashboard = {
@@ -362,7 +377,7 @@ type PartnerScanIssue = {
   } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   discountPercent?: number | null;
-  discountRuleSnapshot?: any;
+  discountRuleSnapshot?: DiscountRuleSnapshot | null;
 };
 
 type BarcodeDetectorResult = { rawValue?: string };
@@ -699,7 +714,8 @@ const formatDateTime = (value: string | null | undefined) => {
 };
 
 const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
-  const date = value instanceof Date ? value : value ? new Date(value) : new Date();
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) {
     return '';
   }
@@ -752,7 +768,30 @@ const translateBookingStatus = (status?: string | null) => {
   }
 };
 
-const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ''));
+const sanitizeMoneyInput = (value: string) => value.replace(/[^\d]/g, '');
+const parseMoneyInput = (value: string) => Number(sanitizeMoneyInput(value));
+const formatMoneyInput = (value: string) => {
+  const digits = sanitizeMoneyInput(value);
+  return digits ? Number(digits).toLocaleString('vi-VN') : '';
+};
+
+const isPartnerBookingConfirmedForBill = (booking: PartnerBooking | null | undefined) =>
+  ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(String(booking?.status ?? '').toUpperCase());
+
+const partnerBookingConfirmedUsageAt = (booking: PartnerBooking | null | undefined) =>
+  booking?.qr?.usedAt ??
+  booking?.couponIssue?.usedAt ??
+  (isPartnerBookingConfirmedForBill(booking) ? booking?.confirmedAt ?? booking?.updatedAt ?? null : null);
+
+const partnerBookingUsageSourceLabel = (booking: PartnerBooking | null | undefined) => {
+  if (booking?.qr?.usedAt) return 'QR booking đã được partner xác nhận';
+  if (booking?.couponIssue?.usedAt) return 'Coupon gắn booking đã được partner xác nhận';
+  if (isPartnerBookingConfirmedForBill(booking) && (booking?.confirmedAt || booking?.updatedAt)) {
+    return 'Booking đã được Admin xác nhận';
+  }
+  if (booking) return 'Booking này chưa có mốc Admin/partner xác nhận';
+  return 'Chọn booking đã được Admin/partner xác nhận';
+};
 
 const isBlank = (value?: string | null) => !value?.trim();
 const hasText = (value?: string | null) => Boolean(value?.trim());
@@ -1540,7 +1579,7 @@ export default function PartnerPage() {
   });
   const [billStoreId, setBillStoreId] = useState('');
   const [billAmountInput, setBillAmountInput] = useState('');
-  const [billUsedAt, setBillUsedAt] = useState(() => toDateTimeLocalValue(new Date()));
+  const [billUsedAt, setBillUsedAt] = useState('');
   const [billBookingId, setBillBookingId] = useState('');
   const [billEvidenceFile, setBillEvidenceFile] = useState<File | null>(null);
   const [billNotice, setBillNotice] = useState<{
@@ -2490,6 +2529,21 @@ export default function PartnerPage() {
   };
   const selectedBillStore =
     stores.find((store) => store.id === billStoreId) ?? stores[0] ?? null;
+  const selectedBillBooking = useMemo(
+    () => bookings.find((booking) => booking.id === billBookingId) ?? null,
+    [billBookingId, bookings],
+  );
+  const billConfirmedUsageAt = useMemo(
+    () => partnerBookingConfirmedUsageAt(selectedBillBooking),
+    [selectedBillBooking],
+  );
+  const billUsageSourceLabel = useMemo(
+    () =>
+      selectedBillId
+        ? 'Thời gian đã lưu từ hóa đơn'
+        : partnerBookingUsageSourceLabel(selectedBillBooking),
+    [selectedBillBooking, selectedBillId],
+  );
   const billAmount = useMemo(() => parseMoneyInput(billAmountInput), [billAmountInput]);
   const billUsedAtDate = useMemo(() => new Date(billUsedAt), [billUsedAt]);
   const isBillUsedAtInvalid = Number.isNaN(billUsedAtDate.getTime());
@@ -2552,9 +2606,18 @@ export default function PartnerPage() {
     !isBillFutureUsage &&
     !isBillPastDeadline;
 
+  const handleBillBookingChange = (value: string) => {
+    const booking = bookings.find((item) => item.id === value) ?? null;
+    const confirmedUsageAt = partnerBookingConfirmedUsageAt(booking);
+
+    setBillBookingId(value);
+    setBillUsedAt(confirmedUsageAt ? toDateTimeLocalValue(confirmedUsageAt) : '');
+    setSelectedBillId(null);
+    setBillNotice(null);
+  };
+
   const handleBillAmountChange = (value: string) => {
-    const parsed = parseMoneyInput(value);
-    setBillAmountInput(parsed ? parsed.toLocaleString('vi-VN') : '');
+    setBillAmountInput(sanitizeMoneyInput(value));
   };
 
   const handleBillFileChange = (input: HTMLInputElement) => {
@@ -5560,7 +5623,7 @@ export default function PartnerPage() {
                   <PrimaryButton
                     onClick={() => {
                       setBillAmountInput('');
-                      setBillUsedAt(toDateTimeLocalValue(new Date()));
+                      setBillUsedAt('');
                       setBillBookingId('');
                       setBillEvidenceFile(null);
                       setBillNotice(null);
@@ -5745,20 +5808,25 @@ export default function PartnerPage() {
             )}
 
             <FormField label="Quán thuộc partner *">
-              <ThemedListingSelect
-                value={billStoreId}
-                disabled={!stores.length}
-                onChange={(value) => {
-                  setBillStoreId(value);
-                  setSelectedBillId(null);
-                  setBillNotice(null);
+              <div
+                aria-readonly="true"
+                style={{
+                  ...inputStyle,
+                  minHeight: '44px',
+                  display: 'grid',
+                  alignContent: 'center',
+                  color: selectedBillStore ? colors.text : colors.muted,
+                  fontWeight: 900,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
-                placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
-                options={stores.map((store) => ({
-                  value: store.id,
-                  label: `${store.name}${store.district ? ` - ${store.district}` : ''}`,
-                }))}
-              />
+                title={selectedBillStore?.name ?? undefined}
+              >
+                {selectedBillStore
+                  ? `${selectedBillStore.name}${selectedBillStore.district ? ` - ${selectedBillStore.district}` : ''}`
+                  : 'Đang tải quán được cấp quyền...'}
+              </div>
             </FormField>
 
             <div className="partner-bill-form-grid">
@@ -5768,24 +5836,39 @@ export default function PartnerPage() {
                   placeholder="VD: 1.800.000"
                   value={billAmountInput}
                   onChange={(event) => handleBillAmountChange(event.target.value)}
+                  onBlur={() => setBillAmountInput((current) => formatMoneyInput(current))}
+                  onFocus={() => setBillAmountInput((current) => sanitizeMoneyInput(current))}
                   style={inputStyle}
                 />
               </FormField>
               <FormField label="Thời gian sử dụng *">
-                <input
-                  type="datetime-local"
-                  value={billUsedAt}
-                  onInput={(event) => setBillUsedAt(event.currentTarget.value)}
-                  onChange={(event) => setBillUsedAt(event.target.value)}
-                  style={inputStyle}
-                />
+                <div
+                  aria-readonly="true"
+                  style={{
+                    ...inputStyle,
+                    minHeight: '44px',
+                    display: 'grid',
+                    alignContent: 'center',
+                    gap: '3px',
+                    color: billUsedAt ? colors.goldPale : colors.muted,
+                    borderColor: billUsedAt ? 'rgba(129,216,157,.34)' : colors.borderGold22,
+                    background: billUsedAt ? 'rgba(129,216,157,.08)' : colors.surface2,
+                  }}
+                >
+                  <strong style={{ fontSize: '13px', lineHeight: 1.2 }}>
+                    {billUsedAt ? formatDateTime(billConfirmedUsageAt ?? billUsedAt) : 'Chưa có thời gian xác nhận'}
+                  </strong>
+                  <span style={{ color: colors.muted, fontSize: '11px', fontWeight: 800, lineHeight: 1.25 }}>
+                    {billUsageSourceLabel}
+                  </span>
+                </div>
               </FormField>
             </div>
 
             <FormField label="Liên kết booking">
               <ThemedListingSelect
                 value={billBookingId}
-                onChange={setBillBookingId}
+                onChange={handleBillBookingChange}
                 placeholder="Không liên kết booking"
                 options={[
                   { value: '', label: 'Không liên kết booking' },
@@ -5879,14 +5962,15 @@ export default function PartnerPage() {
                 ) : selectedBill?.media?.length ? (
                   <div style={{ marginTop: '4px' }}>
                     {selectedBill.media.map((med) => {
+                      const evidenceUrl = med.url ?? '';
                       const isImg =
                         med.mimeType?.startsWith('image/') ||
-                        med.url?.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i);
+                        /\.(jpeg|jpg|gif|png|webp)$/i.test(evidenceUrl.split('?')[0] ?? '');
                       return (
                         <div key={med.id} style={{ display: 'inline-block' }}>
                           {isImg ? (
                             <img
-                              src={med.url || ''}
+                              src={evidenceUrl}
                               alt={med.originalName || 'Evidence'}
                               style={{
                                 maxHeight: '240px',

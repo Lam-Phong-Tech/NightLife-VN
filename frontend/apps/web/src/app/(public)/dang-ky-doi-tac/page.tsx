@@ -1015,10 +1015,10 @@ function PartnerPageContent({
                   placeholder="-- Chọn loại hình --"
                   required
                   options={[
-                    { value: 'CLUB', label: 'Club' },
-                    { value: 'LOUNGE', label: 'Lounge' },
-                    { value: 'BAR', label: 'Bar' },
-                    { value: 'GIRLS_BAR', label: 'Girls Bar' },
+                    { value: 'CLUB', label: 'Câu lạc bộ' },
+                    { value: 'LOUNGE', label: 'Quán lounge' },
+                    { value: 'BAR', label: 'Quán bar' },
+                    { value: 'GIRLS_BAR', label: 'Quán bar nữ' },
                     { value: 'KARAOKE', label: 'Karaoke' },
                     { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
                     { value: 'RESTAURANT', label: 'Nhà hàng' },
@@ -1312,11 +1312,7 @@ function PartnerPageContent({
 }
 
 export default function Page() {
-  const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>('dark');
-
-  useEffect(() => {
-    setPartnerTheme(readStoredPartnerTheme());
-  }, []);
+  const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>(() => readStoredPartnerTheme());
 
   useEffect(() => {
     document.documentElement.classList.toggle('vy-light', partnerTheme === 'light');
