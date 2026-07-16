@@ -20,39 +20,20 @@ import { bookingApi, getLastBooking, type BookingRecord } from "@/lib/api/bookin
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import {
-  intlLocaleByLanguage,
   useActiveLanguage,
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
+import { translateText } from "@/lib/i18n/client-translations";
 import {
   AlertCircle,
-  Calendar,
   CheckCircle2,
   ChevronLeft,
   Clock,
   FileText,
-  Info,
   Sparkles,
   Trash2,
   UploadCloud,
 } from "lucide-react";
-
-const colors = {
-  bg: "var(--vy-bg)",
-  panel: "var(--vy-surface-2)",
-  panelStrong: "var(--vy-surface-3)",
-  border: "var(--vy-border-gold-22)",
-  borderStrong: "var(--vy-border-gold-32)",
-  text: "var(--vy-text)",
-  muted: "var(--vy-muted)",
-  dim: "var(--vy-faint)",
-  gold: "var(--vy-gold)",
-  goldPale: "var(--vy-gold-pale)",
-  onGold: "var(--vy-on-gold)",
-  danger: "var(--vy-error)",
-  success: "var(--vy-success)",
-  warning: "var(--vy-warn)",
-};
 
 const antdLocaleByLanguage: Record<LanguageCode, typeof viVN> = {
   vi: viVN,
@@ -102,20 +83,583 @@ type FormNotice =
   | { tone: "success"; message: string; bill?: BillRecord }
   | { tone: "warning" | "danger"; message: string };
 
-const billStatusLabel = (status?: string | null) => {
+const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
+  "Đối soát hóa đơn": {
+    en: "Bill reconciliation",
+    ja: "請求書の照合",
+    ko: "영수증 정산",
+    zh: "账单对账",
+  },
+  "Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.": {
+    en: "Submit the original bill so the team can reconcile points, deals, and venue payables.",
+    ja: "原本の請求書を送信すると、ポイント、特典、店舗精算を確認できます。",
+    ko: "원본 영수증을 제출하면 포인트, 혜택, 매장 정산을 확인할 수 있습니다.",
+    zh: "提交原始账单，用于核对积分、优惠和店铺结算。",
+  },
+  "Quán / cơ sở": {
+    en: "Venue / business",
+    ja: "店舗 / 施設",
+    ko: "매장 / 업소",
+    zh: "店铺 / 场所",
+  },
+  "Chưa có quán đã đặt": {
+    en: "No booked venue yet",
+    ja: "予約済み店舗はまだありません",
+    ko: "예약한 매장이 아직 없습니다",
+    zh: "暂无已预约店铺",
+  },
+  "Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.": {
+    en: "You need a reservation at a venue before submitting a bill.",
+    ja: "請求書を送信する前に、店舗の予約が必要です。",
+    ko: "영수증을 제출하려면 먼저 매장을 예약해야 합니다.",
+    zh: "提交账单前需要先预约一家店铺。",
+  },
+  "Liên kết đặt chỗ": {
+    en: "Linked reservation",
+    ja: "予約に紐付け",
+    ko: "예약 연결",
+    zh: "关联预约",
+  },
+  "Không liên kết đặt chỗ": {
+    en: "No linked reservation",
+    ja: "予約に紐付けない",
+    ko: "예약 연결 없음",
+    zh: "不关联预约",
+  },
+  "Đặt chỗ": {
+    en: "Reservation",
+    ja: "予約",
+    ko: "예약",
+    zh: "预约",
+  },
+  "Đã liên kết": {
+    en: "Linked",
+    ja: "連携済み",
+    ko: "연결됨",
+    zh: "已关联",
+  },
+  "Đặt chỗ đang gắn với hóa đơn": {
+    en: "Reservation linked to this bill",
+    ja: "この請求書に紐付いた予約",
+    ko: "이 영수증에 연결된 예약",
+    zh: "与此账单关联的预约",
+  },
+  "Đơn hàng đang liên kết": {
+    en: "Linked order",
+    ja: "連携中の注文",
+    ko: "연결된 주문",
+    zh: "关联订单",
+  },
+  "Mã đặt chỗ": {
+    en: "Reservation code",
+    ja: "予約コード",
+    ko: "예약 코드",
+    zh: "预约码",
+  },
+  "Giờ hẹn": {
+    en: "Appointment time",
+    ja: "予約時間",
+    ko: "예약 시간",
+    zh: "预约时间",
+  },
+  "Xác nhận sử dụng": {
+    en: "Usage confirmation",
+    ja: "利用確認",
+    ko: "사용 확인",
+    zh: "使用确认",
+  },
+  "Mã ưu đãi/QR": {
+    en: "Deal code / QR",
+    ja: "特典コード / QR",
+    ko: "혜택 코드 / QR",
+    zh: "优惠码 / QR",
+  },
+  "Mức giảm": {
+    en: "Discount",
+    ja: "割引",
+    ko: "할인",
+    zh: "折扣",
+  },
+  "Chưa được xác nhận": {
+    en: "Not confirmed yet",
+    ja: "未確認",
+    ko: "아직 확인되지 않음",
+    zh: "尚未确认",
+  },
+  "QR đặt chỗ": {
+    en: "Reservation QR",
+    ja: "予約QR",
+    ko: "예약 QR",
+    zh: "预约二维码",
+  },
+  "Liên kết mã ưu đãi": {
+    en: "Linked deal code",
+    ja: "特典コードに紐付け",
+    ko: "혜택 코드 연결",
+    zh: "关联优惠码",
+  },
+  "Đã liên kết mã ưu đãi": {
+    en: "Deal code linked",
+    ja: "特典コード連携済み",
+    ko: "혜택 코드 연결됨",
+    zh: "已关联优惠码",
+  },
+  "Không liên kết mã ưu đãi": {
+    en: "No linked deal code",
+    ja: "特典コードに紐付けない",
+    ko: "혜택 코드 연결 없음",
+    zh: "不关联优惠码",
+  },
+  "Mã ưu đãi": {
+    en: "Deal code",
+    ja: "特典コード",
+    ko: "혜택 코드",
+    zh: "优惠码",
+  },
+  "Tổng tiền hóa đơn gốc": {
+    en: "Original bill total",
+    ja: "原本請求額",
+    ko: "원본 영수증 총액",
+    zh: "原始账单总额",
+  },
+  "Vui lòng nhập tổng tiền": {
+    en: "Enter total amount",
+    ja: "合計金額を入力してください",
+    ko: "총액을 입력하세요",
+    zh: "请输入总金额",
+  },
+  "Thời gian xác nhận sử dụng": {
+    en: "Confirmed usage time",
+    ja: "確認済み利用時間",
+    ko: "확인된 사용 시간",
+    zh: "已确认使用时间",
+  },
+  "Chưa có thời gian xác nhận": {
+    en: "No confirmed time yet",
+    ja: "確認済み時間はまだありません",
+    ko: "확인된 시간이 아직 없습니다",
+    zh: "暂无确认时间",
+  },
+  "Nhấn để tải ảnh hoặc file PDF": {
+    en: "Tap to upload a photo or PDF",
+    ja: "写真またはPDFをアップロード",
+    ko: "사진 또는 PDF 업로드",
+    zh: "点击上传照片或 PDF",
+  },
+  "Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)": {
+    en: "Supports JPG, PNG, WEBP, GIF, PDF (max 25MB)",
+    ja: "JPG、PNG、WEBP、GIF、PDF対応（最大25MB）",
+    ko: "JPG, PNG, WEBP, GIF, PDF 지원 (최대 25MB)",
+    zh: "支持 JPG、PNG、WEBP、GIF、PDF（最大25MB）",
+  },
+  "Ảnh xem trước chứng từ": {
+    en: "Evidence preview",
+    ja: "証明書類のプレビュー",
+    ko: "증빙 미리보기",
+    zh: "凭证预览",
+  },
+  "Đọc hóa đơn tự động": {
+    en: "Read bill automatically",
+    ja: "請求書を自動読み取り",
+    ko: "영수증 자동 읽기",
+    zh: "自动读取账单",
+  },
+  "Xóa": {
+    en: "Remove",
+    ja: "削除",
+    ko: "삭제",
+    zh: "删除",
+  },
+  "Gợi ý từ công cụ đọc hóa đơn": {
+    en: "Suggestions from bill reader",
+    ja: "請求書読み取りツールの提案",
+    ko: "영수증 읽기 도구 제안",
+    zh: "账单读取工具建议",
+  },
+  "Độ tin cậy": {
+    en: "Confidence",
+    ja: "信頼度",
+    ko: "신뢰도",
+    zh: "可信度",
+  },
+  "Thời gian trên hóa đơn": {
+    en: "Time on bill",
+    ja: "請求書上の時間",
+    ko: "영수증의 시간",
+    zh: "账单上的时间",
+  },
+  "Không đọc được, cần nhập tay": {
+    en: "Could not read, enter manually",
+    ja: "読み取れません。手入力してください",
+    ko: "읽을 수 없습니다. 직접 입력하세요",
+    zh: "无法读取，请手动输入",
+  },
+  "Không đọc được": {
+    en: "Could not read",
+    ja: "読み取れません",
+    ko: "읽을 수 없습니다",
+    zh: "无法读取",
+  },
+  "Thời gian gửi hệ thống vẫn được lấy từ mốc đã xác nhận.": {
+    en: "The submitted usage time still comes from the confirmed timestamp.",
+    ja: "送信される利用時間は確認済み時刻から取得されます。",
+    ko: "제출되는 사용 시간은 확인된 시각을 기준으로 합니다.",
+    zh: "提交的使用时间仍以已确认时间为准。",
+  },
+  "Chỉ nhập tổng tiền hóa đơn gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy từ mốc đã xác nhận; hóa đơn quá 10 ngày sẽ không được nhận.": {
+    en: "Enter only the original bill total, not item or service details. Usage time comes from the confirmed timestamp; bills older than 10 days are not accepted.",
+    ja: "明細ではなく原本の合計金額のみ入力してください。利用時間は確認済み時刻から取得され、10日を超えた請求書は受付できません。",
+    ko: "항목/서비스 내역이 아닌 원본 영수증 총액만 입력하세요. 사용 시간은 확인된 시각을 기준으로 하며, 10일이 지난 영수증은 접수되지 않습니다.",
+    zh: "只填写原始账单总额，不填写菜品/服务明细。使用时间取自已确认时间，超过10天的账单不予接收。",
+  },
+  "Đang gửi hóa đơn...": {
+    en: "Submitting bill...",
+    ja: "請求書を送信中...",
+    ko: "영수증 제출 중...",
+    zh: "正在提交账单...",
+  },
+  "Hóa đơn đã gửi": {
+    en: "Submitted bills",
+    ja: "送信済み請求書",
+    ko: "제출한 영수증",
+    zh: "已提交账单",
+  },
+  "Lịch sử gần đây": {
+    en: "Recent history",
+    ja: "最近の履歴",
+    ko: "최근 내역",
+    zh: "最近记录",
+  },
+  "Bạn chưa gửi hóa đơn nào gần đây.": {
+    en: "You have not submitted any bills recently.",
+    ja: "最近送信した請求書はありません。",
+    ko: "최근 제출한 영수증이 없습니다.",
+    zh: "你最近还没有提交账单。",
+  },
+  "Hóa đơn #": {
+    en: "Bill #",
+    ja: "請求書 #",
+    ko: "영수증 #",
+    zh: "账单 #",
+  },
+  "Quán:": {
+    en: "Venue:",
+    ja: "店舗:",
+    ko: "매장:",
+    zh: "店铺：",
+  },
+  "Tổng tiền:": {
+    en: "Total:",
+    ja: "合計:",
+    ko: "총액:",
+    zh: "总金额：",
+  },
+  "Ngày sử dụng:": {
+    en: "Usage date:",
+    ja: "利用日:",
+    ko: "사용일:",
+    zh: "使用日期：",
+  },
+  "Tài khoản": {
+    en: "Account",
+    ja: "アカウント",
+    ko: "계정",
+    zh: "账户",
+  },
+  "Gửi hóa đơn": {
+    en: "Submit bill",
+    ja: "請求書を送信",
+    ko: "영수증 제출",
+    zh: "提交账单",
+  },
+  "Trong 10 ngày": {
+    en: "Within 10 days",
+    ja: "10日以内",
+    ko: "10일 이내",
+    zh: "10天内",
+  },
+  "Số người": {
+    en: "Guests",
+    ja: "人数",
+    ko: "인원",
+    zh: "人数",
+  },
+  "Tổng tiền": {
+    en: "Total",
+    ja: "合計金額",
+    ko: "총액",
+    zh: "总金额",
+  },
+  "Khuyến khích gửi kèm để duyệt nhanh hơn.": {
+    en: "Attach proof to speed up review.",
+    ja: "確認を早めるため添付をおすすめします。",
+    ko: "빠른 검토를 위해 첨부를 권장합니다.",
+    zh: "建议附上凭证以加快审核。",
+  },
+  "Đang đọc...": {
+    en: "Reading...",
+    ja: "読み取り中...",
+    ko: "읽는 중...",
+    zh: "读取中...",
+  },
+  "Bỏ file": {
+    en: "Remove file",
+    ja: "ファイルを削除",
+    ko: "파일 제거",
+    zh: "移除文件",
+  },
+  "Đã duyệt": {
+    en: "Approved",
+    ja: "承認済み",
+    ko: "승인됨",
+    zh: "已通过",
+  },
+  "Từ chối": {
+    en: "Rejected",
+    ja: "却下",
+    ko: "거절됨",
+    zh: "已拒绝",
+  },
+  "Chờ duyệt": {
+    en: "Pending review",
+    ja: "確認待ち",
+    ko: "검토 대기",
+    zh: "待审核",
+  },
+  "Đã thanh toán": {
+    en: "Paid",
+    ja: "支払い済み",
+    ko: "결제 완료",
+    zh: "已支付",
+  },
+  "Đã hủy": {
+    en: "Canceled",
+    ja: "キャンセル済み",
+    ko: "취소됨",
+    zh: "已取消",
+  },
+  "Đang xử lý": {
+    en: "Processing",
+    ja: "処理中",
+    ko: "처리 중",
+    zh: "处理中",
+  },
+  "QR đặt chỗ đã được đối tác xác nhận": {
+    en: "Reservation QR confirmed by the venue",
+    ja: "予約QRは店舗で確認済みです",
+    ko: "예약 QR이 매장에서 확인되었습니다",
+    zh: "预约二维码已由店铺确认",
+  },
+  "Mã ưu đãi gắn đặt chỗ đã được đối tác xác nhận": {
+    en: "Reservation deal code confirmed by the venue",
+    ja: "予約に紐付いた特典コードは店舗で確認済みです",
+    ko: "예약에 연결된 혜택 코드가 매장에서 확인되었습니다",
+    zh: "预约关联的优惠码已由店铺确认",
+  },
+  "Đặt chỗ đã được quản trị viên xác nhận": {
+    en: "Reservation confirmed by the team",
+    ja: "予約はチームにより確認済みです",
+    ko: "예약이 팀에서 확인되었습니다",
+    zh: "预约已由团队确认",
+  },
+  "Mã ưu đãi đã được đối tác xác nhận": {
+    en: "Deal code confirmed by the venue",
+    ja: "特典コードは店舗で確認済みです",
+    ko: "혜택 코드가 매장에서 확인되었습니다",
+    zh: "优惠码已由店铺确认",
+  },
+  "Chưa có xác nhận sử dụng từ quản trị viên hoặc đối tác": {
+    en: "No usage confirmation yet",
+    ja: "利用確認はまだありません",
+    ko: "아직 사용 확인이 없습니다",
+    zh: "暂无使用确认",
+  },
+  "Chọn đặt chỗ hoặc mã ưu đãi đã được xác nhận": {
+    en: "Choose a confirmed reservation or deal code",
+    ja: "確認済みの予約または特典コードを選択してください",
+    ko: "확인된 예약 또는 혜택 코드를 선택하세요",
+    zh: "请选择已确认的预约或优惠码",
+  },
+  "Đang tải danh sách quán, vui lòng thử lại sau vài giây.": {
+    en: "Loading venue list, please try again in a few seconds.",
+    ja: "店舗リストを読み込み中です。数秒後にもう一度お試しください。",
+    ko: "매장 목록을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.",
+    zh: "正在加载店铺列表，请稍后再试。",
+  },
+  "Bạn cần có ít nhất một lịch đặt chỗ trước khi gửi hóa đơn.": {
+    en: "You need at least one reservation before submitting a bill.",
+    ja: "請求書を送信する前に、少なくとも1件の予約が必要です。",
+    ko: "영수증 제출 전에 예약이 하나 이상 필요합니다.",
+    zh: "提交账单前至少需要一个预约。",
+  },
+  "Vui lòng chọn quán/cơ sở.": {
+    en: "Please choose a venue.",
+    ja: "店舗を選択してください。",
+    ko: "매장을 선택해 주세요.",
+    zh: "请选择店铺。",
+  },
+  "Vui lòng liên kết đặt chỗ hoặc mã ưu đãi đã được quản trị viên hoặc đối tác xác nhận.": {
+    en: "Please link a confirmed reservation or deal code.",
+    ja: "確認済みの予約または特典コードに紐付けてください。",
+    ko: "확인된 예약 또는 혜택 코드를 연결해 주세요.",
+    zh: "请关联已确认的预约或优惠码。",
+  },
+  "Vui lòng nhập tổng tiền hóa đơn gốc.": {
+    en: "Please enter the original bill total.",
+    ja: "原本請求額を入力してください。",
+    ko: "원본 영수증 총액을 입력해 주세요.",
+    zh: "请输入原始账单总额。",
+  },
+  "Tổng tiền hóa đơn gốc phải là số nguyên lớn hơn 0.": {
+    en: "Original bill total must be an integer greater than 0.",
+    ja: "原本請求額は0より大きい整数で入力してください。",
+    ko: "원본 영수증 총액은 0보다 큰 정수여야 합니다.",
+    zh: "原始账单总额必须是大于0的整数。",
+  },
+  "Tổng tiền hóa đơn gốc không được vượt quá 100.000.000đ.": {
+    en: "Original bill total cannot exceed 100,000,000 VND.",
+    ja: "原本請求額は100,000,000 VNDを超えられません。",
+    ko: "원본 영수증 총액은 100,000,000 VND를 초과할 수 없습니다.",
+    zh: "原始账单总额不能超过100,000,000越南盾。",
+  },
+  "Đặt chỗ hoặc mã ưu đãi này chưa có thời gian xác nhận sử dụng.": {
+    en: "This reservation or deal code does not have a confirmed usage time yet.",
+    ja: "この予約または特典コードには確認済み利用時間がまだありません。",
+    ko: "이 예약 또는 혜택 코드에는 아직 확인된 사용 시간이 없습니다.",
+    zh: "此预约或优惠码尚无确认使用时间。",
+  },
+  "Thời gian sử dụng không hợp lệ.": {
+    en: "Usage time is invalid.",
+    ja: "利用時間が無効です。",
+    ko: "사용 시간이 올바르지 않습니다.",
+    zh: "使用时间无效。",
+  },
+  "Đang đồng bộ thời gian, vui lòng thử lại sau vài giây.": {
+    en: "Syncing time, please try again in a few seconds.",
+    ja: "時間を同期中です。数秒後にもう一度お試しください。",
+    ko: "시간을 동기화하는 중입니다. 잠시 후 다시 시도해 주세요.",
+    zh: "正在同步时间，请稍后再试。",
+  },
+  "Thời gian sử dụng không được ở tương lai.": {
+    en: "Usage time cannot be in the future.",
+    ja: "利用時間は未来にできません。",
+    ko: "사용 시간은 미래일 수 없습니다.",
+    zh: "使用时间不能是未来时间。",
+  },
+  "Hóa đơn quá 10 ngày sẽ không được nhận.": {
+    en: "Bills older than 10 days are not accepted.",
+    ja: "10日を超えた請求書は受付できません。",
+    ko: "10일이 지난 영수증은 접수되지 않습니다.",
+    zh: "超过10天的账单不予接收。",
+  },
+  "Ảnh/chứng từ chỉ hỗ trợ JPG, PNG, WEBP, GIF hoặc PDF.": {
+    en: "Evidence only supports JPG, PNG, WEBP, GIF, or PDF.",
+    ja: "証明書類はJPG、PNG、WEBP、GIF、PDFのみ対応しています。",
+    ko: "증빙은 JPG, PNG, WEBP, GIF 또는 PDF만 지원합니다.",
+    zh: "凭证仅支持 JPG、PNG、WEBP、GIF 或 PDF。",
+  },
+  "Ảnh/chứng từ không được vượt quá 25MB.": {
+    en: "Evidence cannot exceed 25MB.",
+    ja: "証明書類は25MBを超えられません。",
+    ko: "증빙은 25MB를 초과할 수 없습니다.",
+    zh: "凭证不能超过25MB。",
+  },
+  "Bạn cần đăng nhập hoặc đăng ký thành viên trước khi gửi hóa đơn.": {
+    en: "Please sign in or register as a member before submitting a bill.",
+    ja: "請求書を送信する前に、ログインまたは会員登録してください。",
+    ko: "영수증을 제출하기 전에 로그인하거나 회원가입해 주세요.",
+    zh: "提交账单前请先登录或注册会员。",
+  },
+  "Chưa gửi được hóa đơn. Vui lòng thử lại.": {
+    en: "Could not submit the bill. Please try again.",
+    ja: "請求書を送信できませんでした。もう一度お試しください。",
+    ko: "영수증을 제출하지 못했습니다. 다시 시도해 주세요.",
+    zh: "无法提交账单，请重试。",
+  },
+  "Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.": {
+    en: "The bill reader suggested data. Please review it before submitting.",
+    ja: "請求書読み取りツールがデータを提案しました。送信前に確認してください。",
+    ko: "영수증 읽기 도구가 데이터를 제안했습니다. 제출 전에 확인해 주세요.",
+    zh: "账单读取工具已给出建议数据，请提交前确认。",
+  },
+  "Công cụ đọc hóa đơn đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc đã xác nhận.": {
+    en: "The bill reader filled the total. Usage time still comes from the confirmed timestamp.",
+    ja: "請求書読み取りツールが合計金額を入力しました。利用時間は確認済み時刻から取得されます。",
+    ko: "영수증 읽기 도구가 총액을 입력했습니다. 사용 시간은 확인된 시각을 기준으로 합니다.",
+    zh: "账单读取工具已填写总金额。使用时间仍取自已确认时间。",
+  },
+  "Đã liên kết đặt chỗ": {
+    en: "Linked reservation",
+    ja: "予約を連携しました",
+    ko: "예약이 연결되었습니다",
+    zh: "已关联预约",
+  },
+  "Thời gian sử dụng sẽ lấy từ mốc đã xác nhận.": {
+    en: "Usage time will come from the confirmed timestamp.",
+    ja: "利用時間は確認済み時刻から取得されます。",
+    ko: "사용 시간은 확인된 시각을 기준으로 합니다.",
+    zh: "使用时间将取自已确认时间。",
+  },
+  "Hóa đơn đã được gửi, nhưng ảnh hoặc chứng từ chưa tải lên được.": {
+    en: "The bill was submitted, but the photo or proof could not be uploaded.",
+    ja: "請求書は送信されましたが、写真または証明書類をアップロードできませんでした。",
+    ko: "영수증은 제출되었지만 사진 또는 증빙을 업로드하지 못했습니다.",
+    zh: "账单已提交，但照片或凭证上传失败。",
+  },
+  "Đã gửi hóa đơn": {
+    en: "Submitted bill",
+    ja: "請求書を送信しました",
+    ko: "영수증 제출 완료",
+    zh: "已提交账单",
+  },
+  "để quản trị viên duyệt.": {
+    en: "for review.",
+    ja: "確認待ちです。",
+    ko: "검토 대기 중입니다.",
+    zh: "等待审核。",
+  },
+  "tối đa": {
+    en: "max",
+    ja: "最大",
+    ko: "최대",
+    zh: "最高",
+  },
+  "từ": {
+    en: "from",
+    ja: "最低",
+    ko: "최소",
+    zh: "满",
+  },
+};
+
+const localize = (value: string, language: LanguageCode) => {
+  if (language === "vi") return value;
+  return billPageCopy[value]?.[language] ?? translateText(value, language);
+};
+
+const partySizeLabel = (count: number, language: LanguageCode) =>
+  ({
+    vi: `${count} người`,
+    en: `${count} guests`,
+    ja: `${count}名`,
+    ko: `${count}명`,
+    zh: `${count}人`,
+  })[language];
+
+const billStatusLabel = (status: string | null | undefined, language: LanguageCode) => {
   switch (status) {
     case "VERIFIED":
-      return "Đã duyệt";
+      return localize("Đã duyệt", language);
     case "REJECTED":
-      return "Từ chối";
+      return localize("Từ chối", language);
     case "SUBMITTED":
-      return "Chờ duyệt";
+      return localize("Chờ duyệt", language);
     case "PAID":
-      return "Đã thanh toán";
+      return localize("Đã thanh toán", language);
     case "VOIDED":
-      return "Đã hủy";
+      return localize("Đã hủy", language);
     default:
-      return "Member";
+      return localize("Đang xử lý", language);
   }
 };
 
@@ -173,15 +717,16 @@ const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
 const confirmedUsageSourceLabel = (
   booking: BookingRecord | null,
   couponIssue: CouponIssue | null,
+  language: LanguageCode,
 ) => {
-  if (booking?.qr?.usedAt) return "QR booking đã được partner xác nhận";
-  if (booking?.couponIssue?.usedAt) return "Coupon gắn booking đã được partner xác nhận";
+  if (booking?.qr?.usedAt) return localize("QR đặt chỗ đã được đối tác xác nhận", language);
+  if (booking?.couponIssue?.usedAt) return localize("Mã ưu đãi gắn đặt chỗ đã được đối tác xác nhận", language);
   if (isBookingAdminConfirmedForBill(booking) && (booking?.confirmedAt || booking?.updatedAt)) {
-    return "Booking đã được Admin xác nhận";
+    return localize("Đặt chỗ đã được quản trị viên xác nhận", language);
   }
-  if (couponIssue?.usedAt) return "Coupon đã được partner xác nhận";
-  if (booking || couponIssue) return "Chưa có xác nhận sử dụng từ Admin/partner";
-  return "Chọn booking hoặc coupon đã được Admin/partner xác nhận";
+  if (couponIssue?.usedAt) return localize("Mã ưu đãi đã được đối tác xác nhận", language);
+  if (booking || couponIssue) return localize("Chưa có xác nhận sử dụng từ quản trị viên hoặc đối tác", language);
+  return localize("Chọn đặt chỗ hoặc mã ưu đãi đã được xác nhận", language);
 };
 
 const sanitizeMoneyInput = (value: string) => value.replace(/[^\d]/g, "");
@@ -248,23 +793,23 @@ const validateBillForm = ({
   }
 
   if (!hasConfirmedUsageSource) {
-    return "Vui lòng liên kết booking/coupon đã được Admin hoặc partner xác nhận.";
+    return "Vui lòng liên kết đặt chỗ hoặc mã ưu đãi đã được quản trị viên hoặc đối tác xác nhận.";
   }
 
   if (!amountInput.trim()) {
-    return "Vui lòng nhập tổng tiền bill gốc.";
+    return "Vui lòng nhập tổng tiền hóa đơn gốc.";
   }
 
   if (!Number.isSafeInteger(amount) || amount < 1) {
-    return "Tổng tiền bill gốc phải là số nguyên lớn hơn 0.";
+    return "Tổng tiền hóa đơn gốc phải là số nguyên lớn hơn 0.";
   }
 
   if (amount > maxBillTotalVnd) {
-    return "Tổng tiền bill gốc không được vượt quá 100.000.000đ.";
+    return "Tổng tiền hóa đơn gốc không được vượt quá 100.000.000đ.";
   }
 
   if (!usedAt.trim()) {
-    return "Booking/coupon này chưa có thời gian xác nhận sử dụng từ Admin/partner.";
+    return "Đặt chỗ hoặc mã ưu đãi này chưa có thời gian xác nhận sử dụng.";
   }
 
   if (isUsedAtInvalid) {
@@ -280,7 +825,7 @@ const validateBillForm = ({
   }
 
   if (isPastDeadline) {
-    return "Bill quá 10 ngày sẽ không được nhận.";
+    return "Hóa đơn quá 10 ngày sẽ không được nhận.";
   }
 
   return validateEvidenceFile(evidenceFile);
@@ -289,8 +834,8 @@ const validateBillForm = ({
 const canAttachCouponIssueToBill = (issue: CouponIssue) =>
   issue.status === "USED" && Boolean(issue.usedAt);
 
-const couponIssueOptionLabel = (issue: CouponIssue) => {
-  const storeName = issue.coupon.store?.name ?? "Coupon";
+const couponIssueOptionLabel = (issue: CouponIssue, language: LanguageCode) => {
+  const storeName = issue.coupon.store?.name ?? localize("Mã ưu đãi", language);
   const status = issue.statusLabel ?? issue.status;
   return `${issue.coupon.name} - ${storeName} - ${status}`;
 };
@@ -306,6 +851,7 @@ const couponDiscountLabel = (
   coupon: CouponDiscountSource | null | undefined,
   issue: CouponIssue | null | undefined,
   formatMoney: (value: number) => string,
+  language: LanguageCode,
 ) => {
   const snapshot = issue?.discountRuleSnapshot;
   const discountType = snapshot?.type ?? coupon?.discountType;
@@ -327,10 +873,10 @@ const couponDiscountLabel = (
       : `-${Number(discountValue ?? 0)}%`;
   const detailParts = [
     typeof maxDiscountVnd === "number" && maxDiscountVnd > 0
-      ? `tối đa ${formatMoney(maxDiscountVnd)}`
+      ? `${localize("tối đa", language)} ${formatMoney(maxDiscountVnd)}`
       : "",
     typeof minSpendVnd === "number" && minSpendVnd > 0
-      ? `từ ${formatMoney(minSpendVnd)}`
+      ? `${localize("từ", language)} ${formatMoney(minSpendVnd)}`
       : "",
   ].filter(Boolean);
 
@@ -357,7 +903,7 @@ const bookedStoreOptionsFromBookings = (bookings: BookingRecord[]) => {
 const cleanApiMessage = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
-      return "Guest chưa đăng nhập không gửi bill trong MVP; vui lòng đăng nhập/đăng ký Member.";
+      return "Bạn cần đăng nhập hoặc đăng ký thành viên trước khi gửi hóa đơn.";
     }
 
     return translateApiMessage(error.message, error.status);
@@ -366,13 +912,17 @@ const cleanApiMessage = (error: unknown) => {
   return translateApiMessage(
     error instanceof Error ? error.message : undefined,
     undefined,
-    "Chưa gửi được bill. Vui lòng thử lại.",
+    "Chưa gửi được hóa đơn. Vui lòng thử lại.",
   );
 };
 
 export default function Page() {
   const searchParams = useSearchParams();
   const activeLanguage = useActiveLanguage();
+  const t = useMemo(
+    () => (value: string) => localize(value, activeLanguage),
+    [activeLanguage],
+  );
   const { formatMoney } = useMoneyFormatter(activeLanguage);
   const focusedBillId = searchParams.get("billId") || "";
   const requestedBookingId = searchParams.get("bookingId")?.trim() || "";
@@ -416,7 +966,7 @@ export default function Page() {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
       }
-      setNotice({ tone: "danger", message: fileError });
+      setNotice({ tone: "danger", message: t(fileError) });
       return;
     }
 
@@ -472,11 +1022,11 @@ export default function Page() {
       setNotice({
         tone: preview.requiresManualReview ? "warning" : "success",
         message: preview.requiresManualReview
-          ? "AI đọc bill đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi."
-          : "AI đọc bill đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc Admin/partner xác nhận.",
+          ? t("Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.")
+          : t("Công cụ đọc hóa đơn đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc đã xác nhận."),
       });
     } catch (error) {
-      setNotice({ tone: "danger", message: cleanApiMessage(error) });
+      setNotice({ tone: "danger", message: t(cleanApiMessage(error)) });
     } finally {
       setIsReadingEvidence(false);
     }
@@ -597,11 +1147,11 @@ export default function Page() {
       }
       setNotice({
         tone: "success",
-        message: `Đã liên kết booking ${booking.bookingCode}. Thời gian sử dụng sẽ lấy từ mốc Admin/partner xác nhận.`,
+        message: `${t("Đã liên kết đặt chỗ")} ${booking.bookingCode}. ${t("Thời gian sử dụng sẽ lấy từ mốc đã xác nhận.")}`,
       });
       setAppliedBookingId(requestedBookingId);
     });
-  }, [appliedBookingId, bookings, requestedBookingId]);
+  }, [activeLanguage, appliedBookingId, bookings, requestedBookingId, t]);
 
   const selectedCouponIssue = useMemo(
     () => couponIssues.find((issue) => issue.id === couponIssueId) ?? null,
@@ -622,8 +1172,8 @@ export default function Page() {
     [confirmedUsageAt],
   );
   const confirmedUsageLabel = useMemo(
-    () => confirmedUsageSourceLabel(selectedBooking, selectedCouponIssue),
-    [selectedBooking, selectedCouponIssue],
+    () => confirmedUsageSourceLabel(selectedBooking, selectedCouponIssue, activeLanguage),
+    [activeLanguage, selectedBooking, selectedCouponIssue],
   );
 
   const selectedStore = useMemo(() => {
@@ -646,8 +1196,9 @@ export default function Page() {
         selectedBooking?.coupon ?? selectedCouponIssue?.coupon,
         selectedCouponIssue,
         formatMoney,
+        activeLanguage,
       ),
-    [formatMoney, selectedBooking?.coupon, selectedCouponIssue],
+    [activeLanguage, formatMoney, selectedBooking?.coupon, selectedCouponIssue],
   );
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
@@ -668,23 +1219,9 @@ export default function Page() {
     Boolean(timeWindow.nowMs) &&
     !isUsedAtInvalid &&
     timeWindow.nowMs - usedAtDate.getTime() > tenDaysMs;
-  const isMissingUsageConfirmation = !usedAt.trim();
-  const deadlineStatusLabel = isMissingUsageConfirmation
-    ? "Chưa xác nhận"
-    : isFutureUsage
-      ? "Sai thời gian"
-      : isPastDeadline
-        ? "Quá hạn"
-        : "Hợp lệ";
-  const deadlineStatusColor =
-    isFutureUsage || isPastDeadline
-      ? colors.danger
-      : isMissingUsageConfirmation
-        ? colors.warning
-        : colors.success;
   const billValidationMessage = useMemo(
-    () =>
-      validateBillForm({
+    () => {
+      const message = validateBillForm({
         isLoadingOptions,
         hasBookedStores: stores.length > 0,
         hasStore: Boolean(bookingId || storeSlug),
@@ -697,7 +1234,9 @@ export default function Page() {
         isPastDeadline,
         evidenceFile,
         timeReady: Boolean(timeWindow.nowMs),
-      }),
+      });
+      return message ? t(message) : "";
+    },
     [
       amount,
       amountInput,
@@ -712,6 +1251,7 @@ export default function Page() {
       selectedBooking,
       selectedCouponIssue,
       timeWindow.nowMs,
+      t,
       usedAt,
     ],
   );
@@ -770,19 +1310,19 @@ export default function Page() {
       };
       const bill = await billApi.submitMemberBill(payload);
 
-      let uploadWarning = "";
-      if (evidenceFile) {
-        try {
-          await billApi.uploadEvidence(bill.id, evidenceFile);
-        } catch {
-          uploadWarning = " Bill đã được gửi, nhưng ảnh/chứng từ chưa upload được.";
-        }
+    let uploadWarning = "";
+    if (evidenceFile) {
+      try {
+        await billApi.uploadEvidence(bill.id, evidenceFile);
+      } catch {
+          uploadWarning = ` ${t("Hóa đơn đã được gửi, nhưng ảnh hoặc chứng từ chưa tải lên được.")}`;
       }
+    }
 
       setSubmittedBills((current) => [bill, ...current]);
       setNotice({
         tone: uploadWarning ? "warning" : "success",
-        message: `Đã gửi bill ${bill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
+        message: `${t("Đã gửi hóa đơn")} ${bill.id.slice(0, 8)} ${t("để quản trị viên duyệt.")}${uploadWarning}`,
         bill,
       });
       setAmountInput("");
@@ -795,7 +1335,7 @@ export default function Page() {
         setPreviewUrl(null);
       }
     } catch (error) {
-      setNotice({ tone: "danger", message: cleanApiMessage(error) });
+      setNotice({ tone: "danger", message: t(cleanApiMessage(error)) });
     } finally {
       setIsSubmitting(false);
     }
@@ -807,22 +1347,22 @@ export default function Page() {
         <section className="nl-bill-shell">
           <Link href="/tai-khoan" className="nl-back-link">
             <ChevronLeft size={16} />
-            <span>Tài khoản</span>
+            <span>{t("Tài khoản")}</span>
           </Link>
 
           <div className="nl-bill-head">
             <div className="nl-bill-title-container">
               <div className="nl-bill-title-row">
-                <h1 className="nl-bill-title">Gửi hóa đơn</h1>
+                <h1 className="nl-bill-title">{t("Gửi hóa đơn")}</h1>
                 <span className="nl-bill-rule-pill">
                   <Clock size={12} />
-                  <span>Trong 10 ngày</span>
+                  <span>{t("Trong 10 ngày")}</span>
                 </span>
               </div>
-              <div className="nl-bill-title-en">SUBMIT BILL</div>
+              <div className="nl-bill-title-note">{t("Đối soát hóa đơn")}</div>
               <div className="nl-title-divider"></div>
               <p className="nl-bill-desc">
-                Gửi bill gốc để Admin đối soát điểm, ưu đãi và công nợ với quán.
+                {t("Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.")}
               </p>
             </div>
           </div>
@@ -835,7 +1375,7 @@ export default function Page() {
 
               <div className="nl-field">
                 <label htmlFor="bill-store-select">
-                  Quán / cơ sở * <span className="nl-label-en">STORE / VENUE</span>
+                  {t("Quán / cơ sở")} *
                 </label>
                 {selectedBooking || selectedCouponIssue ? (
                   <>
@@ -857,7 +1397,7 @@ export default function Page() {
                             label: `${storeItem.name}${storeItem.district ? ` - ${storeItem.district}` : ""}`,
                             value: storeItem.slug,
                           }))
-                        : [{ label: "Chưa có quán đã đặt", value: "" }]
+                        : [{ label: t("Chưa có quán đã đặt"), value: "" }]
                     }
                     popupClassName="nl-bill-select-popup"
                     value={storeSlug}
@@ -865,7 +1405,7 @@ export default function Page() {
                 )}
                 {!isLoadingOptions && !stores.length ? (
                   <span className="nl-field-help">
-                    Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.
+                    {t("Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.")}
                   </span>
                 ) : null}
               </div>
@@ -873,7 +1413,7 @@ export default function Page() {
               {bookings.length ? (
                 <div className="nl-field">
                   <label htmlFor="bill-booking-select">
-                    Liên kết booking <span className="nl-label-en">LINKED BOOKING</span>
+                    {t("Liên kết đặt chỗ")}
                   </label>
                   {bookingId ? (
                     <>
@@ -883,7 +1423,7 @@ export default function Page() {
                               selectedBooking.scheduledAt,
                               activeLanguage,
                             )}`
-                          : "Đã liên kết"}
+                          : t("Đã liên kết")}
                       </div>
                     </>
                   ) : (
@@ -892,9 +1432,9 @@ export default function Page() {
                       id="bill-booking-select"
                       onChange={handleBookingChange}
                       options={[
-                        { label: "Không liên kết booking", value: "" },
+                        { label: t("Không liên kết đặt chỗ"), value: "" },
                         ...bookings.map((booking) => ({
-                          label: `${booking.store?.name ?? "Booking"} - ${formatDateTime(
+                          label: `${booking.store?.name ?? t("Đặt chỗ")} - ${formatDateTime(
                             booking.scheduledAt,
                             activeLanguage,
                           )}`,
@@ -909,49 +1449,49 @@ export default function Page() {
               ) : null}
 
               {selectedBooking ? (
-                <section className="nl-linked-booking" aria-label="Booking đang gắn với hóa đơn">
+                <section className="nl-linked-booking" aria-label={t("Đặt chỗ đang gắn với hóa đơn")}>
                   <div className="nl-receipt-ticket">
                     <div className="nl-receipt-header">
-                      <span className="nl-receipt-title">Đơn hàng đang liên kết</span>
+                      <span className="nl-receipt-title">{t("Đơn hàng đang liên kết")}</span>
                       <strong className="nl-receipt-store">{bookingTitle(selectedBooking)}</strong>
                     </div>
                     <div className="nl-receipt-body">
                       <div className="nl-receipt-row">
-                        <span className="nl-receipt-label">Mã booking</span>
+                        <span className="nl-receipt-label">{t("Mã đặt chỗ")}</span>
                         <div className="nl-receipt-line"></div>
                         <span className="nl-receipt-value highlight">#{selectedBooking.bookingCode || selectedBooking.id.slice(0, 8).toUpperCase()}</span>
                       </div>
                       <div className="nl-receipt-row">
-                        <span className="nl-receipt-label">Giờ hẹn</span>
+                        <span className="nl-receipt-label">{t("Giờ hẹn")}</span>
                         <div className="nl-receipt-line"></div>
                         <span className="nl-receipt-value">{formatDateTime(selectedBooking.scheduledAt, activeLanguage)}</span>
                       </div>
                       <div className="nl-receipt-row">
-                        <span className="nl-receipt-label">Xác nhận sử dụng</span>
+                        <span className="nl-receipt-label">{t("Xác nhận sử dụng")}</span>
                         <div className="nl-receipt-line"></div>
                         <span className="nl-receipt-value">
                           {bookingConfirmedUsageAt(selectedBooking)
                             ? formatDateTime(bookingConfirmedUsageAt(selectedBooking), activeLanguage)
-                            : "Chưa Admin/partner xác nhận"}
+                            : t("Chưa được xác nhận")}
                         </span>
                       </div>
                       <div className="nl-receipt-row">
-                        <span className="nl-receipt-label">Số người</span>
+                        <span className="nl-receipt-label">{t("Số người")}</span>
                         <div className="nl-receipt-line"></div>
-                        <span className="nl-receipt-value">{selectedBooking.partySize} người</span>
+                        <span className="nl-receipt-value">{partySizeLabel(selectedBooking.partySize, activeLanguage)}</span>
                       </div>
                       <div className="nl-receipt-row">
-                        <span className="nl-receipt-label">Coupon/QR</span>
+                        <span className="nl-receipt-label">{t("Mã ưu đãi/QR")}</span>
                         <div className="nl-receipt-line"></div>
                         <span className="nl-receipt-value">
                           {selectedBooking.coupon?.name ??
                             selectedBooking.couponIssue?.code ??
-                            "QR đặt chỗ"}
+                            t("QR đặt chỗ")}
                         </span>
                       </div>
                       {linkedCouponDiscount ? (
                         <div className="nl-receipt-row">
-                          <span className="nl-receipt-label">Mức giảm</span>
+                          <span className="nl-receipt-label">{t("Mức giảm")}</span>
                           <div className="nl-receipt-line"></div>
                           <span className="nl-receipt-value discount">{linkedCouponDiscount}</span>
                         </div>
@@ -964,14 +1504,14 @@ export default function Page() {
               {!selectedBooking && couponIssues.length ? (
                 <div className="nl-field">
                   <label htmlFor="bill-coupon-issue-select">
-                    Coupon link <span className="nl-label-en">COUPON LINK</span>
+                    {t("Liên kết mã ưu đãi")}
                   </label>
                   {couponIssueId ? (
                     <>
                       <div className="nl-static-value" id="bill-coupon-issue-static">
                         {selectedCouponIssue
-                          ? couponIssueOptionLabel(selectedCouponIssue)
-                          : "Đã liên kết coupon"}
+                          ? couponIssueOptionLabel(selectedCouponIssue, activeLanguage)
+                          : t("Đã liên kết mã ưu đãi")}
                       </div>
                       <input type="hidden" id="bill-coupon-issue-select" value={couponIssueId} readOnly />
                     </>
@@ -981,9 +1521,9 @@ export default function Page() {
                       id="bill-coupon-issue-select"
                       onChange={handleCouponIssueChange}
                       options={[
-                        { label: "Không liên kết coupon", value: "" },
+                        { label: t("Không liên kết mã ưu đãi"), value: "" },
                         ...couponIssues.map((issue) => ({
-                          label: couponIssueOptionLabel(issue),
+                          label: couponIssueOptionLabel(issue, activeLanguage),
                           value: issue.id,
                         })),
                       ]}
@@ -997,13 +1537,13 @@ export default function Page() {
               <div className="nl-form-grid">
                 <div className="nl-field">
                   <label htmlFor="bill-total">
-                    Tổng tiền bill gốc * <span className="nl-label-en">ORIGINAL BILL TOTAL</span>
+                    {t("Tổng tiền hóa đơn gốc")} *
                   </label>
                   <div className="nl-amount-input-wrapper">
                     <input
                       id="bill-total"
                       inputMode="numeric"
-                      placeholder="Vui lòng nhập tổng tiền"
+                      placeholder={t("Vui lòng nhập tổng tiền")}
                       value={amountInput}
                       onChange={(event) => handleAmountChange(event.target.value)}
                       onBlur={() => setAmountInput((current) => formatMoneyInput(current))}
@@ -1015,7 +1555,7 @@ export default function Page() {
 
                 <div className="nl-field">
                   <label>
-                    Thời gian xác nhận sử dụng * <span className="nl-label-en">CONFIRMED USAGE TIME</span>
+                    {t("Thời gian xác nhận sử dụng")} *
                   </label>
                   <div
                     className={usedAt ? "nl-confirmed-time" : "nl-confirmed-time pending"}
@@ -1027,7 +1567,7 @@ export default function Page() {
                       <strong>
                         {usedAt
                           ? formatDateTime(confirmedUsageAt, activeLanguage)
-                          : "Chưa có thời gian xác nhận"}
+                          : t("Chưa có thời gian xác nhận")}
                       </strong>
                       <span>{confirmedUsageLabel}</span>
                     </div>
@@ -1037,16 +1577,16 @@ export default function Page() {
 
               <div className="nl-field">
                 <label>
-                  Ảnh / chứng từ <span className="nl-label-en">RECEIPT EVIDENCE / PHOTO</span>
+                  {t("Ảnh / chứng từ")}
                 </label>
                 
                 <div className="nl-upload-zone-wrapper">
                   {!evidenceFile ? (
                     <label className="nl-upload-zone">
                       <UploadCloud className="nl-upload-icon" size={28} />
-                      <span className="nl-upload-title">Nhấn để tải ảnh hoặc file PDF</span>
-                      <span className="nl-upload-subtitle">Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)</span>
-                      <span className="nl-upload-hint">Khuyến khích gửi kèm để duyệt nhanh hơn.</span>
+                      <span className="nl-upload-title">{t("Nhấn để tải ảnh hoặc file PDF")}</span>
+                      <span className="nl-upload-subtitle">{t("Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)")}</span>
+                      <span className="nl-upload-hint">{t("Khuyến khích gửi kèm để duyệt nhanh hơn.")}</span>
                       <input
                         className="nl-upload-input-hidden"
                         type="file"
@@ -1059,7 +1599,8 @@ export default function Page() {
                     <div className="nl-upload-preview-card">
                       {previewUrl ? (
                         <div className="nl-preview-thumb-container">
-                          <img src={previewUrl} alt="Thumbnail preview" className="nl-preview-thumb" />
+                          {/* eslint-disable-next-line @next/next/no-img-element -- Local blob preview from the selected evidence file. */}
+                          <img src={previewUrl} alt={t("Ảnh xem trước chứng từ")} className="nl-preview-thumb" />
                         </div>
                       ) : (
                         <div className="nl-preview-file-icon">
@@ -1081,13 +1622,13 @@ export default function Page() {
                             onClick={handleReadEvidence}
                           >
                             <Sparkles size={12} />
-                            <span>{isReadingEvidence ? "Đang đọc..." : "AI đọc bill"}</span>
+                            <span>{isReadingEvidence ? t("Đang đọc...") : t("Đọc hóa đơn tự động")}</span>
                           </button>
                         ) : null}
                         <button
                           type="button"
                           className="nl-delete-file-btn"
-                          aria-label="Bỏ file"
+                          aria-label={t("Bỏ file")}
                           onClick={() => {
                             setEvidenceFile(null);
                             setOcrPreview(null);
@@ -1098,7 +1639,7 @@ export default function Page() {
                           }}
                         >
                           <Trash2 size={14} />
-                          <span>Xóa</span>
+                          <span>{t("Xóa")}</span>
                         </button>
                       </div>
                     </div>
@@ -1109,30 +1650,32 @@ export default function Page() {
                   <div className="nl-ocr-preview-premium">
                     <div className="nl-ocr-header">
                       <Sparkles size={14} className="nl-ocr-sparkle" />
-                      <strong>Gợi ý từ Trí tuệ Nhân tạo (Độ tin cậy {Math.round(ocrPreview.confidence * 100)}%)</strong>
+                      <strong>
+                        {t("Gợi ý từ công cụ đọc hóa đơn")} ({t("Độ tin cậy")} {Math.round(ocrPreview.confidence * 100)}%)
+                      </strong>
                     </div>
                     <div className="nl-ocr-results-grid">
                       <div className="nl-ocr-result-item">
-                        <span className="nl-ocr-label">TỔNG TIỀN</span>
+                        <span className="nl-ocr-label">{t("Tổng tiền")}</span>
                         <strong className="nl-ocr-val">
                           {ocrPreview.suggestions.totalVnd
                             ? formatMoney(ocrPreview.suggestions.totalVnd)
-                            : "Không đọc được (cần nhập tay)"}
+                            : t("Không đọc được, cần nhập tay")}
                         </strong>
                       </div>
                       <div className="nl-ocr-result-item">
-                        <span className="nl-ocr-label">THỜI GIAN TRÊN BILL</span>
+                        <span className="nl-ocr-label">{t("Thời gian trên hóa đơn")}</span>
                         <strong className="nl-ocr-val">
                           {ocrPreview.suggestions.usedAt
-                            ? formatDateTime(ocrPreview.suggestions.usedAt, "vi")
-                            : "Không đọc được"}
+                            ? formatDateTime(ocrPreview.suggestions.usedAt, activeLanguage)
+                            : t("Không đọc được")}
                         </strong>
                       </div>
                     </div>
                     <div className="nl-ocr-notes">
-                      <span>* Thời gian gửi hệ thống vẫn được lấy từ mốc QR partner xác nhận.</span>
+                      <span>* {t("Thời gian gửi hệ thống vẫn được lấy từ mốc đã xác nhận.")}</span>
                       {ocrPreview.warnings.length ? (
-                        <span className="nl-ocr-warn-text">{ocrPreview.warnings.slice(0, 2).join(" ")}</span>
+                        <span className="nl-ocr-warn-text">{ocrPreview.warnings.slice(0, 2).map((warning) => t(warning)).join(" ")}</span>
                       ) : null}
                     </div>
                   </div>
@@ -1144,8 +1687,7 @@ export default function Page() {
                   <AlertCircle size={16} />
                 </div>
                 <span>
-                  Chỉ nhập tổng tiền bill gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy
-                  từ mốc Admin/partner xác nhận; bill quá 10 ngày sẽ không được nhận.
+                  {t("Chỉ nhập tổng tiền hóa đơn gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy từ mốc đã xác nhận; hóa đơn quá 10 ngày sẽ không được nhận.")}
                 </span>
               </div>
 
@@ -1162,10 +1704,10 @@ export default function Page() {
                 {isSubmitting ? (
                   <>
                     <span className="spin-loader"></span>
-                    <span>Đang gửi bill...</span>
+                    <span>{t("Đang gửi hóa đơn...")}</span>
                   </>
                 ) : (
-                  <span>Gửi bill</span>
+                  <span>{t("Gửi hóa đơn")}</span>
                 )}
               </button>
             </form>
@@ -1173,8 +1715,8 @@ export default function Page() {
             <aside className="nl-bill-side">
               <section className="nl-recent">
                 <div className="nl-recent-header-container">
-                  <h2 className="nl-recent-title">Hóa đơn đã gửi</h2>
-                  <span className="nl-recent-title-en">RECENT SUBMISSIONS</span>
+                  <h2 className="nl-recent-title">{t("Hóa đơn đã gửi")}</h2>
+                  <span className="nl-recent-title-note">{t("Lịch sử gần đây")}</span>
                   <div className="nl-recent-divider"></div>
                 </div>
 
@@ -1182,7 +1724,7 @@ export default function Page() {
                   {visibleSubmittedBills.length === 0 ? (
                     <div className="nl-recent-empty">
                       <FileText size={32} className="nl-empty-icon" />
-                      <p>Bạn chưa gửi hóa đơn nào gần đây.</p>
+                      <p>{t("Bạn chưa gửi hóa đơn nào gần đây.")}</p>
                     </div>
                   ) : (
                     visibleSubmittedBills.map((bill) => (
@@ -1191,22 +1733,22 @@ export default function Page() {
                         className={focusedBillId === bill.id ? "nl-recent-card active" : "nl-recent-card"}
                       >
                         <div className="nl-recent-card-header">
-                          <span className="nl-recent-number">Bill #{bill.billNumber || bill.id.slice(0, 8).toUpperCase()}</span>
+                          <span className="nl-recent-number">{t("Hóa đơn #")}{bill.billNumber || bill.id.slice(0, 8).toUpperCase()}</span>
                           <span className={`nl-status-tag ${bill.status.toLowerCase()}`}>
-                            {billStatusLabel(bill.status)}
+                            {billStatusLabel(bill.status, activeLanguage)}
                           </span>
                         </div>
                         <div className="nl-recent-card-body">
                           <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">Quán:</span>
+                            <span className="nl-recent-card-lbl">{t("Quán:")}</span>
                             <span className="nl-recent-card-val highlight">{bill.store?.name || "NightLife"}</span>
                           </div>
                           <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">Tổng tiền:</span>
+                            <span className="nl-recent-card-lbl">{t("Tổng tiền:")}</span>
                             <span className="nl-recent-card-val gold">{formatMoney(bill.totalVnd)}</span>
                           </div>
                           <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">Ngày sử dụng:</span>
+                            <span className="nl-recent-card-lbl">{t("Ngày sử dụng:")}</span>
                             <span className="nl-recent-card-val">{formatDateTime(bill.usedAt, activeLanguage)}</span>
                           </div>
                         </div>
@@ -1297,10 +1839,10 @@ export default function Page() {
           font-weight: 700;
         }
 
-        .nl-bill-title-en {
+        .nl-bill-title-note {
           font-size: 9px;
           font-weight: 600;
-          letter-spacing: 1.6px;
+          letter-spacing: 1.2px;
           color: var(--vy-muted);
           text-transform: uppercase;
           margin-top: -2px;
@@ -1357,14 +1899,10 @@ export default function Page() {
           letter-spacing: 1.5px;
           text-transform: uppercase;
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .nl-label-en {
-          color: var(--vy-muted);
-          font-size: 8.5px;
-          letter-spacing: 1px;
+          align-items: flex-start;
+          gap: 8px;
+          line-height: 1.35;
+          min-height: 14px;
         }
 
         .nl-field-help {
@@ -1376,15 +1914,18 @@ export default function Page() {
 
         .nl-form-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: 16px;
+          align-items: stretch;
           min-width: 0;
           margin-top: 18px;
         }
 
-        .nl-form-grid > * {
+        .nl-form-grid > .nl-field {
           min-width: 0;
           margin-top: 0;
+          grid-template-rows: auto minmax(54px, auto);
+          align-content: start;
         }
 
         input {
@@ -1425,12 +1966,16 @@ export default function Page() {
         }
 
         .nl-amount-input-wrapper {
+          display: flex;
           position: relative;
           width: 100%;
+          min-height: 54px;
           min-width: 0;
         }
 
         .nl-amount-input-wrapper input {
+          height: 100%;
+          min-height: 54px;
           padding-right: 32px;
           font-weight: 600;
         }
@@ -1450,7 +1995,8 @@ export default function Page() {
           display: flex;
           align-items: center;
           gap: 12px;
-          min-height: 48px;
+          min-height: 54px;
+          height: 100%;
           border: 1px solid rgba(127, 211, 162, 0.22);
           border-radius: 11px;
           background: linear-gradient(135deg, rgba(127, 211, 162, 0.05), rgba(255, 255, 255, 0.01));
@@ -1981,7 +2527,7 @@ export default function Page() {
           color: var(--vy-text);
         }
 
-        .nl-recent-title-en {
+        .nl-recent-title-note {
           font-size: 8px;
           font-weight: 600;
           letter-spacing: 1.2px;
