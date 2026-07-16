@@ -3,15 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Heart } from "lucide-react";
-import { ApiError, apiClient } from "@/lib/api/client";
-import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
-import {
-  hasMemberFavoriteAccess,
-  redirectToLoginForFavorite,
-  requireMemberFavoriteAccess,
-} from "@/lib/member-favorite-auth";
-import { isFavoriteCast, writeFavoriteCast } from "@/lib/member-favorites";
+import { apiClient } from "@/lib/api/client";
+import type { PublicCastDetail } from "@/lib/api/cast-detail";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
@@ -51,25 +44,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
     [profile],
   );
-  const [isFavorite, setIsFavorite] = useState(
-    () => hasMemberFavoriteAccess() && isFavoriteCast(profile.slug),
-  );
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
-  const favoriteImage = gallery.find((item) => item.type === "IMAGE")?.url;
-  const favoriteSnapshot = useMemo(
-    () => ({
-      slug: profile.slug,
-      name: profile.name,
-      storeName: profile.store.name,
-      categoryLabel: profile.store.category,
-      areaLabel: area,
-      image: favoriteImage,
-    }),
-    [area, favoriteImage, profile.name, profile.slug, profile.store.category, profile.store.name],
-  );
 
   useEffect(() => {
     void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
@@ -88,40 +66,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    let ignore = false;
-
-    Promise.resolve().then(() => {
-      if (!ignore) {
-        setIsFavorite(hasMemberFavoriteAccess() && isFavoriteCast(favoriteSnapshot.slug));
-      }
-    });
-
-    if (!hasMemberFavoriteAccess()) {
-      return () => {
-        ignore = true;
-      };
-    }
-
-    castFavoriteApi
-      .getState(favoriteSnapshot.slug)
-      .then((state) => {
-        if (ignore) return;
-        setIsFavorite(state.favorited);
-        writeFavoriteCast(favoriteSnapshot, state.favorited);
-      })
-      .catch((error) => {
-        if (error instanceof ApiError && [401, 403].includes(error.status)) {
-          if (!ignore) setIsFavorite(false);
-          return;
-        }
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [favoriteSnapshot]);
 
   const track = (
     action: "booking" | "gallery" | "store" | "favorite" | "related",
@@ -157,35 +101,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     selectMedia(activeMediaIndex >= gallery.length - 1 ? 0 : activeMediaIndex + 1, "next");
   };
 
-  const toggleFavorite = async () => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !isFavorite;
-    setIsFavorite(nextValue);
-    writeFavoriteCast(favoriteSnapshot, nextValue);
-    track("favorite", { favorited: nextValue });
-
-    try {
-      const state = nextValue
-        ? await castFavoriteApi.favorite(profile.slug)
-        : await castFavoriteApi.unfavorite(profile.slug);
-      setIsFavorite(state.favorited);
-      writeFavoriteCast(favoriteSnapshot, state.favorited);
-    } catch (error) {
-      if (error instanceof ApiError && [401, 403].includes(error.status)) {
-        setIsFavorite(false);
-        writeFavoriteCast(favoriteSnapshot, false);
-        redirectToLoginForFavorite();
-        return;
-      }
-
-      setIsFavorite(!nextValue);
-      writeFavoriteCast(favoriteSnapshot, !nextValue);
-    }
-  };
-
   return (
     <>
       <main
@@ -207,8 +122,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             activeMedia={activeMedia}
             area={area}
             language={activeLanguage}
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
             onOpenGallery={() => openLightbox(activeMediaIndex)}
             onPreviousMedia={showPreviousMedia}
             onNextMedia={showNextMedia}
@@ -249,12 +162,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 activeIndex={activeMediaIndex}
                 variant="desktop"
                 isLightboxOpen={isLightboxOpen}
-                isFavorite={isFavorite}
                 language={activeLanguage}
                 onSelect={selectMedia}
                 onOpenLightbox={openLightbox}
                 onCloseLightbox={() => setIsLightboxOpen(false)}
-                onToggleFavorite={toggleFavorite}
               />
 
               <div className="cast-desktop-content">
@@ -265,30 +176,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                   <span>/</span>
                   <strong>{profile.name}</strong>
                 </nav>
-                <div className="cast-desktop-favorite-anchor">
-                  <CastInfo
-                    profile={profile}
-                    area={area}
-                    languageText={languageText}
-                    storeHref={storeHref}
-                    variant="desktop"
-                    language={activeLanguage}
-                    onTrack={track}
-                  />
-                  <button
-                    type="button"
-                    className={`cast-desktop-fav${isFavorite ? " is-active" : ""}`}
-                    onClick={toggleFavorite}
-                    aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
-                    aria-pressed={isFavorite}
-                  >
-                    <Heart
-                      size={20}
-                      strokeWidth={1.9}
-                      fill={isFavorite ? "currentColor" : "none"}
-                    />
-                  </button>
-                </div>
+                <CastInfo
+                  profile={profile}
+                  area={area}
+                  languageText={languageText}
+                  storeHref={storeHref}
+                  variant="desktop"
+                  language={activeLanguage}
+                  onTrack={track}
+                />
 
                 <CastBookingCTA
                   profile={profile}
@@ -316,9 +212,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
               area={area}
               bookingHref={bookingHref}
               variant="mobile"
-              isFavorite={isFavorite}
               language={activeLanguage}
-              onToggleFavorite={toggleFavorite}
               onTrack={track}
             />,
             portalTarget,

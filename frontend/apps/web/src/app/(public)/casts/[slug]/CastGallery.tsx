@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Heart, Play, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Star, X } from "lucide-react";
 import { resolveClientUrl } from "@/lib/api/client";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
@@ -15,11 +15,9 @@ type CastGalleryProps = {
   variant: "mobile" | "desktop";
   language: LanguageCode;
   isLightboxOpen: boolean;
-  isFavorite?: boolean;
   onSelect: (index: number, action?: CastGalleryAction) => void;
   onOpenLightbox: (index?: number) => void;
   onCloseLightbox: () => void;
-  onToggleFavorite?: () => void;
 };
 
 export function CastGallery({
@@ -28,11 +26,9 @@ export function CastGallery({
   variant,
   language,
   isLightboxOpen,
-  isFavorite = false,
   onSelect,
   onOpenLightbox,
   onCloseLightbox,
-  onToggleFavorite,
 }: CastGalleryProps) {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -101,7 +97,10 @@ export function CastGallery({
   if (variant === "mobile") {
     return (
       <>
-        <section className="cast-section cast-gallery-grid-section" data-testid="cast-gallery-mobile">
+        <section
+          className="cast-section cast-gallery-grid-section"
+          data-testid="cast-gallery-mobile"
+        >
           <div className="cast-section-heading">
             <h2>{copy.gallery}</h2>
             <span />
@@ -133,16 +132,22 @@ export function CastGallery({
   return (
     <section className="cast-desktop-gallery" data-testid="cast-gallery-desktop">
       <div className="cast-desktop-main-media-wrap">
-      <button
-        type="button"
-        className="cast-desktop-main-media"
-        style={{ background: mediaBg(activeMedia.url) }}
-        onClick={() => onOpenLightbox(activeIndex)}
-        aria-label={copy.openGallery}
-      >
-        <span className="cast-media-label">{activeMedia.type === "VIDEO" ? "Video" : "Gallery"}</span>
-        {activeMedia.type === "VIDEO" ? <span className="cast-play cast-play-desktop"><Play size={24} fill="currentColor" /></span> : null}
-      </button>
+        <button
+          type="button"
+          className="cast-desktop-main-media"
+          style={{ background: mediaBg(activeMedia.url) }}
+          onClick={() => onOpenLightbox(activeIndex)}
+          aria-label={copy.openGallery}
+        >
+          <span className="cast-media-label">
+            {activeMedia.type === "VIDEO" ? "Video" : "Gallery"}
+          </span>
+          {activeMedia.type === "VIDEO" ? (
+            <span className="cast-play cast-play-desktop">
+              <Play size={24} fill="currentColor" />
+            </span>
+          ) : null}
+        </button>
         <span className="cast-rank-badge cast-desktop-media-rank">
           <Star size={13} fill="currentColor" />
           {copy.rankingJune}
@@ -151,15 +156,6 @@ export function CastGallery({
           <span />
           {copy.acceptingTonight}
         </span>
-        <button
-          type="button"
-          className={`cast-desktop-media-fav${isFavorite ? " is-active" : ""}`}
-          onClick={onToggleFavorite}
-          aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
-          aria-pressed={isFavorite}
-        >
-          <Heart size={17} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
-        </button>
       </div>
 
       <div className="cast-desktop-thumbs">
@@ -233,13 +229,23 @@ function CastLightbox({
         <span>
           {String(index + 1).padStart(2, "0")} <em>/ {count}</em>
         </span>
-        <button className="cast-lightbox-close" type="button" aria-label={copy.closeGallery} onClick={onClose}>
+        <button
+          className="cast-lightbox-close"
+          type="button"
+          aria-label={copy.closeGallery}
+          onClick={onClose}
+        >
           <X size={18} strokeWidth={2.2} />
         </button>
       </div>
 
       {count > 1 ? (
-        <button className="cast-lightbox-nav previous" type="button" aria-label={copy.mediaPrevious} onClick={onPrevious}>
+        <button
+          className="cast-lightbox-nav previous"
+          type="button"
+          aria-label={copy.mediaPrevious}
+          onClick={onPrevious}
+        >
           <ChevronLeft size={22} strokeWidth={2.2} />
         </button>
       ) : null}
@@ -247,7 +253,12 @@ function CastLightbox({
       <div className="cast-lightbox-media">
         {media.type === "VIDEO" ? (
           embed?.kind === "iframe" ? (
-            <iframe title={media.alt} src={embed.url} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+            <iframe
+              title={media.alt}
+              src={embed.url}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
           ) : embed?.kind === "link" ? (
             <a className="cast-booking-button" href={embed.url} target="_blank" rel="noreferrer">
               {copy.openSnsVideo}
@@ -261,7 +272,12 @@ function CastLightbox({
       </div>
 
       {count > 1 ? (
-        <button className="cast-lightbox-nav next" type="button" aria-label={copy.mediaNext} onClick={onNext}>
+        <button
+          className="cast-lightbox-nav next"
+          type="button"
+          aria-label={copy.mediaNext}
+          onClick={onNext}
+        >
           <ChevronRight size={22} strokeWidth={2.2} />
         </button>
       ) : null}

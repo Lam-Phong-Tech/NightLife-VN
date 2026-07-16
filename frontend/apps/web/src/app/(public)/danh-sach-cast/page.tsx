@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
-  Heart,
   History,
   Languages,
   MapPin,
@@ -24,13 +23,9 @@ import {
   type PublicArea,
   type PublicCast,
 } from "@/lib/api/discovery";
-import { castFavoriteApi } from "@/lib/api/cast-detail";
-import { ApiError } from "@/lib/api/client";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
-import { readFavoriteCastSlugs, replaceFavoriteCasts, writeFavoriteCast } from "@/lib/member-favorites";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -87,38 +82,38 @@ type CastSearchCopy = {
 };
 
 const cityOptions: Option[] = [
-  { value: "hn", label: "Hà Nội" },
+  { value: "hn", label: "HÃ  Ná»™i" },
   { value: "hcm", label: "TP.HCM" },
-  { value: "", label: "Tất cả" },
+  { value: "", label: "Táº¥t cáº£" },
 ];
 
 const categoryOptions: Option[] = [
-  { value: "", label: "Tất cả" },
+  { value: "", label: "Táº¥t cáº£" },
   { value: "GIRLS_BAR", label: "Girls Bar" },
   { value: "LOUNGE", label: "Lounge" },
   { value: "CLUB", label: "Club" },
   { value: "BAR", label: "Bar" },
   { value: "KARAOKE", label: "Karaoke / KTV" },
   { value: "MASSAGE_SPA", label: "Massage / Spa" },
-  { value: "RESTAURANT", label: "Nhà hàng" },
+  { value: "RESTAURANT", label: "NhÃ  hÃ ng" },
   { value: "CASINO", label: "Casino" },
 ];
 
 const languageOptions: Option[] = [
-  { value: "", label: "Tất cả" },
-  { value: "ja", label: "日本語" },
+  { value: "", label: "Táº¥t cáº£" },
+  { value: "ja", label: "æ—¥æœ¬èªž" },
   { value: "en", label: "English" },
-  { value: "vi", label: "Tiếng Việt" },
+  { value: "vi", label: "Tiáº¿ng Viá»‡t" },
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "priority", label: "Phổ biến" },
-  { value: "nearest", label: "Gần nhất" },
+  { value: "newest", label: "Má»›i nháº¥t" },
+  { value: "priority", label: "Phá»• biáº¿n" },
+  { value: "nearest", label: "Gáº§n nháº¥t" },
 ];
 
 const priceRangeOptions: Array<{ value: PriceRange; label: string }> = [
-  { value: "", label: "Tất cả" },
+  { value: "", label: "Táº¥t cáº£" },
   { value: "under400", label: "< 400k" },
   { value: "400600", label: "400 - 600k" },
   { value: "6001000", label: "600k - 1tr" },
@@ -132,25 +127,29 @@ const categoryLabels: Record<string, string> = {
   GIRLS_BAR: "Girls Bar",
   KARAOKE: "Karaoke / KTV",
   MASSAGE_SPA: "Massage / Spa",
-  RESTAURANT: "Nhà hàng",
+  RESTAURANT: "NhÃ  hÃ ng",
   CASINO: "Casino",
 };
 
 const cityLabels: Record<string, string> = {
-  hn: "Hà Nội",
+  hn: "HÃ  Ná»™i",
   hcm: "TP.HCM",
 };
 
 const compactLanguageLabels: Record<string, string> = {
   vi: "VI",
-  ja: "日本語",
+  ja: "æ—¥æœ¬èªž",
   en: "EN",
   ko: "KR",
 };
 
-const favoriteCounts = ["1.2k", "1.0k", "947", "880", "812", "760", "690", "642"];
-const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
-const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
+const recentSearches = ["Yuki", "Mei", "Cast HoÃ n Kiáº¿m"];
+const popularKeywords = [
+  "NÃ³i tiáº¿ng Nháº­t",
+  "Top ranking",
+  "CÃ²n lá»‹ch tá»‘i nay",
+  "æ—¥æœ¬èªž N1",
+];
 const ageRangeMin = 20;
 const ageRangeMax = 40;
 const ageRangeStep = 1;
@@ -160,35 +159,35 @@ const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
 
 const castCopyVi: CastSearchCopy = {
-  all: "Tất cả",
+  all: "Táº¥t cáº£",
   applyLabel: (count) => `Xem ${count} cast`,
-  area: "Khu vực",
-  category: "Loại hình",
-  city: "Thành phố",
-  closeFilters: "Đóng bộ lọc",
-  emptyDescription: "Đổi khu vực, ngôn ngữ hoặc khoảng giá để xem thêm.",
-  emptyTitle: "Chưa có cast phù hợp",
-  filterIntro: "Lọc cast theo nhu cầu",
-  filterTitle: "Bộ lọc",
-  find: "Tìm",
-  findCast: "Tìm cast",
-  filterLocation: "Địa điểm",
-  filterNeeds: "Nhu cầu",
-  filterOther: "Khác",
-  hasDeals: "Có ưu đãi",
-  language: "Ngôn ngữ",
-  age: "Độ tuổi",
-  listAria: "Danh sách cast",
-  locating: "Đang lấy vị trí",
-  openFilters: "Mở bộ lọc",
-  priceRange: "Khoảng giá",
-  priceRangeNote: "/ 60 phút",
-  resetFilters: "Đặt lại bộ lọc",
-  searchAria: "Tìm và lọc cast",
-  searchPlaceholder: "Tìm cast theo tên, quán hoặc ngôn ngữ...",
-  sortLabel: "Sắp xếp:",
-  speaksJapanese: "Nói tiếng Nhật",
-  store: "Quán",
+  area: "Khu vá»±c",
+  category: "Loáº¡i hÃ¬nh",
+  city: "ThÃ nh phá»‘",
+  closeFilters: "ÄÃ³ng bá»™ lá»c",
+  emptyDescription: "Äá»•i khu vá»±c, ngÃ´n ngá»¯ hoáº·c khoáº£ng giÃ¡ Ä‘á»ƒ xem thÃªm.",
+  emptyTitle: "ChÆ°a cÃ³ cast phÃ¹ há»£p",
+  filterIntro: "Lá»c cast theo nhu cáº§u",
+  filterTitle: "Bá»™ lá»c",
+  find: "TÃ¬m",
+  findCast: "TÃ¬m cast",
+  filterLocation: "Äá»‹a Ä‘iá»ƒm",
+  filterNeeds: "Nhu cáº§u",
+  filterOther: "KhÃ¡c",
+  hasDeals: "CÃ³ Æ°u Ä‘Ã£i",
+  language: "NgÃ´n ngá»¯",
+  age: "Äá»™ tuá»•i",
+  listAria: "Danh sÃ¡ch cast",
+  locating: "Äang láº¥y vá»‹ trÃ­",
+  openFilters: "Má»Ÿ bá»™ lá»c",
+  priceRange: "Khoáº£ng giÃ¡",
+  priceRangeNote: "/ 60 phÃºt",
+  resetFilters: "Äáº·t láº¡i bá»™ lá»c",
+  searchAria: "TÃ¬m vÃ  lá»c cast",
+  searchPlaceholder: "TÃ¬m cast theo tÃªn, quÃ¡n hoáº·c ngÃ´n ngá»¯...",
+  sortLabel: "Sáº¯p xáº¿p:",
+  speaksJapanese: "NÃ³i tiáº¿ng Nháº­t",
+  store: "QuÃ¡n",
   topRanking: "Top ranking",
 };
 
@@ -293,7 +292,11 @@ const stripCastVietnameseMarks = (value: string) =>
     .replace(/\bQuan\b/g, "District")
     .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
 
-const localizeCastOption = (option: Option, language: LanguageCode, copy: CastSearchCopy): Option => {
+const localizeCastOption = (
+  option: Option,
+  language: LanguageCode,
+  copy: CastSearchCopy,
+): Option => {
   if (!option.value) return { ...option, label: copy.all };
   const englishLabel = englishCastCityLabels[option.value];
   if (language === "en" && englishLabel) {
@@ -303,22 +306,25 @@ const localizeCastOption = (option: Option, language: LanguageCode, copy: CastSe
 };
 
 const getCastCityLabel = (cityCode: string, language: LanguageCode) => {
-  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Việt Nam", language);
+  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Viá»‡t Nam", language);
   if (language === "en") return englishCastCityLabels[cityCode] ?? cityCode;
   return translateText(cityLabels[cityCode] ?? cityCode, language);
 };
 
 const getCastSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
-  language === "en" ? englishCastSortLabels[sort] : translateText(sortOptions.find((item) => item.value === sort)?.label ?? sort, language);
+  language === "en"
+    ? englishCastSortLabels[sort]
+    : translateText(sortOptions.find((item) => item.value === sort)?.label ?? sort, language);
 
 const getCastCategoryLabel = (category: string, language: LanguageCode) =>
-  language === "en" ? englishCastCategoryLabels[category] ?? category : translateText(categoryLabels[category] ?? category, language);
+  language === "en"
+    ? (englishCastCategoryLabels[category] ?? category)
+    : translateText(categoryLabels[category] ?? category, language);
 
 const formatCastActiveFilters = (count: number, language: LanguageCode) =>
-  language === "en" ? `${count} ${count === 1 ? "filter" : "filters"} active` : `${count} ${translateText("bộ lọc đang bật", language)}`;
-
-const pickByIndex = <T,>(items: readonly T[], index: number, fallback: T) =>
-  items[index % items.length] ?? fallback;
+  language === "en"
+    ? `${count} ${count === 1 ? "filter" : "filters"} active`
+    : `${count} ${translateText("bá»™ lá»c Ä‘ang báº­t", language)}`;
 
 const matchesPriceRange = (range: PriceRange, value?: number | null) => {
   if (!range) return true;
@@ -402,56 +408,11 @@ export default function Page() {
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>([]);
-  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(
-    () => (hasMemberFavoriteAccess() ? readFavoriteCastSlugs() : []),
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const filterPanelRef = useRef<HTMLElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getCastCopy(activeLanguage), [activeLanguage]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!hasMemberFavoriteAccess()) {
-      queueMicrotask(() => {
-        if (!cancelled) setFavoriteCastSlugs([]);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    castFavoriteApi
-      .list()
-      .then((items) => {
-        if (cancelled) return;
-        const favoriteSnapshots = items.map((item) => ({
-          slug: item.cast.slug,
-          name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
-          storeName: item.cast.store.name,
-          categoryLabel: getCastCategoryLabel(item.cast.store.category, activeLanguage),
-          areaLabel: [
-            item.cast.store.area?.name ?? item.cast.store.district,
-            getCastCityLabel(item.cast.store.cityCode ?? "", activeLanguage),
-          ]
-            .filter(Boolean)
-            .join(" Â· "),
-          image: item.cast.thumbnailUrl ?? undefined,
-          favoritedAt: item.favoritedAt,
-        }));
-        replaceFavoriteCasts(favoriteSnapshots);
-        setFavoriteCastSlugs(favoriteSnapshots.map((item) => item.slug));
-      })
-      .catch(() => {
-        if (!cancelled) setFavoriteCastSlugs(readFavoriteCastSlugs());
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -495,7 +456,7 @@ export default function Page() {
         .catch(() => {
           if (!cancelled) {
             setCasts([]);
-            setError("Chưa kết nối được dữ liệu cast.");
+            setError("ChÆ°a káº¿t ná»‘i Ä‘Æ°á»£c dá»¯ liá»‡u cast.");
           }
         })
         .finally(() => {
@@ -524,10 +485,18 @@ export default function Page() {
     });
 
     rankingsApi
-      .list({ targetType: "CAST", city: toRankingCity(city), limit: 5 }, { signal: controller.signal })
+      .list(
+        { targetType: "CAST", city: toRankingCity(city), limit: 5 },
+        { signal: controller.signal },
+      )
       .then((response) => {
         if (controller.signal.aborted) return;
-        setTopRankingCastSlugs(response.data.slice(0, 5).map((item) => item.slug).filter(Boolean));
+        setTopRankingCastSlugs(
+          response.data
+            .slice(0, 5)
+            .map((item) => item.slug)
+            .filter(Boolean),
+        );
       })
       .catch(() => {
         if (!controller.signal.aborted) setTopRankingCastSlugs([]);
@@ -613,7 +582,10 @@ export default function Page() {
       { value: "", label: copy.all },
       ...areas.map((item) => ({
         value: item.code,
-        label: activeLanguage === "en" ? stripCastVietnameseMarks(item.name) : translateText(item.name, activeLanguage),
+        label:
+          activeLanguage === "en"
+            ? stripCastVietnameseMarks(item.name)
+            : translateText(item.name, activeLanguage),
       })),
     ],
     [activeLanguage, areas, copy.all],
@@ -718,7 +690,7 @@ export default function Page() {
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
-      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+      setError("Thiáº¿t bá»‹ chÆ°a há»— trá»£ láº¥y vá»‹ trÃ­.");
       return;
     }
 
@@ -733,7 +705,7 @@ export default function Page() {
         setIsLocating(false);
       },
       () => {
-        setError("Chưa lấy được vị trí hiện tại.");
+        setError("ChÆ°a láº¥y Ä‘Æ°á»£c vá»‹ trÃ­ hiá»‡n táº¡i.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 },
@@ -750,7 +722,7 @@ export default function Page() {
   };
 
   const setPopularKeyword = (keyword: string) => {
-    if (keyword.includes("Nhật") || keyword.includes("日本語")) {
+    if (keyword.includes("Nháº­t") || keyword.includes("æ—¥æœ¬èªž")) {
       setLanguage("ja");
       return;
     }
@@ -763,84 +735,17 @@ export default function Page() {
     setHasActiveCoupon(true);
   };
 
-  const toggleCastFavorite = async (cast: PublicCast) => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !favoriteCastSlugs.includes(cast.slug);
-    writeFavoriteCast(
-      {
-        slug: cast.slug,
-        name: cast.publicAlias ?? cast.name ?? cast.stageName,
-        storeName: cast.store.name,
-        categoryLabel: getCastCategoryLabel(cast.store.category, activeLanguage),
-        areaLabel: [
-          cast.store.area?.name ?? cast.store.district,
-          getCastCityLabel(cast.store.cityCode ?? "", activeLanguage),
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        image: cast.thumbnailUrl ?? undefined,
-      },
-      nextValue,
-    );
-    setFavoriteCastSlugs(readFavoriteCastSlugs());
-
-    try {
-      const state = nextValue
-        ? await castFavoriteApi.favorite(cast.slug)
-        : await castFavoriteApi.unfavorite(cast.slug);
-      writeFavoriteCast(
-        {
-          slug: cast.slug,
-          name: cast.publicAlias ?? cast.name ?? cast.stageName,
-          storeName: cast.store.name,
-          categoryLabel: getCastCategoryLabel(cast.store.category, activeLanguage),
-          areaLabel: [
-            cast.store.area?.name ?? cast.store.district,
-            getCastCityLabel(cast.store.cityCode ?? "", activeLanguage),
-          ]
-            .filter(Boolean)
-            .join(" Â· "),
-          image: cast.thumbnailUrl ?? undefined,
-        },
-        state.favorited,
-      );
-      setFavoriteCastSlugs(readFavoriteCastSlugs());
-    } catch (error) {
-      const rollbackValue = !nextValue;
-      writeFavoriteCast(
-        {
-          slug: cast.slug,
-          name: cast.publicAlias ?? cast.name ?? cast.stageName,
-          storeName: cast.store.name,
-          categoryLabel: getCastCategoryLabel(cast.store.category, activeLanguage),
-          areaLabel: [
-            cast.store.area?.name ?? cast.store.district,
-            getCastCityLabel(cast.store.cityCode ?? "", activeLanguage),
-          ]
-            .filter(Boolean)
-            .join(" Â· "),
-          image: cast.thumbnailUrl ?? undefined,
-        },
-        error instanceof ApiError && [401, 403].includes(error.status) ? false : rollbackValue,
-      );
-      setFavoriteCastSlugs(readFavoriteCastSlugs());
-
-      if (error instanceof ApiError && [401, 403].includes(error.status)) {
-        redirectToLoginForFavorite();
-      }
-    }
-  };
-
   return (
     <main className="cast-search-page">
       <style>{castSearchCss}</style>
 
       <div className="cast-search-shell">
         <header className="cast-mobile-topbar">
-          <Link href="/" aria-label={translateText("Quay lại trang chủ", activeLanguage)} className="cast-round-icon">
+          <Link
+            href="/"
+            aria-label={translateText("Quay láº¡i trang chá»§", activeLanguage)}
+            className="cast-round-icon"
+          >
             <ArrowLeft size={17} />
           </Link>
           <div>
@@ -853,7 +758,12 @@ export default function Page() {
             <h1>
               {copy.findCast} {cityLabel}
             </h1>
-            <p>{translateText("Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.", activeLanguage)}</p>
+            <p>
+              {translateText(
+                "LÆ°á»›i chÃ¢n dung theo máº«u Vietyoru, Æ°u tiÃªn áº£nh, ngÃ´n ngá»¯ vÃ  quÃ¡n lÃ m viá»‡c.",
+                activeLanguage,
+              )}
+            </p>
           </div>
 
           <div className="cast-search-controls">
@@ -869,7 +779,7 @@ export default function Page() {
               {query ? (
                 <button
                   type="button"
-                  aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
+                  aria-label={translateText("XÃ³a tÃ¬m kiáº¿m", activeLanguage)}
                   className="cast-input-clear"
                   onClick={() => setQuery("")}
                 >
@@ -930,7 +840,11 @@ export default function Page() {
                   priceRange={priceRange}
                   sort={sort}
                   sortOptions={effectiveSortOptions}
-                  subtitle={activeFilterCount ? formatCastActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+                  subtitle={
+                    activeFilterCount
+                      ? formatCastActiveFilters(activeFilterCount, activeLanguage)
+                      : copy.filterIntro
+                  }
                   storeOptions={storeOptions}
                   storeSlug={storeSlug}
                   total={visibleCasts.length}
@@ -954,7 +868,10 @@ export default function Page() {
             ) : null}
           </div>
 
-          <nav className="cast-chip-row hscroll" aria-label={translateText("Bộ lọc nhanh", activeLanguage)}>
+          <nav
+            className="cast-chip-row hscroll"
+            aria-label={translateText("Bá»™ lá»c nhanh", activeLanguage)}
+          >
             <button
               type="button"
               className={`cast-chip ${hasActiveCoupon ? "is-active" : ""}`}
@@ -991,7 +908,9 @@ export default function Page() {
               type="button"
               className={`cast-chip cast-filter-chip ${activeFilterCount ? "is-active" : ""}`}
               aria-expanded={isFilterOpen}
-              aria-controls={isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"}
+              aria-controls={
+                isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"
+              }
               onClick={() => setFilterOpen((current) => !current)}
             >
               <SlidersHorizontal size={14} />
@@ -1007,7 +926,7 @@ export default function Page() {
           <div className="cast-results-head">
             <span>
               <b>{isResultsLoading ? "..." : visibleCasts.length} cast</b>
-              <span> · {cityLabel}</span>
+              <span> Â· {cityLabel}</span>
             </span>
 
             <CastDropdown
@@ -1030,16 +949,11 @@ export default function Page() {
                   cast={cast}
                   index={index}
                   language={activeLanguage}
-                  isFavorite={favoriteCastSlugs.includes(cast.slug)}
-                  onToggleFavorite={toggleCastFavorite}
                 />
               ))}
             </div>
           ) : (
-            <EmptyState
-              title={copy.emptyTitle}
-              description={copy.emptyDescription}
-            />
+            <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
           )}
         </section>
       </div>
@@ -1060,7 +974,11 @@ export default function Page() {
           priceRange={priceRange}
           sort={sort}
           sortOptions={effectiveSortOptions}
-          subtitle={activeFilterCount ? formatCastActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+          subtitle={
+            activeFilterCount
+              ? formatCastActiveFilters(activeFilterCount, activeLanguage)
+              : copy.filterIntro
+          }
           storeOptions={storeOptions}
           storeSlug={storeSlug}
           total={visibleCasts.length}
@@ -1167,7 +1085,7 @@ function SearchSuggestions({
   onRecent: (value: string) => void;
 }) {
   return (
-    <div className="cast-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
+    <div className="cast-suggestions" role="listbox" aria-label="Gá»£i Ã½ tÃ¬m kiáº¿m">
       <div className="cast-suggestion-searchline">
         <Search size={18} />
         <span>
@@ -1178,7 +1096,7 @@ function SearchSuggestions({
 
       {casts.length ? (
         <>
-          <div className="cast-suggestion-label">Gợi ý cast</div>
+          <div className="cast-suggestion-label">Gá»£i Ã½ cast</div>
           {casts.map((cast, index) => (
             <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
               <PlaceholderMedia
@@ -1190,7 +1108,7 @@ function SearchSuggestions({
               <span>
                 <b>{highlightMatch(cast.name, query)}</b>
                 <small>
-                  {cast.store.name} ·{" "}
+                  {cast.store.name} Â·{" "}
                   {index < 3
                     ? `#${index + 1} Ranking`
                     : (cast.store.area?.name ?? cast.store.district)}
@@ -1201,12 +1119,12 @@ function SearchSuggestions({
           ))}
         </>
       ) : (
-        <div className="cast-suggestion-empty">Không có gợi ý trùng khớp.</div>
+        <div className="cast-suggestion-empty">KhÃ´ng cÃ³ gá»£i Ã½ trÃ¹ng khá»›p.</div>
       )}
 
       <div className="cast-suggestion-split">
-        <span>Tìm gần đây</span>
-        <button type="button">Xóa lịch sử</button>
+        <span>TÃ¬m gáº§n Ä‘Ã¢y</span>
+        <button type="button">XÃ³a lá»‹ch sá»­</button>
       </div>
       <div className="cast-suggestion-tags">
         {recentSearches.map((item) => (
@@ -1222,7 +1140,7 @@ function SearchSuggestions({
         ))}
       </div>
 
-      <div className="cast-suggestion-label">Từ khóa phổ biến</div>
+      <div className="cast-suggestion-label">Tá»« khÃ³a phá»• biáº¿n</div>
       <div className="cast-suggestion-tags is-gold">
         {popularKeywords.map((item) => (
           <button
@@ -1243,14 +1161,10 @@ function CastDiscoveryCard({
   cast,
   index,
   language,
-  isFavorite,
-  onToggleFavorite,
 }: {
   cast: PublicCast;
   index: number;
   language: LanguageCode;
-  isFavorite: boolean;
-  onToggleFavorite: (cast: PublicCast) => void;
 }) {
   const image = cast.thumbnailUrl;
   const areaLabel = [
@@ -1258,25 +1172,19 @@ function CastDiscoveryCard({
     getCastCityLabel(cast.store.cityCode ?? "", language),
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(" Â· ");
   const langText =
-    cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" · ") ||
+    cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" Â· ") ||
     "VI";
   const categoryLabel = getCastCategoryLabel(cast.store.category, language);
-  const rating = (4.9 - Math.min(index, 4) * 0.1).toFixed(1);
-  const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tối nay" : "Mới";
+  const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tá»‘i nay" : "Má»›i";
   const isRanked = index < 3;
-  const handleFavoriteClick = (event: React.MouseEvent | React.KeyboardEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onToggleFavorite(cast);
-  };
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
       <PlaceholderMedia
         src={image}
-        label={translateText("Chưa có ảnh cast", language)}
+        label={translateText("ChÆ°a cÃ³ áº£nh cast", language)}
         tone="dark"
         className="cast-card-media"
       >
@@ -1285,19 +1193,6 @@ function CastDiscoveryCard({
           {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
           {badgeLabel}
         </span>
-        <span
-          className={`cast-fav-button ${isFavorite ? "is-active" : ""}`}
-          role="button"
-          tabIndex={0}
-          aria-label={isFavorite ? translateText("Bỏ lưu cast", language) : translateText("Lưu cast", language)}
-          aria-pressed={isFavorite}
-          onClick={handleFavoriteClick}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
-          }}
-        >
-          <Heart size={15} fill={isFavorite ? "currentColor" : "none"} />
-        </span>
         <span className="cast-card-name">
           <b>{cast.name}</b>
           <small>{categoryLabel}</small>
@@ -1305,7 +1200,7 @@ function CastDiscoveryCard({
         <span className="cast-card-place">
           <MapPin size={12} />
           <b>{cast.store.name}</b>
-          {areaLabel ? <small>· {areaLabel}</small> : null}
+          {areaLabel ? <small>Â· {areaLabel}</small> : null}
         </span>
       </PlaceholderMedia>
 
@@ -1315,19 +1210,11 @@ function CastDiscoveryCard({
             <Languages size={12} />
             {langText}
           </span>
-          <span className="cast-like-count">
-            <Heart size={12} fill="currentColor" />
-            {pickByIndex(favoriteCounts, index, "640")}
-          </span>
         </div>
 
         <div className="cast-card-foot">
-          <span className="cast-rating">
-            <Star size={13} fill="currentColor" />
-            {rating}
-          </span>
           <span className="cast-card-cta">
-            {translateText("Đặt", language)}
+            {translateText("Äáº·t", language)}
             <ChevronRight size={13} />
           </span>
         </div>
@@ -1410,116 +1297,126 @@ function CastFilterPanel({
   const titleId = `cast-filter-title-${variant}`;
   const panelId = `cast-filter-panel-${variant}`;
   const panel = (
-      <section
-        id={panelId}
-        ref={panelRef}
-        className={`cast-filter-sheet cast-filter-sheet--${variant}`}
-        role="dialog"
-        aria-modal={variant === "mobile"}
-        aria-labelledby={titleId}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <div className="cast-sheet-handle" />
-        <header className="cast-sheet-head">
-          <div>
-            <h2 id={titleId}>{copy.filterTitle}</h2>
-            <p>{subtitle}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label={copy.closeFilters}>
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="cast-sheet-scroll hscroll">
-          <div className="cast-filter-layout">
-            <section className="cast-filter-column" aria-label={copy.filterLocation}>
-              <h3 className="cast-filter-column-title">{copy.filterLocation}</h3>
-              <FilterChipGroup label={copy.city} options={cityOptions} value={city} onChange={onCity} />
-              <FilterChipGroup label={copy.area} options={areaOptions} value={area} onChange={onArea} />
-              <FilterChipGroup
-                label={copy.store}
-                options={storeOptions}
-                value={storeSlug}
-                onChange={onStore}
-              />
-            </section>
-
-            <section className="cast-filter-column" aria-label={copy.filterNeeds}>
-              <h3 className="cast-filter-column-title">{copy.filterNeeds}</h3>
-              <FilterChipGroup
-                label={copy.category}
-                options={categoryOptions}
-                value={category}
-                onChange={onCategory}
-              />
-              <FilterChipGroup
-                label={copy.language}
-                options={languageOptions}
-                value={language}
-                onChange={onLanguage}
-              />
-              <FilterChipGroup
-                label={copy.priceRange}
-                note={copy.priceRangeNote}
-                options={priceRangeOptions}
-                value={priceRange}
-                onChange={onPrice}
-              />
-              <FilterChipGroup
-                label={copy.sortLabel.replace(":", "")}
-                options={sortOptions}
-                value={sort}
-                onChange={(value) => onSort(value as DiscoverySort)}
-              />
-            </section>
-
-            <section className="cast-filter-column" aria-label={copy.filterOther}>
-              <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
-              <AgeRangeFilter label={copy.age} value={ageRange} onChange={onAgeRange} />
-
-              <div className="cast-toggle-row">
-                <span>
-                  <i />
-                  {copy.hasDeals}
-                </span>
-                <button
-                  type="button"
-                  aria-pressed={hasActiveCoupon}
-                  className={hasActiveCoupon ? "is-on" : ""}
-                  onClick={onToggleCoupon}
-                >
-                  <b />
-                </button>
-              </div>
-
-              <div className="cast-toggle-row">
-                <span>
-                  <i />
-                  {copy.topRanking}
-                </span>
-                <button
-                  type="button"
-                  aria-pressed={topRankingOnly}
-                  className={topRankingOnly ? "is-on" : ""}
-                  onClick={onToggleTopRanking}
-                >
-                  <b />
-                </button>
-              </div>
-            </section>
-          </div>
+    <section
+      id={panelId}
+      ref={panelRef}
+      className={`cast-filter-sheet cast-filter-sheet--${variant}`}
+      role="dialog"
+      aria-modal={variant === "mobile"}
+      aria-labelledby={titleId}
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <div className="cast-sheet-handle" />
+      <header className="cast-sheet-head">
+        <div>
+          <h2 id={titleId}>{copy.filterTitle}</h2>
+          <p>{subtitle}</p>
         </div>
+        <button type="button" onClick={onClose} aria-label={copy.closeFilters}>
+          <X size={18} />
+        </button>
+      </header>
 
-        <footer className="cast-sheet-actions">
-          <button type="button" className="cast-reset-button" onClick={onReset}>
-            <RotateCcw size={15} />
-            {copy.resetFilters}
-          </button>
-          <button type="button" className="cast-apply-button" onClick={onClose}>
-            {copy.applyLabel(total)}
-          </button>
-        </footer>
-      </section>
+      <div className="cast-sheet-scroll hscroll">
+        <div className="cast-filter-layout">
+          <section className="cast-filter-column" aria-label={copy.filterLocation}>
+            <h3 className="cast-filter-column-title">{copy.filterLocation}</h3>
+            <FilterChipGroup
+              label={copy.city}
+              options={cityOptions}
+              value={city}
+              onChange={onCity}
+            />
+            <FilterChipGroup
+              label={copy.area}
+              options={areaOptions}
+              value={area}
+              onChange={onArea}
+            />
+            <FilterChipGroup
+              label={copy.store}
+              options={storeOptions}
+              value={storeSlug}
+              onChange={onStore}
+            />
+          </section>
+
+          <section className="cast-filter-column" aria-label={copy.filterNeeds}>
+            <h3 className="cast-filter-column-title">{copy.filterNeeds}</h3>
+            <FilterChipGroup
+              label={copy.category}
+              options={categoryOptions}
+              value={category}
+              onChange={onCategory}
+            />
+            <FilterChipGroup
+              label={copy.language}
+              options={languageOptions}
+              value={language}
+              onChange={onLanguage}
+            />
+            <FilterChipGroup
+              label={copy.priceRange}
+              note={copy.priceRangeNote}
+              options={priceRangeOptions}
+              value={priceRange}
+              onChange={onPrice}
+            />
+            <FilterChipGroup
+              label={copy.sortLabel.replace(":", "")}
+              options={sortOptions}
+              value={sort}
+              onChange={(value) => onSort(value as DiscoverySort)}
+            />
+          </section>
+
+          <section className="cast-filter-column" aria-label={copy.filterOther}>
+            <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
+            <AgeRangeFilter label={copy.age} value={ageRange} onChange={onAgeRange} />
+
+            <div className="cast-toggle-row">
+              <span>
+                <i />
+                {copy.hasDeals}
+              </span>
+              <button
+                type="button"
+                aria-pressed={hasActiveCoupon}
+                className={hasActiveCoupon ? "is-on" : ""}
+                onClick={onToggleCoupon}
+              >
+                <b />
+              </button>
+            </div>
+
+            <div className="cast-toggle-row">
+              <span>
+                <i />
+                {copy.topRanking}
+              </span>
+              <button
+                type="button"
+                aria-pressed={topRankingOnly}
+                className={topRankingOnly ? "is-on" : ""}
+                onClick={onToggleTopRanking}
+              >
+                <b />
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer className="cast-sheet-actions">
+        <button type="button" className="cast-reset-button" onClick={onReset}>
+          <RotateCcw size={15} />
+          {copy.resetFilters}
+        </button>
+        <button type="button" className="cast-apply-button" onClick={onClose}>
+          {copy.applyLabel(total)}
+        </button>
+      </footer>
+    </section>
   );
 
   if (variant === "desktop") return panel;
@@ -1576,7 +1473,7 @@ function AgeRangeFilter({
           max={ageRangeMax - ageRangeStep}
           step={ageRangeStep}
           value={value.min}
-          aria-label={`${label} tối thiểu`}
+          aria-label={`${label} tá»‘i thiá»ƒu`}
           onChange={(event) => updateMin(Number(event.target.value))}
         />
         <input
@@ -1585,7 +1482,7 @@ function AgeRangeFilter({
           max={ageRangeMax}
           step={ageRangeStep}
           value={value.max}
-          aria-label={`${label} tối đa`}
+          aria-label={`${label} tá»‘i Ä‘a`}
           onChange={(event) => updateMax(Number(event.target.value))}
         />
       </div>
@@ -2034,8 +1931,7 @@ const castSearchCss = `
   background: linear-gradient(180deg, rgba(12, 12, 15, 0.02) 35%, rgba(12, 12, 15, 0.92) 100%);
 }
 
-.cast-rank-badge,
-.cast-fav-button {
+.cast-rank-badge {
   position: absolute;
   top: 11px;
   display: inline-flex;
@@ -2064,29 +1960,6 @@ const castSearchCss = `
   background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
   color: var(--vy-on-gold);
   box-shadow: 0 6px 16px -8px rgba(168, 124, 60, 0.8);
-}
-
-.cast-fav-button {
-  right: 11px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(12, 12, 15, 0.5);
-  color: #e0729e;
-  backdrop-filter: blur(4px);
-  cursor: pointer;
-}
-
-.cast-fav-button.is-active {
-  border-color: rgba(255, 61, 113, 0.58);
-  background: rgba(255, 61, 113, 0.18);
-  color: #ff3d71;
-}
-
-.cast-fav-button:focus-visible {
-  outline: 2px solid var(--vy-gold-pale);
-  outline-offset: 2px;
 }
 
 .cast-card-name,
@@ -2156,8 +2029,11 @@ const castSearchCss = `
 .cast-card-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+}
+
+.cast-card-meta {
+  justify-content: flex-start;
 }
 
 .cast-language-pill {
@@ -2178,44 +2054,13 @@ const castSearchCss = `
   text-overflow: ellipsis;
 }
 
-.cast-like-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--vy-muted);
-  font-size: 11.5px;
-}
-
-.cast-like-count svg {
-  color: #e0729e;
-}
-
 .cast-card-foot {
+  justify-content: flex-end;
   margin-top: 11px;
 }
 
 .cast-card-foot span:first-child {
   min-width: 0;
-}
-
-.cast-card-foot b {
-  color: #e3c27e;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.cast-card-foot small {
-  color: var(--vy-muted);
-  font-size: 10.5px;
-}
-
-.cast-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #e3c27e;
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .cast-card-cta {
@@ -2986,8 +2831,6 @@ html.vy-light .cast-suggestion-tags.is-gold button {
   color: #77591f;
 }
 
-html.vy-light .cast-like-count,
-html.vy-light .cast-card-foot small,
 html.vy-light .cast-suggestion-row small,
 html.vy-light .cast-suggestion-label,
 html.vy-light .cast-suggestion-split,
@@ -2997,8 +2840,6 @@ html.vy-light .cast-range-preview small {
   color: #766c5b;
 }
 
-html.vy-light .cast-card-foot b,
-html.vy-light .cast-rating,
 html.vy-light .cast-sort-select .cast-dropdown-trigger b,
 html.vy-light .cast-suggestions mark,
 html.vy-light .cast-range-head b,
@@ -3245,13 +3086,6 @@ html.vy-light .cast-sheet-actions {
     font-size: 9px;
   }
 
-  .cast-fav-button {
-    top: 8px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
-  }
-
   .cast-card-name {
     left: 10px;
     right: 10px;
@@ -3294,20 +3128,7 @@ html.vy-light .cast-sheet-actions {
     display: none;
   }
 
-  .cast-like-count {
-    font-size: 10.5px;
-  }
-
   .cast-card-foot {
-    display: none;
-  }
-
-  .cast-card-foot b {
-    font-size: 13px;
-  }
-
-  .cast-rating,
-  .cast-card-cta {
     display: none;
   }
 

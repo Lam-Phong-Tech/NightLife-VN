@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Heart, MapPin, Play, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Play, Star } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
 import { mediaBg } from "./cast-profile.helpers";
@@ -10,8 +10,6 @@ type CastHeroProps = {
   activeMedia: CastMedia;
   area: string;
   language: LanguageCode;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
   onOpenGallery: () => void;
   onPreviousMedia: () => void;
   onNextMedia: () => void;
@@ -19,11 +17,7 @@ type CastHeroProps = {
 };
 
 const profileSummary = (profile: CastProfile) =>
-  [
-    profile.heightCm ? `${profile.heightCm} cm` : null,
-    profile.measurements,
-    profile.zodiacSign,
-  ]
+  [profile.heightCm ? `${profile.heightCm} cm` : null, profile.measurements, profile.zodiacSign]
     .filter(Boolean)
     .join(" · ");
 
@@ -32,8 +26,6 @@ export function CastHero({
   activeMedia,
   area,
   language,
-  isFavorite,
-  onToggleFavorite,
   onOpenGallery,
   onPreviousMedia,
   onNextMedia,
@@ -55,26 +47,27 @@ export function CastHero({
         <Link href="/danh-sach-cast" className="cast-icon-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
-        <button
-          type="button"
-          className={`cast-icon-button${isFavorite ? " is-active" : ""}`}
-          onClick={onToggleFavorite}
-          aria-label={isFavorite ? copy.removeFavorite : copy.favorite}
-          aria-pressed={isFavorite}
-        >
-          <Heart size={18} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
-        </button>
       </div>
 
       {activeMedia.type === "VIDEO" ? (
-        <button type="button" className="cast-play" onClick={onOpenGallery} aria-label={copy.openVideo}>
+        <button
+          type="button"
+          className="cast-play"
+          onClick={onOpenGallery}
+          aria-label={copy.openVideo}
+        >
           <Play size={24} fill="currentColor" />
         </button>
       ) : null}
 
       {showMediaNavigation ? (
         <div className="cast-hero-media-nav" aria-label={copy.gallery}>
-          <button type="button" className="previous" onClick={onPreviousMedia} aria-label={copy.photoPrevious}>
+          <button
+            type="button"
+            className="previous"
+            onClick={onPreviousMedia}
+            aria-label={copy.photoPrevious}
+          >
             <ChevronLeft size={22} strokeWidth={2.2} />
           </button>
           <button type="button" className="next" onClick={onNextMedia} aria-label={copy.photoNext}>
@@ -105,7 +98,6 @@ export function CastHero({
           <strong>{profile.store.name}</strong>
           {area ? <span>· {area}</span> : null}
         </Link>
-
       </div>
     </section>
   );

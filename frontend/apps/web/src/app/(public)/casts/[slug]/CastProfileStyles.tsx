@@ -85,8 +85,7 @@ export function CastProfileStyles() {
         min-height: 42px;
       }
 
-      .cast-icon-link,
-      .cast-icon-button {
+      .cast-icon-link {
         width: 38px;
         height: 38px;
         min-width: 38px;
@@ -104,21 +103,9 @@ export function CastProfileStyles() {
       }
 
       .cast-icon-link svg,
-      .cast-icon-button svg,
       .cast-hero-media-nav button svg,
       .cast-play svg {
         filter: var(--cast-hero-control-icon-shadow);
-      }
-
-      .cast-icon-button {
-        appearance: none;
-        cursor: pointer;
-      }
-
-      .cast-icon-button.is-active {
-        background: var(--cast-hero-control-bg-strong);
-        border-color: transparent;
-        color: var(--cast-hero-control-icon);
       }
 
       .cast-hero-media-nav {
@@ -714,27 +701,6 @@ export function CastProfileStyles() {
         pointer-events: auto;
       }
 
-      .cast-booking-favorite {
-        width: 46px;
-        height: 46px;
-        flex: none;
-        border-radius: 13px;
-        border: 1px solid var(--vy-border-gold-32);
-        background: var(--vy-surface-2);
-        color: var(--vy-favorite);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: var(--vy-shadow-card);
-      }
-
-      .cast-booking-favorite.is-active {
-        border-color: var(--vy-border-gold-40);
-        background: var(--vy-gold-grad);
-        color: var(--vy-on-gold);
-      }
-
       .cast-booking-button {
         flex: 1;
         min-height: 50px;
@@ -919,14 +885,6 @@ export function CastProfileStyles() {
         font-size: 11px;
       }
 
-      .cast-desktop-favorite-anchor {
-        position: relative;
-      }
-
-      .cast-desktop-profile {
-        padding-right: 58px;
-      }
-
       .cast-badge-row.desktop {
         margin-bottom: 18px;
       }
@@ -943,22 +901,6 @@ export function CastProfileStyles() {
         margin: 10px 0 0;
         color: var(--vy-muted);
         font-size: 14px;
-      }
-
-      .cast-desktop-fav {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 50px;
-        height: 50px;
-        border-radius: 13px;
-        border: 1px solid var(--vy-border);
-        background: var(--vy-surface-3);
-        color: #e0729e;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
       }
 
       .cast-desktop-stat-row {
@@ -1166,8 +1108,7 @@ export function CastProfileStyles() {
       }
 
       .cast-media-label,
-      .cast-desktop .cast-badge-row.desktop,
-      .cast-desktop-fav {
+      .cast-desktop .cast-badge-row.desktop {
         display: none;
       }
 
@@ -1184,27 +1125,6 @@ export function CastProfileStyles() {
         left: 14px;
         bottom: 14px;
         background: rgba(12,12,15,.5);
-      }
-
-      .cast-desktop-media-fav {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 38px;
-        height: 38px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.2);
-        background: rgba(12,12,15,.5);
-        color: #fff;
-        display: grid;
-        place-items: center;
-        padding: 0;
-        cursor: pointer;
-        backdrop-filter: blur(6px);
-      }
-
-      .cast-desktop-media-fav.is-active {
-        color: #e0729e;
       }
 
       .cast-desktop-thumbs {
