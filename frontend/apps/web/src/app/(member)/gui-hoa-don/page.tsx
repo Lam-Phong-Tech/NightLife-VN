@@ -75,7 +75,7 @@ const billPickerTheme = {
 } as const;
 
 const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
-const maxBillTotalVnd = 1_000_000_000;
+const maxBillTotalVnd = 100_000_000;
 const maxEvidenceSizeBytes = 25 * 1024 * 1024;
 const allowedEvidenceMimeTypes = new Set([
   "image/jpeg",
@@ -243,7 +243,7 @@ const validateBillForm = ({
   }
 
   if (amount > maxBillTotalVnd) {
-    return "Tổng tiền bill gốc không được vượt quá 1.000.000.000đ.";
+    return "Tổng tiền bill gốc không được vượt quá 100.000.000đ.";
   }
 
   if (!usedAt.trim()) {
@@ -899,7 +899,7 @@ export default function Page() {
                 <input
                   id="bill-total"
                   inputMode="numeric"
-                  placeholder="VD: 1.800.000"
+                  placeholder="Vui lòng nhập tổng tiền"
                   value={amountInput}
                   onChange={(event) => handleAmountChange(event.target.value)}
                   onBlur={() => setAmountInput((current) => formatMoneyInput(current))}
@@ -1005,64 +1005,7 @@ export default function Page() {
             </button>
           </form>
 
-          <aside className="nl-bill-side">
-            <div className="nl-side-row">
-              <span>Quán</span>
-              <strong>{selectedStore?.name ?? "Chọn quán"}</strong>
-            </div>
-            <div className="nl-side-row">
-              <span>Booking</span>
-              <strong>
-                {selectedBooking ? `${selectedBooking.bookingCode} · ${formatDateTime(selectedBooking.scheduledAt, activeLanguage)}` : "Không liên kết booking"}
-              </strong>
-            </div>
-            <div className="nl-side-row">
-              <span>Thời gian xác nhận</span>
-              <strong>{usedAt ? formatDateTime(confirmedUsageAt, activeLanguage) : "Chưa xác nhận"}</strong>
-            </div>
-            <div className="nl-side-row">
-              <span>Coupon link</span>
-              <strong>
-                {selectedBooking?.coupon?.name ??
-                  selectedBooking?.couponIssue?.code ??
-                  selectedCouponIssue?.coupon.name ??
-                  "Không liên kết"}
-              </strong>
-            </div>
-            {linkedCouponDiscount ? (
-              <div className="nl-side-row">
-                <span>Mức giảm</span>
-                <strong>{linkedCouponDiscount}</strong>
-              </div>
-            ) : null}
-            <div className="nl-side-row">
-              <span>Trạng thái deadline</span>
-              <strong style={{ color: deadlineStatusColor }}>
-                {deadlineStatusLabel}
-              </strong>
-            </div>
 
-            <div className="nl-recent">
-              <h2>Lịch sử bill</h2>
-              {visibleSubmittedBills.length ? (
-                visibleSubmittedBills.map((bill) => (
-                  <article
-                    key={bill.id}
-                    className={bill.id === focusedBillId ? "active" : undefined}
-                  >
-                    <strong>{bill.billNumber ?? bill.id.slice(0, 8)}</strong>
-                    <span>{bill.store?.name ?? selectedStore?.name ?? "Quán"}</span>
-                    <em>
-                      {formatMoney(bill.totalVnd)} - {formatDateTime(bill.usedAt, activeLanguage)}
-                    </em>
-                    <small>{billStatusLabel(bill.status)}</small>
-                  </article>
-                ))
-              ) : (
-                <p>Chưa có bill trong phạm vi này.</p>
-              )}
-            </div>
-          </aside>
         </div>
       </section>
 
@@ -1128,7 +1071,8 @@ export default function Page() {
 
         .nl-bill-layout {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 340px;
+          grid-template-columns: minmax(0, 720px);
+          justify-content: center;
           gap: 18px;
           margin-top: 22px;
           align-items: start;
@@ -1619,10 +1563,6 @@ export default function Page() {
           .nl-bill-layout {
             grid-template-columns: 1fr;
           }
-
-          .nl-bill-side {
-            order: -1;
-          }
         }
 
         @media (max-width: 620px) {
@@ -1634,8 +1574,7 @@ export default function Page() {
             padding: 14px 10px 18px;
           }
 
-          .nl-bill-form,
-          .nl-bill-side {
+          .nl-bill-form {
             padding: 12px;
           }
 
