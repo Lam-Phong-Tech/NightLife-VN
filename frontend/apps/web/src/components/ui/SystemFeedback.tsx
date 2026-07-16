@@ -141,7 +141,7 @@ const toneConfig: Record<
   },
 };
 
-const SystemFeedbackContext = createContext<SystemFeedbackApi | null>(null);
+export const SystemFeedbackContext = createContext<SystemFeedbackApi | null>(null);
 
 export function useSystemFeedback() {
   const value = useContext(SystemFeedbackContext);

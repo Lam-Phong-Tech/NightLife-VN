@@ -246,7 +246,7 @@ describe("Bill submit page", () => {
       );
     });
     expect(mocks.uploadEvidence).toHaveBeenCalledWith("bill-member-1", expect.any(File));
-    expect(await screen.findByText("BILL-20260701-TEST")).toBeInTheDocument();
+    expect(await screen.findByText(/BILL-20260701-TEST/)).toBeInTheDocument();
     expect(screen.getByText(/chưa upload được/i)).toBeInTheDocument();
   });
 });

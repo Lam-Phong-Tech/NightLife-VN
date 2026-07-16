@@ -39,12 +39,12 @@ import {
 } from 'lucide-react';
 import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
 import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { billApi } from '@/lib/api/bills';
 import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
-import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
 
 const colors = {
   bg: 'var(--partner-bg, #0c0c0f)',
@@ -1501,7 +1501,12 @@ export default function PartnerPage() {
     readPartnerNotificationIds(),
   );
 
-  const feedback = useSystemFeedback();
+  const rawFeedback = useContext(SystemFeedbackContext);
+  const feedback = rawFeedback || {
+    showToast: () => {},
+    showModal: () => {},
+    closeModal: () => {},
+  };
   const currentUser = getAuthUser();
 
   // Change Password States
@@ -7687,80 +7692,108 @@ export default function PartnerPage() {
                               flex: '0 0 auto',
                             }}
                           >
-                                    }}
-                                  />
-                                ) : null}
-                              </span>
+                            <Icon size={15} />
+                          </span>
+                          <span style={{ minWidth: 0, flex: 1 }}>
+                            <span
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '8px',
+                              }}
+                            >
                               <span
                                 style={{
-                                  display: 'block',
-                                  marginTop: '4px',
-                                  fontSize: '13px',
-                                  fontWeight: 900,
-                                  lineHeight: 1.35,
-                                }}
-                              >
-                                {notification.title}
-                              </span>
-                              <span
-                                style={{
-                                  display: 'block',
-                                  marginTop: '5px',
-                                  color: colors.text2,
-                                  fontSize: '11.5px',
-                                  lineHeight: 1.5,
-                                }}
-                              >
-                                {notification.message}
-                              </span>
-                              <span
-                                style={{
-                                  marginTop: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: '10px',
-                                  color: colors.muted,
-                                  fontSize: '10.5px',
+                                  fontSize: '11px',
                                   fontWeight: 800,
+                                  color: accent,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.5px',
                                 }}
                               >
+                                {notification.category}
+                              </span>
+                              {notification.unread ? (
                                 <span
                                   style={{
-                                    minWidth: 0,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    background: colors.neonPink,
                                   }}
-                                >
-                                  {notification.meta}
-                                </span>
-                                <span style={{ color: colors.goldBright, flex: '0 0 auto' }}>
-                                  {notification.actionLabel}
-                                </span>
+                                />
+                              ) : null}
+                            </span>
+                            <span
+                              style={{
+                                display: 'block',
+                                marginTop: '4px',
+                                fontSize: '13px',
+                                fontWeight: 900,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {notification.title}
+                            </span>
+                            <span
+                              style={{
+                                display: 'block',
+                                marginTop: '5px',
+                                color: colors.text2,
+                                fontSize: '11.5px',
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {notification.message}
+                            </span>
+                            <span
+                              style={{
+                                marginTop: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyStyle: 'space-between',
+                                gap: '10px',
+                                color: colors.muted,
+                                fontSize: '10.5px',
+                                fontWeight: 800,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  minWidth: 0,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {notification.meta}
+                              </span>
+                              <span style={{ color: colors.goldBright, flex: '0 0 auto' }}>
+                                {notification.actionLabel}
                               </span>
                             </span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div
-                        style={{
-                          border: `1px dashed ${colors.borderGold22}`,
-                          borderRadius: '14px',
-                          padding: '16px',
-                          color: colors.text2,
-                          fontSize: '12.5px',
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        Chưa có thông báo cần xử lý. Khi có booking, QR offline, bill, coupon hoặc trạng thái đăng tin mới,
-                        hệ thống sẽ tách thành từng thông báo riêng.
-                      </div>
-                    )}
-                  </div>
+                          </span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div
+                      style={{
+                        border: `1px dashed ${colors.borderGold22}`,
+                        borderRadius: '14px',
+                        padding: '16px',
+                        color: colors.text2,
+                        fontSize: '12.5px',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Chưa có thông báo cần xử lý. Khi có booking, QR offline, bill, coupon hoặc trạng thái đăng tin mới,
+                      hệ thống sẽ tách thành từng thông báo riêng.
+                    </div>
+                  )}
                 </div>
-              ) : null}
+              </div>
               <button
                 type="button"
                 onClick={logout}

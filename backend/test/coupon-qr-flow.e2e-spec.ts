@@ -423,6 +423,7 @@ describe('Coupon QR full flow (e2e)', () => {
       .post('/member/bookings')
       .set('x-test-role', 'USER')
       .set('x-test-user-id', 'member-1')
+      .set('x-test-tier', 'MEMBER')
       .send({
         storeSlug: storeRecord.slug,
         couponId: couponRecord.id,
@@ -444,6 +445,7 @@ describe('Coupon QR full flow (e2e)', () => {
       .get('/member/coupon-issues')
       .set('x-test-role', 'USER')
       .set('x-test-user-id', 'member-1')
+      .set('x-test-tier', 'MEMBER')
       .expect(200);
 
     expect(walletResponse.body).toEqual([
