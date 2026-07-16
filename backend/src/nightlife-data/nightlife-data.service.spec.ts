@@ -125,6 +125,7 @@ describe('NightlifeDataService', () => {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      groupBy: jest.fn(),
     },
     bookingQr: {
       count: jest.fn(),
@@ -146,6 +147,7 @@ describe('NightlifeDataService', () => {
       create: jest.fn(),
       count: jest.fn(),
       findMany: jest.fn(),
+      groupBy: jest.fn(),
     },
     notificationLog: {
       create: jest.fn(),
@@ -8223,6 +8225,105 @@ describe('NightlifeDataService', () => {
       expect(result.monthlyRevenue).toBe(500000);
       expect(result.commissionAmount).toBe(50000);
       expect(result.telegramLogs).toEqual([]);
+    });
+  });
+
+  describe('listPublicHomeRecommendations', () => {
+    it('returns pinned stores sorted by pinRank, manualScore, and updatedAt', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-1', pinRank: 1, manualScore: 100, updatedAt: new Date('2026-01-01') },
+        { targetId: 'store-2', pinRank: 2, manualScore: 50, updatedAt: new Date('2026-01-02') },
+        { targetId: 'store-3', pinRank: 2, manualScore: 80, updatedAt: new Date('2026-01-01') },
+      ] as never);
+
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-1',
+          name: 'Store 1',
+          slug: 'store-1-slug',
+          category: 'BAR_CLUB',
+          description: 'Desc 1',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+          areaId: 'area-1',
+          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          media: [{ url: 'image1.jpg', purpose: 'STORE_COVER' }],
+          coupons: [],
+        },
+        {
+          id: 'store-2',
+          name: 'Store 2',
+          slug: 'store-2-slug',
+          category: 'BAR_CLUB',
+          description: 'Desc 2',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+          areaId: 'area-1',
+          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          media: [{ url: 'image2.jpg', purpose: 'STORE_COVER' }],
+          coupons: [],
+        },
+        {
+          id: 'store-3',
+          name: 'Store 3',
+          slug: 'store-3-slug',
+          category: 'BAR_CLUB',
+          description: 'Desc 3',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+          areaId: 'area-1',
+          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          media: [{ url: 'image3.jpg', purpose: 'STORE_COVER' }],
+          coupons: [],
+        },
+      ] as never);
+
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 3 });
+
+      expect(result).toHaveLength(3);
+      expect(result[0].id).toBe('store-1');
+      expect(result[1].id).toBe('store-3');
+      expect(result[2].id).toBe('store-2');
+
+      expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            scope: 'recommend-home',
+            cityCode: 'hn',
+          }),
+        }),
+      );
+    });
+
+    it('falls back to personalized logic if no pinned stores are configured', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([] as never);
+
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-fallback',
+          name: 'Store Fallback',
+          slug: 'store-fallback-slug',
+          category: 'RESTAURANT',
+          description: 'Desc Fallback',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+          areaId: 'area-1',
+          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          media: [],
+          coupons: [],
+        },
+      ] as never);
+
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 1 });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('store-fallback');
     });
   });
 });
