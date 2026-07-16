@@ -207,14 +207,17 @@ function LoginContent({
           width: '100%',
           maxWidth: '1480px',
           margin: '0 auto',
-          padding: isMobile ? '18px' : '24px 34px 34px',
-          alignItems: 'center',
+          minHeight: isMobile ? undefined : 'calc(100vh - 82px)',
+          gridAutoRows: isMobile ? undefined : '1fr',
+          padding: isMobile ? '18px' : '24px 34px',
+          alignItems: isMobile ? undefined : 'stretch',
           boxSizing: 'border-box',
         }}
       >
         <div
           style={{
-            height: isMobile ? '300px' : 'clamp(410px, 56vh, 500px)',
+            height: isMobile ? '300px' : '100%',
+            minHeight: isMobile ? undefined : '430px',
             borderRadius: '18px',
             border: `1px solid ${darkColors.borderGold22}`,
             overflow: 'hidden',
