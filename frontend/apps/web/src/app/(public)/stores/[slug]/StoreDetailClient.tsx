@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  Info,
   Minus,
   Navigation,
   PhoneCall,
@@ -41,6 +40,7 @@ import {
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
+import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type {
   PublicStoreDetail,
@@ -652,13 +652,6 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const { formatMoney } = useMoneyFormatter(activeLanguage);
   const items = store.priceReference.items;
-  const menuNote = items.length
-    ? store.priceReference.note ||
-      translateText(
-        "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ.",
-        activeLanguage,
-      )
-    : null;
   const menuGroups = Array.from(
     new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
   );
@@ -682,14 +675,11 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
         {items.length ? (
           items.map((item, index) => (
             <div className="menu-row" key={`${item.label}-${item.amountVnd ?? index}`}>
-              <span
+              <PlaceholderMedia
                 className="menu-photo"
-                style={{
-                  backgroundImage: item.imageUrl
-                    ? imageBackground(item.imageUrl)
-                    : emptyMediaBackground,
-                }}
-                aria-hidden="true"
+                src={item.imageUrl}
+                alt={item.label}
+                label=""
               />
               <span className="menu-copy">
                 <strong>
@@ -725,13 +715,6 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
           />
         )}
       </div>
-
-      {menuNote ? (
-        <div className="menu-note">
-          <Info size={15} />
-          <span>{menuNote}</span>
-        </div>
-      ) : null}
     </section>
   );
 }
