@@ -158,17 +158,28 @@ export class PartnerStaffService {
       );
     }
 
-    await this.prisma.storePermission.update({
-      where: {
-        userId_storeId: {
-          userId,
-          storeId,
+    await this.prisma.$transaction(async (tx) => {
+      await tx.storePermission.update({
+        where: {
+          userId_storeId: {
+            userId,
+            storeId,
+          },
         },
-      },
-      data: {
-        status: 'INACTIVE',
-        deletedAt: new Date(),
-      },
+        data: {
+          status: 'INACTIVE',
+          deletedAt: new Date(),
+        },
+      });
+
+      await tx.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          status: 'INACTIVE',
+        },
+      });
     });
 
     return { success: true };
