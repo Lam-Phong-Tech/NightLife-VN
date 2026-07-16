@@ -135,6 +135,7 @@ const { bookingDateWindowDays, maxGuests: maxBookingGuests } = bookingValidation
 const bookingFormAutofillBlockProps = {
   autoComplete: "off",
   "data-1p-ignore": "true",
+  "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
 } as const;
@@ -143,6 +144,7 @@ const bookingInputAutofillBlockProps = {
   autoComplete: "new-password",
   "aria-autocomplete": "none",
   "data-1p-ignore": "true",
+  "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
 } as const;
@@ -848,8 +850,8 @@ function BookingCard({
               <span>{translateText("Email", activeLanguage)}</span>
               <input
                 {...bookingInputAutofillBlockProps}
-                type="email"
-                name="nl-booking-store-contact"
+                type="text"
+                name="nl-booking-store-mailbox"
                 value={email}
                 onBlur={() => onFieldTouched("email")}
                 onChange={(event) => {
@@ -858,6 +860,9 @@ function BookingCard({
                 }}
                 placeholder={translateText("Vui lòng nhập email", activeLanguage)}
                 inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </label>
             <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} reserveSpace />

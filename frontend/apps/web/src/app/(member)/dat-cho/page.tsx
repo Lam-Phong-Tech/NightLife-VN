@@ -17,7 +17,7 @@ import {
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
-import { getCastDetail } from "@/lib/api/cast-detail";
+import { getCastDetail, type PublicCastDetail } from "@/lib/api/cast-detail";
 import { discoveryApi, type PublicCast } from "@/lib/api/discovery";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { getStoreDetail, type StoreDetailCast } from "@/lib/api/store-detail";
@@ -58,6 +58,7 @@ const bookingAutofillBlockProps = {
   autoComplete: "new-password",
   "aria-autocomplete": "none",
   "data-1p-ignore": "true",
+  "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
 } as const;
@@ -154,6 +155,36 @@ const publicCastToStoreCast = (cast: PublicCast): StoreDetailCast => ({
   hourlyRateVnd: cast.hourlyRateVnd,
 });
 
+const castDetailToStoreCast = (cast: PublicCastDetail): StoreDetailCast => ({
+  id: cast.id,
+  slug: cast.slug,
+  stageName: cast.stageName,
+  publicAlias: cast.publicAlias,
+  publicHeadline: cast.publicHeadline,
+  thumbnailUrl: cast.thumbnailUrl,
+  tags: cast.tags,
+  languages: cast.languages,
+  hourlyRateVnd: cast.hourlyRateVnd,
+});
+
+const upsertCastOption = (casts: StoreDetailCast[], nextCast: StoreDetailCast) => {
+  const index = casts.findIndex((cast) => cast.slug === nextCast.slug);
+
+  if (index === -1) {
+    return [nextCast, ...casts];
+  }
+
+  return casts.map((cast, castIndex) =>
+    castIndex === index
+      ? {
+          ...cast,
+          ...nextCast,
+          thumbnailUrl: nextCast.thumbnailUrl ?? cast.thumbnailUrl,
+        }
+      : cast,
+  );
+};
+
 const loadStoreCastOptions = async (storeSlug: string) => {
   try {
     const filteredCasts = await discoveryApi.listCastsStrict({
@@ -217,6 +248,7 @@ export default function Page() {
   const [note, setNote] = useState("");
   const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
   const [storeCasts, setStoreCasts] = useState<StoreDetailCast[]>([]);
+  const [resolvedCastOption, setResolvedCastOption] = useState<StoreDetailCast | null>(null);
   const [storeHoursResolved, setStoreHoursResolved] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,15 +290,25 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (!context.castSlug) return;
-
     let cancelled = false;
+
+    if (!context.castSlug) {
+      queueMicrotask(() => {
+        if (!cancelled) setResolvedCastOption(null);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     getCastDetail(context.castSlug)
       .then((cast) => {
         if (cancelled) return;
 
         const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+        const castOption = castDetailToStoreCast(cast);
+        setResolvedCastOption(castOption);
+        setStoreCasts((current) => upsertCastOption(current, castOption));
         setContext((current) => {
           if (current.castSlug !== cast.slug) return current;
 
@@ -444,10 +486,14 @@ export default function Page() {
     [fieldErrors, submitAttempted, touchedFields],
   );
   const castOptions = useMemo(() => {
-    const options = storeCasts.map((cast) => ({
+    const sourceCasts = resolvedCastOption
+      ? upsertCastOption(storeCasts, resolvedCastOption)
+      : storeCasts;
+    const options = sourceCasts.map((cast) => ({
       slug: cast.slug,
       label: castOptionLabel(cast),
       meta: castOptionMeta(cast),
+      thumbnailUrl: cast.thumbnailUrl,
     }));
 
     if (context.castSlug && !options.some((option) => option.slug === context.castSlug)) {
@@ -455,11 +501,13 @@ export default function Page() {
         slug: context.castSlug,
         label: context.castName ?? fallbackCastNameFromSlug(context.castSlug),
         meta: context.storeName,
+        thumbnailUrl:
+          resolvedCastOption?.slug === context.castSlug ? resolvedCastOption.thumbnailUrl : undefined,
       });
     }
 
     return options;
-  }, [context.castName, context.castSlug, context.storeName, storeCasts]);
+  }, [context.castName, context.castSlug, context.storeName, resolvedCastOption, storeCasts]);
   const markFieldTouched = (field: BookingValidationField) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
     setErrorMessage("");
@@ -682,7 +730,20 @@ export default function Page() {
               </section>
             )}
 
-            <div className={styles.formStack}>
+            <form
+              id="nl-booking-request-form"
+              className={styles.formStack}
+              autoComplete="off"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              data-form-type="other"
+              data-lpignore="true"
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submit();
+              }}
+            >
               <TextField
                 label="Họ tên"
                 value={guestName}
@@ -825,13 +886,13 @@ export default function Page() {
               {errorMessage ? (
                 <div className={styles.errorMessage}>{translateText(errorMessage, activeLanguage)}</div>
               ) : null}
-            </div>
+            </form>
           </div>
 
           <div className={styles.bookingStickyCta}>
             <button
-              type="button"
-              onClick={submit}
+              type="submit"
+              form="nl-booking-request-form"
               disabled={isSubmitting}
               className={styles.primaryCta}
               style={{
@@ -908,7 +969,7 @@ function CastSelectField({
 }: {
   label: string;
   value: string;
-  options: Array<{ slug: string; label: string; meta?: string }>;
+  options: Array<{ slug: string; label: string; meta?: string; thumbnailUrl?: string | null }>;
   onChange: (value: string) => void;
   activeLanguage: LanguageCode;
 }) {
@@ -918,10 +979,20 @@ function CastSelectField({
     slug: "",
     label: translateText("Không chọn cast", activeLanguage),
     meta: undefined,
+    thumbnailUrl: null,
   };
   const selected = selectedOption ?? fallbackOption;
   const optionList = [fallbackOption, ...options];
   const initial = selected.label.trim().charAt(0).toUpperCase() || "C";
+  const selectedAvatarClassName = [
+    value ? styles.castAvatar : styles.castAvatarEmpty,
+    selected.thumbnailUrl ? styles.castAvatarImage : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const selectedAvatarStyle = selected.thumbnailUrl
+    ? { backgroundImage: `url("${selected.thumbnailUrl}")` }
+    : undefined;
 
   const chooseCast = (slug: string) => {
     onChange(slug);
@@ -948,8 +1019,12 @@ function CastSelectField({
           onClick={() => setOpen((current) => !current)}
         >
           <span className={styles.castSelectValue}>
-            <span className={value ? styles.castAvatar : styles.castAvatarEmpty} aria-hidden="true">
-              {value ? initial : <UserRound size={16} />}
+            <span
+              className={selectedAvatarClassName}
+              style={selectedAvatarStyle}
+              aria-hidden="true"
+            >
+              {value ? selected.thumbnailUrl ? null : initial : <UserRound size={16} />}
             </span>
             <span className={styles.castSelectText}>
               <strong>{selected.label}</strong>
@@ -963,6 +1038,15 @@ function CastSelectField({
             {optionList.map((option) => {
               const isSelected = option.slug === value;
               const optionInitial = option.label.trim().charAt(0).toUpperCase() || "C";
+              const optionAvatarClassName = [
+                option.slug ? styles.castAvatar : styles.castAvatarEmpty,
+                option.thumbnailUrl ? styles.castAvatarImage : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              const optionAvatarStyle = option.thumbnailUrl
+                ? { backgroundImage: `url("${option.thumbnailUrl}")` }
+                : undefined;
 
               return (
                 <button
@@ -975,10 +1059,11 @@ function CastSelectField({
                   onClick={() => chooseCast(option.slug)}
                 >
                   <span
-                    className={option.slug ? styles.castAvatar : styles.castAvatarEmpty}
+                    className={optionAvatarClassName}
+                    style={optionAvatarStyle}
                     aria-hidden="true"
                   >
-                    {option.slug ? optionInitial : <UserRound size={15} />}
+                    {option.slug ? option.thumbnailUrl ? null : optionInitial : <UserRound size={15} />}
                   </span>
                   <span className={styles.castSelectText}>
                     <strong>{option.label}</strong>
@@ -1075,9 +1160,9 @@ function EmailField({
       <span className={styles.phoneInput}>
         <Mail size={15} />
         <input
-          type="email"
+          type="text"
           {...bookingAutofillBlockProps}
-          name="nl-booking-cast-contact"
+          name="nl-booking-cast-mailbox"
           value={value}
           placeholder="Vui lòng nhập email"
           onBlur={onTouched}
@@ -1086,7 +1171,10 @@ function EmailField({
             onChange(event.target.value);
           }}
           inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
           className={styles.input}
+          spellCheck={false}
         />
       </span>
       <FieldError activeLanguage={activeLanguage} message={error} />

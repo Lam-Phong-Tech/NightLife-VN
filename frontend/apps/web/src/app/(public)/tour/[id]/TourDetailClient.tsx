@@ -60,6 +60,7 @@ const bookingAutofillBlockProps = {
   autoComplete: "new-password",
   "aria-autocomplete": "none",
   "data-1p-ignore": "true",
+  "data-bwignore": "true",
   "data-form-type": "other",
   "data-lpignore": "true",
 } as const;
@@ -801,6 +802,12 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
             <form
               id="tour-booking-form"
               className={styles.form}
+              autoComplete="off"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              data-form-type="other"
+              data-lpignore="true"
+              noValidate
               onSubmit={(event) => {
                 event.preventDefault();
                 submitBooking();
