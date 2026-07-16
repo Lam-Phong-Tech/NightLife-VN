@@ -304,6 +304,13 @@ type PartnerBooking = {
   updatedAt?: string | null;
   qr?: { usedAt?: string | null } | null;
   couponIssue?: { usedAt?: string | null } | null;
+  coupon?: {
+    id: string;
+    code: string;
+    name: string;
+    discountType: string;
+    discountValue: number;
+  } | null;
 };
 
 type PartnerBill = {
@@ -322,6 +329,7 @@ type PartnerBill = {
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
+  discountRuleSnapshot?: DiscountRuleSnapshot | null;
 };
 
 type DiscountRuleSnapshot = {
@@ -2601,6 +2609,46 @@ export default function PartnerPage() {
         : partnerBookingUsageSourceLabel(selectedBillBooking),
     [selectedBillBooking, selectedBillId],
   );
+  const selectedBill = useMemo(
+    () => bills.find((b) => b.id === selectedBillId) ?? null,
+    [bills, selectedBillId],
+  );
+  const billDiscountLabel = useMemo(() => {
+    if (selectedBill) {
+      const snapshot = selectedBill.discountRuleSnapshot;
+      if (snapshot) {
+        const type = snapshot.type ?? snapshot.discountType;
+        const val = snapshot.value ?? snapshot.sourceValue ?? snapshot.discountPercent;
+        if (type && val) {
+          const main = type === 'FIXED_AMOUNT' ? `-${moneyVnd(Number(val))}` : `-${val}%`;
+          const max = snapshot.maxDiscountVnd;
+          const min = snapshot.minSpendVnd;
+          const details = [
+            max && max > 0 ? `tối đa ${moneyVnd(max)}` : '',
+            min && min > 0 ? `từ ${moneyVnd(min)}` : '',
+          ].filter(Boolean);
+          const ruleLabel = details.length ? `${main} (${details.join(', ')})` : main;
+          return selectedBill.discountVnd
+            ? `${ruleLabel} (Đã giảm thực tế: -${moneyVnd(selectedBill.discountVnd)})`
+            : ruleLabel;
+        }
+      }
+      if (selectedBill.discountVnd) {
+        return `-${moneyVnd(selectedBill.discountVnd)}`;
+      }
+      return null;
+    }
+    if (selectedBillBooking && selectedBillBooking.coupon) {
+      const { discountType, discountValue } = selectedBillBooking.coupon;
+      if (discountType && discountValue) {
+        if (discountType === 'FIXED_AMOUNT') {
+          return `-${moneyVnd(discountValue)}`;
+        }
+        return `-${discountValue}%`;
+      }
+    }
+    return null;
+  }, [selectedBill, selectedBillBooking]);
   const billAmount = useMemo(() => parseMoneyInput(billAmountInput), [billAmountInput]);
   const billUsedAtDate = useMemo(() => new Date(billUsedAt), [billUsedAt]);
   const isBillUsedAtInvalid = Number.isNaN(billUsedAtDate.getTime());
@@ -5717,7 +5765,6 @@ export default function PartnerPage() {
   );
 
   const renderBillPanel = () => {
-    const selectedBill = bills.find((b) => b.id === selectedBillId);
     if (billSubView === 'list') {
       return (
         <div style={{ marginTop: '14px' }}>
@@ -6013,6 +6060,28 @@ export default function PartnerPage() {
                 />
               )}
             </FormField>
+
+            {billDiscountLabel && (
+              <FormField label="Mức giảm giá áp dụng từ coupon">
+                <div
+                  aria-readonly="true"
+                  style={{
+                    ...inputStyle,
+                    minHeight: '44px',
+                    display: 'grid',
+                    alignContent: 'center',
+                    color: colors.goldPale,
+                    borderColor: 'rgba(212,178,106,.45)',
+                    background: 'rgba(212,178,106,.05)',
+                    fontWeight: 900,
+                    fontSize: '13px',
+                    padding: '0 12px',
+                  }}
+                >
+                  {billDiscountLabel}
+                </div>
+              </FormField>
+            )}
 
             <FormField label="Ảnh / chứng từ">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
