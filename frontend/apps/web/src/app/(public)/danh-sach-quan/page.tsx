@@ -24,6 +24,7 @@ import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } from "@/lib/member-favorites";
+import { normalizeStoreOpeningHours } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 
@@ -395,8 +396,10 @@ const getLocalizedCategoryTags = (category: string, fallback: string, language: 
   (categoryTags[category] ?? [fallback]).map((tag) => translateText(tag, language));
 
 const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const minutesPerDay = 24 * 60;
 
-type OpeningSlot = NonNullable<PublicStore["openingHours"]>[string];
+type OpeningSlot = NonNullable<ReturnType<typeof normalizeStoreOpeningHours>>[string];
+type OpeningRange = { openMinutes: number; closeMinutes: number };
 
 const parseClockMinutes = (value?: string | null) => {
   if (typeof value !== "string") return null;
@@ -407,9 +410,23 @@ const parseClockMinutes = (value?: string | null) => {
   const hours = Number(match[1]);
   const minutes = Number(match[2] ?? "0");
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+  if (hours === 24) return minutes === 0 ? minutesPerDay : null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
 
   return hours * 60 + minutes;
+};
+
+const openingRangesFromText = (value?: string | null): OpeningRange[] => {
+  if (!value) return [];
+
+  return [...value.matchAll(/(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/g)]
+    .map((match) => {
+      const openMinutes = parseClockMinutes(`${match[1]}:${match[2] ?? "00"}`);
+      const closeMinutes = parseClockMinutes(`${match[3]}:${match[4] ?? "00"}`);
+
+      return openMinutes === null || closeMinutes === null ? null : { openMinutes, closeMinutes };
+    })
+    .filter((range): range is OpeningRange => Boolean(range));
 };
 
 const openingRangeFromSlot = (slot?: OpeningSlot | null) => {
@@ -428,13 +445,29 @@ const openingLabelFromSlot = (slot: OpeningSlot | undefined, language: LanguageC
   return slot.note || translateText("Chưa có giờ mở cửa", language);
 };
 
+const rawOpeningSummary = (store: PublicStore) => {
+  const value = (store.openingHours as Record<string, unknown> | null | undefined)?.summary;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+};
+
+const isMinuteInOpeningRange = (currentMinutes: number, range: OpeningRange) => {
+  if (range.openMinutes === range.closeMinutes) return true;
+
+  const crossesMidnight = range.closeMinutes <= range.openMinutes;
+  return crossesMidnight
+    ? currentMinutes >= range.openMinutes || currentMinutes < range.closeMinutes
+    : currentMinutes >= range.openMinutes && currentMinutes < range.closeMinutes;
+};
+
 const openingStatus = (store: PublicStore, language: LanguageCode, now = new Date()) => {
   const currentDayIndex = now.getDay();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const previousDayKey = weekdayKeys[(currentDayIndex + 6) % weekdayKeys.length] ?? "monday";
   const todayKey = weekdayKeys[currentDayIndex] ?? "monday";
-  const previousSlot = store.openingHours?.[previousDayKey];
-  const todaySlot = store.openingHours?.[todayKey];
+  const openingHours = normalizeStoreOpeningHours(store.openingHours);
+  const openingSummary = rawOpeningSummary(store);
+  const previousSlot = openingHours?.[previousDayKey];
+  const todaySlot = openingHours?.[todayKey];
   const previousRange = openingRangeFromSlot(previousSlot);
 
   if (
@@ -451,13 +484,21 @@ const openingStatus = (store: PublicStore, language: LanguageCode, now = new Dat
 
   const todayRange = openingRangeFromSlot(todaySlot);
   if (todayRange) {
-    const crossesMidnight = todayRange.closeMinutes <= todayRange.openMinutes;
-    const isOpen = crossesMidnight
-      ? currentMinutes >= todayRange.openMinutes
-      : currentMinutes >= todayRange.openMinutes && currentMinutes < todayRange.closeMinutes;
+    const isOpen = isMinuteInOpeningRange(currentMinutes, todayRange);
 
     return {
       label: openingLabelFromSlot(todaySlot, language),
+      isOpen,
+      tone: isOpen ? ("open" as const) : ("closed" as const),
+    };
+  }
+
+  const summaryRanges = openingRangesFromText(openingSummary);
+  if (summaryRanges.length) {
+    const isOpen = summaryRanges.some((range) => isMinuteInOpeningRange(currentMinutes, range));
+
+    return {
+      label: openingSummary ?? translateText("Chưa có giờ mở cửa", language),
       isOpen,
       tone: isOpen ? ("open" as const) : ("closed" as const),
     };
