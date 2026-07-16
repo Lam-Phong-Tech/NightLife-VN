@@ -708,6 +708,50 @@ const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
   return localDate.toISOString().slice(0, 16);
 };
 
+const translateBillStatus = (status?: string | null) => {
+  if (!status) return '';
+  switch (status.toUpperCase()) {
+    case 'DRAFT':
+      return 'Nháp';
+    case 'SUBMITTED':
+      return 'Chờ duyệt';
+    case 'PENDING_PM_BA':
+      return 'Chờ PM/BA';
+    case 'VERIFIED':
+      return 'Đã duyệt';
+    case 'REJECTED':
+      return 'Từ chối';
+    case 'PAID':
+      return 'Đã thanh toán';
+    case 'VOIDED':
+      return 'Đã hủy';
+    default:
+      return status;
+  }
+};
+
+const translateBookingStatus = (status?: string | null) => {
+  if (!status) return 'Không rõ';
+  switch (status.toUpperCase()) {
+    case 'REQUESTED':
+    case 'PENDING':
+    case 'NEW':
+      return 'Chờ xác nhận';
+    case 'CONFIRMED':
+      return 'Đã xác nhận';
+    case 'CHECKED_IN':
+      return 'Đã đến';
+    case 'COMPLETED':
+      return 'Hoàn tất';
+    case 'CANCELLED':
+      return 'Đã hủy';
+    case 'NO_SHOW':
+      return 'Không đến';
+    default:
+      return status;
+  }
+};
+
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ''));
 
 const isBlank = (value?: string | null) => !value?.trim();
@@ -1504,6 +1548,7 @@ export default function PartnerPage() {
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
   const [billNowMs, setBillNowMs] = useState(0);
   const [billSubView, setBillSubView] = useState<'list' | 'form'>('list');
+  const [billStatusFilter, setBillStatusFilter] = useState<string>('ALL');
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -2475,11 +2520,17 @@ export default function PartnerPage() {
             return true;
           }
 
-          return (
+          const storeMatch = (
             bill.storeId === selectedBillStore.id ||
             bill.store?.id === selectedBillStore.id ||
             bill.store?.name === selectedBillStore.name
           );
+          if (!storeMatch) return false;
+
+          if (billStatusFilter !== 'ALL') {
+            return bill.status.toUpperCase() === billStatusFilter.toUpperCase();
+          }
+          return true;
         })
         .slice()
         .sort((first, second) => {
@@ -2487,7 +2538,7 @@ export default function PartnerPage() {
           const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? '');
           return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
         }),
-    [bills, selectedBillStore],
+    [bills, selectedBillStore, billStatusFilter],
   );
   const canSubmitPartnerBill =
     !isSubmittingBill &&
@@ -5493,6 +5544,40 @@ export default function PartnerPage() {
             <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
               Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
             </p>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {[
+                { key: 'ALL', label: 'Tất cả' },
+                { key: 'SUBMITTED', label: 'Chờ duyệt' },
+                { key: 'VERIFIED', label: 'Đã duyệt' },
+                { key: 'REJECTED', label: 'Từ chối' },
+                { key: 'PAID', label: 'Đã thanh toán' },
+                { key: 'VOIDED', label: 'Đã hủy' },
+              ].map((filter) => {
+                const active = billStatusFilter === filter.key;
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setBillStatusFilter(filter.key)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      border: `1px solid ${active ? colors.borderGold22 : colors.borderSoft}`,
+                      background: active ? 'rgba(212,178,106,.15)' : colors.surface2,
+                      color: active ? colors.goldBright : colors.text2,
+                      transition: 'all 0.15s ease-in-out',
+                    }}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+
             <div
               className="partner-bill-table-scroll"
               style={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${colors.borderHair}` }}
@@ -5553,11 +5638,11 @@ export default function PartnerPage() {
                             {formatDateTime(bill.usedAt ?? bill.submittedAt)}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                            {bill.booking ? `${bill.booking.status} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
+                            {bill.booking ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
                             <StatusPill tone={bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold'}>
-                              {bill.status}
+                              {translateBillStatus(bill.status)}
                             </StatusPill>
                           </td>
                         </tr>
