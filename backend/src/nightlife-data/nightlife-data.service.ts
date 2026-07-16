@@ -15354,6 +15354,7 @@ export class NightlifeDataService {
             url: true,
             purpose: true,
             type: true,
+            castId: true,
           },
         },
         casts: {
@@ -15361,6 +15362,7 @@ export class NightlifeDataService {
           select: {
             id: true,
             stageName: true,
+            publicHeadline: true,
             bio: true,
             tags: true,
             youtubeLinks: true,
@@ -15730,16 +15732,32 @@ export class NightlifeDataService {
       }))
       .filter((item) => item.label && item.value)
       .slice(0, 12);
-    const castProfiles = this.normalizePartnerRequestCasts(
-      dto.castProfiles,
-    ) as PartnerListingCastDto[];
+    const storeCasts = store.casts || [];
+    const storeMedia = store.media || [];
+    const castProfiles = dto.castProfiles !== undefined
+      ? (this.normalizePartnerRequestCasts(dto.castProfiles) as PartnerListingCastDto[])
+      : storeCasts.map(cast => ({
+          stageName: cast.stageName,
+          publicHeadline: cast.publicHeadline ?? '',
+          bio: cast.bio ?? '',
+          tags: cast.tags,
+          languages: cast.languages,
+          birthMonth: cast.birthMonth ?? undefined,
+          zodiacSign: cast.zodiacSign ?? undefined,
+          heightCm: cast.heightCm ?? undefined,
+          measurements: cast.measurements ?? '',
+          hobbies: cast.hobbies,
+          youtubeLinks: cast.youtubeLinks,
+          hourlyRateVnd: cast.hourlyRateVnd ? Number(cast.hourlyRateVnd) : undefined,
+          mediaUrls: storeMedia.filter(m => m.castId === cast.id).map(m => m.url),
+        }));
     const priceRange =
       this.cleanNullableText(dto.priceRange) ??
       this.cleanNullableText(String(pricingRecord?.summary ?? ''));
     const menuGroups = this.normalizePartnerListingMenuGroups(dto.menuGroups);
-    const coverImageUrl = this.cleanNullableText(dto.coverImageUrl);
-    const galleryUrls = this.cleanStringArray(dto.galleryUrls, 12);
-    const videoUrls = this.cleanStringArray(dto.videoUrls, 8);
+    const coverImageUrl = this.cleanNullableText(dto.coverImageUrl) ?? storeMedia.find(m => m.purpose === 'PARTNER_LISTING_STORE' || m.purpose === 'STORE_COVER' || m.purpose === 'COVER_IMAGE')?.url ?? storeMedia.find(m => m.type === 'IMAGE')?.url ?? null;
+    const galleryUrls = dto.galleryUrls !== undefined ? this.cleanStringArray(dto.galleryUrls, 12) : storeMedia.filter(m => m.type === 'IMAGE' && m.purpose !== 'COVER_IMAGE' && !m.castId).map(m => m.url).slice(0, 12);
+    const videoUrls = dto.videoUrls !== undefined ? this.cleanStringArray(dto.videoUrls, 8) : storeMedia.filter(m => m.type === 'VIDEO').map(m => m.url).slice(0, 8);
     const mediaUrls = [
       coverImageUrl,
       ...galleryUrls,
@@ -15956,6 +15974,7 @@ export class NightlifeDataService {
             url: true,
             purpose: true,
             type: true,
+            castId: true,
           },
         },
         casts: {
@@ -15963,6 +15982,7 @@ export class NightlifeDataService {
           select: {
             id: true,
             stageName: true,
+            publicHeadline: true,
             bio: true,
             tags: true,
             youtubeLinks: true,
