@@ -1006,7 +1006,6 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                 <CalendarDays size={17} />
                 <span>
                   <strong>{isSubmitting ? tx("submitting") : tx("submitTour")}</strong>
-                  <small>{tx("bookThisTour")}</small>
                 </span>
               </button>
             </div>,

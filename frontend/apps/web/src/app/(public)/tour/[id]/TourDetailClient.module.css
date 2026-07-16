@@ -13,10 +13,18 @@
   --tour-gold-hi: var(--vy-gold-hi);
   --tour-gold-pale: var(--vy-gold-pale);
   --tour-gold-deep: color-mix(in srgb, var(--tour-gold) 72%, black);
+  --tour-accent-bg: var(--vy-gold-grad);
+  --tour-accent-fg: var(--vy-on-gold);
+  --tour-accent-shadow: 0 18px 34px -22px rgba(212, 178, 106, 0.75);
   min-height: 100vh;
   background: var(--vy-bg);
   color: var(--tour-text);
   font-family: var(--nl-font-sans);
+}
+
+:global(html.vy-light) .page {
+  --tour-accent-bg: linear-gradient(135deg, #fff4bd 0%, #f2cb55 48%, #d19a32 100%);
+  --tour-accent-shadow: 0 16px 28px -18px rgba(160, 112, 32, 0.48);
 }
 
 .shell {
@@ -86,14 +94,15 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #241a0a;
-  background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold));
+  color: var(--tour-accent-fg);
+  background: var(--tour-accent-bg);
   border-radius: 999px;
   padding: 6px 11px;
   font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow: var(--tour-accent-shadow);
 }
 
 .heroTitle {
@@ -513,8 +522,8 @@
   min-height: 50px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--tour-gold-hi), var(--tour-gold) 55%, var(--tour-gold-deep));
-  color: #241a0a;
+  background: var(--tour-accent-bg);
+  color: var(--tour-accent-fg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -689,13 +698,8 @@
     width: 100%;
     min-height: 52px;
     border-radius: 12px;
-    background: linear-gradient(
-      135deg,
-      var(--vy-gold-hi),
-      var(--vy-gold) 55%,
-      color-mix(in srgb, var(--vy-gold) 72%, black)
-    );
-    color: #241a0a;
+    background: var(--tour-accent-bg);
+    color: var(--tour-accent-fg);
     align-items: center;
     justify-content: center;
     gap: 8px;
