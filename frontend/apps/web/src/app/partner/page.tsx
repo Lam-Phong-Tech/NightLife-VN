@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Eye,
+  EyeOff,
   FileClock,
   FileText,
   Home,
@@ -1501,6 +1502,10 @@ export default function PartnerPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
 
   // Staff Management States
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -6209,11 +6214,7 @@ export default function PartnerPage() {
                       );
                     })}
                   </div>
-                ) : (
-                  <span style={{ color: colors.muted, fontSize: '12px', lineHeight: 1.5 }}>
-                    Upload chứng từ sau khi bill tạo sẽ gắn media PROTECTED.
-                  </span>
-                )}
+                ) : null}
               </div>
             </FormField>
 
@@ -6273,31 +6274,97 @@ export default function PartnerPage() {
           <SectionHeading eyebrow="PARTNER SETTINGS" title="Đổi mật khẩu" />
           <form onSubmit={handleChangePassword} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
             <FormField label="Mật khẩu cũ">
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                style={inputStyle}
-                placeholder="Nhập mật khẩu hiện tại"
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  type={showOldPassword ? 'text' : 'password'}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  style={{ ...inputStyle, paddingRight: '40px' }}
+                  placeholder="Nhập mật khẩu hiện tại"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: colors.muted,
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                  }}
+                  aria-label={showOldPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showOldPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </FormField>
             <FormField label="Mật khẩu mới">
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                style={inputStyle}
-                placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={{ ...inputStyle, paddingRight: '40px' }}
+                  placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: colors.muted,
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                  }}
+                  aria-label={showNewPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </FormField>
             <FormField label="Xác nhận mật khẩu mới">
-              <input
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                style={inputStyle}
-                placeholder="Xác nhận mật khẩu mới"
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  style={{ ...inputStyle, paddingRight: '40px' }}
+                  placeholder="Xác nhận mật khẩu mới"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: colors.muted,
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                  }}
+                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </FormField>
             <PrimaryButton type="submit" disabled={isChangingPassword} style={{ marginTop: '8px', alignSelf: 'start' }}>
               {isChangingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
@@ -6333,14 +6400,36 @@ export default function PartnerPage() {
                   />
                 </FormField>
                 <FormField label="Mật khẩu (tối thiểu 8 ký tự)">
-                  <input
-                    type="password"
-                    value={staffPassword}
-                    onChange={(e) => setStaffPassword(e.target.value)}
-                    style={inputStyle}
-                    placeholder="Nhập mật khẩu"
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      type={showStaffPassword ? 'text' : 'password'}
+                      value={staffPassword}
+                      onChange={(e) => setStaffPassword(e.target.value)}
+                      style={{ ...inputStyle, paddingRight: '40px' }}
+                      placeholder="Nhập mật khẩu"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowStaffPassword(!showStaffPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: colors.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px',
+                      }}
+                      aria-label={showStaffPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showStaffPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </FormField>
                 <FormField label="Quyền hạn">
                   <div style={{ display: 'flex', gap: '16px', minHeight: '44px', alignItems: 'center' }}>
@@ -6382,19 +6471,10 @@ export default function PartnerPage() {
               </form>
             </div>
 
-            {/* Bộ lọc xem danh sách nhân viên theo quán */}
+            {/* Danh sách nhân viên */}
             <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.text }}>Danh sách nhân viên</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
-                  <span style={{ fontSize: '12px', color: colors.text2, whiteSpace: 'nowrap', fontWeight: 700 }}>Xem theo quán:</span>
-                  <ThemedListingSelect
-                    value={settingsStoreId}
-                    onChange={setSettingsStoreId}
-                    placeholder="Chọn quán"
-                    options={stores.map((s) => ({ value: s.id, label: s.name }))}
-                  />
-                </div>
               </div>
 
               {/* Bảng danh sách nhân viên */}
