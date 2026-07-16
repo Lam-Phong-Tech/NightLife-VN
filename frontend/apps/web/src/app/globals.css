@@ -59,14 +59,14 @@
 
 html.vy-light {
   --vy-bg: #f3eee5;
-  --vy-bg-2: #fffaf2;
-  --vy-hero-grad: radial-gradient(ellipse at 16% -10%, rgba(212, 178, 106, 0.2) 0%, transparent 44%), radial-gradient(ellipse at 90% 0%, rgba(224, 114, 158, 0.08) 0%, transparent 38%), linear-gradient(180deg, #fffaf1 0%, #efe7da 100%);
-  --vy-surface: rgba(255, 255, 255, 0.92);
-  --vy-surface-1: rgba(255, 255, 255, 0.66);
-  --vy-surface-2: rgba(255, 255, 255, 0.8);
-  --vy-surface-3: rgba(242, 231, 211, 0.76);
-  --vy-nav-bg: rgba(255, 252, 244, 0.94);
-  --vy-border: rgba(91, 65, 20, 0.12);
+  --vy-bg-2: #f9f6ee;
+  --vy-hero-grad: radial-gradient(ellipse at 16% -10%, rgba(212, 178, 106, 0.2) 0%, transparent 44%), radial-gradient(ellipse at 90% 0%, rgba(224, 114, 158, 0.08) 0%, transparent 38%), linear-gradient(180deg, #faf7f0 0%, #eae4d4 100%);
+  --vy-surface: rgba(255, 255, 255, 0.9);
+  --vy-surface-1: rgba(28, 22, 10, 0.03);
+  --vy-surface-2: rgba(28, 22, 10, 0.045);
+  --vy-surface-3: rgba(28, 22, 10, 0.06);
+  --vy-nav-bg: rgba(246, 244, 239, 0.92);
+  --vy-border: rgba(30, 24, 12, 0.08);
   --vy-border-gold-12: rgba(150, 116, 52, 0.18);
   --vy-border-gold-22: rgba(150, 116, 52, 0.28);
   --vy-border-gold-32: rgba(150, 116, 52, 0.38);
@@ -86,8 +86,8 @@ html.vy-light {
   --vy-error: #c2455c;
   --vy-info: #3d6fb0;
   --vy-pink: #c2517e;
-  --vy-shadow: 0 20px 48px -28px rgba(80, 55, 18, 0.4);
-  --vy-shadow-card: 0 18px 44px -32px rgba(80, 55, 18, 0.34);
+  --vy-shadow: 0 20px 48px -28px rgba(80, 55, 18, 0.3);
+  --vy-shadow-card: 0 14px 36px -28px rgba(80, 55, 18, 0.25);
   color-scheme: light;
 }
 
@@ -1822,12 +1822,11 @@ textarea::placeholder {
 }
 
 html.vy-light .nl-media-fallback {
-  background: var(--vy-surface-2) !important;
+  background: linear-gradient(135deg, #f5efe1, #e6dcbf) !important;
 }
 html.vy-light .nl-media-fallback svg, html.vy-light .nl-media-fallback path {
-  color: var(--vy-gold-pale) !important;
-  fill: var(--vy-gold-pale) !important;
-  stroke: var(--vy-gold-pale) !important;
+  color: #9c7630 !important;
+  stroke: #9c7630 !important;
 }
 html.vy-light .nl-home-section-title {
   text-shadow: none !important;
@@ -1867,10 +1866,10 @@ html.vy-light .nl-home-search-panel,
 html.vy-light .nl-home-tab-switch,
 html.vy-light .nl-home-region-trigger,
 html.vy-light .nl-home-region-menu {
-  background: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(246, 244, 239, 0.85) !important;
   border-color: var(--vy-border-gold-22) !important;
   color: var(--vy-text) !important;
-  box-shadow: 0 16px 34px -30px rgba(80, 55, 18, 0.42) !important;
+  box-shadow: 0 12px 28px -26px rgba(80, 55, 18, 0.3) !important;
   backdrop-filter: blur(18px) saturate(1.08) !important;
 }
 
@@ -1881,8 +1880,8 @@ html.vy-light .nl-home-hero {
 
 html.vy-light .nl-home-card,
 html.vy-light .nl-home-data-message {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(250, 244, 232, 0.8)) !important;
-  border-color: rgba(150, 116, 52, 0.2) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(248, 243, 231, 0.54)) !important;
+  border-color: rgba(150, 116, 52, 0.16) !important;
   color: var(--vy-text) !important;
   box-shadow: var(--vy-shadow-card) !important;
 }
@@ -1897,7 +1896,7 @@ html.vy-light .nl-home-legacy-coupon-card {
 
 html.vy-light .nl-home-service-card,
 html.vy-light .nl-home-content-card {
-  background: var(--nl-home-content-card-bg, linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 236, 219, 0.72))) !important;
+  background: var(--nl-home-content-card-bg, linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(245, 236, 219, 0.48))) !important;
 }
 
 html.vy-light .nl-home-content-card--media,
@@ -2003,9 +2002,9 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-arrow {
 }
 
 html.vy-light .nl-home-category-icon {
-  background: rgba(255, 255, 255, 0.76) !important;
+  background: rgba(246, 244, 239, 0.82) !important;
   border-color: rgba(150, 116, 52, 0.2) !important;
-  box-shadow: 0 16px 30px -28px rgba(80, 55, 18, 0.42) !important;
+  box-shadow: 0 10px 24px -20px rgba(80, 55, 18, 0.3) !important;
 }
 
 html.vy-light .nl-home-category-link,
