@@ -3062,6 +3062,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-content: start;
           padding: 10px 10px 12px;
           overflow: visible;
+          background: #201d18;
         }
 
         .booking-cast-label {
@@ -3102,14 +3103,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px solid var(--vy-border-gold-32);
           background: var(--vy-gold-soft-bg);
           color: var(--vy-gold-hi);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+          display: inline-grid;
+          place-items: center;
           overflow: hidden;
           font-size: 12px;
           font-weight: 950;
+          line-height: 1;
           background-position: center;
           background-size: cover;
+        }
+
+        .booking-cast-avatar svg {
+          display: block;
+          width: 16px;
+          height: 16px;
+          margin: 0;
+          transform: none;
         }
 
         .booking-cast-avatar.has-image {
@@ -3119,7 +3128,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-cast-avatar.is-empty {
           color: var(--vy-gold);
-          background: rgba(212, 178, 106, .12);
+          background: #292416;
         }
 
         .booking-cast-copy {
@@ -3167,8 +3176,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           overflow-y: auto;
           border: 1px solid var(--vy-border-gold-32);
           border-radius: 12px;
-          background: var(--vy-surface-2);
-          box-shadow: 0 18px 42px rgba(0, 0, 0, .32);
+          background: #1b1814;
+          box-shadow: 0 18px 42px rgba(0, 0, 0, .52);
           padding: 6px;
         }
 
@@ -3182,7 +3191,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-cast-option:hover,
         .booking-cast-option:focus-visible,
         .booking-cast-option[aria-selected="true"] {
-          background: var(--vy-gold-soft-bg);
+          background: #332a18;
           outline: none;
         }
 
@@ -3208,6 +3217,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         html.vy-light .booking-cast-menu {
           background: #fffdf8;
           box-shadow: 0 18px 38px rgba(98, 73, 25, .18);
+        }
+
+        html.vy-light .booking-cast-field {
+          background: var(--vy-surface-2);
+        }
+
+        html.vy-light .booking-cast-avatar.is-empty {
+          background: rgba(212, 178, 106, .12);
         }
 
         html.vy-light .booking-cast-option:hover,
