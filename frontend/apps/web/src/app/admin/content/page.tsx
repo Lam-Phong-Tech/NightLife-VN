@@ -1460,6 +1460,63 @@ export default function AdminContentPage() {
       {/* VIDEO HOT CONTENT */}
       {activeTab === 'video' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <Search size={15} color="#8c8679" />
+              <input 
+                id="video-search-input" 
+                value={searchVideoQuery}
+                onChange={e => { setSearchVideoQuery(e.target.value); setSearchVideoPage(1); }}
+                placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '310px', overflowY: 'auto' }}>
+              {isSearchingVideo ? (
+                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Đang tìm kiếm...</div>
+              ) : searchVideos.length === 0 ? (
+                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Không tìm thấy video nào</div>
+              ) : searchVideos.map(vr => (
+                <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: '#1a221f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {vr.url && vr.url.includes('youtube.com') ? (
+                      <img src={`https://img.youtube.com/vi/${vr.url.match(/v=([^&]+)/)?.[1] || vr.url.split('/').pop()}/default.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
+                    ) : (
+                      <span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span>
+                    )}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.storeName || 'Không xác định'}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
+                  </div>
+                  <span 
+                    onClick={() => handleAddHotVideo(vr)}
+                    style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: hotVideos.find(h => h.id === vr.id) ? '#999' : 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: hotVideos.find(h => h.id === vr.id) ? 'default' : 'pointer' }}
+                  >
+                    {hotVideos.find(h => h.id === vr.id) ? 'Đã thêm' : '+ Hiện trên trang chủ'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* Pagination for Search */}
+            {searchVideoTotalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
+                <span 
+                  onClick={() => setSearchVideoPage(p => Math.max(1, p - 1))}
+                  style={{ fontSize: '12px', color: searchVideoPage > 1 ? colors.gold : colors.muted, cursor: searchVideoPage > 1 ? 'pointer' : 'default' }}
+                >
+                  &laquo; Trước
+                </span>
+                <span style={{ fontSize: '12px', color: colors.text }}>Trang {searchVideoPage} / {searchVideoTotalPages}</span>
+                <span 
+                  onClick={() => setSearchVideoPage(p => Math.min(searchVideoTotalPages, p + 1))}
+                  style={{ fontSize: '12px', color: searchVideoPage < searchVideoTotalPages ? colors.gold : colors.muted, cursor: searchVideoPage < searchVideoTotalPages ? 'pointer' : 'default' }}
+                >
+                  Sau &raquo;
+                </span>
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: '12px', padding: '16px', background: 'rgba(212,178,106,.05)', border: `1px solid rgba(212,178,106,.2)`, borderRadius: '16px', alignItems: 'center' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.gold, flex: 'none' }}>
               ℹ️
@@ -1524,63 +1581,6 @@ export default function AdminContentPage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
-              <Search size={15} color="#8c8679" />
-              <input 
-                id="video-search-input" 
-                value={searchVideoQuery}
-                onChange={e => { setSearchVideoQuery(e.target.value); setSearchVideoPage(1); }}
-                placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '310px', overflowY: 'auto' }}>
-              {isSearchingVideo ? (
-                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Đang tìm kiếm...</div>
-              ) : searchVideos.length === 0 ? (
-                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Không tìm thấy video nào</div>
-              ) : searchVideos.map(vr => (
-                <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: '#1a221f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {vr.url && vr.url.includes('youtube.com') ? (
-                      <img src={`https://img.youtube.com/vi/${vr.url.match(/v=([^&]+)/)?.[1] || vr.url.split('/').pop()}/default.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
-                    ) : (
-                      <span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span>
-                    )}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.storeName || 'Không xác định'}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
-                  </div>
-                  <span 
-                    onClick={() => handleAddHotVideo(vr)}
-                    style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: hotVideos.find(h => h.id === vr.id) ? '#999' : 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: hotVideos.find(h => h.id === vr.id) ? 'default' : 'pointer' }}
-                  >
-                    {hotVideos.find(h => h.id === vr.id) ? 'Đã thêm' : '+ Hiện trên trang chủ'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* Pagination for Search */}
-            {searchVideoTotalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
-                <span 
-                  onClick={() => setSearchVideoPage(p => Math.max(1, p - 1))}
-                  style={{ fontSize: '12px', color: searchVideoPage > 1 ? colors.gold : colors.muted, cursor: searchVideoPage > 1 ? 'pointer' : 'default' }}
-                >
-                  &laquo; Trước
-                </span>
-                <span style={{ fontSize: '12px', color: colors.text }}>Trang {searchVideoPage} / {searchVideoTotalPages}</span>
-                <span 
-                  onClick={() => setSearchVideoPage(p => Math.min(searchVideoTotalPages, p + 1))}
-                  style={{ fontSize: '12px', color: searchVideoPage < searchVideoTotalPages ? colors.gold : colors.muted, cursor: searchVideoPage < searchVideoTotalPages ? 'pointer' : 'default' }}
-                >
-                  Sau &raquo;
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}
