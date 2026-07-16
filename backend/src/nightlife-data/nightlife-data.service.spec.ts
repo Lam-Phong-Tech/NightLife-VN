@@ -8325,5 +8325,121 @@ describe('NightlifeDataService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('store-fallback');
     });
+
+    it('excludes inactive or deleted pinned stores from recommendation results', async () => {
+      // Setup ranking config returning 2 pinned stores
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-active', pinRank: 1, manualScore: 100, updatedAt: new Date() },
+        { targetId: 'store-inactive', pinRank: 2, manualScore: 50, updatedAt: new Date() },
+      ] as never);
+
+      // Setup store database findMany to only return the active one, simulating database status/deleted filter
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-active',
+          name: 'Store Active',
+          slug: 'store-active-slug',
+          category: 'BAR_CLUB',
+          description: 'Active store desc',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+          areaId: 'area-1',
+          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          media: [],
+          coupons: [],
+        },
+      ] as never);
+
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 2 });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('store-active');
+    });
+
+    it('falls back to personalized logic if all pinned stores are inactive or deleted', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-inactive', pinRank: 1, manualScore: 100, updatedAt: new Date() },
+      ] as never);
+
+      // Simulates no active/non-deleted store found matching the pinned store targetIds
+      prisma.store.findMany
+        .mockResolvedValueOnce([] as never) // First call for pinnedStores returns empty
+        .mockResolvedValueOnce([ // Second call for personalized fallback
+          {
+            id: 'store-fallback-2',
+            name: 'Store Fallback 2',
+            slug: 'store-fallback-2-slug',
+            category: 'RESTAURANT',
+            description: 'Fallback desc',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+            areaId: 'area-1',
+            area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+            media: [],
+            coupons: [],
+          },
+        ] as never);
+
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 1 });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('store-fallback-2');
+    });
+
+    it('verifies city filtering works as expected when cityCode is specified', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([] as never);
+      prisma.store.findMany.mockResolvedValue([] as never);
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      await service.listPublicHomeRecommendations({ cityCode: 'hcm', limit: 5 });
+
+      expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            scope: 'recommend-home',
+            cityCode: 'hcm',
+          }),
+        }),
+      );
+    });
+
+    it('queries default cityCode as all when query.cityCode is not specified or is all', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([] as never);
+      prisma.store.findMany.mockResolvedValue([] as never);
+      (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
+
+      // Call without cityCode
+      await service.listPublicHomeRecommendations({ limit: 5 });
+
+      expect(prisma.rankingConfig.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            scope: 'recommend-home',
+            cityCode: 'all',
+          }),
+        }),
+      );
+
+      // Call with 'all'
+      await service.listPublicHomeRecommendations({ cityCode: 'all', limit: 5 });
+
+      expect(prisma.rankingConfig.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            scope: 'recommend-home',
+            cityCode: 'all',
+          }),
+        }),
+      );
+    });
   });
 });
+
