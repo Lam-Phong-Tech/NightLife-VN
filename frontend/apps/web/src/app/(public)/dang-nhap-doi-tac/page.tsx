@@ -62,12 +62,6 @@ const readStoredPartnerTheme = (): PartnerTheme => {
   return document.documentElement.classList.contains('vy-light') ? 'light' : 'dark';
 };
 
-const testAccount = {
-  email: 'partner@nightlife.vn',
-  password: 'Str0ngPass!',
-  store: 'Demo NightLife Store',
-};
-
 function Logo({ compact = false, colors }: { compact?: boolean; colors: typeof darkColors }) {
   return (
     <Link href="/" style={{ display: 'inline-flex', flexDirection: 'column', textDecoration: 'none' }}>
@@ -208,20 +202,23 @@ function LoginContent({
       <section
         style={{
           display: isMobile ? 'block' : 'grid',
-          gridTemplateColumns: isMobile ? undefined : 'minmax(0,1.1fr) minmax(430px,.9fr)',
-          gap: isMobile ? '18px' : '32px',
-          minHeight: isMobile ? undefined : 'calc(100vh - 82px)',
-          padding: isMobile ? '18px' : '32px 34px',
-          alignItems: 'stretch',
+          gridTemplateColumns: isMobile ? undefined : 'minmax(520px,.92fr) minmax(420px,.72fr)',
+          gap: isMobile ? '18px' : '30px',
+          width: '100%',
+          maxWidth: '1480px',
+          margin: '0 auto',
+          padding: isMobile ? '18px' : '24px 34px 34px',
+          alignItems: 'center',
+          boxSizing: 'border-box',
         }}
       >
         <div
           style={{
-            minHeight: isMobile ? '300px' : 'calc(100vh - 146px)',
+            height: isMobile ? '300px' : 'clamp(410px, 56vh, 500px)',
             borderRadius: '18px',
             border: `1px solid ${darkColors.borderGold22}`,
             overflow: 'hidden',
-            padding: isMobile ? '22px' : '36px',
+            padding: isMobile ? '22px' : '32px',
             background:
               "linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.86)), url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1500&q=80') center/cover",
             display: 'flex',
@@ -253,7 +250,7 @@ function LoginContent({
             <div style={{ color: darkColors.gold, fontSize: '10px', fontWeight: 700, letterSpacing: '1.8px', marginBottom: '10px' }}>
               ĐĂNG NHẬP ĐỐI TÁC
             </div>
-            <h1 style={{ margin: 0, maxWidth: '560px', fontSize: isMobile ? '28px' : '48px', lineHeight: 1.08, fontWeight: 700, color: '#f3f0ea' }}>
+            <h1 style={{ margin: 0, maxWidth: '540px', fontSize: isMobile ? '28px' : 'clamp(34px, 3vw, 46px)', lineHeight: 1.08, fontWeight: 700, color: '#f3f0ea' }}>
               Quản lý đặt chỗ, coupon và nội dung quán tại một nơi
             </h1>
             <p style={{ margin: '14px 0 0', maxWidth: '520px', color: darkColors.text2, fontSize: '13.5px', lineHeight: 1.7 }}>
@@ -264,10 +261,14 @@ function LoginContent({
 
         <div
           style={{
+            width: '100%',
+            maxWidth: isMobile ? undefined : '560px',
+            justifySelf: isMobile ? undefined : 'center',
+            marginTop: isMobile ? '18px' : undefined,
             border: `1px solid ${colors.borderGold22}`,
             borderRadius: '16px',
             background: colors.surface1,
-            padding: isMobile ? '18px' : '26px',
+            padding: isMobile ? '18px' : '30px',
             alignSelf: isMobile ? undefined : 'center',
             boxShadow: theme === 'light' ? '0 16px 36px -20px rgba(40,30,10,.25)' : '0 16px 34px -18px rgba(0,0,0,.7)',
             transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
@@ -277,7 +278,7 @@ function LoginContent({
             <div>
               <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Đăng nhập đối tác</h2>
               <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>
-                PARTNER SIGN IN
+                CỔNG ĐỐI TÁC
               </div>
             </div>
             <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${colors.borderGold40}, transparent)` }} />
@@ -299,6 +300,7 @@ function LoginContent({
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bwignore="true"
+                placeholder="Nhập email đối tác"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 style={{
@@ -330,6 +332,7 @@ function LoginContent({
                   data-lpignore="true"
                   data-1p-ignore="true"
                   data-bwignore="true"
+                  placeholder="Nhập mật khẩu"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={{
@@ -403,6 +406,33 @@ function LoginContent({
             {isSubmitting ? 'Đang xác thực...' : 'Vào cổng đối tác'}
           </button>
 
+          <div
+            style={{
+              marginTop: '16px',
+              paddingTop: '14px',
+              borderTop: `1px solid ${colors.borderGold12}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap',
+              color: colors.muted,
+              fontSize: '12px',
+            }}
+          >
+            <span>Chưa có tài khoản đối tác?</span>
+            <Link
+              href="/dang-ky-doi-tac"
+              style={{
+                color: colors.goldBright,
+                fontWeight: 800,
+                textDecoration: 'none',
+              }}
+            >
+              Đăng ký hợp tác
+            </Link>
+          </div>
+
         </div>
       </section>
     </main>
@@ -413,7 +443,11 @@ export default function Page() {
   const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>('dark');
 
   useEffect(() => {
-    setPartnerTheme(readStoredPartnerTheme());
+    const frame = window.requestAnimationFrame(() => {
+      setPartnerTheme(readStoredPartnerTheme());
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
