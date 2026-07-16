@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildBookingTimeSlotGroups, buildBookingTimeSlots } from "@/lib/booking-time-slots";
+import {
+  buildBookingTimeSlotGroups,
+  buildBookingTimeSlots,
+  normalizeStoreOpeningHours,
+} from "@/lib/booking-time-slots";
 
 describe("booking time slots", () => {
   it("builds booking slots from admin opening hours", () => {
@@ -21,6 +25,36 @@ describe("booking time slots", () => {
       "20:00",
       "21:00",
       "22:00",
+    ]);
+  });
+
+  it("keeps admin closing boundary at 24:00 and builds real slots", () => {
+    const normalized = normalizeStoreOpeningHours({
+      thursday: { isOff: false, hours: "08:00 - 24:00" },
+    });
+
+    expect(normalized?.thursday).toEqual({ open: "08:00", close: "24:00" });
+    expect(
+      buildBookingTimeSlots(normalized, "2026-07-09", {
+        fallback: "empty",
+      }),
+    ).toEqual([
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+      "21:00",
+      "22:00",
+      "23:00",
     ]);
   });
 

@@ -228,6 +228,43 @@ describe('Booking P2 workflows API (e2e)', () => {
     });
   });
 
+  it('allows member reschedule in the final slot before admin closing boundary at 24:00', async () => {
+    const scheduledAt = new Date('2026-07-10T16:00:00.000Z');
+
+    prisma.booking.findFirst.mockResolvedValue(
+      openBooking({
+        store: {
+          bookingCancelCutoffMinutes: 60,
+          openingHours: {
+            friday: { hours: '08:00 - 24:00' },
+          },
+        },
+      }),
+    );
+    prisma.booking.update.mockResolvedValue(
+      bookingNotification({ scheduledAt }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/member/bookings/booking-1/reschedule')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-1')
+      .send({
+        scheduledAt: scheduledAt.toISOString(),
+        reason: 'Move to the final available slot',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.scheduledAt).toBe(scheduledAt.toISOString());
+      });
+
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      data: { scheduledAt },
+      select: expect.any(Object),
+    });
+  });
+
   it('rejects member reschedule outside store booking slots', async () => {
     prisma.booking.findFirst.mockResolvedValue(
       openBooking({

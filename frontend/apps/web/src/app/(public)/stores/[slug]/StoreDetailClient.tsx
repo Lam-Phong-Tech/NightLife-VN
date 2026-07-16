@@ -353,6 +353,7 @@ const priceRangeText = (store: PublicStoreDetail) => {
 };
 
 const storeTimeZone = "Asia/Bangkok";
+const storeDayMinutes = 24 * 60;
 const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 type WeekdayKey = (typeof weekdayKeys)[number];
 
@@ -399,6 +400,7 @@ const parseOpeningTime = (value?: string | null) => {
   const hours = Number(match[1]);
   const minutes = Number(match[2] ?? "0");
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+  if (hours === 24) return minutes === 0 ? storeDayMinutes : null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
 
   return hours * 60 + minutes;

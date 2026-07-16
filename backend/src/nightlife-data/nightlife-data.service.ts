@@ -12006,7 +12006,9 @@ export class NightlifeDataService {
         const [range] = ranges;
         return {
           open: this.formatBookingSlot(range.openMinutes),
-          close: this.formatBookingSlot(range.closeMinutes),
+          close: this.formatBookingSlot(range.closeMinutes, {
+            preserveEndOfDay: true,
+          }),
         };
       }
       if (ranges.length > 1) {
@@ -12035,7 +12037,7 @@ export class NightlifeDataService {
     if (open !== null && close !== null) {
       return {
         open: this.formatBookingSlot(open),
-        close: this.formatBookingSlot(close),
+        close: this.formatBookingSlot(close, { preserveEndOfDay: true }),
       };
     }
 
@@ -12047,7 +12049,9 @@ export class NightlifeDataService {
       const [range] = noteRanges;
       return {
         open: this.formatBookingSlot(range.openMinutes),
-        close: this.formatBookingSlot(range.closeMinutes),
+        close: this.formatBookingSlot(range.closeMinutes, {
+          preserveEndOfDay: true,
+        }),
       };
     }
     if (noteRanges.length > 1) {
@@ -12095,6 +12099,7 @@ export class NightlifeDataService {
         (range) =>
           `${this.formatBookingSlot(range.openMinutes)} - ${this.formatBookingSlot(
             range.closeMinutes,
+            { preserveEndOfDay: true },
           )}`,
       )
       .join(', ');
@@ -12112,6 +12117,9 @@ export class NightlifeDataService {
 
     const hours = Number(match[1]);
     const minutes = Number(match[2] ?? '0');
+    if (hours === 24) {
+      return minutes === 0 ? 1440 : null;
+    }
     if (
       !Number.isInteger(hours) ||
       !Number.isInteger(minutes) ||
@@ -12126,7 +12134,14 @@ export class NightlifeDataService {
     return hours * 60 + minutes;
   }
 
-  private formatBookingSlot(minutes: number) {
+  private formatBookingSlot(
+    minutes: number,
+    options: { preserveEndOfDay?: boolean } = {},
+  ) {
+    if (options.preserveEndOfDay && minutes === 1440) {
+      return '24:00';
+    }
+
     const normalized = ((minutes % 1440) + 1440) % 1440;
     const hours = Math.floor(normalized / 60);
     const minute = normalized % 60;

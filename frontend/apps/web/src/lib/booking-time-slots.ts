@@ -61,12 +61,15 @@ const parseTimeToMinutes = (value: unknown) => {
   const minutes = Number(match[2] ?? "0");
 
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+  if (hours === 24) return minutes === 0 ? minutesPerDay : null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
 
   return hours * 60 + minutes;
 };
 
-const formatSlot = (minutes: number) => {
+const formatSlot = (minutes: number, options: { preserveEndOfDay?: boolean } = {}) => {
+  if (options.preserveEndOfDay && minutes === minutesPerDay) return "24:00";
+
   const normalized = ((minutes % minutesPerDay) + minutesPerDay) % minutesPerDay;
   const hours = Math.floor(normalized / 60);
   const minute = normalized % 60;
@@ -94,7 +97,12 @@ const parseTimeRanges = (value: unknown): OpeningTimeRange[] => {
 
 const formatTimeRanges = (ranges: OpeningTimeRange[]) =>
   ranges
-    .map((range) => `${formatSlot(range.openMinutes)} - ${formatSlot(range.closeMinutes)}`)
+    .map(
+      (range) =>
+        `${formatSlot(range.openMinutes)} - ${formatSlot(range.closeMinutes, {
+          preserveEndOfDay: true,
+        })}`,
+    )
     .join(", ");
 
 const normalizeWeekdayKey = (key: string): WeekdayKey | null => {
@@ -137,7 +145,7 @@ const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
       const range = ranges[0]!;
       return {
         open: formatSlot(range.openMinutes),
-        close: formatSlot(range.closeMinutes),
+        close: formatSlot(range.closeMinutes, { preserveEndOfDay: true }),
       };
     }
     if (ranges.length > 1) return { note: formatTimeRanges(ranges) };
@@ -159,7 +167,7 @@ const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
   const open = parseTimeToMinutes(value.open);
   const close = parseTimeToMinutes(value.close);
   if (open !== null && close !== null) {
-    return { open: formatSlot(open), close: formatSlot(close) };
+    return { open: formatSlot(open), close: formatSlot(close, { preserveEndOfDay: true }) };
   }
 
   const ranges = parseTimeRanges(value.hours);
@@ -168,7 +176,7 @@ const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
     const range = noteRanges[0]!;
     return {
       open: formatSlot(range.openMinutes),
-      close: formatSlot(range.closeMinutes),
+      close: formatSlot(range.closeMinutes, { preserveEndOfDay: true }),
     };
   }
   if (noteRanges.length > 1) return { note: formatTimeRanges(noteRanges) };
