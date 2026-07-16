@@ -5974,18 +5974,44 @@ export default function PartnerPage() {
             </div>
 
             <FormField label="Liên kết booking">
-              <ThemedListingSelect
-                value={billBookingId}
-                onChange={handleBillBookingChange}
-                placeholder="Không liên kết booking"
-                options={[
-                  { value: '', label: 'Không liên kết booking' },
-                  ...billBookingOptions.map((booking) => ({
-                    value: booking.id,
-                    label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,
-                  })),
-                ]}
-              />
+              {selectedBill ? (
+                <div
+                  aria-readonly="true"
+                  style={{
+                    ...inputStyle,
+                    minHeight: '44px',
+                    display: 'grid',
+                    alignContent: 'center',
+                    color: selectedBillBooking ? colors.text : colors.muted,
+                    background: colors.surface2,
+                    borderColor: colors.borderSoft,
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {selectedBillBooking
+                    ? `${formatDateTime(selectedBillBooking.scheduledAt)} - ${selectedBillBooking.partySize} khách - ${selectedBillBooking.store.name}`
+                    : selectedBill.booking
+                      ? `${formatDateTime(selectedBill.booking.scheduledAt)} - ${translateBookingStatus(selectedBill.booking.status)}`
+                      : 'Không liên kết booking'}
+                </div>
+              ) : (
+                <ThemedListingSelect
+                  value={billBookingId}
+                  onChange={handleBillBookingChange}
+                  placeholder="Không liên kết booking"
+                  options={[
+                    { value: '', label: 'Không liên kết booking' },
+                    ...billBookingOptions.map((booking) => ({
+                      value: booking.id,
+                      label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,
+                    })),
+                  ]}
+                />
+              )}
             </FormField>
 
             <FormField label="Ảnh / chứng từ">
