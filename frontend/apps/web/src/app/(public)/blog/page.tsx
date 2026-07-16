@@ -10,6 +10,7 @@ import {
 } from "@/lib/content/blog";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
+import { BlogSearchSubmitGuard } from "./BlogSearchSubmitGuard";
 
 type BlogPageProps = {
   searchParams?: Promise<{
@@ -52,15 +53,18 @@ const formatDate = (value: string) =>
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = (await searchParams) ?? {};
+  const query = params.q?.trim() ?? "";
+  const activeCategory = params.category?.trim() ?? "";
+  const activeTag = params.tag?.trim() ?? "";
   const allPosts = await getPublishedBlogPosts();
   const featuredPost = await getFeaturedBlogPost();
   const categories = getBlogCategories(allPosts);
   const filteredPosts = filterBlogPosts(allPosts, {
-    q: params.q,
-    category: params.category,
-    tag: params.tag,
+    q: query,
+    category: activeCategory,
+    tag: activeTag,
   });
-  const hasFilter = Boolean(params.q || params.category || params.tag);
+  const hasFilter = Boolean(query || activeCategory || activeTag);
   const posts = hasFilter
     ? filteredPosts
     : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost?.slug);
@@ -140,8 +144,9 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             }}
           >
             <input
-              name="q"
-              defaultValue={params.q ?? ""}
+              name={query ? "q" : undefined}
+              data-blog-search-input="true"
+              defaultValue={query}
               placeholder="Tìm bài viết..."
               style={{
                 minHeight: "42px",
@@ -152,7 +157,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 padding: "0 13px",
               }}
             />
-            {params.category && <input type="hidden" name="category" value={params.category} />}
+            {activeCategory && <input type="hidden" name="category" value={activeCategory} />}
+            {activeTag && <input type="hidden" name="tag" value={activeTag} />}
             <button
               type="submit"
               style={{
@@ -169,6 +175,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               Tìm kiếm
             </button>
           </form>
+          <BlogSearchSubmitGuard category={activeCategory} tag={activeTag} />
 
           <div
             aria-label="Chủ đề blog"
@@ -180,7 +187,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             }}
           >
             <Link
-              href={{ pathname: "/blog", query: { ...(params.q ? { q: params.q } : {}), ...(params.tag ? { tag: params.tag } : {}) } }}
+              href={{ pathname: "/blog", query: { ...(query ? { q: query } : {}), ...(activeTag ? { tag: activeTag } : {}) } }}
               style={{
                 flex: "none",
                 borderRadius: "999px",
@@ -189,7 +196,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 fontWeight: 800,
                 whiteSpace: "nowrap",
                 textDecoration: "none",
-                ...(!params.category ? {
+                ...(!activeCategory ? {
                   border: "1px solid var(--vy-gold)",
                   background: "var(--vy-gold-grad)",
                   color: "var(--vy-on-gold)",
@@ -204,11 +211,11 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             </Link>
             {categories.map((category) => {
               const slug = slugifyBlogTerm(category);
-              const isActive = params.category === slug;
+              const isActive = activeCategory === slug;
               return (
                 <Link
                   key={category}
-                  href={{ pathname: "/blog", query: { ...(params.q ? { q: params.q } : {}), ...(params.tag ? { tag: params.tag } : {}), category: slug } }}
+                  href={{ pathname: "/blog", query: { ...(query ? { q: query } : {}), ...(activeTag ? { tag: activeTag } : {}), category: slug } }}
                   style={{
                     flex: "none",
                     borderRadius: "999px",
