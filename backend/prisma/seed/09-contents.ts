@@ -12,7 +12,7 @@ import { PrismaClient, User } from '@prisma/client';
 interface ContentSeed {
   slug: string;
   title: string;
-  type: 'BLOG' | 'POLICY';
+  type: 'BLOG' | 'POLICY' | 'BANNER' | 'VIDEO';
   excerpt: string | null;
   body: string;
   metadata: any;
@@ -359,6 +359,38 @@ Với tư cách nền tảng trung gian, chúng tôi không đảm bảo chất 
       effectiveDate: '2026-06-22',
     },
   },
+
+  // ═══════════════ BANNERS ═══════════════
+  {
+    slug: 'home-banner-1',
+    title: 'Sự kiện âm nhạc EDM lớn nhất năm',
+    type: 'BANNER',
+    excerpt: 'Tham gia cùng các DJ hàng đầu thế giới tại Neon Club.',
+    body: '',
+    metadata: {
+      tag: 'Xem ngay',
+      link: '/stores/neon-club',
+      statusLabel: 'ĐANG DIỄN RA',
+      subtitle: 'Sự kiện diễn ra từ ngày 7',
+      desktopImageUrl: 'https://images.unsplash.com/photo-1570872626485-d8ffea69f463?q=80&w=1200&auto=format&fit=crop',
+      mobileImageUrl: 'https://images.unsplash.com/photo-1570872626485-d8ffea69f463?q=80&w=600&auto=format&fit=crop',
+    },
+  },
+  {
+    slug: 'home-banner-2',
+    title: 'Thưởng thức Cocktail Hoàng Gia',
+    type: 'BANNER',
+    excerpt: 'Trải nghiệm độc đáo tại Moonlight Bar',
+    body: '',
+    metadata: {
+      tag: 'Khám phá',
+      link: '/stores/moonlight-bar',
+      statusLabel: 'MỚI RA MẮT',
+      subtitle: 'Ưu đãi 20% cho thành viên',
+      desktopImageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1200&auto=format&fit=crop',
+      mobileImageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600&auto=format&fit=crop',
+    },
+  },
 ];
 
 export async function seedContents(
@@ -397,5 +429,41 @@ export async function seedContents(
 
   const blogCount = CONTENTS.filter((c) => c.type === 'BLOG').length;
   const policyCount = CONTENTS.filter((c) => c.type === 'POLICY').length;
-  console.log(`     ✓ ${CONTENTS.length} content items (${blogCount} blogs + ${policyCount} policies, all trilingual)`);
+  const bannerCount = CONTENTS.filter((c) => c.type === 'BANNER').length;
+  console.log(`     ✓ ${CONTENTS.length} content items (${blogCount} blogs, ${policyCount} policies, ${bannerCount} banners)`);
+
+  // ═══════════════ HOT VIDEOS ═══════════════
+  const videos = await prisma.media.findMany({
+    where: { type: 'VIDEO', status: 'READY' },
+    take: 4,
+  });
+
+  if (videos.length > 0) {
+    const videoMetadata = {
+      videos: videos.map((v) => ({ mediaId: v.id })),
+    };
+
+    const slugs = ['hot-videos-all', 'hot-videos-01', 'hot-videos-79'];
+    for (const slug of slugs) {
+      await prisma.content.upsert({
+        where: { slug },
+        update: {
+          title: `Hot Videos (${slug})`,
+          metadata: videoMetadata,
+        },
+        create: {
+          authorId: adminId,
+          slug,
+          title: `Hot Videos (${slug})`,
+          type: 'VIDEO',
+          status: 'PUBLISHED',
+          excerpt: '',
+          body: '',
+          metadata: videoMetadata,
+          publishedAt: new Date(),
+        },
+      });
+    }
+    console.log(`     ✓ Seeded 3 hot video lists`);
+  }
 }

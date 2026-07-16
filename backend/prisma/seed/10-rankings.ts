@@ -20,12 +20,28 @@ const CAST_RANKINGS = [
 ];
 
 const STORE_RANKINGS = [
-  { slug: 'moonlight-bar',  pinRank: 1, reason: 'Top bar in HCM District 1. Premium craft cocktails & jazz.' },
-  { slug: 'velvet-club',    pinRank: 2, reason: 'Largest club in Saigon. World-class DJs every weekend.' },
-  { slug: 'crimson-bar',    pinRank: 3, reason: 'Best bar in Hanoi Old Quarter. Craft beers & live jazz.' },
-  { slug: 'sakura-lounge',  pinRank: 4, reason: 'Premium Japanese-style lounge HCM. Private VIP rooms.' },
-  { slug: 'neon-club',      pinRank: 5, reason: 'Top club in Hanoi by West Lake. Cutting-edge EDM.' },
+  // global rankings
+  { slug: 'moonlight-bar',  pinRank: 1, reason: 'Top bar in HCM District 1. Premium craft cocktails & jazz.', scope: 'global' },
+  { slug: 'velvet-club',    pinRank: 2, reason: 'Largest club in Saigon. World-class DJs every weekend.', scope: 'global' },
+  { slug: 'crimson-bar',    pinRank: 3, reason: 'Best bar in Hanoi Old Quarter. Craft beers & live jazz.', scope: 'global' },
+  { slug: 'sakura-lounge',  pinRank: 4, reason: 'Premium Japanese-style lounge HCM. Private VIP rooms.', scope: 'global' },
+  { slug: 'neon-club',      pinRank: 5, reason: 'Top club in Hanoi by West Lake. Cutting-edge EDM.', scope: 'global' },
+  
+  // featured_home rankings
+  { slug: 'hanami-dining',      pinRank: 1, reason: 'Best JP Dining HCM', scope: 'featured_home' },
+  { slug: 'tokyo-kitchen',      pinRank: 2, reason: 'Best JP Dining HN', scope: 'featured_home' },
+  { slug: 'lotus-massage-spa',  pinRank: 1, reason: 'Best Spa HCM', scope: 'featured_home' },
+  { slug: 'opera-spa-hai-phong',pinRank: 2, reason: 'Best Spa Hai Phong', scope: 'featured_home' },
 ];
+
+function getCityCode(city: string | null | undefined): string {
+  if (!city) return 'all';
+  if (city.includes('Hồ Chí Minh')) return '79';
+  if (city.includes('Hà Nội')) return '01';
+  if (city.includes('Đà Nẵng')) return '43';
+  if (city.includes('Hải Phòng')) return '31';
+  return 'all';
+}
 
 export async function seedRankings(
   prisma: PrismaClient,
@@ -50,6 +66,9 @@ export async function seedRankings(
     });
 
     const data = {
+      cityCode: getCityCode(cast.store?.city),
+      category: cast.store?.category || null,
+      scope: 'global',
       manualScore: 100 - (r.pinRank - 1) * 10,
       pinRank: r.pinRank,
       sponsored: r.pinRank === 1,
@@ -85,6 +104,9 @@ export async function seedRankings(
     });
 
     const data = {
+      cityCode: getCityCode(store.city),
+      category: store.category,
+      scope: r.scope,
       manualScore: 100 - (r.pinRank - 1) * 10,
       pinRank: r.pinRank,
       sponsored: r.pinRank === 1,
