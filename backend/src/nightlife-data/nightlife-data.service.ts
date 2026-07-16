@@ -19683,7 +19683,7 @@ export class NightlifeDataService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          store: { select: { id: true, name: true } },
+          store: { select: { id: true, name: true, category: true, city: true } },
           media: { select: { id: true, url: true, type: true } },
         },
       }),

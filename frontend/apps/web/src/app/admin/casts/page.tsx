@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
+import { useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 
@@ -39,6 +40,14 @@ const normalizeListResponse = (value: any): any[] => {
 };
 
 export default function AdminCastsPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
+      <AdminCastsContent />
+    </React.Suspense>
+  );
+}
+
+function AdminCastsContent() {
   const [activeTab, setActiveTab] = useState('all');
   const [casts, setCasts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
@@ -133,12 +142,38 @@ export default function AdminCastsPage() {
     return 'Ẩn';
   };
 
+  const searchParams = useSearchParams();
+  const filterCity = searchParams.get('city') || '';
+  const filterCategory = searchParams.get('category') || '';
+
   const filteredCasts = casts.filter(cast => {
     const st = getStatusLabel(cast.status, cast.isPublic);
-    if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return st === 'Chờ duyệt';
-    if (activeTab === 'visible') return st === 'Đang hiển thị';
-    if (activeTab === 'hidden') return st === 'Ẩn';
+    if (activeTab === 'all') {
+      // do nothing
+    } else if (activeTab === 'pending') {
+      if (st !== 'Chờ duyệt') return false;
+    } else if (activeTab === 'visible') {
+      if (st !== 'Đang hiển thị') return false;
+    } else if (activeTab === 'hidden') {
+      if (st !== 'Ẩn') return false;
+    }
+
+    // Lọc theo City của Quán trực thuộc
+    const storeCity = cast.store?.city || '';
+    const storeArea =
+      storeCity === 'Ho Chi Minh City' || storeCity === 'Hồ Chí Minh' || storeCity === 'Há»“ ChÃ­ Minh'
+        ? 'HCM'
+        : storeCity === 'Hanoi' || storeCity === 'Hà Nội' || storeCity === 'Ha Noi'
+        ? 'HN'
+        : 'Tổng hợp';
+
+    if (filterCity === 'Hanoi' && storeArea !== 'HN') return false;
+    if (filterCity === 'Ho Chi Minh City' && storeArea !== 'HCM') return false;
+    if ((!filterCity || filterCity === 'other') && (storeArea === 'HN' || storeArea === 'HCM')) return false;
+
+    // Lọc theo Category của Quán trực thuộc
+    if (filterCategory && cast.store?.category !== filterCategory) return false;
+
     return true;
   });
 
