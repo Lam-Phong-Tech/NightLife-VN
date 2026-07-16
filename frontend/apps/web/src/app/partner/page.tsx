@@ -7230,54 +7230,6 @@ export default function PartnerPage() {
               {panelTitles[activePanel].title}
             </h1>
 
-            <PanelCard
-              style={{
-                marginBottom: '14px',
-                padding: '16px 18px',
-                background:
-                  "linear-gradient(90deg,rgba(212,178,106,.13),rgba(255,255,255,.025)), linear-gradient(180deg,rgba(12,12,15,.18),rgba(12,12,15,.72)), url('https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1400&q=72') center/cover",
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      color: colors.gold,
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      letterSpacing: '1.6px',
-                    }}
-                  >
-                    LIVE STORE SCOPE
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '6px',
-                      color: colors.text,
-                      fontSize: '18px',
-                      fontWeight: 800,
-                    }}
-                  >
-                    {storeName}
-                  </div>
-                  <div style={{ marginTop: '5px', color: colors.text2, fontSize: '12px' }}>
-                    Mở nhanh tab quét QR, theo dõi tổng quan, đối soát và đăng tin trong portal đối tác.
-                  </div>
-                </div>
-                <GhostButton onClick={() => setActivePanel('scan')}>
-                  <QrCode size={16} />
-                  Mở quét QR
-                </GhostButton>
-              </div>
-            </PanelCard>
 
             {renderActivePanel()}
           </div>
