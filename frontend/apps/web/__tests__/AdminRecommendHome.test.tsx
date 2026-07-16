@@ -268,6 +268,13 @@ describe("Admin Recommend Home content page UI verification", () => {
     fireEvent.click(confirmButton);
 
     // Verify delete API is called
-    expect(mockDelete).toHaveBeenCalledWith('rec-1');
+    await waitFor(() => {
+      expect(mockDelete).toHaveBeenCalledWith('rec-1');
+    });
+
+    // Wait for the modal to be removed from the DOM
+    await waitFor(() => {
+      expect(screen.queryByText("Xác nhận gỡ")).not.toBeInTheDocument();
+    });
   });
 });
