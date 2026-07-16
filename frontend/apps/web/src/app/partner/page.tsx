@@ -1201,15 +1201,17 @@ function SectionHeading({
   title,
   action,
   hideLine,
+  className,
 }: {
   eyebrow?: string;
   title: string;
   action?: React.ReactNode;
   hideLine?: boolean;
+  className?: string;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-      <div>
+    <div className={className ? `partner-section-heading ${className}` : 'partner-section-heading'} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+      <div className="partner-section-heading-copy">
         <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>
           {title}
         </h2>
@@ -1229,6 +1231,7 @@ function SectionHeading({
       </div>
       {!hideLine && (
         <div
+          className="partner-section-heading-line"
           style={{
             flex: 1,
             height: '1px',
@@ -1236,7 +1239,7 @@ function SectionHeading({
           }}
         />
       )}
-      {action}
+      {action ? <div className="partner-section-heading-action">{action}</div> : null}
     </div>
   );
 }
@@ -1244,19 +1247,23 @@ function SectionHeading({
 function PanelCard({
   children,
   style,
+  className,
 }: {
   children: React.ReactNode;
   style?: React.CSSProperties;
+  className?: string;
 }) {
-  return <article style={{ ...cardStyle, padding: '20px', ...style }}>{children}</article>;
+  return <article className={className ? `partner-panel-card ${className}` : 'partner-panel-card'} style={{ ...cardStyle, padding: '20px', ...style }}>{children}</article>;
 }
 
 function StatusPill({
   children,
   tone = 'neutral',
+  className,
 }: {
   children: React.ReactNode;
   tone?: 'neutral' | 'gold' | 'success' | 'danger';
+  className?: string;
 }) {
   const toneColor =
     tone === 'success'
@@ -1269,6 +1276,7 @@ function StatusPill({
 
   return (
     <span
+      className={className ? `partner-status-pill partner-status-pill-${tone} ${className}` : `partner-status-pill partner-status-pill-${tone}`}
       style={{
         minHeight: '26px',
         borderRadius: '999px',
@@ -1295,15 +1303,18 @@ function PrimaryButton({
   onClick,
   type = 'button',
   style,
+  className,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit';
   style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
     <button
+      className={className ? `partner-button partner-button-primary ${className}` : 'partner-button partner-button-primary'}
       disabled={disabled}
       onClick={onClick}
       type={type}
@@ -1335,15 +1346,18 @@ function GhostButton({
   onClick,
   type = 'button',
   style,
+  className,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit';
   style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
     <button
+      className={className ? `partner-button partner-button-ghost ${className}` : 'partner-button partner-button-ghost'}
       disabled={disabled}
       onClick={onClick}
       type={type}
@@ -1382,10 +1396,12 @@ function FormField({
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const fieldClassName = className ? `partner-form-field ${className}` : 'partner-form-field';
+
   if (htmlFor) {
     return (
       <div
-        className={className}
+        className={fieldClassName}
         style={{
           display: 'grid',
           gap: '7px',
@@ -1411,7 +1427,7 @@ function FormField({
 
   return (
     <label
-      className={className}
+      className={fieldClassName}
       style={{
         display: 'grid',
         gap: '7px',
@@ -4199,8 +4215,9 @@ export default function PartnerPage() {
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <PanelCard key={metric.label} style={{ padding: '18px' }}>
+            <PanelCard key={metric.label} className="partner-metric-card" style={{ padding: '18px' }}>
               <div
+                className="partner-metric-card-head"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -4209,6 +4226,7 @@ export default function PartnerPage() {
                 }}
               >
                 <span
+                  className="partner-metric-icon"
                   style={{
                     width: '42px',
                     height: '42px',
@@ -4226,6 +4244,7 @@ export default function PartnerPage() {
                 <StatusPill tone="gold">{metric.trend}</StatusPill>
               </div>
               <div
+                className="partner-metric-label"
                 style={{
                   marginTop: '16px',
                   color: colors.muted,
@@ -4236,6 +4255,7 @@ export default function PartnerPage() {
                 {metric.label}
               </div>
               <div
+                className="partner-metric-value"
                 style={{
                   marginTop: '8px',
                   color: colors.text,
@@ -4246,7 +4266,7 @@ export default function PartnerPage() {
               >
                 {metric.value}
               </div>
-              <div style={{ marginTop: '8px', color: colors.goldBright, fontSize: '12px' }}>
+              <div className="partner-metric-sub" style={{ marginTop: '8px', color: colors.goldBright, fontSize: '12px' }}>
                 {metric.sub}
               </div>
             </PanelCard>
@@ -4267,7 +4287,7 @@ export default function PartnerPage() {
             }
           />
           {bookingTrendBars.length ? (
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
+            <div className="partner-bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
               {bookingTrendBars.map((bar, index) => (
                 <div
                   key={bar.label}
@@ -4395,6 +4415,7 @@ export default function PartnerPage() {
         />
 
         <div
+          className="partner-camera-frame"
           style={{
             minHeight: '320px',
             borderRadius: '16px',
@@ -4458,7 +4479,7 @@ export default function PartnerPage() {
           )}
         </div>
 
-        <div style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="partner-action-row partner-camera-actions" style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <PrimaryButton
             disabled={cameraStatus === 'starting'}
             onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}
@@ -4501,6 +4522,7 @@ export default function PartnerPage() {
         ) : null}
 
         <form
+          className="partner-scan-form"
           onSubmit={(event) => {
             event.preventDefault();
             void scanCouponPayload(scanPayload);
@@ -4596,7 +4618,7 @@ export default function PartnerPage() {
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
+            <div className="partner-action-row partner-scan-result-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
               <PrimaryButton
                 disabled={!canConfirmScan || isConfirmingScan}
                 onClick={confirmScannedIssue}
@@ -4640,6 +4662,7 @@ export default function PartnerPage() {
     <>
       <PanelCard style={{ marginBottom: '14px' }}>
         <div
+          className="partner-filter-head"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -4649,7 +4672,7 @@ export default function PartnerPage() {
           }}
         >
           <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ đối soát" />
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {periodItems.map((item) => (
               <button
                 key={item.key}
@@ -4771,8 +4794,8 @@ export default function PartnerPage() {
           </GhostButton>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px' }}>
+        <div className="partner-table-scroll" style={{ overflowX: 'auto' }}>
+          <table className="partner-settlement-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px' }}>
             <thead>
               <tr>
                 {[
@@ -5786,7 +5809,7 @@ export default function PartnerPage() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+      <div className="partner-listing-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {contentTabs.map((tab) => (
           <button
             key={tab.key}
@@ -5834,6 +5857,7 @@ export default function PartnerPage() {
 
       {!isViewingLive && (
         <div
+          className="partner-action-row partner-listing-actions"
           style={{
             display: 'flex',
             justifyContent: 'flex-end',
@@ -7071,8 +7095,13 @@ export default function PartnerPage() {
         .partner-admin-tag-fallback,
         .partner-quill-fallback {
           position: absolute;
-          width: 1px;
-          height: 1px;
+          width: 1px !important;
+          min-width: 0 !important;
+          max-width: 1px !important;
+          height: 1px !important;
+          min-height: 0 !important;
+          max-height: 1px !important;
+          left: 0 !important;
           overflow: hidden;
           clip: rect(0 0 0 0);
           white-space: nowrap;
@@ -7208,6 +7237,30 @@ export default function PartnerPage() {
         }
         .partner-notification-popover button {
           font-family: inherit;
+        }
+        .partner-panel-card,
+        .partner-section-heading-copy,
+        .partner-form-field {
+          min-width: 0;
+        }
+        .partner-panel-card {
+          overflow: hidden;
+        }
+        .partner-button {
+          min-width: 0;
+          line-height: 1;
+        }
+        .partner-section-heading-action {
+          flex: 0 0 auto;
+        }
+        .partner-table-scroll,
+        .partner-cast-table-wrap {
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+        .partner-table-scroll table,
+        .partner-cast-table {
+          white-space: nowrap;
         }
         @media (max-width: 1180px) {
           .partner-metric-grid,
@@ -7363,6 +7416,183 @@ export default function PartnerPage() {
           .partner-cast-form-header {
             align-items: stretch;
             flex-direction: column;
+          }
+          .partner-content {
+            padding: 14px 14px calc(92px + env(safe-area-inset-bottom)) !important;
+          }
+          .partner-panel-card {
+            border-radius: 14px !important;
+            padding: 16px !important;
+          }
+          .partner-mobile-page-title {
+            margin-bottom: 14px !important;
+            font-size: 22px !important;
+            line-height: 1.18 !important;
+          }
+          .partner-metric-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+          .partner-metric-card {
+            min-height: 143px;
+            padding: 13px !important;
+          }
+          .partner-metric-card-head {
+            gap: 6px !important;
+          }
+          .partner-metric-icon {
+            width: 30px !important;
+            height: 30px !important;
+            border-radius: 13px !important;
+          }
+          .partner-metric-card .partner-status-pill {
+            max-width: 116px;
+            overflow: hidden;
+            padding: 0 8px !important;
+            text-overflow: ellipsis;
+            font-size: 10px !important;
+          }
+          .partner-metric-label {
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+            margin-top: 12px !important;
+            min-height: 30px;
+          }
+          .partner-metric-value {
+            font-size: 25px !important;
+          }
+          .partner-metric-sub {
+            font-size: 11px !important;
+            line-height: 1.35;
+          }
+          .partner-overview-grid,
+          .partner-scan-grid,
+          .partner-bill-panel-grid {
+            gap: 12px;
+            margin-top: 12px;
+          }
+          .partner-section-heading {
+            align-items: flex-start !important;
+            flex-wrap: wrap;
+            gap: 10px !important;
+            margin-bottom: 14px !important;
+          }
+          .partner-section-heading h2 {
+            font-size: 18px !important;
+            line-height: 1.25;
+          }
+          .partner-section-heading-line {
+            flex-basis: 100% !important;
+            order: 3;
+          }
+          .partner-section-heading-action {
+            margin-left: auto;
+          }
+          .partner-bar-chart {
+            gap: 8px !important;
+            height: 178px !important;
+          }
+          .partner-camera-frame {
+            min-height: 254px !important;
+            border-radius: 15px !important;
+          }
+          .partner-action-row,
+          .partner-scan-form {
+            gap: 9px !important;
+          }
+          .partner-scan-form {
+            grid-template-columns: 1fr !important;
+          }
+          .partner-action-row .partner-button,
+          .partner-scan-form .partner-button,
+          .partner-listing-actions .partner-button {
+            width: 100%;
+          }
+          .partner-filter-head {
+            align-items: stretch !important;
+            flex-direction: column;
+          }
+          .partner-filter-head .partner-section-heading {
+            margin-bottom: 0 !important;
+          }
+          .partner-period-tabs,
+          .partner-listing-tabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+          }
+          .partner-period-tabs::-webkit-scrollbar,
+          .partner-listing-tabs::-webkit-scrollbar {
+            display: none;
+          }
+          .partner-period-tabs button,
+          .partner-listing-tabs button {
+            flex: 0 0 auto;
+          }
+          .partner-settlement-summary,
+          .partner-listing-grid,
+          .partner-cast-profile-grid,
+          .partner-hour-row,
+          .partner-listing-toolbar,
+          .partner-media-grid,
+          .partner-store-scope-grid,
+          .partner-settlement-filter-grid,
+          .partner-bill-form-grid {
+            gap: 10px !important;
+          }
+          .partner-table-scroll {
+            margin: 0 -16px -4px;
+            padding: 0 16px 4px;
+          }
+          .partner-settlement-table {
+            min-width: 760px !important;
+          }
+          .partner-listing-tabs {
+            margin: 0 -4px 16px !important;
+            padding-left: 4px;
+            padding-right: 4px;
+          }
+          .partner-cast-table {
+            min-width: 720px !important;
+          }
+          .partner-cast-table-wrap {
+            border-radius: 14px;
+            margin: 0 -2px;
+          }
+          .partner-form-field input,
+          .partner-form-field select,
+          .partner-form-field textarea,
+          .partner-scan-form input,
+          .partner-quill-shell .ql-editor {
+            font-size: 16px !important;
+          }
+          .partner-mobile-bottom-nav {
+            height: calc(66px + env(safe-area-inset-bottom)) !important;
+            box-sizing: border-box;
+            max-width: 100vw;
+            overflow: hidden;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+            width: 100vw;
+          }
+          .partner-mobile-nav-btn {
+            min-width: 0;
+            padding: 0 2px;
+          }
+          .partner-mobile-nav-label {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 9px !important;
+            line-height: 1.1;
+          }
+        }
+        @media (max-width: 360px) {
+          .partner-metric-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .partner-metric-card {
+            min-height: 0;
           }
         }
       `}</style>
