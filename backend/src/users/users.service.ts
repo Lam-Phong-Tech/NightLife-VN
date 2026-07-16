@@ -44,7 +44,7 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    input: { displayName: string; email: string; phone?: string | null },
+    input: { displayName: string; email: string; phone?: string | null; storeId?: string | null },
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
@@ -58,13 +58,123 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: {
-        email,
-        displayName,
-        phone,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id },
+        data: {
+          email,
+          displayName,
+          phone,
+        },
+      });
+
+      if (input.storeId !== undefined) {
+        const storeId = input.storeId || null;
+
+        if (currentUser.role === 'PARTNER') {
+          // Find or create PartnerAccount for this user
+          let partnerAccount = await tx.partnerAccount.findFirst({
+            where: { userId: id, deletedAt: null },
+          });
+
+          if (!partnerAccount) {
+            partnerAccount = await tx.partnerAccount.create({
+              data: {
+                userId: id,
+                businessName: displayName || email.split('@')[0],
+                status: 'ACTIVE',
+              },
+            });
+          }
+
+          // Unlink any stores currently linked to this partner account (except the new one)
+          await tx.store.updateMany({
+            where: { partnerAccountId: partnerAccount.id, NOT: storeId ? { id: storeId } : undefined },
+            data: { partnerAccountId: null, ownerId: null },
+          });
+
+          // Deactivate permissions for stores no longer linked
+          const oldStores = await tx.store.findMany({
+            where: { partnerAccountId: partnerAccount.id, NOT: storeId ? { id: storeId } : undefined },
+            select: { id: true },
+          });
+          for (const oldStore of oldStores) {
+            await tx.storePermission.updateMany({
+              where: { userId: id, storeId: oldStore.id },
+              data: { status: 'INACTIVE' },
+            });
+          }
+
+          // If a new storeId is provided, link it to this partner account and user
+          if (storeId) {
+            await tx.store.update({
+              where: { id: storeId },
+              data: { partnerAccountId: partnerAccount.id, ownerId: id },
+            });
+
+            await tx.storePermission.upsert({
+              where: {
+                userId_storeId: {
+                  userId: id,
+                  storeId,
+                },
+              },
+              update: {
+                permissions: [
+                  'store.partner.view',
+                  'booking.partner.view',
+                  'bill.partner.view',
+                  'coupon.scan',
+                ],
+                status: 'ACTIVE',
+                deletedAt: null,
+              },
+              create: {
+                userId: id,
+                storeId,
+                permissions: [
+                  'store.partner.view',
+                  'booking.partner.view',
+                  'bill.partner.view',
+                  'coupon.scan',
+                ],
+                status: 'ACTIVE',
+              },
+            });
+          }
+        } else if (currentUser.role === 'STAFF') {
+          // Unlink staff permissions for any other stores
+          await tx.storePermission.updateMany({
+            where: { userId: id, NOT: storeId ? { storeId } : undefined },
+            data: { status: 'INACTIVE' },
+          });
+
+          // Link staff permissions to the new store
+          if (storeId) {
+            await tx.storePermission.upsert({
+              where: {
+                userId_storeId: {
+                  userId: id,
+                  storeId,
+                },
+              },
+              update: {
+                permissions: ['store.staff.all'],
+                status: 'ACTIVE',
+                deletedAt: null,
+              },
+              create: {
+                userId: id,
+                storeId,
+                permissions: ['store.staff.all'],
+                status: 'ACTIVE',
+              },
+            });
+          }
+        }
+      }
+
+      return updatedUser;
     });
   }
 
@@ -355,6 +465,25 @@ export class UsersService {
         skip: skip ? Number(skip) : undefined,
         take: take ? Number(take) : undefined,
         orderBy: { createdAt: 'desc' },
+        include: {
+          partnerAccounts: {
+            where: { deletedAt: null },
+            include: {
+              stores: {
+                where: { deletedAt: null },
+                select: { id: true, name: true },
+              },
+            },
+          },
+          storePermissions: {
+            where: { deletedAt: null, status: 'ACTIVE' },
+            include: {
+              store: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
       }),
       this.prisma.user.count({ where }),
     ]);

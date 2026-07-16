@@ -94,7 +94,7 @@ export class AdminUsersController {
   @Patch(':id')
   updateUser(
     @Param('id') id: string,
-    @Body() dto: { displayName: string; email: string },
+    @Body() dto: { displayName: string; email: string; storeId?: string | null },
   ) {
     return this.usersService.updateProfile(id, dto);
   }

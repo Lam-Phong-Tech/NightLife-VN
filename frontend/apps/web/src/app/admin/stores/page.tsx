@@ -1589,29 +1589,10 @@ function AdminStoresContent() {
                     </div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedPartnerAccount.email || 'Chưa có email'} · vai trò Đối tác</div>
                   </div>
-                  <span onClick={() => setPartnerLinkEditing(!partnerLinkEditing)} title="Sửa tài khoản liên kết" style={{ width: 32, height: 32, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-                  </span>
-                  <span onClick={() => { setPartnerAccountId(''); setPartnerLinkEditing(true); }} title="Gỡ liên kết tài khoản" style={{ width: 32, height: 32, flex: 'none', borderRadius: 9, background: 'rgba(232,139,153,.08)', border: '1px solid rgba(232,139,153,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e88b99', cursor: 'pointer' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8l5 5M22 8l-5 5"/></svg>
-                  </span>
                 </div>
               ) : (
-                <div onClick={() => setPartnerLinkEditing(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '14px', color: '#8c8679', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-                  Liên kết tài khoản quản trị
-                </div>
-              )}
-
-              {partnerLinkEditing && (
-                <div style={{ marginTop: '10px', background: 'rgba(12,12,15,.45)', border: '1px solid rgba(212,178,106,.25)', borderRadius: '12px', padding: '12px' }}>
-                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Chọn tài khoản đối tác</div>
-                  <select value={partnerAccountId} onChange={(e) => setPartnerAccountId(e.target.value)} style={{ ...inputS, appearance: 'none', cursor: 'pointer' }}>
-                    <option value="" style={optS}>Không liên kết tài khoản</option>
-                    {partnerAccounts.map((account: any) => (
-                      <option key={account.id} value={account.id} style={optS}>{account.name || account.businessName} · {account.email || account.status}</option>
-                    ))}
-                  </select>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1.5px dashed rgba(255,255,255,.08)', borderRadius: '13px', padding: '14px', color: '#8c8679', fontSize: '12px', fontWeight: 600 }}>
+                  Chưa liên kết tài khoản
                 </div>
               )}
 

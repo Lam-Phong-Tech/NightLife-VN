@@ -37,7 +37,7 @@ export const createAdminUser = async (data: any) => {
   return apiClient<AdminUser>('/admin/users', { method: 'POST', data });
 };
 
-export const updateAdminUser = async (id: string, data: { displayName: string; email: string }) => {
+export const updateAdminUser = async (id: string, data: { displayName: string; email: string; storeId?: string | null }) => {
   return apiClient<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', data });
 };
 

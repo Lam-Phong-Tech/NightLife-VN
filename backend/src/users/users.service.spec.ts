@@ -24,6 +24,19 @@ describe('UsersService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    partnerAccount: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+    store: {
+      updateMany: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+    storePermission: {
+      updateMany: jest.fn(),
+      upsert: jest.fn(),
+    },
   } as unknown as jest.Mocked<PrismaService>;
 
   const passwordService = {
@@ -96,6 +109,45 @@ describe('UsersService', () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: activeUser.id },
       data: { passwordHash: 'new-hashed-password' },
+    });
+  });
+
+  it('updates profile and links store for PARTNER user', async () => {
+    const partnerUser = {
+      ...activeUser,
+      id: 'partner-user-1',
+      role: 'PARTNER',
+    };
+    prisma.user.findUnique.mockResolvedValue(partnerUser);
+    prisma.user.update.mockResolvedValue(partnerUser);
+    prisma.partnerAccount.findFirst.mockResolvedValue({ id: 'pa-1', userId: 'partner-user-1' });
+    prisma.store.findMany.mockResolvedValue([]);
+    prisma.store.updateMany.mockResolvedValue({ count: 0 });
+    prisma.store.update.mockResolvedValue({});
+    prisma.storePermission.upsert.mockResolvedValue({});
+
+    await service.updateProfile('partner-user-1', {
+      displayName: 'New Partner Name',
+      email: 'partner@nightlife.vn',
+      storeId: 'store-1',
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'partner-user-1' },
+      data: {
+        email: 'partner@nightlife.vn',
+        displayName: 'New Partner Name',
+        phone: null,
+      },
+    });
+
+    expect(prisma.partnerAccount.findFirst).toHaveBeenCalledWith({
+      where: { userId: 'partner-user-1', deletedAt: null },
+    });
+
+    expect(prisma.store.update).toHaveBeenCalledWith({
+      where: { id: 'store-1' },
+      data: { partnerAccountId: 'pa-1', ownerId: 'partner-user-1' },
     });
   });
 });

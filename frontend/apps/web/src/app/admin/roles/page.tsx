@@ -75,7 +75,8 @@ export default function AdminRolesPage() {
   const handleSearchStores = async (q: string) => {
      setStoreSearchQ(q);
      try {
-       const res = await searchStoresForAdmin(q, afKind);
+       const kind = storeSearchTarget === 'edit' ? edKind : afKind;
+       const res = await searchStoresForAdmin(q, kind);
        setStoreSearchResults(res || []);
      } catch (e) {
        console.error(e);
@@ -88,6 +89,10 @@ export default function AdminRolesPage() {
   const [edOrig, setEdOrig] = useState('');
   const [edName, setEdName] = useState('');
   const [edEmail, setEdEmail] = useState('');
+  const [edStoreId, setEdStoreId] = useState('');
+  const [edStoreName, setEdStoreName] = useState('');
+  const [edKind, setEdKind] = useState('partner');
+  const [storeSearchTarget, setStoreSearchTarget] = useState<'add' | 'edit'>('add');
 
   // Password states
   const [cpOpen, setCpOpen] = useState(false);
@@ -127,6 +132,25 @@ export default function AdminRolesPage() {
         const nm = (u.displayName || (u.email ? u.email.split('@')[0] : 'Unknown')) as string;
         const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
         const roleData = kmap[kind] || ['Khác', 'linear-gradient(135deg,#9b958a,#57534b)'];
+
+        let storeId = '';
+        let storeName = '';
+        if (kind === 'partner') {
+          const pa = (u as any).partnerAccounts?.[0];
+          const st = pa?.stores?.[0];
+          if (st) {
+            storeId = st.id;
+            storeName = st.name;
+          }
+        } else if (kind === 'staff') {
+          const sp = (u as any).storePermissions?.[0];
+          const st = sp?.store;
+          if (st) {
+            storeId = st.id;
+            storeName = st.name;
+          }
+        }
+
         return {
            id: u.id,
            key: u.id,
@@ -136,7 +160,9 @@ export default function AdminRolesPage() {
            role: roleData[0],
            kind,
            avaBg: roleData[1],
-           disabled: u.status === 'DELETED' || u.status === 'SUSPENDED'
+           disabled: u.status === 'DELETED' || u.status === 'SUSPENDED',
+           storeId,
+           storeName
         };
       });
       console.log('MAPPED:', mapped);
@@ -234,7 +260,7 @@ export default function AdminRolesPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
             <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Tài khoản</span>
             <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
-            <span onClick={() => { setAfName(''); setAfEmail(''); setAfPw(''); setAfPwShow(false); setAfKind('partner'); setAfStoreId(''); setAfStoreName(''); setIsAdding(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 13px', borderRadius: '9px', cursor: 'pointer' }}>
+            <span onClick={() => { setAfName(''); setAfEmail(''); setAfPw(''); setAfPwShow(false); setAfKind('partner'); setAfStoreId(''); setAfStoreName(''); setStoreSearchTarget('add'); setIsAdding(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 13px', borderRadius: '9px', cursor: 'pointer' }}>
               <Plus size={13} strokeWidth={2.4} /> Thêm
             </span>
           </div>
@@ -282,6 +308,11 @@ export default function AdminRolesPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#f3f0ea' }}>{a.name}</div>
                   <div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.email}</div>
+                  {(a as any).storeName && (
+                    <div style={{ fontSize: '11px', color: '#caa765', marginTop: '2.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                      Liên kết: {(a as any).storeName}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right', flex: 'none' }}>
                   <span style={rst(a.kind)}>{a.role}</span>
@@ -290,7 +321,15 @@ export default function AdminRolesPage() {
                   ) : null}
                 </div>
                 <div style={{ display: 'flex', gap: '5px', flex: 'none' }}>
-                  <span onClick={() => { setEdOrig(a.id); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                  <span onClick={() => { 
+                    setEdOrig(a.id); 
+                    setEdName(a.name); 
+                    setEdEmail(a.email); 
+                    setEdStoreId((a as any).storeId || '');
+                    setEdStoreName((a as any).storeName || '');
+                    setEdKind(a.kind);
+                    setEdOpen(true); 
+                  }} title="Sửa thông tin và liên kết quán" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                     <Edit2 size={12} strokeWidth={1.9} />
                   </span>
                   <span onClick={() => { setHdKey(a.id); setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
@@ -453,6 +492,22 @@ export default function AdminRolesPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
                 <input value={edEmail} onChange={e => setEdEmail(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
               </div>
+
+              {(edKind === 'partner' || edKind === 'staff') && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Quán liên kết</div>
+                    {edStoreId && (
+                      <span onClick={() => { setEdStoreId(''); setEdStoreName(''); }} style={{ color: '#e88b99', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>Gỡ liên kết</span>
+                    )}
+                  </div>
+                  <div onClick={() => { setStoreSearchTarget('edit'); setStoreSearchOpen(true); handleSearchStores(''); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: edStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {edStoreName || 'Bấm để tìm và chọn quán...'}
+                    <Search size={14} />
+                  </div>
+                </div>
+              )}
+
               {edEmail !== edOrig && (
                 <div style={{ display: 'flex', gap: '9px', padding: '11px 14px', background: 'rgba(224,164,78,.06)', border: '1px solid rgba(224,164,78,.25)', borderRadius: '11px' }}>
                   <AlertCircle size={15} color="#e7b869" style={{ flex: 'none', marginTop: '1px' }} />
@@ -465,7 +520,7 @@ export default function AdminRolesPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
               <span style={{ flex: 1 }}></span>
               <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={async () => { try { await updateAdminUser(edOrig, { displayName: edName, email: edEmail }); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi cập nhật'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
+              <span onClick={async () => { try { await updateAdminUser(edOrig, { displayName: edName, email: edEmail, storeId: edStoreId || null }); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi cập nhật'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
                 Lưu thay đổi
               </span>
             </div>
@@ -595,7 +650,16 @@ export default function AdminRolesPage() {
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
                {storeSearchResults.map(s => (
-                  <div key={s.id} onClick={() => { setAfStoreId(s.id); setAfStoreName(s.name); setStoreSearchOpen(false); }} style={{ padding: '12px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }} className="hover-bg-surface1" onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <div key={s.id} onClick={() => {
+                    if (storeSearchTarget === 'edit') {
+                      setEdStoreId(s.id);
+                      setEdStoreName(s.name);
+                    } else {
+                      setAfStoreId(s.id);
+                      setAfStoreName(s.name);
+                    }
+                    setStoreSearchOpen(false);
+                  }} style={{ padding: '12px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }} className="hover-bg-surface1" onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
                      <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.address || 'Chưa có địa chỉ'}</div>
                   </div>
