@@ -9,7 +9,6 @@ import {
   Home,
   LogIn,
   ReceiptText,
-  Settings,
   Search,
   Ticket,
   UserRound,
@@ -134,20 +133,25 @@ const bottomNavIconMap: Record<string, LucideIcon> = {
 };
 
 function appearanceIconUrl(icon?: string) {
-  if (!icon || (!/^(https?:|\/|data:image\/)/i.test(icon) && !icon.startsWith("storage/"))) return undefined;
+  if (!icon || (!/^(https?:|\/|data:image\/)/i.test(icon) && !icon.startsWith("storage/")))
+    return undefined;
   return resolveClientUrl(icon) || icon;
 }
 
 function mapAppearanceNavItem(item: AppearanceItem, index: number): BottomNavItem {
-  const fallback = bottomNav[index] ?? bottomNav[0] ?? {
-    href: "/",
-    label: "Trang chủ",
-    icon: Home,
-  };
+  const fallback = bottomNav[index] ??
+    bottomNav[0] ?? {
+      href: "/",
+      label: "Trang chủ",
+      icon: Home,
+    };
   const defaultConfig = DEFAULT_APPEARANCE_CONFIG.nav[index] ?? DEFAULT_APPEARANCE_CONFIG.nav[0];
 
   return {
-    href: bottomNavHrefById[item.id] ?? (defaultConfig ? bottomNavHrefById[defaultConfig.id] : undefined) ?? fallback.href,
+    href:
+      bottomNavHrefById[item.id] ??
+      (defaultConfig ? bottomNavHrefById[defaultConfig.id] : undefined) ??
+      fallback.href,
     label: item.label || fallback.label,
     icon: bottomNavIconMap[item.icon] ?? fallback.icon,
     iconUrl: appearanceIconUrl(item.icon),
@@ -210,7 +214,8 @@ const footerCopy: Record<
 > = {
   vi: {
     description: "Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.",
-    legalPlaceholder: "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
+    legalPlaceholder:
+      "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
     mobileNotice: (brandName) =>
       `© 2026 ${brandName}. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.`,
     rights: (brandName) => `© 2026 ${brandName}. Bảo lưu mọi quyền.`,
@@ -218,7 +223,8 @@ const footerCopy: Record<
   },
   en: {
     description: "Discover venues, Cast, deals, and nightlife guides in Vietnam.",
-    legalPlaceholder: "Legal content is a placeholder until the client provides the official version.",
+    legalPlaceholder:
+      "Legal content is a placeholder until the client provides the official version.",
     mobileNotice: (brandName) =>
       `© 2026 ${brandName}. 18+ · Prices and booking availability are confirmed by admin.`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
@@ -227,8 +233,7 @@ const footerCopy: Record<
   ja: {
     description: "ベトナムの店舗、キャスト、特典、ナイトライフガイドを探せます。",
     legalPlaceholder: "正式版が提供されるまで、法務コンテンツは仮テキストです。",
-    mobileNotice: (brandName) =>
-      `© 2026 ${brandName}. 18+ · 料金と予約状況は管理者が確認します。`,
+    mobileNotice: (brandName) => `© 2026 ${brandName}. 18+ · 料金と予約状況は管理者が確認します。`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
     bookingNote: "18+ · 料金と予約状況は管理者が再確認します。",
   },
@@ -243,8 +248,7 @@ const footerCopy: Record<
   zh: {
     description: "探索越南的场所、Cast、优惠和夜生活指南。",
     legalPlaceholder: "正式内容提供前，法律文本暂为占位内容。",
-    mobileNotice: (brandName) =>
-      `© 2026 ${brandName}. 18+ · 价格和预订状态由管理员确认。`,
+    mobileNotice: (brandName) => `© 2026 ${brandName}. 18+ · 价格和预订状态由管理员确认。`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
     bookingNote: "18+ · 价格和预订状态由管理员再次确认。",
   },
@@ -267,6 +271,24 @@ type Notice = {
 };
 
 type NotificationFilter = "all" | MemberNotificationCategory;
+
+type NotificationAnchorRect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
+
+const notificationAnchorFromRect = (rect: DOMRect): NotificationAnchorRect => ({
+  left: rect.left,
+  right: rect.right,
+  top: rect.top,
+  bottom: rect.bottom,
+  width: rect.width,
+  height: rect.height,
+});
 
 const noticeToneStyle: Record<NoticeTone, { background: string; border: string; color: string }> = {
   gold: {
@@ -336,7 +358,7 @@ function NotificationBellButton({
   isMobile: boolean;
   isOpen: boolean;
   unreadCount: number;
-  onClick: () => void;
+  onClick: (anchorRect: NotificationAnchorRect) => void;
 }) {
   const size = isMobile ? 36 : 40;
 
@@ -347,7 +369,9 @@ function NotificationBellButton({
       aria-haspopup="dialog"
       aria-expanded={isOpen}
       aria-label="Mở thông báo"
-      onClick={onClick}
+      onClick={(event) =>
+        onClick(notificationAnchorFromRect(event.currentTarget.getBoundingClientRect()))
+      }
       style={{
         minHeight: `${size}px`,
         width: `${size}px`,
@@ -459,9 +483,7 @@ function NotificationTabs({
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
-              background: active
-                ? "linear-gradient(135deg,#f0dda8,#d4b26a)"
-                : colors.surface2,
+              background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "0" : `1px solid ${colors.border}`,
               borderRadius: "15px",
               padding: isMobile ? "7px 13px" : "6px 12px",
@@ -564,7 +586,9 @@ function NoticeRow({
           >
             {notice.title}
           </span>
-          <span style={{ fontSize: isMobile ? "10.5px" : "11px", color: colors.faint, flex: "none" }}>
+          <span
+            style={{ fontSize: isMobile ? "10.5px" : "11px", color: colors.faint, flex: "none" }}
+          >
             {notice.time}
           </span>
         </div>
@@ -674,9 +698,7 @@ const extractBookingPlaceFromBody = (body: string) => {
   );
   if (placeMatch?.[1]) return placeMatch[1].trim();
 
-  const castMatch = body.match(
-    /Yêu cầu đặt\s+(.+?)(?:\s+lúc|\s+đã được ghi nhận|\.|$)/i,
-  );
+  const castMatch = body.match(/Yêu cầu đặt\s+(.+?)(?:\s+lúc|\s+đã được ghi nhận|\.|$)/i);
   return castMatch?.[1]?.trim() || "";
 };
 
@@ -772,9 +794,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     return {
       ...notification,
       title: "Lịch đặt đã được đổi",
-      body: notification.title === "Cập nhật lịch đặt"
-        ? `Lịch đặt ${placeLabel} đã được đổi lịch.`
-        : notification.body,
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Lịch đặt ${placeLabel} đã được đổi lịch.`
+          : notification.body,
       actionLabel: "Xem lịch mới",
       category: "booking",
       tone: "green",
@@ -785,9 +808,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     return {
       ...notification,
       title: "Yêu cầu đổi lịch chưa được duyệt",
-      body: notification.title === "Cập nhật lịch đặt"
-        ? `Yêu cầu đổi lịch ${placeLabel} chưa được Admin duyệt.`
-        : notification.body,
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Yêu cầu đổi lịch ${placeLabel} chưa được Admin duyệt.`
+          : notification.body,
       actionLabel: "Xem lịch đặt",
       category: "booking",
       tone: "danger",
@@ -798,9 +822,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     return {
       ...notification,
       title: "Lịch đặt đã hủy",
-      body: notification.title === "Cập nhật lịch đặt"
-        ? `Lịch đặt ${placeLabel} đã được hủy.`
-        : notification.body,
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Lịch đặt ${placeLabel} đã được hủy.`
+          : notification.body,
       actionLabel: "Xem lịch đặt",
       category: "booking",
       tone: "danger",
@@ -811,9 +836,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     return {
       ...notification,
       title: "Đã check-in lịch đặt",
-      body: notification.title === "Cập nhật lịch đặt"
-        ? `Lịch đặt ${placeLabel} đã được check-in.`
-        : notification.body,
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Lịch đặt ${placeLabel} đã được check-in.`
+          : notification.body,
       actionLabel: "Xem lịch đặt",
       category: "booking",
       tone: "green",
@@ -824,9 +850,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     return {
       ...notification,
       title: "Lịch đặt đã hoàn tất",
-      body: notification.title === "Cập nhật lịch đặt"
-        ? `Lịch đặt ${placeLabel} đã hoàn tất.`
-        : notification.body,
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Lịch đặt ${placeLabel} đã hoàn tất.`
+          : notification.body,
       actionLabel: "Xem lịch đặt",
       category: "booking",
       tone: "green",
@@ -897,11 +924,24 @@ function DesktopNotificationDropdown({
   onFilterChange,
   onMarkAllRead,
   onNoticeSelect,
-}: NotificationPanelProps) {
+  anchorRect,
+}: NotificationPanelProps & { anchorRect?: NotificationAnchorRect | null }) {
   const visibleNotices =
     activeFilter === "all" ? notices : notices.filter((notice) => notice.category === activeFilter);
   const todayNotices = visibleNotices.filter((notice) => notice.group === "today");
   const previousNotices = visibleNotices.filter((notice) => notice.group === "yesterday");
+  const viewportWidth = typeof window === "undefined" ? 1440 : window.innerWidth;
+  const panelWidth = Math.min(404, Math.max(320, viewportWidth - 36));
+  const anchorCenter = anchorRect ? anchorRect.left + anchorRect.width / 2 : viewportWidth - 72;
+  const panelLeftTarget = anchorRect
+    ? anchorRect.right - panelWidth + 12
+    : viewportWidth - panelWidth - 18;
+  const panelLeft = Math.min(
+    Math.max(18, panelLeftTarget),
+    Math.max(18, viewportWidth - panelWidth - 18),
+  );
+  const panelTop = anchorRect ? Math.max(58, anchorRect.bottom + 10) : 70;
+  const arrowLeft = Math.min(Math.max(18, anchorCenter - 7), viewportWidth - 32);
 
   return (
     <>
@@ -909,8 +949,8 @@ function DesktopNotificationDropdown({
         aria-hidden="true"
         style={{
           position: "fixed",
-          top: "62px",
-          right: "72px",
+          top: `${panelTop - 8}px`,
+          left: `${arrowLeft}px`,
           width: "14px",
           height: "14px",
           background: colors.notificationPanel,
@@ -927,10 +967,10 @@ function DesktopNotificationDropdown({
         onMouseDown={(event) => event.stopPropagation()}
         style={{
           position: "fixed",
-          top: "70px",
-          right: "18px",
+          top: `${panelTop}px`,
+          left: `${panelLeft}px`,
           zIndex: 101,
-          width: "min(404px, calc(100vw - 36px))",
+          width: `${panelWidth}px`,
           background: colors.notificationPanel,
           border: `1px solid ${colors.border}`,
           borderRadius: "16px",
@@ -1019,7 +1059,7 @@ function DesktopNotificationDropdown({
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "flex-start",
             padding: "12px 16px",
             borderTop: `1px solid ${colors.border}`,
           }}
@@ -1040,24 +1080,6 @@ function DesktopNotificationDropdown({
           >
             Xem hóa đơn của tôi
           </Link>
-          <button
-            type="button"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              border: 0,
-              padding: 0,
-              background: "transparent",
-              color: colors.muted,
-              fontSize: "12px",
-              fontFamily: "var(--nl-font-sans)",
-              cursor: "pointer",
-            }}
-          >
-            <Settings size={15} strokeWidth={1.7} />
-            Cài đặt
-          </button>
         </div>
       </section>
     </>
@@ -1155,7 +1177,6 @@ function MobileNotificationPanel({
             Notifications
           </div>
         </div>
-
       </div>
 
       <div
@@ -1237,12 +1258,17 @@ function MobileNotificationPanel({
 function NotificationOverlay({
   isMobile,
   onClose,
+  anchorRect,
   ...props
-}: { isMobile: boolean; onClose: () => void } & NotificationPanelProps) {
+}: {
+  isMobile: boolean;
+  onClose: () => void;
+  anchorRect?: NotificationAnchorRect | null;
+} & NotificationPanelProps) {
   return isMobile ? (
     <MobileNotificationPanel onClose={onClose} {...props} />
   ) : (
-    <DesktopNotificationDropdown {...props} />
+    <DesktopNotificationDropdown anchorRect={anchorRect} {...props} />
   );
 }
 
@@ -1295,7 +1321,9 @@ function SiteFooter({
               />
             ) : (
               <>
-                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>{brandName}</span>
+                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>
+                  {brandName}
+                </span>
                 <span
                   style={{
                     marginTop: "5px",
@@ -1402,7 +1430,9 @@ function SiteFooter({
               />
             ) : (
               <>
-                <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
+                <span
+                  style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}
+                >
                   {brandName}
                 </span>
                 <span
@@ -1491,6 +1521,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notificationAnchorRect, setNotificationAnchorRect] =
+    useState<NotificationAnchorRect | null>(null);
   const [notificationFilter, setNotificationFilter] = useState<NotificationFilter>("all");
   const [memberNotifications, setMemberNotifications] = useState<MemberNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
@@ -1724,9 +1756,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
     const retryTimers = new Set<number>();
     const handleCreated = (event: Event) => {
-      const detail = event instanceof CustomEvent
-        ? (event.detail as MemberNotificationSocketPayload | undefined)
-        : undefined;
+      const detail =
+        event instanceof CustomEvent
+          ? (event.detail as MemberNotificationSocketPayload | undefined)
+          : undefined;
       const notificationId =
         typeof detail?.id === "string" && detail.id.trim() ? detail.id.trim() : "";
 
@@ -1834,7 +1867,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!isNotificationOpen) return;
+    if (!isNotificationOpen || !isMobile) return;
 
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
@@ -1849,10 +1882,18 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPaddingRight;
     };
-  }, [isNotificationOpen]);
+  }, [isMobile, isNotificationOpen]);
 
   useEffect(() => {
     if (!isNotificationOpen) return;
+
+    const updateNotificationAnchor = () => {
+      const trigger = document.querySelector<HTMLElement>(
+        "[data-notification-trigger='true'][aria-expanded='true']",
+      );
+      if (!trigger) return;
+      setNotificationAnchorRect(notificationAnchorFromRect(trigger.getBoundingClientRect()));
+    };
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
@@ -1870,10 +1911,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", updateNotificationAnchor);
+    window.addEventListener("scroll", updateNotificationAnchor, true);
 
     return () => {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", updateNotificationAnchor);
+      window.removeEventListener("scroll", updateNotificationAnchor, true);
     };
   }, [isNotificationOpen]);
 
@@ -2004,11 +2049,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   if (shouldSimulate) return <MobileSimulator />;
 
   const routePreloader = customerRouteMotionEnabled ? (
-    <div
-      key={`route-preloader-${pathname}`}
-      aria-hidden="true"
-      className="nl-route-preloader"
-    />
+    <div key={`route-preloader-${pathname}`} aria-hidden="true" className="nl-route-preloader" />
   ) : null;
 
   if (hideChrome) {
@@ -2017,10 +2058,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         {customerRouteMotionEnabled ? (
           <>
             {routePreloader}
-            <div
-              key={`route-content-${pathname}`}
-              className="nl-customer-route-content"
-            >
+            <div key={`route-content-${pathname}`} className="nl-customer-route-content">
               {children}
             </div>
           </>
@@ -2178,7 +2216,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   isMobile={isMobile}
                   isOpen={isNotificationOpen}
                   unreadCount={notificationUnreadCount}
-                  onClick={() => {
+                  onClick={(anchorRect) => {
+                    setNotificationAnchorRect(anchorRect);
                     setIsChatOpen(false);
                     setIsNotificationOpen((open) => !open);
                   }}
@@ -2241,7 +2280,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   isMobile={isMobile}
                   isOpen={isNotificationOpen}
                   unreadCount={notificationUnreadCount}
-                  onClick={() => {
+                  onClick={(anchorRect) => {
+                    setNotificationAnchorRect(anchorRect);
                     setIsChatOpen(false);
                     setIsNotificationOpen((open) => !open);
                   }}
@@ -2401,6 +2441,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 onMarkAllRead={markAllNotificationsRead}
                 onNoticeSelect={handleNotificationSelect}
                 onClose={() => setIsNotificationOpen(false)}
+                anchorRect={notificationAnchorRect}
               />,
               document.body,
             )

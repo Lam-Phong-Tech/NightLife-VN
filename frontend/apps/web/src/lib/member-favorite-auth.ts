@@ -37,7 +37,7 @@ export function redirectToLoginForFavorite() {
   const dialog = document.createElement("section");
   dialog.className = "nl-favorite-login-dialog";
   dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-modal", "false");
   dialog.setAttribute("aria-labelledby", "nl-favorite-login-title");
   dialog.setAttribute("aria-describedby", "nl-favorite-login-description");
 
@@ -74,7 +74,6 @@ export function redirectToLoginForFavorite() {
 
   document.addEventListener("keydown", handleFavoriteLoginPromptKeydown);
   document.body.append(overlay);
-  continueButton.focus();
 }
 
 export function requireMemberFavoriteAccess() {

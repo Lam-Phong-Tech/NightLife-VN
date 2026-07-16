@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Play, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Play, Star, X } from "lucide-react";
 import { resolveClientUrl } from "@/lib/api/client";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
-import { mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
+import { isPlaceholderCastMedia, mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
 import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
 type CastGalleryProps = {
@@ -33,6 +33,7 @@ export function CastGallery({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
+  const activeMediaIsPlaceholder = isPlaceholderCastMedia(activeMedia);
   const copy = getCastProfileCopy(language);
 
   const showPrevious = useCallback(() => {
@@ -74,6 +75,13 @@ export function CastGallery({
     </span>
   );
 
+  const renderPlaceholder = (compact = false) => (
+    <span className={compact ? "cast-media-placeholder compact" : "cast-media-placeholder"}>
+      <ImageOff size={compact ? 16 : 26} strokeWidth={1.8} />
+      {compact ? null : <strong>Chưa có ảnh</strong>}
+    </span>
+  );
+
   const lightbox =
     isLightboxOpen && activeMedia && portalTarget
       ? createPortal(
@@ -107,21 +115,29 @@ export function CastGallery({
             <small>{copy.galleryCount(gallery.length)}</small>
           </div>
           <div className="cast-mobile-gallery-grid">
-            {gallery.map((media, index) => (
-              <button
-                type="button"
-                key={media.id}
-                onClick={() => {
-                  onSelect(index, "select");
-                  onOpenLightbox(index);
-                }}
-                aria-label={media.alt}
-                className="cast-gallery-tile"
-                style={{ background: mediaBg(media.url) }}
-              >
-                {media.type === "VIDEO" ? renderPlayIcon() : null}
-              </button>
-            ))}
+            {gallery.map((media, index) => {
+              const isPlaceholder = isPlaceholderCastMedia(media);
+
+              return (
+                <button
+                  type="button"
+                  key={media.id}
+                  onClick={() => {
+                    onSelect(index, "select");
+                    onOpenLightbox(index);
+                  }}
+                  aria-label={media.alt}
+                  className={`cast-gallery-tile${isPlaceholder ? " is-placeholder" : ""}`}
+                  style={{ background: mediaBg(media.url) }}
+                >
+                  {isPlaceholder
+                    ? renderPlaceholder(true)
+                    : media.type === "VIDEO"
+                      ? renderPlayIcon()
+                      : null}
+                </button>
+              );
+            })}
           </div>
         </section>
         {lightbox}
@@ -134,7 +150,7 @@ export function CastGallery({
       <div className="cast-desktop-main-media-wrap">
         <button
           type="button"
-          className="cast-desktop-main-media"
+          className={`cast-desktop-main-media${activeMediaIsPlaceholder ? " is-placeholder" : ""}`}
           style={{ background: mediaBg(activeMedia.url) }}
           onClick={() => onOpenLightbox(activeIndex)}
           aria-label={copy.openGallery}
@@ -142,7 +158,9 @@ export function CastGallery({
           <span className="cast-media-label">
             {activeMedia.type === "VIDEO" ? "Video" : "Gallery"}
           </span>
-          {activeMedia.type === "VIDEO" ? (
+          {activeMediaIsPlaceholder ? (
+            renderPlaceholder()
+          ) : activeMedia.type === "VIDEO" ? (
             <span className="cast-play cast-play-desktop">
               <Play size={24} fill="currentColor" />
             </span>
@@ -159,18 +177,26 @@ export function CastGallery({
       </div>
 
       <div className="cast-desktop-thumbs">
-        {gallery.slice(0, 5).map((media, index) => (
-          <button
-            type="button"
-            className={`cast-thumb${activeIndex === index ? " is-active" : ""}`}
-            key={media.id}
-            onClick={() => onSelect(index, "select")}
-            aria-label={media.alt}
-            style={{ background: mediaBg(media.url) }}
-          >
-            {media.type === "VIDEO" ? renderPlayIcon() : null}
-          </button>
-        ))}
+        {gallery.slice(0, 5).map((media, index) => {
+          const isPlaceholder = isPlaceholderCastMedia(media);
+
+          return (
+            <button
+              type="button"
+              className={`cast-thumb${activeIndex === index ? " is-active" : ""}${isPlaceholder ? " is-placeholder" : ""}`}
+              key={media.id}
+              onClick={() => onSelect(index, "select")}
+              aria-label={media.alt}
+              style={{ background: mediaBg(media.url) }}
+            >
+              {isPlaceholder
+                ? renderPlaceholder(true)
+                : media.type === "VIDEO"
+                  ? renderPlayIcon()
+                  : null}
+            </button>
+          );
+        })}
       </div>
       {lightbox}
     </section>
@@ -205,6 +231,7 @@ function CastLightbox({
   const mediaUrl = resolveClientUrl(media.url) ?? media.url;
   const embed = media.type === "VIDEO" ? videoEmbedUrl(mediaUrl) : null;
   const copy = getCastProfileCopy(language);
+  const isPlaceholder = isPlaceholderCastMedia(media);
 
   const onTouchEnd = (clientX: number) => {
     if (touchStartX === null) return;
@@ -266,6 +293,11 @@ function CastLightbox({
           ) : (
             <video src={embed?.url || mediaUrl} controls autoPlay />
           )
+        ) : isPlaceholder ? (
+          <div className="cast-lightbox-placeholder">
+            <ImageOff size={34} strokeWidth={1.8} />
+            <strong>Chưa có ảnh</strong>
+          </div>
         ) : (
           <img src={mediaUrl} alt={media.alt} />
         )}
@@ -290,18 +322,26 @@ function CastLightbox({
       </div>
 
       <div className="cast-lightbox-thumbs">
-        {gallery.map((item, itemIndex) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`cast-lightbox-thumb${itemIndex === index ? " is-active" : ""}`}
-            style={{ background: mediaBg(item.url) }}
-            onClick={() => onSelect(itemIndex, "select")}
-            aria-label={item.alt}
-          >
-            {item.type === "VIDEO" ? renderSmallPlayIcon() : null}
-          </button>
-        ))}
+        {gallery.map((item, itemIndex) => {
+          const isPlaceholder = isPlaceholderCastMedia(item);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`cast-lightbox-thumb${itemIndex === index ? " is-active" : ""}${isPlaceholder ? " is-placeholder" : ""}`}
+              style={{ background: mediaBg(item.url) }}
+              onClick={() => onSelect(itemIndex, "select")}
+              aria-label={item.alt}
+            >
+              {isPlaceholder ? (
+                <ImageOff size={14} strokeWidth={1.8} />
+              ) : item.type === "VIDEO" ? (
+                renderSmallPlayIcon()
+              ) : null}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

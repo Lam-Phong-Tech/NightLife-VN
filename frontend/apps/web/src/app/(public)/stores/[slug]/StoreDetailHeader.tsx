@@ -113,7 +113,7 @@ export function StoreDetailHeader({
         ) : (
           <div className="legacy-gallery-empty">
             <ImageIcon size={22} />
-            <strong>Chưa có gallery</strong>
+            <strong>Chưa có ảnh</strong>
             <span>Quán chưa đăng ảnh hoặc video công khai.</span>
           </div>
         )}

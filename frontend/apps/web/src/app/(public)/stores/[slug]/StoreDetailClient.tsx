@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  ImageOff,
   Minus,
   Navigation,
   PhoneCall,
@@ -78,7 +79,10 @@ import {
   type BookingTouchedFields,
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
-import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
+import {
+  scrollBookingValidationFieldIntoView,
+  type BookingFieldScrollSelectors,
+} from "@/lib/booking-field-scroll";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
@@ -1369,6 +1373,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const gallery = [...videoGallery, ...rawGallery.filter((item) => item.type !== "VIDEO")];
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
+  const hasHeroVisual = Boolean(galleryImageUrl(selectedMedia, heroImage));
   const heroBackground = galleryBackground(selectedMedia, heroImage);
   const selectedMediaUrl = selectedMedia
     ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url)
@@ -1812,6 +1817,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <div className="detail-layout">
           <div className="media-column">
             <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
+              {!hasHeroVisual ? (
+                <div className="hero-empty-placeholder" aria-hidden="true">
+                  <ImageOff size={34} strokeWidth={1.7} />
+                  <span>{translateText("Chưa có ảnh", activeLanguage)}</span>
+                </div>
+              ) : null}
               {shouldShowHeroVideoPreview ? (
                 <video
                   className="hero-video-preview"
@@ -2362,6 +2373,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           height: 100%;
           object-fit: cover;
           pointer-events: none;
+        }
+
+        .hero-empty-placeholder {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #f0dda8;
+          text-align: center;
+          pointer-events: none;
+        }
+
+        .hero-empty-placeholder span {
+          font-size: 13px;
+          line-height: 1.3;
+          font-weight: 900;
         }
 
         .hero-top,

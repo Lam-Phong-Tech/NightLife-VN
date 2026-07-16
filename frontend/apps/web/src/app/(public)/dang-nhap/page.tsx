@@ -206,7 +206,10 @@ export default function Page() {
     return redirect;
   }, []);
 
-  const title = translateText(isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên", activeLanguage);
+  const title = translateText(
+    isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên",
+    activeLanguage,
+  );
   const subtitle = translateText(
     isReg
       ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích lũy."
@@ -625,14 +628,28 @@ export default function Page() {
                   padding: 5,
                 }}
               >
-                <Tab active={!isReg} label={translateText("Đăng nhập", activeLanguage)} onClick={() => switchMode(false)} />
-                <Tab active={isReg} label={translateText("Đăng ký", activeLanguage)} onClick={() => switchMode(true)} />
+                <Tab
+                  active={!isReg}
+                  label={translateText("Đăng nhập", activeLanguage)}
+                  onClick={() => switchMode(false)}
+                />
+                <Tab
+                  active={isReg}
+                  label={translateText("Đăng ký", activeLanguage)}
+                  onClick={() => switchMode(true)}
+                />
               </div>
 
-              <h2 className="nl-login-title" style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>
+              <h2
+                className="nl-login-title"
+                style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}
+              >
                 {title}
               </h2>
-              <p className="nl-login-subtitle" style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
+              <p
+                className="nl-login-subtitle"
+                style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}
+              >
                 {subtitle}
               </p>
 
@@ -687,7 +704,10 @@ export default function Page() {
                   action={
                     <button
                       type="button"
-                      aria-label={translateText(showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu", activeLanguage)}
+                      aria-label={translateText(
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu",
+                        activeLanguage,
+                      )}
                       onClick={() => setShowPassword((current) => !current)}
                       style={{
                         display: "inline-flex",
@@ -777,7 +797,10 @@ export default function Page() {
                     opacity: isSubmitting ? 0.72 : 1,
                   }}
                 >
-                  {translateText(isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập", activeLanguage)}
+                  {translateText(
+                    isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập",
+                    activeLanguage,
+                  )}
                 </button>
 
                 <div
@@ -846,7 +869,9 @@ export default function Page() {
           border-color: rgba(150, 116, 52, 0.2) !important;
           background: rgba(255, 255, 255, 0.72) !important;
           color: #241a0a !important;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 16px 38px -34px rgba(65, 45, 16, 0.44) !important;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.64),
+            0 16px 38px -34px rgba(65, 45, 16, 0.44) !important;
         }
 
         html.vy-light .nl-login-page .nl-login-tab:not(.is-active) {
@@ -926,7 +951,8 @@ export default function Page() {
           .nl-login-page .nl-login-form-section {
             min-height: auto !important;
             width: 100% !important;
-            padding: 20px max(20px, env(safe-area-inset-right)) 30px max(20px, env(safe-area-inset-left)) !important;
+            padding: 20px max(20px, env(safe-area-inset-right)) 30px
+              max(20px, env(safe-area-inset-left)) !important;
             align-items: flex-start !important;
             justify-content: center !important;
             box-sizing: border-box !important;
@@ -1049,7 +1075,12 @@ function Field({
 }) {
   return (
     <label style={{ display: "grid", gap: 7 }}>
-      <span className="nl-field-label" style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{label}</span>
+      <span
+        className="nl-field-label"
+        style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}
+      >
+        {label}
+      </span>
       <span
         className="nl-field-box"
         style={{
@@ -1062,9 +1093,14 @@ function Field({
           background: colors.panelStrong,
           padding: "0 13px",
           color: colors.text,
+          overflow: "visible",
         }}
       >
-        {icon ? <span className="nl-field-icon" style={{ color: colors.gold, display: "inline-flex" }}>{icon}</span> : null}
+        {icon ? (
+          <span className="nl-field-icon" style={{ color: colors.gold, display: "inline-flex" }}>
+            {icon}
+          </span>
+        ) : null}
         <input
           name={name}
           type={type}
@@ -1093,10 +1129,19 @@ function Field({
             background: "transparent",
             color: colors.text,
             fontSize: 16,
+            height: "100%",
+            padding: 0,
+            borderRadius: 0,
+            lineHeight: "normal",
+            appearance: "none",
+            WebkitAppearance: "none",
+            caretColor: colors.gold,
           }}
         />
         {action ? (
-          <span className="nl-field-action" style={{ color: colors.gold, display: "inline-flex" }}>{action}</span>
+          <span className="nl-field-action" style={{ color: colors.gold, display: "inline-flex" }}>
+            {action}
+          </span>
         ) : null}
       </span>
     </label>

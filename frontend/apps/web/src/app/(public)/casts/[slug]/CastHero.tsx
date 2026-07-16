@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MapPin, Play, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, MapPin, Play, Star } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
-import { mediaBg } from "./cast-profile.helpers";
+import { isPlaceholderCastMedia, mediaBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 type CastHeroProps = {
@@ -34,6 +34,7 @@ export function CastHero({
   const summary = profileSummary(profile);
   const storeHref = `/stores/${profile.store.slug}`;
   const copy = getCastProfileCopy(language);
+  const isPlaceholder = isPlaceholderCastMedia(activeMedia);
 
   return (
     <section
@@ -43,6 +44,12 @@ export function CastHero({
         background: `linear-gradient(180deg, rgba(12,12,15,.18) 0%, rgba(12,12,15,0) 28%, rgba(12,12,15,.58) 64%, rgba(12,12,15,.97) 100%), ${mediaBg(activeMedia.url)}`,
       }}
     >
+      {isPlaceholder ? (
+        <div className="cast-hero-placeholder" aria-hidden="true">
+          <ImageOff size={36} strokeWidth={1.7} />
+          <span>Chưa có ảnh</span>
+        </div>
+      ) : null}
       <div className="cast-mobile-topbar">
         <Link href="/danh-sach-cast" className="cast-icon-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />

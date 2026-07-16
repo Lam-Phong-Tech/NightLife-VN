@@ -47,6 +47,7 @@ export const placeholderGallery: CastMedia[] = [
     type: "IMAGE",
     url: emptyCastImage,
     alt: "Ảnh profile cast",
+    isPlaceholder: true,
   },
 ];
 
@@ -83,8 +84,12 @@ export function formatOptional(value?: string | number | null) {
   return String(value);
 }
 
-export function mediaBg(url: string) {
-  return `url("${url}") center/cover`;
+export function isPlaceholderCastMedia(media?: Pick<CastMedia, "id" | "isPlaceholder"> | null) {
+  return Boolean(media?.isPlaceholder || media?.id === "placeholder-cast-media");
+}
+
+export function mediaBg(url?: string | null) {
+  return url ? `url("${url}") center/cover` : "linear-gradient(135deg,#19191d,#2a2418)";
 }
 
 export function buildCastBio(cast: PublicCastDetail) {

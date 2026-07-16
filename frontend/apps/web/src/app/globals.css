@@ -148,6 +148,7 @@ body {
   justify-content: center;
   padding: 24px;
   background: transparent;
+  pointer-events: none;
 }
 
 .nl-favorite-login-dialog {
@@ -159,6 +160,7 @@ body {
   box-shadow: var(--vy-shadow);
   padding: 22px;
   font-family: var(--nl-font-sans);
+  pointer-events: auto;
 }
 
 .nl-favorite-login-dialog h2 {
@@ -196,6 +198,7 @@ body {
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .nl-favorite-login-secondary {
@@ -208,6 +211,33 @@ body {
   border: 0;
   background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
   color: var(--vy-on-gold);
+}
+
+@media (max-width: 520px) {
+  .nl-favorite-login-overlay {
+    padding: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  }
+
+  .nl-favorite-login-dialog {
+    width: min(342px, calc(100vw - 32px));
+    padding: 20px;
+  }
+
+  .nl-favorite-login-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .nl-favorite-login-secondary,
+  .nl-favorite-login-primary {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 10px;
+    text-align: center;
+    white-space: normal;
+  }
 }
 
 @theme inline {

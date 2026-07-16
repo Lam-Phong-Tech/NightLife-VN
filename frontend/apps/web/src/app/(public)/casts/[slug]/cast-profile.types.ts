@@ -7,6 +7,7 @@ export type CastMedia = {
   alt: string;
   purpose?: string | null;
   mimeType?: string | null;
+  isPlaceholder?: boolean;
 };
 
 export type CastProfile = {

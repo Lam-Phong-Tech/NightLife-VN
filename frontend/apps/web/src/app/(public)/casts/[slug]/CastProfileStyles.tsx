@@ -63,6 +63,26 @@ export function CastProfileStyles() {
         overflow: hidden;
       }
 
+      .cast-hero-placeholder {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #f0dda8;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .cast-hero-placeholder span {
+        font-size: 13px;
+        line-height: 1.3;
+        font-weight: 900;
+      }
+
       .cast-mobile-topbar,
       .cast-title-row,
       .cast-badge-row,
@@ -584,6 +604,37 @@ export function CastProfileStyles() {
         cursor: pointer;
       }
 
+      .cast-gallery-tile.is-placeholder,
+      .cast-thumb.is-placeholder,
+      .cast-lightbox-thumb.is-placeholder {
+        color: #f0dda8;
+        background: linear-gradient(135deg,#19191d,#2a2418) !important;
+      }
+
+      .cast-media-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #f0dda8;
+        background: radial-gradient(circle at 28% 22%, rgba(212,178,106,.18), transparent 30%);
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .cast-media-placeholder strong {
+        font-size: 13px;
+        line-height: 1.25;
+        font-weight: 900;
+      }
+
+      .cast-media-placeholder.compact {
+        gap: 0;
+      }
+
       .cast-video-overlay {
         position: absolute;
         inset: 0;
@@ -772,6 +823,10 @@ export function CastProfileStyles() {
         background-position: center !important;
         padding: 0;
         cursor: pointer;
+        box-shadow: inset 0 -120px 80px -70px rgba(0,0,0,.85);
+      }
+
+      .cast-desktop-main-media.is-placeholder {
         box-shadow: inset 0 -120px 80px -70px rgba(0,0,0,.85);
       }
 
@@ -1297,6 +1352,25 @@ export function CastProfileStyles() {
         place-items: center;
       }
 
+      .cast-lightbox-placeholder {
+        width: min(520px, 100%);
+        aspect-ratio: 4 / 3;
+        border-radius: 18px;
+        border: 1px solid rgba(212,178,106,.24);
+        background: linear-gradient(135deg,#19191d,#2a2418);
+        color: #f0dda8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .cast-lightbox-placeholder strong {
+        font-size: 14px;
+        font-weight: 900;
+      }
+
       .cast-lightbox-media img,
       .cast-lightbox-media video,
       .cast-lightbox-media iframe {
@@ -1352,6 +1426,11 @@ export function CastProfileStyles() {
         opacity: .55;
         background-size: cover !important;
         background-position: center !important;
+      }
+
+      .cast-lightbox-thumb.is-placeholder {
+        display: grid;
+        place-items: center;
       }
 
       .cast-lightbox-thumb.is-active {
