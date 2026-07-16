@@ -284,7 +284,7 @@ export default function AdminContentPage() {
     status: string;
   }
 
-  const fetchRecommendItems = async () => {
+  async function fetchRecommendItems() {
     try {
       setIsLoadingRecommend(true);
       const data = await adminRankingsApi.list({
@@ -298,9 +298,9 @@ export default function AdminContentPage() {
     } finally {
       setIsLoadingRecommend(false);
     }
-  };
+  }
 
-  const searchRecommendStore = async (q: string) => {
+  async function searchRecommendStore(q: string) {
     if (!q.trim()) {
       setSearchRecommendItems([]);
       return;
@@ -332,7 +332,7 @@ export default function AdminContentPage() {
     } finally {
       setIsSearchingRecommend(false);
     }
-  };
+  }
 
   const handleAddRecommend = async (store: AdminRankingTargetOption) => {
     if (recommendItems.find(item => item.targetId === store.id)) return;
@@ -410,20 +410,30 @@ export default function AdminContentPage() {
     const swapRank = swapItem.pinRank || (direction === 'up' ? index : index + 2);
 
     try {
-      await Promise.all([
-        adminRankingsApi.update(currentItem.id, {
-          targetType: 'STORE',
-          targetId: currentItem.targetId,
-          cityCode: currentItem.cityCode,
-          pinRank: swapRank
-        }),
-        adminRankingsApi.update(swapItem.id, {
-          targetType: 'STORE',
-          targetId: swapItem.targetId,
-          cityCode: swapItem.cityCode,
-          pinRank: currentRank
-        })
-      ]);
+      // Step 1: Update swapItem to pinRank: null first
+      await adminRankingsApi.update(swapItem.id, {
+        targetType: 'STORE',
+        targetId: swapItem.targetId,
+        cityCode: swapItem.cityCode,
+        pinRank: null
+      });
+
+      // Step 2: Update currentItem to swapRank
+      await adminRankingsApi.update(currentItem.id, {
+        targetType: 'STORE',
+        targetId: currentItem.targetId,
+        cityCode: currentItem.cityCode,
+        pinRank: swapRank
+      });
+
+      // Step 3: Update swapItem to currentRank
+      await adminRankingsApi.update(swapItem.id, {
+        targetType: 'STORE',
+        targetId: swapItem.targetId,
+        cityCode: swapItem.cityCode,
+        pinRank: currentRank
+      });
+
       await fetchRecommendItems();
     } catch (err) {
       console.error(err);
@@ -436,6 +446,7 @@ export default function AdminContentPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRecommendItems();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   useEffect(() => {
@@ -1254,7 +1265,7 @@ export default function AdminContentPage() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
-            <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>"Dịch vụ nổi bật"</b> trên trang chủ — chọn quán theo khu vực &amp; nhóm dịch vụ, gắn nhãn, sắp thứ tự. Trang chủ hiển thị đúng thứ tự này.</span>
+            <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>&quot;Dịch vụ nổi bật&quot;</b> trên trang chủ — chọn quán theo khu vực &amp; nhóm dịch vụ, gắn nhãn, sắp thứ tự. Trang chủ hiển thị đúng thứ tự này.</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
@@ -1322,7 +1333,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as any).name : store.area) || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
                   </div>
                   {featuredItems.find(f => f.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã thêm</span>
@@ -1343,7 +1354,7 @@ export default function AdminContentPage() {
           <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
             <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
-              Khối <b style={{ color: '#f0dda8' }}>"Đề xuất tối nay"</b> trên trang chủ — Ghim tối đa 8 quán đang hoạt động nổi bật lên đầu trang chủ để tăng lượng truy cập và tương tác ban đêm.
+              Khối <b style={{ color: '#f0dda8' }}>&quot;Đề xuất tối nay&quot;</b> trên trang chủ — Ghim tối đa 8 quán đang hoạt động nổi bật lên đầu trang chủ để tăng lượng truy cập và tương tác ban đêm.
             </span>
           </div>
 
@@ -1424,7 +1435,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as any).name : store.area) || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
                   </div>
                   {recommendItems.find(r => r.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã ghim</span>
@@ -1453,7 +1464,7 @@ export default function AdminContentPage() {
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.gold, flex: 'none' }}>
               ℹ️
             </div>
-            <span style={{ fontSize: '13px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>"Video Hot"</b> trên trang chủ — chọn từ <b style={{ color: '#f0dda8' }}>thư viện video của các quán</b> (mục Quán → Video quán), sắp thứ tự theo khu vực.</span>
+            <span style={{ fontSize: '13px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>&quot;Video Hot&quot;</b> trên trang chủ — chọn từ <b style={{ color: '#f0dda8' }}>thư viện video của các quán</b> (mục Quán → Video quán), sắp thứ tự theo khu vực.</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>

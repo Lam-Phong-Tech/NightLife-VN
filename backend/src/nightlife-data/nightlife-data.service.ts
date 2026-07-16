@@ -1345,26 +1345,7 @@ export class NightlifeDataService {
                   { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
                 ],
               }
-            : {
-                NOT: {
-                  OR: [
-                    {
-                      city: {
-                        in: [
-                          'Ho Chi Minh City',
-                          'Hồ Chí Minh',
-                          'HCM',
-                          'Hanoi',
-                          'Hà Nội',
-                          'HN',
-                        ],
-                      },
-                    },
-                    { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
-                    { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
-                  ],
-                },
-              }),
+            : {}),
           ...(q
             ? {
                 OR: [
@@ -1450,26 +1431,7 @@ export class NightlifeDataService {
                   },
                 ],
               }
-            : {
-                NOT: {
-                  OR: [
-                    {
-                      city: {
-                        in: [
-                          'Ho Chi Minh City',
-                          'Hồ Chí Minh',
-                          'HCM',
-                          'Hanoi',
-                          'Hà Nội',
-                          'HN',
-                        ],
-                      },
-                    },
-                    { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
-                    { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
-                  ],
-                },
-              }),
+            : {}),
         },
         ...(q
           ? {
@@ -14962,7 +14924,28 @@ export class NightlifeDataService {
     pinRank: number | null;
     excludeId?: string;
   }) {
-    return;
+    if (input.pinRank === null || input.pinRank === undefined) {
+      return;
+    }
+
+    const collision = await this.prisma.rankingConfig.findFirst({
+      where: {
+        targetType: input.targetType,
+        cityCode: input.cityCode,
+        category: input.category,
+        scope: input.scope,
+        pinRank: input.pinRank,
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...(input.excludeId ? { NOT: { id: input.excludeId } } : {}),
+      },
+    });
+
+    if (collision) {
+      throw new BadRequestException(
+        `Ranking collision: Rank ${input.pinRank} is already pinned for targetType ${input.targetType}, cityCode ${input.cityCode}, category ${input.category}, scope ${input.scope}.`,
+      );
+    }
   }
 
   private resolveRankingTargetType(value?: string | null): RankingTargetType {
