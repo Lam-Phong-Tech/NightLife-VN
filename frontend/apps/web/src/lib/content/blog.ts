@@ -8,6 +8,7 @@ export type BlogPost = {
   description: string;
   category: string;
   date: string;
+  createdAt: string;
   publishedAt: string;
   updatedAt: string;
   status: BlogStatus;
@@ -69,6 +70,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
   if (!preview && content.status !== "PUBLISHED") return null;
 
   const metadata = asRecord(content.metadata) ?? {};
+  const createdAt = content.createdAt;
   const publishedAt = content.publishedAt?.slice(0, 10) ?? content.createdAt.slice(0, 10);
   const sections = asSections(metadata.sections);
 
@@ -78,6 +80,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
     description: content.excerpt ?? content.body?.slice(0, 160) ?? content.title,
     category: typeof metadata.category === "string" ? metadata.category : "Cẩm nang nightlife",
     date: publishedAt,
+    createdAt,
     publishedAt,
     updatedAt: content.updatedAt.slice(0, 10),
     status: content.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT",

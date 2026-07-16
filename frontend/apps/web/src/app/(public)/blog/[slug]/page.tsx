@@ -11,11 +11,14 @@ type PageProps = {
   searchParams: Promise<{ preview?: string }>;
 };
 
-const formatDate = (value: string) =>
+const formatDateTime = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Ho_Chi_Minh",
   }).format(new Date(value));
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
@@ -82,9 +85,11 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
   if (!post) return <SystemStatusPage kind="not-found" />;
 
   const allPosts = await getPublishedBlogPosts();
-  const relatedPosts = allPosts
+  const latestPosts = allPosts
     .filter((item) => item.slug !== post.slug && !item.noindex)
-    .filter((item) => item.category === post.category || item.tags.some((tag) => post.tags.includes(tag)))
+    .sort(
+      (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
+    )
     .slice(0, 3);
   const structuredData = jsonLdGraph([
     articleJsonLd(post),
@@ -184,7 +189,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
           >
             <span>{post.author}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
+            <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
             <span aria-hidden="true">·</span>
             <span>{post.readTime}</span>
           </div>
@@ -234,33 +239,18 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
                 <h2 style={{ margin: 0, fontSize: "24px", lineHeight: 1.24, fontWeight: 900 }}>
                   {section.heading}
                 </h2>
-                <div 
+                <div
                   style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85 }}
                   dangerouslySetInnerHTML={{ __html: section.body }}
                   className="nl-blog-body"
                 />
               </section>
             ))}
-
-            <aside
-              style={{
-                marginTop: "30px",
-                border: "1px solid var(--vy-border-gold-22)",
-                borderRadius: "8px",
-                padding: "18px",
-                background: "var(--vy-gold-soft-bg)",
-                color: "var(--vy-gold-pale)",
-                lineHeight: 1.65,
-              }}
-            >
-              Giá, tình trạng bàn, cast và ưu đãi trong bài chỉ là tham khảo. Thông tin
-              cuối cùng sẽ được admin xác nhận khi khách gửi yêu cầu đặt chỗ.
-            </aside>
           </div>
 
           <aside
             className="nl-blog-related"
-            aria-label="Bài liên quan"
+            aria-label="Bài viết mới nhất"
             style={{
               position: "sticky",
               top: "110px",
@@ -270,9 +260,9 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
               background: "var(--vy-surface-1)",
             }}
           >
-            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 900 }}>Bài liên quan</h2>
+            <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 900 }}>Bài viết mới nhất</h2>
             <div style={{ display: "grid", gap: "12px", marginTop: "14px" }}>
-              {relatedPosts.map((item) => (
+              {latestPosts.map((item) => (
                 <Link
                   key={item.slug}
                   href={`/blog/${item.slug}`}
@@ -307,9 +297,18 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
                     <strong style={{ display: "block", fontSize: "13px", lineHeight: 1.35 }}>
                       {item.title}
                     </strong>
-                    <small style={{ display: "block", marginTop: "4px", color: "var(--vy-muted)", fontWeight: 700 }}>
-                      {item.readTime}
-                    </small>
+                    <time
+                      dateTime={item.createdAt}
+                      style={{
+                        display: "block",
+                        marginTop: "4px",
+                        color: "var(--vy-muted)",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {formatDateTime(item.createdAt)}
+                    </time>
                   </span>
                 </Link>
               ))}
