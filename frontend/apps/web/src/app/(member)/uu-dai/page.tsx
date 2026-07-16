@@ -182,6 +182,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       sort: "Sắp xếp:",
       subtitle: (city: string) => `Coupon & khuyến mãi từ các quán đối tác · ${city}`,
       title: "Ưu đãi đêm nay",
+      allCities: "Toàn quốc",
       urgentSoon: "Sắp hết hạn - còn 2 giờ",
       used: "Đã dùng",
       validUntil: "HSD",
@@ -202,6 +203,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       sort: "Sort:",
       subtitle: (city: string) => `Coupons and promotions from partner venues · ${city}`,
       title: "Tonight's deals",
+      allCities: "All areas",
       urgentSoon: "Expiring soon - 2 hours left",
       used: "Used",
       validUntil: "Valid until",
@@ -222,6 +224,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       sort: "並び替え:",
       subtitle: (city: string) => `提携店舗のクーポン・キャンペーン · ${city}`,
       title: "今夜の特典",
+      allCities: "全エリア",
       urgentSoon: "まもなく終了 - 残り2時間",
       used: "使用済み",
       validUntil: "有効期限",
@@ -242,6 +245,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       sort: "정렬:",
       subtitle: (city: string) => `제휴 매장의 쿠폰 및 프로모션 · ${city}`,
       title: "오늘 밤 혜택",
+      allCities: "전체 지역",
       urgentSoon: "곧 만료 - 2시간 남음",
       used: "사용됨",
       validUntil: "유효 기간",
@@ -262,6 +266,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       sort: "排序:",
       subtitle: (city: string) => `合作场所的优惠券和促销 · ${city}`,
       title: "今晚优惠",
+      allCities: "全部地区",
       urgentSoon: "即将结束 - 剩余2小时",
       used: "已使用",
       validUntil: "有效期至",
@@ -442,16 +447,23 @@ export default function Page() {
     return result;
   }, [campaigns, activeFilter, selectedStoreId, searchTerm, sortType]);
 
-  const firstCampaignCity = useMemo(() => {
-    if (campaigns.length === 0) return "Hà Nội";
-    const cities = campaigns.map(c => c.targetStore?.city).filter(Boolean);
-    if (cities.length === 0) return "Hà Nội";
-    const city = cities[0];
-    if (city?.toLowerCase().includes("ha noi") || city?.toLowerCase().includes("hanoi")) return "Hà Nội";
-    if (city?.toLowerCase().includes("ho chi minh") || city?.toLowerCase().includes("hcm")) return "TP.HCM";
-    return city || "Hà Nội";
-  }, [campaigns]);
-  const firstCampaignCityLabel = normalizeCityLabel(firstCampaignCity, activeLanguage);
+  const campaignCityLabel = useMemo(() => {
+    const cityKeys = new Map<string, string>();
+    const sourceCampaigns = filteredCampaigns.length ? filteredCampaigns : campaigns;
+
+    sourceCampaigns.forEach((campaign) => {
+      const city = campaign.targetStore?.city?.trim();
+      if (!city) return;
+      cityKeys.set(normalizeText(city), city);
+    });
+
+    if (cityKeys.size === 1) {
+      const city = Array.from(cityKeys.values())[0];
+      return city ? normalizeCityLabel(city, activeLanguage) : copy.allCities;
+    }
+
+    return copy.allCities;
+  }, [activeLanguage, campaigns, copy.allCities, filteredCampaigns]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
@@ -478,7 +490,7 @@ export default function Page() {
       <section className="campaign-shell">
         <header className="campaign-header-simple">
           <h1>{copy.title}</h1>
-          <p>{copy.subtitle(firstCampaignCityLabel)}</p>
+          <p>{copy.subtitle(campaignCityLabel)}</p>
         </header>
 
         {loadError ? (

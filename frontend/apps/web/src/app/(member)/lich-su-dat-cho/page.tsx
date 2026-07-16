@@ -260,6 +260,9 @@ const billSubmitHref = (booking: BookingRecord) => {
   return `/gui-hoa-don?${params.toString()}`;
 };
 
+const bookingConfirmHref = (booking: BookingRecord) =>
+  `/xac-nhan?bookingId=${encodeURIComponent(booking.id)}`;
+
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
   if (isBookingPastDue(booking)) {
     return `${booking.bookingCode} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
@@ -336,21 +339,31 @@ export default function Page() {
           const lastBooking = getLastBooking();
           const resolvedMemberUserId =
             authUser?.id || items.find((booking) => booking.user?.id)?.user?.id || "";
-          const memberBookings = items.map((booking) => ({
-            ...booking,
-            user:
-              booking.user ??
-              (authUser
-                ? {
-                    id: resolvedMemberUserId || "current-member",
-                    displayName: authUser.displayName,
-                    tier: authUser.tier ?? null,
-                  }
-                : undefined),
-          }));
+          const currentMemberUser = authUser
+            ? {
+                id: resolvedMemberUserId || "current-member",
+                displayName: authUser.displayName,
+                tier: authUser.tier ?? null,
+              }
+            : undefined;
+          const attachCurrentMemberUser = (booking: BookingRecord): BookingRecord => {
+            const hasGuestIdentity = Boolean(booking.guest?.id || booking.guest?.phone?.trim());
+            if (booking.user?.id || hasGuestIdentity || !currentMemberUser) {
+              return booking;
+            }
+
+            return {
+              ...booking,
+              user: currentMemberUser,
+            };
+          };
+          const memberBookings = items.map(attachCurrentMemberUser);
+          const normalizedLastBooking = lastBooking
+            ? attachCurrentMemberUser(lastBooking)
+            : null;
           if (alive) {
-            const mergedBookings = lastBooking
-              ? mergeBookingHistories(memberBookings, [lastBooking])
+            const mergedBookings = normalizedLastBooking
+              ? mergeBookingHistories(memberBookings, [normalizedLastBooking])
               : memberBookings;
             setMemberUserId(resolvedMemberUserId);
             setBookings(sortBookingHistories(mergedBookings, Date.now()));
@@ -1079,7 +1092,12 @@ function BookingCard({
 
   return (
     <article className={itemClass}>
-      <div className={styles.historyMain}>
+      <Link
+        href={bookingConfirmHref(booking)}
+        onClick={() => rememberLastBooking(booking)}
+        className={styles.historyMain}
+        aria-label={`${translateText("Chi tiết", activeLanguage)} ${bookingTitle(booking)}`}
+      >
         <span
           className={styles.historyThumb}
           style={{
@@ -1104,7 +1122,7 @@ function BookingCard({
             {statusMeta(booking, group, activeLanguage)}
           </div>
         </div>
-      </div>
+      </Link>
 
       <div className={styles.historyActions}>
         {isOpenBooking ? (
@@ -1125,7 +1143,7 @@ function BookingCard({
             ) : null}
             {hasQr ? (
               <Link
-                href={`/xac-nhan?bookingId=${booking.id}`}
+                href={bookingConfirmHref(booking)}
                 onClick={() => rememberLastBooking(booking)}
                 className={styles.secondaryCta}
               >
@@ -1134,7 +1152,7 @@ function BookingCard({
               </Link>
             ) : !cancelAllowed ? (
               <Link
-                href={`/xac-nhan?bookingId=${booking.id}`}
+                href={bookingConfirmHref(booking)}
                 onClick={() => rememberLastBooking(booking)}
                 className={styles.ghostCta}
               >

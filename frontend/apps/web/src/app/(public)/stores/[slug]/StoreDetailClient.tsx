@@ -81,6 +81,12 @@ type StoreDetailClientProps = {
   store: PublicStoreDetail;
 };
 
+type LanguageStatCard = {
+  label: string;
+  value: string;
+  title?: string;
+};
+
 type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
 
 const localizedApiErrorMessage = (
@@ -1179,13 +1185,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     () => selectIntroText(introLines, activeLanguage),
     [activeLanguage, introLines],
   );
-  const nationalityText = Array.from(
+  const nationalityNames = Array.from(
     new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
   )
     .slice(0, 3)
-    .map((nationality) => translateText(nationality, activeLanguage))
-    .join(" · ");
-  const languageCards = useMemo(() => {
+    .map((nationality) => translateText(nationality, activeLanguage));
+  const nationalityText = nationalityNames.join(" · ");
+  const firstNationality = nationalityNames[0] ?? "";
+  const nationalityCardText =
+    nationalityNames.length > 1 && firstNationality
+      ? `${firstNationality} +${nationalityNames.length - 1}`
+      : nationalityText;
+  const languageCards = useMemo<LanguageStatCard[]>(() => {
     const languageCounts = new Map<string, number>();
     store.casts.forEach((cast) => {
       cast.languages.forEach((language) => {
@@ -1207,10 +1218,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       ...cards,
       {
         label: translateText("Quốc tịch cast", activeLanguage),
-        value: nationalityText || translateText("Đang cập nhật", activeLanguage),
+        value: nationalityCardText || translateText("Đang cập nhật", activeLanguage),
+        title: nationalityText || undefined,
       },
     ];
-  }, [activeLanguage, nationalityText, store.casts]);
+  }, [activeLanguage, nationalityCardText, nationalityText, store.casts]);
 
   const dateOptions = useMemo(
     () =>
@@ -1791,7 +1803,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 {languageCards.map((card) => (
                   <div key={card.label}>
                     <span>{card.label}</span>
-                    <strong>{card.value}</strong>
+                    <strong title={card.title ?? card.value}>{card.value}</strong>
                   </div>
                 ))}
               </div>
@@ -3239,6 +3251,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .language-grid div {
           min-height: 74px;
+          min-width: 0;
           padding: 12px;
           border-radius: 8px;
           background: var(--vy-surface-3);
@@ -3261,6 +3274,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-gold-pale);
           font-size: 14px;
           line-height: 1.3;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .cast-rail {
