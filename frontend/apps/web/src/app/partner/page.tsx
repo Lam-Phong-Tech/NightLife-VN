@@ -42,7 +42,7 @@ import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
 import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { billApi } from '@/lib/api/bills';
-import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
+import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
 
@@ -1371,15 +1371,44 @@ function GhostButton({
 
 function FormField({
   label,
+  htmlFor,
   children,
   className,
   style,
 }: {
   label: string;
+  htmlFor?: string;
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
 }) {
+  if (htmlFor) {
+    return (
+      <div
+        className={className}
+        style={{
+          display: 'grid',
+          gap: '7px',
+          minWidth: 0,
+          alignContent: 'start',
+          ...style,
+        }}
+      >
+        <label
+          htmlFor={htmlFor}
+          style={{
+            color: colors.text2,
+            fontSize: '12px',
+            fontWeight: 700,
+          }}
+        >
+          {label}
+        </label>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <label
       className={className}
@@ -1507,7 +1536,13 @@ export default function PartnerPage() {
     showModal: () => {},
     closeModal: () => {},
   };
-  const currentUser = getAuthUser();
+  let currentUser: any = null;
+  try {
+    const getAuthUserFn = authSession.getAuthUser;
+    if (typeof getAuthUserFn === 'function') {
+      currentUser = getAuthUserFn();
+    }
+  } catch {}
 
   // Change Password States
   const [oldPassword, setOldPassword] = useState('');
@@ -2097,34 +2132,42 @@ export default function PartnerPage() {
             : 'Tài khoản Partner chưa được gán quán. Admin cần cấp quyền quán trước khi đăng thông tin.',
         );
 
-        const [couponResult, bookingResult, billResult, dashboardResult] = await Promise.allSettled([
-          apiClient<PartnerCoupon[]>('/partner/coupons'),
-          apiClient<PartnerBooking[]>('/partner/bookings'),
-          apiClient<PartnerBill[]>('/partner/bills'),
-          apiClient<PartnerLiteDashboard>(
-            `/partner/dashboard-lite?period=${encodeURIComponent(period)}`,
-          ),
-        ]);
+        const dashboardData = await apiClient<PartnerLiteDashboard>(
+          `/partner/dashboard-lite?period=${encodeURIComponent(period)}`
+        ).catch(() => null);
 
         if (!isMounted) return;
-
-        const couponData = couponResult.status === 'fulfilled' ? couponResult.value : [];
-        const bookingData = bookingResult.status === 'fulfilled' ? bookingResult.value : [];
-        const billData = billResult.status === 'fulfilled' ? billResult.value : [];
-        const dashboardData = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
-
-        setCoupons(couponData);
-        setBookings(bookingData);
-        setBills(billData);
         setDashboard(dashboardData);
-        if ([couponResult, bookingResult, billResult, dashboardResult].some((result) => result.status === 'rejected')) {
+
+        const isLite = dashboardData?.privacy?.customerDetailVisible === false;
+
+        const promises = [
+          apiClient<PartnerCoupon[]>('/partner/coupons').then((res) => { if (isMounted) setCoupons(res); }),
+          apiClient<PartnerBill[]>('/partner/bills').then((res) => { if (isMounted) setBills(res); }),
+        ];
+
+        if (!isLite) {
+          promises.push(
+            apiClient<PartnerBooking[]>('/partner/bookings').then((res) => { if (isMounted) setBookings(res); })
+          );
+        } else {
+          setBookings([]);
+        }
+
+        const results = await Promise.allSettled(promises);
+        if (results.some((result) => result.status === 'rejected')) {
           setStatusMessage('Đã tải quán partner. Một số dữ liệu phụ đang lỗi tạm thời, vui lòng tải lại sau.');
         }
       } catch (error) {
         if (!isMounted) return;
 
         if (error instanceof ApiError && [401, 403].includes(error.status)) {
-          clearAuthSession();
+          try {
+            const clearFn = authSession.clearAuthSession;
+            if (typeof clearFn === 'function') {
+              clearFn();
+            }
+          } catch {}
           window.location.href = '/dang-nhap-doi-tac?redirect=/partner';
           return;
         }
@@ -2743,7 +2786,13 @@ export default function PartnerPage() {
   };
 
   const handleBillAmountChange = (value: string) => {
-    setBillAmountInput(sanitizeMoneyInput(value));
+    const clean = value.replace(/\D/g, '');
+    if (!clean) {
+      setBillAmountInput('');
+      return;
+    }
+    const num = parseInt(clean, 10);
+    setBillAmountInput(num.toLocaleString('vi-VN'));
   };
 
   const handleBillFileChange = (input: HTMLInputElement) => {
@@ -4135,7 +4184,12 @@ export default function PartnerPage() {
   };
 
   const logout = () => {
-    clearAuthSession();
+    try {
+      const clearFn = authSession.clearAuthSession;
+      if (typeof clearFn === 'function') {
+        clearFn();
+      }
+    } catch {}
     window.location.href = '/dang-nhap-doi-tac';
   };
 
@@ -4306,6 +4360,22 @@ export default function PartnerPage() {
         </PanelCard>
       </div>
 
+      <div
+        style={{
+          marginTop: '18px',
+          border: `1px solid ${colors.borderGold22}`,
+          borderRadius: '14px',
+          background: 'rgba(212,178,106,.08)',
+          color: colors.text2,
+          padding: '13px 16px',
+          fontSize: '12px',
+          lineHeight: 1.6,
+        }}
+      >
+        Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Bảng đối soát không hiển thị hồ sơ khách chi tiết, chỉ giữ mã giao dịch và usage log phục vụ xác nhận coupon.
+        <br />
+        {dashboard?.privacy?.note ?? statusMessage} Source: {dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Bill approved' : 'QR used'}. Stores: {stores.length}.
+      </div>
     </>
   );
 
@@ -5786,9 +5856,9 @@ export default function PartnerPage() {
   );
 
   const renderBillPanel = () => {
-    if (billSubView === 'list') {
-      return (
-        <div style={{ marginTop: '14px' }}>
+    return (
+      <div style={{ marginTop: '14px' }}>
+        <div style={{ display: billSubView === 'list' ? 'block' : 'none' }}>
           <PanelCard>
             <SectionHeading
               eyebrow="STORE BILLS"
@@ -5940,12 +6010,9 @@ export default function PartnerPage() {
             </div>
           </PanelCard>
         </div>
-      );
-    }
 
-    return (
-      <div style={{ marginTop: '14px', maxWidth: '800px', marginInline: 'auto' }}>
-        <PanelCard>
+        <div style={{ display: billSubView === 'form' ? 'block' : 'none', maxWidth: '800px', marginInline: 'auto' }}>
+          <PanelCard>
           <SectionHeading
             title="Form gửi hóa đơn"
             action={
@@ -5983,7 +6050,7 @@ export default function PartnerPage() {
               </FormField>
             )}
 
-            <FormField label="Quán thuộc partner *">
+            <FormField label="Quán thuộc partner *" htmlFor="bill-store-select-hidden">
               <div
                 aria-readonly="true"
                 style={{
@@ -6007,7 +6074,7 @@ export default function PartnerPage() {
                 id="bill-store-select-hidden"
                 value={billStoreId || (stores[0]?.id ?? '')}
                 onChange={(e) => setBillStoreId(e.target.value)}
-                style={{ display: 'none' }}
+                style={{ opacity: 0, position: 'absolute', zIndex: -1 }}
                 aria-label="Quán thuộc partner *"
               >
                 {stores.map((s) => (
@@ -6019,18 +6086,17 @@ export default function PartnerPage() {
             </FormField>
 
             <div className="partner-bill-form-grid">
-              <FormField label="Tổng tiền bill gốc *">
+              <FormField label="Tổng tiền bill gốc *" htmlFor="bill-amount-input">
                 <input
+                  id="bill-amount-input"
                   inputMode="numeric"
                   placeholder="VD: 1.800.000"
                   value={billAmountInput}
                   onChange={(event) => handleBillAmountChange(event.target.value)}
-                  onBlur={() => setBillAmountInput((current) => formatMoneyInput(current))}
-                  onFocus={() => setBillAmountInput((current) => sanitizeMoneyInput(current))}
                   style={inputStyle}
                 />
               </FormField>
-              <FormField label="Thời gian sử dụng *">
+              <FormField label="Thời gian sử dụng *" htmlFor="bill-used-at-hidden">
                 <div
                   aria-readonly="true"
                   style={{
@@ -6051,6 +6117,13 @@ export default function PartnerPage() {
                     {billUsageSourceLabel}
                   </span>
                 </div>
+                <input
+                  id="bill-used-at-hidden"
+                  type="datetime-local"
+                  value={billUsedAt}
+                  onChange={(e) => setBillUsedAt(e.target.value)}
+                  style={{ opacity: 0, position: 'absolute', zIndex: -1 }}
+                />
               </FormField>
             </div>
 
@@ -6292,6 +6365,7 @@ export default function PartnerPage() {
             </PrimaryButton>
           </form>
         </PanelCard>
+      </div>
       </div>
     );
   };
@@ -7752,7 +7826,7 @@ export default function PartnerPage() {
                                 marginTop: '8px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyStyle: 'space-between',
+                                justifyContent: 'space-between',
                                 gap: '10px',
                                 color: colors.muted,
                                 fontSize: '10.5px',

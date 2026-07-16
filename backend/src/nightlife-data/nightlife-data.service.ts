@@ -18900,6 +18900,43 @@ export class NightlifeDataService {
             store: { select: { name: true, slug: true } },
             user: { select: { id: true, displayName: true, tier: true, role: true } },
             guest: { select: { id: true, displayName: true } },
+            booking: {
+              select: {
+                id: true,
+                bookingCode: true,
+                status: true,
+                scheduledAt: true,
+                partySize: true,
+                note: true,
+                coupon: {
+                  select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    discountType: true,
+                    discountValue: true,
+                    maxDiscountVnd: true,
+                    minSpendVnd: true,
+                  },
+                },
+                couponIssue: {
+                  select: {
+                    id: true,
+                    code: true,
+                    status: true,
+                    metadata: true,
+                    usedAt: true,
+                  },
+                },
+                qr: {
+                  select: {
+                    id: true,
+                    usedAt: true,
+                    status: true,
+                  },
+                },
+              },
+            },
           },
         }),
         this.prisma.bill.count({ where }).catch(() => 0),
@@ -18982,6 +19019,62 @@ export class NightlifeDataService {
         adminCommission: bill.commissionAmountVnd || 0,
         points: pointsEarned ? `+${pointsEarned} điểm` : '+0 điểm',
         rejectReason: bill.rejectReason || '',
+        coupon: bill.coupon
+          ? {
+              id: bill.coupon.id,
+              code: bill.coupon.code,
+              name: bill.coupon.name,
+              discountType: bill.coupon.discountType,
+              discountValue: bill.coupon.discountValue,
+              maxDiscountVnd: bill.coupon.maxDiscountVnd,
+              minSpendVnd: bill.coupon.minSpendVnd,
+            }
+          : null,
+        couponIssue: bill.couponIssue
+          ? {
+              id: bill.couponIssue.id,
+              code: bill.couponIssue.code,
+              status: bill.couponIssue.status,
+              metadata: bill.couponIssue.metadata,
+            }
+          : null,
+        booking: bill.booking
+          ? {
+              id: bill.booking.id,
+              bookingCode: bill.booking.bookingCode,
+              status: bill.booking.status,
+              scheduledAt: bill.booking.scheduledAt.toISOString(),
+              partySize: bill.booking.partySize,
+              note: bill.booking.note || '',
+              coupon: bill.booking.coupon
+                ? {
+                    id: bill.booking.coupon.id,
+                    code: bill.booking.coupon.code,
+                    name: bill.booking.coupon.name,
+                    discountType: bill.booking.coupon.discountType,
+                    discountValue: bill.booking.coupon.discountValue,
+                    maxDiscountVnd: bill.booking.coupon.maxDiscountVnd,
+                    minSpendVnd: bill.booking.coupon.minSpendVnd,
+                  }
+                : null,
+              couponIssue: bill.booking.couponIssue
+                ? {
+                    id: bill.booking.couponIssue.id,
+                    code: bill.booking.couponIssue.code,
+                    status: bill.booking.couponIssue.status,
+                    metadata: bill.booking.couponIssue.metadata,
+                    usedAt: bill.booking.couponIssue.usedAt?.toISOString() ?? null,
+                  }
+                : null,
+              qr: bill.booking.qr
+                ? {
+                    id: bill.booking.qr.id,
+                    usedAt: bill.booking.qr.usedAt?.toISOString() ?? null,
+                    status: bill.booking.qr.status,
+                  }
+                : null,
+            }
+          : null,
       };
     });
 

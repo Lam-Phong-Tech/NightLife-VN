@@ -64,7 +64,7 @@ vi.mock("../src/lib/api/client", () => {
       if (endpoint === "/partner/bills") {
         return Promise.resolve([]);
       }
-      if (endpoint === "/partner/dashboard-lite") {
+      if (endpoint.startsWith("/partner/dashboard-lite")) {
         return Promise.resolve({
           period: "seven",
           from: "2026-06-27T00:00:00.000Z",
@@ -116,7 +116,7 @@ describe("Partner lite dashboard", () => {
     render(<PartnerPage />);
 
     await waitFor(() => {
-      expect(apiClient).toHaveBeenCalledWith("/partner/dashboard-lite");
+      expect(apiClient).toHaveBeenCalledWith(expect.stringContaining("/partner/dashboard-lite"));
     });
 
     expect(apiClient).not.toHaveBeenCalledWith("/partner/bookings");

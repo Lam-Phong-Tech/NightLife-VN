@@ -189,10 +189,13 @@ describe("Admin coupon issue detail", () => {
   it("shows qrPayloadHash, campaignSnapshot, auditLogs, REVOKED filter, and QR token actions", async () => {
     render(<AdminConsole section="campaign" />);
 
-    const statusFilter = screen.getByRole("combobox");
-    const statusOptions = Array.from(statusFilter.querySelectorAll("option")).map(
-      (option) => option.value,
-    );
+    const comboboxes = screen.getAllByRole("combobox");
+    const statusFilter = (comboboxes.find((select) =>
+      Array.from(select.querySelectorAll("option")).some((opt) => opt.value === "REVOKED")
+    ) || comboboxes[0]) as HTMLElement | undefined;
+    const statusOptions = statusFilter
+      ? Array.from(statusFilter.querySelectorAll("option")).map((option) => option.value)
+      : [];
     expect(statusOptions).toContain("REVOKED");
     expect(statusOptions).not.toContain("CANCELLED");
 

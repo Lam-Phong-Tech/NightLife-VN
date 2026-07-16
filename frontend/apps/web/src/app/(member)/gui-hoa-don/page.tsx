@@ -137,13 +137,18 @@ const formatDateTime = (value: string | null | undefined, language: LanguageCode
   if (!value) return emptyDateLabel(language);
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return emptyDateLabel(language);
-  return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+
+  const tzString = date.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
+  const tzDate = new Date(tzString);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  
+  const day = pad(tzDate.getDate());
+  const month = pad(tzDate.getMonth() + 1);
+  const year = tzDate.getFullYear();
+  const hours = pad(tzDate.getHours());
+  const minutes = pad(tzDate.getMinutes());
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
 
 
@@ -506,7 +511,7 @@ export default function Page() {
         setBookings(mergedBookingItems);
         if (requestedBooking) {
           setBookingId(requestedBooking.id);
-        } else if (mergedBookingItems.length === 1) {
+        } else if (mergedBookingItems.length === 1 && mergedBookingItems[0]) {
           setBookingId(mergedBookingItems[0].id);
           if (mergedBookingItems[0].store?.slug) {
             setStoreSlug(mergedBookingItems[0].store.slug);
@@ -777,7 +782,7 @@ export default function Page() {
       setSubmittedBills((current) => [bill, ...current]);
       setNotice({
         tone: uploadWarning ? "warning" : "success",
-        message: `Đã gửi bill ${bill.billNumber ?? bill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
+        message: `Đã gửi bill ${bill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
         bill,
       });
       setAmountInput("");
@@ -1119,7 +1124,7 @@ export default function Page() {
                         <span className="nl-ocr-label">THỜI GIAN TRÊN BILL</span>
                         <strong className="nl-ocr-val">
                           {ocrPreview.suggestions.usedAt
-                            ? formatDateTime(ocrPreview.suggestions.usedAt, activeLanguage)
+                            ? formatDateTime(ocrPreview.suggestions.usedAt, "vi")
                             : "Không đọc được"}
                         </strong>
                       </div>

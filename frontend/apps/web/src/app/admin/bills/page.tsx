@@ -53,6 +53,9 @@ type AdminBill = {
   adminCommission?: number | null;
   points?: string | null;
   rejectReason?: string | null;
+  booking?: any | null;
+  coupon?: any | null;
+  couponIssue?: any | null;
 };
 
 type AdminBillsMeta = {
@@ -73,6 +76,83 @@ type AdminBillsResponse = {
   data?: AdminBill[];
   meta?: AdminBillsMeta;
   stats?: AdminBillsStats;
+};
+
+const formatDateTime = (value: string | null | undefined) => {
+  if (!value) return "Chưa có";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa có";
+
+  const tzString = date.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
+  const tzDate = new Date(tzString);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  
+  const day = pad(tzDate.getDate());
+  const month = pad(tzDate.getMonth() + 1);
+  const year = tzDate.getFullYear();
+  const hours = pad(tzDate.getHours());
+  const minutes = pad(tzDate.getMinutes());
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+const couponDiscountLabel = (
+  coupon: any,
+  issue: any,
+) => {
+  const snapshot = issue?.discountRuleSnapshot || issue?.metadata?.discountRuleSnapshot;
+  const discountType = snapshot?.type ?? coupon?.discountType;
+  const discountValue =
+    snapshot?.value ??
+    snapshot?.sourceValue ??
+    coupon?.discountValue ??
+    snapshot?.discountPercent ??
+    issue?.discountPercent ??
+    null;
+  const maxDiscountVnd = snapshot?.maxDiscountVnd ?? coupon?.maxDiscountVnd ?? null;
+  const minSpendVnd = snapshot?.minSpendVnd ?? coupon?.minSpendVnd ?? null;
+
+  if (!discountType && !discountValue) return "";
+
+  const mainLabel =
+    discountType === "FIXED_AMOUNT"
+      ? `-${Number(discountValue ?? 0).toLocaleString("vi-VN")}đ`
+      : `-${Number(discountValue ?? 0)}%`;
+  const detailParts = [];
+  if (typeof maxDiscountVnd === "number" && maxDiscountVnd > 0) {
+    detailParts.push(`tối đa ${maxDiscountVnd.toLocaleString("vi-VN")}đ`);
+  }
+  if (typeof minSpendVnd === "number" && minSpendVnd > 0) {
+    detailParts.push(`đơn tối thiểu ${minSpendVnd.toLocaleString("vi-VN")}đ`);
+  }
+
+  return detailParts.length > 0 ? `${mainLabel} (${detailParts.join(", ")})` : mainLabel;
+};
+
+const isBookingAdminConfirmedForBill = (booking: any) =>
+  ["CONFIRMED", "CHECKED_IN", "COMPLETED"].includes(
+    String(booking?.status ?? "").toUpperCase(),
+  );
+
+const bookingConfirmedUsageAt = (booking: any) =>
+  booking?.qr?.usedAt ??
+  booking?.couponIssue?.usedAt ??
+  (isBookingAdminConfirmedForBill(booking)
+    ? booking?.confirmedAt ?? booking?.updatedAt ?? null
+    : null);
+
+const confirmedUsageSourceLabel = (
+  booking: any,
+  couponIssue: any,
+) => {
+  if (booking?.qr?.usedAt) return "QR booking đã được partner xác nhận";
+  if (booking?.couponIssue?.usedAt) return "Coupon gắn booking đã được partner xác nhận";
+  if (isBookingAdminConfirmedForBill(booking)) {
+    return "Booking đã được Admin xác nhận";
+  }
+  if (couponIssue?.usedAt) return "Coupon đã được partner xác nhận";
+  if (booking || couponIssue) return "Chưa có xác nhận sử dụng";
+  return "Không có thông tin xác nhận";
 };
 
 export default function AdminBillsPage() {
@@ -536,6 +616,106 @@ export default function AdminBillsPage() {
                   border: `1px solid ${colors.borderSoft}`
                 }}>{selectedBill.guestType}</span>
               </div>
+
+              {/* Linked Booking Box */}
+              {selectedBill.booking && (
+                <div style={{
+                  background: colors.surface1,
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.gold }}>ĐƠN HÀNG ĐANG LIÊN KẾT</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Mã booking</span>
+                    <span style={{ color: colors.goldBright, fontWeight: 700 }}>#{selectedBill.booking.bookingCode || selectedBill.booking.id.slice(0, 8).toUpperCase()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Giờ hẹn</span>
+                    <span style={{ color: colors.text }}>{formatDateTime(selectedBill.booking.scheduledAt)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Xác nhận sử dụng</span>
+                    <span style={{ color: colors.text, textAlign: 'right' }}>
+                      {bookingConfirmedUsageAt(selectedBill.booking)
+                        ? formatDateTime(bookingConfirmedUsageAt(selectedBill.booking))
+                        : "Chưa có xác nhận"}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Chi tiết xác nhận</span>
+                    <span style={{ fontSize: '12px', color: colors.blue }}>
+                      {confirmedUsageSourceLabel(selectedBill.booking, selectedBill.booking.couponIssue)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Số người</span>
+                    <span style={{ color: colors.text }}>{selectedBill.booking.partySize} người</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Coupon/QR</span>
+                    <span style={{ color: colors.text }}>
+                      {selectedBill.booking.coupon?.name ??
+                        selectedBill.booking.couponIssue?.code ??
+                        "QR đặt chỗ"}
+                    </span>
+                  </div>
+                  {couponDiscountLabel(selectedBill.booking.coupon, selectedBill.booking.couponIssue) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                      <span style={{ color: colors.muted }}>Mức giảm</span>
+                      <span style={{ color: colors.red, fontWeight: 600 }}>
+                        {couponDiscountLabel(selectedBill.booking.coupon, selectedBill.booking.couponIssue)}
+                      </span>
+                    </div>
+                  )}
+                  {selectedBill.booking.note && (
+                    <div style={{ borderTop: `1px solid ${colors.borderSoft}`, paddingTop: '8px', fontSize: '12px', color: colors.muted }}>
+                      <strong style={{ display: 'block', marginBottom: '2px', color: colors.text }}>Ghi chú:</strong>
+                      {selectedBill.booking.note}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Linked Coupon Box (if no booking but direct coupon) */}
+              {!selectedBill.booking && (selectedBill.coupon || selectedBill.couponIssue) && (
+                <div style={{
+                  background: colors.surface1,
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.gold }}>COUPON ĐANG LIÊN KẾT</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Mã coupon</span>
+                    <span style={{ color: colors.goldBright, fontWeight: 700 }}>#{selectedBill.couponIssue?.code || selectedBill.coupon?.code || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: colors.muted }}>Tên coupon</span>
+                    <span style={{ color: colors.text }}>{selectedBill.coupon?.name || 'Mã giảm giá'}</span>
+                  </div>
+                  {couponDiscountLabel(selectedBill.coupon, selectedBill.couponIssue) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                      <span style={{ color: colors.muted }}>Mức giảm</span>
+                      <span style={{ color: colors.red, fontWeight: 600 }}>
+                        {couponDiscountLabel(selectedBill.coupon, selectedBill.couponIssue)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Calculation Box */}
               <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', padding: '24px' }}>

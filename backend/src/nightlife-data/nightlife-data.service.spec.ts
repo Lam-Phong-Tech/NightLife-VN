@@ -4964,6 +4964,7 @@ describe('NightlifeDataService', () => {
           store: { select: { name: true, slug: true } },
           user: { select: { id: true, displayName: true, tier: true, role: true } },
           guest: { select: { id: true, displayName: true } },
+          booking: expect.any(Object),
         }),
       }),
     );
