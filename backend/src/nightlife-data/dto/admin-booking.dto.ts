@@ -19,7 +19,8 @@ export class AdminBookingQueryDto {
   limit?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Filter by status (all, new, completed, cancelled)',
+    description:
+      'Filter by status (all, new, checked_in, completed, cancelled)',
   })
   @IsOptional()
   @IsString()

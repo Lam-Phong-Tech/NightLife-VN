@@ -20160,6 +20160,7 @@ export class NightlifeDataService {
 
     let prismaStatus: import('@prisma/client').BookingStatus | undefined;
     if (status === 'new') prismaStatus = 'REQUESTED';
+    else if (status === 'checked_in') prismaStatus = 'CHECKED_IN';
     else if (status === 'completed') prismaStatus = 'COMPLETED';
     else if (status === 'cancelled') prismaStatus = 'CANCELLED';
 
@@ -20208,14 +20209,25 @@ export class NightlifeDataService {
     };
 
     let orderBy: any;
-    if (status === 'completed' || status === 'cancelled') {
+    if (
+      status === 'checked_in' ||
+      status === 'completed' ||
+      status === 'cancelled'
+    ) {
       orderBy = { scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc' };
     } else {
       // Cho tab 'Tất cả' và 'Mới', ưu tiên những booking vừa được gửi tới
       orderBy = { createdAt: sortBy === 'oldest' ? 'asc' : 'desc' };
     }
 
-    const [items, total, newCount, completedCount, cancelledCount] =
+    const [
+      items,
+      total,
+      newCount,
+      checkedInCount,
+      completedCount,
+      cancelledCount,
+    ] =
       await Promise.all([
         this.prisma.booking.findMany({
           where,
@@ -20227,6 +20239,9 @@ export class NightlifeDataService {
         this.prisma.booking.count({ where: baseWhere }),
         this.prisma.booking.count({
           where: { ...baseWhere, status: 'REQUESTED' },
+        }),
+        this.prisma.booking.count({
+          where: { ...baseWhere, status: 'CHECKED_IN' },
         }),
         this.prisma.booking.count({
           where: { ...baseWhere, status: 'COMPLETED' },
@@ -20259,9 +20274,10 @@ export class NightlifeDataService {
         page,
         limit,
         new: newCount,
+        checkedIn: checkedInCount,
         completed: completedCount,
         cancelled: cancelledCount,
-        all: newCount + completedCount + cancelledCount,
+        all: total,
       },
     };
   }

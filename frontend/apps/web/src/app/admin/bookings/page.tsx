@@ -1,10 +1,39 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+
+type AdminBookingMeta = {
+  total?: number;
+  all: number;
+  new: number;
+  checkedIn: number;
+  completed: number;
+  cancelled: number;
+};
+
+type AdminBookingRecord = {
+  id: string;
+  bookingCode?: string | null;
+  customerName: string;
+  customerEmail?: string | null;
+  store: (string & { name?: string | null }) | null;
+  cast: string | { stageName?: string | null } | null;
+  partySize: number;
+  scheduledAt: string;
+  source?: string | null;
+  status: string;
+  note?: string | null;
+  customerNote?: string | null;
+};
+
+type AdminBookingsResponse = {
+  data: AdminBookingRecord[];
+  meta: AdminBookingMeta;
+};
 
 export default function AdminBookingsPage() {
   return (
@@ -20,9 +49,15 @@ function AdminBookingsContent() {
   const city = searchParams.get('city') || '';
   const category = searchParams.get('category') || '';
   const [activeTab, setActiveTab] = useState('all');
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>({ all: 0, new: 0, completed: 0, cancelled: 0 });
+  const [selectedBooking, setSelectedBooking] = useState<AdminBookingRecord | null>(null);
+  const [bookings, setBookings] = useState<AdminBookingRecord[]>([]);
+  const [meta, setMeta] = useState<AdminBookingMeta>({
+    all: 0,
+    new: 0,
+    checkedIn: 0,
+    completed: 0,
+    cancelled: 0,
+  });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [bookingSearch, setBookingSearch] = useState('');
@@ -32,7 +67,7 @@ function AdminBookingsContent() {
       setIsActionLoading(true);
       await apiClient(`/admin/bookings/${bookingId}/status`, { method: 'PATCH', data: { status } });
       await fetchBookings();
-      setSelectedBooking((prev: any) => prev && prev.id === bookingId ? { ...prev, status } : prev);
+      setSelectedBooking((prev) => prev && prev.id === bookingId ? { ...prev, status } : prev);
     } catch (error) {
       console.error(error);
       feedback.showToast({ title: 'Lỗi khi cập nhật trạng thái', tone: 'error' });
@@ -41,10 +76,10 @@ function AdminBookingsContent() {
     }
   };
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
-      let statusParam = activeTab === 'all' ? undefined : activeTab;
-      const res = await apiClient<any>('/admin/bookings', { 
+      const statusParam = activeTab === 'all' ? undefined : activeTab;
+      const res = await apiClient<AdminBookingsResponse>('/admin/bookings', {
         params: {
           status: statusParam,
           city: city || undefined,
@@ -59,15 +94,26 @@ function AdminBookingsContent() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [activeTab, bookingSearch, category, city, currentPage]);
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, city, category, bookingSearch, currentPage]);
+  }, [fetchBookings]);
 
-  useEffect(() => {
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
     setCurrentPage(1);
-  }, [activeTab, city, category, bookingSearch]);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setBookingSearch(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleClearSearch = () => {
+    setBookingSearch('');
+    setCurrentPage(1);
+  };
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';
@@ -87,7 +133,7 @@ function AdminBookingsContent() {
     return { color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)' };
   };
 
-  const formatEmail = (email?: string) => {
+  const formatEmail = (email?: string | null) => {
     return email || 'Chưa cung cấp email';
   };
 
@@ -100,7 +146,7 @@ function AdminBookingsContent() {
     return `${h}:${m} - ${D}/${M}`;
   };
 
-  const formatBookingId = (booking: any) => {
+  const formatBookingId = (booking: Pick<AdminBookingRecord, 'bookingCode' | 'id'> | null) => {
     return booking?.bookingCode || `BK-${String(booking?.id || '').slice(0, 8).toUpperCase()}`;
   };
 
@@ -120,7 +166,7 @@ function AdminBookingsContent() {
             return (
               <span 
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 style={{
                   fontSize: '12px',
                   color: isActive ? '#241a0a' : '#c5c0b6',
@@ -130,13 +176,31 @@ function AdminBookingsContent() {
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  order: tab.id === 'all' ? 0 : tab.id === 'new' ? 1 : tab.id === 'completed' ? 3 : tab.id === 'cancelled' ? 4 : 5
                 }}
               >
                 {tab.label} <b style={{ fontWeight: isActive ? 800 : 600 }}>{tab.count}</b>
               </span>
             );
           })}
+          <span
+            onClick={() => handleTabChange('checked_in')}
+            style={{
+              fontSize: '12px',
+              color: activeTab === 'checked_in' ? '#241a0a' : '#c5c0b6',
+              background: activeTab === 'checked_in' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              order: 2
+            }}
+          >
+            Đã check-in <b style={{ fontWeight: activeTab === 'checked_in' ? 800 : 600 }}>{meta.checkedIn}</b>
+          </span>
         </div>
         <label style={{ position: 'relative', display: 'flex', alignItems: 'center', width: 'min(320px, 100%)' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 12, pointerEvents: 'none' }}>
@@ -145,7 +209,7 @@ function AdminBookingsContent() {
           </svg>
           <input
             value={bookingSearch}
-            onChange={(event) => setBookingSearch(event.target.value)}
+            onChange={handleSearchChange}
             placeholder="Tìm mã booking..."
             aria-label="Tìm mã booking"
             style={{
@@ -164,7 +228,7 @@ function AdminBookingsContent() {
           {bookingSearch && (
             <button
               type="button"
-              onClick={() => setBookingSearch('')}
+              onClick={handleClearSearch}
               aria-label="Xóa tìm kiếm"
               style={{ position: 'absolute', right: 8, width: 28, height: 28, border: 'none', borderRadius: 8, background: 'transparent', color: '#8c8679', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
