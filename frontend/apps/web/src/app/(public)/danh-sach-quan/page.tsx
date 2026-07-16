@@ -71,6 +71,13 @@ type VenueSearchCopy = {
   find: string;
   hasDeals: string;
   listAria: string;
+  locationBlockedAction: string;
+  locationBlockedDescription: string;
+  locationBlockedMessage: string;
+  locationBlockedTitle: string;
+  locationSecureContextMessage: string;
+  locationUnavailableMessage: string;
+  locationUnsupportedMessage: string;
   locationPermissionAction: string;
   locationPermissionCancel: string;
   locationPermissionDescription: string;
@@ -184,6 +191,14 @@ const venueCopyVi: VenueSearchCopy = {
   find: "Tìm",
   hasDeals: "Có ưu đãi",
   listAria: "Danh sách quán",
+  locationBlockedAction: "Tôi đã mở quyền, thử lại",
+  locationBlockedDescription:
+    "Trình duyệt đang chặn vị trí cho website này. Hãy bấm biểu tượng cài đặt/ổ khóa trên thanh địa chỉ, đổi Vị trí sang Cho phép rồi quay lại thử lại.",
+  locationBlockedMessage: "Trình duyệt đang chặn quyền vị trí. Mở quyền vị trí cho website rồi thử lại.",
+  locationBlockedTitle: "Quyền vị trí đang bị chặn",
+  locationSecureContextMessage: "Lấy vị trí chỉ hoạt động khi website chạy bằng HTTPS.",
+  locationUnavailableMessage: "Chưa lấy được vị trí hiện tại. Hãy kiểm tra GPS/mạng rồi thử lại.",
+  locationUnsupportedMessage: "Thiết bị hoặc trình duyệt hiện chưa hỗ trợ lấy vị trí.",
   locationPermissionAction: "Cấp quyền vị trí",
   locationPermissionCancel: "Để sau",
   locationPermissionDescription:
@@ -225,6 +240,14 @@ const venueCopyEn: VenueSearchCopy = {
   find: "Find",
   hasDeals: "Has deals",
   listAria: "Venue list",
+  locationBlockedAction: "I enabled it, try again",
+  locationBlockedDescription:
+    "Your browser is blocking location for this website. Tap the site settings or lock icon in the address bar, set Location to Allow, then come back and try again.",
+  locationBlockedMessage: "Your browser is blocking location. Allow location for this website, then try again.",
+  locationBlockedTitle: "Location is blocked",
+  locationSecureContextMessage: "Location only works when the website is served over HTTPS.",
+  locationUnavailableMessage: "Could not read your current location. Check GPS/network and try again.",
+  locationUnsupportedMessage: "This device or browser does not support location access.",
   locationPermissionAction: "Allow location",
   locationPermissionCancel: "Later",
   locationPermissionDescription:
@@ -346,20 +369,6 @@ const formatVenueActiveFilters = (count: number, language: LanguageCode) => {
 const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
   if (language === "en") return `View ${formatVenueCount(count, language)}`;
   return `${translateText("Xem", language)} ${formatVenueCount(count, language)}`;
-};
-
-const isMobileViewport = () =>
-  typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-
-const readGeolocationPermissionState = async () => {
-  if (typeof navigator === "undefined" || !navigator.permissions?.query) return null;
-
-  try {
-    const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-    return status.state;
-  } catch {
-    return null;
-  }
 };
 
 const formatVenueSearchTitle = (
@@ -557,6 +566,8 @@ type VenueDirectoryPageProps = {
   fixedCategory?: string;
 };
 
+type LocationDialogMode = "permission" | "blocked";
+
 export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
   const defaultOpenNow = !fixedCategory;
   const [query, setQuery] = useState("");
@@ -574,6 +585,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [isLocationPermissionOpen, setLocationPermissionOpen] = useState(false);
+  const [locationDialogMode, setLocationDialogMode] = useState<LocationDialogMode>("permission");
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
@@ -881,13 +893,27 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     return [{ value: "", label: copy.all }, ...(dynamicOptions.length ? dynamicOptions : fallbackOptions)];
   }, [activeLanguage, areas, city, copy.all]);
 
+  const canRequestBrowserLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError(copy.locationUnsupportedMessage);
+      return false;
+    }
+
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      setError(copy.locationSecureContextMessage);
+      return false;
+    }
+
+    return true;
+  };
+
   const startNearbyLocationRequest = () => {
-    if (!navigator.geolocation) {
-      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+    if (!canRequestBrowserLocation()) {
       return;
     }
 
     setLocationPermissionOpen(false);
+    setError(null);
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -900,29 +926,29 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         setIsLocating(false);
       },
       (positionError) => {
-        const deniedMessage =
-          "Trình duyệt đang chặn quyền vị trí. Hãy mở quyền vị trí trong cài đặt trình duyệt rồi thử lại.";
-        setError(positionError.code === positionError.PERMISSION_DENIED ? deniedMessage : "Chưa lấy được vị trí hiện tại.");
+        if (positionError.code === positionError.PERMISSION_DENIED) {
+          setLocationDialogMode("blocked");
+          setLocationPermissionOpen(true);
+          setError(copy.locationBlockedMessage);
+          setIsLocating(false);
+          return;
+        }
+
+        setError(copy.locationUnavailableMessage);
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 8000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60 * 1000 },
     );
   };
 
-  const requestNearby = async ({ bypassPermissionNotice = false } = {}) => {
-    if (!navigator.geolocation) {
-      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+  const requestNearby = () => {
+    if (coords) {
+      setError(null);
+      setSort("nearest");
       return;
     }
 
-    if (isMobileViewport() && !bypassPermissionNotice && !coords) {
-      const permissionState = await readGeolocationPermissionState();
-      if (permissionState !== "granted") {
-        setLocationPermissionOpen(true);
-        return;
-      }
-    }
-
+    setLocationDialogMode("permission");
     startNearbyLocationRequest();
   };
 
@@ -1342,6 +1368,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       {isLocationPermissionOpen ? (
         <LocationPermissionDialog
           copy={copy}
+          mode={locationDialogMode}
           onAllow={confirmLocationPermission}
           onClose={() => setLocationPermissionOpen(false)}
         />
@@ -1356,13 +1383,19 @@ export default function Page() {
 
 function LocationPermissionDialog({
   copy,
+  mode,
   onAllow,
   onClose,
 }: {
   copy: VenueSearchCopy;
+  mode: LocationDialogMode;
   onAllow: () => void;
   onClose: () => void;
 }) {
+  const isBlocked = mode === "blocked";
+  const title = isBlocked ? copy.locationBlockedTitle : copy.locationPermissionTitle;
+  const description = isBlocked ? copy.locationBlockedDescription : copy.locationPermissionDescription;
+  const actionLabel = isBlocked ? copy.locationBlockedAction : copy.locationPermissionAction;
   const dialog = (
     <div className="venue-location-backdrop" role="presentation" onMouseDown={onClose}>
       <section
@@ -1378,14 +1411,14 @@ function LocationPermissionDialog({
         <div className="venue-location-icon" aria-hidden="true">
           <LocateFixed size={22} />
         </div>
-        <h2 id="venue-location-title">{copy.locationPermissionTitle}</h2>
-        <p>{copy.locationPermissionDescription}</p>
+        <h2 id="venue-location-title">{title}</h2>
+        <p>{description}</p>
         <div className="venue-location-actions">
           <button type="button" className="venue-location-secondary" onClick={onClose}>
             {copy.locationPermissionCancel}
           </button>
           <button type="button" className="venue-location-primary" onClick={onAllow}>
-            {copy.locationPermissionAction}
+            {actionLabel}
           </button>
         </div>
       </section>
