@@ -1303,7 +1303,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
   if (!event) {
     return (
       <HomeDataMessage
-        text="Chưa có banner nổi bật."
+        text={translateText("Chưa có banner nổi bật.", activeLanguage)}
         minHeight={desktop ? 310 : 208}
       />
     );

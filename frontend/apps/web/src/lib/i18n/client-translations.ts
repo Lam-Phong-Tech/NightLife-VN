@@ -1173,6 +1173,13 @@ const entries: TranslationEntry[] = [
     zh: "精选横幅",
   },
   {
+    vi: "Chưa có banner nổi bật.",
+    en: "No featured banner yet.",
+    ja: "注目バナーはまだありません。",
+    ko: "아직 추천 배너가 없습니다.",
+    zh: "暂无精选横幅。",
+  },
+  {
     vi: "Chọn banner",
     en: "Choose banner",
     ja: "バナーを選択",
@@ -4088,6 +4095,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "预约请求已发送",
   },
   {
+    vi: "Đặt tour thành công",
+    en: "Tour reservation request sent",
+    ja: "ツアー予約リクエストを送信しました",
+    ko: "투어 예약 요청을 보냈습니다",
+    zh: "行程预订请求已发送",
+  },
+  {
     vi: "Đặt bàn theo cast thành công",
     en: "Cast reservation request sent",
     ja: "キャスト指名予約を送信しました",
@@ -6245,6 +6259,40 @@ function translatePattern(
       ja: `このエリアの${subject}はまだありません。`,
       ko: `이 지역에는 아직 ${subject}이(가) 없습니다.`,
       zh: `该区域暂无${subject}。`,
+    }[language];
+  }
+
+  const tourBookingRequestMatch = normalized.match(
+    /^Yêu cầu đặt tour(?:\s+(.+?))?(?:\s+lúc\s+(.+?))?\s+đã được ghi nhận\.\s+Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình\.$/i,
+  );
+  if (tourBookingRequestMatch) {
+    const rawTourTarget = tourBookingRequestMatch[1]?.trim() ?? "";
+    const target = rawTourTarget ? translateText(rawTourTarget, language) : "";
+    const time = tourBookingRequestMatch[2] ?? "";
+
+    if (target && time) {
+      return {
+        en: `Your tour reservation request for ${target} at ${time} has been received. Admin will check each venue and cast stop in the itinerary.`,
+        ja: `${target}の${time}のツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。`,
+        ko: `${target} ${time} 투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.`,
+        zh: `已收到你预订 ${target} ${time} 行程的请求。管理员会检查行程中的每个场所和 Cast。`,
+      }[language];
+    }
+
+    if (target) {
+      return {
+        en: `Your tour reservation request for ${target} has been received. Admin will check each venue and cast stop in the itinerary.`,
+        ja: `${target}のツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。`,
+        ko: `${target} 투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.`,
+        zh: `已收到你预订 ${target} 行程的请求。管理员会检查行程中的每个场所和 Cast。`,
+      }[language];
+    }
+
+    return {
+      en: "Your tour reservation request has been received. Admin will check each venue and cast stop in the itinerary.",
+      ja: "ツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。",
+      ko: "투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.",
+      zh: "已收到你的行程预订请求。管理员会检查行程中的每个场所和 Cast。",
     }[language];
   }
 

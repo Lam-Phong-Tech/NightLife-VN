@@ -9,6 +9,7 @@ import {
   languageHtmlLang,
   readStoredLanguage,
   storeLanguagePreference,
+  translateText,
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
 
@@ -75,6 +76,14 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
 
   const activeLanguage = useMemo(() => getLanguage(activeCode), [activeCode]);
   const draftLanguage = useMemo(() => getLanguage(draftCode), [draftCode]);
+  const hasPendingLanguageChange = draftCode !== activeCode;
+  const chooseLanguageLabel = translateText("Chọn ngôn ngữ", activeCode);
+  const selectLanguageLabel = translateText("Select language", activeCode);
+  const inUseLanguageLabel = translateText("Đang dùng", activeCode);
+  const selectedLanguageLabel = translateText("Đang chọn", activeCode);
+  const cancelLanguageLabel = translateText("Hủy", activeCode);
+  const applyLanguageLabel = translateText(`Áp dụng ${draftLanguage.badge}`, activeCode);
+  const closeLanguagePickerLabel = translateText("Đóng chọn ngôn ngữ", activeCode);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -223,7 +232,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         type="button"
         aria-haspopup={isMobile ? "dialog" : "menu"}
         aria-expanded={isOpen}
-        aria-label={`Chọn ngôn ngữ, hiện tại ${activeLanguage.label}`}
+        aria-label={`${chooseLanguageLabel}: ${activeLanguage.label}`}
         onClick={() => {
           if (isOpen) {
             closePicker();
@@ -241,7 +250,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
       </button>
 
       {!isMobile && isOpen ? (
-        <div role="menu" aria-label="Select language" style={dropdownStyle}>
+        <div role="menu" aria-label={selectLanguageLabel} style={dropdownStyle}>
           {languages.map((language) => {
             const isActive = language.code === activeCode;
 
@@ -399,7 +408,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                       margin: 0,
                     }}
                   >
-                    Chọn ngôn ngữ
+                    {chooseLanguageLabel}
                   </h2>
                   <div
                     style={{
@@ -411,13 +420,13 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                       marginTop: "4px",
                     }}
                   >
-                    Select language
+                    {selectLanguageLabel}
                   </div>
                 </div>
               </div>
               <button
                 type="button"
-                aria-label="Đóng chọn ngôn ngữ"
+                aria-label={closeLanguagePickerLabel}
                 onClick={closePicker}
                 style={{
                   width: isMobile ? "30px" : "32px",
@@ -441,7 +450,13 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
               {languages.map((language, index) => {
                 const isDraft = language.code === draftCode;
                 const isActive = language.code === activeCode;
-                const showSelectedLabel = isActive || isDraft;
+                const showActiveLabel = isActive && !hasPendingLanguageChange;
+                const showDraftLabel = isDraft && hasPendingLanguageChange;
+                const statusLabel = showDraftLabel
+                  ? selectedLanguageLabel
+                  : showActiveLabel
+                    ? inUseLanguageLabel
+                    : "";
 
                 return (
                   <button
@@ -506,7 +521,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                         >
                           {language.label}
                         </span>
-                        {showSelectedLabel ? (
+                        {statusLabel ? (
                           <span
                             style={{
                               color: colors.onGold,
@@ -519,7 +534,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                               textTransform: "uppercase",
                             }}
                           >
-                            {isActive ? "Đang dùng" : "Đang chọn"}
+                            {statusLabel}
                           </span>
                         ) : null}
                       </span>
@@ -582,12 +597,13 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                     fontFamily: "var(--nl-font-sans)",
                   }}
                 >
-                  Hủy
+                  {cancelLanguageLabel}
                 </button>
               ) : null}
               <button
                 type="button"
                 onClick={applyLanguage}
+                disabled={!hasPendingLanguageChange}
                 style={{
                   flex: isMobile ? "1" : "1.7",
                   minHeight: isMobile ? "48px" : "44px",
@@ -597,11 +613,12 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                   color: colors.onGold,
                   fontSize: isMobile ? "14.5px" : "14px",
                   fontWeight: 800,
-                  cursor: "pointer",
+                  cursor: hasPendingLanguageChange ? "pointer" : "default",
+                  opacity: hasPendingLanguageChange ? 1 : 0.72,
                   fontFamily: "var(--nl-font-sans)",
                 }}
               >
-                {`Áp dụng ${draftLanguage.badge}`}
+                {hasPendingLanguageChange ? applyLanguageLabel : inUseLanguageLabel}
               </button>
             </div>
           </section>
