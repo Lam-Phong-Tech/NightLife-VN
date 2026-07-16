@@ -454,12 +454,6 @@ export default function AdminRolesPage() {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '9px', padding: '11px 14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 8h8M8 11h5"/></svg>
-                <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
-                  Tài khoản đăng nhập bằng <b style={{ color: '#f0dda8' }}>email &amp; mật khẩu vừa đặt</b> — hệ thống gửi email thông báo kèm hướng dẫn. Nên yêu cầu đổi mật khẩu ở lần đăng nhập đầu.
-                </span>
-              </div>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
