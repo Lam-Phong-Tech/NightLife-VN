@@ -5998,6 +5998,19 @@ export default function PartnerPage() {
                   ? `${selectedBillStore.name}${selectedBillStore.district ? ` - ${selectedBillStore.district}` : ''}`
                   : 'Đang tải quán được cấp quyền...'}
               </div>
+              <select
+                id="bill-store-select-hidden"
+                value={billStoreId || (stores[0]?.id ?? '')}
+                onChange={(e) => setBillStoreId(e.target.value)}
+                style={{ display: 'none' }}
+                aria-label="Quán thuộc partner *"
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
             </FormField>
 
             <div className="partner-bill-form-grid">
@@ -7565,141 +7578,115 @@ export default function PartnerPage() {
                   </span>
                 ) : null}
               </button>
-              {isNotificationOpen ? (
+              <div
+                className="partner-notification-popover"
+                style={{
+                  display: isNotificationOpen ? 'block' : 'none',
+                  position: 'fixed',
+                  top: '84px',
+                  right: '30px',
+                  width: '390px',
+                  maxWidth: 'calc(100vw - 36px)',
+                  zIndex: 80,
+                  border: `1px solid ${colors.borderGold32}`,
+                  borderRadius: '18px',
+                  background: colors.popoverBg,
+                  boxShadow: '0 26px 70px -28px rgba(0,0,0,.9)',
+                  overflow: 'hidden',
+                }}
+              >
                 <div
-                  className="partner-notification-popover"
                   style={{
-                    position: 'fixed',
-                    top: '84px',
-                    right: '30px',
-                    width: '390px',
-                    maxWidth: 'calc(100vw - 36px)',
-                    zIndex: 80,
-                    border: `1px solid ${colors.borderGold32}`,
-                    borderRadius: '18px',
-                    background: colors.popoverBg,
-                    boxShadow: '0 26px 70px -28px rgba(0,0,0,.9)',
-                    overflow: 'hidden',
+                    padding: '14px 14px 12px',
+                    borderBottom: `1px solid ${colors.borderHair}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
                   }}
                 >
-                  <div
+                  <div>
+                    <div style={{ color: colors.text, fontSize: '15px', fontWeight: 900 }}>
+                      Thông báo đối tác
+                    </div>
+                    <div style={{ marginTop: '3px', color: colors.muted, fontSize: '11px' }}>
+                      Tách theo booking, QR, bill, coupon và đăng tin
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={markAllNotificationsRead}
+                    disabled={!unreadNotificationCount}
                     style={{
-                      padding: '14px 14px 12px',
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '10px',
+                      minHeight: '30px',
+                      border: `1px solid ${colors.borderGold22}`,
+                      borderRadius: '999px',
+                      background: unreadNotificationCount ? 'rgba(212,178,106,.12)' : colors.surface2,
+                      color: unreadNotificationCount ? colors.goldBright : colors.muted,
+                      padding: '0 10px',
+                      fontSize: '10.5px',
+                      fontWeight: 900,
+                      cursor: unreadNotificationCount ? 'pointer' : 'not-allowed',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    <div>
-                      <div style={{ color: colors.text, fontSize: '15px', fontWeight: 900 }}>
-                        Thông báo đối tác
-                      </div>
-                      <div style={{ marginTop: '3px', color: colors.muted, fontSize: '11px' }}>
-                        Tách theo booking, QR, bill, coupon và đăng tin
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={markAllNotificationsRead}
-                      disabled={!unreadNotificationCount}
-                      style={{
-                        minHeight: '30px',
-                        border: `1px solid ${colors.borderGold22}`,
-                        borderRadius: '999px',
-                        background: unreadNotificationCount ? 'rgba(212,178,106,.12)' : colors.surface2,
-                        color: unreadNotificationCount ? colors.goldBright : colors.muted,
-                        padding: '0 10px',
-                        fontSize: '10.5px',
-                        fontWeight: 900,
-                        cursor: unreadNotificationCount ? 'pointer' : 'not-allowed',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      Đã đọc
-                    </button>
-                  </div>
-                  <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '8px' }}>
-                    {partnerNotifications.length ? (
-                      partnerNotifications.map((notification) => {
-                        const Icon = notification.icon;
-                        const accent =
-                          notification.tone === 'danger'
-                            ? colors.danger
-                            : notification.tone === 'success'
-                              ? colors.success
-                              : notification.tone === 'warning'
-                                ? colors.goldPale
-                                : notification.tone === 'info'
-                                  ? '#9bc7ff'
-                                  : colors.goldBright;
+                    Đã đọc
+                  </button>
+                </div>
+                <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '8px' }}>
+                  {partnerNotifications.length ? (
+                    partnerNotifications.map((notification) => {
+                      const Icon = notification.icon;
+                      const accent =
+                        notification.tone === 'danger'
+                          ? colors.danger
+                          : notification.tone === 'success'
+                            ? colors.success
+                            : notification.tone === 'warning'
+                              ? colors.goldPale
+                              : notification.tone === 'info'
+                                ? '#9bc7ff'
+                                : colors.goldBright;
 
-                        return (
-                          <button
-                            key={notification.id}
-                            type="button"
-                            onClick={() => openPartnerNotification(notification)}
+                      return (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => openPartnerNotification(notification)}
+                          style={{
+                            width: '100%',
+                            border: `1px solid ${notification.unread ? colors.borderGold32 : colors.borderHair}`,
+                            borderRadius: '14px',
+                            background: notification.unread
+                              ? 'linear-gradient(90deg,rgba(212,178,106,.15),rgba(255,255,255,.035))'
+                              : colors.surface2,
+                            color: colors.text,
+                            padding: '12px 14px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'start',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            marginTop: '4px',
+                            position: 'relative',
+                            boxShadow: notification.unread ? '0 4px 15px rgba(212,178,106,.05)' : undefined,
+                          }}
+                        >
+                          <span
                             style={{
-                              width: '100%',
-                              border: `1px solid ${notification.unread ? colors.borderGold32 : colors.borderHair}`,
-                              borderRadius: '14px',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '10px',
                               background: notification.unread
-                                ? 'linear-gradient(90deg,rgba(212,178,106,.15),rgba(255,255,255,.035))'
-                                : colors.surface2,
-                              color: colors.text,
-                              padding: '12px',
-                              display: 'grid',
-                              gridTemplateColumns: '34px minmax(0,1fr)',
-                              gap: '10px',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              marginBottom: '8px',
+                                ? 'rgba(212,178,106,.12)'
+                                : colors.surface3,
+                              color: accent,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flex: '0 0 auto',
                             }}
                           >
-                            <span
-                              style={{
-                                width: '34px',
-                                height: '34px',
-                                borderRadius: '11px',
-                                border: `1px solid ${colors.borderGold22}`,
-                                background: 'rgba(212,178,106,.11)',
-                                color: accent,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Icon size={17} />
-                            </span>
-                            <span style={{ minWidth: 0 }}>
-                              <span
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: '8px',
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    color: accent,
-                                    fontSize: '10px',
-                                    fontWeight: 900,
-                                    letterSpacing: '.8px',
-                                    textTransform: 'uppercase',
-                                  }}
-                                >
-                                  {notification.category}
-                                </span>
-                                {notification.unread ? (
-                                  <span
-                                    style={{
-                                      width: '7px',
-                                      height: '7px',
-                                      borderRadius: '50%',
-                                      background: colors.neonPink,
-                                      flex: '0 0 auto',
                                     }}
                                   />
                                 ) : null}

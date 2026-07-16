@@ -4962,7 +4962,7 @@ describe('NightlifeDataService', () => {
         take: 8,
         select: expect.objectContaining({
           store: { select: { name: true, slug: true } },
-          user: { select: { id: true, displayName: true, tier: true } },
+          user: { select: { id: true, displayName: true, tier: true, role: true } },
           guest: { select: { id: true, displayName: true } },
         }),
       }),
