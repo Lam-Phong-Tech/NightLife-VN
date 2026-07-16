@@ -1661,7 +1661,12 @@ function VenueMiniCard({
             top: 10,
             right: 10,
             width: 30,
+            minWidth: 30,
+            maxWidth: 30,
             height: 30,
+            minHeight: 30,
+            maxHeight: 30,
+            aspectRatio: "1 / 1",
             border: 0,
             borderRadius: "50%",
             background: "rgba(12,12,15,.7)",
@@ -1669,6 +1674,8 @@ function VenueMiniCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            boxSizing: "border-box",
+            padding: 0,
             cursor: "pointer",
           }}
         >

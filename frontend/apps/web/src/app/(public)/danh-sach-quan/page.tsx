@@ -2440,9 +2440,15 @@ const venueSearchCss = `
     top: 12px;
     right: 12px;
     width: 36px;
+    min-width: 36px;
+    max-width: 36px;
     height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    aspect-ratio: 1 / 1;
     display: inline-grid;
     place-items: center;
+    box-sizing: border-box;
     border: 1.5px solid rgba(255, 255, 255, .92);
     border-radius: 50%;
     background: rgba(12, 12, 15, .22);
@@ -2450,6 +2456,7 @@ const venueSearchCss = `
     backdrop-filter: blur(8px);
     box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
     cursor: pointer;
+    padding: 0;
   }
 
   .venue-heart.is-active {
@@ -3297,7 +3304,11 @@ const venueSearchCss = `
       top: 8px;
       right: 8px;
       width: 30px;
+      min-width: 30px;
+      max-width: 30px;
       height: 30px;
+      min-height: 30px;
+      max-height: 30px;
     }
 
     .venue-heart svg {
