@@ -33,7 +33,11 @@ describe('UsersController', () => {
     it('should return public user details', async () => {
       const mockReq = { user: { id: 'user-123' } };
       const mockUser = { id: 'user-123', email: 'user@example.com' };
-      const mockPublicUser = { id: 'user-123', email: 'user@example.com', name: 'User' };
+      const mockPublicUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        name: 'User',
+      };
 
       service.findByIdOrThrow.mockResolvedValue(mockUser as any);
       service.toPublicUser.mockReturnValue(mockPublicUser as any);
@@ -47,9 +51,13 @@ describe('UsersController', () => {
 
     it('should propagate NotFoundException if user is not found', async () => {
       const mockReq = { user: { id: 'user-123' } };
-      service.findByIdOrThrow.mockRejectedValue(new NotFoundException('User not found'));
+      service.findByIdOrThrow.mockRejectedValue(
+        new NotFoundException('User not found'),
+      );
 
-      await expect(controller.me(mockReq as any)).rejects.toThrow(NotFoundException);
+      await expect(controller.me(mockReq as any)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

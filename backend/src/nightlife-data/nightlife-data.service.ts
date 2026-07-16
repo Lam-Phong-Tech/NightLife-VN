@@ -20307,29 +20307,28 @@ export class NightlifeDataService {
       checkedInCount,
       completedCount,
       cancelledCount,
-    ] =
-      await Promise.all([
-        this.prisma.booking.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy,
-          include: { store: true, cast: true, user: true, guest: true },
-        }),
-        this.prisma.booking.count({ where: baseWhere }),
-        this.prisma.booking.count({
-          where: { ...baseWhere, status: 'REQUESTED' },
-        }),
-        this.prisma.booking.count({
-          where: { ...baseWhere, status: 'CHECKED_IN' },
-        }),
-        this.prisma.booking.count({
-          where: { ...baseWhere, status: 'COMPLETED' },
-        }),
-        this.prisma.booking.count({
-          where: { ...baseWhere, status: 'CANCELLED' },
-        }),
-      ]);
+    ] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: { store: true, cast: true, user: true, guest: true },
+      }),
+      this.prisma.booking.count({ where: baseWhere }),
+      this.prisma.booking.count({
+        where: { ...baseWhere, status: 'REQUESTED' },
+      }),
+      this.prisma.booking.count({
+        where: { ...baseWhere, status: 'CHECKED_IN' },
+      }),
+      this.prisma.booking.count({
+        where: { ...baseWhere, status: 'COMPLETED' },
+      }),
+      this.prisma.booking.count({
+        where: { ...baseWhere, status: 'CANCELLED' },
+      }),
+    ]);
 
     const data = items.map((bk) => ({
       id: bk.id,

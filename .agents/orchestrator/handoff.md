@@ -1,24 +1,35 @@
-# Orchestrator Handoff Report — Booking & Discount Flows integration
+# Handoff Report - Partner Settings & Staff Management
 
 ## Milestone State
-- **Milestone 1: Explore & Design** — **DONE** (100% completed, detailed technical designs produced by 3 explorers).
-- **Milestone 2: Implementation** — **DONE** (100% completed by Worker, including git commit & push).
-- **Milestone 3: Verification** — **DONE** (100% completed, verified by 2 Reviewers and 2 Challengers with 27 passed challenge tests).
-- **Milestone 4: Forensic Audit** — **DONE** (100% completed, Forensic Auditor verdict is **CLEAN**).
+- **Milestone 1: Explore & Design** - DONE
+- **Milestone 2: Backend Implementation** - DONE
+- **Milestone 3: Frontend Implementation** - DONE
+- **Milestone 4: Write Tests** - DONE
+- **Milestone 5: Verification & Forensic Audit** - DONE
+- **Milestone 6: Git operations (Commit & Push)** - DONE
+
+All requirements are 100% complete and fully verified.
 
 ## Active Subagents
-- **None** — All subagents have successfully completed their tasks and delivered handoff reports.
+- None (All subagents completed successfully, no pending tasks).
 
 ## Pending Decisions
-- **None** — All features integrated and fully tested.
+- None.
 
 ## Remaining Work
-- The task is fully complete. The backend booking and discount flows matching the business specifications (R1, R2, and R3) have been integrated and verified. All unit tests (173/173) and E2E tests (66/68) are passing successfully, and the changes have been pushed to GitHub.
+- None (Task is complete. Codebase is up to date and pushed).
 
 ## Key Artifacts
-- `d:/laragon/www/NightLife-VN/.agents/orchestrator/progress.md` — Liveness and checkpoint checklist.
-- `d:/laragon/www/NightLife-VN/.agents/orchestrator/BRIEFING.md` — Persistent briefing memory.
-- `d:/laragon/www/NightLife-VN/.agents/orchestrator/PROJECT.md` — Global architecture, milestones and code layouts.
-- `d:/laragon/www/NightLife-VN/.agents/teamwork_preview_worker_booking_discounts_1/handoff.md` — Implementation changes report.
-- `d:/laragon/www/NightLife-VN/.agents/teamwork_preview_auditor_booking_discounts_1/handoff.md` — Forensic audit report confirming CLEAN verdict.
-- `d:/laragon/www/NightLife-VN/.agents/teamwork_preview_challenger_booking_discounts_1/handoff.md` & `..._2/handoff.md` — Challenger reports confirming 27 passing edge case tests.
+- `d:/laragon/www/NightLife-VN/.agents/orchestrator/ORIGINAL_REQUEST.md` — Original request tracker
+- `d:/laragon/www/NightLife-VN/.agents/orchestrator/BRIEFING.md` — Orchestrator memory
+- `d:/laragon/www/NightLife-VN/.agents/orchestrator/progress.md` — Checklist and iteration progress tracker
+- `d:/laragon/www/NightLife-VN/.agents/orchestrator/PROJECT.md` — Project milestones and layout mapping
+- `d:/laragon/www/NightLife-VN/.agents/teamwork_preview_worker_settings_1/handoff.md` — Primary worker implementation handoff
+- `d:/laragon/www/NightLife-VN/.agents/teamwork_preview_auditor_settings_1/handoff.md` — Forensic audit report confirming CLEAN verdict
+
+## Summary of Completed Changes
+1. **Change Password API**: Implemented `POST /users/change-password` with Old Password verification via bcrypt hashing and custom error handling (`UnauthorizedException`). Exposes a clean and secure password change flow.
+2. **Staff Management APIs**: Built a NestJS `partner-staff` module exposing listing, creation, and deletion. Creates users with the `STAFF` role, assigns them to `StorePermission` lists, and validates that only the owner of the store (`AccessService`) can manage them. Marking a staff user as deleted updates both their permission record status and the User record status to `INACTIVE`.
+3. **Frontend Shared Selector**: Extracted the local `ThemedListingSelect` component to a reusable module under `frontend/apps/web/src/components/ui/ThemedListingSelect.tsx` to maintain UI styling consistency and avoid browser native selects.
+4. **Partner Settings Dashboard**: Integrated a new "Cài đặt" tab in the Sidebar of the Partner Portal. Displays a Change Password form and a Staff Management manager. Uses custom confirmation modal dialogs and toasts from `useSystemFeedback()` instead of browser native alerts/confirmations.
+5. **Git Version Control**: All changes successfully committed and pushed to `origin/main` (latest commit hash: `bae003d`).

@@ -1,4 +1,4 @@
-# BRIEFING — 2026-07-16T10:00:00+07:00
+# BRIEFING — 2026-07-16T10:06:00+07:00
 
 ## Mission
 Implement the Settings page (password change and staff management) for the Partner Portal across NestJS backend and Next.js frontend.
@@ -21,7 +21,7 @@ Implement the Settings page (password change and staff management) for the Partn
 
 ## Current Parent
 - Conversation ID: 8d243168-4e21-45f9-abdf-ca8a5f3d08a2
-- Updated: 2026-07-16T10:00:00+07:00
+- Updated: 2026-07-16T10:06:00+07:00
 
 ## Task Summary
 - **What to build**: ChangePasswordDto, changePassword logic in UsersService/UsersController. PartnerStaff module with CRUD endpoints (store permission + user link/creation). Frontend Settings Panel in Partner page with Change Password form, Staff management form/table utilizing custom ThemedListingSelect, and showModal confirmation.
@@ -33,6 +33,7 @@ Implement the Settings page (password change and staff management) for the Partn
 - Extracted ThemedListingSelect into a separate reusable component in components/ui.
 - Configured settings panel to show both password change and staff management based on user role (only PARTNER can see staff management).
 - Used the existing useSystemFeedback context hook to integrate custom modals and toasts.
+- Created CommonModule to export PasswordService and clean up dependencies.
 
 ## Artifact Index
 - None.
@@ -50,14 +51,15 @@ Implement the Settings page (password change and staff management) for the Partn
   - `backend/src/partner-staff/partner-staff.controller.spec.ts`
   - `backend/src/partner-staff/partner-staff.module.ts`
   - `backend/src/app.module.ts`
+  - `backend/src/common/common.module.ts`
   - `frontend/apps/web/src/components/ui/ThemedListingSelect.tsx`
   - `frontend/apps/web/src/app/partner/page.tsx`
-- **Build status**: Backend build & tests pass. Frontend check-types in progress.
+- **Build status**: Backend and Frontend builds fully pass.
 - **Pending issues**: None.
 
 ## Quality Status
-- **Build/test result**: 13 passed, 13 total suites in backend (204 tests).
-- **Lint status**: Passed.
+- **Build/test result**: 13 passed, 13 total suites in backend (205 tests).
+- **Lint status**: Passed typechecking and lint rules.
 - **Tests added/modified**: `users.controller.spec.ts`, `partner-staff.controller.spec.ts`.
 
 ## Loaded Skills

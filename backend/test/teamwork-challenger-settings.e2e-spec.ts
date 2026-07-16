@@ -149,7 +149,10 @@ describe('Challenger Settings Verification (e2e)', () => {
         .post('/users/change-password')
         .set('x-test-role', 'USER')
         .set('x-test-user-id', 'user-1')
-        .send({ oldPassword: 'WrongOldPassword', newPassword: 'NewPassword123!' })
+        .send({
+          oldPassword: 'WrongOldPassword',
+          newPassword: 'NewPassword123!',
+        })
         .expect(401);
 
       expect(response.body.message).toContain('Mật khẩu cũ không chính xác');
@@ -162,7 +165,10 @@ describe('Challenger Settings Verification (e2e)', () => {
         .post('/users/change-password')
         .set('x-test-role', 'USER')
         .set('x-test-user-id', 'user-1')
-        .send({ oldPassword: 'OldPassword123!', newPassword: 'NewPassword123!' })
+        .send({
+          oldPassword: 'OldPassword123!',
+          newPassword: 'NewPassword123!',
+        })
         .expect(201);
 
       expect(usersService.changePassword).toHaveBeenCalledWith('user-1', {
@@ -259,7 +265,9 @@ describe('Challenger Settings Verification (e2e)', () => {
 
     it('returns 200 OK and deletes staff when store is owned/authorized', async () => {
       accessService.ensureStoreAccess.mockResolvedValue(undefined);
-      partnerStaffService.removeStaffFromStore.mockResolvedValue({ success: true });
+      partnerStaffService.removeStaffFromStore.mockResolvedValue({
+        success: true,
+      });
 
       const response = await request(app.getHttpServer())
         .delete('/partner/staff/staff-id-123?storeId=owned-store-id')

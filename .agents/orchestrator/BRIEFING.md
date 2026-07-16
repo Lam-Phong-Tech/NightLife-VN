@@ -26,14 +26,14 @@ Design and implement the Settings page (password change and staff management) fo
 4. **Succession**: Self-succeed at 16 spawns, write handoff.md, spawn successor.
 - **Work items**:
   1. Explore codebase and locate settings-related controllers, models, and UI components [done]
-  2. Implement backend APIs (change-password, staff management GET/POST/DELETE, permissions) [in-progress]
-  3. Implement frontend UI (tab in sidebar, change-password form, staff list, custom selector) [in-progress]
-  4. Write spec tests (users.controller.spec.ts, partner-staff.controller.spec.ts) [in-progress]
-  5. Verification & E2E testing (run test runner, verify 100% pass) [pending]
-  6. Forensic Integrity Audit [pending]
-  7. Push to Github [pending]
-- **Current phase**: 1
-- **Current focus**: Implementation and testing of backend APIs and frontend UI for Settings & Staff management
+  2. Implement backend APIs (change-password, staff management GET/POST/DELETE, permissions) [done]
+  3. Implement frontend UI (tab in sidebar, change-password form, staff list, custom selector) [done]
+  4. Write spec tests (users.controller.spec.ts, partner-staff.controller.spec.ts) [done]
+  5. Verification & E2E testing (run test runner, verify 100% pass) [done]
+  6. Forensic Integrity Audit [done]
+  7. Push to Github [done]
+- **Current phase**: 2
+- **Current focus**: Verification completed and changes pushed to repository.
 
 ## 🔒 Key Constraints
 - Never write, modify, or create source code files directly.
@@ -48,17 +48,27 @@ Design and implement the Settings page (password change and staff management) fo
 ## Key Decisions Made
 - Starting settings page implementation orchestration.
 - Dispatched Worker 1 to implement full backend and frontend changes.
+- Dispatched Auditor 1 to run integrity checks on settings page implementation.
+- Dispatched Worker 2 to close the logic gap on staff delete.
+- Dispatched Auditor 2 to verify transaction logic on deletion.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | Explorer 1 | teamwork_preview_explorer | Explore settings codebase | completed | c3bd9b3c-f555-424b-85c7-c68f518addb6 |
-| Worker 1 | teamwork_preview_worker | Implement settings API and UI | pending | 0b25542b-8d8f-497c-963d-a220507cfb4e |
+| Worker 1 | teamwork_preview_worker | Implement settings API and UI | completed | 4353c607-8559-4cb1-8ef7-e86b2a78ce1f |
+| Reviewer 1 | teamwork_preview_reviewer | Code review of Settings | completed | 770287fb-996a-41b5-9662-5470a9780262 |
+| Reviewer 2 | teamwork_preview_reviewer | Code review of Settings | completed | 0fc7f8c2-dbfa-45c4-bbcb-c02c0358760b |
+| Challenger 1 | teamwork_preview_challenger | Security testing of Settings | completed | fe7abe77-4156-49c3-9b8e-d9f00f2c8c81 |
+| Challenger 2 | teamwork_preview_challenger | Edges and unit tests check | completed | 98910eaf-b4ef-4034-b26f-d4590fffca6b |
+| Auditor 1 | teamwork_preview_auditor | Forensic Integrity Audit | completed | 2b66df3f-f7b2-4bd1-8d7f-0b966bc8afff |
+| Worker 2 | teamwork_preview_worker | Fix staff delete User status logic gap | completed | 2b6a8859-d495-4004-bfb1-4a0aa5e29985 |
+| Auditor 2 | teamwork_preview_auditor | Forensic Integrity Audit 2 | completed | 5f9e94c3-6346-410b-9504-8a3ae90b32cd |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: 0b25542b-8d8f-497c-963d-a220507cfb4e
+- Spawn count: 9 / 16
+- Pending subagents: none
 - Predecessor: none
 - Successor: not yet spawned
 
