@@ -312,7 +312,7 @@ type PartnerBill = {
   booking?: { id: string; status: string; scheduledAt?: string | null } | null;
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
-  media?: { id: string; originalName?: string | null }[];
+  media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
 };
 
 type PartnerLiteDashboard = {
@@ -2577,10 +2577,6 @@ export default function PartnerPage() {
     setBillAmountInput(bill.totalVnd ? bill.totalVnd.toLocaleString('vi-VN') : '');
     setBillUsedAt(toDateTimeLocalValue(bill.usedAt ?? bill.submittedAt ?? new Date()));
     setBillBookingId(bill.booking?.id ?? '');
-    setBillNotice({
-      tone: 'gold',
-      message: `Đã điền thông tin từ hóa đơn ${bill.billNumber ?? bill.id.slice(0, 8)} lên form.`,
-    });
     setBillSubView('form');
   };
 
@@ -5435,6 +5431,7 @@ export default function PartnerPage() {
   );
 
   const renderBillPanel = () => {
+    const selectedBill = bills.find((b) => b.id === selectedBillId);
     if (billSubView === 'list') {
       return (
         <div style={{ marginTop: '14px' }}>
@@ -5596,13 +5593,14 @@ export default function PartnerPage() {
       <div style={{ marginTop: '14px', maxWidth: '800px', marginInline: 'auto' }}>
         <PanelCard>
           <SectionHeading
-            eyebrow="SUBMIT BILL"
             title="Form gửi hóa đơn"
             action={
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <StatusPill tone={stores.length === 1 ? 'success' : 'gold'}>
-                  {stores.length ? `${stores.length} quán thuộc partner` : 'Đang tải quán'}
-                </StatusPill>
+                {selectedBill && (
+                  <StatusPill tone={selectedBill.status === 'VERIFIED' || selectedBill.status === 'PAID' ? 'success' : selectedBill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                    {translateBillStatus(selectedBill.status)}
+                  </StatusPill>
+                )}
                 <GhostButton
                   onClick={() => setBillSubView('list')}
                   style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
@@ -5616,6 +5614,21 @@ export default function PartnerPage() {
             onSubmit={submitPartnerBill}
             style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
           >
+            {selectedBill && (
+              <FormField label="Trạng thái hóa đơn">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <StatusPill tone={selectedBill.status === 'VERIFIED' || selectedBill.status === 'PAID' ? 'success' : selectedBill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                    {translateBillStatus(selectedBill.status)}
+                  </StatusPill>
+                  {selectedBill.rejectReason && (
+                    <span style={{ color: colors.danger, fontSize: '12.5px', fontWeight: 800 }}>
+                      Lý do từ chối: {selectedBill.rejectReason}
+                    </span>
+                  )}
+                </div>
+              </FormField>
+            )}
+
             <FormField label="Quán thuộc partner *">
               <ThemedListingSelect
                 value={billStoreId}
@@ -5670,54 +5683,130 @@ export default function PartnerPage() {
             </FormField>
 
             <FormField label="Ảnh / chứng từ">
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                <label
-                  style={{
-                    minHeight: '42px',
-                    borderRadius: '11px',
-                    border: `1px solid ${colors.borderGold22}`,
-                    background: colors.surface2,
-                    color: colors.gold,
-                    padding: '0 14px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <ImagePlus size={16} />
-                  {billEvidenceFile ? 'Đổi file' : 'Chọn file'}
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onInput={(event) => handleBillFileChange(event.currentTarget)}
-                    onChange={(event) => handleBillFileChange(event.currentTarget)}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-                {billEvidenceFile ? (
-                  <span
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <label
                     style={{
-                      ...softCardStyle,
-                      minHeight: '38px',
-                      padding: '0 11px',
+                      minHeight: '42px',
+                      borderRadius: '11px',
+                      border: `1px solid ${colors.borderGold22}`,
+                      background: colors.surface2,
+                      color: colors.gold,
+                      padding: '0 14px',
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
-                      color: colors.text2,
-                      fontSize: '12px',
-                      minWidth: 0,
-                      maxWidth: '100%',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    <FileText size={14} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {billEvidenceFile.name}
-                    </span>
-                  </span>
+                    <ImagePlus size={16} />
+                    {billEvidenceFile || selectedBill?.media?.length ? 'Đổi file' : 'Chọn file'}
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onInput={(event) => handleBillFileChange(event.currentTarget)}
+                      onChange={(event) => handleBillFileChange(event.currentTarget)}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {billEvidenceFile && (
+                    <GhostButton
+                      onClick={() => setBillEvidenceFile(null)}
+                      style={{ minHeight: '42px', height: '42px', padding: '0 14px', color: colors.danger }}
+                    >
+                      Xóa file chọn
+                    </GhostButton>
+                  )}
+                </div>
+
+                {billEvidenceFile ? (
+                  <div style={{ marginTop: '4px' }}>
+                    {billEvidenceFile.type.startsWith('image/') ? (
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img
+                          src={URL.createObjectURL(billEvidenceFile)}
+                          alt="Local Preview"
+                          style={{
+                            maxHeight: '240px',
+                            maxWidth: '100%',
+                            borderRadius: '8px',
+                            border: `1px solid ${colors.borderGold22}`,
+                            objectFit: 'contain',
+                            display: 'block',
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span
+                        style={{
+                          ...softCardStyle,
+                          minHeight: '38px',
+                          padding: '0 11px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: colors.text2,
+                          fontSize: '12px',
+                          minWidth: 0,
+                          maxWidth: '100%',
+                        }}
+                      >
+                        <FileText size={14} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {billEvidenceFile.name} (Chưa hỗ trợ preview định dạng này)
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                ) : selectedBill?.media?.length ? (
+                  <div style={{ marginTop: '4px' }}>
+                    {selectedBill.media.map((med) => {
+                      const isImg =
+                        med.mimeType?.startsWith('image/') ||
+                        med.url?.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i);
+                      return (
+                        <div key={med.id} style={{ display: 'inline-block' }}>
+                          {isImg ? (
+                            <img
+                              src={med.url || ''}
+                              alt={med.originalName || 'Evidence'}
+                              style={{
+                                maxHeight: '240px',
+                                maxWidth: '100%',
+                                borderRadius: '8px',
+                                border: `1px solid ${colors.borderGold22}`,
+                                objectFit: 'contain',
+                                display: 'block',
+                              }}
+                            />
+                          ) : (
+                            <a
+                              href={med.url || ''}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                ...softCardStyle,
+                                minHeight: '38px',
+                                padding: '0 11px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                color: colors.goldBright,
+                                fontSize: '12px',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <FileText size={14} />
+                              <span>{med.originalName || 'Tải file chứng từ'}</span>
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <span style={{ color: colors.muted, fontSize: '12px', lineHeight: 1.5 }}>
                     Upload chứng từ sau khi bill tạo sẽ gắn media PROTECTED.
