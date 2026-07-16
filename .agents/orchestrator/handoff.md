@@ -1,28 +1,30 @@
-# Hard Handoff - recommend-home Manual Configuration
- 
- ## Milestone State
- - Milestone 1: Exploration & Design [DONE]
- - Milestone 2: Backend API adjustments [DONE]
- - Milestone 3: Admin UI Tab [DONE]
- - Milestone 4: Verification & Integration Testing [DONE]
- - Milestone 5: Forensic Integrity Audit [DONE]
- - Milestone 6: Git commit and push [DONE]
- 
- ## Active Subagents
- - None. All subagents have finished their execution and have been retired.
- 
- ## Pending Decisions
- - None.
- 
- ## Remaining Work
- - None. The feature is 100% complete and fully verified.
- 
- ## Key Artifacts
- - `d:\laragon\www\NightLife-VN\.agents\orchestrator\progress.md` - Checklist and retrospective notes
- - `d:\laragon\www\NightLife-VN\.agents\orchestrator\BRIEFING.md` - Persistent briefing and memory
- - `d:\laragon\www\NightLife-VN\.agents\orchestrator\PROJECT.md` - Milestones and file layout
- - `d:\laragon\www\NightLife-VN\.agents\orchestrator\ORIGINAL_REQUEST.md` - Verbatim user request history
- - Backend test files: `backend/src/nightlife-data/nightlife-data.service.spec.ts`, `backend/src/nightlife-data/recommendations.spec.ts`
- - Frontend test file: `frontend/apps/web/__tests__/AdminRecommendHome.test.tsx`
- - Backend implementation files: `backend/src/nightlife-data/nightlife-data.service.ts`, `backend/src/nightlife-data/dto/admin-ranking.dto.ts`
- - Frontend implementation file: `frontend/apps/web/src/app/admin/content/page.tsx`
+# Handoff Report — Seeding Sync & Schema Coverage Completed
+
+## Milestone State
+- **Milestone 1: Explore & Analyze**: Completed. 9 missing entities and codebases explored by 3 Explorers.
+- **Milestone 2: Implement Seed Fixtures**: Completed. Created `16-tours.ts`, `17-admin-coupons-campaigns.ts`, updated `13-api-fixtures.ts`, and updated `14-full-fixtures.ts`.
+- **Milestone 3: Integrate and Verify**: Completed. Main entry point `index.ts` and verification script `verify.ts` updated to check 42 models. Local builds and database seeding verified successfully.
+- **Milestone 4: Deploy VPS Script**: Completed. Created `seed_vps_full.py` and unit test script `test_seed_vps_full.py` using Paramiko, including race condition fixes, connection cleanup, and full profile execution.
+- **Milestone 5: Forensic Audit & Commit**: Completed. Forensic Auditor verdict is CLEAN. Changes successfully committed and pushed to GitHub.
+
+## Active Subagents
+- None (All subagents successfully completed their tasks).
+
+## Pending Decisions
+- None.
+
+## Remaining Work
+- None. The task is fully complete and verified.
+
+## Key Artifacts
+- Seeding entry point: `backend/prisma/seed/index.ts`
+- Seeding files:
+  - `backend/prisma/seed/13-api-fixtures.ts`
+  - `backend/prisma/seed/14-full-fixtures.ts`
+  - `backend/prisma/seed/16-tours.ts`
+  - `backend/prisma/seed/17-admin-coupons-campaigns.ts`
+- Verification script: `backend/prisma/seed/verify.ts`
+- VPS deployment script: `backend/seed_vps_full.py`
+- VPS unit test suite: `backend/test_seed_vps_full.py`
+- Progress status: `.agents/orchestrator/progress.md`
+- Briefing status: `.agents/orchestrator/BRIEFING.md`
