@@ -3133,7 +3133,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           width: 18px;
           height: 18px;
           margin: 0;
-          transform: translateY(1px);
+          transform: translateY(2px);
         }
 
         .booking-cast-avatar.has-image {
