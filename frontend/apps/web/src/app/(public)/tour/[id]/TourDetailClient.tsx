@@ -44,12 +44,13 @@ import {
 } from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
-  firstBookingFieldError,
+  firstBookingFieldErrorKey,
   touchAllBookingFields,
   visibleBookingFieldErrors,
   type BookingTouchedFields,
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
+import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "./TourDetailClient.module.css";
@@ -74,6 +75,15 @@ const tourBookingFieldNames = {
   guestName: "nlbf-tour-f1",
   note: "nlbf-tour-f4",
 } as const;
+
+const tourBookingFieldScrollSelectors: BookingFieldScrollSelectors = {
+  bookingDate: ".nl-booking-date-field",
+  bookingTime: ".nl-booking-time-field",
+  email: `[name="${tourBookingFieldNames.guestEmail}"]`,
+  guestCount: `[name="${tourBookingFieldNames.guestCount}"]`,
+  guestName: `[name="${tourBookingFieldNames.guestName}"]`,
+  note: `[name="${tourBookingFieldNames.note}"]`,
+};
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
@@ -626,7 +636,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       bookingTime,
       explicitDepartureTimes.length ? undefined : bookingStore?.openingHours,
     );
-    const validationError = firstBookingFieldError(buildBookingFieldErrors({
+    const validationErrors = buildBookingFieldErrors({
       availableTimes: bookingTimeOptions,
       bookingDate,
       bookingTime,
@@ -637,13 +647,17 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       note: trimmedNote,
       scheduledAt,
       todayDate: getTodayDate(),
-    }));
+    });
+    const validationErrorField = firstBookingFieldErrorKey(validationErrors);
 
     setGuestName(displayName);
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
-    if (validationError) return;
+    if (validationErrorField) {
+      scrollBookingValidationFieldIntoView(validationErrorField, tourBookingFieldScrollSelectors);
+      return;
+    }
     if (!bookingStore) {
       setErrorMessage(tx("invalidTour"));
       return;

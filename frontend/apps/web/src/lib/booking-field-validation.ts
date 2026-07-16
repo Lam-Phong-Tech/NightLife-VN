@@ -40,6 +40,9 @@ export const touchAllBookingFields = (): BookingTouchedFields =>
 export const firstBookingFieldError = (errors: BookingFieldErrors) =>
   bookingValidationFieldKeys.map((field) => errors[field]).find(Boolean) ?? "";
 
+export const firstBookingFieldErrorKey = (errors: BookingFieldErrors) =>
+  bookingValidationFieldKeys.find((field) => Boolean(errors[field])) ?? null;
+
 export function buildBookingFieldErrors({
   availableTimes,
   bookingDate,

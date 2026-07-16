@@ -3,6 +3,7 @@
 import { getAuthUser, updateStoredAuthUser, type AuthUser } from "@/lib/auth/session";
 import { updateMemberProfile } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -36,7 +37,6 @@ type ProfileForm = {
   phone: string;
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const displayNamePattern = /^[\p{L}\s]+$/u;
 const phonePattern = /^[0-9+\-\s().]+$/;
 const minPhoneDigits = 8;
@@ -54,7 +54,7 @@ function formFromUser(user: AuthUser | null): ProfileForm {
 function normalizeForm(form: ProfileForm): ProfileForm {
   return {
     displayName: form.displayName.trim().replace(/\s+/g, " "),
-    email: form.email.trim().toLowerCase(),
+    email: normalizeEmailAddress(form.email),
     phone: form.phone.trim().replace(/\s+/g, " "),
   };
 }
@@ -77,15 +77,8 @@ function validateForm(form: ProfileForm) {
     errors.displayName = "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
   }
 
-  if (!normalized.email) {
-    errors.email = "Vui lòng nhập email.";
-  } else if (!emailPattern.test(normalized.email)) {
-    errors.email = "Email chưa đúng định dạng.";
-  }
-
-  if (normalized.email.length > 254) {
-    errors.email = "Email không được vượt quá 254 ký tự.";
-  }
+  const emailError = validateEmailAddress(normalized.email);
+  if (emailError) errors.email = emailError;
 
   if (normalized.phone) {
     const digitCount = normalized.phone.replace(/\D/g, "").length;

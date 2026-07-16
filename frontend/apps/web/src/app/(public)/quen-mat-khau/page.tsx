@@ -5,6 +5,7 @@ import {
   verifyPasswordResetCode,
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,26 +27,12 @@ const colors = {
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeEmailAddress(value);
 }
 
 function validateEmailInput(value: string) {
-  if (!value) {
-    return "Vui lòng nhập email.";
-  }
-
-  if (!emailPattern.test(value)) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  if (value.length > 254) {
-    return "Email không được vượt quá 254 ký tự.";
-  }
-
-  return "";
+  return validateEmailAddress(value);
 }
 
 function initialEmail() {

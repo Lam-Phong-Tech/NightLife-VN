@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
+import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
@@ -63,8 +64,6 @@ declare global {
   }
 }
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const emailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const displayNamePattern = /^[\p{L}\s]+$/u;
 const passwordRules = [
   { test: (value: string) => value.length >= 8, message: "Mật khẩu cần tối thiểu 8 ký tự." },
@@ -74,7 +73,7 @@ const passwordRules = [
 ];
 
 function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeEmailAddress(value);
 }
 
 function normalizeDisplayName(value: string) {
@@ -86,56 +85,7 @@ function normalizePassword(value: string) {
 }
 
 function validateEmail(value: string) {
-  if (!value) {
-    return "Vui lòng nhập email.";
-  }
-
-  if (value.length > 254) {
-    return "Email không được vượt quá 254 ký tự.";
-  }
-
-  const atParts = value.split("@");
-  if (atParts.length !== 2) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  const [localPart, domainPart] = atParts;
-
-  if (!localPart) {
-    return "Phần trước dấu @ không được để trống.";
-  }
-
-  if (localPart.length > 64) {
-    return "Phần trước dấu @ không được vượt quá 64 ký tự.";
-  }
-
-  if (!domainPart) {
-    return "Phần sau dấu @ không được để trống.";
-  }
-
-  if (domainPart.length > 253) {
-    return "Phần sau dấu @ không được vượt quá 253 ký tự.";
-  }
-
-  const domainLabels = domainPart.split(".");
-
-  if (domainLabels.length < 2 || domainLabels.some((label) => !label)) {
-    return "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.";
-  }
-
-  if (domainLabels.some((label) => label.length > 63)) {
-    return "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.";
-  }
-
-  if (!domainLabels.every((label) => emailDomainLabelPattern.test(label))) {
-    return "Tên miền sau dấu @ chỉ được gồm chữ, số, dấu gạch ngang và không bắt đầu/kết thúc bằng dấu gạch ngang.";
-  }
-
-  if (!emailPattern.test(value)) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  return "";
+  return validateEmailAddress(value);
 }
 
 function getInitialQueryMessage() {
@@ -921,8 +871,8 @@ export default function Page() {
         }
 
         html.vy-light .nl-login-page .nl-field-box:focus-within {
-          border-color: rgba(150, 116, 52, 0.56) !important;
-          box-shadow: 0 0 0 3px rgba(150, 116, 52, 0.13) !important;
+          border-color: rgba(150, 116, 52, 0.18) !important;
+          box-shadow: none !important;
         }
 
         html.vy-light .nl-login-page .nl-field-icon,

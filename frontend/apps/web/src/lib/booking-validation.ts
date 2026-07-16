@@ -1,3 +1,5 @@
+import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
+
 export const bookingValidationLimits = {
   bookingDateWindowDays: 14,
   maxEmailLength: 254,
@@ -10,8 +12,6 @@ export const bookingValidationLimits = {
   minNameLength: 2,
 } as const;
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const emailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const displayNamePattern = /^[\p{L}\p{M}\s]+$/u;
 const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
 const phonePattern = /^[0-9+\-\s().]+$/;
@@ -22,7 +22,7 @@ export const normalizeBookingDisplayName = (value: string) =>
 export const sanitizeBookingDisplayNameInput = (value: string) =>
   value.replace(/\p{C}/gu, "").replace(/\s{2,}/g, " ");
 
-export const normalizeBookingEmail = (value: string) => value.trim().toLowerCase();
+export const normalizeBookingEmail = normalizeEmailAddress;
 
 export const normalizeBookingNote = (value: string) => value.trim();
 
@@ -69,56 +69,7 @@ export function validateBookingDisplayName(value: string) {
 }
 
 export function validateBookingEmail(value: string) {
-  if (!value) {
-    return "Vui lòng nhập email.";
-  }
-
-  if (value.length > bookingValidationLimits.maxEmailLength) {
-    return `Email tối đa ${bookingValidationLimits.maxEmailLength} ký tự.`;
-  }
-
-  const atParts = value.split("@");
-  if (atParts.length !== 2) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  const [localPart, domainPart] = atParts;
-
-  if (!localPart) {
-    return "Phần trước dấu @ không được để trống.";
-  }
-
-  if (localPart.length > 64) {
-    return "Phần trước dấu @ không được vượt quá 64 ký tự.";
-  }
-
-  if (!domainPart) {
-    return "Phần sau dấu @ không được để trống.";
-  }
-
-  if (domainPart.length > 253) {
-    return "Phần sau dấu @ không được vượt quá 253 ký tự.";
-  }
-
-  const domainLabels = domainPart.split(".");
-
-  if (domainLabels.length < 2 || domainLabels.some((label) => !label)) {
-    return "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.";
-  }
-
-  if (domainLabels.some((label) => label.length > 63)) {
-    return "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.";
-  }
-
-  if (!domainLabels.every((label) => emailDomainLabelPattern.test(label))) {
-    return "Tên miền sau dấu @ chỉ được gồm chữ, số, dấu gạch ngang và không bắt đầu/kết thúc bằng dấu gạch ngang.";
-  }
-
-  if (!emailPattern.test(value)) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  return "";
+  return validateEmailAddress(value);
 }
 
 export function validateBookingPhone(value: string, options: { required?: boolean } = {}) {

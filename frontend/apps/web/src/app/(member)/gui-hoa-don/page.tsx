@@ -58,7 +58,7 @@ const billPickerTheme = {
   },
   components: {
     Select: {
-      activeBorderColor: "var(--vy-gold)",
+      activeBorderColor: "var(--vy-border-gold-22)",
       hoverBorderColor: "var(--vy-border-gold-40)",
       optionActiveBg: "var(--vy-gold-soft-bg)",
       optionSelectedBg: "var(--vy-gold-soft-bg)",
@@ -1946,8 +1946,8 @@ export default function Page() {
         }
 
         input:focus {
-          border-color: var(--vy-gold);
-          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.15);
+          border-color: var(--vy-border);
+          box-shadow: none;
         }
 
         .nl-static-value {
@@ -2359,10 +2359,13 @@ export default function Page() {
           box-shadow: none !important;
         }
 
-        :global(.nl-bill-ant-select.ant-select:hover .ant-select-selector),
-        :global(.nl-bill-ant-select.ant-select-focused .ant-select-selector) {
+        :global(.nl-bill-ant-select.ant-select:hover .ant-select-selector) {
           border-color: var(--vy-gold) !important;
-          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12) !important;
+        }
+
+        :global(.nl-bill-ant-select.ant-select-focused .ant-select-selector) {
+          border-color: var(--vy-border) !important;
+          box-shadow: none !important;
         }
 
         :global(.nl-bill-ant-select.ant-select-disabled .ant-select-selector) {

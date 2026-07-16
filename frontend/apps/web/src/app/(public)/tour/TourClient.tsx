@@ -542,8 +542,8 @@ const tourDirectoryCss = `
   }
 
   .tour-city-select.is-open {
-    border-color: var(--vy-border-gold-40);
-    box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+    border-color: var(--vy-border-gold-22);
+    box-shadow: none;
   }
 
   .tour-city-select.is-open .tour-city-trigger svg:last-child {

@@ -87,12 +87,12 @@ const bookingPickerTheme = {
   },
   components: {
     DatePicker: {
-      activeBorderColor: "var(--vy-gold)",
+      activeBorderColor: "var(--vy-border-gold-22)",
       hoverBorderColor: "var(--vy-border-gold-40)",
       cellActiveWithRangeBg: "var(--vy-gold-soft-bg)",
     },
     Select: {
-      activeBorderColor: "var(--vy-gold)",
+      activeBorderColor: "var(--vy-border-gold-22)",
       hoverBorderColor: "var(--vy-border-gold-40)",
       optionActiveBg: "var(--vy-gold-soft-bg)",
       optionSelectedBg: "var(--vy-gold-soft-bg)",

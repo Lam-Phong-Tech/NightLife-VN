@@ -37,12 +37,13 @@ import {
 import { getBookingDateAfterDays, getTodayBookingDate } from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
-  firstBookingFieldError,
+  firstBookingFieldErrorKey,
   touchAllBookingFields,
   visibleBookingFieldErrors,
   type BookingTouchedFields,
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
+import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
@@ -81,6 +82,15 @@ const bookingFieldNames = {
   note: "nlbf-dc-f4",
   selectedCast: "nlbf-dc-f5",
 } as const;
+
+const bookingFieldScrollSelectors: BookingFieldScrollSelectors = {
+  bookingDate: ".nl-booking-date-field",
+  bookingTime: ".nl-booking-time-field",
+  email: `[name="${bookingFieldNames.guestEmail}"]`,
+  guestCount: `[name="${bookingFieldNames.guestCount}"]`,
+  guestName: `[name="${bookingFieldNames.guestName}"]`,
+  note: `[name="${bookingFieldNames.note}"]`,
+};
 
 type BookingContext = {
   storeSlug?: string;
@@ -644,27 +654,27 @@ export default function Page() {
       storeOpeningHours,
     );
 
-    const validationError = firstBookingFieldError(
-      buildBookingFieldErrors({
-        displayName,
-        email: normalizedEmail,
-        guestCount: partySize,
-        bookingDate,
-        bookingTime,
-        availableTimes: bookingTimeOptions,
-        loadingTimes: !storeHoursResolved,
-        maxDate: getMaxBookingDate(),
-        scheduledAt,
-        note: trimmedNote,
-        todayDate: getTodayDate(),
-      }),
-    );
+    const validationErrors = buildBookingFieldErrors({
+      displayName,
+      email: normalizedEmail,
+      guestCount: partySize,
+      bookingDate,
+      bookingTime,
+      availableTimes: bookingTimeOptions,
+      loadingTimes: !storeHoursResolved,
+      maxDate: getMaxBookingDate(),
+      scheduledAt,
+      note: trimmedNote,
+      todayDate: getTodayDate(),
+    });
+    const validationErrorField = firstBookingFieldErrorKey(validationErrors);
 
     setGuestName(displayName);
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
-    if (validationError) {
+    if (validationErrorField) {
+      scrollBookingValidationFieldIntoView(validationErrorField, bookingFieldScrollSelectors);
       return;
     }
 

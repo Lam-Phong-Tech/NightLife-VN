@@ -652,18 +652,22 @@ textarea::placeholder {
 .nl-page-content a:focus-visible,
 .nl-page-content button:focus-visible,
 .nl-page-content [role="button"]:focus-visible,
-.nl-page-content input:focus-visible,
-.nl-page-content select:focus-visible,
-.nl-page-content textarea:focus-visible,
 .nl-customer-route-content a:focus-visible,
 .nl-customer-route-content button:focus-visible,
 .nl-customer-route-content [role="button"]:focus-visible,
-.nl-customer-route-content input:focus-visible,
-.nl-customer-route-content select:focus-visible,
-.nl-customer-route-content textarea:focus-visible,
 .nl-mobile-bottom-nav a:focus-visible {
   outline: 2px solid var(--vy-gold);
   outline-offset: 3px;
+}
+
+.nl-page-content :is(input, select, textarea):focus,
+.nl-page-content :is(input, select, textarea):focus-visible,
+.nl-customer-route-content :is(input, select, textarea):focus,
+.nl-customer-route-content :is(input, select, textarea):focus-visible,
+.nl-auth-page :is(input, select, textarea):focus,
+.nl-auth-page :is(input, select, textarea):focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .nl-site-header :is(a, button)[aria-disabled="true"],
@@ -2196,10 +2200,13 @@ html.vy-light .nl-reset-auth-input::placeholder {
   color: var(--vy-text);
 }
 
-.nl-booking-ant-control.ant-picker:hover,
-.nl-booking-ant-control.ant-picker-focused {
+.nl-booking-ant-control.ant-picker:hover {
   border-color: var(--vy-border-gold-40);
-  box-shadow: 0 0 0 3px var(--vy-gold-soft-bg);
+}
+
+.nl-booking-ant-control.ant-picker-focused {
+  border-color: var(--vy-border-gold-22);
+  box-shadow: none;
 }
 
 .nl-booking-ant-control.ant-picker .ant-picker-input > input {
@@ -2231,10 +2238,13 @@ html.vy-light .nl-reset-auth-input::placeholder {
   align-items: center;
 }
 
-.nl-booking-ant-select.ant-select:hover .ant-select-selector,
-.nl-booking-ant-select.ant-select-focused .ant-select-selector {
+.nl-booking-ant-select.ant-select:hover .ant-select-selector {
   border-color: var(--vy-border-gold-40) !important;
-  box-shadow: 0 0 0 3px var(--vy-gold-soft-bg) !important;
+}
+
+.nl-booking-ant-select.ant-select-focused .ant-select-selector {
+  border-color: var(--vy-border-gold-22) !important;
+  box-shadow: none !important;
 }
 
 .nl-booking-ant-select .ant-select-selection-item,
@@ -2275,11 +2285,14 @@ html.vy-light .nl-reset-auth-input::placeholder {
   box-shadow: none;
 }
 
-.nl-booking-time-trigger:hover,
+.nl-booking-time-trigger:hover {
+  border-color: var(--vy-border-gold-40);
+}
+
 .nl-booking-time-trigger:focus-visible,
 .nl-booking-time-select.is-open .nl-booking-time-trigger {
-  border-color: var(--vy-border-gold-40);
-  box-shadow: 0 0 0 3px var(--vy-gold-soft-bg);
+  border-color: var(--vy-border-gold-22);
+  box-shadow: none;
   outline: none;
 }
 

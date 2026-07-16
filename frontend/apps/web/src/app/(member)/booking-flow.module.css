@@ -756,8 +756,8 @@
 }
 
 .noteArea:focus {
-  border-color: rgba(240, 221, 168, 0.72);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  border-color: rgba(212, 178, 106, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .infoNote {
@@ -1692,13 +1692,13 @@
 }
 
 .dialogTextArea:focus {
-  border-color: rgba(212, 178, 106, 0.74);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  border-color: rgba(212, 178, 106, 0.28);
+  box-shadow: none;
 }
 
 .dialogInput:focus {
-  border-color: rgba(212, 178, 106, 0.74);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  border-color: rgba(212, 178, 106, 0.28);
+  box-shadow: none;
 }
 
 .dialogTextArea::placeholder {
@@ -1819,13 +1819,18 @@
 }
 
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker:hover),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker-focused),
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select:hover .ant-select-selector),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-select.ant-select-focused .ant-select-selector),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:hover),
-:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:focus-visible) {
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:hover) {
   border-color: rgba(168, 124, 52, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(168, 124, 52, 0.12) !important;
+}
+
+:global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker-focused),
+:global(html.vy-light)
+  .dialogPanel
+  :global(.nl-booking-ant-select.ant-select-focused .ant-select-selector),
+:global(html.vy-light) .dialogPanel :global(.nl-booking-time-trigger:focus-visible) {
+  border-color: rgba(168, 124, 52, 0.28) !important;
+  box-shadow: none !important;
 }
 
 :global(html.vy-light) .dialogPanel :global(.nl-booking-ant-control.ant-picker .ant-picker-input > input),

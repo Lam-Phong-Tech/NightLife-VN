@@ -1720,8 +1720,8 @@ const castSearchCss = `
 }
 
 .cast-search-input.is-focused {
-  border-color: rgba(212, 178, 106, 0.85);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.14);
+  border-color: rgba(212, 178, 106, 0.28);
+  box-shadow: none;
 }
 
 .cast-search-input svg,
@@ -1806,8 +1806,8 @@ const castSearchCss = `
 }
 
 .cast-dropdown.is-open .cast-dropdown-trigger {
-  border-color: rgba(212, 178, 106, 0.72);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  border-color: rgba(212, 178, 106, 0.28);
+  box-shadow: none;
 }
 
 .cast-dropdown.is-open .cast-dropdown-trigger > svg:last-child {
@@ -2946,8 +2946,8 @@ html.vy-light .cast-input-filter svg {
 
 html.vy-light .cast-dropdown.is-open .cast-dropdown-trigger,
 html.vy-light .cast-search-input.is-focused {
-  border-color: rgba(150, 116, 52, 0.56);
-  box-shadow: 0 0 0 3px rgba(150, 116, 52, 0.13);
+  border-color: rgba(150, 116, 52, 0.18);
+  box-shadow: none;
 }
 
 html.vy-light .cast-dropdown-menu {

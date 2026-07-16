@@ -71,13 +71,14 @@ import {
 } from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
-  firstBookingFieldError,
+  firstBookingFieldErrorKey,
   touchAllBookingFields,
   visibleBookingFieldErrors,
   type BookingFieldErrors,
   type BookingTouchedFields,
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
+import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
@@ -204,6 +205,15 @@ const storeBookingFieldNames = {
   note: "nlbf-sd-f4",
   selectedCast: "nlbf-sd-f5",
 } as const;
+
+const storeBookingFieldScrollSelectors: BookingFieldScrollSelectors = {
+  bookingDate: ".booking-card .nl-booking-date-field",
+  bookingTime: ".booking-card .nl-booking-time-field",
+  email: `[name="${storeBookingFieldNames.guestEmail}"]`,
+  guestCount: `[name="${storeBookingFieldNames.guestCount}"]`,
+  guestName: `[name="${storeBookingFieldNames.guestName}"]`,
+  note: `[name="${storeBookingFieldNames.note}"]`,
+};
 
 const emptyMediaBackground = "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
@@ -1710,22 +1720,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
-    const validationError = firstBookingFieldError(
-      buildBookingFieldErrors({
-        availableTimes: bookingTimeOptions,
-        bookingDate: selectedDate.iso,
-        bookingTime: selectedTime,
-        displayName,
-        email: normalizedEmail,
-        guestCount,
-        maxDate: getMaxBookingDate(),
-        note: trimmedNote,
-        scheduledAt,
-        todayDate: getTodayDate(),
-      }),
-    );
+    const validationErrors = buildBookingFieldErrors({
+      availableTimes: bookingTimeOptions,
+      bookingDate: selectedDate.iso,
+      bookingTime: selectedTime,
+      displayName,
+      email: normalizedEmail,
+      guestCount,
+      maxDate: getMaxBookingDate(),
+      note: trimmedNote,
+      scheduledAt,
+      todayDate: getTodayDate(),
+    });
+    const validationErrorField = firstBookingFieldErrorKey(validationErrors);
 
-    if (validationError) {
+    if (validationErrorField) {
+      scrollBookingValidationFieldIntoView(validationErrorField, storeBookingFieldScrollSelectors);
       return;
     }
 
@@ -3473,8 +3483,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field:focus-within,
         .booking-note-box:focus {
-          border-color: var(--vy-border-gold-40);
-          box-shadow: 0 0 0 2px var(--vy-gold-soft-bg);
+          border-color: var(--vy-border-gold-22);
+          box-shadow: none;
+          outline: none;
         }
 
         .booking-card .booking-field .nl-booking-ant-control.ant-picker {
