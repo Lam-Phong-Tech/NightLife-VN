@@ -28,7 +28,13 @@ import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
-import type { PublicStoreDetail, RelatedStore, StoreGalleryItem, StoreOpeningHour } from "@/lib/api/store-detail";
+import type {
+  PublicStoreDetail,
+  RelatedStore,
+  StoreDetailCast,
+  StoreGalleryItem,
+  StoreOpeningHour,
+} from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlots,
@@ -85,6 +91,12 @@ type LanguageStatCard = {
   label: string;
   value: string;
   title?: string;
+};
+
+type BookingCastOption = {
+  slug: string;
+  label: string;
+  meta: string;
 };
 
 type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
@@ -174,6 +186,7 @@ const storeBookingFieldNames = {
   guestEmail: "nlbf-sd-f2",
   guestName: "nlbf-sd-f1",
   note: "nlbf-sd-f4",
+  selectedCast: "nlbf-sd-f5",
 } as const;
 
 const emptyMediaBackground =
@@ -202,6 +215,20 @@ const formatNationalities = (languages: string[], language: LanguageCode) =>
   nationalitiesFromLanguages(languages)
     .map((nationality) => translateText(nationality, language))
     .join(" · ");
+
+const storeCastOptionLabel = (cast: Pick<StoreDetailCast, "publicAlias" | "stageName">) =>
+  readableName(cast.publicAlias || cast.stageName);
+
+const storeCastOptionMeta = (
+  cast: Pick<StoreDetailCast, "publicHeadline" | "languages">,
+  language: LanguageCode,
+) =>
+  [
+    cast.publicHeadline ? translateText(cast.publicHeadline, language) : "",
+    formatNationalities(cast.languages, language) || cast.languages.filter(Boolean).join(", "),
+  ]
+    .filter(Boolean)
+    .join(" - ");
 
 const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) =>
   parts
@@ -787,6 +814,8 @@ function BookingCard({
   guestName,
   email,
   note,
+  selectedCastSlug,
+  castOptions,
   isSubmitting,
   errorMessage,
   fieldErrors,
@@ -797,6 +826,7 @@ function BookingCard({
   onGuestNameChange,
   onEmailChange,
   onNoteChange,
+  onCastSelect,
   onFieldTouched,
   onSubmit,
 }: {
@@ -810,6 +840,8 @@ function BookingCard({
   guestName: string;
   email: string;
   note: string;
+  selectedCastSlug: string;
+  castOptions: BookingCastOption[];
   isSubmitting: boolean;
   errorMessage: string;
   fieldErrors: BookingFieldErrors;
@@ -820,10 +852,12 @@ function BookingCard({
   onGuestNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onNoteChange: (value: string) => void;
+  onCastSelect: (value: string) => void;
   onFieldTouched: (field: BookingValidationField) => void;
   onSubmit: () => void;
 }) {
   const bookingPriceText = priceRangeText(store);
+  const selectedCast = castOptions.find((option) => option.slug === selectedCastSlug);
 
   return (
     <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
@@ -968,6 +1002,31 @@ function BookingCard({
           />
         </div>
 
+        {castOptions.length ? (
+          <div className="booking-form-grid booking-cast-grid">
+            <label className="booking-field booking-cast-field">
+              <span>{translateText("Cast đã chọn", activeLanguage)}</span>
+              <select
+                {...bookingInputAutofillBlockProps}
+                name={storeBookingFieldNames.selectedCast}
+                value={selectedCastSlug}
+                aria-label={translateText("Cast đã chọn", activeLanguage)}
+                onChange={(event) => onCastSelect(event.target.value)}
+              >
+                <option value="">{translateText("Không chọn cast", activeLanguage)}</option>
+                {castOptions.map((option) => (
+                  <option key={option.slug} value={option.slug}>
+                    {option.meta ? `${option.label} - ${option.meta}` : option.label}
+                  </option>
+                ))}
+              </select>
+              <small className="booking-cast-meta">
+                {selectedCast?.meta || translateText("Không chọn cast", activeLanguage)}
+              </small>
+            </label>
+          </div>
+        ) : null}
+
         <label className="booking-note-label">
           {translateText("Ghi chú tuỳ chọn", activeLanguage)}
         </label>
@@ -1067,6 +1126,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
+  const [selectedCastSlug, setSelectedCastSlug] = useState("");
   const [statusNow, setStatusNow] = useState(() => new Date());
   const [guestName, setGuestName] = useState("");
   const [email, setEmail] = useState("");
@@ -1150,7 +1210,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     Boolean(selectedVideoUrl) &&
     !selectedVideoUrl.includes("youtube.com/embed") &&
     !selectedVideoUrl.includes("player.vimeo.com");
-  const galleryTiles = gallery.slice(0, 5);
+  const desktopGalleryTiles = gallery.slice(0, 5);
+  const mobileGalleryTiles = gallery;
   const tourMedia = videoGallery;
   const location = localizedStoreParts([store.area?.name, store.district, store.city], activeLanguage);
   const addressText = storeAddressText(store);
@@ -1179,6 +1240,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   };
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
   const priceText = priceRangeText(store);
+  const bookingCastOptions = useMemo<BookingCastOption[]>(
+    () =>
+      store.casts.map((cast) => ({
+        slug: cast.slug,
+        label: storeCastOptionLabel(cast),
+        meta: storeCastOptionMeta(cast, activeLanguage),
+      })),
+    [activeLanguage, store.casts],
+  );
+  const activeSelectedCastSlug = bookingCastOptions.some((option) => option.slug === selectedCastSlug)
+    ? selectedCastSlug
+    : "";
+  const selectedBookingCast = bookingCastOptions.find((option) => option.slug === activeSelectedCastSlug);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const introText = useMemo(
@@ -1314,6 +1388,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     guests: String(guestCount),
     date: selectedDate.iso,
     time: selectedTime,
+    ...(activeSelectedCastSlug ? { castSlug: activeSelectedCastSlug } : {}),
+    ...(selectedBookingCast?.label ? { castName: selectedBookingCast.label } : {}),
     ...(couponId ? { couponId } : {}),
   });
 
@@ -1419,6 +1495,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       guests: guestCount,
       date: selectedDate.iso,
       time: selectedTime,
+      castSlug: activeSelectedCastSlug || undefined,
     });
   const submitDesktopBooking = async () => {
     if (isBookingSubmitting) return;
@@ -1459,6 +1536,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const payload: CreateBookingPayload = {
       storeSlug: store.slug,
+      ...(activeSelectedCastSlug ? { castSlug: activeSelectedCastSlug } : {}),
       displayName,
       email: normalizedEmail,
       scheduledAt,
@@ -1605,7 +1683,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
             </section>
 
-            {galleryTiles.length ? (
+            {mobileGalleryTiles.length ? (
               <div
                 className="mobile-gallery-strip"
                 aria-label={translateText("Thư viện ảnh của quán", activeLanguage)}
@@ -1617,7 +1695,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   </small>
                 </div>
                 <div className="mobile-gallery-rail hscroll">
-                  {galleryTiles.map((item, index) => (
+                  {mobileGalleryTiles.map((item, index) => (
                     <button
                       key={`mobile-${item.id}-${index}`}
                       className={index === selectedGalleryIndex ? "active" : undefined}
@@ -1677,9 +1755,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </a>
             </div>
 
-            {galleryTiles.length ? (
+            {desktopGalleryTiles.length ? (
               <div className="thumb-grid">
-                {galleryTiles.map((item, index) => (
+                {desktopGalleryTiles.map((item, index) => (
                   <button
                     key={`${item.id}-${index}`}
                     className={index === selectedGalleryIndex ? "active" : undefined}
@@ -1765,6 +1843,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               guestName={guestName}
               email={email}
               note={note}
+              selectedCastSlug={activeSelectedCastSlug}
+              castOptions={bookingCastOptions}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
               fieldErrors={visibleFieldErrors}
@@ -1778,6 +1858,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onGuestNameChange={setGuestName}
               onEmailChange={setEmail}
               onNoteChange={setNote}
+              onCastSelect={setSelectedCastSlug}
               onFieldTouched={markBookingFieldTouched}
               onSubmit={submitDesktopBooking}
             />
@@ -2408,12 +2489,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           gap: 8px;
           overflow-x: auto;
-          padding-bottom: 2px;
+          max-width: 100%;
+          padding: 0 2px 4px 0;
+          scroll-padding: 0 18px;
+          scroll-snap-type: x proximity;
+          touch-action: pan-x;
+          -webkit-overflow-scrolling: touch;
         }
 
         .mobile-gallery-rail button {
           position: relative;
-          flex: 0 0 78px;
+          flex: 0 0 clamp(78px, 22vw, 96px);
           height: 56px;
           border: 1px solid rgba(255, 255, 255, .08);
           border-radius: 8px;
@@ -2424,6 +2510,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           place-items: center;
           overflow: hidden;
           cursor: pointer;
+          scroll-snap-align: start;
         }
 
         .mobile-gallery-rail button.active {
@@ -2751,6 +2838,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-top: 0;
         }
 
+        .booking-cast-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
         .booking-schedule-grid {
           display: grid;
           grid-template-columns: minmax(130px, .82fr) minmax(150px, 1fr) minmax(150px, 1fr);
@@ -2842,6 +2933,46 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field select option {
           color: #17151a;
+        }
+
+        .booking-cast-field {
+          position: relative;
+          min-height: 72px;
+          padding-right: 36px;
+        }
+
+        .booking-cast-field::after {
+          content: "";
+          position: absolute;
+          top: 39px;
+          right: 15px;
+          width: 8px;
+          height: 8px;
+          border-right: 2px solid var(--vy-gold);
+          border-bottom: 2px solid var(--vy-gold);
+          transform: rotate(45deg);
+          pointer-events: none;
+          opacity: .9;
+        }
+
+        .booking-cast-field select {
+          padding-right: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .booking-cast-meta {
+          display: block;
+          max-width: 100%;
+          margin-top: 4px;
+          overflow: hidden;
+          color: var(--vy-muted);
+          font-size: 10.5px;
+          font-weight: 750;
+          line-height: 1.25;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .slot-row {

@@ -2584,6 +2584,14 @@ const venueSearchCss = `
     font-weight: 800;
   }
 
+  html.vy-light .venue-error {
+    border-color: rgba(190, 18, 60, .52);
+    background: #fff1f2;
+    color: #881337;
+    box-shadow: 0 10px 22px rgba(136, 19, 55, .12);
+    font-weight: 900;
+  }
+
   .venue-empty {
     display: grid;
     gap: 8px;
@@ -3356,7 +3364,8 @@ const venueSearchCss = `
       margin-top: 8px;
       border-radius: 10px;
       padding: 9px 10px;
-      font-size: 11px;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .venue-empty {
