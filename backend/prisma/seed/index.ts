@@ -1,4 +1,7 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PasswordService } from '../../src/common/password.service';
 import { seedPermissions, seedRoles } from './00-roles';
 import { seedUsers } from './01-users';
 import { seedAreas } from './02-areas';
@@ -15,7 +18,9 @@ import { seedBookingsAndBills } from './12-bookings-bills';
 import { seedApiFixtures } from './13-api-fixtures';
 import { seedFullFixtures } from './14-full-fixtures';
 import { seedSystemConfigs } from './15-system-configs';
-import { SeedOptions } from './shared';
+import { seedTours } from './16-tours';
+import { seedAdminCouponsAndCampaigns } from './17-admin-coupons-campaigns';
+import { SeedOptions, resolveSeedProfile } from './shared';
 import { verifySeedCoverage } from './verify';
 
 export async function seedAll(
@@ -57,6 +62,14 @@ export async function seedAll(
   });
 
   await seedSystemConfigs(prisma);
+
+  await seedTours(prisma, stores);
+  await seedAdminCouponsAndCampaigns(prisma, {
+    stores,
+    users,
+    guests: transactions.guests,
+    now: options.now,
+  });
 
   if (options.profile === 'full') {
     await seedFullFixtures(prisma, {
@@ -106,6 +119,11 @@ export async function seedAll(
   console.log(
     '  • API fixtures:  categories, coupon issues, favorites, chat, reviews, notifications and audits',
   );
+  console.log('  • Favorite Stores: 3 custom member/VIP store preferences');
+  console.log('  • Support:       3 tickets (1 active, 1 pending, 1 closed) with 7 messages');
+  console.log('  • Tours:         2 custom night tours across stores');
+  console.log('  • Admin Coupons: 2 admin coupons with scans and issued tokens');
+  console.log('  • Campaigns:     3 marketing campaigns (2 active, 1 draft)');
   console.log(`  • Profile:       ${options.profile}`);
   console.log('');
   console.log('🔑 Login credentials (all: Str0ngPass!):');
@@ -124,4 +142,28 @@ export async function seedAll(
   console.log(
     '  • Promo videos      → YouTube embed (https://www.youtube.com/embed/...)',
   );
+}
+
+if (require.main === module) {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL ?? '',
+    }),
+  });
+  const passwordService = new PasswordService();
+
+  const main = async () => {
+    const passwordHash = await passwordService.hash('Str0ngPass!');
+    await seedAll(prisma, passwordHash, {
+      profile: resolveSeedProfile(),
+      now: new Date(),
+    });
+  };
+
+  main()
+    .finally(() => prisma.$disconnect())
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
 }

@@ -1,7 +1,11 @@
 import {
   Area,
+  CampaignStatus,
   Content,
   Coupon,
+  CouponIssueStatus,
+  CouponStatus,
+  DiscountType,
   MediaAccess,
   MediaStatus,
   MediaType,
@@ -9,8 +13,11 @@ import {
   NotificationStatus,
   Prisma,
   PrismaClient,
+  ProfileStatus,
   Role,
   Store,
+  SupportSenderType,
+  SupportTicketStatus,
   User,
 } from '@prisma/client';
 import { TransactionSeedResult } from './12-bookings-bills';
@@ -832,6 +839,161 @@ export async function seedFullFixtures(
         email: `${fixture.key}@guest.nightlife.vn`,
         status: fixture.status,
         deletedAt: fixture.deletedAt,
+      },
+    });
+  }
+
+  // --- Seed Extra States for New Models ---
+
+  // SupportTicket CLOSED status
+  const closedTicketId = seedUuid('support-ticket:closed');
+  await prisma.supportTicket.upsert({
+    where: { id: closedTicketId },
+    update: {
+      userId: users.member?.id ?? null,
+      assignedAdminId: users.admin?.id ?? null,
+      status: SupportTicketStatus.CLOSED,
+      closedAt: seedDate(now, -1, 15),
+    },
+    create: {
+      id: closedTicketId,
+      userId: users.member?.id ?? null,
+      assignedAdminId: users.admin?.id ?? null,
+      status: SupportTicketStatus.CLOSED,
+      closedAt: seedDate(now, -1, 15),
+      createdAt: seedDate(now, -1, 12),
+    },
+  });
+
+  // SupportMessage SYSTEM senderType
+  const systemMsgId = seedUuid('support-message:system-msg');
+  await prisma.supportMessage.upsert({
+    where: { id: systemMsgId },
+    update: {
+      ticketId: seedUuid('support-ticket:member-active'),
+      senderId: null,
+      senderType: SupportSenderType.SYSTEM,
+      content: 'Hệ thống tự động: Yêu cầu của bạn đã được tiếp nhận.',
+      isRead: true,
+    },
+    create: {
+      id: systemMsgId,
+      ticketId: seedUuid('support-ticket:member-active'),
+      senderId: null,
+      senderType: SupportSenderType.SYSTEM,
+      content: 'Hệ thống tự động: Yêu cầu của bạn đã được tiếp nhận.',
+      isRead: true,
+      createdAt: seedDate(now, -1, 9),
+    },
+  });
+
+  // Campaign statuses: PAUSED, DRAFT, EXPIRED, DELETED
+  for (const status of [CampaignStatus.PAUSED, CampaignStatus.DRAFT, CampaignStatus.EXPIRED, CampaignStatus.DELETED]) {
+    const id = seedUuid(`full-campaign:${status}`);
+    await prisma.campaign.upsert({
+      where: { id },
+      update: {
+        name: `Seed Campaign ${status}`,
+        discountType: DiscountType.PERCENT,
+        discountValue: 10,
+        targetStoreId: stores['moonlight-bar']?.id ?? null,
+        status,
+        startsAt: seedDate(now, -5),
+        endsAt: seedDate(now, 5),
+      },
+      create: {
+        id,
+        name: `Seed Campaign ${status}`,
+        discountType: DiscountType.PERCENT,
+        discountValue: 10,
+        targetStoreId: stores['moonlight-bar']?.id ?? null,
+        status,
+        startsAt: seedDate(now, -5),
+        endsAt: seedDate(now, 5),
+        createdAt: seedDate(now, -5),
+      },
+    });
+  }
+
+  // Tour statuses: HIDDEN, DELETED
+  for (const status of [ProfileStatus.HIDDEN, ProfileStatus.DELETED]) {
+    const id = seedUuid(`full-tour:${status}`);
+    await prisma.tour.upsert({
+      where: { id },
+      update: {
+        title: `Seed Tour ${status}`,
+        city: 'Hanoi',
+        status,
+        deletedAt: status === ProfileStatus.DELETED ? seedDate(now, -30, 12) : null,
+      },
+      create: {
+        id,
+        title: `Seed Tour ${status}`,
+        city: 'Hanoi',
+        status,
+        deletedAt: status === ProfileStatus.DELETED ? seedDate(now, -30, 12) : null,
+        createdAt: seedDate(now, -5),
+      },
+    });
+  }
+
+  // AdminCoupon statuses: DRAFT, PAUSED, EXPIRED, ARCHIVED, DELETED
+  for (const status of [CouponStatus.DRAFT, CouponStatus.PAUSED, CouponStatus.EXPIRED, CouponStatus.ARCHIVED, CouponStatus.DELETED]) {
+    const id = seedUuid(`full-admin-coupon:${status}`);
+    const qrPayload = `https://nightlife.vn/admin-coupon/SEED-${status}?id=${id}`;
+    await prisma.adminCoupon.upsert({
+      where: { id },
+      update: {
+        code: `SEED-ADMIN-COUPON-${status}`,
+        qrPayloadHash: seedHash(qrPayload),
+        name: `Seed Admin Coupon ${status}`,
+        discountType: DiscountType.PERCENT,
+        discountValue: 10,
+        startsAt: seedDate(now, -5),
+        status,
+        deletedAt: status === CouponStatus.DELETED ? seedDate(now, -30, 12) : null,
+      },
+      create: {
+        id,
+        code: `SEED-ADMIN-COUPON-${status}`,
+        qrPayloadHash: seedHash(qrPayload),
+        name: `Seed Admin Coupon ${status}`,
+        discountType: DiscountType.PERCENT,
+        discountValue: 10,
+        startsAt: seedDate(now, -5),
+        status,
+        deletedAt: status === CouponStatus.DELETED ? seedDate(now, -30, 12) : null,
+        createdAt: seedDate(now, -5),
+      },
+    });
+  }
+
+  // AdminCouponIssue statuses: EXPIRED, REVOKED
+  const adminCouponActiveId = seedUuid('admin-coupon:admin-festive-50k');
+  for (const status of [CouponIssueStatus.EXPIRED, CouponIssueStatus.REVOKED]) {
+    const id = seedUuid(`full-admin-coupon-issue:${status}`);
+    const qrPayload = `https://nightlife.vn/admin-coupon-issue/SEED-${status}?id=${id}`;
+    await prisma.adminCouponIssue.upsert({
+      where: { id },
+      update: {
+        adminCouponId: adminCouponActiveId,
+        userId: users.member?.id ?? null,
+        code: `SEED-ADMIN-ISSUE-${status}`,
+        qrPayloadHash: seedHash(qrPayload),
+        status,
+        expiresAt: seedDate(now, -1),
+        revokedAt: status === CouponIssueStatus.REVOKED ? seedDate(now, -2) : null,
+      },
+      create: {
+        id,
+        adminCouponId: adminCouponActiveId,
+        userId: users.member?.id ?? null,
+        code: `SEED-ADMIN-ISSUE-${status}`,
+        qrPayloadHash: seedHash(qrPayload),
+        status,
+        expiresAt: seedDate(now, -1),
+        revokedAt: status === CouponIssueStatus.REVOKED ? seedDate(now, -2) : null,
+        createdAt: seedDate(now, -5),
       },
     });
   }

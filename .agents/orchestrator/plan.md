@@ -1,41 +1,46 @@
-# Phase 2 Implementation Plan: Partner Request State Machine & Frontend Diff UI
+# Implementation Plan: "Đề xuất tối nay" (Recommend Home) Manual Configuration
 
-This plan consolidates findings from Explorers 1, 2, and 3 to resolve the backend partner request state machine bugs and build the frontend side-by-side comparison Diff modal.
+This plan details the steps to build the manual configuration feature and home page display of up to 8 pinned stores for the "Đề xuất tối nay" section, including backend APIs and frontend administration tabs and logic.
 
-## Backend Changes (`nightlife-data.service.ts`)
+## 1. Backend Changes (NestJS, Prisma)
 
-1. **Type Definitions**:
-   - Update `PartnerRequestCmsRecord` to include detailed store fields (`description`, `address`, `city`, `district`, `phone`, `openingHours`, `pricingInfo`, `tags`, and `media`).
-2. **Select Block**:
-   - Extend `partnerRequestSelect()` to query all relevant detailed store fields including the `media` URLs.
-3. **Record Mapping**:
-   - Update `mapPartnerRequestRecord()` to compile these queried fields into an `originalStore` object and prefix-matched fields (such as `draftStoreCategory`, `draftStoreAddress`, `draftStoreMenuSummary`, `draftStoreMediaUrls`, etc.).
-4. **State Transitions (`reviewPartnerRequest`)**:
-   - Check if request is a partner registration: `const isPartnerRegistration = request.id.startsWith('PARTNER-')`.
-   - Call `ensurePartnerOnboarding` only if `approve` is true AND `isPartnerRegistration` is true.
-   - On approval:
-     - Set store status to `ACTIVE`.
-     - Conditionally update `ownerId` and `partnerAccountId` only if `onboarding` is present (registration). For updates, preserve the store's current owner/account IDs.
-   - On rejection:
-     - Only set the store status to `DRAFT` if `isPartnerRegistration` is true. If it is a listing update (`LISTING-`), keep the store's current status intact.
+### A. DTO Validation Relaxation
+- In `backend/src/nightlife-data/dto/admin-ranking.dto.ts`:
+  - Relax the `@Max(5)` constraint on `pinRank` for both `CreateAdminRankingConfigDto` and `UpdateAdminRankingConfigDto` to `@Max(8)` (or dynamically support up to 8 when `scope === 'recommend-home'`). Since `@Max(8)` is backward-compatible with 5, we can just change the decorator to:
+    `@Max(8, { message: 'Ranking chỉ hỗ trợ Top 1-8' })`
 
-## Frontend Changes (`AdminConsole.tsx`)
+### B. Home Page Recommendation Logic Update
+- In `backend/src/nightlife-data/nightlife-data.service.ts` -> `listPublicHomeRecommendations`:
+  - Query manual store rankings under `scope: 'recommend-home'`, `status: 'ACTIVE'`, `targetType: 'STORE'`.
+  - Check if these manual rankings are configured.
+  - If they are, load the associated stores, preserving the order defined by `pinRank`.
+  - Filter out any stores that are inactive (`status !== 'ACTIVE'`) or deleted (`deletedAt !== null`).
+  - If the manual rankings configuration is empty (0 active stores found), fall back to the existing personalized recommendations score-based logic.
 
-1. **Types**:
-   - Extend `AdminPartnerRequest` type to define `originalStore` and additional fields.
-2. **Custom Filter Dropdown**:
-   - Replace the native HTML `<select>` status filter dropdown with a custom dropdown button and popup list to comply with `AGENTS.md` rules.
-3. **Tab Filtering**:
-   - Implement navigation tabs at the top of the "Hồ sơ đối tác" section: "Yêu cầu Đăng ký mới" (prefix `PARTNER-`) and "Yêu cầu Sửa đổi" (prefix `LISTING-`).
-   - Group and count requests for each category.
-4. **View Changes Button**:
-   - Render a "Xem thay đổi" button next to pending `LISTING-` requests.
-5. **Comparison Diff Modal**:
-   - Render a side-by-side visual Diff View comparison modal when clicking "Xem thay đổi".
-   - Highlight modified fields using custom golden background and text colors.
-   - Support side-by-side comparison for text fields and image attachments.
-   - Integrate a text area for approval/rejection feedback reasons.
-   - Allow direct Approve and Reject actions from within the modal using the updated API handler.
+## 2. Frontend Changes (Next.js, Tailwind, React)
 
-## Git Operations
-- Run `git add`, `git commit -m "..."`, and `git push` to push the changes after verification, adhering to the project rules.
+### A. Admin Content Panel Tab addition
+- In `frontend/apps/web/src/app/admin/content/page.tsx`:
+  - Add a new tab: `'recommend-home'` ("Đề xuất tối nay") alongside campaign, banner, etc.
+  - Render a management layout when the tab is active:
+    - Search bar allowing searching all active stores in the system (using `apiClient('/admin/rankings/options', { params: { targetType: 'STORE', q: searchStoreQuery } })` or a custom store query).
+    - A list of currently pinned stores (maximum 8) showing their names, city/district, category, and order index.
+    - Add button to pin a store. If the count is already 8, prevent addition and display an error toast/modal (no browser `alert()`).
+    - Up / Down buttons next to each pinned store. Clicking them reorders them in the list and updates their `pinRank` in the database directly.
+    - Delete button next to each pinned store to remove them from the pinned rankings (calls DELETE API).
+
+### B. Homepage Rendering and Mapping
+- Verify that frontend homepage (`frontend/apps/web/src/app/page.tsx`) correctly fetches recommendations and maps them to home cards. Since `listPublicHomeRecommendations` handles the fallback and ordering at the API level, the frontend home page should seamlessly display the configured stores in order.
+
+## 3. Testing and Verification
+
+- **Unit/Integration Tests**:
+  - Add test scenarios to verify:
+    - Creating and saving rankings under scope `recommend-home`.
+    - Pinned stores are returned in order on `/content/recommendations` API.
+    - Inactive or deleted stores are automatically filtered.
+    - Empty scope falls back to personalized recommendation logic.
+- **Auditing**:
+  - Run Forensic Integrity Audit.
+- **Git Push**:
+  - Perform `git add`, `git commit`, and `git push` once successfully verified.

@@ -1,21 +1,22 @@
-# BRIEFING — 2026-07-16T09:50:04+07:00
+# BRIEFING — 2026-07-16T17:18:00+07:00
 
 ## Mission
-Design and implement the Settings page (password change and staff management) for the Partner Portal.
+Implement a comprehensive seed data sync to ensure 100% database schema coverage for the NightLife-VN project, covering 9 missing entities and providing VPS deployment scripts.
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
-- Working directory: d:/laragon/www/NightLife-VN/.agents/orchestrator/
+- Working directory: d:\laragon\www\NightLife-VN\.agents\orchestrator\
 - Original parent: parent
-- Original parent conversation ID: 6572296b-84ce-44ae-9eec-ce6c2ff7a4a3
+- Original parent conversation ID: 2cb255c9-93bf-4707-92c4-38ed3054a49e
 
 ## 🔒 My Workflow
 - **Pattern**: Project Pattern
-- **Scope document**: d:/laragon/www/NightLife-VN/.agents/orchestrator/PROJECT.md
-1. **Decompose**: Decompose requirements into milestones: Exploration, Backend Implementation (change password, staff management), Frontend Implementation (Settings page, change password UI, staff table, custom selects, confirm dialogs), Testing (spec files), Audit, and Git push.
-2. **Dispatch & Execute**:
-   - **Delegate (sub-orchestrator)**: For large milestones, or iterate directly using Explorer -> Worker -> Reviewer -> Challenger -> Auditor.
+- **Scope document**: d:\laragon\www\NightLife-VN\.agents\orchestrator\PROJECT.md
+1. **Decompose**: Decompose into M1: Explore & Analyze, M2: Implement Seed Fixtures, M3: Integrate and Verify, M4: Deploy VPS Script, M5: Forensic Audit & Commit.
+2. **Dispatch & Execute** (pick ONE):
+   - **Delegate (sub-orchestrator)**: For large milestones, spawn a sub-orchestrator.
+   - **Direct (iteration loop)**: For smaller, iterate using Explorer -> Worker -> Reviewer -> Challenger -> Auditor.
 3. **On failure** (in this order):
    - Retry: nudge stuck agent or re-send task
    - Replace: spawn fresh agent with partial progress
@@ -25,15 +26,13 @@ Design and implement the Settings page (password change and staff management) fo
    - Escalate: report to parent (sub-orchestrators only, last resort)
 4. **Succession**: Self-succeed at 16 spawns, write handoff.md, spawn successor.
 - **Work items**:
-  1. Explore codebase and locate settings-related controllers, models, and UI components [done]
-  2. Implement backend APIs (change-password, staff management GET/POST/DELETE, permissions) [done]
-  3. Implement frontend UI (tab in sidebar, change-password form, staff list, custom selector) [done]
-  4. Write spec tests (users.controller.spec.ts, partner-staff.controller.spec.ts) [done]
-  5. Verification & E2E testing (run test runner, verify 100% pass) [done]
-  6. Forensic Integrity Audit [done]
-  7. Push to Github [done]
-- **Current phase**: 2
-- **Current focus**: Verification completed and changes pushed to repository.
+  1. Explore codebase [done]
+  2. Implement seed fixtures (13-api-fixtures, 16-tours, 17-admin-coupons-campaigns) [pending]
+  3. Integrate index.ts and verify.ts [pending]
+  4. Create seed_vps_full.py [pending]
+  5. Run checks, audit, and push [pending]
+- **Current phase**: 1
+- **Current focus**: Exploration of codebase and planning dispatch.
 
 ## 🔒 Key Constraints
 - Never write, modify, or create source code files directly.
@@ -42,42 +41,42 @@ Design and implement the Settings page (password change and staff management) fo
 - Never reuse a subagent after it has delivered its handoff.
 
 ## Current Parent
-- Conversation ID: 6572296b-84ce-44ae-9eec-ce6c2ff7a4a3
-- Updated: 2026-07-16T09:50:04+07:00
+- Conversation ID: 2cb255c9-93bf-4707-92c4-38ed3054a49e
+- Updated: 2026-07-16T17:18:00+07:00
 
 ## Key Decisions Made
-- Starting settings page implementation orchestration.
-- Dispatched Worker 1 to implement full backend and frontend changes.
-- Dispatched Auditor 1 to run integrity checks on settings page implementation.
-- Dispatched Worker 2 to close the logic gap on staff delete.
-- Dispatched Auditor 2 to verify transaction logic on deletion.
+- Transitioned to the Seed Data Sync & Schema Coverage task.
+- Chose Project Pattern for orchestration.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| Explorer 1 | teamwork_preview_explorer | Explore settings codebase | completed | c3bd9b3c-f555-424b-85c7-c68f518addb6 |
-| Worker 1 | teamwork_preview_worker | Implement settings API and UI | completed | 4353c607-8559-4cb1-8ef7-e86b2a78ce1f |
-| Reviewer 1 | teamwork_preview_reviewer | Code review of Settings | completed | 770287fb-996a-41b5-9662-5470a9780262 |
-| Reviewer 2 | teamwork_preview_reviewer | Code review of Settings | completed | 0fc7f8c2-dbfa-45c4-bbcb-c02c0358760b |
-| Challenger 1 | teamwork_preview_challenger | Security testing of Settings | completed | fe7abe77-4156-49c3-9b8e-d9f00f2c8c81 |
-| Challenger 2 | teamwork_preview_challenger | Edges and unit tests check | completed | 98910eaf-b4ef-4034-b26f-d4590fffca6b |
-| Auditor 1 | teamwork_preview_auditor | Forensic Integrity Audit | completed | 2b66df3f-f7b2-4bd1-8d7f-0b966bc8afff |
-| Worker 2 | teamwork_preview_worker | Fix staff delete User status logic gap | completed | 2b6a8859-d495-4004-bfb1-4a0aa5e29985 |
-| Auditor 2 | teamwork_preview_auditor | Forensic Integrity Audit 2 | completed | 5f9e94c3-6346-410b-9504-8a3ae90b32cd |
+| Explorer 1 | teamwork_preview_explorer | Explore 13-api-fixtures.ts seeding | completed | f8d8ee77-4b76-41cd-b91a-46129ae6c83c |
+| Explorer 2 | teamwork_preview_explorer | Explore 16-tours.ts and 17-admin-coupons-campaigns.ts | completed | 1457c60e-d176-4288-a178-352e7790ebbd |
+| Explorer 3 | teamwork_preview_explorer | Explore index.ts, verify.ts, and seed_vps_full.py | completed | 4b379cbb-57a3-4f84-855d-091b45938226 |
+| Worker 1 | teamwork_preview_worker | Implement seeds, verification checks, and VPS python script | completed | af9ff1f0-8ff7-421a-a31d-9653ad8cc049 |
+| Reviewer 1 | teamwork_preview_reviewer | Code review the seed files | completed | b8dd68c1-4699-4317-ba13-59f5bf99f65d |
+| Reviewer 2 | teamwork_preview_reviewer | Code review seed_vps_full.py | completed | 6910775c-f4fa-41ca-979b-7b8560d75db3 |
+| Challenger 1 | teamwork_preview_challenger | Run local db seeds and verification checks | completed | 0e8a2027-a4b2-4762-9847-4843db7e2838 |
+| Challenger 2 | teamwork_preview_challenger | Verify seed_vps_full.py script | completed | 5bc2bd50-4019-4c30-b577-e951c8750e32 |
+| Auditor 1 | teamwork_preview_auditor | Run forensic audit integrity verification | completed | 4cdfd11d-6d6b-4ffd-94ed-35b4ada5a4c8 |
+| Worker 2 | teamwork_preview_worker | Code Review Remediation (VPS script & index.ts self-exec) | in-progress | 170a8702-9b9b-423e-a4c4-5ea269abd651 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 9 / 16
+- Spawn count: 10 / 16
 - Pending subagents: none
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-38
+- Heartbeat cron: 61ffbece-f8cc-4657-9e67-aa9b98e6c241/task-19
 - Safety timer: none
+- On succession: kill all timers before spawning successor
+- On context truncation: run `manage_task(Action="list")` — re-create if missing
 
 ## Artifact Index
-- d:/laragon/www/NightLife-VN/.agents/orchestrator/ORIGINAL_REQUEST.md — Verbatim user request
-- d:/laragon/www/NightLife-VN/.agents/orchestrator/BRIEFING.md — Persistent briefing and memory
-- d:/laragon/www/NightLife-VN/.agents/orchestrator/progress.md — Liveness and step-by-step progress tracking
-- d:/laragon/www/NightLife-VN/.agents/orchestrator/PROJECT.md — Global project plan and milestones
+- d:\laragon\www\NightLife-VN\.agents\orchestrator\ORIGINAL_REQUEST.md — Verbatim user request
+- d:\laragon\www\NightLife-VN\.agents\orchestrator\BRIEFING.md — Persistent briefing and memory
+- d:\laragon\www\NightLife-VN\.agents\orchestrator\progress.md — Liveness and step-by-step progress tracking
+- d:\laragon\www\NightLife-VN\.agents\orchestrator\PROJECT.md — Global project plan and milestones

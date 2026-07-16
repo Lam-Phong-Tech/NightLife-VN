@@ -144,5 +144,81 @@ Integrity mode: development
 - [ ] Viết test suite đổi mật khẩu `users.controller.spec.ts` cho các kịch bản thành công và thất bại.
 - [ ] Chạy lệnh test và đảm bảo toàn bộ unit test/integration test liên quan đều pass.
 
+## Follow-up — 2026-07-16T06:21:37Z
+
+Xây dựng tính năng cấu hình thủ công và hiển thị tối đa 8 quán trên trang chủ cho khối "Đề xuất tối nay", cho phép tìm kiếm và thêm tự do từ tất cả các quán trên hệ thống, có khả năng di chuyển thứ tự từ 1 đến 8 và tự động quay về gợi ý cá nhân hóa nếu chưa được cấu hình.
+
+Working directory: d:\laragon\www\NightLife-VN
+Integrity mode: development
+
+## Requirements
+
+### R1. Quản trị viên quản lý "Đề xuất tối nay"
+- Thêm một tab mới tên là "Đề xuất tối nay" vào trang quản trị nội dung (`frontend/apps/web/src/app/admin/content/page.tsx`).
+- Cho phép tìm kiếm toàn bộ các quán đang hoạt động trên hệ thống (không lọc theo thành phố hay danh mục trên giao diện).
+- Cho phép ghim tối đa 8 quán vào danh sách Đề xuất tối nay. Nếu cố thêm quán thứ 9, hiển thị thông báo lỗi bằng toast/modal tự dựng của hệ thống (tuyệt đối không dùng alert mặc định).
+- Cho phép đổi thứ tự (Lên / Xuống) các quán đã ghim và xóa quán khỏi danh sách ghim. Các thay đổi về thứ tự hoặc xóa phải được lưu trực tiếp vào cơ sở dữ liệu (sử dụng API `/admin/rankings` với scope là `recommend-home` hoặc tương tự).
+
+### R2. Hiển thị "Đề xuất tối nay" trên trang chủ
+- Hàm lấy đề xuất trên trang chủ (trong backend và frontend) phải kiểm tra xem có danh sách quán được ghim thủ công (scope `recommend-home`) hay không.
+- Nếu danh sách ghim có dữ liệu, hiển thị đúng các quán này theo thứ tự ghim. Các quán bị ngưng hoạt động (inactive) hoặc đã bị xóa phải được tự động lọc bỏ khỏi danh sách hiển thị trên trang chủ.
+- Nếu danh sách ghim rỗng, tự động quay về hiển thị danh sách gợi ý cá nhân hóa động như ban đầu để đảm bảo tính liên tục của hệ thống.
+
+## Acceptance Criteria
+
+### Giao diện Admin
+- [ ] Tab "Đề xuất tối nay" hiển thị danh sách các quán đã chọn kèm số thứ tự (1-8).
+- [ ] Cho phép tìm kiếm và thêm quán từ toàn bộ các quán có trên hệ thống mà không bị giới hạn bởi bộ lọc khu vực hay nhóm dịch vụ.
+- [ ] Ngăn chặn thêm quá 8 quán và hiển thị thông báo lỗi bằng giao diện toast/modal (không dùng alert mặc định).
+- [ ] Cho phép đổi vị trí (Lên/Xuống) các quán đã thêm và cập nhật ngay vào DB.
+
+### Giao diện Trang chủ
+- [ ] Khối "Đề xuất tối nay" hiển thị đúng các quán đã ghim theo đúng thứ tự 1-8.
+- [ ] Nếu danh sách cấu hình thủ công rỗng, trang chủ quay về hiển thị danh sách gợi ý cá nhân hóa động như ban đầu.
+
+## Follow-up — 2026-07-16T10:17:06Z
+
+Implement a comprehensive seed data sync to ensure 100% database schema coverage for the NightLife-VN project, covering 9 missing entities and providing VPS deployment scripts.
+
+Working directory: d:\laragon\www\NightLife-VN
+Integrity mode: development
+
+## Requirements
+
+### R1. Seed Missing Entities
+Develop seed logic for the following 9 entities using Prisma upsert:
+- SupportTicket and SupportMessage
+- MemberFavoriteStore
+- Tour and TourStop
+- AdminCoupon, AdminCouponScan, AdminCouponIssue
+- Campaign
+
+### R2. Seed Implementation Structure
+- Update 13-api-fixtures.ts for MemberFavoriteStore, SupportTicket, and SupportMessage.
+- Create 16-tours.ts for Tour and TourStop.
+- Create 17-admin-coupons-campaigns.ts for AdminCoupon and Campaign entities.
+- Update index.ts to integrate the new modules and report summary logs.
+
+### R3. Verification Coverage
+Update verify.ts to include assertions and status checks for all 9 new entities to guarantee 100% schema coverage.
+
+### R4. VPS Deployment Script
+Create a Python script seed_vps_full.py using paramiko to deploy the new seed files and execute npx tsx prisma/seed/index.ts on the remote VPS (45.119.83.233).
+
+## Acceptance Criteria
+
+### Automated Tests
+- [ ] pnpm run seed runs locally without encountering errors.
+- [ ] pnpm run seed:check executes successfully, explicitly reporting that all new entities are covered.
+
+### Deployment
+- [ ] seed_vps_full.py successfully connects to the remote VPS and runs the seed process without syntax or runtime errors.
+
+## Follow-up — 2026-07-16T13:03:00Z
+
+The server restarted and all subagents/background tasks were interrupted. The user has requested to resume the process (`/teamwork-preview tiếp tục`). Please resume your work on Milestone 2 from where you left off, verify your progress, and continue until completion. Send me a progress update when you are back on track.
+
+
+
 
 

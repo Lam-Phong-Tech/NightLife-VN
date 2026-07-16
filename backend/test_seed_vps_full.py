@@ -69,7 +69,7 @@ class TestSeedVpsFull(unittest.TestCase):
         self.assertNotIn('/var/www/api.demonightlight.test9.io.vn/prisma/seed/readme.txt', uploaded_destinations)
         
         # Verify execute prisma seed command
-        mock_ssh.exec_command.assert_any_call("cd /var/www/api.demonightlight.test9.io.vn && npx prisma db seed")
+        mock_ssh.exec_command.assert_any_call("cd /var/www/api.demonightlight.test9.io.vn && npx tsx prisma/seed/index.ts --profile=full")
         
         # Verify close connections
         mock_sftp.close.assert_called_once()
@@ -90,7 +90,7 @@ class TestSeedVpsFull(unittest.TestCase):
             
         mock_ssh.connect.assert_called_once()
         mock_ssh.exec_command.assert_not_called()
-        mock_ssh.close.assert_not_called()
+        mock_ssh.close.assert_called_once()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,196 @@
+diff --git a/backend/src/nightlife-data/dto/admin-ranking.dto.ts b/backend/src/nightlife-data/dto/admin-ranking.dto.ts
+index b1c4fa5..d8a2cb0 100644
+--- a/backend/src/nightlife-data/dto/admin-ranking.dto.ts
++++ b/backend/src/nightlife-data/dto/admin-ranking.dto.ts
+@@ -80,7 +80,7 @@ export class CreateAdminRankingConfigDto {
+   @Type(() => Number)
+   @IsInt()
+   @Min(1)
+-  @Max(5, { message: 'Ranking P0 chỉ hỗ trợ Top 1-5' })
++  @Max(8, { message: 'Ranking P0 chỉ hỗ trợ Top 1-8' })
+   pinRank?: number | null;
+ 
+   @IsOptional()
+@@ -141,7 +141,7 @@ export class UpdateAdminRankingConfigDto {
+   @Type(() => Number)
+   @IsInt()
+   @Min(1)
+-  @Max(5, { message: 'Ranking P0 chỉ hỗ trợ Top 1-5' })
++  @Max(8, { message: 'Ranking P0 chỉ hỗ trợ Top 1-8' })
+   pinRank?: number | null;
+ 
+   @IsOptional()
+diff --git a/backend/src/nightlife-data/nightlife-data.service.ts b/backend/src/nightlife-data/nightlife-data.service.ts
+index 7254e4e..fcd9f58 100644
+--- a/backend/src/nightlife-data/nightlife-data.service.ts
++++ b/backend/src/nightlife-data/nightlife-data.service.ts
+@@ -20527,6 +20527,105 @@ export class NightlifeDataService {
+     const since = new Date(now.getTime() - 30 * DAY_MS);
+     const activeCouponWhere = this.buildActiveCouponWhere(now);
+ 
++    // Retrieve store rankings for 'recommend-home' scope
++    const rankingConfigs = await this.prisma.rankingConfig.findMany({
++      where: {
++        targetType: 'STORE',
++        scope: 'recommend-home',
++        status: 'ACTIVE',
++        deletedAt: null,
++        ...this.buildPublicRankingConfigCityWhere(cityCode === 'all' ? undefined : cityCode),
++        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
++        AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
++      },
++      orderBy: [
++        { pinRank: 'asc' },
++        { manualScore: 'desc' },
++        { updatedAt: 'desc' },
++      ],
++    });
++
++    if (rankingConfigs.length > 0) {
++      const targetStoreIds = rankingConfigs.map((config) => config.targetId);
++      const pinnedStores = await this.prisma.store.findMany({
++        where: {
++          id: { in: targetStoreIds },
++          deletedAt: null,
++          status: 'ACTIVE',
++        },
++        select: {
++          id: true,
++          name: true,
++          slug: true,
++          category: true,
++          description: true,
++          city: true,
++          district: true,
++          areaId: true,
++          area: {
++            select: {
++              id: true,
++              code: true,
++              name: true,
++              city: true,
++              district: true,
++            },
++          },
++          media: {
++            where: {
++              deletedAt: null,
++              access: 'PUBLIC',
++              status: 'READY',
++              type: 'IMAGE',
++            },
++            orderBy: { createdAt: 'desc' },
++            take: 6,
++            select: {
++              url: true,
++              purpose: true,
++            },
++          },
++          coupons: {
++            where: activeCouponWhere,
++            orderBy: { startsAt: 'desc' },
++            take: 1,
++            select: {
++              id: true,
++              name: true,
++              discountType: true,
++              discountValue: true,
++            },
++          },
++        },
++      });
++
++      if (pinnedStores.length > 0) {
++        const configMap = new Map(
++          rankingConfigs.map((c) => [c.targetId, c]),
++        );
++
++        pinnedStores.sort((a, b) => {
++          const configA = configMap.get(a.id);
++          const configB = configMap.get(b.id);
++          const pinA = configA?.pinRank ?? Number.POSITIVE_INFINITY;
++          const pinB = configB?.pinRank ?? Number.POSITIVE_INFINITY;
++          if (pinA !== pinB) {
++            return pinA - pinB;
++          }
++          const scoreA = configA?.manualScore ?? 0;
++          const scoreB = configB?.manualScore ?? 0;
++          if (scoreA !== scoreB) {
++            return scoreB - scoreA;
++          }
++          const timeA = configA?.updatedAt ? new Date(configA.updatedAt).getTime() : 0;
++          const timeB = configB?.updatedAt ? new Date(configB.updatedAt).getTime() : 0;
++          return timeB - timeA;
++        });
++
++        const storeIds = pinnedStores.map((store) => store.id);
++        const [viewGroups, bookingGroups] = await Promise.all([
++          this.prisma.auditLog.groupBy({
++            by: ['targetId'],
++            where: {
++              action: 'PROFILE_VIEW_RECORDED',
++              targetType: 'STORE',
++              targetId: { in: storeIds },
++              createdAt: { gte: since },
++            },
++            _count: { _all: true },
++          }),
++          this.prisma.booking.groupBy({
++            by: ['storeId'],
++            where: {
++              storeId: { in: storeIds },
++              deletedAt: null,
++              createdAt: { gte: since },
++            },
++            _count: { _all: true },
++          }),
++        ]);
++
++        const viewCountByStore = new Map(
++          viewGroups.map((group) => [group.targetId, group._count._all]),
++        );
++        const bookingCountByStore = new Map(
++          bookingGroups.map((group) => [group.storeId, group._count._all]),
++        );
++
++        return pinnedStores.slice(0, limit).map((store, index) => {
++          const viewCount = viewCountByStore.get(store.id) ?? 0;
++          const bookingCount = bookingCountByStore.get(store.id) ?? 0;
++
++          return {
++            id: store.id,
++            name: store.name,
++            slug: store.slug,
++            category: store.category,
++            description: store.description,
++            city: store.city,
++            cityCode: store.area?.code
++              ? this.cityCodeFromAreaCode(store.area.code)
++              : this.normalizeCityCode(store.city),
++            district: store.district,
++            area: this.mapPublicArea(store.area),
++            thumbnailUrl: this.resolveStoreCoverImage(store.media),
++            href: `/stores/${store.slug}`,
++            score: 1000 - index,
++            reason: 'Gợi ý nổi bật',
++            signals: {
++              viewCount,
++              bookingCount,
++              hasActiveCoupon: store.coupons.length > 0,
++            },
++            activeCoupon: store.coupons[0]
++              ? {
++                  id: store.coupons[0].id,
++                  name: store.coupons[0].name,
++                  discountType: store.coupons[0].discountType,
++                  discountValue: store.coupons[0].discountValue,
++                }
++              : null,
++          };
++        });
++      }
++    }
++
+     const viewedStores = preferredSlugs.length
+       ? await this.prisma.store.findMany({
+           where: {

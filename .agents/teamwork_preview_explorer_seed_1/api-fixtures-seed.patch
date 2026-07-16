@@ -1,0 +1,184 @@
+diff --git a/backend/prisma/seed/13-api-fixtures.ts b/backend/prisma/seed/13-api-fixtures.ts
+index e20fcf9..f8cb123 100644
+--- a/backend/prisma/seed/13-api-fixtures.ts
++++ b/backend/prisma/seed/13-api-fixtures.ts
+@@ -6,6 +6,8 @@ import {
+   Prisma,
+   PrismaClient,
+   Store,
++  SupportSenderType,
++  SupportTicketStatus,
+   User,
+ } from '@prisma/client';
+ import { TransactionSeedResult } from './12-bookings-bills';
+@@ -586,8 +588,140 @@ export async function seedApiFixtures(
+       },
+     });
+   }
+ 
++  // --- Seed MemberFavoriteStore ---
++  const favoriteStorePairs = [
++    ['member', 'moonlight-bar'],
++    ['member', 'velvet-club'],
++    ['vip', 'moonlight-bar'],
++  ] as const;
++  for (const [userKey, storeSlug] of favoriteStorePairs) {
++    const user = users[userKey];
++    const store = stores[storeSlug];
++    if (!user || !store) {
++      throw new Error(
++        `Missing favorite store fixture relation: ${userKey}/${storeSlug}`,
++      );
++    }
++    const id = seedUuid(`favorite-store:${userKey}:${storeSlug}`);
++    await prisma.memberFavoriteStore.upsert({
++      where: { id },
++      update: { userId: user.id, storeId: store.id },
++      create: { id, userId: user.id, storeId: store.id, createdAt: seedDate(now, -1, 10) },
++    });
++  }
++
++  // --- Seed SupportTicket & SupportMessage ---
++  const supportTicketFixtures = [
++    {
++      key: 'guest-closed',
++      guestSessionId: 'session-guest-123',
++      userKey: null,
++      assignedAdminKey: 'operator',
++      status: SupportTicketStatus.CLOSED,
++      createdAt: seedDate(now, -5, 10),
++      closedAt: seedDate(now, -5, 11),
++      messages: [
++        {
++          senderType: SupportSenderType.GUEST,
++          senderKey: null,
++          content: 'Hello, I cannot see my discount coupon on checkout.',
++          createdAt: seedDate(now, -5, 10),
++        },
++        {
++          senderType: SupportSenderType.ADMIN,
++          senderKey: 'operator',
++          content: 'Hi! Please make sure you are using the correct guest email that received the coupon.',
++          createdAt: seedDate(now, -5, 10, 15),
++        },
++        {
++          senderType: SupportSenderType.GUEST,
++          senderKey: null,
++          content: 'Ah! I was using my personal email instead of the work one. It works now. Thank you!',
++          createdAt: seedDate(now, -5, 10, 30),
++        },
++        {
++          senderType: SupportSenderType.SYSTEM,
++          senderKey: null,
++          content: 'This support ticket was closed by the operator.',
++          createdAt: seedDate(now, -5, 11),
++        },
++      ],
++    },
++    {
++      key: 'member-active',
++      guestSessionId: null,
++      userKey: 'member',
++      assignedAdminKey: 'operator',
++      status: SupportTicketStatus.ACTIVE,
++      createdAt: seedDate(now, -2, 14),
++      closedAt: null,
++      messages: [
++        {
++          senderType: SupportSenderType.USER,
++          senderKey: 'member',
++          content: 'Can I request a change for my booking VIP-100?',
++          createdAt: seedDate(now, -2, 14),
++        },
++        {
++          senderType: SupportSenderType.ADMIN,
++          senderKey: 'operator',
++          content: 'Yes, you can do that in your booking details screen. I will guide you.',
++          createdAt: seedDate(now, -2, 14, 10),
++        },
++      ],
++    },
++    {
++      key: 'vip-pending',
++      guestSessionId: null,
++      userKey: 'vip',
++      assignedAdminKey: null,
++      status: SupportTicketStatus.PENDING,
++      createdAt: seedDate(now, -1, 9),
++      closedAt: null,
++      messages: [
++        {
++          senderType: SupportSenderType.USER,
++          senderKey: 'vip',
++          content: 'I need to book a private lounge for 20 people tonight.',
++          createdAt: seedDate(now, -1, 9),
++        },
++      ],
++    },
++  ];
++
++  for (const ticketFixture of supportTicketFixtures) {
++    const user = ticketFixture.userKey ? users[ticketFixture.userKey] : null;
++    const assignedAdmin = ticketFixture.assignedAdminKey ? users[ticketFixture.assignedAdminKey] : null;
++
++    if (ticketFixture.userKey && !user) {
++      throw new Error(`Missing user for support ticket: ${ticketFixture.userKey}`);
++    }
++    if (ticketFixture.assignedAdminKey && !assignedAdmin) {
++      throw new Error(`Missing assigned admin/operator for support ticket: ${ticketFixture.assignedAdminKey}`);
++    }
++
++    const ticketId = seedUuid(`support-ticket:${ticketFixture.key}`);
++    await prisma.supportTicket.upsert({
++      where: { id: ticketId },
++      update: {
++        guestSessionId: ticketFixture.guestSessionId,
++        userId: user?.id ?? null,
++        assignedAdminId: assignedAdmin?.id ?? null,
++        status: ticketFixture.status,
++        closedAt: ticketFixture.closedAt,
++      },
++      create: {
++        id: ticketId,
++        guestSessionId: ticketFixture.guestSessionId,
++        userId: user?.id ?? null,
++        assignedAdminId: assignedAdmin?.id ?? null,
++        status: ticketFixture.status,
++        closedAt: ticketFixture.closedAt,
++        createdAt: ticketFixture.createdAt,
++      },
++    });
++
++    for (const [index, msgFixture] of ticketFixture.messages.entries()) {
++      const msgId = seedUuid(`support-message:${ticketFixture.key}:${index}`);
++      let senderId: string | null = null;
++      if (msgFixture.senderType === SupportSenderType.USER && user) {
++        senderId = user.id;
++      } else if (msgFixture.senderType === SupportSenderType.ADMIN && assignedAdmin) {
++        senderId = assignedAdmin.id;
++      }
++
++      await prisma.supportMessage.upsert({
++        where: { id: msgId },
++        update: {
++          content: msgFixture.content,
++          senderType: msgFixture.senderType,
++          senderId,
++        },
++        create: {
++          id: msgId,
++          ticketId,
++          content: msgFixture.content,
++          senderType: msgFixture.senderType,
++          senderId,
++          createdAt: msgFixture.createdAt,
++        },
++      });
++    }
++  }
++
+   console.log(
+-    '     ✓ categories, favorites, change requests, chat, partner review, notifications and audit fixtures',
++    '     ✓ categories, favorites, change requests, chat, partner review, notifications, support tickets and audit fixtures',
+   );
+ }

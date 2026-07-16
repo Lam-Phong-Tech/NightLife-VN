@@ -1,19 +1,19 @@
 ## Current Status
-Last visited: 2026-07-16T10:23:00+07:00
+Last visited: 2026-07-16T20:13:30+07:00
 
 ## Iteration Status
-Current iteration: 3 / 32
+Current iteration: 1 / 32
 
 ## Checklist
-- [x] Milestone 1: Explore & Design (Locate user and partner files, schema, components)
-- [x] Milestone 2: Backend Implementation (change password, staff management, store permissions)
-- [x] Milestone 3: Frontend Implementation (Settings page, sidebar integration, password change form, staff manager, custom components)
-- [x] Milestone 4: Write Tests (unit/integration test files)
-- [x] Milestone 5: Verification & Forensic Audit (Run build/tests, run Forensic Auditor)
-- [x] Milestone 6: Git operations (git add, commit, push)
+- [x] Milestone 1: Exploration & Analyze (Locate and examine schema, seeds, verifications, and scripts)
+- [x] Milestone 2: Implement Seed Fixtures (Update 13-api-fixtures.ts, create 16-tours.ts, create 17-admin-coupons-campaigns.ts)
+- [x] Milestone 3: Integrate and Verify (Update index.ts and verify.ts, run local seeds and check coverage)
+- [/] Milestone 4: Deploy VPS Script (Create seed_vps_full.py, execute tests/dry-run checks)
+- [/] Milestone 5: Forensic Audit & Commit (Run Forensic Auditor checks, run git add, commit, and push)
 
 ## Retrospective Notes
-- Exposing clean APIs and custom reusable components (like `ThemedListingSelect`) made integrating Settings straightforward and robust.
-- Wrapping DB updates in explicit Prisma transactions prevents inconsistencies and conforms strictly to the requirements.
-- Rigorous security reviews and Challenger E2E tests verified that cross-partner access is safely blocked with 403 Forbidden checks.
-- Zero violations found by Forensic Auditor.
+- Reviewer 1 approved all database seed files.
+- Challenger 1 completed the local database seed and verify executions, achieving 100% coverage (42 required models checked).
+- Forensic Auditor verified all changes are CLEAN (no hardcoding or violations).
+- Reviewer 2 requested changes on `backend/seed_vps_full.py` to fix mkdir race conditions, connection cleanup, and incorrect seed execution profile.
+- Worker 2 is dispatched to apply the requested code review improvements to `backend/seed_vps_full.py` and add a self-exec block to `backend/prisma/seed/index.ts`.

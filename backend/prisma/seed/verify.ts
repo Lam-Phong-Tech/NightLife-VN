@@ -76,6 +76,16 @@ export async function verifySeedCoverage(
     StorePermission: await prisma.storePermission.count(),
     RankingConfig: await prisma.rankingConfig.count(),
     Category: await prisma.category.count(),
+    SupportTicket: await prisma.supportTicket.count(),
+    SupportMessage: await prisma.supportMessage.count(),
+    MemberFavoriteStore: await prisma.memberFavoriteStore.count(),
+    Tour: await prisma.tour.count(),
+    TourStop: await prisma.tourStop.count(),
+    AdminCoupon: await prisma.adminCoupon.count(),
+    AdminCouponScan: await prisma.adminCouponScan.count(),
+    AdminCouponIssue: await prisma.adminCouponIssue.count(),
+    Campaign: await prisma.campaign.count(),
+    SystemConfig: await prisma.systemConfig.count(),
   };
 
   const demoRequiredModels = [
@@ -108,6 +118,16 @@ export async function verifySeedCoverage(
     'StorePermission',
     'RankingConfig',
     'Category',
+    'SupportTicket',
+    'SupportMessage',
+    'MemberFavoriteStore',
+    'Tour',
+    'TourStop',
+    'AdminCoupon',
+    'AdminCouponScan',
+    'AdminCouponIssue',
+    'Campaign',
+    'SystemConfig',
   ] as const;
   const fullOnlyModels = [
     'UserSession',
@@ -343,6 +363,12 @@ export async function verifySeedCoverage(
       mediaAccess,
       contentTypes,
       rankingTargetTypes,
+      supportTicketStatuses,
+      supportSenderTypes,
+      campaignStatuses,
+      adminCouponStatuses,
+      adminCouponIssueStatuses,
+      tourStatuses,
     ] = await Promise.all([
       prisma.user.findMany({ distinct: ['status'], select: { status: true } }),
       prisma.guest.findMany({ distinct: ['status'], select: { status: true } }),
@@ -420,6 +446,12 @@ export async function verifySeedCoverage(
         distinct: ['targetType'],
         select: { targetType: true },
       }),
+      prisma.supportTicket.findMany({ distinct: ['status'], select: { status: true } }),
+      prisma.supportMessage.findMany({ distinct: ['senderType'], select: { senderType: true } }),
+      prisma.campaign.findMany({ distinct: ['status'], select: { status: true } }),
+      prisma.adminCoupon.findMany({ distinct: ['status'], select: { status: true } }),
+      prisma.adminCouponIssue.findMany({ distinct: ['status'], select: { status: true } }),
+      prisma.tour.findMany({ distinct: ['status'], select: { status: true } }),
     ]);
 
     requireStatuses('User', userRows, ['ACTIVE', 'SUSPENDED', 'DELETED']);
@@ -577,10 +609,20 @@ export async function verifySeedCoverage(
       rankingTargetTypes.map((row) => row.targetType),
       ['STORE', 'CAST', 'COUPON', 'CONTENT'],
     );
+    requireStatuses('SupportTicket', supportTicketStatuses, ['PENDING', 'ACTIVE', 'CLOSED']);
+    requireValues(
+      'SupportSenderType',
+      supportSenderTypes.map((row) => row.senderType),
+      ['GUEST', 'USER', 'ADMIN', 'SYSTEM'],
+    );
+    requireStatuses('Campaign', campaignStatuses, ['ACTIVE', 'PAUSED', 'DRAFT', 'EXPIRED', 'DELETED']);
+    requireStatuses('AdminCoupon', adminCouponStatuses, ['DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'ARCHIVED', 'DELETED']);
+    requireStatuses('AdminCouponIssue', adminCouponIssueStatuses, ['ISSUED', 'USED', 'EXPIRED', 'REVOKED']);
+    requireStatuses('Tour', tourStatuses, ['ACTIVE', 'HIDDEN', 'DELETED']);
   }
 
   console.log(
-    `  ✅ Seed coverage verified (${profile}): ${requiredModels.length}/32 required models`,
+    `  ✅ Seed coverage verified (${profile}): ${requiredModels.length}/${profile === 'full' ? 42 : 39} required models`,
   );
 
   return { profile, modelCounts };
