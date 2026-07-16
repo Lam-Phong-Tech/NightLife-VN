@@ -1521,6 +1521,8 @@ export default function PartnerPage() {
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
+  const [activeMenuGroupIndex, setActiveMenuGroupIndex] = useState<number>(0);
+  const [menuManage, setMenuManage] = useState<boolean>(false);
   const [provinces, setProvinces] = useState<VietnamProvince[]>([]);
   const [wards, setWards] = useState<VietnamWard[]>([]);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
@@ -3014,18 +3016,30 @@ export default function PartnerPage() {
 
   const addMenuGroup = () => {
     clearListingErrorsFor('menuGroups');
+    const newIndex = listingDraft.menuGroups.length;
     setListingDraft((current) => ({
       ...current,
-      menuGroups: [...current.menuGroups, { name: '', items: [] }],
+      menuGroups: [...current.menuGroups, { name: 'Nhóm mới', items: [] }],
     }));
+    setActiveMenuGroupIndex(newIndex);
+    setMenuManage(true);
   };
 
   const removeMenuGroup = (index: number) => {
     clearListingErrorsFor('menuGroups');
-    setListingDraft((current) => ({
-      ...current,
-      menuGroups: current.menuGroups.filter((_, groupIndex) => groupIndex !== index),
-    }));
+    setListingDraft((current) => {
+      const nextGroups = current.menuGroups.filter((_, groupIndex) => groupIndex !== index);
+      return {
+        ...current,
+        menuGroups: nextGroups,
+      };
+    });
+    setActiveMenuGroupIndex((current) => {
+      if (current >= listingDraft.menuGroups.length - 1) {
+        return Math.max(0, listingDraft.menuGroups.length - 2);
+      }
+      return current;
+    });
   };
 
   const updateMenuItem = (
@@ -4929,98 +4943,222 @@ export default function PartnerPage() {
     </div>
   );
 
-  const renderMenuGroupsSection = () => (
-    <section className="partner-listing-section">
-      <div className="partner-listing-section-title">Nhóm menu</div>
-      <div className="partner-menu-editor">
-        {!listingDraft.menuGroups.length ? (
-          <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-            Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
-          </div>
-        ) : null}
-        {listingDraft.menuGroups.map((group, groupIndex) => (
-          <div key={`menu-group-${groupIndex}`} className="partner-menu-group-card">
-            <div className="partner-menu-group-head">
-              <FormField label="Tên nhóm">
-                <input
-                  value={group.name}
-                  onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
-                  placeholder="VD: VIP packages"
-                  style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
-                />
-                {listingErrorText(`menuGroups.${groupIndex}.name`)}
-              </FormField>
-              <div className="partner-menu-actions">
-                <GhostButton onClick={() => addMenuItem(groupIndex)}>
-                  <ReceiptText size={16} />
-                  Thêm món
-                </GhostButton>
-                <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
-                  <XCircle size={16} />
-                  Xóa nhóm
-                </GhostButton>
-              </div>
-            </div>
-            {group.items.map((item, itemIndex) => (
-              <div key={`menu-item-${groupIndex}-${itemIndex}`} className="partner-menu-item-card">
-                <FormField label="Tên món / dịch vụ">
-                  <input
-                    value={item.name}
-                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
-                    placeholder="VD: VIP table"
-                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
+  const renderMenuGroupsSection = () => {
+    const activeIndex = Math.max(0, Math.min(activeMenuGroupIndex, listingDraft.menuGroups.length - 1));
+    const activeGroup = listingDraft.menuGroups[activeIndex];
+
+    return (
+      <section className="partner-listing-section">
+        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Thực đơn & mức giá</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '11px' }}>
+          {listingDraft.menuGroups.map((group, groupIndex) => (
+            <div key={`group-tab-${groupIndex}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {menuManage ? (
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.05)', borderRadius: '9px', padding: '2px 2px 2px 8px' }}>
+                  <input 
+                    value={group.name} 
+                    onChange={(e) => updateMenuGroupName(groupIndex, e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '80px' }}
                   />
-                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
-                </FormField>
-                <FormField label="Mô tả">
-                  <input
-                    value={item.description ?? ''}
-                    onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
-                    placeholder="Mô tả ngắn"
-                    style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                  />
-                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
-                </FormField>
-                <FormField label="Mức chi phí">
-                  <ThemedListingSelect
-                    value={item.priceTier ?? '$$'}
-                    onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
-                    placeholder="-- Chọn mức --"
-                    hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
-                    options={[
-                      { value: '$$', label: '$$' },
-                      { value: '$$$', label: '$$$' },
-                      { value: '$$$$', label: '$$$$' },
-                    ]}
-                  />
-                  {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
-                </FormField>
-                {renderMenuItemImageControl(item, groupIndex, itemIndex)}
-                <div className="partner-menu-actions partner-menu-item-actions">
-                  <button
-                    type="button"
-                    onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
-                    className={item.isHot ? 'partner-menu-hot is-active' : 'partner-menu-hot'}
-                    aria-pressed={Boolean(item.isHot)}
+                  <span 
+                    onClick={() => removeMenuGroup(groupIndex)} 
+                    style={{ width: 24, height: 24, borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e88b99', background: 'rgba(232,139,153,.15)', marginLeft: '4px' }}
                   >
-                    {item.isHot ? 'HOT' : 'Không HOT'}
-                  </button>
-                  <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
-                    <XCircle size={16} />
-                    Xóa món
-                  </GhostButton>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </span>
                 </div>
+              ) : (
+                <span 
+                  onClick={() => setActiveMenuGroupIndex(groupIndex)} 
+                  style={{ 
+                    padding: '6px 12px', 
+                    borderRadius: '9px', 
+                    fontSize: '12px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '7px', 
+                    color: activeIndex === groupIndex ? '#241a0a' : '#c5c0b6', 
+                    background: activeIndex === groupIndex ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.05)' 
+                  }}
+                >
+                  {group.name || 'Nhóm chưa đặt tên'}
+                </span>
+              )}
+            </div>
+          ))}
+          
+          <span 
+            onClick={addMenuGroup} 
+            style={{ fontSize: '11.5px', fontWeight: 600, color: '#8c8679', border: '1.5px dashed rgba(212,178,106,.35)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer' }}
+          >
+            + Nhóm
+          </span>
+          
+          <span style={{ flex: 1 }}></span>
+          <span 
+            onClick={() => setMenuManage(!menuManage)} 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: menuManage ? '#d4b26a' : '#8c8679', cursor: 'pointer' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            {menuManage ? 'Hoàn tất' : 'Sửa nhóm'}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          {activeGroup?.items.map((item, itemIndex) => {
+            const imageUrl = safeListingText(item.imageUrl).trim();
+            const uploadKey = `menu-item-image-${activeIndex}-${itemIndex}`;
+            const isBusy = listingUploadKey === uploadKey;
+            const isDisabled = Boolean(listingUploadKey);
+            
+            return (
+              <div 
+                key={`item-row-${itemIndex}`} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  background: 'rgba(255,255,255,.03)', 
+                  border: '1px solid rgba(255,255,255,.07)', 
+                  borderRadius: '12px', 
+                  padding: '9px 12px 9px 9px' 
+                }}
+              >
+                <div 
+                  onClick={() => {
+                    if (!isDisabled) {
+                      const inputEl = document.getElementById(uploadKey) as HTMLInputElement;
+                      inputEl?.click();
+                    }
+                  }} 
+                  style={{ 
+                    width: 46, 
+                    height: 46, 
+                    flex: 'none', 
+                    borderRadius: 9, 
+                    background: imageUrl ? `url("${listingMediaUrl(imageUrl)}") center/cover no-repeat` : 'rgba(255,255,255,.05)', 
+                    cursor: 'pointer', 
+                    position: 'relative', 
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,.07)'
+                  }} 
+                  title="Đổi ảnh món ăn"
+                >
+                  {!imageUrl && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679' }}>
+                      <ImagePlus size={16} />
+                    </div>
+                  )}
+                  {isBusy && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                      </svg>
+                    </div>
+                  )}
+                  <input 
+                    id={uploadKey}
+                    type="file" 
+                    accept="image/*" 
+                    disabled={isDisabled} 
+                    style={{ display: 'none' }}
+                    onChange={(event) => {
+                      const files = Array.from(event.currentTarget.files ?? []);
+                      event.currentTarget.value = '';
+                      void uploadListingFiles(files, {
+                        key: uploadKey,
+                        kind: 'image',
+                        purpose: 'PARTNER_MENU_ITEM',
+                        successLabel: 'ảnh món',
+                        onUploaded: ([url]) => {
+                          if (!url) return;
+                          updateMenuItem(activeIndex, itemIndex, 'imageUrl', url);
+                        },
+                      });
+                    }} 
+                  />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <input 
+                      value={item.name} 
+                      onChange={e => updateMenuItem(activeIndex, itemIndex, 'name', e.target.value)} 
+                      style={{ background: 'transparent', border: 'none', color: '#e8e4db', fontSize: '12.5px', fontWeight: 600, outline: 'none', width: '100%' }} 
+                      placeholder="Tên món" 
+                    />
+                    <span 
+                      onClick={() => updateMenuItem(activeIndex, itemIndex, 'isHot', !item.isHot)} 
+                      style={{ 
+                        flex: 'none', 
+                        fontSize: '8.5px', 
+                        fontWeight: 800, 
+                        letterSpacing: '.8px', 
+                        color: item.isHot ? '#241a0a' : '#8c8679', 
+                        background: item.isHot ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.1)', 
+                        padding: '2.5px 7px', 
+                        borderRadius: '5px', 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      HOT
+                    </span>
+                  </div>
+                  <input 
+                    value={item.description ?? ''} 
+                    onChange={e => updateMenuItem(activeIndex, itemIndex, 'description', e.target.value)} 
+                    style={{ background: 'transparent', border: 'none', color: '#8c8679', fontSize: '10.5px', marginTop: '2px', outline: 'none', width: '100%' }} 
+                    placeholder="Mô tả" 
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flex: 'none', gap: '3px', background: 'rgba(12,12,15,.4)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '9px', padding: '3px' }}>
+                  <span onClick={() => updateMenuItem(activeIndex, itemIndex, 'priceTier', '$$')} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: item.priceTier === '$$' ? '#d4b26a' : '#57534b', background: item.priceTier === '$$' ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$</span>
+                  <span onClick={() => updateMenuItem(activeIndex, itemIndex, 'priceTier', '$$$')} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: item.priceTier === '$$$' ? '#d4b26a' : '#57534b', background: item.priceTier === '$$$' ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$</span>
+                  <span onClick={() => updateMenuItem(activeIndex, itemIndex, 'priceTier', '$$$$')} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: item.priceTier === '$$$$' ? '#d4b26a' : '#57534b', background: item.priceTier === '$$$$' ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$$</span>
+                </div>
+
+                <span 
+                  onClick={() => removeMenuItem(activeIndex, itemIndex)} 
+                  style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} 
+                  title="Xóa món"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                </span>
               </div>
-            ))}
-          </div>
-        ))}
-        <GhostButton onClick={addMenuGroup}>
-          <ReceiptText size={16} />
-          Thêm nhóm menu
-        </GhostButton>
-      </div>
-    </section>
-  );
+            );
+          })}
+
+          {listingDraft.menuGroups.length > 0 && (
+            <div 
+              onClick={() => addMenuItem(activeIndex)} 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '7px', 
+                border: '1.5px dashed rgba(212,178,106,.35)', 
+                borderRadius: '12px', 
+                padding: '12px', 
+                color: '#8c8679', 
+                cursor: 'pointer', 
+                fontSize: '11.5px' 
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+          <span>Không hiển thị giá tiền trực tiếp — chỉ hiển thị mức chi phí: <b style={{ color: '#caa765' }}>$$</b> rẻ · <b style={{ color: '#caa765' }}>$$$</b> vừa · <b style={{ color: '#caa765' }}>$$$$</b> cao.</span>
+        </div>
+      </section>
+    );
+  };
 
   const renderListingTab = () => {
     if (listingTab === 'cast') {
