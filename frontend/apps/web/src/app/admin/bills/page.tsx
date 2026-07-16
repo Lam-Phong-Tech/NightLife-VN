@@ -596,10 +596,7 @@ export default function AdminBillsPage() {
               )}
 
               {/* Basic Info */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Ngày dùng dịch vụ</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>{selectedBill.date ? new Date(selectedBill.date).toLocaleDateString('vi-VN') : 'N/A'}</span>
-              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                 <span style={{ color: colors.muted, fontSize: '14px' }}>Người gửi</span>
                 <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>{selectedBill.sender}</span>
