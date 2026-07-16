@@ -26,6 +26,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+  INACTIVE
 }
 
 enum SessionStatus {

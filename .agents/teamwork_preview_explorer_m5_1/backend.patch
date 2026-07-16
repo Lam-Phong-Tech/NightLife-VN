@@ -1,0 +1,115 @@
+diff --git a/backend/src/nightlife-data/nightlife-data.service.ts b/backend/src/nightlife-data/nightlife-data.service.ts
+index e23d9a1..a512bcd 100644
+--- a/backend/src/nightlife-data/nightlife-data.service.ts
++++ b/backend/src/nightlife-data/nightlife-data.service.ts
+@@ -503,11 +503,17 @@ type PartnerRequestCmsRecord = {
+   store: {
+     id: string;
+     name: string;
+     slug: string;
+     status: string;
+     category: StoreCategory;
+     mapUrl: string | null;
++    description: string | null;
++    address: string | null;
++    city: string;
++    district: string | null;
++    phone: string | null;
++    openingHours: Prisma.JsonValue | null;
++    pricingInfo: Prisma.JsonValue | null;
+   };
+   notificationLog: {
+     id: string;
+@@ -6881,17 +6887,24 @@   async reviewPartnerRequest(
+-      const onboarding = dto.approve
+-        ? await this.ensurePartnerOnboarding(tx, request)
+-        : null;
++      const isPartnerRegistration = request.id.startsWith('PARTNER-');
++      const onboarding = (dto.approve && isPartnerRegistration)
++        ? await this.ensurePartnerOnboarding(tx, request)
++        : null;
+       const listingStoreUpdate = dto.approve
+         ? await this.partnerListingStoreUpdateFromRequest(tx, request)
+         : {};
+ 
+       if (dto.approve) {
++        const storeUpdateData: any = {
++          ...listingStoreUpdate,
++          status: 'ACTIVE',
++        };
++        if (isPartnerRegistration && onboarding) {
++          storeUpdateData.ownerId = onboarding.userId;
++          storeUpdateData.partnerAccountId = onboarding.partnerAccountId;
++        }
+         await tx.store.update({
+           where: { id: request.store.id },
+-          data: {
+-            ...listingStoreUpdate,
+-            status: 'ACTIVE',
+-            ownerId: onboarding?.userId,
+-            partnerAccountId: onboarding?.partnerAccountId,
+-          },
++          data: storeUpdateData,
+           select: { id: true },
+         });
+         if (request.draftCastIds.length) {
+@@ -6917,11 +6930,13 @@   async reviewPartnerRequest(
+       } else {
+-        await tx.store.update({
+-          where: { id: request.store.id },
+-          data: { status: 'DRAFT' },
+-          select: { id: true },
+-        });
++        if (isPartnerRegistration) {
++          await tx.store.update({
++            where: { id: request.store.id },
++            data: { status: 'DRAFT' },
++            select: { id: true },
++          });
++        }
+         if (request.draftCastIds.length) {
+@@ -6948,4 +6963,4 @@   async reviewPartnerRequest(
+         reviewedById: adminId,
+-        partnerUserId: onboarding?.userId ?? request.partnerUserId,
++        partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
+         partnerAccountId:
+-          onboarding?.partnerAccountId ?? request.partnerAccountId,
++          onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+         publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+@@ -6974,4 +6989,4 @@   async reviewPartnerRequest(
+                 draftContentIds: request.draftContentIds,
+-                partnerUserId: onboarding?.userId ?? null,
+-                partnerAccountId: onboarding?.partnerAccountId ?? null,
++                partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
++                partnerAccountId: onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+                 temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
+@@ -7012,4 +7027,4 @@   async reviewPartnerRequest(
+               reviewedById: adminId,
+-              partnerUserId: onboarding?.userId ?? null,
+-              partnerAccountId: onboarding?.partnerAccountId ?? null,
++              partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
++              partnerAccountId: onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+               publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+@@ -16047,4 +16062,11 @@   private partnerRequestSelect() {
+           category: true,
+           mapUrl: true,
++          description: true,
++          address: true,
++          city: true,
++          district: true,
++          phone: true,
++          openingHours: true,
++          pricingInfo: true,
+         },
+@@ -16233,4 +16255,11 @@   private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
+       draftStoreCategory: request.store.category,
++      draftStoreDescription: request.store.description,
++      draftStoreAddress: request.store.address,
++      draftStoreCity: request.store.city,
++      draftStoreDistrict: request.store.district,
++      draftStorePhone: request.store.phone,
++      draftStoreOpeningHours: request.store.openingHours,
++      draftStoreMenuSummary: request.store.pricingInfo
++        ? (request.store.pricingInfo as any).menuSummary || null
++        : null,
+       draftCastIds: request.draftCastIds,

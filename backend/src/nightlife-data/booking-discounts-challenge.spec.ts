@@ -311,7 +311,7 @@ describe('Booking and Discount Flows Backend Integration Challenger Suite', () =
 
       const result = await service.claimAdminGlobalCouponForMember(
         'admin-coupon-vip',
-        { id: 'user-vip', role: 'USER', tier: 'VIP' } as AuthenticatedUser,
+        { id: 'user-vip', role: 'USER', tier: 'VIP' },
       );
 
       expect(result).toBeDefined();
@@ -324,8 +324,6 @@ describe('Booking and Discount Flows Backend Integration Challenger Suite', () =
         }),
       );
     });
-
-
   });
 
   describe('3. Store scope targetStores constraints for Admin Coupons', () => {
@@ -370,7 +368,9 @@ describe('Booking and Discount Flows Backend Integration Challenger Suite', () =
           },
         ),
       ).rejects.toThrow(
-        new UnprocessableEntityException('Store is not eligible for this admin coupon'),
+        new UnprocessableEntityException(
+          'Store is not eligible for this admin coupon',
+        ),
       );
     });
 
@@ -482,7 +482,9 @@ describe('Booking and Discount Flows Backend Integration Challenger Suite', () =
           tier: 'VIP',
         } as AuthenticatedUser),
       ).rejects.toThrow(
-        new UnprocessableEntityException('You have already claimed this coupon'),
+        new UnprocessableEntityException(
+          'You have already claimed this coupon',
+        ),
       );
     });
 
@@ -512,7 +514,9 @@ describe('Booking and Discount Flows Backend Integration Challenger Suite', () =
           displayName: 'Guest Name',
         }),
       ).rejects.toThrow(
-        new UnprocessableEntityException('This phone has already claimed this coupon'),
+        new UnprocessableEntityException(
+          'This phone has already claimed this coupon',
+        ),
       );
     });
   });

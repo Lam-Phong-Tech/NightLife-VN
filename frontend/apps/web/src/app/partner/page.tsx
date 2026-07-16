@@ -32,6 +32,7 @@ import {
   TrendingUp,
   Upload,
   UsersRound,
+  Settings,
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
@@ -40,7 +41,9 @@ import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { billApi } from '@/lib/api/bills';
-import { clearAuthSession } from '@/lib/auth/session';
+import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
+import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 const colors = {
   bg: 'var(--partner-bg, #0c0c0f)',
@@ -319,7 +322,6 @@ type PartnerBill = {
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
-  rejectReason?: string | null;
 };
 
 type DiscountRuleSnapshot = {
@@ -390,7 +392,7 @@ type BarcodeDetectorConstructor = new (options: { formats: string[] }) => Barcod
 type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstructor };
 type VietnamProvince = { code: number; name: string };
 type VietnamWard = { code: number; name: string };
-const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'bill'] as const;
+const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'bill', 'settings'] as const;
 type PanelKey = (typeof panelKeys)[number];
 type PartnerNotificationTone = 'gold' | 'success' | 'warning' | 'danger' | 'info';
 type PartnerNotification = {
@@ -1132,6 +1134,7 @@ const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'settlement', label: 'Đối soát', icon: FileClock },
   { key: 'listing', label: 'Đăng thông tin', icon: Camera },
   { key: 'bill', label: 'Gửi hóa đơn', icon: ReceiptText },
+  { key: 'settings', label: 'Cài đặt tài khoản', icon: Settings },
 ];
 
 const periodItems: { key: PeriodKey; label: string }[] = [
@@ -1146,6 +1149,7 @@ const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
   settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
   listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
   bill: { eyebrow: 'PARTNER BILL', title: 'Gửi hóa đơn cho chủ quán' },
+  settings: { eyebrow: 'PARTNER SETTINGS', title: 'Cài đặt tài khoản' },
 };
 
 const cardStyle: React.CSSProperties = {
@@ -1380,141 +1384,7 @@ function FormField({
   );
 }
 
-function ThemedListingSelect({
-  value,
-  onChange,
-  placeholder,
-  options,
-  hasError,
-  disabled,
-  ariaLabel,
-  compact,
-  style,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  options: { value: string; label: string }[];
-  hasError?: boolean;
-  disabled?: boolean;
-  ariaLabel?: string;
-  compact?: boolean;
-  style?: React.CSSProperties;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find((option) => option.value === value);
-
-  return (
-    <div
-      onBlur={(event) => {
-        const nextFocus = event.relatedTarget;
-        if (!nextFocus || !event.currentTarget.contains(nextFocus as Node)) {
-          setIsOpen(false);
-        }
-      }}
-      style={{
-        position: 'relative',
-        minWidth: compact ? '96px' : undefined,
-        ...style,
-      }}
-    >
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setIsOpen((current) => (disabled ? false : !current))}
-        aria-label={ariaLabel ?? placeholder}
-        aria-expanded={isOpen}
-        style={{
-          width: '100%',
-          minHeight: compact ? '34px' : '44px',
-          border: `1px solid ${hasError ? colors.danger : colors.borderGold22}`,
-          borderRadius: compact ? '9px' : '12px',
-          background: colors.surface2,
-          color: selectedOption ? colors.text : colors.muted,
-          font: 'inherit',
-          fontSize: compact ? '12px' : '13px',
-          fontWeight: 900,
-          padding: compact ? '0 8px' : '0 12px',
-          outline: 'none',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '10px',
-          opacity: disabled ? 0.65 : 1,
-          textAlign: 'left',
-        }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selectedOption?.label ?? placeholder}
-        </span>
-        <ChevronDown
-          size={compact ? 14 : 16}
-          style={{ flex: '0 0 auto', color: colors.goldBright }}
-        />
-      </button>
-      {isOpen && !disabled ? (
-        <div
-          className="partner-themed-select-menu"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            right: 0,
-            zIndex: 180,
-            maxHeight: compact ? '220px' : '280px',
-            overflowY: 'auto',
-            border: `1px solid ${colors.borderGold32}`,
-            borderRadius: '12px',
-            background: colors.popoverBg,
-            boxShadow: '0 24px 50px -26px rgba(0,0,0,.86)',
-            padding: '6px',
-          }}
-        >
-          {options.length ? (
-            options.map((option) => {
-              const selected = option.value === value;
-              return (
-                <button
-                  key={`${option.value}-${option.label}`}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    minHeight: compact ? '32px' : '36px',
-                    border: 0,
-                    borderRadius: '9px',
-                    background: selected ? colors.goldGrad : 'transparent',
-                    color: selected ? colors.onGold : colors.text,
-                    font: 'inherit',
-                    fontSize: compact ? '12px' : '12.5px',
-                    fontWeight: selected ? 900 : 800,
-                    textAlign: 'left',
-                    padding: '0 10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {option.label}
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            <div style={{ padding: '10px', color: colors.muted, fontSize: '12px', fontWeight: 800 }}>
-              Chưa có dữ liệu
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+// ThemedListingSelect has been extracted to '@/components/ui/ThemedListingSelect'
 
 function ListingTimeSelect({
   value,
@@ -1614,6 +1484,190 @@ export default function PartnerPage() {
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() =>
     readPartnerNotificationIds(),
   );
+
+  const feedback = useSystemFeedback();
+  const currentUser = getAuthUser();
+
+  // Change Password States
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Staff Management States
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [staffDisplayName, setStaffDisplayName] = useState('');
+  const [staffEmail, setStaffEmail] = useState('');
+  const [staffPassword, setStaffPassword] = useState('');
+  const [staffStoreId, setStaffStoreId] = useState('');
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const [staffPermissions, setStaffPermissions] = useState<string[]>(['coupon.scan', 'checkin.confirm']);
+  const [settingsStoreId, setSettingsStoreId] = useState('');
+
+  const fetchStaffList = useCallback(async (storeId: string) => {
+    if (!storeId) return;
+    setIsLoadingStaff(true);
+    try {
+      const data = await apiClient<any[]>(`/partner/staff?storeId=${storeId}`);
+      setStaffList(data);
+    } catch (err: any) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi tải danh sách nhân viên',
+        description: err.message || 'Không thể lấy dữ liệu nhân viên.',
+      });
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  }, [feedback]);
+
+  useEffect(() => {
+    if (activePanel === 'settings' && settingsStoreId) {
+      fetchStaffList(settingsStoreId);
+    }
+  }, [activePanel, settingsStoreId, fetchStaffList]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi nhập liệu',
+        description: 'Vui lòng điền đầy đủ thông tin.',
+      });
+      return;
+    }
+    if (newPassword.length < 8) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Mật khẩu yếu',
+        description: 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+      });
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi xác nhận',
+        description: 'Mật khẩu mới và xác nhận mật khẩu không khớp.',
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await apiClient('/users/change-password', {
+        method: 'POST',
+        data: { oldPassword, newPassword },
+      });
+      feedback.showToast({
+        tone: 'success',
+        title: 'Thành công',
+        description: 'Đổi mật khẩu thành công.',
+      });
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Đổi mật khẩu thất bại',
+        description: err.message || 'Mật khẩu cũ không chính xác.',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffDisplayName || !staffEmail || !staffPassword || !staffStoreId) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi nhập liệu',
+        description: 'Vui lòng điền đầy đủ các thông tin của nhân viên.',
+      });
+      return;
+    }
+    if (staffPassword.length < 8) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Mật khẩu yếu',
+        description: 'Mật khẩu nhân viên phải có ít nhất 8 ký tự.',
+      });
+      return;
+    }
+
+    setIsAddingStaff(true);
+    try {
+      await apiClient('/partner/staff', {
+        method: 'POST',
+        data: {
+          storeId: staffStoreId,
+          email: staffEmail,
+          password: staffPassword,
+          displayName: staffDisplayName,
+          permissions: staffPermissions,
+        },
+      });
+      feedback.showToast({
+        tone: 'success',
+        title: 'Thành công',
+        description: 'Đã thêm/liên kết nhân viên thành công.',
+      });
+      setStaffDisplayName('');
+      setStaffEmail('');
+      setStaffPassword('');
+      setStaffPermissions(['coupon.scan', 'checkin.confirm']);
+      if (staffStoreId === settingsStoreId) {
+        fetchStaffList(settingsStoreId);
+      }
+    } catch (err: any) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi thêm nhân viên',
+        description: err.message || 'Không thể tạo tài khoản nhân viên.',
+      });
+    } finally {
+      setIsAddingStaff(false);
+    }
+  };
+
+  const handleDeleteStaff = (staffId: string, staffName: string) => {
+    feedback.showModal({
+      tone: 'warning',
+      title: 'Xác nhận xóa nhân viên',
+      description: `Bạn có chắc chắn muốn xóa nhân viên "${staffName}" khỏi quán này? Quyền truy cập của nhân viên sẽ bị gỡ và tài khoản sẽ ngưng hoạt động.`,
+      primaryLabel: 'Xóa',
+      secondaryLabel: 'Hủy',
+      destructive: true,
+      onPrimary: async () => {
+        try {
+          await apiClient(`/partner/staff/${staffId}?storeId=${settingsStoreId}`, {
+            method: 'DELETE',
+          });
+          feedback.showToast({
+            tone: 'success',
+            title: 'Thành công',
+            description: 'Đã xóa nhân viên thành công.',
+          });
+          fetchStaffList(settingsStoreId);
+          feedback.closeModal();
+        } catch (err: any) {
+          feedback.showToast({
+            tone: 'error',
+            title: 'Lỗi xóa nhân viên',
+            description: err.message || 'Không thể xóa nhân viên.',
+          });
+        }
+      },
+      onSecondary: () => {
+        feedback.closeModal();
+      },
+    });
+  };
+
   const partnerThemeVariables = partnerTheme === 'light'
     ? partnerLightThemeVariables
     : partnerDarkThemeVariables;
@@ -2010,6 +2064,8 @@ export default function PartnerPage() {
         setStores(storeData);
         setListingStoreId((current) => current || storeData[0]?.id || '');
         setBillStoreId((current) => current || storeData[0]?.id || '');
+        setSettingsStoreId((current) => current || storeData[0]?.id || '');
+        setStaffStoreId((current) => current || storeData[0]?.id || '');
         setStatusMessage(
           storeData.length
             ? 'Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.'
@@ -6119,6 +6175,223 @@ export default function PartnerPage() {
     );
   };
 
+  const renderSettingsPanel = () => {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '14px' }}>
+        <PanelCard>
+          <SectionHeading eyebrow="PARTNER SETTINGS" title="Đổi mật khẩu" />
+          <form onSubmit={handleChangePassword} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
+            <FormField label="Mật khẩu cũ">
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                style={inputStyle}
+                placeholder="Nhập mật khẩu hiện tại"
+              />
+            </FormField>
+            <FormField label="Mật khẩu mới">
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={inputStyle}
+                placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
+              />
+            </FormField>
+            <FormField label="Xác nhận mật khẩu mới">
+              <input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                style={inputStyle}
+                placeholder="Xác nhận mật khẩu mới"
+              />
+            </FormField>
+            <PrimaryButton type="submit" disabled={isChangingPassword} style={{ marginTop: '8px', alignSelf: 'start' }}>
+              {isChangingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+            </PrimaryButton>
+          </form>
+        </PanelCard>
+
+        {currentUser?.role === 'PARTNER' && (
+          <PanelCard>
+            <SectionHeading eyebrow="STAFF MANAGEMENT" title="Quản lý nhân viên" />
+            
+            {/* Form thêm nhân viên */}
+            <div style={{ marginTop: '20px', padding: '16px', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', background: colors.surface2 }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.goldBright, marginBottom: '14px' }}>Thêm nhân viên mới</h3>
+              <form onSubmit={handleAddStaff} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'end' }}>
+                <FormField label="Họ tên nhân viên">
+                  <input
+                    type="text"
+                    value={staffDisplayName}
+                    onChange={(e) => setStaffDisplayName(e.target.value)}
+                    style={inputStyle}
+                    placeholder="Nguyễn Văn A"
+                  />
+                </FormField>
+                <FormField label="Email đăng nhập">
+                  <input
+                    type="email"
+                    value={staffEmail}
+                    onChange={(e) => setStaffEmail(e.target.value)}
+                    style={inputStyle}
+                    placeholder="staff@example.com"
+                  />
+                </FormField>
+                <FormField label="Mật khẩu (tối thiểu 8 ký tự)">
+                  <input
+                    type="password"
+                    value={staffPassword}
+                    onChange={(e) => setStaffPassword(e.target.value)}
+                    style={inputStyle}
+                    placeholder="Nhập mật khẩu"
+                  />
+                </FormField>
+                <FormField label="Cửa hàng quản lý">
+                  <ThemedListingSelect
+                    value={staffStoreId}
+                    onChange={setStaffStoreId}
+                    placeholder="Chọn cửa hàng"
+                    options={stores.map((s) => ({ value: s.id, label: s.name }))}
+                  />
+                </FormField>
+                <FormField label="Quyền hạn">
+                  <div style={{ display: 'flex', gap: '16px', minHeight: '44px', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={staffPermissions.includes('coupon.scan')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setStaffPermissions(prev => [...prev, 'coupon.scan']);
+                          } else {
+                            setStaffPermissions(prev => prev.filter(p => p !== 'coupon.scan'));
+                          }
+                        }}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: colors.gold }}
+                      />
+                      Quét coupon
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={staffPermissions.includes('checkin.confirm')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setStaffPermissions(prev => [...prev, 'checkin.confirm']);
+                          } else {
+                            setStaffPermissions(prev => prev.filter(p => p !== 'checkin.confirm'));
+                          }
+                        }}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: colors.gold }}
+                      />
+                      Xác nhận check-in
+                    </label>
+                  </div>
+                </FormField>
+                <PrimaryButton type="submit" disabled={isAddingStaff} style={{ minHeight: '44px' }}>
+                  {isAddingStaff ? 'Đang thêm...' : 'Thêm nhân viên'}
+                </PrimaryButton>
+              </form>
+            </div>
+
+            {/* Bộ lọc xem danh sách nhân viên theo quán */}
+            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.text }}>Danh sách nhân viên</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '300px' }}>
+                  <span style={{ fontSize: '12px', color: colors.text2, whiteSpace: 'nowrap', fontWeight: 700 }}>Xem theo quán:</span>
+                  <ThemedListingSelect
+                    value={settingsStoreId}
+                    onChange={setSettingsStoreId}
+                    placeholder="Chọn quán"
+                    options={stores.map((s) => ({ value: s.id, label: s.name }))}
+                  />
+                </div>
+              </div>
+
+              {/* Bảng danh sách nhân viên */}
+              <div style={{ overflowX: 'auto', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: colors.surface3, borderBottom: `1px solid ${colors.borderSoft}`, color: colors.text2, fontWeight: 700 }}>
+                      <th style={{ padding: '12px 16px' }}>Họ tên</th>
+                      <th style={{ padding: '12px 16px' }}>Email</th>
+                      <th style={{ padding: '12px 16px' }}>Quán quản lý</th>
+                      <th style={{ padding: '12px 16px' }}>Trạng thái</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoadingStaff ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
+                          Đang tải danh sách nhân viên...
+                        </td>
+                      </tr>
+                    ) : staffList.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
+                          Chưa có nhân viên nào tại quán này.
+                        </td>
+                      </tr>
+                    ) : (
+                      staffList.map((staff) => {
+                        const currentStore = stores.find((s) => s.id === settingsStoreId);
+                        return (
+                          <tr key={staff.id} style={{ borderBottom: `1px solid ${colors.borderSoft}`, color: colors.text }}>
+                            <td style={{ padding: '12px 16px', fontWeight: 600 }}>{staff.displayName}</td>
+                            <td style={{ padding: '12px 16px' }}>{staff.email}</td>
+                            <td style={{ padding: '12px 16px' }}>{currentStore?.name || 'N/A'}</td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                background: staff.status === 'ACTIVE' ? 'rgba(141,230,176,.12)' : 'rgba(255,180,168,.12)',
+                                color: staff.status === 'ACTIVE' ? colors.success : colors.danger,
+                              }}>
+                                {staff.status === 'ACTIVE' ? 'Hoạt động' : 'Ngưng hoạt động'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStaff(staff.id, staff.displayName)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 0,
+                                  color: colors.danger,
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 800,
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  outline: 'none',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,180,168,.08)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                Xóa
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </PanelCard>
+        )}
+      </div>
+    );
+  };
+
   const renderActivePanel = () => {
     if (activePanel === 'scan') {
       return renderScanPanel();
@@ -6131,6 +6404,9 @@ export default function PartnerPage() {
     }
     if (activePanel === 'bill') {
       return renderBillPanel();
+    }
+    if (activePanel === 'settings') {
+      return renderSettingsPanel();
     }
     return renderOverviewPanel();
   };

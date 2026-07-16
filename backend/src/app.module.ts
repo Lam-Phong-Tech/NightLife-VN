@@ -15,6 +15,7 @@ import { SupportChatModule } from './support-chat/support-chat.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { TourModule } from './tour/tour.module';
+import { PartnerStaffModule } from './partner-staff/partner-staff.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -33,6 +34,7 @@ import { validateEnv } from './config/env.validation';
     AuditLogsModule,
     CampaignsModule,
     TourModule,
+    PartnerStaffModule,
   ],
   controllers: [AppController],
   providers: [AppService],

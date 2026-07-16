@@ -1,0 +1,246 @@
+diff --git a/frontend/apps/web/src/app/admin/AdminConsole.tsx b/frontend/apps/web/src/app/admin/AdminConsole.tsx
+index 4016a24..b024b3b 100644
+--- a/frontend/apps/web/src/app/admin/AdminConsole.tsx
++++ b/frontend/apps/web/src/app/admin/AdminConsole.tsx
+@@ -342,6 +342,14 @@ type AdminPartnerRequest = {
+   draftStoreName: string | null;
+   draftStoreSlug: string | null;
++  draftStoreCategory?: string | null;
++  draftStoreDescription?: string | null;
++  draftStoreAddress?: string | null;
++  draftStoreCity?: string | null;
++  draftStoreDistrict?: string | null;
++  draftStorePhone?: string | null;
++  draftStoreOpeningHours?: any;
++  draftStoreMenuSummary?: string | null;
+   draftCastCount: number;
+   draftMediaCount: number;
+   draftContentCount: number;
+@@ -1714,6 +1722,9 @@ export default function AdminConsole() {
+   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
++  const [partnerRequestTab, setPartnerRequestTab] = useState<"registration" | "modification">("registration");
++  const [diffPartnerRequest, setDiffPartnerRequest] = useState<AdminPartnerRequest | null>(null);
++  const [diffReviewReason, setDiffReviewReason] = useState<string>("");
+   const [partnerRequestFilters, setPartnerRequestFilters] = useState<PartnerRequestFilterState>(
+@@ -1902,6 +1913,12 @@ export default function AdminConsole() {
+   const orderedPartnerRequests = useMemo(
+     () => prioritizeById(partnerRequests, focusedRequestId),
+     [focusedRequestId, partnerRequests],
+   );
+ 
++  const filteredPartnerRequests = useMemo(() => {
++    return orderedPartnerRequests.filter((req) =>
++      partnerRequestTab === "registration" ? req.id.startsWith("PARTNER-") : req.id.startsWith("LISTING-")
++    );
++  }, [orderedPartnerRequests, partnerRequestTab]);
++
+   const counts = useMemo(
+@@ -3278,6 +3295,17 @@ export default function AdminConsole() {
++  const formatOpeningHours = (val: any) => {
++    if (!val) return "";
++    if (typeof val === "string") return val;
++    if (typeof val === "object") {
++      return val.summary || JSON.stringify(val);
++    }
++    return String(val);
++  };
++
+   const partnerTable = () => (
+     <Panel testId="admin-partner-requests-panel">
+       <div style={{ minWidth: 900, overflowX: "auto" }}>
+@@ -3301,6 +3329,6 @@ export default function AdminConsole() {
+-        {orderedPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
++        {filteredPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
+           <div
+@@ -3376,6 +3405,17 @@ export default function AdminConsole() {
+               <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
++                {request.id.startsWith("LISTING-") && (
++                  <button
++                    type="button"
++                    onClick={() => {
++                      setDiffPartnerRequest(request);
++                      setDiffReviewReason(partnerReviewReasons[request.id] ?? "");
++                    }}
++                    style={buttonStyle("secondary")}
++                  >
++                    Xem thay đổi
++                  </button>
++                )}
+                 <button
+                   type="button"
+                   disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
+                   onClick={() => void reviewPartnerRequest(request.id, true)}
+                   style={buttonStyle("primary")}
+                 >
+@@ -3920,4 +3960,32 @@ export default function AdminConsole() {
+       <SectionTitle title="Hồ sơ đối tác" eyebrow="PARTNER REQUESTS" />
++      <div style={{ display: "flex", gap: 10, borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: 10 }}>
++        <button
++          type="button"
++          onClick={() => setPartnerRequestTab("registration")}
++          style={{
++            padding: "8px 16px",
++            background: partnerRequestTab === "registration" ? "rgba(212,178,106,.15)" : "transparent",
++            color: partnerRequestTab === "registration" ? colors.goldBright : colors.text2,
++            border: `1px solid ${partnerRequestTab === "registration" ? colors.borderGold40 : "transparent"}`,
++            borderRadius: 8,
++            fontWeight: partnerRequestTab === "registration" ? 800 : 600,
++            cursor: "pointer",
++          }}
++        >
++          Yêu cầu Đăng ký mới ({partnerRequests.filter(r => r.id.startsWith("PARTNER-")).length})
++        </button>
++        <button
++          type="button"
++          onClick={() => setPartnerRequestTab("modification")}
++          style={{
++            padding: "8px 16px",
++            background: partnerRequestTab === "modification" ? "rgba(212,178,106,.15)" : "transparent",
++            color: partnerRequestTab === "modification" ? colors.goldBright : colors.text2,
++            border: `1px solid ${partnerRequestTab === "modification" ? colors.borderGold40 : "transparent"}`,
++            borderRadius: 8,
++            fontWeight: partnerRequestTab === "modification" ? 800 : 600,
++            cursor: "pointer",
++          }}
++        >
++          Yêu cầu Sửa đổi ({partnerRequests.filter(r => r.id.startsWith("LISTING-")).length})
++        </button>
++      </div>
+       {partnerRequestFilterPanel()}
+       {partnerTable()}
+@@ -5470,4 +5538,127 @@ export default function AdminConsole() {
++      {diffPartnerRequest ? (
++        <div
++          role="dialog"
++          aria-modal="true"
++          style={{
++            position: "fixed",
++            inset: 0,
++            zIndex: 85,
++            display: "grid",
++            placeItems: "center",
++            padding: 18,
++            background: "rgba(0,0,0,.75)",
++            backdropFilter: "blur(8px)",
++          }}
++        >
++          <div
++            style={{
++              width: "min(100%, 820px)",
++              maxHeight: "90vh",
++              border: `1px solid ${colors.borderGold32}`,
++              borderRadius: 14,
++              background: "#121216",
++              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
++              padding: 24,
++              display: "flex",
++              flexDirection: "column",
++            }}
++          >
++            <div style={{ display: "flex", justifySelf: "stretch", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: 12 }}>
++              <h2 style={{ margin: 0, color: colors.goldBright, fontSize: 19 }}>
++                So sánh thay đổi thông tin cơ sở
++              </h2>
++              <button
++                type="button"
++                onClick={() => setDiffPartnerRequest(null)}
++                style={{ background: "transparent", border: "none", color: colors.muted, fontSize: 20, cursor: "pointer" }}
++              >
++                ✕
++              </button>
++            </div>
++
++            <div style={{ flex: 1, overflowY: "auto", padding: "16px 0", display: "grid", gap: 14 }}>
++              <div style={{
++                display: "grid",
++                gridTemplateColumns: "1fr 1fr",
++                gap: 16,
++                paddingBottom: 8,
++                borderBottom: `2px solid ${colors.borderSoft}`,
++                fontWeight: 800,
++                color: colors.text
++              }}>
++                <div>Dữ liệu hiện tại</div>
++                <div>Dữ liệu đề xuất</div>
++              </div>
++
++              <div style={{ display: "grid", gap: 10 }}>
++                {[
++                  { label: "Tên cơ sở", orig: diffPartnerRequest.draftStoreName, prop: diffPartnerRequest.businessName },
++                  { label: "Loại hình", orig: diffPartnerRequest.draftStoreCategory, prop: diffPartnerRequest.businessType },
++                  { label: "Mô tả", orig: diffPartnerRequest.draftStoreDescription, prop: diffPartnerRequest.storeDescription },
++                  { label: "Địa chỉ", orig: diffPartnerRequest.draftStoreAddress, prop: diffPartnerRequest.storeAddress },
++                  { label: "Thành phố", orig: diffPartnerRequest.draftStoreCity, prop: diffPartnerRequest.storeCity },
++                  { label: "Quận", orig: diffPartnerRequest.draftStoreDistrict, prop: diffPartnerRequest.storeDistrict },
++                  { label: "Số điện thoại", orig: diffPartnerRequest.draftStorePhone, prop: diffPartnerRequest.contactPhone },
++                  { label: "Giờ hoạt động", orig: formatOpeningHours(diffPartnerRequest.draftStoreOpeningHours), prop: formatOpeningHours(diffPartnerRequest.openingHours) },
++                  { label: "Menu / Pricing", orig: diffPartnerRequest.draftStoreMenuSummary, prop: diffPartnerRequest.menuSummary },
++                ].map((field, idx) => {
++                  const isChanged = String(field.orig ?? "") !== String(field.prop ?? "");
++                  return (
++                    <div key={idx} style={{
++                      display: "grid",
++                      gridTemplateColumns: "1fr 1fr",
++                      gap: 16,
++                      padding: "10px 0",
++                      borderBottom: `1px solid ${colors.borderSoft}`,
++                      background: isChanged ? "rgba(212,178,106,.06)" : "transparent"
++                    }}>
++                      <div style={{ paddingRight: 8 }}>
++                        <span style={{ display: "block", fontSize: 11, color: colors.muted, fontWeight: 700 }}>{field.label} (Hiện tại)</span>
++                        <span style={{ display: "block", fontSize: 13, color: colors.text2, marginTop: 4, whiteSpace: "pre-line" }}>
++                          {field.orig || <span style={{ fontStyle: "italic", color: colors.muted }}>Trống</span>}
++                        </span>
++                      </div>
++                      <div style={{ paddingLeft: 8, borderLeft: `1px solid ${isChanged ? colors.borderGold22 : colors.borderSoft}` }}>
++                        <span style={{ display: "block", fontSize: 11, color: isChanged ? colors.goldBright : colors.muted, fontWeight: 700 }}>
++                          {field.label} (Đề xuất) {isChanged ? "• Thay đổi" : ""}
++                        </span>
++                        <span style={{ display: "block", fontSize: 13, color: isChanged ? colors.goldBright : colors.text2, marginTop: 4, fontWeight: isChanged ? 700 : 400, whiteSpace: "pre-line" }}>
++                          {field.prop || <span style={{ fontStyle: "italic", color: colors.muted }}>Trống</span>}
++                        </span>
++                      </div>
++                    </div>
++                  );
++                })}
++              </div>
++            </div>
++
++            <div style={{ borderTop: `1px solid ${colors.borderSoft}`, paddingTop: 16 }}>
++              <Field label="Lý do duyệt / từ chối">
++                <textarea
++                  value={diffReviewReason}
++                  onChange={(event) => setDiffReviewReason(event.target.value)}
++                  rows={3}
++                  placeholder="Nhập phản hồi cho đối tác..."
++                  style={inputStyle({ padding: 12, minHeight: 80, resize: "vertical", marginTop: 8 })}
++                />
++              </Field>
++              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
++                <button type="button" onClick={() => setDiffPartnerRequest(null)} style={buttonStyle("secondary")}>Quay lại</button>
++                <button
++                  type="button"
++                  disabled={reviewingPartnerRequestId === diffPartnerRequest.id}
++                  onClick={async () => {
++                    setPartnerReviewReasons(current => ({ ...current, [diffPartnerRequest.id]: diffReviewReason }));
++                    await reviewPartnerRequest(diffPartnerRequest.id, false);
++                    setDiffPartnerRequest(null);
++                  }}
++                  style={buttonStyle("danger")}
++                >Từ chối</button>
++                <button
++                  type="button"
++                  disabled={reviewingPartnerRequestId === diffPartnerRequest.id}
++                  onClick={async () => {
++                    setPartnerReviewReasons(current => ({ ...current, [diffPartnerRequest.id]: diffReviewReason }));
++                    await reviewPartnerRequest(diffPartnerRequest.id, true);
++                    setDiffPartnerRequest(null);
++                  }}
++                  style={buttonStyle("primary")}
++                >Duyệt</button>
++              </div>
++            </div>
++          </div>
++        </div>
++      ) : null}
+       {promptData?.isOpen && (

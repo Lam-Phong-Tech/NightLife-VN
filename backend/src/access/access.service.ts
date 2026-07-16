@@ -148,7 +148,11 @@ export class AccessService {
     let queryHash: string | undefined;
     if (target.code) {
       const clean = target.code.trim();
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
+      if (
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          clean,
+        )
+      ) {
         queryId = clean;
       } else if (/^[0-9a-f]{32}$/i.test(clean)) {
         queryId = `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20)}`;
@@ -188,7 +192,10 @@ export class AccessService {
         return this.hasStoreAccess(user, adminIssue.storeId, 'coupon.scan');
       }
       const targetStores = adminIssue.adminCoupon.targetStores || [];
-      const accessibleStoreIds = await this.getAccessibleStoreIds(user, 'coupon.scan');
+      const accessibleStoreIds = await this.getAccessibleStoreIds(
+        user,
+        'coupon.scan',
+      );
       if (!accessibleStoreIds) {
         return true;
       }
@@ -239,7 +246,10 @@ export class AccessService {
         return this.hasStoreAccess(user, adminIssue.storeId, 'checkin.confirm');
       }
       const targetStores = adminIssue.adminCoupon.targetStores || [];
-      const accessibleStoreIds = await this.getAccessibleStoreIds(user, 'checkin.confirm');
+      const accessibleStoreIds = await this.getAccessibleStoreIds(
+        user,
+        'checkin.confirm',
+      );
       if (!accessibleStoreIds) {
         return true;
       }

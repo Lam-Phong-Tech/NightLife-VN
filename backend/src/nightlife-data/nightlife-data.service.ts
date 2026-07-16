@@ -2781,8 +2781,6 @@ export class NightlifeDataService {
       );
     }
 
-
-
     const existingIssue = await this.prisma.adminCouponIssue.findFirst({
       where: {
         adminCouponId: coupon.id,
@@ -2880,8 +2878,6 @@ export class NightlifeDataService {
         'Admin coupon usage limit reached',
       );
     }
-
-
 
     let guest = await this.prisma.guest.findFirst({
       where: { phone: dto.phone },
@@ -4198,7 +4194,10 @@ export class NightlifeDataService {
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
     const clean = code.trim();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        clean,
+      );
     const isUuidNoDashes = /^[0-9a-f]{32}$/i.test(clean);
     const isSha256 = /^[0-9a-f]{64}$/i.test(clean);
 
@@ -4694,23 +4693,34 @@ export class NightlifeDataService {
       throw new NotFoundException('Coupon issue not found');
     }
 
-    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'coupon.scan');
+    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'coupon.scan',
+    );
     let scanStoreId: string | null = null;
     if (accessibleStoreIds === undefined) {
       scanStoreId = issue.storeId ?? null;
       if (!scanStoreId) {
-        const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+        const firstStore = await this.prisma.store.findFirst({
+          select: { id: true },
+        });
         scanStoreId = firstStore?.id ?? null;
       }
     } else {
       if (accessibleStoreIds.length === 0) {
-        throw new ForbiddenException('Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.');
+        throw new ForbiddenException(
+          'Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.',
+        );
       }
       const targetStores = issue.adminCoupon.targetStores || [];
       if (targetStores.length > 0) {
-        const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+        const common = accessibleStoreIds.filter((id) =>
+          targetStores.includes(id),
+        );
         if (common.length === 0) {
-          throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+          throw new BadRequestException(
+            'Mã ưu đãi này không áp dụng cho quán của bạn.',
+          );
         }
         scanStoreId = common[0];
       } else {
@@ -4762,7 +4772,9 @@ export class NightlifeDataService {
   ) {
     // Validate campaign is active
     if (coupon.status !== 'ACTIVE') {
-      throw new UnprocessableEntityException('Chiến dịch coupon đang tạm dừng.');
+      throw new UnprocessableEntityException(
+        'Chiến dịch coupon đang tạm dừng.',
+      );
     }
     if (coupon.deletedAt) {
       throw new NotFoundException('Chiến dịch coupon không tồn tại.');
@@ -4770,29 +4782,44 @@ export class NightlifeDataService {
 
     const now = new Date();
     if (coupon.startsAt > now || (coupon.endsAt && coupon.endsAt <= now)) {
-      throw new UnprocessableEntityException('Chiến dịch coupon ngoài thời gian áp dụng.');
+      throw new UnprocessableEntityException(
+        'Chiến dịch coupon ngoài thời gian áp dụng.',
+      );
     }
 
     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new UnprocessableEntityException('Chiến dịch coupon đã hết lượt sử dụng.');
+      throw new UnprocessableEntityException(
+        'Chiến dịch coupon đã hết lượt sử dụng.',
+      );
     }
 
     // Resolve partner store access
-    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'coupon.scan');
+    const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'coupon.scan',
+    );
     let scanStoreId: string | null = null;
     if (accessibleStoreIds === undefined) {
       // Platform admin – pick any store
-      const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+      const firstStore = await this.prisma.store.findFirst({
+        select: { id: true },
+      });
       scanStoreId = firstStore?.id ?? null;
     } else {
       if (accessibleStoreIds.length === 0) {
-        throw new ForbiddenException('Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.');
+        throw new ForbiddenException(
+          'Bạn không có quyền quét ưu đãi ở bất kỳ quán nào.',
+        );
       }
       const targetStores = coupon.targetStores || [];
       if (targetStores.length > 0) {
-        const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+        const common = accessibleStoreIds.filter((id) =>
+          targetStores.includes(id),
+        );
         if (common.length === 0) {
-          throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+          throw new BadRequestException(
+            'Mã ưu đãi này không áp dụng cho quán của bạn.',
+          );
         }
         scanStoreId = common[0];
       } else {
@@ -4944,7 +4971,7 @@ export class NightlifeDataService {
     couponIssueId: string,
     user: AuthenticatedUser,
   ) {
-    let issue = await this.prisma.couponIssue.findUnique({
+    const issue = await this.prisma.couponIssue.findUnique({
       where: { id: couponIssueId },
       select: {
         id: true,
@@ -4984,23 +5011,34 @@ export class NightlifeDataService {
         throw new NotFoundException('Coupon issue not found');
       }
 
-      const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(user, 'checkin.confirm');
+      const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(
+        user,
+        'checkin.confirm',
+      );
       let scanStoreId: string | null = null;
       if (accessibleStoreIds === undefined) {
         scanStoreId = adminIssue.storeId ?? null;
         if (!scanStoreId) {
-          const firstStore = await this.prisma.store.findFirst({ select: { id: true } });
+          const firstStore = await this.prisma.store.findFirst({
+            select: { id: true },
+          });
           scanStoreId = firstStore?.id ?? null;
         }
       } else {
         if (accessibleStoreIds.length === 0) {
-          throw new ForbiddenException('Bạn không có quyền thực hiện xác nhận ở bất kỳ quán nào.');
+          throw new ForbiddenException(
+            'Bạn không có quyền thực hiện xác nhận ở bất kỳ quán nào.',
+          );
         }
         const targetStores = adminIssue.adminCoupon.targetStores || [];
         if (targetStores.length > 0) {
-          const common = accessibleStoreIds.filter((id) => targetStores.includes(id));
+          const common = accessibleStoreIds.filter((id) =>
+            targetStores.includes(id),
+          );
           if (common.length === 0) {
-            throw new BadRequestException('Mã ưu đãi này không áp dụng cho quán của bạn.');
+            throw new BadRequestException(
+              'Mã ưu đãi này không áp dụng cho quán của bạn.',
+            );
           }
           scanStoreId = common[0];
         } else {
@@ -5026,7 +5064,9 @@ export class NightlifeDataService {
       });
 
       if (usedIssue.count !== 1) {
-        throw new UnprocessableEntityException('Coupon issue has already been used');
+        throw new UnprocessableEntityException(
+          'Coupon issue has already been used',
+        );
       }
 
       const updatedIssue = await this.prisma.adminCouponIssue.findUnique({
@@ -6351,12 +6391,15 @@ export class NightlifeDataService {
             ? {
                 adminCouponIssueId: couponLink.adminCouponIssue.id,
                 adminCouponId: couponLink.adminCouponIssue.adminCoupon.id,
-                discountType: couponLink.adminCouponIssue.adminCoupon.discountType,
-                discountValue: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                discountType:
+                  couponLink.adminCouponIssue.adminCoupon.discountType,
+                discountValue:
+                  couponLink.adminCouponIssue.adminCoupon.discountValue,
                 type: couponLink.adminCouponIssue.adminCoupon.discountType,
                 value: couponLink.adminCouponIssue.adminCoupon.discountValue,
                 discountPercent:
-                  couponLink.adminCouponIssue.adminCoupon.discountType === 'PERCENT'
+                  couponLink.adminCouponIssue.adminCoupon.discountType ===
+                  'PERCENT'
                     ? couponLink.adminCouponIssue.adminCoupon.discountValue
                     : undefined,
                 code: couponLink.adminCouponIssue.adminCoupon.code,
@@ -6554,12 +6597,15 @@ export class NightlifeDataService {
             ? {
                 adminCouponIssueId: couponLink.adminCouponIssue.id,
                 adminCouponId: couponLink.adminCouponIssue.adminCoupon.id,
-                discountType: couponLink.adminCouponIssue.adminCoupon.discountType,
-                discountValue: couponLink.adminCouponIssue.adminCoupon.discountValue,
+                discountType:
+                  couponLink.adminCouponIssue.adminCoupon.discountType,
+                discountValue:
+                  couponLink.adminCouponIssue.adminCoupon.discountValue,
                 type: couponLink.adminCouponIssue.adminCoupon.discountType,
                 value: couponLink.adminCouponIssue.adminCoupon.discountValue,
                 discountPercent:
-                  couponLink.adminCouponIssue.adminCoupon.discountType === 'PERCENT'
+                  couponLink.adminCouponIssue.adminCoupon.discountType ===
+                  'PERCENT'
                     ? couponLink.adminCouponIssue.adminCoupon.discountValue
                     : undefined,
                 code: couponLink.adminCouponIssue.adminCoupon.code,
@@ -6888,9 +6934,10 @@ export class NightlifeDataService {
       }
 
       const isPartnerRegistration = request.id.startsWith('PARTNER-');
-      const onboarding = (dto.approve && isPartnerRegistration)
-        ? await this.ensurePartnerOnboarding(tx, request)
-        : null;
+      const onboarding =
+        dto.approve && isPartnerRegistration
+          ? await this.ensurePartnerOnboarding(tx, request)
+          : null;
       const listingStoreUpdate = dto.approve
         ? await this.partnerListingStoreUpdateFromRequest(tx, request)
         : {};
@@ -6901,10 +6948,12 @@ export class NightlifeDataService {
           data: {
             ...listingStoreUpdate,
             status: 'ACTIVE',
-            ...(onboarding ? {
-              ownerId: onboarding.userId,
-              partnerAccountId: onboarding.partnerAccountId,
-            } : {}),
+            ...(onboarding
+              ? {
+                  ownerId: onboarding.userId,
+                  partnerAccountId: onboarding.partnerAccountId,
+                }
+              : {}),
           },
           select: { id: true },
         });
@@ -10213,7 +10262,7 @@ export class NightlifeDataService {
 
       const targetStore = input.target.store;
       const expectedCode = `${targetStore.slug.toUpperCase()}-${defaultCode}`;
-      
+
       // 1. Try finding defaultCode directly for this store (required for tests to pass expecting code check)
       let coupon = await prisma.coupon.findFirst({
         where: {
@@ -10915,7 +10964,10 @@ export class NightlifeDataService {
 
         if (adminIssue) {
           const targetStores = adminIssue.adminCoupon.targetStores || [];
-          if (targetStores.length > 0 && !targetStores.includes(input.store.id)) {
+          if (
+            targetStores.length > 0 &&
+            !targetStores.includes(input.store.id)
+          ) {
             throw new UnprocessableEntityException(
               'Store is not eligible for this admin coupon',
             );
@@ -11416,7 +11468,6 @@ export class NightlifeDataService {
               );
             }
           }
-
 
           if (input.userId) {
             if (
@@ -13180,10 +13231,7 @@ export class NightlifeDataService {
       (typeof payload?.rejectReason === 'string' ? payload.rejectReason : null);
     const bookingNote =
       this.payloadString(payload, 'note') ?? log.booking?.note ?? null;
-    const note =
-      bookingNote ??
-      this.payloadString(payload, 'reason') ??
-      null;
+    const note = bookingNote ?? this.payloadString(payload, 'reason') ?? null;
     const tourTitle =
       this.payloadString(payload, 'tourTitle') ??
       this.bookingTourTitle(bookingNote);
@@ -15734,30 +15782,61 @@ export class NightlifeDataService {
       .slice(0, 12);
     const storeCasts = store.casts || [];
     const storeMedia = store.media || [];
-    const castProfiles = dto.castProfiles !== undefined
-      ? (this.normalizePartnerRequestCasts(dto.castProfiles) as PartnerListingCastDto[])
-      : storeCasts.map(cast => ({
-          stageName: cast.stageName,
-          publicHeadline: cast.publicHeadline ?? '',
-          bio: cast.bio ?? '',
-          tags: cast.tags,
-          languages: cast.languages,
-          birthMonth: cast.birthMonth ?? undefined,
-          zodiacSign: cast.zodiacSign ?? undefined,
-          heightCm: cast.heightCm ?? undefined,
-          measurements: cast.measurements ?? '',
-          hobbies: cast.hobbies,
-          youtubeLinks: cast.youtubeLinks,
-          hourlyRateVnd: cast.hourlyRateVnd ? Number(cast.hourlyRateVnd) : undefined,
-          mediaUrls: storeMedia.filter(m => m.castId === cast.id).map(m => m.url),
-        }));
+    const castProfiles =
+      dto.castProfiles !== undefined
+        ? (this.normalizePartnerRequestCasts(
+            dto.castProfiles,
+          ) as PartnerListingCastDto[])
+        : storeCasts.map((cast) => ({
+            stageName: cast.stageName,
+            publicHeadline: cast.publicHeadline ?? '',
+            bio: cast.bio ?? '',
+            tags: cast.tags,
+            languages: cast.languages,
+            birthMonth: cast.birthMonth ?? undefined,
+            zodiacSign: cast.zodiacSign ?? undefined,
+            heightCm: cast.heightCm ?? undefined,
+            measurements: cast.measurements ?? '',
+            hobbies: cast.hobbies,
+            youtubeLinks: cast.youtubeLinks,
+            hourlyRateVnd: cast.hourlyRateVnd
+              ? Number(cast.hourlyRateVnd)
+              : undefined,
+            mediaUrls: storeMedia
+              .filter((m) => m.castId === cast.id)
+              .map((m) => m.url),
+          }));
     const priceRange =
       this.cleanNullableText(dto.priceRange) ??
       this.cleanNullableText(String(pricingRecord?.summary ?? ''));
     const menuGroups = this.normalizePartnerListingMenuGroups(dto.menuGroups);
-    const coverImageUrl = this.cleanNullableText(dto.coverImageUrl) ?? storeMedia.find(m => m.purpose === 'PARTNER_LISTING_STORE' || m.purpose === 'STORE_COVER' || m.purpose === 'COVER_IMAGE')?.url ?? storeMedia.find(m => m.type === 'IMAGE')?.url ?? null;
-    const galleryUrls = dto.galleryUrls !== undefined ? this.cleanStringArray(dto.galleryUrls, 12) : storeMedia.filter(m => m.type === 'IMAGE' && m.purpose !== 'COVER_IMAGE' && !m.castId).map(m => m.url).slice(0, 12);
-    const videoUrls = dto.videoUrls !== undefined ? this.cleanStringArray(dto.videoUrls, 8) : storeMedia.filter(m => m.type === 'VIDEO').map(m => m.url).slice(0, 8);
+    const coverImageUrl =
+      this.cleanNullableText(dto.coverImageUrl) ??
+      storeMedia.find(
+        (m) =>
+          m.purpose === 'PARTNER_LISTING_STORE' ||
+          m.purpose === 'STORE_COVER' ||
+          m.purpose === 'COVER_IMAGE',
+      )?.url ??
+      storeMedia.find((m) => m.type === 'IMAGE')?.url ??
+      null;
+    const galleryUrls =
+      dto.galleryUrls !== undefined
+        ? this.cleanStringArray(dto.galleryUrls, 12)
+        : storeMedia
+            .filter(
+              (m) =>
+                m.type === 'IMAGE' && m.purpose !== 'COVER_IMAGE' && !m.castId,
+            )
+            .map((m) => m.url)
+            .slice(0, 12);
+    const videoUrls =
+      dto.videoUrls !== undefined
+        ? this.cleanStringArray(dto.videoUrls, 8)
+        : storeMedia
+            .filter((m) => m.type === 'VIDEO')
+            .map((m) => m.url)
+            .slice(0, 8);
     const mediaUrls = [
       coverImageUrl,
       ...galleryUrls,
@@ -15790,8 +15869,7 @@ export class NightlifeDataService {
         draftStoreAddress ??
         store.address,
       storeAddress:
-        draftStoreAddress ??
-        (composedStoreAddress || store.address),
+        draftStoreAddress ?? (composedStoreAddress || store.address),
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours: this.partnerListingOpeningHoursSummary(
         openingHourItems,
@@ -16356,23 +16434,25 @@ export class NightlifeDataService {
       openingHours: request.openingHours,
       menuSummary: request.menuSummary,
       mediaUrls: request.mediaUrls,
-      originalStore: request.store ? {
-        id: request.store.id,
-        name: request.store.name,
-        slug: request.store.slug,
-        status: request.store.status,
-        category: request.store.category,
-        description: request.store.description,
-        address: request.store.address,
-        city: request.store.city,
-        district: request.store.district,
-        phone: request.store.phone,
-        openingHours: request.store.openingHours,
-        pricingInfo: request.store.pricingInfo,
-        tags: request.store.tags,
-        media: request.store.media,
-        mapUrl: request.store.mapUrl,
-      } : null,
+      originalStore: request.store
+        ? {
+            id: request.store.id,
+            name: request.store.name,
+            slug: request.store.slug,
+            status: request.store.status,
+            category: request.store.category,
+            description: request.store.description,
+            address: request.store.address,
+            city: request.store.city,
+            district: request.store.district,
+            phone: request.store.phone,
+            openingHours: request.store.openingHours,
+            pricingInfo: request.store.pricingInfo,
+            tags: request.store.tags,
+            media: request.store.media,
+            mapUrl: request.store.mapUrl,
+          }
+        : null,
     };
   }
 

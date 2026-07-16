@@ -1,0 +1,485 @@
+diff --git a/backend/src/nightlife-data/nightlife-data.service.ts b/backend/src/nightlife-data/nightlife-data.service.ts
+index e23d9a1..b01a2f6 100644
+--- a/backend/src/nightlife-data/nightlife-data.service.ts
++++ b/backend/src/nightlife-data/nightlife-data.service.ts
+@@ -503,11 +503,21 @@ type PartnerRequestCmsRecord = {
+   store: {
+     id: string;
+     name: string;
+     slug: string;
+     status: string;
+     category: StoreCategory;
+     mapUrl: string | null;
++    description: string | null;
++    address: string | null;
++    city: string;
++    district: string | null;
++    phone: string | null;
++    openingHours: Prisma.JsonValue | null;
++    pricingInfo: Prisma.JsonValue | null;
++    tags: string[];
++    media: { url: string }[];
+   };
+   notificationLog: {
+     id: string;
+     status: string;
+@@ -6881,17 +6891,24 @@   async reviewPartnerRequest(
+-      const onboarding = dto.approve
+-        ? await this.ensurePartnerOnboarding(tx, request)
+-        : null;
++      const isPartnerRegistration = request.id.startsWith('PARTNER-');
++      const onboarding = (dto.approve && isPartnerRegistration)
++        ? await this.ensurePartnerOnboarding(tx, request)
++        : null;
+       const listingStoreUpdate = dto.approve
+         ? await this.partnerListingStoreUpdateFromRequest(tx, request)
+         : {};
+ 
+       if (dto.approve) {
++        const storeUpdateData: any = {
++          ...listingStoreUpdate,
++          status: 'ACTIVE',
++        };
++        if (isPartnerRegistration && onboarding) {
++          storeUpdateData.ownerId = onboarding.userId;
++          storeUpdateData.partnerAccountId = onboarding.partnerAccountId;
++        }
+         await tx.store.update({
+           where: { id: request.store.id },
+-          data: {
+-            ...listingStoreUpdate,
+-            status: 'ACTIVE',
+-            ownerId: onboarding?.userId,
+-            partnerAccountId: onboarding?.partnerAccountId,
+-          },
++          data: storeUpdateData,
+           select: { id: true },
+         });
+         if (request.draftCastIds.length) {
+@@ -6917,11 +6934,13 @@   async reviewPartnerRequest(
+       } else {
+-        await tx.store.update({
+-          where: { id: request.store.id },
+-          data: { status: 'DRAFT' },
+-          select: { id: true },
+-        });
++        if (isPartnerRegistration) {
++          await tx.store.update({
++            where: { id: request.store.id },
++            data: { status: 'DRAFT' },
++            select: { id: true },
++          });
++        }
+         if (request.draftCastIds.length) {
+@@ -6948,4 +6967,4 @@   async reviewPartnerRequest(
+         reviewedById: adminId,
+-        partnerUserId: onboarding?.userId ?? request.partnerUserId,
++        partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
+         partnerAccountId:
+-          onboarding?.partnerAccountId ?? request.partnerAccountId,
++          onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+         publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+@@ -6974,4 +6993,4 @@   async reviewPartnerRequest(
+                 draftContentIds: request.draftContentIds,
+-                partnerUserId: onboarding?.userId ?? null,
+-                partnerAccountId: onboarding?.partnerAccountId ?? null,
++                partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
++                partnerAccountId: onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+                 temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
+@@ -7012,4 +7031,4 @@   async reviewPartnerRequest(
+               reviewedById: adminId,
+-              partnerUserId: onboarding?.userId ?? null,
+-              partnerAccountId: onboarding?.partnerAccountId ?? null,
++              partnerUserId: onboarding?.userId ?? request.partnerUserId ?? null,
++              partnerAccountId: onboarding?.partnerAccountId ?? request.partnerAccountId ?? null,
+               publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+@@ -16047,4 +16066,16 @@   private partnerRequestSelect() {
+           category: true,
+           mapUrl: true,
++          description: true,
++          address: true,
++          city: true,
++          district: true,
++          phone: true,
++          openingHours: true,
++          pricingInfo: true,
++          tags: true,
++          media: {
++            select: {
++              url: true,
++            },
++          },
+         },
+@@ -16233,4 +16264,14 @@   private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
+       draftStoreCategory: request.store.category,
++      draftStoreDescription: request.store.description,
++      draftStoreAddress: request.store.address,
++      draftStoreCity: request.store.city,
++      draftStoreDistrict: request.store.district,
++      draftStorePhone: request.store.phone,
++      draftStoreOpeningHours: request.store.openingHours,
++      draftStoreMenuSummary: request.store.pricingInfo
++        ? (request.store.pricingInfo as any).menuSummary || null
++        : null,
++      draftStoreMediaUrls: request.store.media
++        ? request.store.media.map((m: any) => m.url)
++        : [],
+       draftCastIds: request.draftCastIds,
+
+diff --git a/frontend/apps/web/src/app/admin/AdminConsole.tsx b/frontend/apps/web/src/app/admin/AdminConsole.tsx
+index 4016a24..b024b3b 100644
+--- a/frontend/apps/web/src/app/admin/AdminConsole.tsx
++++ b/frontend/apps/web/src/app/admin/AdminConsole.tsx
+@@ -342,6 +342,15 @@ type AdminPartnerRequest = {
+   draftStoreName: string | null;
+   draftStoreSlug: string | null;
++  draftStoreCategory?: string | null;
++  draftStoreDescription?: string | null;
++  draftStoreAddress?: string | null;
++  draftStoreCity?: string | null;
++  draftStoreDistrict?: string | null;
++  draftStorePhone?: string | null;
++  draftStoreOpeningHours?: any;
++  draftStoreMenuSummary?: string | null;
++  draftStoreMediaUrls?: string[];
+   draftCastCount: number;
+   draftMediaCount: number;
+   draftContentCount: number;
+@@ -1714,6 +1723,10 @@ export default function AdminConsole() {
+   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
++  const [partnerRequestTab, setPartnerRequestTab] = useState<"registration" | "modification">("registration");
++  const [diffPartnerRequest, setDiffPartnerRequest] = useState<AdminPartnerRequest | null>(null);
++  const [diffReviewReason, setDiffReviewReason] = useState<string>("");
++  const [statusDropdownOpen, setStatusDropdownOpen] = useState<boolean>(false);
+   const [partnerRequestFilters, setPartnerRequestFilters] = useState<PartnerRequestFilterState>(
+@@ -1902,6 +1915,12 @@ export default function AdminConsole() {
+   const orderedPartnerRequests = useMemo(
+     () => prioritizeById(partnerRequests, focusedRequestId),
+     [focusedRequestId, partnerRequests],
+   );
+ 
++  const filteredPartnerRequests = useMemo(() => {
++    return orderedPartnerRequests.filter((req) =>
++      partnerRequestTab === "registration" ? req.id.startsWith("PARTNER-") : req.id.startsWith("LISTING-")
++    );
++  }, [orderedPartnerRequests, partnerRequestTab]);
++
+   const counts = useMemo(
+@@ -2557,5 +2576,5 @@ export default function AdminConsole() {
+-  const reviewPartnerRequest = async (requestId: string, approve: boolean) => {
+-    const reason =
+-      partnerReviewReasons[requestId]?.trim() ||
++  const reviewPartnerRequest = async (requestId: string, approve: boolean, overrideReason?: string) => {
++    const reason =
++      overrideReason?.trim() ||
++      partnerReviewReasons[requestId]?.trim() ||
+       (approve
+@@ -3278,6 +3297,17 @@ export default function AdminConsole() {
++  const formatOpeningHours = (val: any) => {
++    if (!val) return "";
++    if (typeof val === "string") return val;
++    if (typeof val === "object") {
++      return val.summary || JSON.stringify(val);
++    }
++    return String(val);
++  };
++
+   const partnerTable = () => (
+     <Panel testId="admin-partner-requests-panel">
+       <div style={{ minWidth: 900, overflowX: "auto" }}>
+@@ -3301,6 +3331,6 @@ export default function AdminConsole() {
+-        {orderedPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
++        {filteredPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
+           <div
+@@ -3376,6 +3406,17 @@ export default function AdminConsole() {
+               <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
++                {request.id.startsWith("LISTING-") && (
++                  <button
++                    type="button"
++                    onClick={() => {
++                      setDiffPartnerRequest(request);
++                      setDiffReviewReason(partnerReviewReasons[request.id] ?? "");
++                    }}
++                    style={buttonStyle("secondary")}
++                  >
++                    Xem thay đổi
++                  </button>
++                )}
+                 <button
+                   type="button"
+                   disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
+                   onClick={() => void reviewPartnerRequest(request.id, true)}
+                   style={buttonStyle("primary")}
+                 >
+@@ -3212,11 +3253,49 @@ export default function AdminConsole() {
+-            <select
+-              aria-label="Partner request status filter"
+-              value={partnerRequestFilterDraft.status}
+-              onChange={(event) => updatePartnerRequestFilterDraft("status", event.target.value)}
+-              style={inputStyle({ minHeight: 38 })}
+-            >
+-              <option value="all">Tất cả</option>
+-              <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+-              <option value="APPROVED">APPROVED</option>
+-              <option value="REJECTED">REJECTED</option>
+-            </select>
++            <div style={{ position: "relative" }}>
++              <button
++                type="button"
++                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
++                style={{
++                  ...inputStyle({ minHeight: 38 }),
++                  width: "100%",
++                  display: "flex",
++                  justifyContent: "space-between",
++                  alignItems: "center",
++                  background: "rgba(255,255,255,.035)",
++                  color: colors.text,
++                  border: `1px solid ${colors.borderSoft}`,
++                  borderRadius: 10,
++                  padding: "0 12px",
++                  cursor: "pointer",
++                  textAlign: "left"
++                }}
++              >
++                <span>{partnerRequestFilterDraft.status === "all" ? "Tất cả" : partnerRequestFilterDraft.status}</span>
++                <span style={{ fontSize: 10, color: colors.muted }}>▼</span>
++              </button>
++              {statusDropdownOpen && (
++                <div style={{
++                  position: "absolute",
++                  top: "100%",
++                  left: 0,
++                  right: 0,
++                  zIndex: 50,
++                  background: "#121216",
++                  border: `1px solid ${colors.borderGold32}`,
++                  borderRadius: 8,
++                  marginTop: 4,
++                  overflow: "hidden",
++                  boxShadow: "0 4px 12px rgba(0,0,0,.5)"
++                }}>
++                  {["all", "PENDING_REVIEW", "APPROVED", "REJECTED"].map((status) => (
++                    <button
++                      key={status}
++                      type="button"
++                      onClick={() => {
++                        updatePartnerRequestFilterDraft("status", status);
++                        setStatusDropdownOpen(false);
++                      }}
++                      style={{
++                        width: "100%",
++                        padding: "10px 12px",
++                        background: partnerRequestFilterDraft.status === status ? "rgba(212,178,106,.1)" : "transparent",
++                        color: partnerRequestFilterDraft.status === status ? colors.goldBright : colors.text2,
++                        border: "none",
++                        cursor: "pointer",
++                        textAlign: "left",
++                        fontSize: 13,
++                      }}
++                    >
++                      {status === "all" ? "Tất cả" : status}
++                    </button>
++                  ))}
++                </div>
++              )}
++            </div>
+ 
+@@ -3920,4 +3999,32 @@ export default function AdminConsole() {
+       <SectionTitle title="Hồ sơ đối tác" eyebrow="PARTNER REQUESTS" />
++      <div style={{ display: "flex", gap: 10, borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: 10 }}>
++        <button
++          type="button"
++          onClick={() => setPartnerRequestTab("registration")}
++          style={{
++            padding: "8px 16px",
++            background: partnerRequestTab === "registration" ? "rgba(212,178,106,.15)" : "transparent",
++            color: partnerRequestTab === "registration" ? colors.goldBright : colors.text2,
++            border: `1px solid ${partnerRequestTab === "registration" ? colors.borderGold40 : "transparent"}`,
++            borderRadius: 8,
++            fontWeight: partnerRequestTab === "registration" ? 800 : 600,
++            cursor: "pointer",
++          }}
++        >
++          Yêu cầu Đăng ký mới ({partnerRequests.filter(r => r.id.startsWith("PARTNER-")).length})
++        </button>
++        <button
++          type="button"
++          onClick={() => setPartnerRequestTab("modification")}
++          style={{
++            padding: "8px 16px",
++            background: partnerRequestTab === "modification" ? "rgba(212,178,106,.15)" : "transparent",
++            color: partnerRequestTab === "modification" ? colors.goldBright : colors.text2,
++            border: `1px solid ${partnerRequestTab === "modification" ? colors.borderGold40 : "transparent"}`,
++            borderRadius: 8,
++            fontWeight: partnerRequestTab === "modification" ? 800 : 600,
++            cursor: "pointer",
++          }}
++        >
++          Yêu cầu Sửa đổi ({partnerRequests.filter(r => r.id.startsWith("LISTING-")).length})
++        </button>
++      </div>
+       {partnerRequestFilterPanel()}
+       {partnerTable()}
+@@ -5470,4 +5577,143 @@ export default function AdminConsole() {
++      {diffPartnerRequest ? (
++        <div
++          role="dialog"
++          aria-modal="true"
++          style={{
++            position: "fixed",
++            inset: 0,
++            zIndex: 85,
++            display: "grid",
++            placeItems: "center",
++            padding: 18,
++            background: "rgba(0,0,0,.75)",
++            backdropFilter: "blur(8px)",
++          }}
++        >
++          <div
++            style={{
++              width: "min(100%, 880px)",
++              maxHeight: "90vh",
++              border: `1px solid ${colors.borderGold32}`,
++              borderRadius: 14,
++              background: "#121216",
++              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
++              padding: 24,
++              display: "flex",
++              flexDirection: "column",
++            }}
++          >
++            <div style={{ display: "flex", justifySelf: "stretch", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: 12 }}>
++              <h2 style={{ margin: 0, color: colors.goldBright, fontSize: 19 }}>
++                So sánh thay đổi thông tin cơ sở
++              </h2>
++              <button
++                type="button"
++                onClick={() => setDiffPartnerRequest(null)}
++                style={{ background: "transparent", border: "none", color: colors.muted, fontSize: 20, cursor: "pointer" }}
++              >
++                ✕
++              </button>
++            </div>
++
++            <div style={{ flex: 1, overflowY: "auto", padding: "16px 0", display: "grid", gap: 14 }}>
++              <div style={{
++                display: "grid",
++                gridTemplateColumns: "1fr 1fr",
++                gap: 16,
++                paddingBottom: 8,
++                borderBottom: `2px solid ${colors.borderSoft}`,
++                fontWeight: 800,
++                color: colors.text
++              }}>
++                <div>Dữ liệu hiện tại</div>
++                <div>Dữ liệu đề xuất</div>
++              </div>
++
++              <div style={{ display: "grid", gap: 10 }}>
++                {[
++                  { label: "Tên cơ sở", orig: diffPartnerRequest.draftStoreName, prop: diffPartnerRequest.businessName, isMedia: false },
++                  { label: "Loại hình", orig: diffPartnerRequest.draftStoreCategory, prop: diffPartnerRequest.businessType, isMedia: false },
++                  { label: "Mô tả", orig: diffPartnerRequest.draftStoreDescription, prop: diffPartnerRequest.storeDescription, isMedia: false },
++                  { label: "Địa chỉ", orig: diffPartnerRequest.draftStoreAddress, prop: diffPartnerRequest.storeAddress, isMedia: false },
++                  { label: "Thành phố", orig: diffPartnerRequest.draftStoreCity, prop: diffPartnerRequest.storeCity, isMedia: false },
++                  { label: "Quận", orig: diffPartnerRequest.draftStoreDistrict, prop: diffPartnerRequest.storeDistrict, isMedia: false },
++                  { label: "Số điện thoại", orig: diffPartnerRequest.draftStorePhone, prop: diffPartnerRequest.contactPhone, isMedia: false },
++                  { label: "Giờ hoạt động", orig: formatOpeningHours(diffPartnerRequest.draftStoreOpeningHours), prop: formatOpeningHours(diffPartnerRequest.openingHours), isMedia: false },
++                  { label: "Menu / Pricing", orig: diffPartnerRequest.draftStoreMenuSummary, prop: diffPartnerRequest.menuSummary, isMedia: false },
++                  {
++                    label: "Hình ảnh",
++                    orig: diffPartnerRequest.draftStoreMediaUrls ?? [],
++                    prop: diffPartnerRequest.mediaUrls ?? [],
++                    isMedia: true
++                  }
++                ].map((field, idx) => {
++                  const isChanged = field.isMedia
++                    ? JSON.stringify(field.orig) !== JSON.stringify(field.prop)
++                    : String(field.orig ?? "") !== String(field.prop ?? "");
++                  return (
++                    <div key={idx} style={{
++                      display: "grid",
++                      gridTemplateColumns: "1fr 1fr",
++                      gap: 16,
++                      padding: "10px 0",
++                      borderBottom: `1px solid ${colors.borderSoft}`,
++                      background: isChanged ? "rgba(212,178,106,.06)" : "transparent"
++                    }}>
++                      <div style={{ paddingRight: 8 }}>
++                        <span style={{ display: "block", fontSize: 11, color: colors.muted, fontWeight: 700 }}>{field.label} (Hiện tại)</span>
++                        <span style={{ display: "block", fontSize: 13, color: colors.text2, marginTop: 4, whiteSpace: "pre-line" }}>
++                          {field.isMedia ? (
++                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
++                              {(field.orig as string[]).map((url, i) => (
++                                <img key={i} src={url} alt="Original" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 6 }} />
++                              ))}
++                              {!(field.orig as string[]).length && <span style={{ fontStyle: "italic", color: colors.muted }}>Không có hình ảnh</span>}
++                            </div>
++                          ) : (
++                            field.orig || <span style={{ fontStyle: "italic", color: colors.muted }}>Trống</span>
++                          )}
++                        </span>
++                      </div>
++                      <div style={{ paddingLeft: 8, borderLeft: `1px solid ${isChanged ? colors.borderGold22 : colors.borderSoft}` }}>
++                        <span style={{ display: "block", fontSize: 11, color: isChanged ? colors.goldBright : colors.muted, fontWeight: 700 }}>
++                          {field.label} (Đề xuất) {isChanged ? "• Thay đổi" : ""}
++                        </span>
++                        <span style={{ display: "block", fontSize: 13, color: isChanged ? colors.goldBright : colors.text2, marginTop: 4, fontWeight: isChanged ? 700 : 400, whiteSpace: "pre-line" }}>
++                          {field.isMedia ? (
++                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
++                              {(field.prop as string[]).map((url, i) => {
++                                const isNew = !(field.orig as string[]).includes(url);
++                                return (
++                                  <img key={i} src={url} alt="Proposed" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 6, border: isNew ? `2px solid ${colors.green}` : "none" }} />
++                                );
++                              })}
++                              {!(field.prop as string[]).length && <span style={{ fontStyle: "italic", color: colors.muted }}>Không có hình ảnh</span>}
++                            </div>
++                          ) : (
++                            field.prop || <span style={{ fontStyle: "italic", color: colors.muted }}>Trống</span>
++                          )}
++                        </span>
++                      </div>
++                    </div>
++                  );
++                })}
++              </div>
++            </div>
++
++            <div style={{ borderTop: `1px solid ${colors.borderSoft}`, paddingTop: 16 }}>
++              <Field label="Lý do duyệt / từ chối">
++                <textarea
++                  value={diffReviewReason}
++                  onChange={(event) => setDiffReviewReason(event.target.value)}
++                  rows={3}
++                  placeholder="Nhập phản hồi cho đối tác..."
++                  style={inputStyle({ padding: 12, minHeight: 80, resize: "vertical", marginTop: 8 })}
++                />
++              </Field>
++              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
++                <button type="button" onClick={() => setDiffPartnerRequest(null)} style={buttonStyle("secondary")}>Quay lại</button>
++                <button
++                  type="button"
++                  disabled={reviewingPartnerRequestId === diffPartnerRequest.id}
++                  onClick={async () => {
++                    await reviewPartnerRequest(diffPartnerRequest.id, false, diffReviewReason);
++                    setDiffPartnerRequest(null);
++                  }}
++                  style={buttonStyle("danger")}
++                >Từ chối</button>
++                <button
++                  type="button"
++                  disabled={reviewingPartnerRequestId === diffPartnerRequest.id}
++                  onClick={async () => {
++                    await reviewPartnerRequest(diffPartnerRequest.id, true, diffReviewReason);
++                    setDiffPartnerRequest(null);
++                  }}
++                  style={buttonStyle("primary")}
++                >Duyệt</button>
++              </div>
++            </div>
++          </div>
++        </div>
++      ) : null}

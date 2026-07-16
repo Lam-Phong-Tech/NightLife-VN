@@ -1,13 +1,13 @@
 ## Current Status
-Last visited: 2026-07-15T17:30:00Z
+Last visited: 2026-07-16T09:50:04+07:00
 
 ## Iteration Status
 Current iteration: 1 / 32
 
 ## Checklist
-- [x] Initial codebase exploration (locate booking, coupon, campaign, bill files)
-- [x] Decompose task and write PROJECT.md (Global architecture, interface contracts, milestones)
-- [x] Execute Milestone 1: Explorer investigation & design
-- [x] Execute Milestone 2: Worker implementation of R1, R2, R3
-- [x] Execute Milestone 3: Reviewer & Challenger verification
-- [x] Execute Milestone 4: Forensic audit and final acceptance
+- [x] Milestone 1: Explore & Design (Locate user and partner files, schema, components)
+- [/] Milestone 2: Backend Implementation (change password, staff management, store permissions)
+- [/] Milestone 3: Frontend Implementation (Settings page, sidebar integration, password change form, staff manager, custom components)
+- [/] Milestone 4: Write Tests (unit/integration test files)
+- [ ] Milestone 5: Verification & Forensic Audit (Run build/tests, run Forensic Auditor)
+- [ ] Milestone 6: Git operations (git add, commit, push)

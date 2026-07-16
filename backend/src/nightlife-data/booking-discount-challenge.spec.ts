@@ -84,7 +84,9 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
-    jest.spyOn(QRCode, 'toDataURL').mockResolvedValue('data:image/png;base64,test-booking-qr');
+    jest
+      .spyOn(QRCode, 'toDataURL')
+      .mockResolvedValue('data:image/png;base64,test-booking-qr');
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
 
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
@@ -173,7 +175,9 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
             }),
           }),
         );
-        expect(prisma.coupon.findFirst.mock.calls[0][0].where).not.toHaveProperty('storeId');
+        expect(
+          prisma.coupon.findFirst.mock.calls[0][0].where,
+        ).not.toHaveProperty('storeId');
       },
     );
 
@@ -263,7 +267,6 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       ).resolves.toBeDefined();
     });
 
-
     it('allows a guest to claim an Admin Coupon targeted to GUEST', async () => {
       prisma.adminCoupon.findFirst.mockResolvedValue({
         ...adminCouponBase,
@@ -283,7 +286,6 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
         }),
       ).resolves.toBeDefined();
     });
-
 
     it('validates audience check case-insensitively', async () => {
       prisma.store.findFirst.mockResolvedValue({
@@ -402,7 +404,11 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
             adminCouponIssueId: 'admin-issue-1',
           },
         ),
-      ).rejects.toThrow(new UnprocessableEntityException('Store is not eligible for this admin coupon'));
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Store is not eligible for this admin coupon',
+        ),
+      );
     });
   });
 
@@ -421,8 +427,13 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       } as any);
 
       await expect(
-        service.claimAdminGlobalCouponForMember('admin-coupon-1', { id: 'member-1', role: 'USER' }),
-      ).rejects.toThrow(new UnprocessableEntityException('Admin coupon usage limit reached'));
+        service.claimAdminGlobalCouponForMember('admin-coupon-1', {
+          id: 'member-1',
+          role: 'USER',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Admin coupon usage limit reached'),
+      );
     });
 
     it('prevents claiming guest admin coupon if usageLimit has been reached', async () => {
@@ -439,8 +450,13 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       } as any);
 
       await expect(
-        service.claimAdminGlobalCouponForGuest('admin-coupon-1', { phone: '+84999999999', displayName: 'Guest' }),
-      ).rejects.toThrow(new UnprocessableEntityException('Admin coupon usage limit reached'));
+        service.claimAdminGlobalCouponForGuest('admin-coupon-1', {
+          phone: '+84999999999',
+          displayName: 'Guest',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Admin coupon usage limit reached'),
+      );
     });
 
     it('prevents member from duplicate claims of the same Admin Coupon', async () => {
@@ -465,8 +481,15 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       } as any);
 
       await expect(
-        service.claimAdminGlobalCouponForMember('admin-coupon-1', { id: 'member-1', role: 'USER' }),
-      ).rejects.toThrow(new UnprocessableEntityException('You have already claimed this coupon'));
+        service.claimAdminGlobalCouponForMember('admin-coupon-1', {
+          id: 'member-1',
+          role: 'USER',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'You have already claimed this coupon',
+        ),
+      );
     });
 
     it('prevents guest from duplicate claims of the same Admin Coupon using the same phone number', async () => {
@@ -494,8 +517,15 @@ describe('Booking and Discount Flows Backend Integration (Challenge)', () => {
       } as any);
 
       await expect(
-        service.claimAdminGlobalCouponForGuest('admin-coupon-1', { phone: '+84999999999', displayName: 'Guest' }),
-      ).rejects.toThrow(new UnprocessableEntityException('This phone has already claimed this coupon'));
+        service.claimAdminGlobalCouponForGuest('admin-coupon-1', {
+          phone: '+84999999999',
+          displayName: 'Guest',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException(
+          'This phone has already claimed this coupon',
+        ),
+      );
     });
   });
 });

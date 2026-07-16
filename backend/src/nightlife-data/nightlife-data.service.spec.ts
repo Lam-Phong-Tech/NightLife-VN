@@ -3114,9 +3114,9 @@ describe('NightlifeDataService', () => {
       tags: [],
       partnerAccountId: null,
       ownerId: null,
-    } as never);
-    prisma.content.findFirst.mockResolvedValueOnce(null as never);
-    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null as never);
+    });
+    prisma.content.findFirst.mockResolvedValueOnce(null);
+    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
 
     await expect(
       service.getPartnerListingDraft(
@@ -5322,13 +5322,17 @@ describe('NightlifeDataService', () => {
           status: 'REQUESTED',
           scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
           note: 'Tour: Bar Hopping VIP | Diem dung: Tokyo Kitchen > Crimson Bar',
-          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          store: {
+            id: 'store-1',
+            name: 'Tokyo Kitchen',
+            slug: 'tokyo-kitchen',
+          },
           cast: null,
         },
         bill: null,
       },
     ] as never);
-    prisma.notificationLog.count.mockResolvedValue(1 as never);
+    prisma.notificationLog.count.mockResolvedValue(1);
 
     const result = await service.listMemberNotifications(
       { id: 'member-1', role: 'USER' },

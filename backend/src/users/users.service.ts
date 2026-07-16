@@ -8,6 +8,7 @@ import { UserTier } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../common/password.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
 
@@ -74,6 +75,20 @@ export class UsersService {
         passwordHash: await this.passwordService.hash(password),
       },
     });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.findByIdOrThrow(userId);
+    const isOldPasswordMatch = await this.passwordService.verify(
+      dto.oldPassword,
+      user.passwordHash,
+    );
+
+    if (!isOldPasswordMatch) {
+      throw new UnauthorizedException('Mật khẩu cũ không chính xác');
+    }
+
+    return this.updatePassword(userId, dto.newPassword);
   }
 
   async createUser(input: {
