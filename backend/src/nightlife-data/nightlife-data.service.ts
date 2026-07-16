@@ -10253,7 +10253,7 @@ export class NightlifeDataService {
       if (userTier) {
         if (userTier === 'VIP') {
           defaultCode = 'VIP10';
-        } else if (userTier === 'MEMBER' || userTier === 'PREMIUM') {
+        } else if (userTier === 'MEMBER' || userTier === 'PREMIUM' || userTier === 'FREE') {
           defaultCode = 'MEMBER8';
         } else {
           defaultCode = 'GUEST5';
