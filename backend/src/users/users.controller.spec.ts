@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { NotFoundException } from '@nestjs/common';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -26,6 +27,30 @@ describe('UsersController', () => {
 
     controller = module.get<UsersController>(UsersController);
     service = module.get(UsersService);
+  });
+
+  describe('me', () => {
+    it('should return public user details', async () => {
+      const mockReq = { user: { id: 'user-123' } };
+      const mockUser = { id: 'user-123', email: 'user@example.com' };
+      const mockPublicUser = { id: 'user-123', email: 'user@example.com', name: 'User' };
+
+      service.findByIdOrThrow.mockResolvedValue(mockUser as any);
+      service.toPublicUser.mockReturnValue(mockPublicUser as any);
+
+      const result = await controller.me(mockReq as any);
+
+      expect(service.findByIdOrThrow).toHaveBeenCalledWith('user-123');
+      expect(service.toPublicUser).toHaveBeenCalledWith(mockUser);
+      expect(result).toEqual(mockPublicUser);
+    });
+
+    it('should propagate NotFoundException if user is not found', async () => {
+      const mockReq = { user: { id: 'user-123' } };
+      service.findByIdOrThrow.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(controller.me(mockReq as any)).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('changePassword', () => {
@@ -58,6 +83,13 @@ describe('UsersController', () => {
       await expect(
         controller.changePassword(mockReq as any, dto),
       ).rejects.toThrow('Mật khẩu cũ không chính xác');
+    });
+  });
+
+  describe('partnerAdminCheck', () => {
+    it('should return ok: true', () => {
+      const result = controller.partnerAdminCheck();
+      expect(result).toEqual({ ok: true });
     });
   });
 });

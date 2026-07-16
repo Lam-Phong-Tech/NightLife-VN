@@ -4,7 +4,7 @@ import { PartnerStaffController } from './partner-staff.controller';
 import { PartnerStaffService } from './partner-staff.service';
 import { AccessService } from '../access/access.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 describe('PartnerStaffController', () => {
   let controller: PartnerStaffController;
@@ -74,6 +74,23 @@ describe('PartnerStaffController', () => {
       expect(partnerStaffService.getStaffByStore).toHaveBeenCalledWith(storeId);
       expect(result).toEqual(staffList);
     });
+
+    it('should propagate ForbiddenException if store access check fails', async () => {
+      const storeId = 'store-123';
+      accessService.ensureStoreAccess.mockRejectedValue(new ForbiddenException('No access'));
+
+      await expect(controller.getStaff(mockReq, storeId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should propagate service errors when fetching staff fails', async () => {
+      const storeId = 'store-123';
+      accessService.ensureStoreAccess.mockResolvedValue(undefined);
+      partnerStaffService.getStaffByStore.mockRejectedValue(new Error('DB error'));
+
+      await expect(controller.getStaff(mockReq, storeId)).rejects.toThrow('DB error');
+    });
   });
 
   describe('createStaff', () => {
@@ -104,6 +121,33 @@ describe('PartnerStaffController', () => {
       expect(partnerStaffService.assignStaffToStore).toHaveBeenCalledWith(dto);
       expect(result).toEqual(createdUser);
     });
+
+    it('should propagate ForbiddenException if store access check fails', async () => {
+      const dto: CreateStaffDto = {
+        storeId: 'store-123',
+        email: 'staff@example.com',
+        password: 'password123',
+        displayName: 'Staff Name',
+      };
+      accessService.ensureStoreAccess.mockRejectedValue(new ForbiddenException('No access'));
+
+      await expect(controller.createStaff(mockReq, dto)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should propagate service errors when creating staff fails', async () => {
+      const dto: CreateStaffDto = {
+        storeId: 'store-123',
+        email: 'staff@example.com',
+        password: 'password123',
+        displayName: 'Staff Name',
+      };
+      accessService.ensureStoreAccess.mockResolvedValue(undefined);
+      partnerStaffService.assignStaffToStore.mockRejectedValue(new Error('Email already exists'));
+
+      await expect(controller.createStaff(mockReq, dto)).rejects.toThrow('Email already exists');
+    });
   });
 
   describe('deleteStaff', () => {
@@ -132,6 +176,25 @@ describe('PartnerStaffController', () => {
         storeId,
       );
       expect(result).toEqual({ success: true });
+    });
+
+    it('should propagate ForbiddenException if store access check fails', async () => {
+      const staffId = 'staff-123';
+      const storeId = 'store-123';
+      accessService.ensureStoreAccess.mockRejectedValue(new ForbiddenException('No access'));
+
+      await expect(controller.deleteStaff(mockReq, staffId, storeId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should propagate service errors when deleting staff fails', async () => {
+      const staffId = 'staff-123';
+      const storeId = 'store-123';
+      accessService.ensureStoreAccess.mockResolvedValue(undefined);
+      partnerStaffService.removeStaffFromStore.mockRejectedValue(new Error('Staff not found'));
+
+      await expect(controller.deleteStaff(mockReq, staffId, storeId)).rejects.toThrow('Staff not found');
     });
   });
 });
