@@ -1,4 +1,5 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 export const cityLabels: Record<string, string> = {
@@ -144,7 +145,8 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],
     hourlyRateVnd: cast.hourlyRateVnd ?? null,
-    thumbnailUrl: cast.thumbnailUrl ?? cast.gallery.find((item) => item.type === "IMAGE")?.url ?? null,
+    thumbnailUrl:
+      cast.thumbnailUrl ?? cast.gallery.find((item) => item.type === "IMAGE")?.url ?? null,
     gallery: galleryFromCast(cast),
     monthOfBirth: cast.monthOfBirth ?? null,
     zodiacSign: cast.zodiacSign ?? null,
@@ -168,13 +170,19 @@ export function buildCastArea(profile: CastProfile) {
 }
 
 export function buildBookingHref(profile: CastProfile, area: string) {
-  return `/dat-cho?${new URLSearchParams({
-    castSlug: profile.slug,
-    castName: profile.name,
+  const params = new URLSearchParams({
     storeSlug: profile.store.slug,
     storeName: profile.store.name,
+    category: profile.store.category,
     area,
-  }).toString()}`;
+  });
+
+  if (!isServiceOnlyBookingCategory(profile.store.category)) {
+    params.set("castSlug", profile.slug);
+    params.set("castName", profile.name);
+  }
+
+  return `/dat-cho?${params.toString()}`;
 }
 
 export function videoEmbedUrl(url: string) {

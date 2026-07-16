@@ -34,10 +34,7 @@ import {
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
 } from "@/lib/booking-validation";
-import {
-  getBookingDateAfterDays,
-  getTodayBookingDate,
-} from "@/lib/booking-date";
+import { getBookingDateAfterDays, getTodayBookingDate } from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
   firstBookingFieldError,
@@ -48,6 +45,7 @@ import {
 } from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -87,6 +85,7 @@ const bookingFieldNames = {
 type BookingContext = {
   storeSlug?: string;
   storeName: string;
+  category?: string;
   area?: string;
   castSlug?: string;
   castName?: string;
@@ -104,11 +103,7 @@ const defaultContext: BookingContext = {
 
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
 
-const localizedApiErrorMessage = (
-  error: unknown,
-  language: LanguageCode,
-  fallback: string,
-) => {
+const localizedApiErrorMessage = (error: unknown, language: LanguageCode, fallback: string) => {
   const vietnameseMessage =
     error instanceof ApiError
       ? translateApiMessage(error.message, error.status, fallback)
@@ -152,9 +147,7 @@ const castOptionLabel = (cast: Pick<StoreDetailCast, "publicAlias" | "stageName"
   cast.publicAlias || cast.stageName;
 
 const castOptionMeta = (cast: Pick<StoreDetailCast, "publicHeadline" | "languages">) =>
-  [cast.publicHeadline, cast.languages?.filter(Boolean).join(", ")]
-    .filter(Boolean)
-    .join(" · ");
+  [cast.publicHeadline, cast.languages?.filter(Boolean).join(", ")].filter(Boolean).join(" · ");
 
 const publicCastToStoreCast = (cast: PublicCast): StoreDetailCast => ({
   id: cast.id,
@@ -214,26 +207,27 @@ const loadStoreCastOptions = async (storeSlug: string) => {
   }
 
   const allCasts = await discoveryApi.listCasts({ city: "all", limit: 100 });
-  return allCasts
-    .filter((cast) => cast.store.slug === storeSlug)
-    .map(publicCastToStoreCast);
+  return allCasts.filter((cast) => cast.store.slug === storeSlug).map(publicCastToStoreCast);
 };
 
 const parseContext = () => {
   const params = new URLSearchParams(window.location.search);
-  const castSlug = params.get("castSlug") || undefined;
+  const category = params.get("category") || undefined;
+  const isServiceOnlyBooking = isServiceOnlyBookingCategory(category);
+  const castSlug = isServiceOnlyBooking ? undefined : params.get("castSlug") || undefined;
   const rawStoreSlug = params.get("storeSlug") || undefined;
   const storeSlug = rawStoreSlug || (castSlug ? undefined : defaultContext.storeSlug);
-  const couponId = params.get("couponId") || undefined;
-  const couponIssueId = params.get("couponIssueId") || undefined;
+  const couponId = isServiceOnlyBooking ? undefined : params.get("couponId") || undefined;
+  const couponIssueId = isServiceOnlyBooking ? undefined : params.get("couponIssueId") || undefined;
 
   return {
     context: {
       storeSlug,
       storeName: params.get("storeName") || defaultContext.storeName,
+      category,
       area: params.get("area") || defaultContext.area,
       castSlug,
-      castName: params.get("castName") || undefined,
+      castName: isServiceOnlyBooking ? undefined : params.get("castName") || undefined,
       couponId,
       couponIssueId,
       fromHref: castSlug
@@ -268,6 +262,7 @@ export default function Page() {
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const isServiceOnlyBooking = isServiceOnlyBookingCategory(context.category);
 
   useEffect(() => {
     const parsed = parseContext();
@@ -324,13 +319,22 @@ export default function Page() {
         setStoreCasts((current) => upsertCastOption(current, castOption));
         setContext((current) => {
           if (current.castSlug !== cast.slug) return current;
+          const castStoreCategory = cast.store.category;
+          const isCastStoreServiceOnly = isServiceOnlyBookingCategory(castStoreCategory);
 
           return {
             ...current,
-            castName: current.castName ?? castName,
+            category: castStoreCategory ?? current.category,
+            castSlug: isCastStoreServiceOnly ? undefined : current.castSlug,
+            castName: isCastStoreServiceOnly ? undefined : (current.castName ?? castName),
             storeSlug: cast.store.slug ?? current.storeSlug,
             storeName: cast.store.name || current.storeName,
             area: current.area ?? cast.store.area?.name ?? cast.store.district ?? undefined,
+            couponId: isCastStoreServiceOnly ? undefined : current.couponId,
+            couponIssueId: isCastStoreServiceOnly ? undefined : current.couponIssueId,
+            fromHref: isCastStoreServiceOnly
+              ? `/stores/${cast.store.slug ?? current.storeSlug ?? defaultContext.storeSlug}`
+              : current.fromHref,
           };
         });
       })
@@ -373,17 +377,27 @@ export default function Page() {
     getStoreDetail(context.storeSlug)
       .then((store) => {
         if (cancelled) return;
+        const isStoreServiceOnly = isServiceOnlyBookingCategory(store.category);
         setStoreOpeningHours(store.openingHours ?? null);
-        setStoreCasts(store.casts ?? []);
+        setStoreCasts(isStoreServiceOnly ? [] : (store.casts ?? []));
         setContext((current) => {
           if (current.storeSlug !== store.slug) return current;
           const selectedCast = store.casts.find((cast) => cast.slug === current.castSlug);
 
           return {
             ...current,
+            category: store.category ?? current.category,
             storeName: current.storeName || store.name,
             area: current.area ?? store.area?.name ?? store.district ?? undefined,
-            castName: selectedCast ? castOptionLabel(selectedCast) : current.castName,
+            castSlug: isStoreServiceOnly ? undefined : current.castSlug,
+            castName: isStoreServiceOnly
+              ? undefined
+              : selectedCast
+                ? castOptionLabel(selectedCast)
+                : current.castName,
+            couponId: isStoreServiceOnly ? undefined : current.couponId,
+            couponIssueId: isStoreServiceOnly ? undefined : current.couponIssueId,
+            fromHref: isStoreServiceOnly ? `/stores/${store.slug}` : current.fromHref,
           };
         });
       })
@@ -402,7 +416,7 @@ export default function Page() {
   }, [context.storeSlug]);
 
   useEffect(() => {
-    if (!context.storeSlug) return;
+    if (!context.storeSlug || isServiceOnlyBooking) return;
 
     let cancelled = false;
 
@@ -429,7 +443,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [context.storeSlug]);
+  }, [context.storeSlug, isServiceOnlyBooking]);
 
   const bookingTimeOptionGroups = useMemo(() => {
     return storeHoursResolved
@@ -499,6 +513,8 @@ export default function Page() {
     [fieldErrors, submitAttempted, touchedFields],
   );
   const castOptions = useMemo(() => {
+    if (isServiceOnlyBooking) return [];
+
     const sourceCasts = resolvedCastOption
       ? upsertCastOption(storeCasts, resolvedCastOption)
       : storeCasts;
@@ -515,17 +531,28 @@ export default function Page() {
         label: context.castName ?? fallbackCastNameFromSlug(context.castSlug),
         meta: context.storeName,
         thumbnailUrl:
-          resolvedCastOption?.slug === context.castSlug ? resolvedCastOption.thumbnailUrl : undefined,
+          resolvedCastOption?.slug === context.castSlug
+            ? resolvedCastOption.thumbnailUrl
+            : undefined,
       });
     }
 
     return options;
-  }, [context.castName, context.castSlug, context.storeName, resolvedCastOption, storeCasts]);
+  }, [
+    context.castName,
+    context.castSlug,
+    context.storeName,
+    isServiceOnlyBooking,
+    resolvedCastOption,
+    storeCasts,
+  ]);
   const markFieldTouched = (field: BookingValidationField) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
     setErrorMessage("");
   };
   const updateSelectedCast = (castSlug: string) => {
+    if (isServiceOnlyBooking) return;
+
     const nextCast = storeCasts.find((cast) => cast.slug === castSlug);
 
     setContext((current) => ({
@@ -534,7 +561,7 @@ export default function Page() {
       castName: castSlug
         ? nextCast
           ? castOptionLabel(nextCast)
-          : current.castName ?? fallbackCastNameFromSlug(castSlug)
+          : (current.castName ?? fallbackCastNameFromSlug(castSlug))
         : undefined,
       fromHref: castSlug
         ? `/casts/${castSlug}`
@@ -547,22 +574,26 @@ export default function Page() {
       mode: "member",
       ...(context.storeSlug ? { storeSlug: context.storeSlug } : {}),
       storeName: context.storeName,
+      ...(context.category ? { category: context.category } : {}),
       ...(context.area ? { area: context.area } : {}),
-      ...(context.castSlug ? { castSlug: context.castSlug } : {}),
-      ...(context.couponId ? { couponId: context.couponId } : {}),
-      ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
-      ...(context.castName ? { castName: context.castName } : {}),
+      ...(!isServiceOnlyBooking && context.castSlug ? { castSlug: context.castSlug } : {}),
+      ...(!isServiceOnlyBooking && context.couponId ? { couponId: context.couponId } : {}),
+      ...(!isServiceOnlyBooking && context.couponIssueId
+        ? { couponIssueId: context.couponIssueId }
+        : {}),
+      ...(!isServiceOnlyBooking && context.castName ? { castName: context.castName } : {}),
       date: bookingDate,
       time: bookingTime,
       guests: String(guests),
     });
 
     return `/dang-nhap?redirect=${encodeURIComponent(`/dat-cho?${redirectParams.toString()}`)}`;
-  }, [bookingDate, bookingTime, context, guests]);
+  }, [bookingDate, bookingTime, context, guests, isServiceOnlyBooking]);
 
-  const targetLabel = context.castName
-    ? `${context.castName} @ ${context.storeName}`
-    : context.storeName;
+  const targetLabel =
+    !isServiceOnlyBooking && context.castName
+      ? `${context.castName} @ ${context.storeName}`
+      : context.storeName;
   const isMemberMode = mode === "member";
   const parsedGuestInput = Number(guestInput);
   const stepperGuestCount =
@@ -613,19 +644,21 @@ export default function Page() {
       storeOpeningHours,
     );
 
-    const validationError = firstBookingFieldError(buildBookingFieldErrors({
-      displayName,
-      email: normalizedEmail,
-      guestCount: partySize,
-      bookingDate,
-      bookingTime,
-      availableTimes: bookingTimeOptions,
-      loadingTimes: !storeHoursResolved,
-      maxDate: getMaxBookingDate(),
-      scheduledAt,
-      note: trimmedNote,
-      todayDate: getTodayDate(),
-    }));
+    const validationError = firstBookingFieldError(
+      buildBookingFieldErrors({
+        displayName,
+        email: normalizedEmail,
+        guestCount: partySize,
+        bookingDate,
+        bookingTime,
+        availableTimes: bookingTimeOptions,
+        loadingTimes: !storeHoursResolved,
+        maxDate: getMaxBookingDate(),
+        scheduledAt,
+        note: trimmedNote,
+        todayDate: getTodayDate(),
+      }),
+    );
 
     setGuestName(displayName);
     setEmail(normalizedEmail);
@@ -635,10 +668,12 @@ export default function Page() {
       return;
     }
 
-    if (!context.storeSlug && !context.castSlug) {
-      setErrorMessage(
-        translateText("Thiếu thông tin quán hoặc cast để đặt chỗ.", activeLanguage),
-      );
+    const bookingCastSlug = isServiceOnlyBooking ? undefined : context.castSlug;
+    const bookingCouponId = isServiceOnlyBooking ? undefined : context.couponId;
+    const bookingCouponIssueId = isServiceOnlyBooking ? undefined : context.couponIssueId;
+
+    if (!context.storeSlug && !bookingCastSlug) {
+      setErrorMessage(translateText("Thiếu thông tin quán hoặc cast để đặt chỗ.", activeLanguage));
       return;
     }
 
@@ -649,9 +684,9 @@ export default function Page() {
 
     const payload: CreateBookingPayload = {
       ...(context.storeSlug ? { storeSlug: context.storeSlug } : {}),
-      ...(context.castSlug ? { castSlug: context.castSlug } : {}),
-      ...(context.couponId ? { couponId: context.couponId } : {}),
-      ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
+      ...(bookingCastSlug ? { castSlug: bookingCastSlug } : {}),
+      ...(bookingCouponId ? { couponId: bookingCouponId } : {}),
+      ...(bookingCouponIssueId ? { couponIssueId: bookingCouponIssueId } : {}),
       displayName,
       email: normalizedEmail,
       scheduledAt,
@@ -705,10 +740,10 @@ export default function Page() {
               <div className={styles.venueCopy}>
                 <div className={styles.venueName}>{targetLabel}</div>
                 <div className={styles.venueMeta}>
-                  {context.castName ? context.storeName : "Lounge cao cấp"} ·{" "}
-                  {context.area ?? "NightLife"}
+                  {!isServiceOnlyBooking && context.castName ? context.storeName : "Lounge cao cấp"}{" "}
+                  · {context.area ?? "NightLife"}
                 </div>
-                {context.couponIssueId || context.couponId ? (
+                {!isServiceOnlyBooking && (context.couponIssueId || context.couponId) ? (
                   <div className={styles.venueMeta}>
                     Coupon link: {(context.couponIssueId ?? context.couponId)?.slice(0, 8)}
                   </div>
@@ -716,7 +751,7 @@ export default function Page() {
               </div>
             </section>
 
-            {isMemberMode ? (
+            {!isServiceOnlyBooking && isMemberMode ? (
               <section className={styles.memberNudge}>
                 <span className={styles.nudgeIcon}>
                   <ShieldCheck size={16} />
@@ -728,7 +763,7 @@ export default function Page() {
                   </div>
                 </div>
               </section>
-            ) : (
+            ) : !isServiceOnlyBooking ? (
               <section className={styles.loginNudge}>
                 <span className={styles.nudgeIcon}>
                   <Star size={16} />
@@ -741,7 +776,7 @@ export default function Page() {
                   Đăng nhập
                 </Link>
               </section>
-            )}
+            ) : null}
 
             <form
               id="nl-booking-request-form"
@@ -811,7 +846,8 @@ export default function Page() {
                           }}
                           onKeyDown={(event) => {
                             if (event.ctrlKey || event.metaKey || event.altKey) return;
-                            if (event.key.length === 1 && !/\d/.test(event.key)) event.preventDefault();
+                            if (event.key.length === 1 && !/\d/.test(event.key))
+                              event.preventDefault();
                           }}
                           onChange={(event) => {
                             markFieldTouched("guestCount");
@@ -862,13 +898,15 @@ export default function Page() {
                 labelClassName={styles.fieldLabel}
               />
 
-              <CastSelectField
-                label="Cast đã chọn"
-                value={context.castSlug ?? ""}
-                options={castOptions}
-                onChange={updateSelectedCast}
-                activeLanguage={activeLanguage}
-              />
+              {!isServiceOnlyBooking ? (
+                <CastSelectField
+                  label="Cast đã chọn"
+                  value={context.castSlug ?? ""}
+                  options={castOptions}
+                  onChange={updateSelectedCast}
+                  activeLanguage={activeLanguage}
+                />
+              ) : null}
 
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>
@@ -899,7 +937,9 @@ export default function Page() {
               </div>
 
               {errorMessage ? (
-                <div className={styles.errorMessage}>{translateText(errorMessage, activeLanguage)}</div>
+                <div className={styles.errorMessage}>
+                  {translateText(errorMessage, activeLanguage)}
+                </div>
               ) : null}
             </form>
           </div>
@@ -932,8 +972,9 @@ export default function Page() {
           <div className={styles.dialogPanel}>
             <h2 id="member-login-title">Yêu cầu đăng nhập</h2>
             <p>
-              Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao
-              hơn.
+              {isServiceOnlyBooking
+                ? "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên."
+                : "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao hơn."}
             </p>
             <div className={styles.dialogActions}>
               <button
@@ -1078,7 +1119,13 @@ function CastSelectField({
                     style={optionAvatarStyle}
                     aria-hidden="true"
                   >
-                    {option.slug ? option.thumbnailUrl ? null : optionInitial : <UserRound size={15} />}
+                    {option.slug ? (
+                      option.thumbnailUrl ? null : (
+                        optionInitial
+                      )
+                    ) : (
+                      <UserRound size={15} />
+                    )}
                   </span>
                   <span className={styles.castSelectText}>
                     <strong>{option.label}</strong>

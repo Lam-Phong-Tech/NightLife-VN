@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { translateText } from "@/lib/i18n/client-translations";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import { getCastProfileCopy } from "./cast-profile.copy";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
@@ -16,6 +18,7 @@ type CastBookingCTAProps = {
 };
 
 export function CastBookingCTA({
+  profile,
   bookingHref,
   variant,
   language,
@@ -24,6 +27,9 @@ export function CastBookingCTA({
   onTrack,
 }: CastBookingCTAProps) {
   const copy = getCastProfileCopy(language);
+  const bookingLabel = isServiceOnlyBookingCategory(profile.store.category)
+    ? translateText("Đặt chỗ tại quán", language)
+    : copy.bookThisCast;
 
   if (variant === "mobile") {
     return (
@@ -41,8 +47,12 @@ export function CastBookingCTA({
         >
           <Heart size={19} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
         </button>
-        <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "mobile-sticky" })}>
-          <strong>{copy.bookThisCast}</strong>
+        <Link
+          href={bookingHref}
+          className="cast-booking-button"
+          onClick={() => onTrack?.("booking", { surface: "mobile-sticky" })}
+        >
+          <strong>{bookingLabel}</strong>
         </Link>
       </section>
     );
@@ -51,8 +61,12 @@ export function CastBookingCTA({
   return (
     <section className="cast-desktop-booking" data-testid="cast-booking-cta-desktop">
       <div className="cast-desktop-booking-actions">
-        <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "desktop-panel" })}>
-          <strong>{copy.bookThisCast}</strong>
+        <Link
+          href={bookingHref}
+          className="cast-booking-button"
+          onClick={() => onTrack?.("booking", { surface: "desktop-panel" })}
+        >
+          <strong>{bookingLabel}</strong>
         </Link>
       </div>
     </section>

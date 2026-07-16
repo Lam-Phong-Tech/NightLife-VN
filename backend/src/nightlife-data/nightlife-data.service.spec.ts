@@ -2065,6 +2065,7 @@ describe('NightlifeDataService', () => {
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
+      category: 'CLUB',
     });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.booking.create.mockResolvedValue({
@@ -2100,6 +2101,7 @@ describe('NightlifeDataService', () => {
       select: {
         id: true,
         name: true,
+        category: true,
         openingHours: true,
         slug: true,
       },
@@ -2169,6 +2171,71 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'booking-1',
         status: 'REQUESTED',
+      }),
+    );
+  });
+
+  it('creates service-only bookings without cast or coupon links', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-restaurant-1',
+      slug: 'aoi-restaurant',
+      stageName: 'Aoi',
+      publicAlias: 'Aoi',
+      store: {
+        id: 'store-restaurant-1',
+        name: 'Tokyo Kitchen',
+        slug: 'tokyo-kitchen',
+        category: 'RESTAURANT',
+        openingHours: null,
+      },
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-restaurant-1',
+      bookingCode: 'BK-BOOKING-',
+      status: 'REQUESTED',
+      storeId: 'store-restaurant-1',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+      store: {
+        id: 'store-restaurant-1',
+        name: 'Tokyo Kitchen',
+        slug: 'tokyo-kitchen',
+      },
+      cast: null,
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        email: null,
+      },
+    });
+
+    await service.createGuestBooking({
+      storeSlug: 'tokyo-kitchen',
+      castSlug: 'aoi-restaurant',
+      couponId: 'coupon-restaurant-1',
+      displayName: 'Guest Name',
+      phone: '+84901234567',
+      scheduledAt: '2026-06-30T14:00:00.000Z',
+      partySize: 2,
+    });
+
+    expect(prisma.coupon.findFirst).not.toHaveBeenCalled();
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId: 'store-restaurant-1',
+          castId: undefined,
+          couponId: undefined,
+          couponIssueId: undefined,
+          discountSnapshot: {
+            couponId: null,
+            couponIssueId: null,
+          },
+        }),
       }),
     );
   });
@@ -4964,7 +5031,9 @@ describe('NightlifeDataService', () => {
         take: 8,
         select: expect.objectContaining({
           store: { select: { name: true, slug: true } },
-          user: { select: { id: true, displayName: true, tier: true, role: true } },
+          user: {
+            select: { id: true, displayName: true, tier: true, role: true },
+          },
           guest: { select: { id: true, displayName: true } },
           booking: expect.any(Object),
         }),
@@ -8231,9 +8300,24 @@ describe('NightlifeDataService', () => {
   describe('listPublicHomeRecommendations', () => {
     it('returns pinned stores sorted by pinRank, manualScore, and updatedAt', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([
-        { targetId: 'store-1', pinRank: 1, manualScore: 100, updatedAt: new Date('2026-01-01') },
-        { targetId: 'store-2', pinRank: 2, manualScore: 50, updatedAt: new Date('2026-01-02') },
-        { targetId: 'store-3', pinRank: 2, manualScore: 80, updatedAt: new Date('2026-01-01') },
+        {
+          targetId: 'store-1',
+          pinRank: 1,
+          manualScore: 100,
+          updatedAt: new Date('2026-01-01'),
+        },
+        {
+          targetId: 'store-2',
+          pinRank: 2,
+          manualScore: 50,
+          updatedAt: new Date('2026-01-02'),
+        },
+        {
+          targetId: 'store-3',
+          pinRank: 2,
+          manualScore: 80,
+          updatedAt: new Date('2026-01-01'),
+        },
       ] as never);
 
       prisma.store.findMany.mockResolvedValue([
@@ -8246,7 +8330,13 @@ describe('NightlifeDataService', () => {
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [{ url: 'image1.jpg', purpose: 'STORE_COVER' }],
           coupons: [],
         },
@@ -8259,7 +8349,13 @@ describe('NightlifeDataService', () => {
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [{ url: 'image2.jpg', purpose: 'STORE_COVER' }],
           coupons: [],
         },
@@ -8272,7 +8368,13 @@ describe('NightlifeDataService', () => {
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [{ url: 'image3.jpg', purpose: 'STORE_COVER' }],
           coupons: [],
         },
@@ -8281,7 +8383,10 @@ describe('NightlifeDataService', () => {
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
       (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 3 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 3,
+      });
 
       expect(result).toHaveLength(3);
       expect(result[0].id).toBe('store-1');
@@ -8311,7 +8416,13 @@ describe('NightlifeDataService', () => {
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [],
           coupons: [],
         },
@@ -8320,7 +8431,10 @@ describe('NightlifeDataService', () => {
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
       (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 1 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 1,
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('store-fallback');
@@ -8329,8 +8443,18 @@ describe('NightlifeDataService', () => {
     it('excludes inactive or deleted pinned stores from recommendation results', async () => {
       // Setup ranking config returning 2 pinned stores
       prisma.rankingConfig.findMany.mockResolvedValue([
-        { targetId: 'store-active', pinRank: 1, manualScore: 100, updatedAt: new Date() },
-        { targetId: 'store-inactive', pinRank: 2, manualScore: 50, updatedAt: new Date() },
+        {
+          targetId: 'store-active',
+          pinRank: 1,
+          manualScore: 100,
+          updatedAt: new Date(),
+        },
+        {
+          targetId: 'store-inactive',
+          pinRank: 2,
+          manualScore: 50,
+          updatedAt: new Date(),
+        },
       ] as never);
 
       // Setup store database findMany to only return the active one, simulating database status/deleted filter
@@ -8344,7 +8468,13 @@ describe('NightlifeDataService', () => {
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [],
           coupons: [],
         },
@@ -8353,7 +8483,10 @@ describe('NightlifeDataService', () => {
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
       (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 2 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 2,
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('store-active');
@@ -8361,13 +8494,19 @@ describe('NightlifeDataService', () => {
 
     it('falls back to personalized logic if all pinned stores are inactive or deleted', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([
-        { targetId: 'store-inactive', pinRank: 1, manualScore: 100, updatedAt: new Date() },
+        {
+          targetId: 'store-inactive',
+          pinRank: 1,
+          manualScore: 100,
+          updatedAt: new Date(),
+        },
       ] as never);
 
       // Simulates no active/non-deleted store found matching the pinned store targetIds
       prisma.store.findMany
         .mockResolvedValueOnce([] as never) // First call for pinnedStores returns empty
-        .mockResolvedValueOnce([ // Second call for personalized fallback
+        .mockResolvedValueOnce([
+          // Second call for personalized fallback
           {
             id: 'store-fallback-2',
             name: 'Store Fallback 2',
@@ -8377,7 +8516,13 @@ describe('NightlifeDataService', () => {
             city: 'Hanoi',
             district: 'Tay Ho',
             areaId: 'area-1',
-            area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+            area: {
+              id: 'area-1',
+              code: 'hn-tayho',
+              name: 'Tay Ho',
+              city: 'Hanoi',
+              district: 'Tay Ho',
+            },
             media: [],
             coupons: [],
           },
@@ -8386,7 +8531,10 @@ describe('NightlifeDataService', () => {
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
       (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 1 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 1,
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('store-fallback-2');
@@ -8398,7 +8546,10 @@ describe('NightlifeDataService', () => {
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
       (prisma.booking.groupBy as jest.Mock).mockResolvedValue([]);
 
-      await service.listPublicHomeRecommendations({ cityCode: 'hcm', limit: 5 });
+      await service.listPublicHomeRecommendations({
+        cityCode: 'hcm',
+        limit: 5,
+      });
 
       expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -8429,7 +8580,10 @@ describe('NightlifeDataService', () => {
       );
 
       // Call with 'all'
-      await service.listPublicHomeRecommendations({ cityCode: 'all', limit: 5 });
+      await service.listPublicHomeRecommendations({
+        cityCode: 'all',
+        limit: 5,
+      });
 
       expect(prisma.rankingConfig.findMany).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -8442,4 +8596,3 @@ describe('NightlifeDataService', () => {
     });
   });
 });
-

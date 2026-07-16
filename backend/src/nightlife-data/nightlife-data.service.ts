@@ -639,6 +639,18 @@ const CATEGORY_ALIASES: Record<string, StoreCategory> = {
   casino: 'CASINO',
 };
 
+const SERVICE_ONLY_BOOKING_CATEGORIES = new Set<StoreCategory>([
+  'MASSAGE_SPA',
+  'RESTAURANT',
+]);
+
+const isServiceOnlyBookingCategory = (
+  category?: StoreCategory | string | null,
+) =>
+  SERVICE_ONLY_BOOKING_CATEGORIES.has(
+    String(category ?? '').toUpperCase() as StoreCategory,
+  );
+
 const STORE_SLUG_ALIASES: Record<string, string> = {
   'club-lumiere': 'neon-club',
   'yakitori-hanoi': 'tokyo-kitchen',
@@ -882,6 +894,7 @@ type BookingTarget = {
     id: string;
     name: string;
     slug: string;
+    category?: StoreCategory | null;
     openingHours?: Prisma.JsonValue | null;
   };
   cast?: {
@@ -10043,6 +10056,7 @@ export class NightlifeDataService {
               id: true,
               name: true,
               slug: true,
+              category: true,
               openingHours: true,
             },
           },
@@ -10058,6 +10072,10 @@ export class NightlifeDataService {
         (storeSlug && cast.store.slug !== storeSlug)
       ) {
         throw new BadRequestException('Cast does not belong to selected store');
+      }
+
+      if (isServiceOnlyBookingCategory(cast.store.category)) {
+        return { store: cast.store };
       }
 
       return {
@@ -10085,6 +10103,7 @@ export class NightlifeDataService {
         id: true,
         name: true,
         slug: true,
+        category: true,
         openingHours: true,
       },
     });
@@ -10203,6 +10222,10 @@ export class NightlifeDataService {
     const couponIssueId = this.cleanText(input.dto.couponIssueId);
     const adminCouponIssueId = this.cleanText(input.dto.adminCouponIssueId);
     const adminCouponIssueCode = this.cleanText(input.dto.adminCouponIssueCode);
+
+    if (isServiceOnlyBookingCategory(input.target.store.category)) {
+      return {};
+    }
 
     if (
       !couponId &&
@@ -18881,7 +18904,9 @@ export class NightlifeDataService {
               },
             },
             store: { select: { name: true, slug: true } },
-            user: { select: { id: true, displayName: true, tier: true, role: true } },
+            user: {
+              select: { id: true, displayName: true, tier: true, role: true },
+            },
             guest: { select: { id: true, displayName: true } },
             booking: {
               select: {
@@ -18973,12 +18998,13 @@ export class NightlifeDataService {
         );
         discount = discountInfo.discountVnd;
         discountPercent = discountInfo.effectiveDiscountPercent;
-        
+
         if (bill.user && bill.user.role === 'USER') {
           pointsEarned = Math.floor(grossVnd / 100000);
         }
       } else {
-        const gross = bill.subtotalVnd || (bill.totalVnd + (bill.discountVnd || 0)) || 1;
+        const gross =
+          bill.subtotalVnd || bill.totalVnd + (bill.discountVnd || 0) || 1;
         discountPercent = Math.round(((bill.discountVnd || 0) / gross) * 100);
       }
 
@@ -19046,7 +19072,8 @@ export class NightlifeDataService {
                     code: bill.booking.couponIssue.code,
                     status: bill.booking.couponIssue.status,
                     metadata: bill.booking.couponIssue.metadata,
-                    usedAt: bill.booking.couponIssue.usedAt?.toISOString() ?? null,
+                    usedAt:
+                      bill.booking.couponIssue.usedAt?.toISOString() ?? null,
                   }
                 : null,
               qr: bill.booking.qr
@@ -19683,7 +19710,9 @@ export class NightlifeDataService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          store: { select: { id: true, name: true, category: true, city: true } },
+          store: {
+            select: { id: true, name: true, category: true, city: true },
+          },
           media: { select: { id: true, url: true, type: true } },
         },
       }),
@@ -20517,7 +20546,9 @@ export class NightlifeDataService {
         scope: 'recommend-home',
         status: 'ACTIVE',
         deletedAt: null,
-        ...this.buildPublicRankingConfigCityWhere(cityCode === 'all' ? undefined : cityCode),
+        ...this.buildPublicRankingConfigCityWhere(
+          cityCode === 'all' ? undefined : cityCode,
+        ),
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
       },
@@ -20583,9 +20614,7 @@ export class NightlifeDataService {
       });
 
       if (pinnedStores.length > 0) {
-        const configMap = new Map(
-          rankingConfigs.map((c) => [c.targetId, c]),
-        );
+        const configMap = new Map(rankingConfigs.map((c) => [c.targetId, c]));
 
         pinnedStores.sort((a, b) => {
           const configA = configMap.get(a.id);
@@ -20600,8 +20629,12 @@ export class NightlifeDataService {
           if (scoreA !== scoreB) {
             return scoreB - scoreA;
           }
-          const timeA = configA?.updatedAt ? new Date(configA.updatedAt).getTime() : 0;
-          const timeB = configB?.updatedAt ? new Date(configB.updatedAt).getTime() : 0;
+          const timeA = configA?.updatedAt
+            ? new Date(configA.updatedAt).getTime()
+            : 0;
+          const timeB = configB?.updatedAt
+            ? new Date(configB.updatedAt).getTime()
+            : 0;
           return timeB - timeA;
         });
 

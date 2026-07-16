@@ -25,8 +25,19 @@ import {
 } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
-import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
+import {
+  bookingApi,
+  rememberLastBooking,
+  type BookingRecord,
+  type CreateBookingPayload,
+} from "@/lib/api/bookings";
+import {
+  ApiError,
+  apiClient,
+  getAuthToken,
+  resolveClientUrl,
+  translateApiMessage,
+} from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
@@ -69,9 +80,14 @@ import {
 } from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
-import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import {
+  hasMemberFavoriteAccess,
+  redirectToLoginForFavorite,
+  requireMemberFavoriteAccess,
+} from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import {
   categoryLabels,
   formatDateOption,
@@ -105,11 +121,7 @@ type BookingCastOption = {
 
 type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
 
-const localizedApiErrorMessage = (
-  error: unknown,
-  language: LanguageCode,
-  fallback: string,
-) => {
+const localizedApiErrorMessage = (error: unknown, language: LanguageCode, fallback: string) => {
   const vietnameseMessage =
     error instanceof ApiError
       ? translateApiMessage(error.message, error.status, fallback)
@@ -193,8 +205,7 @@ const storeBookingFieldNames = {
   selectedCast: "nlbf-sd-f5",
 } as const;
 
-const emptyMediaBackground =
-  "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
+const emptyMediaBackground = "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
@@ -391,7 +402,15 @@ const priceRangeText = (store: PublicStoreDetail) => {
 
 const storeTimeZone = "Asia/Bangkok";
 const storeDayMinutes = 24 * 60;
-const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+const weekdayKeys = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+] as const;
 type WeekdayKey = (typeof weekdayKeys)[number];
 
 const weekdayByShortName: Record<string, WeekdayKey> = {
@@ -497,8 +516,9 @@ const isStoreOpenAt = (
 ) => {
   const currentWeekday = todayKey(date);
   const minutes = currentStoreMinutes(date);
-  const previousRanges = openingRangesFromSlot(openingHours?.[previousWeekdayKey(currentWeekday)])
-    .filter(isOvernightRange);
+  const previousRanges = openingRangesFromSlot(
+    openingHours?.[previousWeekdayKey(currentWeekday)],
+  ).filter(isOvernightRange);
 
   if (previousRanges.some((range) => isStoreMinuteInRange(minutes, range))) {
     return true;
@@ -594,7 +614,10 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
       <EmptyState
         icon={<Users size={20} />}
         title={translateText("Chưa có cast công khai", activeLanguage)}
-        body={translateText("Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng.", activeLanguage)}
+        body={translateText(
+          "Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng.",
+          activeLanguage,
+        )}
       />
     );
   }
@@ -615,7 +638,8 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
             <strong>{cast.publicAlias || cast.stageName}</strong>
             <small>
               <Star size={11} fill="currentColor" />
-              {formatNationalities(cast.languages, activeLanguage) || translateText("Cast", activeLanguage)}
+              {formatNationalities(cast.languages, activeLanguage) ||
+                translateText("Cast", activeLanguage)}
             </small>
           </Link>
         );
@@ -642,7 +666,10 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   return (
     <section className="menu-panel">
       {menuGroups.length ? (
-        <div className="menu-chips hscroll" aria-label={translateText("Nhóm thực đơn", activeLanguage)}>
+        <div
+          className="menu-chips hscroll"
+          aria-label={translateText("Nhóm thực đơn", activeLanguage)}
+        >
           {menuGroups.map((chip, index) => (
             <span className={index === 0 ? "active" : undefined} key={chip}>
               {translateText(chip, activeLanguage)}
@@ -658,7 +685,9 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
               <span
                 className="menu-photo"
                 style={{
-                  backgroundImage: item.imageUrl ? imageBackground(item.imageUrl) : emptyMediaBackground,
+                  backgroundImage: item.imageUrl
+                    ? imageBackground(item.imageUrl)
+                    : emptyMediaBackground,
                 }}
                 aria-hidden="true"
               />
@@ -673,7 +702,9 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                     : item.group
                       ? translateText(item.group, activeLanguage)
                       : translateText(
-                          item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán",
+                          item.unit === "hour"
+                            ? "Giá tham khảo theo giờ"
+                            : "Giá tham khảo tại quán",
                           activeLanguage,
                         )}
                 </small>
@@ -923,7 +954,11 @@ function BookingCard({
                 spellCheck={false}
               />
             </label>
-            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} reserveSpace />
+            <BookingFieldError
+              activeLanguage={activeLanguage}
+              message={fieldErrors.email}
+              reserveSpace
+            />
           </div>
         </div>
 
@@ -978,7 +1013,11 @@ function BookingCard({
                 </button>
               </div>
             </div>
-            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.guestCount} reserveSpace />
+            <BookingFieldError
+              activeLanguage={activeLanguage}
+              message={fieldErrors.guestCount}
+              reserveSpace
+            />
           </div>
 
           <BookingDateTimeFields
@@ -1031,7 +1070,11 @@ function BookingCard({
           }}
           placeholder={translateText("Vui lòng nhập ghi chú nếu có", activeLanguage)}
         />
-        <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} reserveSpace />
+        <BookingFieldError
+          activeLanguage={activeLanguage}
+          message={fieldErrors.note}
+          reserveSpace
+        />
 
         {errorMessage ? (
           <div className="booking-error" role="alert" aria-live="polite">
@@ -1139,7 +1182,9 @@ function StoreBookingCastSelect({
                     <strong>{option.label}</strong>
                     {option.meta ? <small>{option.meta}</small> : null}
                   </span>
-                  {isSelected ? <Check size={16} className="booking-cast-check" aria-hidden="true" /> : null}
+                  {isSelected ? (
+                    <Check size={16} className="booking-cast-check" aria-hidden="true" />
+                  ) : null}
                 </button>
               );
             })}
@@ -1184,7 +1229,9 @@ function StoreBookingCastAvatar({
         "booking-cast-avatar",
         active ? "is-empty" : "",
         option.thumbnailUrl ? "has-image" : "",
-      ].filter(Boolean).join(" ")}
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
         width: size,
         height: size,
@@ -1193,7 +1240,9 @@ function StoreBookingCastAvatar({
       aria-hidden="true"
     >
       {option.slug ? (
-        option.thumbnailUrl ? null : initial
+        option.thumbnailUrl ? null : (
+          initial
+        )
       ) : (
         <span className="booking-cast-empty-icon">
           <UserRound size={18} strokeWidth={2.1} />
@@ -1231,7 +1280,10 @@ function RelatedStores({
               <small>{translateText(recommendationLabel(related), activeLanguage)}</small>
               <em>
                 {localizedStoreParts(
-                  [categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district],
+                  [
+                    categoryLabels[related.category] ?? related.category,
+                    related.area?.name ?? related.district,
+                  ],
                   activeLanguage,
                 )}
               </em>
@@ -1325,7 +1377,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
   const heroBackground = galleryBackground(selectedMedia, heroImage);
-  const selectedMediaUrl = selectedMedia ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url) : "";
+  const selectedMediaUrl = selectedMedia
+    ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url)
+    : "";
   const selectedVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMediaUrl) : "";
   const selectedVideoIndex =
     selectedMedia?.type === "VIDEO"
@@ -1339,7 +1393,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const desktopGalleryTiles = gallery.slice(0, 5);
   const mobileGalleryTiles = gallery;
   const tourMedia = videoGallery;
-  const location = localizedStoreParts([store.area?.name, store.district, store.city], activeLanguage);
+  const location = localizedStoreParts(
+    [store.area?.name, store.district, store.city],
+    activeLanguage,
+  );
   const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
@@ -1352,7 +1409,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const rawTodayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = isStoreOpenAt(normalizedOpeningHours, openingSummary, statusNow);
-  const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
+  const categoryLabel = translateText(
+    categoryLabels[store.category] ?? store.category,
+    activeLanguage,
+  );
+  const isServiceOnlyBooking = isServiceOnlyBookingCategory(store.category);
+  const activeCouponId = isServiceOnlyBooking ? undefined : couponId;
   const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
   const favoriteCityLabel = store.cityCode ?? store.city;
   const heroFavoriteImage = galleryImageUrl(heroImage);
@@ -1364,7 +1426,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     cityLabel: favoriteCityLabel,
     image: heroFavoriteImage,
   };
-  const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
+  const featureChips = [
+    categoryLabel,
+    ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage)),
+  ];
   const priceText = priceRangeText(store);
   const bookingCastOptions = useMemo<BookingCastOption[]>(
     () =>
@@ -1376,10 +1441,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       })),
     [activeLanguage, store.casts],
   );
-  const activeSelectedCastSlug = bookingCastOptions.some((option) => option.slug === selectedCastSlug)
+  const serviceBookingCastOptions = isServiceOnlyBooking ? [] : bookingCastOptions;
+  const activeSelectedCastSlug = serviceBookingCastOptions.some(
+    (option) => option.slug === selectedCastSlug,
+  )
     ? selectedCastSlug
     : "";
-  const selectedBookingCast = bookingCastOptions.find((option) => option.slug === activeSelectedCastSlug);
+  const selectedBookingCast = serviceBookingCastOptions.find(
+    (option) => option.slug === activeSelectedCastSlug,
+  );
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const introText = useMemo(
@@ -1500,11 +1570,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     ],
   );
   const visibleFieldErrors = useMemo(
-    () => visibleBookingFieldErrors(bookingFieldErrors, bookingTouchedFields, bookingSubmitAttempted),
+    () =>
+      visibleBookingFieldErrors(bookingFieldErrors, bookingTouchedFields, bookingSubmitAttempted),
     [bookingFieldErrors, bookingSubmitAttempted, bookingTouchedFields],
   );
   const markBookingFieldTouched = (field: BookingValidationField) => {
-    setBookingTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
+    setBookingTouchedFields((current) =>
+      current[field] ? current : { ...current, [field]: true },
+    );
     setBookingErrorMessage("");
   };
 
@@ -1515,15 +1588,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     guests: String(guestCount),
     date: selectedDate.iso,
     time: selectedTime,
+    category: store.category,
     ...(activeSelectedCastSlug ? { castSlug: activeSelectedCastSlug } : {}),
     ...(selectedBookingCast?.label ? { castName: selectedBookingCast.label } : {}),
-    ...(couponId ? { couponId } : {}),
+    ...(activeCouponId ? { couponId: activeCouponId } : {}),
   });
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
-  const lightboxMediaUrl = lightboxMedia ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url) : "";
+  const lightboxMediaUrl = lightboxMedia
+    ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url)
+    : "";
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMediaUrl) : "";
 
   useEffect(() => {
@@ -1561,7 +1637,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     return () => {
       ignore = true;
     };
-  }, [categoryLabel, displayName, favoriteAreaLabel, favoriteCityLabel, heroFavoriteImage, store.slug]);
+  }, [
+    categoryLabel,
+    displayName,
+    favoriteAreaLabel,
+    favoriteCityLabel,
+    heroFavoriteImage,
+    store.slug,
+  ]);
 
   const showPreviousMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
@@ -1644,18 +1727,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
-    const validationError = firstBookingFieldError(buildBookingFieldErrors({
-      availableTimes: bookingTimeOptions,
-      bookingDate: selectedDate.iso,
-      bookingTime: selectedTime,
-      displayName,
-      email: normalizedEmail,
-      guestCount,
-      maxDate: getMaxBookingDate(),
-      note: trimmedNote,
-      scheduledAt,
-      todayDate: getTodayDate(),
-    }));
+    const validationError = firstBookingFieldError(
+      buildBookingFieldErrors({
+        availableTimes: bookingTimeOptions,
+        bookingDate: selectedDate.iso,
+        bookingTime: selectedTime,
+        displayName,
+        email: normalizedEmail,
+        guestCount,
+        maxDate: getMaxBookingDate(),
+        note: trimmedNote,
+        scheduledAt,
+        todayDate: getTodayDate(),
+      }),
+    );
 
     if (validationError) {
       return;
@@ -1669,7 +1754,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       scheduledAt,
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
-      ...(couponId ? { couponId } : {}),
+      ...(activeCouponId ? { couponId: activeCouponId } : {}),
     };
 
     try {
@@ -1910,7 +1995,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
                       onClick={(event) =>
-                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index, event)
+                        openGallery(
+                          gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index,
+                          event,
+                        )
                       }
                     >
                       <Play size={18} fill="currentColor" />
@@ -1953,10 +2041,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <strong>{priceText}</strong>
                 <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
-              <div>
-                <strong>{formatStoreCastCount(store.casts.length, activeLanguage)}</strong>
-                <span>{translateText("Đang phục vụ", activeLanguage)}</span>
-              </div>
+              {!isServiceOnlyBooking ? (
+                <div>
+                  <strong>{formatStoreCastCount(store.casts.length, activeLanguage)}</strong>
+                  <span>{translateText("Đang phục vụ", activeLanguage)}</span>
+                </div>
+              ) : null}
             </div>
 
             <BookingCard
@@ -1971,7 +2061,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               email={email}
               note={note}
               selectedCastSlug={activeSelectedCastSlug}
-              castOptions={bookingCastOptions}
+              castOptions={serviceBookingCastOptions}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
               fieldErrors={visibleFieldErrors}
@@ -2007,14 +2097,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
-              <div className="language-grid">
-                {languageCards.map((card) => (
-                  <div key={card.label}>
-                    <span>{card.label}</span>
-                    <strong title={card.title ?? card.value}>{card.value}</strong>
-                  </div>
-                ))}
-              </div>
+              {!isServiceOnlyBooking ? (
+                <div className="language-grid">
+                  {languageCards.map((card) => (
+                    <div key={card.label}>
+                      <span>{card.label}</span>
+                      <strong title={card.title ?? card.value}>{card.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             {tourMedia.length ? (
@@ -2028,7 +2120,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
                       onClick={(event) =>
-                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index, event)
+                        openGallery(
+                          gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index,
+                          event,
+                        )
                       }
                     >
                       <Play size={18} fill="currentColor" />
@@ -2039,10 +2134,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </section>
             ) : null}
 
-            <section>
-              <SectionTitle title="Cast đang làm" meta={formatStoreCastCount(store.casts.length, activeLanguage)} />
-              <CastRail store={store} />
-            </section>
+            {!isServiceOnlyBooking ? (
+              <section>
+                <SectionTitle
+                  title="Cast đang làm"
+                  meta={formatStoreCastCount(store.casts.length, activeLanguage)}
+                />
+                <CastRail store={store} />
+              </section>
+            ) : null}
 
             <section id="menu" className="mobile-only">
               <SectionTitle title="Thực đơn" />
@@ -2069,86 +2169,90 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <RelatedStores stores={recommendedStores} activeLanguage={activeLanguage} />
       </section>
 
-      {portalTarget ? createPortal(
-        <div className="store-mobile-footer-cta nl-scroll-reveal-skip" data-no-scroll-reveal>
-        <Link
-          data-testid="store-booking-cta-mobile"
-          className="primary-action"
-          href={bookingHref}
-          onClick={() => trackBookingClick("mobile-sticky")}
-        >
-          <CalendarDays size={17} />
-          <span>
-            {translateText("Đặt bàn ngay", activeLanguage)}
-            <small>{translateText("Gửi yêu cầu · không thu cọc", activeLanguage)}</small>
-          </span>
-        </Link>
-        </div>,
-        portalTarget,
-      ) : null}
+      {portalTarget
+        ? createPortal(
+            <div className="store-mobile-footer-cta nl-scroll-reveal-skip" data-no-scroll-reveal>
+              <Link
+                data-testid="store-booking-cta-mobile"
+                className="primary-action"
+                href={bookingHref}
+                onClick={() => trackBookingClick("mobile-sticky")}
+              >
+                <CalendarDays size={17} />
+                <span>
+                  {translateText("Đặt bàn ngay", activeLanguage)}
+                  <small>{translateText("Gửi yêu cầu · không thu cọc", activeLanguage)}</small>
+                </span>
+              </Link>
+            </div>,
+            portalTarget,
+          )
+        : null}
 
-      {portalTarget && isLightboxOpen && lightboxMedia ? createPortal(
-        <div
-          className="lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Store gallery lightbox"
-        >
-          <button
-            className="lightbox-close"
-            type="button"
-            aria-label="Đóng gallery"
-            onMouseDown={preventHeroControlMouseDown}
-            onClick={() => setIsLightboxOpen(false)}
-          >
-            <X size={22} />
-          </button>
-          {gallery.length > 1 ? (
-            <button
-              className="lightbox-nav previous"
-              type="button"
-              aria-label="Media trước"
-              onMouseDown={preventHeroControlMouseDown}
-              onClick={showPreviousMedia}
+      {portalTarget && isLightboxOpen && lightboxMedia
+        ? createPortal(
+            <div
+              className="lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Store gallery lightbox"
             >
-              <ChevronLeft size={28} />
-            </button>
-          ) : null}
-          <div className="lightbox-media">
-            {lightboxMedia.type === "VIDEO" ? (
-              lightboxVideoUrl.includes("youtube.com/embed") ||
-              lightboxVideoUrl.includes("player.vimeo.com") ? (
-                <iframe
-                  title={`${displayName} gallery video`}
-                  src={lightboxVideoUrl}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <video src={lightboxVideoUrl || lightboxMediaUrl} controls autoPlay />
-              )
-            ) : (
-              <img src={lightboxMediaUrl} alt={lightboxMedia.alt || displayName} />
-            )}
-          </div>
-          {gallery.length > 1 ? (
-            <button
-              className="lightbox-nav next"
-              type="button"
-              aria-label="Media sau"
-              onMouseDown={preventHeroControlMouseDown}
-              onClick={showNextMedia}
-            >
-              <ChevronRight size={28} />
-            </button>
-          ) : null}
-          <div className="lightbox-caption">
-            {selectedGalleryIndex + 1}/{gallery.length}
-            {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
-          </div>
-        </div>,
-        portalTarget,
-      ) : null}
+              <button
+                className="lightbox-close"
+                type="button"
+                aria-label="Đóng gallery"
+                onMouseDown={preventHeroControlMouseDown}
+                onClick={() => setIsLightboxOpen(false)}
+              >
+                <X size={22} />
+              </button>
+              {gallery.length > 1 ? (
+                <button
+                  className="lightbox-nav previous"
+                  type="button"
+                  aria-label="Media trước"
+                  onMouseDown={preventHeroControlMouseDown}
+                  onClick={showPreviousMedia}
+                >
+                  <ChevronLeft size={28} />
+                </button>
+              ) : null}
+              <div className="lightbox-media">
+                {lightboxMedia.type === "VIDEO" ? (
+                  lightboxVideoUrl.includes("youtube.com/embed") ||
+                  lightboxVideoUrl.includes("player.vimeo.com") ? (
+                    <iframe
+                      title={`${displayName} gallery video`}
+                      src={lightboxVideoUrl}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={lightboxVideoUrl || lightboxMediaUrl} controls autoPlay />
+                  )
+                ) : (
+                  <img src={lightboxMediaUrl} alt={lightboxMedia.alt || displayName} />
+                )}
+              </div>
+              {gallery.length > 1 ? (
+                <button
+                  className="lightbox-nav next"
+                  type="button"
+                  aria-label="Media sau"
+                  onMouseDown={preventHeroControlMouseDown}
+                  onClick={showNextMedia}
+                >
+                  <ChevronRight size={28} />
+                </button>
+              ) : null}
+              <div className="lightbox-caption">
+                {selectedGalleryIndex + 1}/{gallery.length}
+                {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
+              </div>
+            </div>,
+            portalTarget,
+          )
+        : null}
 
       <style>{`
         .store-detail-page {
