@@ -1993,6 +1993,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             ) : null}
 
             <section className="desktop-only">
+              <SectionTitle title="Thực đơn" />
+              <PriceMenu store={store} />
+            </section>
+
+            <section className="desktop-only">
               <SectionTitle title="Vị trí" kicker={addressText || undefined} kickerTone="address" />
               <MapBlock
                 displayName={displayName}
