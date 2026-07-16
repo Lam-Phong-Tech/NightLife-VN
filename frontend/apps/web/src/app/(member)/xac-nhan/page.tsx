@@ -183,7 +183,7 @@ export default function Page() {
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
-  const canShowQr = booking ? !isCancelled && !isTourBooking : false;
+  const canShowQr = booking ? !isCancelled : false;
   const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
@@ -191,7 +191,7 @@ export default function Page() {
   const guestEmailLabel =
     booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
   const guestConfirmationMessage = isTourBooking
-    ? `${translateText("Thông tin đặt tour đã được gửi về", activeLanguage)} ${guestEmailLabel}. ${translateText("Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.", activeLanguage)}`
+    ? `${translateText("Thông tin đặt tour và mã QR đã được gửi về", activeLanguage)} ${guestEmailLabel}. ${translateText("Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.", activeLanguage)}`
     : `${translateText(
         "Thông tin đặt chỗ và mã QR đã được gửi về",
         activeLanguage,
@@ -231,10 +231,10 @@ export default function Page() {
         ? "Đã hủy"
         : isConfirmed
           ? isTourBooking
-            ? "Đã xác nhận tour"
+            ? "Đã xác nhận tour · QR đã cấp"
             : "Đã xác nhận · QR đã cấp"
           : isTourBooking
-            ? "Mới · chờ điều phối tour"
+            ? "Mới · chờ điều phối tour · QR đã cấp"
             : "Mới · QR đã cấp",
     activeLanguage,
   );
@@ -373,10 +373,10 @@ export default function Page() {
             <Clock3 size={15} />
             <span>
               {translateText(
-                isTourBooking
-                  ? "Tour sẽ được admin điều phối theo từng điểm dừng. Nếu cần đổi lịch trình, hãy chat Admin hoặc hủy yêu cầu tour cũ trước giờ hẹn."
-                  : canShowQr
+                canShowQr
                   ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
+                  : isTourBooking
+                    ? "Tour sẽ được admin điều phối theo từng điểm dừng. Nếu cần đổi lịch trình, hãy chat Admin hoặc hủy yêu cầu tour cũ trước giờ hẹn."
                   : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
                 activeLanguage,
               )}

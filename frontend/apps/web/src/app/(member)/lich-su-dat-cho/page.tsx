@@ -1135,7 +1135,6 @@ function BookingCard({
   const cancelAllowed = isOpenBooking && canCancelBooking(booking) && hasCancelIdentity;
   const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
   const canSubmitBill =
-    !tourBooking &&
     isMemberActionBooking &&
     group === "Hoàn tất" &&
     !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());
@@ -1192,25 +1191,7 @@ function BookingCard({
               <MessageCircle size={14} />
               Chat Admin
             </button>
-            {tourBooking ? (
-              <>
-                <Link
-                  href={bookingConfirmHref(booking)}
-                  onClick={() => rememberLastBooking(booking)}
-                  className={styles.ghostCta}
-                >
-                  <MessageCircle size={14} />
-                  Xem yêu cầu
-                </Link>
-                <Link
-                  href={tourDetailHref(booking)}
-                  onClick={() => rememberLastBooking(booking)}
-                  className={styles.ghostCta}
-                >
-                  Chi tiết tour
-                </Link>
-              </>
-            ) : canReschedule ? (
+            {canReschedule ? (
               <button
                 type="button"
                 onClick={() => onReschedule(booking)}
@@ -1265,24 +1246,6 @@ function BookingCard({
             ) : null}
           </>
         ) : group === "Hoàn tất" ? (
-          tourBooking ? (
-            <>
-              <Link
-                href={bookingConfirmHref(booking)}
-                onClick={() => rememberLastBooking(booking)}
-                className={styles.primaryCta}
-              >
-                <strong>Xem yêu cầu tour</strong>
-              </Link>
-              <Link
-                href={tourDetailHref(booking)}
-                onClick={() => rememberLastBooking(booking)}
-                className={styles.secondaryCta}
-              >
-                <strong>Chi tiết tour</strong>
-              </Link>
-            </>
-          ) : (
           <>
             {canSubmitBill ? (
               <Link
@@ -1295,16 +1258,15 @@ function BookingCard({
               </Link>
             ) : null}
             <Link href={rebookHref(booking)} className={canSubmitBill ? styles.secondaryCta : styles.primaryCta}>
-              <strong>{translateText("Đặt lại", activeLanguage)}</strong>
+              <strong>{translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}</strong>
             </Link>
           </>
-          )
         ) : (
           <>
             <StatusBadge booking={booking} activeLanguage={activeLanguage} />
             <Link href={rebookHref(booking)} className={styles.secondaryCta}>
               <RotateCcw size={14} />
-              {tourBooking ? "Chi tiết tour" : translateText("Đặt lại", activeLanguage)}
+              {translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}
             </Link>
           </>
         )}

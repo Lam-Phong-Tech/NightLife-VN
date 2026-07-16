@@ -171,7 +171,7 @@ describe("BookingHistoryPage", () => {
     );
   });
 
-  it("renders tour bookings with tour actions instead of restaurant rebooking actions", async () => {
+  it("renders completed tour bookings with bill submission and tour rebooking actions", async () => {
     const apiBooking = booking({
       id: "tour-booking-1",
       bookingCode: "BK-TOUR1",
@@ -218,15 +218,24 @@ describe("BookingHistoryPage", () => {
 
     expect(screen.getByText("Tour")).toBeInTheDocument();
     expect(screen.getByText(/2 điểm dừng/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Xem yêu cầu tour/i })).toHaveAttribute(
-      "href",
-      "/xac-nhan?bookingId=tour-booking-1",
+    expect(screen.queryByRole("link", { name: /Xem yêu cầu/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Xem yêu cầu tour/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Chi tiết tour/i })).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(
+        Array.from(document.querySelectorAll("a")).find(
+          (link) =>
+            link.getAttribute("href") ===
+            "/gui-hoa-don?bookingId=tour-booking-1&storeSlug=tokyo-kitchen",
+        ),
+      ).toBeInTheDocument(),
     );
-    expect(screen.getByRole("link", { name: /Chi tiết tour/i })).toHaveAttribute(
-      "href",
-      "/tour/tour-1",
-    );
-    expect(screen.queryByRole("link", { name: /Gửi hóa đơn/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /^Đặt lại$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Đặt lại tour/i })).toBeInTheDocument();
+    expect(
+      Array.from(document.querySelectorAll("a")).find(
+        (link) => link.getAttribute("href") === "/tour/tour-1",
+      ),
+    ).toBeInTheDocument();
   });
 });
