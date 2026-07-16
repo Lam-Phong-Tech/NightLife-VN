@@ -10,6 +10,11 @@ import { SupportSenderType, SupportTicketStatus } from '@prisma/client';
 export class SupportChatService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly openTicketStatuses = [
+    SupportTicketStatus.PENDING,
+    SupportTicketStatus.ACTIVE,
+  ];
+
   async getHistory(ticketId: string, limit = 50, beforeMessageId?: string) {
     const ticket = await this.prisma.supportTicket.findUnique({
       where: { id: ticketId },
@@ -39,6 +44,39 @@ export class SupportChatService {
     const messages = await this.prisma.supportMessage.findMany(query);
     // Reverse because we queried desc to get the latest, but chat UI needs chronological
     return messages.reverse();
+  }
+
+  async getSessionHistory(
+    guestSessionId?: string,
+    userId?: string,
+    limit = 50,
+    beforeMessageId?: string,
+  ) {
+    const ticket = await this.findLatestOpenTicket(guestSessionId, userId);
+    if (!ticket) return { ticket: null, messages: [] };
+
+    const messages = await this.getHistory(ticket.id, limit, beforeMessageId);
+    return { ticket, messages };
+  }
+
+  async findLatestOpenTicket(guestSessionId?: string, userId?: string) {
+    if (!guestSessionId && !userId) return null;
+
+    const whereClause = userId
+      ? { userId, status: { in: this.openTicketStatuses } }
+      : {
+          guestSessionId: guestSessionId as string,
+          status: { in: this.openTicketStatuses },
+        };
+
+    return this.prisma.supportTicket.findFirst({
+      where: whereClause,
+      include: {
+        assignedAdmin: { select: { id: true, displayName: true } },
+        user: { select: { id: true, displayName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async getAdminTickets(adminId: string) {
@@ -75,8 +113,11 @@ export class SupportChatService {
       throw new BadRequestException('Guest session or User ID required');
 
     const whereClause = userId
-      ? { userId, status: { in: ['PENDING', 'ACTIVE'] } as any }
-      : { guestSessionId, status: { in: ['PENDING', 'ACTIVE'] } as any };
+      ? { userId, status: { in: this.openTicketStatuses } }
+      : {
+          guestSessionId: guestSessionId as string,
+          status: { in: this.openTicketStatuses },
+        };
 
     const existingTicket = await this.prisma.supportTicket.findFirst({
       where: whereClause,
@@ -108,19 +149,27 @@ export class SupportChatService {
     content: string,
     senderId?: string,
   ) {
-    return this.prisma.supportMessage.create({
-      data: {
-        ticketId,
-        senderType,
-        senderId: senderId || null,
-        content,
-      },
-      include: {
-        senderUser: {
-          select: { id: true, displayName: true },
+    const [message] = await this.prisma.$transaction([
+      this.prisma.supportMessage.create({
+        data: {
+          ticketId,
+          senderType,
+          senderId: senderId || null,
+          content,
         },
-      },
-    });
+        include: {
+          senderUser: {
+            select: { id: true, displayName: true },
+          },
+        },
+      }),
+      this.prisma.supportTicket.update({
+        where: { id: ticketId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+
+    return message;
   }
 
   async claimTicket(ticketId: string, adminId: string) {

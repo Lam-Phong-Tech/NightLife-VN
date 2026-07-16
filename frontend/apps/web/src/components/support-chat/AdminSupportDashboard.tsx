@@ -4,18 +4,59 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
-import { getAuthUser, getAuthSessionToken } from '@/lib/auth/session';
+import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/session';
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
+
+type SupportMessagePayload = {
+  id?: string;
+  ticketId?: string;
+  senderType?: 'GUEST' | 'USER' | 'ADMIN' | 'SYSTEM';
+  content?: string;
+  createdAt?: string;
+};
+
+type SupportTicketPayload = {
+  id: string;
+  userId?: string | null;
+  status?: string;
+  user?: {
+    displayName?: string | null;
+    email?: string | null;
+  } | null;
+  messages?: SupportMessagePayload[];
+  latestMessage?: string | null;
+  claimedByOther?: boolean;
+};
+
+type SupportActionResponse = {
+  success?: boolean;
+  ticket?: SupportTicketPayload;
+  error?: string;
+};
+
+type SessionMergedPayload = {
+  ticketId: string;
+  user?: {
+    displayName?: string | null;
+  } | null;
+};
+
+function formatSupportTicket(ticket: SupportTicketPayload): SupportTicketPayload {
+  return {
+    ...ticket,
+    latestMessage: ticket.latestMessage ?? ticket.messages?.[0]?.content ?? null,
+  };
+}
 
 export function AdminSupportDashboard() {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [pendingTickets, setPendingTickets] = useState<any[]>([]);
+  const [pendingTickets, setPendingTickets] = useState<SupportTicketPayload[]>([]);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
-  const [activeTicketInfo, setActiveTicketInfo] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [activeTicketInfo, setActiveTicketInfo] = useState<SupportTicketPayload | null>(null);
+  const [messages, setMessages] = useState<SupportMessagePayload[]>([]);
   const [input, setInput] = useState('');
   const [toast, setToast] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   
   const activeTicketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,10 +117,7 @@ export function AdminSupportDashboard() {
       .then(data => {
         if (Array.isArray(data)) {
           // Format tickets with latest message from DB if available
-          const formatted = data.map(t => ({
-            ...t,
-            latestMessage: t.messages?.[0]?.content || null
-          }));
+          const formatted = data.map(formatSupportTicket);
           setPendingTickets(formatted);
           // Join socket rooms for all tickets so admin receives new messages
           formatted.forEach(t => newSocket.emit('rejoin_ticket', { ticketId: t.id }));
@@ -89,10 +127,13 @@ export function AdminSupportDashboard() {
       })
       .catch(console.error);
 
-    newSocket.on('new_ticket', (ticket: any) => {
+    newSocket.on('new_ticket', (ticket: SupportTicketPayload) => {
       setPendingTickets(prev => {
-        if (prev.some(t => t.id === ticket.id)) return prev;
-        return [ticket, ...prev];
+        const formattedTicket = formatSupportTicket(ticket);
+        if (prev.some(t => t.id === ticket.id)) {
+          return prev.map(t => t.id === ticket.id ? { ...t, ...formattedTicket } : t);
+        }
+        return [formattedTicket, ...prev];
       });
       newSocket.emit('rejoin_ticket', { ticketId: ticket.id });
     });
@@ -112,7 +153,7 @@ export function AdminSupportDashboard() {
       }, 2000);
     });
 
-    newSocket.on('receive_message', (msg: any) => {
+    newSocket.on('receive_message', (msg: SupportMessagePayload) => {
       // Update preview in the sidebar
       setPendingTickets(prev => prev.map(t => 
         t.id === msg.ticketId ? { ...t, latestMessage: msg.content } : t
@@ -139,7 +180,7 @@ export function AdminSupportDashboard() {
       });
     });
 
-    newSocket.on('session_merged', (data: { ticketId: string, user: any }) => {
+    newSocket.on('session_merged', (data: SessionMergedPayload) => {
       setToast(`Khách hàng đã đăng nhập: ${data.user?.displayName || 'Tài khoản mới'}`);
       setTimeout(() => setToast(null), 4000);
     });
@@ -176,10 +217,10 @@ export function AdminSupportDashboard() {
   const claimTicket = async (ticketId: string) => {
     if (!socket) return;
 
-    socket.emit('claim_ticket', { ticketId, adminId }, (response: any) => {
+    socket.emit('claim_ticket', { ticketId, adminId }, (response: SupportActionResponse) => {
       if (response.success) {
         const ticketInfo = pendingTickets.find(t => t.id === ticketId);
-        setActiveTicketInfo(ticketInfo || response.ticket);
+        setActiveTicketInfo(ticketInfo ?? response.ticket ?? null);
         setActiveTicketId(ticketId);
         // Don't filter it out, keep it in the list as ACTIVE
         setPendingTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'ACTIVE' } : t));
@@ -213,7 +254,7 @@ export function AdminSupportDashboard() {
       content: text,
       userId: adminId,
       isAdmin: true,
-    }, (response: any) => {
+    }, (response: SupportMessagePayload) => {
       if (response && response.id) {
         setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
       }
@@ -222,7 +263,7 @@ export function AdminSupportDashboard() {
 
   const closeTicket = () => {
     if (!socket || !activeTicketId) return;
-    socket.emit('close_ticket', { ticketId: activeTicketId }, (response: any) => {
+    socket.emit('close_ticket', { ticketId: activeTicketId }, (response: SupportActionResponse) => {
       if (response.success) {
         setPendingTickets(prev => prev.filter(t => t.id !== activeTicketId));
         setActiveTicketId(null);

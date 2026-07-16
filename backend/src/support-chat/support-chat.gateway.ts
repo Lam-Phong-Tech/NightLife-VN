@@ -65,6 +65,7 @@ export class SupportChatGateway
       role === 'OPERATOR'
     ) {
       this.onlineAdmins.add(client.id);
+      client.join('support_admins');
       console.log(
         `[SupportChat] Admin added to onlineAdmins. Total online admins: ${this.onlineAdmins.size}`,
       );
@@ -115,24 +116,11 @@ export class SupportChatGateway
       let ticket;
 
       if (!ticketId) {
-        // Offline Flow check: Prevent creating ticket if no admin is online
-        if (!isOnline) {
-          client.emit('system_message', {
-            content:
-              'Hiện tại chúng tôi đang ngoài giờ làm việc. Vui lòng liên hệ trực tiếp qua Hotline: 1900-xxxx',
-          });
-          return { error: 'Offline' };
-        }
         ticket = await this.supportChatService.createOrGetTicket(
           data.guestSessionId,
           data.userId,
         );
         ticketId = ticket.id;
-
-        // Broadcast new ticket to all admins
-        if (ticket.status === 'PENDING') {
-          this.server.emit('new_ticket', ticket);
-        }
       }
 
       // Always ensure the sender is in the room so they receive their own broadcast (or rather, for future broadcasts)
@@ -152,10 +140,32 @@ export class SupportChatGateway
         data.userId || undefined,
       );
 
-      // Broadcast to the room (excluding sender to prevent duplicate in optimistic UI)
-      client.broadcast
-        .to(`ticket_${ticketId}`)
-        .emit('receive_message', message);
+      if (ticket?.status === 'PENDING') {
+        this.server.to('support_admins').emit('new_ticket', {
+          ...ticket,
+          messages: [message],
+          latestMessage: message.content,
+        });
+      }
+
+      if (!isOnline && !isAdminSender) {
+        client.emit('system_message', {
+          id: `queued-${message.id}`,
+          content:
+            'Tin nhắn đã được ghi nhận. Admin sẽ phản hồi ngay khi trực tuyến.',
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // Broadcast to the room (excluding sender to prevent duplicate in optimistic UI).
+      // User messages also go to the admin room so the first message is not lost
+      // while the admin dashboard is joining the ticket room.
+      const target = client.broadcast.to(`ticket_${ticketId}`);
+      if (isAdminSender) {
+        target.emit('receive_message', message);
+      } else {
+        target.to('support_admins').emit('receive_message', message);
+      }
       return message;
     } catch (error) {
       console.error('[SupportChat] Error sending message:', error);

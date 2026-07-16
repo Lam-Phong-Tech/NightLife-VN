@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { io, Socket } from "socket.io-client";
-import { getAuthUser } from "@/lib/auth/session";
+import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { translateText } from "@/lib/i18n/client-translations";
 import {
   intlLocaleByLanguage,
@@ -36,6 +36,20 @@ type ChatMessage = {
   time: string;
 };
 
+type SupportMessagePayload = {
+  id?: string;
+  ticketId?: string;
+  senderType?: "GUEST" | "USER" | "ADMIN" | "SYSTEM";
+  content?: string;
+  createdAt?: string | number | Date;
+  error?: string;
+};
+
+type SupportSessionHistoryPayload = {
+  ticket?: { id?: string } | null;
+  messages?: SupportMessagePayload[];
+};
+
 // Removed dead code initialMessages
 
 type SupportChatWidgetProps = {
@@ -51,6 +65,21 @@ function formatChatTime(date: Date, language: LanguageCode = "ja") {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+function mapSupportMessageToChatMessage(
+  message: SupportMessagePayload,
+  language: LanguageCode,
+): ChatMessage {
+  return {
+    id: message.id ?? `message-${Date.now().toString()}`,
+    from:
+      message.senderType === "USER" || message.senderType === "GUEST"
+        ? "user"
+        : "support",
+    text: message.content ?? "",
+    time: formatChatTime(new Date(message.createdAt ?? Date.now()), language),
+  };
 }
 
 function IconCircleButton({
@@ -564,10 +593,11 @@ export function SupportChatWidget({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string>("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
   const [hasOpened, setHasOpened] = useState(false);
+  const hasLoadedSessionHistoryRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) setHasOpened(true);
@@ -610,18 +640,49 @@ export function SupportChatWidget({
   }, []);
 
   useEffect(() => {
+    if (!guestSessionId || ticketId || hasLoadedSessionHistoryRef.current) return;
+
+    hasLoadedSessionHistoryRef.current = true;
+    const params = new URLSearchParams({ guestSessionId });
+    if (currentUser?.id) {
+      params.set("userId", currentUser.id);
+    }
+
+    setIsLoadingHistory(true);
+    fetch(`${getApiBaseUrl()}/api/support/history?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data: SupportSessionHistoryPayload) => {
+        const restoredTicketId = data?.ticket?.id;
+        if (restoredTicketId) {
+          setTicketId(restoredTicketId);
+          localStorage.setItem("vy_support_ticket_id", restoredTicketId);
+        }
+
+        if (Array.isArray(data?.messages)) {
+          setMessages(
+            data.messages.map((message) =>
+              mapSupportMessageToChatMessage(message, activeLanguage),
+            ),
+          );
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingHistory(false));
+  }, [guestSessionId, ticketId, currentUser?.id, activeLanguage]);
+
+  useEffect(() => {
     if (!ticketId) return;
     setIsLoadingHistory(true);
     fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
       .then(res => res.json())
-      .then(data => {
+      .then((data: unknown) => {
         if (Array.isArray(data)) {
-          const mapped: ChatMessage[] = data.map((m: any) => ({
-            id: m.id,
-            from: m.senderType === "USER" || m.senderType === "GUEST" ? "user" : "support",
-            text: m.content,
-            time: formatChatTime(new Date(m.createdAt), activeLanguage),
-          }));
+          const mapped = data.map((message) =>
+            mapSupportMessageToChatMessage(
+              message as SupportMessagePayload,
+              activeLanguage,
+            ),
+          );
           setMessages(mapped);
         }
       })
@@ -670,33 +731,26 @@ export function SupportChatWidget({
     newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
     newSocket.on('connect_error', () => setConnectionStatus('error'));
 
-    newSocket.on('receive_message', (msg: any) => {
+    newSocket.on('receive_message', (msg: SupportMessagePayload) => {
       setMessages(prev => {
         // Prevent duplicate if we already have it from optimistic UI
-        if (prev.some(m => m.id === msg.id)) return prev;
+        if (msg.id && prev.some(m => m.id === msg.id)) return prev;
         return [
           ...prev,
-          {
-            id: msg.id || Date.now().toString(),
-            from: msg.senderType === 'USER' || msg.senderType === 'GUEST' ? 'user' : 'support',
-            text: msg.content,
-            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
-          }
+          mapSupportMessageToChatMessage(msg, activeLanguageRef.current),
         ];
       });
     });
 
-    newSocket.on('system_message', (msg: any) => {
+    newSocket.on('system_message', (msg: SupportMessagePayload) => {
       setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev;
+        if (msg.id && prev.some(m => m.id === msg.id)) return prev;
         return [
           ...prev,
-          {
-            id: msg.id || Date.now().toString(),
-            from: 'support',
-            text: msg.content,
-            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
-          }
+          mapSupportMessageToChatMessage(
+            { ...msg, senderType: "SYSTEM" },
+            activeLanguageRef.current,
+          ),
         ];
       });
     });
@@ -782,19 +836,28 @@ export function SupportChatWidget({
       content: text,
       guestSessionId,
       userId: currentUser?.id
-    }, (response: any) => {
-      if (response && response.error === 'Offline') {
-        // Remove optimistic message if offline (system message is emitted by server)
-        setMessages(prev => prev.filter(m => m.id !== localTempId));
+    }, (response?: SupportMessagePayload) => {
+      if (response?.error) {
+        setMessages((prev) => prev.filter((m) => m.id !== localTempId));
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `send-error-${Date.now().toString()}`,
+            from: "support",
+            text: "Tin nhắn chưa gửi được. Vui lòng thử lại.",
+            time: formatChatTime(new Date(), activeLanguageRef.current),
+          },
+        ]);
         return;
       }
       
       // Update real ID from server
-      if (response && response.id) {
-        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
+      const persistedMessageId = response?.id;
+      if (persistedMessageId) {
+        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: persistedMessageId } : m));
       }
 
-      if (response && response.ticketId && !ticketId) {
+      if (response?.ticketId && !ticketId) {
         setTicketId(response.ticketId);
         localStorage.setItem("vy_support_ticket_id", response.ticketId);
       }

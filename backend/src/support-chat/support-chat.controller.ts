@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -21,13 +22,28 @@ export class SupportChatController {
 
   @Get('history')
   async getHistory(
-    @Query('ticketId') ticketId: string,
+    @Query('ticketId') ticketId?: string,
+    @Query('guestSessionId') guestSessionId?: string,
+    @Query('userId') userId?: string,
     @Query('limit') limit?: string,
     @Query('beforeMessageId') beforeMessageId?: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.supportChatService.getHistory(
-      ticketId,
+    if (ticketId) {
+      return this.supportChatService.getHistory(
+        ticketId,
+        limitNum,
+        beforeMessageId,
+      );
+    }
+
+    if (!guestSessionId && !userId) {
+      throw new BadRequestException('Ticket ID or session is required');
+    }
+
+    return this.supportChatService.getSessionHistory(
+      guestSessionId,
+      userId,
       limitNum,
       beforeMessageId,
     );
