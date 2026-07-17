@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  Heart,
   History,
   Languages,
   MapPin,
@@ -17,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 
+import { castFavoriteApi, type MemberFavoriteCast } from "@/lib/api/cast-detail";
+import { ApiError } from "@/lib/api/client";
 import {
   discoveryApi,
   type DiscoverySort,
@@ -30,8 +33,17 @@ import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
-
-type PriceRange = "" | "under400" | "400600" | "6001000" | "over1000";
+import {
+  hasMemberFavoriteAccess,
+  redirectToLoginForFavorite,
+  requireMemberFavoriteAccess,
+} from "@/lib/member-favorite-auth";
+import {
+  readFavoriteCastSlugs,
+  replaceFavoriteCasts,
+  writeFavoriteCast,
+  type SavedFavoriteCast,
+} from "@/lib/member-favorites";
 
 type AgeRange = {
   min: number;
@@ -70,8 +82,6 @@ type CastSearchCopy = {
   listAria: string;
   locating: string;
   openFilters: string;
-  priceRange: string;
-  priceRangeNote: string;
   resetFilters: string;
   searchAria: string;
   searchPlaceholder: string;
@@ -110,14 +120,6 @@ const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
   { value: "newest", label: "Mới nhất" },
   { value: "priority", label: "Phổ biến" },
   { value: "nearest", label: "Gần nhất" },
-];
-
-const priceRangeOptions: Array<{ value: PriceRange; label: string }> = [
-  { value: "", label: "Tất cả" },
-  { value: "under400", label: "< 400k" },
-  { value: "400600", label: "400 - 600k" },
-  { value: "6001000", label: "600k - 1tr" },
-  { value: "over1000", label: "1tr+" },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -160,7 +162,7 @@ const castCopyVi: CastSearchCopy = {
   category: "Loại hình",
   city: "Thành phố",
   closeFilters: "Đóng bộ lọc",
-  emptyDescription: "Đổi khu vực, ngôn ngữ hoặc khoảng giá để xem thêm.",
+  emptyDescription: "Đổi khu vực hoặc ngôn ngữ để xem thêm.",
   emptyTitle: "Chưa có cast phù hợp",
   filterIntro: "Lọc cast theo nhu cầu",
   filterTitle: "Bộ lọc",
@@ -175,8 +177,6 @@ const castCopyVi: CastSearchCopy = {
   listAria: "Danh sách cast",
   locating: "Đang lấy vị trí",
   openFilters: "Mở bộ lọc",
-  priceRange: "Khoảng giá",
-  priceRangeNote: "/ 60 phút",
   resetFilters: "Đặt lại bộ lọc",
   searchAria: "Tìm và lọc cast",
   searchPlaceholder: "Tìm cast theo tên, quán hoặc ngôn ngữ...",
@@ -193,7 +193,7 @@ const castCopyEn: CastSearchCopy = {
   category: "Category",
   city: "City",
   closeFilters: "Close filters",
-  emptyDescription: "Change area, language, or price range to see more Cast.",
+  emptyDescription: "Change area or language to see more Cast.",
   emptyTitle: "No matching Cast yet",
   filterIntro: "Filter Cast by your needs",
   filterTitle: "Filters",
@@ -208,8 +208,6 @@ const castCopyEn: CastSearchCopy = {
   listAria: "Cast list",
   locating: "Finding location",
   openFilters: "Open filters",
-  priceRange: "Price range",
-  priceRangeNote: "/ 60 minutes",
   resetFilters: "Reset filters",
   searchAria: "Search and filter Cast",
   searchPlaceholder: "Search Cast by name, venue, or language...",
@@ -268,8 +266,6 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
     listAria: translateText(castCopyVi.listAria, language),
     locating: translateText(castCopyVi.locating, language),
     openFilters: translateText(castCopyVi.openFilters, language),
-    priceRange: translateText(castCopyVi.priceRange, language),
-    priceRangeNote: translateText(castCopyVi.priceRangeNote, language),
     resetFilters: translateText(castCopyVi.resetFilters, language),
     searchAria: translateText(castCopyVi.searchAria, language),
     searchPlaceholder: translateText(castCopyVi.searchPlaceholder, language),
@@ -321,16 +317,6 @@ const formatCastActiveFilters = (count: number, language: LanguageCode) =>
     ? `${count} ${count === 1 ? "filter" : "filters"} active`
     : `${count} ${translateText("bộ lọc đang bật", language)}`;
 
-const matchesPriceRange = (range: PriceRange, value?: number | null) => {
-  if (!range) return true;
-  if (!value) return false;
-
-  if (range === "under400") return value < 400_000;
-  if (range === "400600") return value >= 400_000 && value <= 600_000;
-  if (range === "6001000") return value > 600_000 && value <= 1_000_000;
-  return value > 1_000_000;
-};
-
 const isDefaultAgeRange = (range: AgeRange) =>
   range.min === defaultAgeRange.min && range.max === defaultAgeRange.max;
 
@@ -366,6 +352,49 @@ const matchesAgeRange = (range: AgeRange, cast: PublicCast) => {
   return age >= range.min && age <= range.max;
 };
 
+const castAreaLabel = (cast: PublicCast, language: LanguageCode) =>
+  [
+    cast.store.area?.name ?? cast.store.district,
+    getCastCityLabel(cast.store.cityCode ?? "", language),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+const favoriteSnapshotFromCast = (
+  cast: PublicCast,
+  language: LanguageCode,
+): SavedFavoriteCast => ({
+  slug: cast.slug,
+  name: cast.name,
+  storeName: cast.store.name,
+  categoryLabel: getCastCategoryLabel(cast.store.category, language),
+  areaLabel: castAreaLabel(cast, language),
+  image: cast.thumbnailUrl ?? undefined,
+});
+
+const favoriteSnapshotFromApi = (
+  item: MemberFavoriteCast,
+  language: LanguageCode,
+): SavedFavoriteCast => ({
+  slug: item.cast.slug,
+  name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
+  storeName: item.cast.store.name,
+  categoryLabel: getCastCategoryLabel(item.cast.store.category, language),
+  areaLabel: [
+    item.cast.store.area?.name ?? item.cast.store.district,
+    getCastCityLabel(item.cast.store.cityCode ?? "", language),
+  ]
+    .filter(Boolean)
+    .join(" · "),
+  image: item.cast.thumbnailUrl ?? undefined,
+  favoritedAt: item.favoritedAt,
+});
+
+const nextFavoriteSlugs = (slugs: string[], slug: string, favorited: boolean) =>
+  favorited
+    ? [slug, ...slugs.filter((item) => item !== slug)]
+    : slugs.filter((item) => item !== slug);
+
 const highlightMatch = (text: string, query: string) => {
   const normalizedQuery = query.trim().toLowerCase();
   const normalizedText = text.toLowerCase();
@@ -389,11 +418,11 @@ export default function Page() {
   const [category, setCategory] = useState("");
   const [language, setLanguage] = useState("");
   const [storeSlug, setStoreSlug] = useState("");
-  const [priceRange, setPriceRange] = useState<PriceRange>("");
   const [ageRange, setAgeRange] = useState<AgeRange>(defaultAgeRange);
   const [sort, setSort] = useState<DiscoverySort>("newest");
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingCastSlugs, setTopRankingCastSlugs] = useState<string[]>([]);
+  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
@@ -516,6 +545,38 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      queueMicrotask(() => {
+        if (!cancelled) setFavoriteCastSlugs([]);
+      });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    queueMicrotask(() => {
+      if (!cancelled) setFavoriteCastSlugs(readFavoriteCastSlugs());
+    });
+
+    castFavoriteApi
+      .list()
+      .then((items) => {
+        if (cancelled) return;
+        const favoriteItems = items.map((item) => favoriteSnapshotFromApi(item, activeLanguage));
+        replaceFavoriteCasts(favoriteItems);
+        setFavoriteCastSlugs(favoriteItems.map((item) => item.slug));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage]);
+
+  useEffect(() => {
     if (!isFilterOpen) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -593,7 +654,6 @@ export default function Page() {
   const visibleCasts = useMemo(() => {
     const filteredCasts = casts
       .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
-      .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd))
       .filter((cast) => matchesAgeRange(ageRange, cast))
       .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug));
     const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
@@ -617,7 +677,7 @@ export default function Page() {
         (topRankingOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [ageRange, casts, priceRange, query, storeSlug, topRankingOnly, topRankingOrder]);
+  }, [ageRange, casts, query, storeSlug, topRankingOnly, topRankingOrder]);
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const cityLabel = getCastCityLabel(city, activeLanguage);
@@ -637,10 +697,6 @@ export default function Page() {
     () => languageOptions.map((option) => localizeCastOption(option, activeLanguage, copy)),
     [activeLanguage, copy],
   );
-  const localizedPriceRangeOptions = useMemo(
-    () => priceRangeOptions.map((option) => localizeCastOption(option, activeLanguage, copy)),
-    [activeLanguage, copy],
-  );
   const effectiveSortOptions = useMemo(
     () =>
       sortOptions.map((option) =>
@@ -655,7 +711,6 @@ export default function Page() {
     category,
     language,
     storeSlug,
-    priceRange,
     !isDefaultAgeRange(ageRange),
     topRankingOnly,
     sort !== "newest",
@@ -669,7 +724,6 @@ export default function Page() {
     setCategory("");
     setLanguage("");
     setStoreSlug("");
-    setPriceRange("");
     setAgeRange(defaultAgeRange);
     setTopRankingOnly(false);
     setHasActiveCoupon(false);
@@ -681,6 +735,35 @@ export default function Page() {
     setArea("");
     setStoreSlug("");
     setSort((current) => (current === "nearest" && !coords ? "newest" : current));
+  };
+
+  const applyCastFavorite = (cast: PublicCast, favorited: boolean) => {
+    writeFavoriteCast(favoriteSnapshotFromCast(cast, activeLanguage), favorited);
+    setFavoriteCastSlugs((current) => nextFavoriteSlugs(current, cast.slug, favorited));
+  };
+
+  const toggleCastFavorite = async (cast: PublicCast) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !favoriteCastSlugs.includes(cast.slug);
+    applyCastFavorite(cast, nextValue);
+
+    try {
+      const state = nextValue
+        ? await castFavoriteApi.favorite(cast.slug)
+        : await castFavoriteApi.unfavorite(cast.slug);
+      applyCastFavorite(cast, state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        applyCastFavorite(cast, false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      applyCastFavorite(cast, !nextValue);
+    }
   };
 
   const requestNearby = () => {
@@ -831,8 +914,6 @@ export default function Page() {
                   language={language}
                   languageOptions={localizedLanguageOptions}
                   panelRef={filterPanelRef}
-                  priceRangeOptions={localizedPriceRangeOptions}
-                  priceRange={priceRange}
                   sort={sort}
                   sortOptions={effectiveSortOptions}
                   subtitle={
@@ -852,7 +933,6 @@ export default function Page() {
                   onCity={handleCityChange}
                   onClose={() => setFilterOpen(false)}
                   onLanguage={setLanguage}
-                  onPrice={(value) => setPriceRange(value as PriceRange)}
                   onReset={resetFilters}
                   onSort={handleSortChange}
                   onStore={setStoreSlug}
@@ -944,6 +1024,8 @@ export default function Page() {
                   cast={cast}
                   index={index}
                   language={activeLanguage}
+                  isFavorite={favoriteCastSlugs.includes(cast.slug)}
+                  onToggleFavorite={() => void toggleCastFavorite(cast)}
                 />
               ))}
             </div>
@@ -965,8 +1047,6 @@ export default function Page() {
           copy={copy}
           language={language}
           languageOptions={localizedLanguageOptions}
-          priceRangeOptions={localizedPriceRangeOptions}
-          priceRange={priceRange}
           sort={sort}
           sortOptions={effectiveSortOptions}
           subtitle={
@@ -986,7 +1066,6 @@ export default function Page() {
           onCity={handleCityChange}
           onClose={() => setFilterOpen(false)}
           onLanguage={setLanguage}
-          onPrice={(value) => setPriceRange(value as PriceRange)}
           onReset={resetFilters}
           onSort={handleSortChange}
           onStore={setStoreSlug}
@@ -1156,10 +1235,14 @@ function CastDiscoveryCard({
   cast,
   index,
   language,
+  isFavorite,
+  onToggleFavorite,
 }: {
   cast: PublicCast;
   index: number;
   language: LanguageCode;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const image = cast.thumbnailUrl;
   const areaLabel = [
@@ -1174,47 +1257,59 @@ function CastDiscoveryCard({
   const categoryLabel = getCastCategoryLabel(cast.store.category, language);
   const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tối nay" : "Mới";
   const isRanked = index < 3;
+  const favoriteLabel = translateText(isFavorite ? "Bỏ lưu cast" : "Lưu cast", language);
 
   return (
-    <Link href={`/casts/${cast.slug}`} className="cast-card">
-      <PlaceholderMedia
-        src={image}
-        label={translateText("Chưa có ảnh cast", language)}
-        tone="dark"
-        className="cast-card-media"
+    <article className="cast-card-wrap">
+      <Link href={`/casts/${cast.slug}`} className={`cast-card${index === 0 ? " is-leading" : ""}`}>
+        <PlaceholderMedia
+          src={image}
+          label={translateText("Chưa có ảnh cast", language)}
+          tone="dark"
+          className="cast-card-media"
+        >
+          <span className="cast-media-shade" />
+          <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
+            {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
+            {badgeLabel}
+          </span>
+          <span className="cast-card-name">
+            <b>{cast.name}</b>
+            <small>{categoryLabel}</small>
+          </span>
+          <span className="cast-card-place">
+            <MapPin size={12} />
+            <b>{cast.store.name}</b>
+            {areaLabel ? <small>· {areaLabel}</small> : null}
+          </span>
+        </PlaceholderMedia>
+
+        <div className="cast-card-body">
+          <div className="cast-card-meta">
+            <span className="cast-language-pill">
+              <Languages size={12} />
+              {langText}
+            </span>
+          </div>
+
+          <div className="cast-card-foot">
+            <span className="cast-card-cta">
+              {translateText("Đặt", language)}
+              <ChevronRight size={13} />
+            </span>
+          </div>
+        </div>
+      </Link>
+      <button
+        type="button"
+        className={`cast-card-favorite${isFavorite ? " is-active" : ""}`}
+        onClick={onToggleFavorite}
+        aria-label={favoriteLabel}
+        title={favoriteLabel}
       >
-        <span className="cast-media-shade" />
-        <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
-          {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
-          {badgeLabel}
-        </span>
-        <span className="cast-card-name">
-          <b>{cast.name}</b>
-          <small>{categoryLabel}</small>
-        </span>
-        <span className="cast-card-place">
-          <MapPin size={12} />
-          <b>{cast.store.name}</b>
-          {areaLabel ? <small>· {areaLabel}</small> : null}
-        </span>
-      </PlaceholderMedia>
-
-      <div className="cast-card-body">
-        <div className="cast-card-meta">
-          <span className="cast-language-pill">
-            <Languages size={12} />
-            {langText}
-          </span>
-        </div>
-
-        <div className="cast-card-foot">
-          <span className="cast-card-cta">
-            {translateText("Đặt", language)}
-            <ChevronRight size={13} />
-          </span>
-        </div>
-      </div>
-    </Link>
+        <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
+      </button>
+    </article>
   );
 }
 
@@ -1230,8 +1325,6 @@ function CastFilterPanel({
   language,
   languageOptions,
   panelRef,
-  priceRange,
-  priceRangeOptions,
   storeOptions,
   storeSlug,
   sort,
@@ -1247,7 +1340,6 @@ function CastFilterPanel({
   onCity,
   onClose,
   onLanguage,
-  onPrice,
   onReset,
   onSort,
   onStore,
@@ -1265,8 +1357,6 @@ function CastFilterPanel({
   language: string;
   languageOptions: Option[];
   panelRef?: React.Ref<HTMLElement>;
-  priceRange: PriceRange;
-  priceRangeOptions: Option[];
   sort: DiscoverySort;
   sortOptions: Array<{ value: DiscoverySort; label: string }>;
   subtitle: string;
@@ -1282,7 +1372,6 @@ function CastFilterPanel({
   onCity: (value: string) => void;
   onClose: () => void;
   onLanguage: (value: string) => void;
-  onPrice: (value: string) => void;
   onReset: () => void;
   onSort: (value: DiscoverySort) => void;
   onStore: (value: string) => void;
@@ -1349,13 +1438,6 @@ function CastFilterPanel({
               options={languageOptions}
               value={language}
               onChange={onLanguage}
-            />
-            <FilterChipGroup
-              label={copy.priceRange}
-              note={copy.priceRangeNote}
-              options={priceRangeOptions}
-              value={priceRange}
-              onChange={onPrice}
             />
             <FilterChipGroup
               label={copy.sortLabel.replace(":", "")}
@@ -1891,8 +1973,14 @@ const castSearchCss = `
   gap: 16px;
 }
 
+.cast-card-wrap {
+  position: relative;
+  min-width: 0;
+}
+
 .cast-card {
   display: block;
+  height: 100%;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 16px;
@@ -1902,8 +1990,38 @@ const castSearchCss = `
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
 }
 
-.cast-card:first-child {
+.cast-card.is-leading {
   border-color: rgba(212, 178, 106, 0.28);
+}
+
+.cast-card-favorite {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(13, 13, 17, 0.62);
+  color: #f6ecda;
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.cast-card-favorite.is-active {
+  border-color: rgba(212, 178, 106, 0.56);
+  background: rgba(212, 178, 106, 0.24);
+  color: #f4d27d;
+}
+
+.cast-card-favorite svg {
+  pointer-events: none;
 }
 
 .cast-card-media {

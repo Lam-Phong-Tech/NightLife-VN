@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ImageOff, MapPin, Play, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, ImageOff, MapPin, Play, Star } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
-import { isPlaceholderCastMedia, mediaBg } from "./cast-profile.helpers";
+import { isPlaceholderCastMedia, mediaPreviewBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 type CastHeroProps = {
@@ -14,6 +14,9 @@ type CastHeroProps = {
   onPreviousMedia: () => void;
   onNextMedia: () => void;
   showMediaNavigation: boolean;
+  favoriteLabel: string;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 };
 
 const profileSummary = (profile: CastProfile) =>
@@ -30,6 +33,9 @@ export function CastHero({
   onPreviousMedia,
   onNextMedia,
   showMediaNavigation,
+  favoriteLabel,
+  isFavorite,
+  onToggleFavorite,
 }: CastHeroProps) {
   const summary = profileSummary(profile);
   const storeHref = `/stores/${profile.store.slug}`;
@@ -41,7 +47,7 @@ export function CastHero({
       className="cast-mobile-hero"
       data-testid="cast-hero-mobile"
       style={{
-        background: `linear-gradient(180deg, rgba(12,12,15,.18) 0%, rgba(12,12,15,0) 28%, rgba(12,12,15,.58) 64%, rgba(12,12,15,.97) 100%), ${mediaBg(activeMedia.url)}`,
+        background: `linear-gradient(180deg, rgba(12,12,15,.18) 0%, rgba(12,12,15,0) 28%, rgba(12,12,15,.58) 64%, rgba(12,12,15,.97) 100%), ${mediaPreviewBg(activeMedia, profile.thumbnailUrl)}`,
       }}
     >
       {isPlaceholder ? (
@@ -54,6 +60,15 @@ export function CastHero({
         <Link href="/danh-sach-cast" className="cast-icon-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
+        <button
+          type="button"
+          className={`cast-icon-link cast-favorite-action${isFavorite ? " is-active" : ""}`}
+          onClick={onToggleFavorite}
+          aria-label={favoriteLabel}
+          title={favoriteLabel}
+        >
+          <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+        </button>
       </div>
 
       {activeMedia.type === "VIDEO" ? (

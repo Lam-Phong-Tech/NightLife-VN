@@ -122,6 +122,21 @@ export function CastProfileStyles() {
         box-shadow: var(--cast-hero-control-shadow);
       }
 
+      .cast-favorite-action {
+        cursor: pointer;
+        transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+      }
+
+      .cast-favorite-action.is-active {
+        background: rgba(212,178,106,.22);
+        border-color: rgba(212,178,106,.55);
+        color: #f4d27d;
+      }
+
+      .cast-favorite-action svg {
+        pointer-events: none;
+      }
+
       .cast-icon-link svg,
       .cast-hero-media-nav button svg,
       .cast-play svg {
@@ -1180,6 +1195,24 @@ export function CastProfileStyles() {
         left: 14px;
         bottom: 14px;
         background: rgba(12,12,15,.5);
+      }
+
+      .cast-desktop-main-media-wrap .cast-favorite-action {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 4;
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 999px;
+        background: rgba(17,17,20,.72);
+        color: #f6ecda;
+        box-shadow: 0 12px 28px -18px rgba(0,0,0,.9);
+        backdrop-filter: blur(8px);
       }
 
       .cast-desktop-thumbs {

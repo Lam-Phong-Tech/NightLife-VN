@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, ImageOff, Play, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, ImageOff, Play, Star, X } from "lucide-react";
 import { resolveClientUrl } from "@/lib/api/client";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
-import { isPlaceholderCastMedia, mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
+import { isPlaceholderCastMedia, mediaPreviewBg, videoEmbedUrl } from "./cast-profile.helpers";
 import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
 type CastGalleryProps = {
@@ -18,6 +18,9 @@ type CastGalleryProps = {
   onSelect: (index: number, action?: CastGalleryAction) => void;
   onOpenLightbox: (index?: number) => void;
   onCloseLightbox: () => void;
+  favoriteLabel?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 };
 
 export function CastGallery({
@@ -29,11 +32,16 @@ export function CastGallery({
   onSelect,
   onOpenLightbox,
   onCloseLightbox,
+  favoriteLabel,
+  isFavorite = false,
+  onToggleFavorite,
 }: CastGalleryProps) {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
   const activeMediaIsPlaceholder = isPlaceholderCastMedia(activeMedia);
+  const fallbackImageUrl =
+    gallery.find((item) => item.type === "IMAGE" && !isPlaceholderCastMedia(item))?.url ?? null;
   const copy = getCastProfileCopy(language);
 
   const showPrevious = useCallback(() => {
@@ -128,7 +136,7 @@ export function CastGallery({
                   }}
                   aria-label={media.alt}
                   className={`cast-gallery-tile${isPlaceholder ? " is-placeholder" : ""}`}
-                  style={{ background: mediaBg(media.url) }}
+                  style={{ background: mediaPreviewBg(media, fallbackImageUrl) }}
                 >
                   {isPlaceholder
                     ? renderPlaceholder(true)
@@ -151,7 +159,7 @@ export function CastGallery({
         <button
           type="button"
           className={`cast-desktop-main-media${activeMediaIsPlaceholder ? " is-placeholder" : ""}`}
-          style={{ background: mediaBg(activeMedia.url) }}
+          style={{ background: mediaPreviewBg(activeMedia, fallbackImageUrl) }}
           onClick={() => onOpenLightbox(activeIndex)}
           aria-label={copy.openGallery}
         >
@@ -174,6 +182,17 @@ export function CastGallery({
           <span />
           {copy.acceptingTonight}
         </span>
+        {onToggleFavorite ? (
+          <button
+            type="button"
+            className={`cast-favorite-action${isFavorite ? " is-active" : ""}`}
+            onClick={onToggleFavorite}
+            aria-label={favoriteLabel}
+            title={favoriteLabel}
+          >
+            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+          </button>
+        ) : null}
       </div>
 
       <div className="cast-desktop-thumbs">
@@ -187,7 +206,7 @@ export function CastGallery({
               key={media.id}
               onClick={() => onSelect(index, "select")}
               aria-label={media.alt}
-              style={{ background: mediaBg(media.url) }}
+              style={{ background: mediaPreviewBg(media, fallbackImageUrl) }}
             >
               {isPlaceholder
                 ? renderPlaceholder(true)
@@ -232,6 +251,8 @@ function CastLightbox({
   const embed = media.type === "VIDEO" ? videoEmbedUrl(mediaUrl) : null;
   const copy = getCastProfileCopy(language);
   const isPlaceholder = isPlaceholderCastMedia(media);
+  const fallbackImageUrl =
+    gallery.find((item) => item.type === "IMAGE" && !isPlaceholderCastMedia(item))?.url ?? null;
 
   const onTouchEnd = (clientX: number) => {
     if (touchStartX === null) return;
@@ -330,7 +351,7 @@ function CastLightbox({
               key={item.id}
               type="button"
               className={`cast-lightbox-thumb${itemIndex === index ? " is-active" : ""}${isPlaceholder ? " is-placeholder" : ""}`}
-              style={{ background: mediaBg(item.url) }}
+              style={{ background: mediaPreviewBg(item, fallbackImageUrl) }}
               onClick={() => onSelect(itemIndex, "select")}
               aria-label={item.alt}
             >

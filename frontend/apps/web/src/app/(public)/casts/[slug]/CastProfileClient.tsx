@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { apiClient } from "@/lib/api/client";
-import type { PublicCastDetail } from "@/lib/api/cast-detail";
+import { ApiError, apiClient } from "@/lib/api/client";
+import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
@@ -23,6 +23,12 @@ import { personalizeRelatedCasts } from "./cast-profile.recommendations";
 import { buildCastStructuredData } from "./cast-profile.schema";
 import { trackCastDetailClick } from "./cast-profile.tracking";
 import type { CastGalleryAction } from "./cast-profile.types";
+import {
+  hasMemberFavoriteAccess,
+  redirectToLoginForFavorite,
+  requireMemberFavoriteAccess,
+} from "@/lib/member-favorite-auth";
+import { isFavoriteCast, writeFavoriteCast } from "@/lib/member-favorites";
 
 type CastProfileClientProps = {
   cast: PublicCastDetail;
@@ -47,7 +53,22 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
+  const favoriteSnapshot = useMemo(
+    () => ({
+      slug: profile.slug,
+      name: profile.name,
+      storeName: profile.store.name,
+      categoryLabel: profile.store.category,
+      areaLabel: area,
+      image:
+        profile.thumbnailUrl ??
+        gallery.find((media) => media.type === "IMAGE" && !media.isPlaceholder)?.url ??
+        undefined,
+    }),
+    [area, gallery, profile.name, profile.slug, profile.store.category, profile.store.name, profile.thumbnailUrl],
+  );
 
   useEffect(() => {
     void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
@@ -71,6 +92,66 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     action: "booking" | "gallery" | "store" | "favorite" | "related",
     metadata: Record<string, unknown> = {},
   ) => trackCastDetailClick(profile, action, metadata);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!hasMemberFavoriteAccess()) {
+      Promise.resolve().then(() => {
+        if (!ignore) setIsFavorite(false);
+      });
+
+      return () => {
+        ignore = true;
+      };
+    }
+
+    Promise.resolve(isFavoriteCast(favoriteSnapshot.slug)).then((favorited) => {
+      if (!ignore) setIsFavorite(favorited);
+    });
+
+    castFavoriteApi
+      .getState(favoriteSnapshot.slug)
+      .then((state) => {
+        if (ignore) return;
+        setIsFavorite(state.favorited);
+        writeFavoriteCast(favoriteSnapshot, state.favorited);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      ignore = true;
+    };
+  }, [favoriteSnapshot]);
+
+  const toggleFavorite = async () => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !isFavorite;
+    setIsFavorite(nextValue);
+    writeFavoriteCast(favoriteSnapshot, nextValue);
+    track("favorite", { favorited: nextValue });
+
+    try {
+      const state = nextValue
+        ? await castFavoriteApi.favorite(profile.slug)
+        : await castFavoriteApi.unfavorite(profile.slug);
+      setIsFavorite(state.favorited);
+      writeFavoriteCast(favoriteSnapshot, state.favorited);
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        setIsFavorite(false);
+        writeFavoriteCast(favoriteSnapshot, false);
+        redirectToLoginForFavorite();
+        return;
+      }
+
+      setIsFavorite(!nextValue);
+      writeFavoriteCast(favoriteSnapshot, !nextValue);
+    }
+  };
 
   const selectMedia = (index: number, action: CastGalleryAction = "select") => {
     setActiveMediaIndex(index);
@@ -126,6 +207,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onPreviousMedia={showPreviousMedia}
             onNextMedia={showNextMedia}
             showMediaNavigation={gallery.length > 1}
+            favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
           />
           <CastGallery
             gallery={gallery}
@@ -136,6 +220,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onSelect={selectMedia}
             onOpenLightbox={openLightbox}
             onCloseLightbox={() => setIsLightboxOpen(false)}
+            favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
           />
           <CastInfo
             profile={profile}
@@ -166,6 +253,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 onSelect={selectMedia}
                 onOpenLightbox={openLightbox}
                 onCloseLightbox={() => setIsLightboxOpen(false)}
+                favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
+                isFavorite={isFavorite}
+                onToggleFavorite={toggleFavorite}
               />
 
               <div className="cast-desktop-content">

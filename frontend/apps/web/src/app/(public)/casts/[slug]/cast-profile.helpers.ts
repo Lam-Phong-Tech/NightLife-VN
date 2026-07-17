@@ -92,6 +92,45 @@ export function mediaBg(url?: string | null) {
   return url ? `url("${url}") center/cover` : "linear-gradient(135deg,#19191d,#2a2418)";
 }
 
+export function videoThumbnailUrl(url?: string | null) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes("youtube.com")) {
+      const id =
+        parsed.searchParams.get("v") || parsed.pathname.split("/").filter(Boolean).at(-1);
+      return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+    }
+
+    if (parsed.hostname === "youtu.be") {
+      const id = parsed.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+export function mediaPreviewUrl(
+  media?: Pick<CastMedia, "type" | "url"> | null,
+  fallback?: string | null,
+) {
+  if (!media) return fallback ?? null;
+  if (media.type === "VIDEO") return videoThumbnailUrl(media.url) ?? fallback ?? null;
+  return media.url ?? fallback ?? null;
+}
+
+export function mediaPreviewBg(
+  media?: Pick<CastMedia, "type" | "url"> | null,
+  fallback?: string | null,
+) {
+  return mediaBg(mediaPreviewUrl(media, fallback));
+}
+
 export function buildCastBio(cast: PublicCastDetail) {
   const name = cast.publicAlias ?? cast.name ?? cast.stageName;
   const adminBio = cast.publicBio?.trim() || cast.publicHeadline?.trim();
