@@ -52,6 +52,13 @@ describe("booking validation", () => {
     );
   });
 
+  it("rejects common mistyped booking email domains before submit", () => {
+    expect(validateBookingEmail("guest@gmai.com")).toBe("Email chưa đúng định dạng.");
+    expect(validateBookingEmail("guest@gmeo.com")).toBe("Email chưa đúng định dạng.");
+    expect(validateBookingEmail("guest@gmail.con")).toBe("Email chưa đúng định dạng.");
+    expect(validateBookingEmail("guest@gmail.com")).toBe("");
+  });
+
   it("rejects invalid phone numbers used by legacy guest booking flows", () => {
     expect(validateBookingPhone("abc0901234567")).toBe(
       "Số điện thoại chỉ được nhập số và các ký tự + - ( ) .",

@@ -13,6 +13,8 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateBy,
+  type ValidationOptions,
 } from 'class-validator';
 
 const trimOptionalString = ({ value }: TransformFnParams): unknown => {
@@ -31,6 +33,55 @@ const trimLowerEmail = ({ value }: TransformFnParams): unknown => {
   const trimmed = value.trim().toLowerCase();
   return trimmed || undefined;
 };
+
+const commonEmailDomainTypoLabels = new Set([
+  'gmai',
+  'gmeo',
+  'gmial',
+  'gamil',
+  'gnail',
+  'gmal',
+  'gmali',
+  'gmaiil',
+]);
+const commonEmailDomainTypos = new Set([
+  'gmail.cm',
+  'gmail.cmo',
+  'gmail.con',
+  'gmail.coom',
+  'gmail.om',
+  'gmail.comm',
+]);
+
+const hasCommonEmailDomainTypo = (value: string) => {
+  const domainPart = value.trim().toLowerCase().split('@')[1] ?? '';
+  const domainLabels = domainPart.split('.');
+  const rootDomainLabel = domainLabels[0] ?? '';
+
+  return (
+    commonEmailDomainTypoLabels.has(rootDomainLabel) ||
+    commonEmailDomainTypos.has(domainPart)
+  );
+};
+
+const IsNotCommonEmailDomainTypo = (validationOptions?: ValidationOptions) =>
+  ValidateBy(
+    {
+      name: 'isNotCommonEmailDomainTypo',
+      validator: {
+        validate(value: unknown) {
+          if (value === undefined || value === null || value === '')
+            return true;
+
+          return typeof value === 'string' && !hasCommonEmailDomainTypo(value);
+        },
+        defaultMessage() {
+          return 'email must use a valid email domain';
+        },
+      },
+    },
+    validationOptions,
+  );
 
 export class CreateBookingDto {
   @ApiPropertyOptional({
@@ -110,6 +161,9 @@ export class CreateBookingDto {
   @Transform(trimLowerEmail)
   @IsOptional()
   @IsEmail()
+  @IsNotCommonEmailDomainTypo({
+    message: 'email must use a valid email domain',
+  })
   @MaxLength(254)
   email?: string;
 
