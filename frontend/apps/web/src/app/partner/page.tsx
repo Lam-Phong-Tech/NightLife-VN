@@ -437,6 +437,7 @@ type PartnerNotification = {
   icon: LucideIcon;
   unread: boolean;
 };
+type PartnerNotificationEvent = Omit<PartnerNotification, 'unread'>;
 type ListingTabKey = 'store' | 'cast';
 type PeriodKey = 'today' | 'seven' | 'thirty';
 type OfflineScanQueueItem = {
@@ -1564,6 +1565,7 @@ export default function PartnerPage() {
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() =>
     readPartnerNotificationIds(),
   );
+  const [partnerNotificationEvents, setPartnerNotificationEvents] = useState<PartnerNotificationEvent[]>([]);
 
   const rawFeedback = useContext(SystemFeedbackContext);
   const feedback = rawFeedback || {
@@ -2399,9 +2401,16 @@ export default function PartnerPage() {
     [persistReadNotifications],
   );
 
+  const pushPartnerNotificationEvent = useCallback((notification: PartnerNotificationEvent) => {
+    setPartnerNotificationEvents((current) => [
+      notification,
+      ...current.filter((item) => item.id !== notification.id),
+    ].slice(0, 4));
+  }, []);
+
   const partnerNotifications = useMemo<PartnerNotification[]>(() => {
     const readIds = new Set(readNotificationIds);
-    const notifications: Omit<PartnerNotification, 'unread'>[] = [];
+    const notifications: PartnerNotificationEvent[] = [...partnerNotificationEvents];
     const nowMs = billNowMs;
     const pendingBookingStatuses = new Set(['PENDING', 'NEW', 'REQUESTED', 'WAITING', 'AWAITING_CONFIRMATION']);
     const upcomingBookingStatuses = new Set(['CONFIRMED', 'APPROVED', 'BOOKED']);
@@ -2662,6 +2671,7 @@ export default function PartnerPage() {
     listingErrorCount,
     listingReview,
     offlineScanQueue,
+    partnerNotificationEvents,
     readNotificationIds,
     scopedStoreCount,
     scanIssue,
@@ -2941,6 +2951,17 @@ export default function PartnerPage() {
       await refreshPartnerBills(normalizedBill);
       setSelectedBillId(normalizedBill.id);
       setBillEvidenceFile(null);
+      pushPartnerNotificationEvent({
+        id: `bill-submitted:${normalizedBill.id}:${normalizedBill.submittedAt ?? Date.now()}`,
+        category: 'Hóa đơn',
+        title: 'Đã gửi bill về Admin đối soát',
+        message: `${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} của ${selectedBillStore.name} đang chờ Admin kiểm tra.${uploadWarning}`,
+        meta: `${moneyVnd(billAmount)} · ${formatDateTime(normalizedBill.usedAt ?? normalizedBill.submittedAt ?? new Date().toISOString())}`,
+        actionLabel: 'Xem bill',
+        panel: 'bill',
+        tone: uploadWarning ? 'warning' : 'gold',
+        icon: ReceiptText,
+      });
       setBillNotice({
         tone: uploadWarning ? 'gold' : 'success',
         message: `Đã gửi bill ${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
@@ -4254,6 +4275,28 @@ export default function PartnerPage() {
         status: response.status,
         submittedAt: response.submittedAt,
         publicState: 'HIDDEN',
+      });
+      const submittedCastCount = listingDraft.castProfiles.filter((cast) => !isEmptyCastProfile(cast)).length;
+      const submittedMediaCount = [
+        listingDraft.coverImageUrl,
+        ...listingDraft.galleryUrls,
+        ...listingDraft.videoUrls,
+      ].filter((item) => item.trim()).length;
+      const submittedMenuCount = listingDraft.menuGroups.reduce(
+        (sum, group) => sum + group.items.filter((item) => hasText(item.name)).length,
+        0,
+      );
+      pushPartnerNotificationEvent({
+        id: `listing-submitted:${response.id}:${response.submittedAt}`,
+        category: 'Đăng tin',
+        title: 'Đã gửi bản chỉnh sửa chờ Admin duyệt',
+        message: `Thông tin quán${submittedCastCount ? `, ${submittedCastCount} cast` : ''}${submittedMenuCount ? `, ${submittedMenuCount} món/menu` : ''}${submittedMediaCount ? ` và ${submittedMediaCount} media` : ''} đã gửi vào hàng chờ duyệt.`,
+        meta: `Gửi lúc ${formatDateTime(response.submittedAt)}`,
+        actionLabel: 'Xem đăng tin',
+        panel: 'listing',
+        listingTab: submittedCastCount ? 'cast' : 'store',
+        tone: 'gold',
+        icon: FileText,
       });
       setListingNotice('Đã gửi Admin duyệt. Nội dung sẽ public sau khi được duyệt.');
     } catch (error) {
