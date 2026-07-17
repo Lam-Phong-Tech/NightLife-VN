@@ -4,7 +4,7 @@ import { AlertCircle, Check, Clock3, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import { getLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
@@ -54,6 +54,18 @@ const bookingTitle = (booking: BookingRecord | null) => {
     return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${booking.store?.name ?? "NightLife"}`;
   }
   return booking.store?.name ?? "Booking NightLife";
+};
+
+const normalizeBookingLookupToken = (value?: string | null) =>
+  (value ?? "").trim().replace(/^#?BK[-_]?/i, "").replace(/-/g, "").toLowerCase();
+
+const bookingMatchesLookup = (booking: BookingRecord, lookup?: string | null) => {
+  const token = normalizeBookingLookupToken(lookup);
+  if (!token) return false;
+
+  return [booking.id, booking.tourBookingId, booking.bookingCode].some((value) =>
+    normalizeBookingLookupToken(value).startsWith(token),
+  );
 };
 
 const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
@@ -338,12 +350,70 @@ export default function Page() {
   const activeLanguage = useActiveLanguage();
   const tourCopy = getTourConfirmCopy(activeLanguage);
   const [booking, setBooking] = useState<BookingRecord | null>(null);
+  const [isBookingLoading, setIsBookingLoading] = useState(true);
 
   useEffect(() => {
+    let alive = true;
+
+    const resolveBooking = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const bookingId = searchParams.get("bookingId");
+      const email = searchParams.get("email")?.trim() ?? "";
+      const phone = searchParams.get("phone")?.trim() ?? "";
+      const rememberedBooking = getLastBooking(bookingId);
+
+      if (rememberedBooking) {
+        if (alive) {
+          setBooking(rememberedBooking);
+          setIsBookingLoading(false);
+        }
+        return;
+      }
+
+      if (bookingId) {
+        try {
+          const memberBookings = await bookingApi.listMemberBookings();
+          const memberBooking = memberBookings.find((item) => bookingMatchesLookup(item, bookingId));
+          if (memberBooking) {
+            rememberLastBooking(memberBooking, { history: true });
+            if (alive) {
+              setBooking(memberBooking);
+              setIsBookingLoading(false);
+            }
+            return;
+          }
+        } catch {
+          // Guests and signed-out users continue to code/email lookup below.
+        }
+
+        if (email || phone) {
+          try {
+            const guestBooking = await bookingApi.getGuestBookingByCode(bookingId, { email, phone });
+            rememberLastBooking(guestBooking, { history: true });
+            if (alive) {
+              setBooking(guestBooking);
+              setIsBookingLoading(false);
+            }
+            return;
+          } catch {
+            // Keep the existing empty state when the booking cannot be recovered.
+          }
+        }
+      }
+
+      if (alive) {
+        setBooking(null);
+        setIsBookingLoading(false);
+      }
+    };
+
     queueMicrotask(() => {
-      const bookingId = new URLSearchParams(window.location.search).get("bookingId");
-      setBooking(getLastBooking(bookingId));
+      void resolveBooking();
     });
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
@@ -410,6 +480,16 @@ export default function Page() {
               : "Mới · QR đã cấp",
         activeLanguage,
       );
+  const displayedHeroTitle = isBookingLoading
+    ? translateText("Đang tải booking", activeLanguage)
+    : heroTitle;
+  const displayedHeroText = isBookingLoading
+    ? translateText("Đang kiểm tra dữ liệu booking vừa tạo.", activeLanguage)
+    : heroText;
+  const displayedStatusText = isBookingLoading ? translateText("Đang tải", activeLanguage) : statusText;
+  const emptyBookingMessage = isBookingLoading
+    ? translateText("Đang kiểm tra dữ liệu booking vừa tạo.", activeLanguage)
+    : translateText("Chưa tìm thấy booking vừa tạo trong phiên này.", activeLanguage);
 
   const saveQrImage = async () => {
     if (!booking || !qrImageUrl) {
@@ -450,13 +530,19 @@ export default function Page() {
         <div className={`${styles.bookingFrame} ${styles.confirmFrame}`}>
           <div className={styles.confirmHero}>
             <span className={styles.heroMark}>
-              {isCancelled || !booking ? <AlertCircle size={34} /> : <Check size={34} />}
+              {isBookingLoading ? (
+                <Clock3 size={34} />
+              ) : isCancelled || !booking ? (
+                <AlertCircle size={34} />
+              ) : (
+                <Check size={34} />
+              )}
             </span>
-            <h1 className={styles.confirmTitle}>{heroTitle}</h1>
-            <p className={styles.confirmText}>{heroText}</p>
+            <h1 className={styles.confirmTitle}>{displayedHeroTitle}</h1>
+            <p className={styles.confirmText}>{displayedHeroText}</p>
             <span className={styles.statusBadge}>
               <span className={styles.statusDot} />
-              {isTourBooking ? tourCopy.statusLabel : translateText("Trạng thái", activeLanguage)}: {statusText}
+              {isTourBooking ? tourCopy.statusLabel : translateText("Trạng thái", activeLanguage)}: {displayedStatusText}
             </span>
           </div>
 
@@ -506,7 +592,7 @@ export default function Page() {
             </section>
           ) : (
             <div className={styles.emptyCard}>
-              {translateText("Chưa tìm thấy booking vừa tạo trong phiên này.", activeLanguage)}
+              {emptyBookingMessage}
             </div>
           )}
 
@@ -554,7 +640,7 @@ export default function Page() {
           </div>
 
           <div className={styles.bottomActions}>
-            {booking && isGuestBooking ? (
+            {isBookingLoading && !booking ? null : booking && isGuestBooking ? (
               <div className={styles.guestConfirmNotice}>
                 <Check size={16} />
                 <span>{guestConfirmationMessage}</span>

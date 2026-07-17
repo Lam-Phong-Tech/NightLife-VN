@@ -643,7 +643,11 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }
-      router.push(`/xac-nhan?bookingId=${booking.id}`);
+      const confirmParams = new URLSearchParams({ bookingId: booking.id });
+      if (!savedAsMemberBooking) {
+        confirmParams.set("email", normalizedEmail);
+      }
+      router.push(`/xac-nhan?${confirmParams.toString()}`);
     } catch (error) {
       setErrorMessage(localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi")));
     } finally {

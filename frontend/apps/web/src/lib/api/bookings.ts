@@ -467,7 +467,11 @@ const readStoredBookings = () => {
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? (parsed as BookingRecord[]) : [];
   } catch {
-    window.localStorage.removeItem(guestBookingsKey);
+    try {
+      window.localStorage.removeItem(guestBookingsKey);
+    } catch {
+      // Ignore storage failures so a private/quota-limited browser cannot break booking confirmation.
+    }
     return [];
   }
 };
@@ -477,7 +481,11 @@ const writeStoredBookings = (bookings: BookingRecord[]) => {
     return;
   }
 
-  window.localStorage.setItem(guestBookingsKey, JSON.stringify(bookings.slice(0, maxStoredBookings)));
+  try {
+    window.localStorage.setItem(guestBookingsKey, JSON.stringify(bookings.slice(0, maxStoredBookings)));
+  } catch {
+    // Local history is a convenience cache; the API remains the source of truth.
+  }
 };
 
 export const rememberLastBooking = (
@@ -488,7 +496,11 @@ export const rememberLastBooking = (
     return;
   }
 
-  window.sessionStorage.setItem(lastBookingKey, JSON.stringify(booking));
+  try {
+    window.sessionStorage.setItem(lastBookingKey, JSON.stringify(booking));
+  } catch {
+    // The confirmation page can recover from the API when this tab cache is unavailable.
+  }
 
   if (options?.guestHistory || options?.history) {
     writeStoredBookings(mergeBookingHistories([booking], readStoredBookings()));
@@ -506,7 +518,11 @@ export const getLastBooking = (bookingId?: string | null) => {
     const raw = window.sessionStorage.getItem(lastBookingKey);
     lastBooking = raw ? (JSON.parse(raw) as BookingRecord) : null;
   } catch {
-    window.sessionStorage.removeItem(lastBookingKey);
+    try {
+      window.sessionStorage.removeItem(lastBookingKey);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
   }
 
   if (!bookingId || lastBooking?.id === bookingId) {
@@ -518,6 +534,24 @@ export const getLastBooking = (bookingId?: string | null) => {
 
 export const getGuestBookingHistory = readStoredBookings;
 
+type GuestBookingLookup = {
+  email?: string | null;
+  phone?: string | null;
+};
+
+const buildGuestBookingLookupQuery = (lookup: string | GuestBookingLookup) => {
+  const params = new URLSearchParams();
+
+  if (typeof lookup === "string") {
+    params.set("phone", lookup);
+  } else {
+    if (lookup.phone) params.set("phone", lookup.phone);
+    if (lookup.email) params.set("email", lookup.email);
+  }
+
+  return params.toString();
+};
+
 export const bookingApi = {
   createGuestBooking: (payload: CreateBookingPayload) => apiClient<BookingRecord>("/bookings", { data: payload }),
   createMemberBooking: (payload: CreateBookingPayload) =>
@@ -528,10 +562,12 @@ export const bookingApi = {
     apiClient<BookingRecord>(`/member/tours/${encodeURIComponent(tourId)}/bookings`, {
       data: payload,
     }),
-  getGuestBookingByCode: (bookingCode: string, phone: string) =>
-    apiClient<BookingRecord>(
-      `/bookings/${encodeURIComponent(bookingCode)}?${new URLSearchParams({ phone }).toString()}`,
-    ),
+  getGuestBookingByCode: (bookingCode: string, lookup: string | GuestBookingLookup) => {
+    const query = buildGuestBookingLookupQuery(lookup);
+    return apiClient<BookingRecord>(
+      `/bookings/${encodeURIComponent(bookingCode)}${query ? `?${query}` : ""}`,
+    );
+  },
   cancelGuestBooking: (bookingId: string, payload: CancelGuestBookingPayload) =>
     apiClient<BookingRecord>(`/bookings/${encodeURIComponent(bookingId)}/cancel`, {
       method: "PATCH",

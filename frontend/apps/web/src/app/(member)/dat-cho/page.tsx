@@ -714,7 +714,11 @@ export default function Page() {
       if (isMemberMode) {
         requestMemberNotificationsRefresh();
       }
-      router.push(`/xac-nhan?bookingId=${booking.id}`);
+      const confirmParams = new URLSearchParams({ bookingId: booking.id });
+      if (!isMemberMode) {
+        confirmParams.set("email", normalizedEmail);
+      }
+      router.push(`/xac-nhan?${confirmParams.toString()}`);
     } catch (error) {
       setErrorMessage(
         localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt chỗ."),

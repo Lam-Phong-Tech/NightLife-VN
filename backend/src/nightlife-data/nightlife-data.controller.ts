@@ -462,9 +462,13 @@ export class NightlifeDataController {
   @Get('bookings/:bookingCode')
   getGuestBookingByCode(
     @Param('bookingCode') bookingCode: string,
-    @Query('phone') phone: string,
+    @Query('phone') phone?: string,
+    @Query('email') email?: string,
   ) {
-    return this.nightlifeDataService.getGuestBookingByCode(bookingCode, phone);
+    return this.nightlifeDataService.getGuestBookingByCode(bookingCode, {
+      phone,
+      email,
+    });
   }
 
   @CreatePartnerRequestContract()

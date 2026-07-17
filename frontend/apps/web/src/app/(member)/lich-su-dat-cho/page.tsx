@@ -34,7 +34,6 @@ import { getStoreDetail } from "@/lib/api/store-detail";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import {
-  buildBookingTimeSlotGroups,
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
   type OpeningHoursInput,
@@ -512,19 +511,15 @@ export default function Page() {
     return Array.from({ length: end - start + 1 }, (_, index) => start + index);
   }, [historyTotalPages, safeHistoryPage]);
   const rescheduleOpeningHours = pendingRescheduleBooking?.store?.openingHours ?? null;
-  const rescheduleTimeOptionGroups = useMemo(() => {
+  const rescheduleTimeOptions = useMemo(() => {
     if (!pendingRescheduleBooking) {
       return [];
     }
 
-    return buildBookingTimeSlotGroups(rescheduleOpeningHours, rescheduleDate, {
+    return buildBookingTimeSlots(rescheduleOpeningHours, rescheduleDate, {
       fallback: "empty",
     });
   }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
-  const rescheduleTimeOptions = useMemo(
-    () => rescheduleTimeOptionGroups.flatMap((group) => group.slots),
-    [rescheduleTimeOptionGroups],
-  );
   const pendingRescheduleStoreSlug = pendingRescheduleBooking?.store?.slug ?? "";
   const pendingRescheduleStoreHasOpeningHours = hasOpeningHours(rescheduleOpeningHours);
 
@@ -1034,7 +1029,6 @@ export default function Page() {
               dateValue={rescheduleDate}
               timeValue={rescheduleTime}
               timeOptions={rescheduleTimeOptions}
-              timeOptionGroups={rescheduleTimeOptionGroups}
               minDate={getTodayDate()}
               maxDate={getMaxBookingDate()}
               loadingTimes={isRescheduleHoursLoading}
