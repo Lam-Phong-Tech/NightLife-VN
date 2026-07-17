@@ -449,7 +449,6 @@ function NotificationTabs({
         { key: "all", label: "Tất cả" },
         { key: "bill", label: "Hóa đơn" },
         { key: "booking", label: "Đặt chỗ" },
-        { key: "system", label: "Hệ thống" },
       ]
     : [
         { key: "all", label: "Tất cả" },
@@ -480,14 +479,16 @@ function NotificationTabs({
               flex: "none",
               display: "inline-flex",
               alignItems: "center",
-              gap: "5px",
+              justifyContent: "center",
+              gap: isMobile ? "6px" : "5px",
+              minWidth: isMobile && tab.key === "all" ? "76px" : undefined,
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "0" : `1px solid ${colors.border}`,
               borderRadius: "15px",
-              padding: isMobile ? "7px 13px" : "6px 12px",
+              padding: isMobile ? "7px 15px" : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
             }}
@@ -496,8 +497,8 @@ function NotificationTabs({
             {active && tab.key === "all" && unreadCount > 0 ? (
               <b
                 style={{
-                  minWidth: "18px",
-                  height: "18px",
+                  minWidth: "22px",
+                  height: "19px",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -509,7 +510,7 @@ function NotificationTabs({
                   fontSize: "10px",
                   fontWeight: 800,
                   lineHeight: 1,
-                  padding: "0 5px",
+                  padding: "0 6px",
                 }}
               >
                 {unreadCount > 9 ? "9+" : unreadCount}
