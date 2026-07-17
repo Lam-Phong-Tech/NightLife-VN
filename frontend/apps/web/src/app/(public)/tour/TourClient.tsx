@@ -26,15 +26,7 @@ const cityOptions = [
   { id: "hcm", label: "TP.HCM", value: "Ho Chi Minh City" },
 ] as const;
 
-const filterOptions = [
-  { id: "all", label: "Tất cả" },
-  { id: "short", label: "2-3 điểm dừng" },
-  { id: "deal", label: "Có ưu đãi" },
-  { id: "premium", label: "Premium" },
-] as const;
-
 type CityFilter = (typeof cityOptions)[number]["id"];
-type TourFilter = (typeof filterOptions)[number]["id"];
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
@@ -59,6 +51,131 @@ const normalizeSearch = (value: string) =>
 
 const localize = (value: string, language: LanguageCode) =>
   language === "vi" ? value : translateText(value, language);
+
+const tourDirectoryCopy: Record<LanguageCode, {
+  backHome: string;
+  title: string;
+  eyebrow: string;
+  searchAria: string;
+  searchPlaceholder: string;
+  cityAria: string;
+  searchButton: string;
+  reset: string;
+  loadFailed: string;
+  listAria: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  requestTime: string;
+  noTourImage: string;
+  freeExperience: string;
+  hasDeals: string;
+  itinerary: string;
+  viewTour: string;
+}> = {
+  vi: {
+    backHome: "Quay lại trang chủ",
+    title: "Danh sách tour nightlife",
+    eyebrow: "TOUR DIRECTORY",
+    searchAria: "Tìm tour",
+    searchPlaceholder: "Tìm tour, quán hoặc khu vực...",
+    cityAria: "Chọn thành phố",
+    searchButton: "Tìm",
+    reset: "Đặt lại",
+    loadFailed: "Chưa tải được danh sách tour. Vui lòng thử lại sau.",
+    listAria: "Danh sách tour",
+    emptyTitle: "Chưa có tour phù hợp",
+    emptyDescription: "Đổi thành phố hoặc từ khóa để xem thêm hành trình.",
+    requestTime: "Theo yêu cầu",
+    noTourImage: "Chưa có ảnh tour",
+    freeExperience: "Trải nghiệm tự do",
+    hasDeals: "Có ưu đãi",
+    itinerary: "Theo lịch trình",
+    viewTour: "Xem tour",
+  },
+  en: {
+    backHome: "Back to home",
+    title: "Nightlife tour list",
+    eyebrow: "TOUR DIRECTORY",
+    searchAria: "Search tours",
+    searchPlaceholder: "Search tours, venues, or areas...",
+    cityAria: "Choose city",
+    searchButton: "Search",
+    reset: "Reset",
+    loadFailed: "Could not load the tour list. Please try again later.",
+    listAria: "Tour list",
+    emptyTitle: "No matching tours",
+    emptyDescription: "Change the city or keyword to see more itineraries.",
+    requestTime: "On request",
+    noTourImage: "No tour image yet",
+    freeExperience: "Free-form experience",
+    hasDeals: "Has deals",
+    itinerary: "Itinerary",
+    viewTour: "View tour",
+  },
+  ja: {
+    backHome: "ホームへ戻る",
+    title: "ナイトライフツアー一覧",
+    eyebrow: "TOUR DIRECTORY",
+    searchAria: "ツアーを検索",
+    searchPlaceholder: "ツアー、店舗、エリアを検索...",
+    cityAria: "都市を選択",
+    searchButton: "検索",
+    reset: "リセット",
+    loadFailed: "ツアー一覧を読み込めませんでした。後でもう一度お試しください。",
+    listAria: "ツアー一覧",
+    emptyTitle: "該当するツアーがありません",
+    emptyDescription: "都市またはキーワードを変更して、ほかの行程を確認してください。",
+    requestTime: "リクエスト制",
+    noTourImage: "ツアー画像はまだありません",
+    freeExperience: "自由体験",
+    hasDeals: "特典あり",
+    itinerary: "旅程",
+    viewTour: "ツアーを見る",
+  },
+  ko: {
+    backHome: "홈으로 돌아가기",
+    title: "나이트라이프 투어 목록",
+    eyebrow: "TOUR DIRECTORY",
+    searchAria: "투어 검색",
+    searchPlaceholder: "투어, 매장 또는 지역 검색...",
+    cityAria: "도시 선택",
+    searchButton: "검색",
+    reset: "초기화",
+    loadFailed: "투어 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    listAria: "투어 목록",
+    emptyTitle: "일치하는 투어가 없습니다",
+    emptyDescription: "도시 또는 키워드를 변경해 다른 일정을 확인하세요.",
+    requestTime: "요청 시",
+    noTourImage: "투어 이미지가 아직 없습니다",
+    freeExperience: "자유 체험",
+    hasDeals: "혜택 있음",
+    itinerary: "일정",
+    viewTour: "투어 보기",
+  },
+  zh: {
+    backHome: "返回首页",
+    title: "夜生活行程列表",
+    eyebrow: "TOUR DIRECTORY",
+    searchAria: "搜索行程",
+    searchPlaceholder: "搜索行程、店铺或区域...",
+    cityAria: "选择城市",
+    searchButton: "搜索",
+    reset: "重置",
+    loadFailed: "无法加载行程列表。请稍后重试。",
+    listAria: "行程列表",
+    emptyTitle: "没有匹配的行程",
+    emptyDescription: "更换城市或关键词以查看更多路线。",
+    requestTime: "按需求安排",
+    noTourImage: "暂无行程图片",
+    freeExperience: "自由体验",
+    hasDeals: "有优惠",
+    itinerary: "行程",
+    viewTour: "查看行程",
+  },
+};
+
+const getTourDirectoryCopy = (language: LanguageCode) =>
+  tourDirectoryCopy[language] ?? tourDirectoryCopy.vi;
 
 const formatTourCount = (count: number, language: LanguageCode) => {
   if (language === "en") return `${count} ${count === 1 ? "tour" : "tours"}`;
@@ -85,9 +202,6 @@ const priceTierLabel = (tier: number) =>
 
 const tourImage = (tour: PublicTour) =>
   tour.coverUrl || tour.stops.find((stop) => stop.store.media[0])?.store.media[0]?.url || emptyTourImage;
-
-const hasTourDeal = (tour: PublicTour) =>
-  tour.stops.some((stop) => stop.store.coupons.length > 0);
 
 const countTourCasts = (tour: PublicTour) =>
   tour.stops.reduce((sum, stop) => sum + stop.store.casts.length, 0);
@@ -117,8 +231,8 @@ const tourSearchText = (tour: PublicTour) =>
 
 export function TourClient() {
   const activeLanguage = useActiveLanguage();
+  const copy = getTourDirectoryCopy(activeLanguage);
   const [city, setCity] = useState<CityFilter>("all");
-  const [filter, setFilter] = useState<TourFilter>("all");
   const [query, setQuery] = useState("");
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [tours, setTours] = useState<PublicTour[]>([]);
@@ -147,7 +261,7 @@ export function TourClient() {
       .catch(() => {
         if (!cancelled) {
           setTours([]);
-          setError("Chưa tải được danh sách tour. Vui lòng thử lại sau.");
+          setError("loadFailed");
         }
       })
       .finally(() => {
@@ -164,21 +278,15 @@ export function TourClient() {
 
     return tours.filter((tour) => {
       const matchesQuery = !normalizedQuery || tourSearchText(tour).includes(normalizedQuery);
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "short" && tour.stops.length <= 3) ||
-        (filter === "deal" && hasTourDeal(tour)) ||
-        (filter === "premium" && tour.priceTier >= 3);
 
-      return matchesQuery && matchesFilter;
+      return matchesQuery;
     });
-  }, [filter, query, tours]);
+  }, [query, tours]);
 
-  const hasActiveFilter = city !== "all" || filter !== "all" || query.trim().length > 0;
+  const hasActiveFilter = city !== "all" || query.trim().length > 0;
 
-  const resetFilters = () => {
+  const resetSearchControls = () => {
     setCity("all");
-    setFilter("all");
     setQuery("");
     setCityMenuOpen(false);
   };
@@ -194,23 +302,23 @@ export function TourClient() {
 
       <div className="tour-directory-shell">
         <header className="tour-directory-header">
-          <Link href="/" aria-label={localize("Quay lại trang chủ", activeLanguage)} className="tour-directory-back">
+          <Link href="/" aria-label={copy.backHome} className="tour-directory-back">
             <ArrowLeft size={17} />
           </Link>
 
           <div className="tour-directory-title">
-            <h1>{localize("Danh sách tour nightlife", activeLanguage)}</h1>
-            <p>{localize("TOUR DIRECTORY", activeLanguage)}</p>
+            <h1>{copy.title}</h1>
+            <p>{copy.eyebrow}</p>
           </div>
         </header>
 
-        <section className="tour-search-controls" aria-label={localize("Tìm và lọc tour", activeLanguage)}>
+        <section className="tour-search-controls" aria-label={copy.searchAria}>
           <label className="tour-search-input">
             <Search size={18} />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={localize("Tìm tour, quán hoặc khu vực...", activeLanguage)}
+              placeholder={copy.searchPlaceholder}
               autoComplete="off"
             />
           </label>
@@ -226,7 +334,7 @@ export function TourClient() {
             <button
               type="button"
               className="tour-city-trigger"
-              aria-label={localize("Chọn thành phố", activeLanguage)}
+              aria-label={copy.cityAria}
               aria-haspopup="listbox"
               aria-expanded={isCityMenuOpen}
               onClick={() => setCityMenuOpen((current) => !current)}
@@ -237,7 +345,7 @@ export function TourClient() {
             </button>
 
             {isCityMenuOpen ? (
-              <div className="tour-city-menu" role="listbox" aria-label={localize("Chọn thành phố", activeLanguage)}>
+              <div className="tour-city-menu" role="listbox" aria-label={copy.cityAria}>
                 {cityOptions.map((option) => (
                   <button
                     key={option.id}
@@ -255,22 +363,9 @@ export function TourClient() {
           </div>
 
           <button type="button" className="tour-find-button">
-            {localize("Tìm", activeLanguage)}
+            {copy.searchButton}
           </button>
         </section>
-
-        <nav className="tour-chip-row hscroll" aria-label={localize("Bộ lọc tour", activeLanguage)}>
-          {filterOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`tour-chip ${filter === option.id ? "is-active" : ""}`}
-              onClick={() => setFilter(option.id)}
-            >
-              {localize(option.label, activeLanguage)}
-            </button>
-          ))}
-        </nav>
 
         <div className="tour-result-bar">
           <div>
@@ -279,15 +374,15 @@ export function TourClient() {
           </div>
 
           {hasActiveFilter ? (
-            <button type="button" onClick={resetFilters}>
-              {localize("Đặt lại", activeLanguage)}
+            <button type="button" onClick={resetSearchControls}>
+              {copy.reset}
             </button>
           ) : null}
         </div>
 
-        {error ? <div className="tour-error">{localize(error, activeLanguage)}</div> : null}
+        {error ? <div className="tour-error">{copy.loadFailed}</div> : null}
 
-        <section className="tour-list" aria-label={localize("Danh sách tour", activeLanguage)}>
+        <section className="tour-list" aria-label={copy.listAria}>
           {isLoading ? (
             <TourSkeletons />
           ) : visibleTours.length > 0 ? (
@@ -296,8 +391,8 @@ export function TourClient() {
             ))
           ) : (
             <div className="tour-empty">
-              <strong>{localize("Chưa có tour phù hợp", activeLanguage)}</strong>
-              <span>{localize("Đổi thành phố, từ khóa hoặc bộ lọc để xem thêm hành trình.", activeLanguage)}</span>
+              <strong>{copy.emptyTitle}</strong>
+              <span>{copy.emptyDescription}</span>
             </div>
           )}
         </section>
@@ -307,10 +402,11 @@ export function TourClient() {
 }
 
 function TourResultCard({ tour, language }: { tour: PublicTour; language: LanguageCode }) {
+  const copy = getTourDirectoryCopy(language);
   const stopCount = tour.stops.length;
   const castCount = countTourCasts(tour);
   const deal = tour.stops.find((stop) => stop.store.coupons[0])?.store.coupons[0];
-  const departureLabel = tour.departureTimes.slice(0, 2).join(", ") || localize("Theo yêu cầu", language);
+  const departureLabel = tour.departureTimes.slice(0, 2).join(", ") || copy.requestTime;
 
   return (
     <article className="tour-card">
@@ -318,7 +414,7 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
         <PlaceholderMedia
           src={tourImage(tour)}
           alt={tour.title}
-          label={localize("Chưa có ảnh tour", language)}
+          label={copy.noTourImage}
           className="tour-card-image"
         >
           <span className="tour-media-shade" />
@@ -354,7 +450,7 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
             </span>
             <span>
               <Sparkles size={14} />
-              {castCount ? formatCastCount(castCount, language) : localize("Trải nghiệm tự do", language)}
+              {castCount ? formatCastCount(castCount, language) : copy.freeExperience}
             </span>
           </div>
 
@@ -372,11 +468,10 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
         <div className="tour-card-side">
           <div>
             <Ticket size={17} />
-            <strong>{deal ? localize("Có ưu đãi", language) : localize("Theo lịch trình", language)}</strong>
-            <span>{localize("Admin xác nhận sau khi gửi yêu cầu", language)}</span>
+            <strong>{deal ? copy.hasDeals : copy.itinerary}</strong>
           </div>
           <Link href={`/tour/${tour.id}`}>
-            {localize("Xem tour", language)}
+            {copy.viewTour}
             <ChevronRight size={16} />
           </Link>
         </div>
@@ -636,41 +731,6 @@ const tourDirectoryCss = `
     font-size: 14px;
     font-weight: 950;
     cursor: pointer;
-  }
-
-  .tour-chip-row {
-    display: flex;
-    gap: 9px;
-    margin-top: 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tour-chip-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tour-chip {
-    min-height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    border: 1px solid var(--vy-border);
-    border-radius: 999px;
-    background: var(--vy-surface-1);
-    color: var(--vy-muted);
-    padding: 0 16px;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 850;
-    cursor: pointer;
-  }
-
-  .tour-chip.is-active {
-    border-color: var(--vy-border-gold-40);
-    background: var(--vy-gold-grad);
-    color: var(--vy-on-gold);
   }
 
   .tour-result-bar {
@@ -1104,18 +1164,6 @@ const tourDirectoryCss = `
 
     .tour-find-button {
       display: none;
-    }
-
-    .tour-chip-row {
-      gap: 7px;
-      margin: 8px -14px 0;
-      padding: 0 14px 2px;
-    }
-
-    .tour-chip {
-      min-height: 28px;
-      padding: 0 13px;
-      font-size: 10.5px;
     }
 
     .tour-result-bar {
