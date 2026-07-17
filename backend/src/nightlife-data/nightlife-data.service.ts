@@ -42,6 +42,7 @@ import { EmailNotificationService } from '../notifications/email-notification.se
 import { SocketGateway } from '../notifications/socket.gateway';
 import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildAdminDashboardReport } from './admin-dashboard-report';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -19961,56 +19962,124 @@ export class NightlifeDataService {
   }
 
   async getAdminDashboardExport(query: AdminDashboardQuery = {}) {
-    const ExcelJS = require('exceljs');
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Bao_Cao');
+    const reportRowLimit = 20_000;
+    const generatedAt = new Date();
+    const startDate = new Date(generatedAt);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 1);
+
+    if (query.timeframe === 'week') {
+      startDate.setDate(startDate.getDate() - 6);
+    } else if (query.timeframe === 'month') {
+      startDate.setDate(1);
+      endDate.setTime(startDate.getTime());
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
     const storeFilter = this.buildAdminDashboardStoreWhere(query);
     const scopedStoreRelation = storeFilter
       ? { store: { is: storeFilter } }
       : {};
-    let scheduledAtFilter: Prisma.DateTimeFilter | undefined;
 
-    if (query.timeframe) {
-      const startDate = new Date();
-      startDate.setHours(0, 0, 0, 0);
-
-      if (query.timeframe === 'week') {
-        startDate.setDate(startDate.getDate() - 7);
-      } else if (query.timeframe === 'month') {
-        startDate.setDate(1);
-      }
-
-      scheduledAtFilter = { gte: startDate };
-    }
-
-    sheet.columns = [
-      { header: 'Mã Booking', key: 'id', width: 20 },
-      { header: 'Số Khách', key: 'partySize', width: 15 },
-      { header: 'Trạng Thái', key: 'status', width: 20 },
-      { header: 'Thời Gian', key: 'time', width: 25 },
-    ];
-
-    const recentBookings = await this.prisma.booking
-      .findMany({
+    const [stores, bookingRows, billRows] = await Promise.all([
+      this.prisma.store.findMany({
+        where: {
+          ...(storeFilter ?? {}),
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          category: true,
+        },
+        orderBy: [{ city: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.booking.findMany({
         where: {
           ...scopedStoreRelation,
-          ...(scheduledAtFilter ? { scheduledAt: scheduledAtFilter } : {}),
+          deletedAt: null,
+          scheduledAt: { gte: startDate, lt: endDate },
         },
-        take: 100,
-        orderBy: { scheduledAt: 'desc' },
-      })
-      .catch(() => []);
-    for (const b of recentBookings) {
-      sheet.addRow({
-        id: b.id.substring(0, 8),
-        partySize: b.partySize || 1,
-        status: b.status,
-        time: b.scheduledAt,
-      });
-    }
+        select: {
+          id: true,
+          bookingCode: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          partySize: true,
+          subtotalVnd: true,
+          discountVnd: true,
+          totalVnd: true,
+          user: { select: { displayName: true } },
+          guest: { select: { displayName: true } },
+          store: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              category: true,
+            },
+          },
+          cast: { select: { stageName: true } },
+          coupon: { select: { code: true } },
+        },
+        take: reportRowLimit + 1,
+        orderBy: { scheduledAt: 'asc' },
+      }),
+      this.prisma.bill.findMany({
+        where: {
+          ...scopedStoreRelation,
+          deletedAt: null,
+          usedAt: { gte: startDate, lt: endDate },
+        },
+        select: {
+          id: true,
+          billNumber: true,
+          status: true,
+          usedAt: true,
+          createdAt: true,
+          subtotalVnd: true,
+          discountVnd: true,
+          serviceChargeVnd: true,
+          taxVnd: true,
+          totalVnd: true,
+          paidVnd: true,
+          commissionAmountVnd: true,
+          booking: { select: { bookingCode: true } },
+          user: { select: { displayName: true } },
+          guest: { select: { displayName: true } },
+          store: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              category: true,
+            },
+          },
+          coupon: { select: { code: true } },
+        },
+        take: reportRowLimit + 1,
+        orderBy: [{ usedAt: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    return buffer;
+    const bookingsTruncated = bookingRows.length > reportRowLimit;
+    const billsTruncated = billRows.length > reportRowLimit;
+
+    return buildAdminDashboardReport({
+      query,
+      generatedAt,
+      startDate,
+      endDate,
+      stores,
+      bookings: bookingRows.slice(0, reportRowLimit),
+      bills: billRows.slice(0, reportRowLimit),
+      bookingsTruncated,
+      billsTruncated,
+    });
   }
 
   async getAdminDashboardStats(query: AdminDashboardQuery = {}) {

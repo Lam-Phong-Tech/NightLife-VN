@@ -1912,10 +1912,15 @@ export class NightlifeDataController {
   ) {
     const buffer =
       await this.nightlifeDataService.getAdminDashboardExport(query);
+    const timeframe = ['today', 'week', 'month'].includes(query.timeframe || '')
+      ? query.timeframe
+      : 'today';
+    const exportDate = new Date().toISOString().slice(0, 10);
+    const filename = `bao_cao_nightlife_${timeframe}_${exportDate}.xlsx`;
     res.set({
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename=bao_cao.xlsx',
+      'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': buffer.byteLength,
     });
     res.send(buffer);
