@@ -39,6 +39,7 @@ type StorageUser = {
 };
 
 const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
+  'APPEARANCE_LOGO',
   'APPEARANCE_ICON',
   'BANNER_GLOBAL',
 ]);
