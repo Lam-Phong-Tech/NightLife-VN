@@ -783,7 +783,8 @@ function PartnerPageContent({
       .then((response) => response.json())
       .then((data) => {
         if (isMounted && Array.isArray(data)) {
-          setProvinces(normalizeAddressOptions(data));
+          const filtered = data.filter(p => String(p.code) === '1' || String(p.code) === '79');
+          setProvinces(normalizeAddressOptions(filtered));
         }
       })
       .catch(() => {

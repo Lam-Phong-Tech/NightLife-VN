@@ -57,7 +57,8 @@ export default function AdminDashboardPage() {
 function AdminDashboardContent() {
   const feedback = useSystemFeedback();
   const searchParams = useSearchParams();
-  const city = searchParams.get('city') || 'other';
+  const rawCity = searchParams.get('city') || '';
+  const city = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' ? rawCity : 'Hanoi';
   const category = searchParams.get('category') || '';
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [storageUsage, setStorageUsage] = useState<{ limit: number, used: number, percentage: number, isExceeded: boolean } | null>(null);

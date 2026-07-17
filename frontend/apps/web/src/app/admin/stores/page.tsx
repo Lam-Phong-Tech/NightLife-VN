@@ -284,7 +284,8 @@ function AdminStoresContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const filterCity = searchParams.get('city') || '';
+  const rawCity = searchParams.get('city') || '';
+  const filterCity = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' ? rawCity : 'Hanoi';
   const filterCategory = searchParams.get('category') || '';
   
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -372,7 +373,10 @@ function AdminStoresContent() {
     fetch('https://provinces.open-api.vn/api/v2/p/')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setProvinces(data);
+        if (Array.isArray(data)) {
+          const filtered = data.filter(p => String(p.code) === '1' || String(p.code) === '79');
+          setProvinces(filtered);
+        }
       })
       .catch(e => console.error(e));
   }, []);
@@ -929,9 +933,9 @@ function AdminStoresContent() {
   };
 
   const filteredStores = stores.filter((v: any) => {
+    if (v.area !== 'HN' && v.area !== 'HCM') return false;
     if (filterCity === 'Hanoi' && v.area !== 'HN') return false;
     if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM') return false;
-    if ((!filterCity || filterCity === 'other') && (v.area === 'HN' || v.area === 'HCM')) return false;
     
     if (filterCategory && v.category !== filterCategory) return false;
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;

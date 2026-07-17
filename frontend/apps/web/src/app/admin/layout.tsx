@@ -135,16 +135,15 @@ function TopRegionFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
-  const activeCity = city || 'other';
+  const activeCity = city === 'Hanoi' || city === 'Ho Chi Minh City' ? city : 'Hanoi';
   const [open, setOpen] = useState(false);
 
   const opts = [
     { v: 'Hanoi', label: 'Hà Nội', short: 'HN', sub: 'Các quán tại Hà Nội' },
-    { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' },
-    { v: 'other', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' }
+    { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' }
   ];
 
-  const curr = opts.find(o => o.v === activeCity) || opts[2]!;
+  const curr = opts.find(o => o.v === activeCity) || opts[0]!;
 
   return (
     <div style={{ position: 'relative' }}>

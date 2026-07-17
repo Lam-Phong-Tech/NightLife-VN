@@ -143,7 +143,8 @@ function AdminCastsContent() {
   };
 
   const searchParams = useSearchParams();
-  const filterCity = searchParams.get('city') || '';
+  const rawCity = searchParams.get('city') || '';
+  const filterCity = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' ? rawCity : 'Hanoi';
   const filterCategory = searchParams.get('category') || '';
 
   const filteredCasts = casts.filter(cast => {
@@ -167,9 +168,9 @@ function AdminCastsContent() {
         ? 'HN'
         : 'Tổng hợp';
 
+    if (storeArea !== 'HN' && storeArea !== 'HCM') return false;
     if (filterCity === 'Hanoi' && storeArea !== 'HN') return false;
     if (filterCity === 'Ho Chi Minh City' && storeArea !== 'HCM') return false;
-    if ((!filterCity || filterCity === 'other') && (storeArea === 'HN' || storeArea === 'HCM')) return false;
 
     // Lọc theo Category của Quán trực thuộc
     if (filterCategory && cast.store?.category !== filterCategory) return false;

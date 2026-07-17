@@ -1769,7 +1769,8 @@ export default function PartnerPage() {
       .then((response) => (response.ok ? response.json() : []))
       .then((data: VietnamProvince[]) => {
         if (Array.isArray(data)) {
-          setProvinces(data);
+          const filtered = data.filter(p => String(p.code) === '1' || String(p.code) === '79');
+          setProvinces(filtered);
         }
       })
       .catch(() => undefined);
