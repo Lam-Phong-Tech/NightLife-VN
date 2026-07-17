@@ -63,7 +63,6 @@ import {
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
-  sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import {
   getBookingDateAfterDays,
@@ -889,6 +888,27 @@ function BookingCard({
   onSubmit: () => void;
 }) {
   const bookingPriceText = priceRangeText(store);
+  const [guestCountDraft, setGuestCountDraft] = useState(String(guestCount));
+
+  useEffect(() => {
+    setGuestCountDraft(String(guestCount));
+  }, [guestCount]);
+
+  const commitGuestCountDraft = () => {
+    onFieldTouched("guestCount");
+    const draftValue = guestCountDraft.trim();
+    const normalizedDraftValue = draftValue.replace(/^0+(?=\d)/, "");
+    const parsedGuestCount =
+      normalizedDraftValue.length > String(maxBookingGuests).length
+        ? maxBookingGuests
+        : Number.parseInt(normalizedDraftValue, 10);
+    const nextGuestCount = draftValue
+      ? clampBookingGuestCount(parsedGuestCount)
+      : 1;
+
+    onGuestCountChange(nextGuestCount);
+    setGuestCountDraft(String(nextGuestCount));
+  };
 
   return (
     <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
@@ -982,16 +1002,16 @@ function BookingCard({
                     inputMode="numeric"
                     pattern="[0-9]*"
                     name={storeBookingFieldNames.guestCount}
-                    value={String(guestCount)}
-                    style={{ width: `${String(guestCount).length}ch` }}
-                    onBlur={() => onFieldTouched("guestCount")}
+                    value={guestCountDraft}
+                    style={{ width: `${Math.max(1, guestCountDraft.length)}ch` }}
+                    onBlur={commitGuestCountDraft}
                     onKeyDown={(event) => {
                       if (event.ctrlKey || event.metaKey || event.altKey) return;
                       if (event.key.length === 1 && !/\d/.test(event.key)) event.preventDefault();
                     }}
                     onChange={(event) => {
                       onFieldTouched("guestCount");
-                      onGuestCountChange(sanitizeBookingGuestCountInput(event.target.value));
+                      setGuestCountDraft(event.target.value.replace(/\D/g, ""));
                     }}
                     aria-label={translateText("Số người", activeLanguage)}
                   />
