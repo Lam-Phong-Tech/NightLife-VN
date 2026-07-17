@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Heart,
   History,
@@ -176,6 +177,7 @@ const categoryTags: Record<string, string[]> = {
 
 const recentVenueSearches = ["Tokyo Kitchen", "Spa Tây Hồ", "Bar Hoàn Kiếm"];
 const popularVenueKeywords = ["Top ranking", "Có ưu đãi", "Lounge", "Nhà hàng"];
+const venueItemsPerPage = 8;
 
 const venueCopyVi: VenueSearchCopy = {
   all: "Tất cả",
@@ -593,6 +595,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [openingClock, setOpeningClock] = useState(() => Date.now());
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
@@ -1006,6 +1009,12 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
   const suggestions = useMemo(() => venues.slice(0, 4), [venues]);
+  const totalPages = Math.max(1, Math.ceil(venues.length / venueItemsPerPage));
+  const currentPageStart = (currentPage - 1) * venueItemsPerPage;
+  const pagedVenues = useMemo(
+    () => venues.slice(currentPageStart, currentPageStart + venueItemsPerPage),
+    [currentPageStart, venues],
+  );
   const showSuggestions = isSearchFocused && query.trim().length > 0;
   const pageTitle = fixedCategory
     ? formatCategoryVenueSearchTitle(fixedCategory, cityLabel, activeLanguage)
@@ -1017,6 +1026,16 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     ? getCategoryVenueSubtitle(fixedCategory, activeLanguage)
     : copy.subtitleDesktop;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [area, city, effectiveCategory, hasActiveCoupon, query, sort, topRankingOnly]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const resetFilters = () => {
     setCity("hn");
     setArea("");
@@ -1024,6 +1043,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setSort("priority");
     setHasActiveCoupon(false);
     setTopRankingOnly(false);
+    setCurrentPage(1);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
   };
@@ -1316,7 +1336,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           {isResultsLoading ? (
             <VenueSkeletons />
           ) : venues.length > 0 ? (
-            venues.map((venue) => (
+            pagedVenues.map((venue) => (
               <VenueResultCard
                 key={venue.id}
                 venue={venue}
@@ -1332,6 +1352,14 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             </div>
           )}
         </section>
+        {!isResultsLoading && venues.length > venueItemsPerPage ? (
+          <VenuePagination
+            currentPage={currentPage}
+            language={activeLanguage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        ) : null}
       </div>
 
       {isFilterSheetOpen ? (
@@ -1422,6 +1450,58 @@ function LocationPermissionDialog({
   );
 
   return createPortal(dialog, document.body);
+}
+
+function VenuePagination({
+  currentPage,
+  language,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  language: LanguageCode;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pageLabel = translateText("Trang", language);
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <nav className="venue-pagination" aria-label={translateText("Phân trang", language)}>
+      <button
+        type="button"
+        aria-label={translateText("Trang trước", language)}
+        disabled={currentPage <= 1}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+      >
+        <ChevronLeft size={15} />
+      </button>
+      <span>
+        {pageLabel} {currentPage} / {totalPages}
+      </span>
+      <div>
+        {pages.map((page) => (
+          <button
+            key={page}
+            type="button"
+            aria-current={page === currentPage ? "page" : undefined}
+            className={page === currentPage ? "is-active" : ""}
+            onClick={() => onPageChange(page)}
+          >
+            {page}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        aria-label={translateText("Trang sau", language)}
+        disabled={currentPage >= totalPages}
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+      >
+        <ChevronRight size={15} />
+      </button>
+    </nav>
+  );
 }
 
 function VenueSearchSuggestions({
@@ -2587,6 +2667,58 @@ const venueSearchCss = `
     margin-top: 14px;
   }
 
+  .venue-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 22px;
+    color: var(--vy-muted);
+  }
+
+  .venue-pagination > span {
+    min-width: 88px;
+    color: var(--vy-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .venue-pagination > div {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .venue-pagination button {
+    min-width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 12px;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
+    font-family: var(--nl-font-sans);
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  .venue-pagination button:hover:not(:disabled),
+  .venue-pagination button:focus-visible,
+  .venue-pagination button.is-active {
+    border-color: rgba(244, 227, 180, .72);
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: var(--vy-on-gold);
+    outline: 0;
+  }
+
+  .venue-pagination button:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+  }
+
   .venue-card {
     min-height: 168px;
     display: grid;
@@ -3293,6 +3425,25 @@ const venueSearchCss = `
     color: #7b591f;
   }
 
+  html.vy-light .venue-pagination,
+  html.vy-light .venue-pagination > span {
+    color: #7a7164;
+  }
+
+  html.vy-light .venue-pagination button {
+    border-color: rgba(150, 116, 52, .22);
+    background: rgba(255, 255, 255, .76);
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-pagination button:hover:not(:disabled),
+  html.vy-light .venue-pagination button:focus-visible,
+  html.vy-light .venue-pagination button.is-active {
+    border-color: rgba(150, 116, 52, .42);
+    background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
+    color: #241a0a;
+  }
+
   html.vy-light .venue-suggestions {
     border-color: rgba(150, 116, 52, .24);
     background: #fffaf1;
@@ -3614,6 +3765,38 @@ const venueSearchCss = `
     .venue-skeleton-stack {
       gap: 10px;
       margin-top: 7px;
+    }
+
+    .venue-pagination {
+      justify-content: flex-start;
+      gap: 8px;
+      margin-top: 14px;
+      overflow-x: auto;
+      padding: 0 14px 2px;
+      scrollbar-width: none;
+    }
+
+    .venue-pagination::-webkit-scrollbar {
+      display: none;
+    }
+
+    .venue-pagination > span {
+      min-width: auto;
+      flex: none;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .venue-pagination > div {
+      flex: none;
+      gap: 6px;
+    }
+
+    .venue-pagination button {
+      min-width: 31px;
+      height: 31px;
+      border-radius: 10px;
+      font-size: 11px;
     }
 
     .venue-card {

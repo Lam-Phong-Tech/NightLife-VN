@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Heart,
   History,
@@ -151,6 +152,7 @@ const ageRangeMin = 20;
 const ageRangeMax = 40;
 const ageRangeStep = 1;
 const defaultAgeRange: AgeRange = { min: ageRangeMin, max: ageRangeMax };
+const castItemsPerPage = 8;
 
 const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
@@ -424,6 +426,7 @@ export default function Page() {
   const [topRankingCastSlugs, setTopRankingCastSlugs] = useState<string[]>([]);
   const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
@@ -680,6 +683,12 @@ export default function Page() {
   }, [ageRange, casts, query, storeSlug, topRankingOnly, topRankingOrder]);
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
+  const totalPages = Math.max(1, Math.ceil(visibleCasts.length / castItemsPerPage));
+  const currentPageStart = (currentPage - 1) * castItemsPerPage;
+  const pagedCasts = useMemo(
+    () => visibleCasts.slice(currentPageStart, currentPageStart + castItemsPerPage),
+    [currentPageStart, visibleCasts],
+  );
   const cityLabel = getCastCityLabel(city, activeLanguage);
   const localizedCityOptions = useMemo(
     () => cityOptions.map((option) => localizeCastOption(option, activeLanguage, copy)),
@@ -719,6 +728,27 @@ export default function Page() {
   const isResultsLoading = isLoading || isTopRankingLoading;
   const showSuggestions = isSearchFocused && query.trim().length > 0;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    ageRange,
+    area,
+    category,
+    city,
+    hasActiveCoupon,
+    language,
+    query,
+    sort,
+    storeSlug,
+    topRankingOnly,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const resetFilters = () => {
     setArea("");
     setCategory("");
@@ -728,6 +758,7 @@ export default function Page() {
     setTopRankingOnly(false);
     setHasActiveCoupon(false);
     setSort("newest");
+    setCurrentPage(1);
   };
 
   const handleCityChange = (nextCity: string) => {
@@ -1018,11 +1049,11 @@ export default function Page() {
             <LoadingSkeleton />
           ) : visibleCasts.length > 0 ? (
             <div className="cast-card-grid">
-              {visibleCasts.map((cast, index) => (
+              {pagedCasts.map((cast, index) => (
                 <CastDiscoveryCard
                   key={cast.id}
                   cast={cast}
-                  index={index}
+                  index={currentPageStart + index}
                   language={activeLanguage}
                   isFavorite={favoriteCastSlugs.includes(cast.slug)}
                   onToggleFavorite={() => void toggleCastFavorite(cast)}
@@ -1032,6 +1063,14 @@ export default function Page() {
           ) : (
             <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
           )}
+          {!isResultsLoading && visibleCasts.length > castItemsPerPage ? (
+            <CastPagination
+              currentPage={currentPage}
+              language={activeLanguage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          ) : null}
         </section>
       </div>
 
@@ -1074,6 +1113,58 @@ export default function Page() {
         />
       ) : null}
     </main>
+  );
+}
+
+function CastPagination({
+  currentPage,
+  language,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  language: LanguageCode;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pageLabel = translateText("Trang", language);
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <nav className="cast-pagination" aria-label={translateText("Phân trang", language)}>
+      <button
+        type="button"
+        aria-label={translateText("Trang trước", language)}
+        disabled={currentPage <= 1}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+      >
+        <ChevronLeft size={15} />
+      </button>
+      <span>
+        {pageLabel} {currentPage} / {totalPages}
+      </span>
+      <div>
+        {pages.map((page) => (
+          <button
+            key={page}
+            type="button"
+            aria-current={page === currentPage ? "page" : undefined}
+            className={page === currentPage ? "is-active" : ""}
+            onClick={() => onPageChange(page)}
+          >
+            {page}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        aria-label={translateText("Trang sau", language)}
+        disabled={currentPage >= totalPages}
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+      >
+        <ChevronRight size={15} />
+      </button>
+    </nav>
   );
 }
 
@@ -1971,6 +2062,58 @@ const castSearchCss = `
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.cast-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  color: var(--vy-muted);
+}
+
+.cast-pagination > span {
+  min-width: 88px;
+  color: var(--vy-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.cast-pagination > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cast-pagination button {
+  min-width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(212, 178, 106, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--vy-muted);
+  font-family: var(--nl-font-sans);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.cast-pagination button:hover:not(:disabled),
+.cast-pagination button:focus-visible,
+.cast-pagination button.is-active {
+  border-color: rgba(212, 178, 106, 0.48);
+  background: linear-gradient(135deg, #f0dda8, #d4b26a);
+  color: var(--vy-on-gold);
+  outline: 0;
+}
+
+.cast-pagination button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
 }
 
 .cast-card-wrap {
@@ -2891,6 +3034,25 @@ html.vy-light .cast-input-clear {
   color: #7a705f;
 }
 
+html.vy-light .cast-pagination,
+html.vy-light .cast-pagination > span {
+  color: #7a7164;
+}
+
+html.vy-light .cast-pagination button {
+  border-color: rgba(150, 116, 52, 0.22);
+  background: rgba(255, 255, 255, 0.76);
+  color: #6f6658;
+}
+
+html.vy-light .cast-pagination button:hover:not(:disabled),
+html.vy-light .cast-pagination button:focus-visible,
+html.vy-light .cast-pagination button.is-active {
+  border-color: rgba(150, 116, 52, 0.42);
+  background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
+  color: #241a0a;
+}
+
 html.vy-light .cast-round-icon {
   border-color: rgba(150, 116, 52, 0.24);
   background: rgba(255, 255, 255, 0.86);
@@ -3187,6 +3349,38 @@ html.vy-light .cast-sheet-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     padding: 0 16px;
+  }
+
+  .cast-pagination {
+    justify-content: flex-start;
+    gap: 8px;
+    margin: 14px 16px 0;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .cast-pagination::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cast-pagination > span {
+    min-width: auto;
+    flex: none;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .cast-pagination > div {
+    flex: none;
+    gap: 6px;
+  }
+
+  .cast-pagination button {
+    min-width: 31px;
+    height: 31px;
+    border-radius: 10px;
+    font-size: 11px;
   }
 
   .cast-card {
