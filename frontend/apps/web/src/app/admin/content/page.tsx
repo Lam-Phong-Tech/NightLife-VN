@@ -252,20 +252,27 @@ export default function AdminContentPage() {
     const swapRank = swapItem.pinRank || (direction === 'up' ? index : index + 2);
 
     try {
-      await Promise.all([
-        adminRankingsApi.update(currentItem.id, {
-          targetType: 'STORE',
-          targetId: currentItem.targetId,
-          cityCode: currentItem.cityCode,
-          pinRank: swapRank
-        }),
-        adminRankingsApi.update(swapItem.id, {
-          targetType: 'STORE',
-          targetId: swapItem.targetId,
-          cityCode: swapItem.cityCode,
-          pinRank: currentRank
-        })
-      ]);
+      await adminRankingsApi.update(swapItem.id, {
+        targetType: 'STORE',
+        targetId: swapItem.targetId,
+        cityCode: swapItem.cityCode,
+        pinRank: null
+      });
+
+      await adminRankingsApi.update(currentItem.id, {
+        targetType: 'STORE',
+        targetId: currentItem.targetId,
+        cityCode: currentItem.cityCode,
+        pinRank: swapRank
+      });
+
+      await adminRankingsApi.update(swapItem.id, {
+        targetType: 'STORE',
+        targetId: swapItem.targetId,
+        cityCode: swapItem.cityCode,
+        pinRank: currentRank
+      });
+
       await fetchFeaturedItems();
     } catch (err) {
       console.error(err);

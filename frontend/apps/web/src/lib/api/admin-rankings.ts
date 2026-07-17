@@ -98,7 +98,7 @@ export const adminRankingsApi = {
 function normalizePayload(payload: AdminRankingFormPayload) {
   const result: any = { ...payload };
   if (result.category === "all") delete result.category;
-  if (!result.pinRank) delete result.pinRank;
+  if (result.pinRank === undefined || result.pinRank === 0) delete result.pinRank;
   if (!result.startsAt) delete result.startsAt;
   if (!result.endsAt) delete result.endsAt;
   return result;
