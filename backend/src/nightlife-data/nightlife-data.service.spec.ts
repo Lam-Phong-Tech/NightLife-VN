@@ -95,6 +95,7 @@ describe('NightlifeDataService', () => {
     },
     content: {
       create: jest.fn(),
+      upsert: jest.fn(),
       count: jest.fn(),
       updateMany: jest.fn(),
       findFirst: jest.fn(),
@@ -310,6 +311,18 @@ describe('NightlifeDataService', () => {
     prisma.media.findMany.mockResolvedValue([] as never);
     prisma.media.updateMany.mockResolvedValue({ count: 1 });
     prisma.content.create.mockResolvedValue({ id: 'content-draft-1' });
+    prisma.content.upsert.mockResolvedValue({
+      id: 'content-draft-1',
+      title: 'Partner listing draft',
+      slug: 'partner-listing-draft-store-a',
+      status: 'DRAFT',
+      excerpt: null,
+      body: null,
+      metadata: {},
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+      publishedAt: null,
+    });
     prisma.content.updateMany.mockResolvedValue({ count: 1 });
     prisma.content.findFirst.mockResolvedValue(null);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
@@ -722,6 +735,42 @@ describe('NightlifeDataService', () => {
           name: 'Meo Meo',
           areaId: 'area-ninhbinh-general',
         }),
+      }),
+    );
+  });
+
+  it('returns the canonical ward for the admin store editor', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-ward-1',
+        name: 'Ward Club',
+        category: 'CLUB',
+        city: 'Ho Chi Minh City',
+        address: '22 Nguyen Hue, Phuong Sai Gon, Ho Chi Minh City',
+        status: 'ACTIVE',
+        deletedAt: null,
+        partnerAccountId: null,
+        partnerAccount: null,
+        area: {
+          id: 'area-sai-gon',
+          ward: 'Phuong Sai Gon',
+        },
+        media: [],
+        _count: { casts: 0 },
+      },
+    ] as never);
+    prisma.store.count.mockResolvedValueOnce(1);
+
+    await expect(
+      service.listAdminStores({ page: 1, limit: 10 }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            id: 'store-ward-1',
+            ward: 'Phuong Sai Gon',
+          }),
+        ],
       }),
     );
   });
@@ -3606,6 +3655,57 @@ describe('NightlifeDataService', () => {
           ward: 'Xã Ngọc Đường',
           streetAddress: '123 Nguyen Hue',
           storeAddress: '123 Nguyen Hue, Xã Ngọc Đường, Tỉnh Tuyên Quang',
+        }),
+      }),
+    );
+  });
+
+  it('normalizes the partner ward into the canonical store address', async () => {
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Partner A Store',
+      slug: 'partner-a-store',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Night club',
+      address: '123 Nguyen Hue, Ben Nghe, Quan 1, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0978654578',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: [],
+      partnerAccountId: null,
+      ownerId: null,
+      media: [],
+      casts: [],
+    });
+    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
+
+    await service.savePartnerListingDraft(
+      { id: 'partner-a', role: 'PARTNER' },
+      '11111111-1111-4111-8111-111111111111',
+      {
+        storeName: 'Partner A Store',
+        storeCity: 'Ho Chi Minh City',
+        storeDistrict: 'Quan 1',
+        ward: 'Phuong Sai Gon',
+        streetAddress: '123 Nguyen Hue',
+      },
+    );
+
+    expect(prisma.content.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          metadata: expect.objectContaining({
+            listing: expect.objectContaining({
+              ward: 'Phuong Sai Gon',
+              streetAddress: '123 Nguyen Hue',
+              storeAddress:
+                '123 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
+            }),
+          }),
         }),
       }),
     );
@@ -6511,6 +6611,7 @@ describe('NightlifeDataService', () => {
     ).resolves.toEqual([
       expect.objectContaining({
         id: 'PARTNER-ABC12345',
+        requestType: 'NEW_PARTNER',
         notificationId: 'notification-1',
         notificationStatus: 'SENT',
         status: 'PENDING_REVIEW',
@@ -6538,6 +6639,26 @@ describe('NightlifeDataService', () => {
         take: 10,
       }),
     );
+  });
+
+  it('marks listing edit requests separately from new partner registrations', async () => {
+    prisma.partnerRequest.findMany.mockResolvedValue([
+      partnerRequestRecord({
+        id: 'LISTING-ABC12345',
+      }),
+    ] as never);
+
+    await expect(
+      service.listAdminPartnerRequests({
+        page: 1,
+        limit: 10,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: 'LISTING-ABC12345',
+        requestType: 'LISTING_UPDATE',
+      }),
+    ]);
   });
 
   it('approves a partner request transactionally, publishes drafts, and onboards the partner account', async () => {
@@ -6682,6 +6803,140 @@ describe('NightlifeDataService', () => {
         publicState: 'PUBLIC',
         partnerUserId: 'partner-user-1',
         partnerAccountId: 'partner-account-1',
+      }),
+    );
+  });
+
+  it('blocks approval when a listing update contains corrupted text', async () => {
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord({
+        id: 'LISTING-CORRUPT1',
+        businessName: '???????? - Velvet Club',
+        storeDescription: '???? One of Saigon largest clubs',
+      }) as never,
+    );
+
+    await expect(
+      service.reviewPartnerRequest('admin-1', 'LISTING-CORRUPT1', {
+        approve: true,
+        reason: 'Thong tin hop le',
+      }),
+    ).rejects.toThrow(
+      'Partner listing update contains corrupted text and must be submitted again',
+    );
+
+    expect(prisma.partnerRequest.updateMany).not.toHaveBeenCalled();
+    expect(prisma.store.update).not.toHaveBeenCalled();
+  });
+
+  it('syncs an approved listing ward to the store address and area', async () => {
+    const listingStore = {
+      id: 'store-draft-1',
+      name: 'Old Club',
+      slug: 'old-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      mapUrl: null,
+      description: 'Old description',
+      address: '10 Old Street, Ben Nghe, Quan 1, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      tags: [],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-user-1',
+      media: [],
+      casts: [],
+    };
+    const pendingListing = partnerRequestRecord({
+      id: 'LISTING-WARD1234',
+      partnerUserId: 'partner-user-1',
+      partnerAccountId: 'partner-account-1',
+      draftCastIds: [],
+      draftMediaIds: [],
+      draftContentIds: ['content-draft-1'],
+      store: listingStore,
+    });
+    prisma.partnerRequest.findFirst.mockResolvedValue(pendingListing as never);
+    prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
+      partnerRequestRecord({
+        ...pendingListing,
+        status: 'APPROVED',
+        reviewReason: 'Thong tin hop le',
+        reviewedAt: new Date('2026-06-30T10:05:00.000Z'),
+        reviewedById: 'admin-1',
+        publicState: 'PUBLIC',
+        store: { ...listingStore, status: 'ACTIVE' },
+      }) as never,
+    );
+    prisma.content.findFirst.mockResolvedValue({
+      id: 'content-draft-1',
+      title: 'New Club listing draft',
+      slug: 'partner-listing-draft-store-draft-1',
+      status: 'DRAFT',
+      excerpt: null,
+      body: null,
+      metadata: {
+        kind: 'PARTNER_LISTING_DRAFT',
+        version: 1,
+        listing: {
+          storeName: 'New Club',
+          storeCategory: 'CLUB',
+          storeCity: 'Ho Chi Minh City',
+          storeDistrict: 'Quan 1',
+          ward: 'Phuong Sai Gon',
+          streetAddress: '22 Nguyen Hue',
+          storeAddress:
+            '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
+        },
+      },
+      createdAt: new Date('2026-06-30T10:00:00.000Z'),
+      updatedAt: new Date('2026-06-30T10:00:00.000Z'),
+      publishedAt: null,
+    } as never);
+    prisma.store.findUnique.mockResolvedValue(listingStore as never);
+    prisma.area.findMany.mockResolvedValue([
+      {
+        id: 'area-sai-gon',
+        code: 'hcm-sai-gon',
+        name: 'Sai Gon',
+        city: 'Ho Chi Minh City',
+        district: 'Quan 1',
+        ward: 'Phuong Sai Gon',
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      {
+        id: 'area-ben-nghe',
+        code: 'hcm-ben-nghe',
+        name: 'Ben Nghe',
+        city: 'Ho Chi Minh City',
+        district: 'Quan 1',
+        ward: 'Ben Nghe',
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    ] as never);
+
+    await service.reviewPartnerRequest('admin-1', 'LISTING-WARD1234', {
+      approve: true,
+      reason: 'Thong tin hop le',
+    });
+
+    expect(prisma.store.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'store-draft-1' },
+        data: expect.objectContaining({
+          name: 'New Club',
+          address:
+            '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
+          city: 'Ho Chi Minh City',
+          district: 'Quan 1',
+          areaId: 'area-sai-gon',
+          status: 'ACTIVE',
+        }),
       }),
     );
   });

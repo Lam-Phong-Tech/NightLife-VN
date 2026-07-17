@@ -23,6 +23,29 @@ const getStatusMeta = (status: string) => {
   return { label: status, style: 'muted' };
 };
 
+const normalizeLocationName = (value?: string | null) =>
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/\b(thanh pho|tinh|tp|phuong|xa|thi tran)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const locationNamesMatch = (first?: string | null, second?: string | null) => {
+  const firstToken = normalizeLocationName(first);
+  const secondToken = normalizeLocationName(second);
+  return Boolean(
+    firstToken &&
+      secondToken &&
+      (firstToken === secondToken ||
+        firstToken.includes(secondToken) ||
+        secondToken.includes(firstToken)),
+  );
+};
+
 const getChipStyle = (kind: string) => {
   const m: Record<string, string[]> = {
     success: ['rgba(95,191,134,.1)', 'rgba(95,191,134,.28)', '#7fd3a2'],
@@ -416,7 +439,14 @@ function AdminStoresContent() {
   useEffect(() => {
     if (pendingAddress && wards.length > 0 && selProvince) {
       const p = provinces.find(x => x.code.toString() === selProvince);
-      const w = wards.find(x => pendingAddress.includes(x.name));
+      const selectedStore = stores.find((store) => store.id === venueSel);
+      const storedWard = selectedStore?.ward;
+      const normalizedAddress = normalizeLocationName(pendingAddress);
+      const w = wards.find(
+        (item) =>
+          locationNamesMatch(item.name, storedWard) ||
+          normalizedAddress.includes(normalizeLocationName(item.name)),
+      );
       
       let street = pendingAddress;
       if (p) {
@@ -425,7 +455,16 @@ function AdminStoresContent() {
       
       if (w) {
         setSelWard(w.code.toString());
-        street = street.replace(new RegExp(`,?\\s*${w.name}$`), '').trim();
+        street = street
+          .split(',')
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .filter(
+            (part) =>
+              !locationNamesMatch(part, w.name) &&
+              !locationNamesMatch(part, selectedStore?.city),
+          )
+          .join(', ');
       } else {
         setSelWard('');
       }
@@ -433,7 +472,7 @@ function AdminStoresContent() {
       setStreetAddress(street);
       setPendingAddress('');
     }
-  }, [wards, pendingAddress, selProvince, provinces]);
+  }, [wards, pendingAddress, selProvince, provinces, stores, venueSel]);
 
   // Clear slug status when typing
   useEffect(() => {
@@ -525,7 +564,13 @@ function AdminStoresContent() {
     setPartnerLinkEditing(false);
     
     const fullAddress = st.address || '';
-    const matchedProv = provinces.find(p => fullAddress.includes(p.name));
+    const matchedProv = provinces.find(
+      (province) =>
+        locationNamesMatch(province.name, st.city) ||
+        normalizeLocationName(fullAddress).includes(
+          normalizeLocationName(province.name),
+        ),
+    );
     if (matchedProv) {
       setSelProvince(matchedProv.code.toString());
       setPendingAddress(fullAddress);

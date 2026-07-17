@@ -7437,6 +7437,16 @@ export class NightlifeDataService {
         throw new NotFoundException('Partner request not found');
       }
 
+      if (
+        dto.approve &&
+        request.id.startsWith('LISTING-') &&
+        this.hasPartnerRequestEncodingCorruption(request)
+      ) {
+        throw new UnprocessableEntityException(
+          'Partner listing update contains corrupted text and must be submitted again',
+        );
+      }
+
       const statusUpdate = await tx.partnerRequest.updateMany({
         where: { id: request.id, status: 'PENDING_REVIEW' },
         data: {
@@ -16312,12 +16322,7 @@ export class NightlifeDataService {
     const pricingRecord = this.asRecord(store.pricingInfo);
     const storeArea = [store.district, store.city].filter(Boolean).join(', ');
     const draftStoreAddress = this.cleanNullableText(dto.storeAddress);
-    const dtoWard =
-      this.cleanNullableText(dto.ward) ??
-      this.cleanNullableText(
-        (dto as Partial<PartnerListingDraftDto> & { wardName?: string })
-          .wardName,
-      );
+    const dtoWard = this.cleanNullableText(dto.ward);
     const storeWard =
       dtoWard ??
       this.extractWardFromStoreAddress(draftStoreAddress) ??
@@ -16419,9 +16424,36 @@ export class NightlifeDataService {
       .filter((url): url is string => Boolean(url))
       .filter((url, index, list) => list.indexOf(url) === index)
       .slice(0, 20);
-    const composedStoreAddress = draftStreetAddress
-      ? [draftStreetAddress, storeWard].filter(Boolean).join(', ')
-      : '';
+    const requestedStoreCity =
+      this.cleanNullableText(dto.storeCity) ?? store.city;
+    const requestedStoreDistrict =
+      this.cleanNullableText(dto.storeDistrict) ?? store.district;
+    const hasExplicitAddressParts =
+      dto.streetAddress !== undefined ||
+      dto.ward !== undefined ||
+      dto.storeCity !== undefined ||
+      dto.storeDistrict !== undefined;
+    const resolvedStreetAddress =
+      draftStreetAddress ??
+      draftAddressStreet ??
+      storeStreetAddress ??
+      draftStoreAddress ??
+      store.address;
+    const composedStoreAddress = [
+      resolvedStreetAddress,
+      storeWard,
+      requestedStoreDistrict,
+      requestedStoreCity,
+    ]
+      .filter((part): part is string => Boolean(part))
+      .filter(
+        (part, index, parts) =>
+          parts.findIndex(
+            (candidate) =>
+              this.normalizeToken(candidate) === this.normalizeToken(part),
+          ) === index,
+      )
+      .join(', ');
 
     return {
       storeName:
@@ -16431,18 +16463,13 @@ export class NightlifeDataService {
       storeCategory:
         this.cleanNullableText(dto.storeCategory) ?? store.category,
       area: this.cleanNullableText(dto.area) ?? (storeArea || null),
-      storeCity: this.cleanNullableText(dto.storeCity) ?? store.city,
-      storeDistrict:
-        this.cleanNullableText(dto.storeDistrict) ?? store.district,
+      storeCity: requestedStoreCity,
+      storeDistrict: requestedStoreDistrict,
       ward: storeWard,
-      streetAddress:
-        draftStreetAddress ??
-        draftAddressStreet ??
-        storeStreetAddress ??
-        draftStoreAddress ??
-        store.address,
-      storeAddress:
-        draftStoreAddress ?? (composedStoreAddress || store.address),
+      streetAddress: resolvedStreetAddress,
+      storeAddress: hasExplicitAddressParts
+        ? composedStoreAddress || draftStoreAddress || store.address
+        : draftStoreAddress ?? (composedStoreAddress || store.address),
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours: this.partnerListingOpeningHoursSummary(
         openingHourItems,
@@ -16667,6 +16694,12 @@ export class NightlifeDataService {
     if (payload.storeAddress !== null) data.address = payload.storeAddress;
     if (payload.storeCity !== null) data.city = payload.storeCity;
     if (payload.storeDistrict !== null) data.district = payload.storeDistrict;
+    const inferredAreaId = await this.inferAreaFromAddress(
+      payload.storeAddress ?? store.address ?? '',
+      payload.storeCity ?? store.city,
+      client,
+    );
+    if (inferredAreaId) data.areaId = inferredAreaId;
     if (payload.phone !== null) data.phone = payload.phone;
     if (payload.mapUrl !== null) data.mapUrl = payload.mapUrl;
     data.tags = payload.tags;
@@ -16967,6 +17000,9 @@ export class NightlifeDataService {
   private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
     return {
       id: request.id,
+      requestType: request.id.startsWith('LISTING-')
+        ? 'LISTING_UPDATE'
+        : 'NEW_PARTNER',
       notificationId: request.notificationLog?.id ?? null,
       notificationStatus: request.notificationLog?.status ?? null,
       notificationError: request.notificationLog?.error ?? null,
@@ -17027,6 +17063,25 @@ export class NightlifeDataService {
           }
         : null,
     };
+  }
+
+  private hasPartnerRequestEncodingCorruption(
+    request: PartnerRequestCmsRecord,
+  ) {
+    return [
+      request.businessName,
+      request.storeDescription,
+      request.storeAddress,
+      request.storeCity,
+      request.storeDistrict,
+    ].some((value) => {
+      const text = value?.trim() ?? '';
+      const questionMarks = text.match(/\?/g)?.length ?? 0;
+      return (
+        questionMarks >= 3 &&
+        questionMarks / Math.max(text.length, 1) >= 0.08
+      );
+    });
   }
 
   private async ensurePartnerOnboarding(
@@ -20374,6 +20429,7 @@ export class NightlifeDataService {
         include: {
           _count: { select: { casts: true } },
           media: true,
+          area: true,
           partnerAccount: {
             include: {
               user: {
@@ -20405,6 +20461,9 @@ export class NightlifeDataService {
         initials: store.name.substring(0, 2).toUpperCase(),
         name: store.name,
         address: store.address || '',
+        ward:
+          store.area?.ward ??
+          this.extractWardFromStoreAddress(store.address),
         type: typeLabel,
         area:
           store.city === 'Ho Chi Minh City' ||
@@ -20713,6 +20772,7 @@ export class NightlifeDataService {
   private async inferAreaFromAddress(
     address: string,
     city: string,
+    client: NightlifePrismaClient = this.prisma,
   ): Promise<string | undefined> {
     const provinceArea = resolveVietnamProvinceArea(city);
     const cityNames = vietnamAreaCityLookupNames(city);
@@ -20726,7 +20786,7 @@ export class NightlifeDataService {
       : { city: { in: cityNames } };
 
     // A simple inference: look for matching district names in the address
-    const areas = await this.prisma.area.findMany({
+    const areas = await client.area.findMany({
       where: {
         status: 'ACTIVE',
         deletedAt: null,
@@ -20736,9 +20796,19 @@ export class NightlifeDataService {
 
     // Find an area where its district name is mentioned in the address
     // e.g. "Tây Hồ", "Hoàn Kiếm", "Quận 1"
-    const lowerAddr = address.toLowerCase();
+    const addressToken = this.normalizeToken(address);
+    const wardArea = areas.find(
+      (area) =>
+        area.ward &&
+        addressToken.includes(this.normalizeToken(area.ward)),
+    );
+    if (wardArea) return wardArea.id;
+
     for (const area of areas) {
-      if (area.district && lowerAddr.includes(area.district.toLowerCase())) {
+      if (
+        area.district &&
+        addressToken.includes(this.normalizeToken(area.district))
+      ) {
         return area.id;
       }
     }
@@ -21118,6 +21188,7 @@ export class NightlifeDataService {
       include: {
         _count: { select: { casts: true } },
         media: true,
+        area: true,
         partnerAccount: {
           include: {
             user: {
@@ -21148,6 +21219,9 @@ export class NightlifeDataService {
       ...store,
       initials: store.name.substring(0, 2).toUpperCase(),
       address: store.address || '',
+      ward:
+        store.area?.ward ??
+        this.extractWardFromStoreAddress(store.address),
       type: typeLabel,
       area:
         store.city === 'Ho Chi Minh City' ||

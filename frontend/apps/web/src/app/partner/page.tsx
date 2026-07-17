@@ -3611,6 +3611,8 @@ export default function PartnerPage() {
   };
 
   const listingPayload = () => {
+    const draftPayload = { ...listingDraft };
+    delete (draftPayload as Partial<PartnerListingDraft>).wardName;
     const galleryUrls = listingDraft.galleryUrls.filter((url) => url.trim());
     const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
     const mediaUrls = [
@@ -3630,7 +3632,7 @@ export default function PartnerPage() {
     const menuSummary = buildListingMenuSummary(menuGroups, pricingItems);
 
     return {
-      ...listingDraft,
+      ...draftPayload,
       priceRange: '',
       menuSummary,
       tags: listingDraft.tags.filter(Boolean),
@@ -3642,14 +3644,18 @@ export default function PartnerPage() {
       menuGroups,
       castProfiles: listingDraft.castProfiles
         .filter((item) => item.stageName.trim())
-        .map((item) => ({
-          ...item,
-          tags: item.tags?.filter(Boolean) ?? [],
-          languages: item.languages?.filter(Boolean) ?? [],
-          hobbies: item.hobbies?.filter(Boolean) ?? [],
-          youtubeLinks: item.youtubeLinks?.filter(Boolean) ?? [],
-          mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
-        })),
+        .map((item) => {
+          const castPayload = { ...item };
+          delete castPayload.storeName;
+          return {
+            ...castPayload,
+            tags: item.tags?.filter(Boolean) ?? [],
+            languages: item.languages?.filter(Boolean) ?? [],
+            hobbies: item.hobbies?.filter(Boolean) ?? [],
+            youtubeLinks: item.youtubeLinks?.filter(Boolean) ?? [],
+            mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
+          };
+        }),
       galleryUrls,
       videoUrls,
       mediaUrls,

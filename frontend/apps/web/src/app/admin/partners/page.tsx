@@ -23,9 +23,23 @@ const colors = {
 };
 
 type PartnerStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+type PartnerRequestType = "NEW_PARTNER" | "LISTING_UPDATE";
+type PartnerTab = "PENDING_NEW" | "PENDING_UPDATE" | "APPROVED" | "REJECTED";
+
+type OriginalStore = {
+  id?: string | null;
+  name?: string | null;
+  category?: string | null;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  district?: string | null;
+  phone?: string | null;
+};
 
 type ApiPartnerRequest = {
   id: string;
+  requestType?: PartnerRequestType;
   submittedAt?: string | null;
   status: PartnerStatus;
   reviewReason?: string | null;
@@ -55,13 +69,22 @@ type ApiPartnerRequest = {
   notificationStatus?: string | null;
   notificationError?: string | null;
   notifiedAt?: string | null;
+  originalStore?: OriginalStore | null;
 };
 
-const tabs: Array<{ status: PartnerStatus; label: string }> = [
-  { status: "PENDING_REVIEW", label: "Chờ duyệt" },
-  { status: "APPROVED", label: "Đã duyệt" },
-  { status: "REJECTED", label: "Từ chối" },
+const tabs: Array<{ key: PartnerTab; label: string }> = [
+  { key: "PENDING_NEW", label: "Quán mới" },
+  { key: "PENDING_UPDATE", label: "Sửa thông tin" },
+  { key: "APPROVED", label: "Đã duyệt" },
+  { key: "REJECTED", label: "Từ chối" },
 ];
+
+const tabLabels: Record<PartnerTab, string> = {
+  PENDING_NEW: "quán mới chờ duyệt",
+  PENDING_UPDATE: "quán chờ duyệt sửa thông tin",
+  APPROVED: "đã duyệt",
+  REJECTED: "bị từ chối",
+};
 
 const statusLabels: Record<PartnerStatus, string> = {
   PENDING_REVIEW: "Chờ duyệt",
@@ -82,6 +105,78 @@ const statusTone = (status: PartnerStatus) => {
 const cleanText = (value?: string | null, fallback = "-") => {
   const normalized = value?.trim();
   return normalized ? normalized : fallback;
+};
+
+const getRequestType = (request: ApiPartnerRequest): PartnerRequestType =>
+  request.requestType ?? (request.id.startsWith("LISTING-") ? "LISTING_UPDATE" : "NEW_PARTNER");
+
+const requestBadgeLabel = (request: ApiPartnerRequest) => {
+  if (request.status !== "PENDING_REVIEW") return statusLabels[request.status];
+  return getRequestType(request) === "NEW_PARTNER" ? "Quán mới" : "Sửa thông tin";
+};
+
+const looksEncodingCorrupted = (value?: string | null) => {
+  const text = value?.trim() ?? "";
+  const questionMarks = text.match(/\?/g)?.length ?? 0;
+  return questionMarks >= 3 && questionMarks / Math.max(text.length, 1) >= 0.08;
+};
+
+const hasCorruptedContent = (request: ApiPartnerRequest) =>
+  getRequestType(request) === "LISTING_UPDATE" &&
+  [
+    request.businessName,
+    request.storeDescription,
+    request.storeAddress,
+    request.storeCity,
+    request.storeDistrict,
+  ].some(looksEncodingCorrupted);
+
+const safeRequestValue = (
+  proposed: string | null | undefined,
+  current: string | null | undefined,
+) => (looksEncodingCorrupted(proposed) ? current : proposed);
+
+const requestTitle = (request: ApiPartnerRequest) =>
+  cleanText(
+    safeRequestValue(
+      request.businessName ?? request.draftStoreName,
+      request.originalStore?.name ?? request.draftStoreName,
+    ),
+    "Yêu cầu đối tác",
+  );
+
+const displayAddress = (request: ApiPartnerRequest) => {
+  const proposedAddress = safeRequestValue(
+    request.storeAddress,
+    request.originalStore?.address,
+  );
+  const proposedDistrict = safeRequestValue(
+    request.storeDistrict,
+    request.originalStore?.district,
+  );
+  const proposedCity = safeRequestValue(
+    request.storeCity,
+    request.originalStore?.city,
+  );
+  const parts = [proposedAddress, proposedDistrict, proposedCity]
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item));
+
+  return parts.filter(
+    (part, index) =>
+      !parts.some(
+        (other, otherIndex) =>
+          otherIndex < index && other.toLocaleLowerCase("vi").includes(part.toLocaleLowerCase("vi")),
+      ),
+  ).join(", ");
+};
+
+const matchesTab = (request: ApiPartnerRequest, tab: PartnerTab) => {
+  if (tab === "APPROVED" || tab === "REJECTED") return request.status === tab;
+  if (request.status !== "PENDING_REVIEW") return false;
+  return tab === "PENDING_NEW"
+    ? getRequestType(request) === "NEW_PARTNER"
+    : getRequestType(request) === "LISTING_UPDATE";
 };
 
 const formatRequestCode = (id: string) => {
@@ -124,10 +219,16 @@ const joinTypeAndArea = (request: ApiPartnerRequest) => {
 };
 
 const requestDescription = (request: ApiPartnerRequest) =>
-  cleanText(request.storeDescription ?? request.menuSummary, "Chưa có mô tả gửi kèm.");
+  cleanText(
+    safeRequestValue(
+      request.storeDescription ?? request.menuSummary,
+      request.originalStore?.description,
+    ),
+    "Chưa có mô tả gửi kèm.",
+  );
 
 export default function AdminPartnersPage() {
-  const [activeStatus, setActiveStatus] = useState<PartnerStatus>("PENDING_REVIEW");
+  const [activeTab, setActiveTab] = useState<PartnerTab>("PENDING_NEW");
   const [requests, setRequests] = useState<ApiPartnerRequest[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -162,21 +263,24 @@ export default function AdminPartnersPage() {
     });
   }, [loadRequests]);
 
-  const counts = useMemo(
-    () =>
-      requests.reduce<Record<PartnerStatus, number>>(
-        (result, request) => {
-          result[request.status] += 1;
-          return result;
-        },
-        { PENDING_REVIEW: 0, APPROVED: 0, REJECTED: 0 },
-      ),
-    [requests],
-  );
+  const counts = useMemo(() => {
+    const result: Record<PartnerTab, number> = {
+      PENDING_NEW: 0,
+      PENDING_UPDATE: 0,
+      APPROVED: 0,
+      REJECTED: 0,
+    };
+    requests.forEach((request) => {
+      tabs.forEach((tab) => {
+        if (matchesTab(request, tab.key)) result[tab.key] += 1;
+      });
+    });
+    return result;
+  }, [requests]);
 
   const filteredRequests = useMemo(
-    () => requests.filter((request) => request.status === activeStatus),
-    [activeStatus, requests],
+    () => requests.filter((request) => matchesTab(request, activeTab)),
+    [activeTab, requests],
   );
 
   const selectedRequest = useMemo(
@@ -185,8 +289,18 @@ export default function AdminPartnersPage() {
   );
 
   const reviewRequest = async (request: ApiPartnerRequest, approve: boolean) => {
+    if (approve && hasCorruptedContent(request)) {
+      setActionMessage(
+        "Không thể duyệt yêu cầu này vì nội dung đã bị lỗi mã hóa. Hãy từ chối và yêu cầu đối tác gửi lại.",
+      );
+      return;
+    }
+
     const reason = approve
-      ? reviewReason.trim() || "Hồ sơ hợp lệ, duyệt public nội dung đối tác."
+      ? reviewReason.trim() ||
+        (getRequestType(request) === "NEW_PARTNER"
+          ? "Hồ sơ đối tác hợp lệ, duyệt và kích hoạt quán."
+          : "Thông tin cập nhật hợp lệ, duyệt thay đổi cho quán.")
       : reviewReason.trim();
 
     if (!reason) {
@@ -204,7 +318,7 @@ export default function AdminPartnersPage() {
       setActionMessage(approve ? "Đã duyệt yêu cầu và public nội dung nháp." : "Đã từ chối yêu cầu đối tác.");
       setReviewReason("");
       await loadRequests();
-      setActiveStatus(approve ? "APPROVED" : "REJECTED");
+      setActiveTab(approve ? "APPROVED" : "REJECTED");
     } catch (error) {
       setActionMessage(
         error instanceof ApiError
@@ -215,6 +329,11 @@ export default function AdminPartnersPage() {
       setReviewingId(null);
     }
   };
+
+  const selectedRequestType = selectedRequest ? getRequestType(selectedRequest) : null;
+  const selectedHasCorruptedContent = selectedRequest
+    ? hasCorruptedContent(selectedRequest)
+    : false;
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: "calc(100vh - 80px)" }}>
@@ -227,14 +346,27 @@ export default function AdminPartnersPage() {
         }}
       >
         <div style={{ padding: "24px 20px 16px" }}>
-          <div style={{ display: "flex", background: colors.surface1, borderRadius: 8, padding: 4 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 4,
+              background: colors.surface1,
+              borderRadius: 8,
+              padding: 4,
+            }}
+          >
             {tabs.map((tab) => {
-              const isActive = activeStatus === tab.status;
+              const isActive = activeTab === tab.key;
               return (
                 <button
-                  key={tab.status}
+                  key={tab.key}
                   type="button"
-                  onClick={() => setActiveStatus(tab.status)}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    setSelectedId("");
+                    setActionMessage("");
+                  }}
                   style={{
                     flex: 1,
                     padding: "8px 0",
@@ -247,7 +379,7 @@ export default function AdminPartnersPage() {
                     cursor: "pointer",
                   }}
                 >
-                  {tab.label} {counts[tab.status] || ""}
+                  {tab.label} {counts[tab.key] || ""}
                 </button>
               );
             })}
@@ -310,7 +442,7 @@ export default function AdminPartnersPage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {cleanText(request.businessName ?? request.draftStoreName, "Yêu cầu đối tác")}
+                        {requestTitle(request)}
                       </div>
                       <span
                         style={{
@@ -323,7 +455,7 @@ export default function AdminPartnersPage() {
                           border: tone.border,
                         }}
                       >
-                        {statusLabels[request.status]}
+                        {requestBadgeLabel(request)}
                       </span>
                     </div>
                     <div style={{ fontSize: 13, color: colors.text2, marginBottom: 8 }}>
@@ -369,7 +501,7 @@ export default function AdminPartnersPage() {
                 textAlign: "center",
               }}
             >
-              Chưa có yêu cầu {statusLabels[activeStatus].toLowerCase()}.
+              Chưa có {tabLabels[activeTab]}.
             </div>
           )}
         </div>
@@ -398,10 +530,13 @@ export default function AdminPartnersPage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Yêu cầu hợp tác · {formatRequestCode(selectedRequest.id)}
+                  {selectedRequestType === "NEW_PARTNER"
+                    ? "Hồ sơ đối tác mới"
+                    : "Yêu cầu sửa thông tin"}{" "}
+                  · {formatRequestCode(selectedRequest.id)}
                 </div>
                 <h2 style={{ fontSize: 30, fontWeight: 800, color: colors.text, margin: "0 0 6px" }}>
-                  {cleanText(selectedRequest.businessName ?? selectedRequest.draftStoreName, "Yêu cầu đối tác")}
+                  {requestTitle(selectedRequest)}
                 </h2>
                 <div style={{ fontSize: 14, color: colors.muted }}>{joinTypeAndArea(selectedRequest)}</div>
               </div>
@@ -416,7 +551,7 @@ export default function AdminPartnersPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {statusLabels[selectedRequest.status]}
+                {requestBadgeLabel(selectedRequest)}
               </span>
             </div>
 
@@ -438,6 +573,104 @@ export default function AdminPartnersPage() {
 
             <div
               style={{
+                padding: 14,
+                borderRadius: 12,
+                border: `1px solid ${colors.borderGold22}`,
+                background: "rgba(212,178,106,.05)",
+                color: colors.text2,
+                fontSize: 13,
+                lineHeight: 1.55,
+                marginBottom: 24,
+              }}
+            >
+              <strong style={{ color: colors.gold }}>
+                {selectedRequestType === "NEW_PARTNER"
+                  ? "Phạm vi duyệt quán mới:"
+                  : "Phạm vi duyệt sửa thông tin:"}
+              </strong>{" "}
+              {selectedRequestType === "NEW_PARTNER"
+                ? "Kiểm tra thông tin liên hệ và thông tin cơ bản để tạo tài khoản đối tác, kích hoạt quán."
+                : "Kiểm tra dữ liệu đề xuất bên dưới trước khi cập nhật vào quán đang hoạt động."}
+            </div>
+
+            {selectedHasCorruptedContent ? (
+              <div
+                role="alert"
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  border: "1px solid rgba(248,113,113,.4)",
+                  background: "rgba(248,113,113,.08)",
+                  color: colors.red,
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  marginBottom: 24,
+                }}
+              >
+                <strong>Không thể duyệt yêu cầu này.</strong> Một số nội dung đã bị thay bằng
+                dấu hỏi do lỗi mã hóa và không thể khôi phục. Màn hình đang dùng dữ liệu hiện
+                tại của quán làm nội dung dự phòng; hãy từ chối và yêu cầu đối tác gửi lại.
+              </div>
+            ) : null}
+
+            {selectedRequestType === "LISTING_UPDATE" ? (
+              <Section title="So sánh thay đổi">
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <ComparisonField
+                    label="Tên quán hiện tại"
+                    value={selectedRequest.originalStore?.name}
+                  />
+                  <ComparisonField
+                    label="Tên quán đề xuất"
+                    value={safeRequestValue(
+                      selectedRequest.businessName ?? selectedRequest.draftStoreName,
+                      selectedRequest.originalStore?.name,
+                    )}
+                    corrupted={looksEncodingCorrupted(
+                      selectedRequest.businessName ?? selectedRequest.draftStoreName,
+                    )}
+                  />
+                  <ComparisonField
+                    label="Địa chỉ hiện tại"
+                    value={selectedRequest.originalStore?.address}
+                  />
+                  <ComparisonField
+                    label="Địa chỉ đề xuất"
+                    value={displayAddress(selectedRequest)}
+                    corrupted={
+                      looksEncodingCorrupted(selectedRequest.storeAddress) ||
+                      looksEncodingCorrupted(selectedRequest.storeDistrict) ||
+                      looksEncodingCorrupted(selectedRequest.storeCity)
+                    }
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginTop: 12,
+                    color: colors.muted,
+                    fontSize: 12,
+                  }}
+                >
+                  <span>{selectedRequest.draftCastCount ?? 0} cast</span>
+                  <span>·</span>
+                  <span>{selectedRequest.draftMediaCount ?? selectedRequest.mediaUrls?.length ?? 0} media</span>
+                  <span>·</span>
+                  <span>{selectedRequest.draftContentCount ?? 0} nội dung</span>
+                </div>
+              </Section>
+            ) : null}
+
+            <div
+              style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
                 gap: 28,
@@ -449,10 +682,7 @@ export default function AdminPartnersPage() {
               <InfoField label="Email" value={selectedRequest.contactEmail} />
               <InfoField
                 label="Địa chỉ"
-                value={[selectedRequest.storeAddress, selectedRequest.storeDistrict, selectedRequest.storeCity]
-                  .map((item) => item?.trim())
-                  .filter(Boolean)
-                  .join(", ")}
+                value={displayAddress(selectedRequest)}
               />
 
             </div>
@@ -617,7 +847,9 @@ export default function AdminPartnersPage() {
                   <button
                     type="button"
                     onClick={() => void reviewRequest(selectedRequest, true)}
-                    disabled={reviewingId === selectedRequest.id}
+                    disabled={
+                      reviewingId === selectedRequest.id || selectedHasCorruptedContent
+                    }
                     style={{
                       flex: 1,
                       display: "flex",
@@ -631,8 +863,15 @@ export default function AdminPartnersPage() {
                       borderRadius: 8,
                       fontSize: 14,
                       fontWeight: 800,
-                      cursor: reviewingId === selectedRequest.id ? "wait" : "pointer",
-                      opacity: reviewingId === selectedRequest.id ? 0.75 : 1,
+                      cursor: selectedHasCorruptedContent
+                        ? "not-allowed"
+                        : reviewingId === selectedRequest.id
+                          ? "wait"
+                          : "pointer",
+                      opacity:
+                        reviewingId === selectedRequest.id || selectedHasCorruptedContent
+                          ? 0.55
+                          : 1,
                     }}
                   >
                     {reviewingId === selectedRequest.id ? (
@@ -640,7 +879,11 @@ export default function AdminPartnersPage() {
                     ) : (
                       <Check size={18} />
                     )}
-                    Duyệt & public hồ sơ
+                    {selectedHasCorruptedContent
+                      ? "Không thể duyệt: dữ liệu lỗi"
+                      : selectedRequestType === "NEW_PARTNER"
+                        ? "Duyệt đối tác & kích hoạt quán"
+                        : "Duyệt & cập nhật thông tin quán"}
                   </button>
                   <button
                     type="button"
@@ -716,6 +959,37 @@ function InfoField({
       <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? colors.gold : colors.text }}>
         {cleanText(value)}
       </div>
+    </div>
+  );
+}
+
+function ComparisonField({
+  label,
+  value,
+  corrupted = false,
+}: {
+  label: string;
+  value?: string | null;
+  corrupted?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        padding: 14,
+        borderRadius: 10,
+        border: `1px solid ${corrupted ? "rgba(248,113,113,.35)" : colors.borderSoft}`,
+        background: colors.surface1,
+      }}
+    >
+      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 14, color: colors.text2, lineHeight: 1.5 }}>
+        {cleanText(value)}
+      </div>
+      {corrupted ? (
+        <div style={{ marginTop: 6, color: colors.red, fontSize: 11 }}>
+          Bản đề xuất bị lỗi mã hóa — đang hiển thị dữ liệu hiện tại
+        </div>
+      ) : null}
     </div>
   );
 }
