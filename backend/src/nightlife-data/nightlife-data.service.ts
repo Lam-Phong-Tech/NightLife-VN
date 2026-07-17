@@ -3555,7 +3555,7 @@ export class NightlifeDataService {
       select: { id: true },
     });
 
-    return this.createTourBookingRecord({
+    const result = await this.createTourBookingRecord({
       tourId,
       dto,
       guestId: guest.id,
@@ -3564,6 +3564,10 @@ export class NightlifeDataService {
       phone: contact.phone,
       context,
     });
+
+    await this.notifyGuestTourBookingQrEmail(result);
+
+    return result;
   }
 
   async createMemberTourBooking(
@@ -14088,6 +14092,124 @@ export class NightlifeDataService {
         billId: null,
         createdAt: new Date().toISOString(),
       });
+    }
+  }
+
+  private async notifyGuestTourBookingQrEmail(tourBooking: any) {
+    const email = this.cleanEmail(tourBooking.guest?.email);
+    const qrPayload =
+      typeof tourBooking.qr?.payload === 'string' ? tourBooking.qr.payload : '';
+
+    if (!email || !qrPayload) {
+      return;
+    }
+
+    const bookingCode = this.bookingCodeFor(tourBooking);
+    const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+    const tourTitle = tourBooking.tour?.title ?? 'NightLife tour';
+    const tourStops = Array.isArray(tourBooking.tour?.stops)
+      ? tourBooking.tour.stops
+          .map((stop: any) => stop.storeName)
+          .filter((name: unknown): name is string => typeof name === 'string')
+      : [];
+    const amountLabel = this.bookingAmountLabel(
+      tourBooking as BookingNotificationRecord,
+    );
+    const tourNote = [
+      tourBooking.note,
+      tourStops.length ? `Tour stops: ${tourStops.join(' > ')}` : null,
+    ]
+      .filter((line): line is string => typeof line === 'string' && !!line)
+      .join('\n');
+    const payload = {
+      bookingId: tourBooking.id,
+      tourBookingId: tourBooking.tourBookingId ?? null,
+      bookingCode,
+      status: tourBooking.status,
+      scheduledAt: this.toAuditIso(tourBooking.scheduledAt),
+      partySize: tourBooking.partySize ?? null,
+      tourTitle,
+      tourStops,
+      guestName: tourBooking.guest?.displayName ?? null,
+      amountLabel,
+      qrPayload,
+      qrImageUrl,
+    } satisfies Prisma.InputJsonObject;
+
+    let log: { id: string };
+    try {
+      log = await this.prisma.notificationLog.create({
+        data: {
+          guestId: tourBooking.guest?.id,
+          storeId: tourBooking.storeId ?? tourBooking.store?.id ?? undefined,
+          bookingId: tourBooking.id,
+          channel: 'EMAIL',
+          status: 'QUEUED',
+          recipient: email,
+          templateKey: 'customer.booking.tour_qr_email.v1',
+          payload,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to queue tour booking QR email notification: ${this.errorMessage(error)}`,
+      );
+      return;
+    }
+
+    try {
+      if (!this.emailNotificationService) {
+        throw new Error('EmailNotificationService is not available');
+      }
+
+      const result = await this.emailNotificationService.sendBookingQrEmail({
+        to: email,
+        guestName: tourBooking.guest?.displayName,
+        bookingId: tourBooking.tourBookingId ?? tourBooking.id,
+        bookingCode,
+        status: tourBooking.status,
+        storeName: tourTitle,
+        storeSlug: tourBooking.store?.slug,
+        castName: null,
+        scheduledAt: tourBooking.scheduledAt,
+        partySize: tourBooking.partySize,
+        amountLabel,
+        note: tourNote || tourBooking.note,
+        qrPayload,
+        qrImageUrl,
+        qrImageDataUrl,
+      });
+
+      await this.prisma.notificationLog.update({
+        where: { id: log.id },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          error: null,
+          payload: {
+            ...payload,
+            providerMessageId: result.messageId ?? null,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Tour booking QR email failed: ${this.errorMessage(error)}`,
+      );
+      await this.prisma.notificationLog
+        .update({
+          where: { id: log.id },
+          data: {
+            status: 'FAILED',
+            error: this.errorMessage(error),
+          },
+        })
+        .catch((logError) => {
+          this.logger.warn(
+            `Failed to update tour booking QR email notification log: ${this.errorMessage(logError)}`,
+          );
+        });
     }
   }
 
