@@ -86,6 +86,19 @@ const normalizeRankingCategory = (value?: string | null): AdminRankingCategory |
     : undefined;
 };
 
+const rankingSaveErrorMessage = (error: unknown) => {
+  const message =
+    error && typeof error === 'object' && 'message' in error
+      ? String((error as { message?: string }).message || '')
+      : '';
+
+  if (/Ranking collision|already pinned/i.test(message)) {
+    return 'Thứ hạng đang bị trùng. Vui lòng bấm lưu lại để hệ thống sắp xếp lại ranking.';
+  }
+
+  return message || 'Lỗi khi lưu ranking. Vui lòng thử lại.';
+};
+
 function SortableRankingItem(props: {
   item: RankingItem;
   index: number;
@@ -467,68 +480,63 @@ function AdminRankingsClient() {
         await apiClient(`/admin/rankings/${id}`, { method: 'DELETE' });
       }
 
-      for (let i = 0; i < casts.length; i++) {
-        const cast = casts[i];
-        if (!cast) continue;
-        if (cast.id.startsWith('new-')) {
-          await apiClient('/admin/rankings', {
-            method: 'POST',
-            data: {
-              targetId: cast.targetId,
-              targetType: 'CAST',
-              cityCode: cityCode,
-              category: activeCategory,
-              pinRank: i + 1,
-              sponsored: cast.sponsored
-            }
-          });
-        } else {
-          await apiClient(`/admin/rankings/${cast.id}`, {
-            method: 'PATCH',
-            data: {
-              cityCode: cityCode,
-              category: activeCategory,
-              pinRank: i + 1,
-              sponsored: cast.sponsored
-            }
-          });
+      const unpinExistingItems = async (items: RankingItem[]) => {
+        await Promise.all(
+          items
+            .filter((item) => !item.id.startsWith('new-'))
+            .map((item) =>
+              apiClient(`/admin/rankings/${item.id}`, {
+                method: 'PATCH',
+                data: { pinRank: null },
+              }),
+            ),
+        );
+      };
+
+      const saveRankingItems = async (
+        items: RankingItem[],
+        targetType: RankingItem['targetType'],
+      ) => {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (!item) continue;
+          if (item.id.startsWith('new-')) {
+            await apiClient('/admin/rankings', {
+              method: 'POST',
+              data: {
+                targetId: item.targetId,
+                targetType,
+                cityCode: cityCode,
+                category: activeCategory,
+                pinRank: i + 1,
+                sponsored: item.sponsored
+              }
+            });
+          } else {
+            await apiClient(`/admin/rankings/${item.id}`, {
+              method: 'PATCH',
+              data: {
+                cityCode: cityCode,
+                category: activeCategory,
+                pinRank: i + 1,
+                sponsored: item.sponsored
+              }
+            });
+          }
         }
-      }
-      
-      for (let i = 0; i < stores.length; i++) {
-        const store = stores[i];
-        if (!store) continue;
-        if (store.id.startsWith('new-')) {
-          await apiClient('/admin/rankings', {
-            method: 'POST',
-            data: {
-              targetId: store.targetId,
-              targetType: 'STORE',
-              cityCode: cityCode,
-              category: activeCategory,
-              pinRank: i + 1,
-              sponsored: store.sponsored
-            }
-          });
-        } else {
-          await apiClient(`/admin/rankings/${store.id}`, {
-            method: 'PATCH',
-            data: {
-              cityCode: cityCode,
-              category: activeCategory,
-              pinRank: i + 1,
-              sponsored: store.sponsored
-            }
-          });
-        }
-      }
+      };
+
+      await unpinExistingItems(casts);
+      await unpinExistingItems(stores);
+      await saveRankingItems(casts, 'CAST');
+      await saveRankingItems(stores, 'STORE');
 
       showToast('Lưu ranking thành công.', 'success');
       setDeletedItemIds([]);
       fetchRankings();
     } catch (error: any) {
       console.error(error);
-      showToast(error?.message || 'Lỗi khi lưu ranking. Vui lòng thử lại.', 'error');
+      showToast(rankingSaveErrorMessage(error), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -566,10 +574,10 @@ function AdminRankingsClient() {
                   : '1px solid rgba(127,211,162,.42)',
             background:
               toast.type === 'error'
-                ? 'linear-gradient(135deg,rgba(224,105,122,.16),rgba(19,18,24,.96))'
+                ? '#1f1218'
                 : toast.type === 'warning'
-                  ? 'linear-gradient(135deg,rgba(224,164,78,.16),rgba(19,18,24,.96))'
-                  : 'linear-gradient(135deg,rgba(127,211,162,.14),rgba(19,18,24,.96))',
+                  ? '#1f1a10'
+                  : '#101d17',
             boxShadow: '0 24px 60px -28px rgba(0,0,0,.9)',
             padding: '14px 14px 14px 15px',
             color: '#f3f0ea',
@@ -586,10 +594,10 @@ function AdminRankingsClient() {
               borderRadius: '10px',
               background:
                 toast.type === 'error'
-                  ? 'rgba(224,105,122,.18)'
+                  ? '#321923'
                   : toast.type === 'warning'
-                    ? 'rgba(224,164,78,.18)'
-                    : 'rgba(127,211,162,.16)',
+                    ? '#302511'
+                    : '#172b20',
               color: toast.type === 'error' ? '#e88b99' : toast.type === 'warning' ? '#e3c27e' : '#7fd3a2',
               display: 'inline-flex',
               alignItems: 'center',
@@ -612,7 +620,7 @@ function AdminRankingsClient() {
             type="button"
             aria-label="Đóng thông báo"
             onClick={() => setToast(null)}
-            style={{ width: '26px', height: '26px', borderRadius: '8px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)', color: '#8c8679', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+            style={{ width: '26px', height: '26px', borderRadius: '8px', border: '1px solid rgba(255,255,255,.08)', background: '#242126', color: '#8c8679', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
