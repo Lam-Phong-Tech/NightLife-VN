@@ -4163,7 +4163,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           position: fixed;
           inset: 0;
           z-index: 1000;
-          background: rgba(5, 6, 8, .94);
+          background: rgba(5, 6, 8, .96);
           display: grid;
           place-items: center;
           padding: 28px;
@@ -4190,15 +4190,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .lightbox-close,
         .lightbox-nav {
           position: absolute;
-          border: 1px solid rgba(244, 221, 155, .28);
+          border: 1px solid rgba(244, 221, 155, .52);
           border-radius: 999px;
-          background: rgba(255, 255, 255, .08);
-          color: #f7f1e7;
+          background: rgba(18, 16, 12, .88);
+          color: #fff7dd;
           cursor: pointer;
           display: grid;
           place-items: center;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
+          box-shadow: 0 14px 34px rgba(0, 0, 0, .42);
+          backdrop-filter: blur(10px);
+        }
+
+        html.vy-light .lightbox {
+          background: rgba(14, 12, 8, .72);
+        }
+
+        html.vy-light .lightbox-close,
+        html.vy-light .lightbox-nav {
+          border-color: rgba(142, 99, 28, .55);
+          background: #fffaf0;
+          color: #3a2b0d;
+          box-shadow: 0 16px 40px rgba(70, 48, 10, .32);
         }
 
         .lightbox-close svg,
