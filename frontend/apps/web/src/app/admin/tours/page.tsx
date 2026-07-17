@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { normalizeSearchText } from '@/lib/search-relevance';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
@@ -36,6 +37,8 @@ const ALL_TIME_SLOTS = Array.from(
   { length: 24 },
   (_, hour) => `${String(hour).padStart(2, '0')}:00`,
 );
+
+const tourTableColumns = 'minmax(0, 2.2fr) minmax(82px, 1fr) minmax(88px, 1fr) minmax(72px, 1fr) 120px 40px';
 
 const isSameCity = (c1: string, c2: string) => {
   const norm = (c: string) => {
@@ -84,6 +87,8 @@ function AdminToursContent() {
   });
 
   const [venueSearch, setVenueSearch] = useState('');
+  const [venueSearchResults, setVenueSearchResults] = useState<any[]>([]);
+  const [isSearchingVenues, setIsSearchingVenues] = useState(false);
   const [addingTime, setAddingTime] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +141,37 @@ function AdminToursContent() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const query = venueSearch.trim();
+    if (!query) {
+      setVenueSearchResults([]);
+      setIsSearchingVenues(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        setIsSearchingVenues(true);
+        const res = await apiClient<any>('/admin/stores', { params: { search: query, limit: 20 } });
+        if (cancelled) return;
+        const data = Array.isArray(res?.data) ? res.data : [];
+        setVenueSearchResults(
+          data.filter((s: any) => s.category !== 'MASSAGE_SPA' && s.status === 'ACTIVE'),
+        );
+      } catch (e) {
+        if (!cancelled) setVenueSearchResults([]);
+      } finally {
+        if (!cancelled) setIsSearchingVenues(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [venueSearch]);
 
   const closeDrawer = () => {
     setTourSel(null);
@@ -331,13 +367,25 @@ function AdminToursContent() {
 
   // Filter candidates list
   const selectedStoreIds = formData.stops.map(s => s.storeId);
-  const candidates = stores.filter(s => {
-    // Chỉ lấy quán cùng thành phố
+  const normalizedVenueQuery = normalizeSearchText(venueSearch);
+  const candidatePool = normalizedVenueQuery ? [...venueSearchResults, ...stores] : stores;
+  const seenStoreIds = new Set<string>();
+  const candidates = candidatePool.filter(s => {
+    if (!s?.id || seenStoreIds.has(s.id)) return false;
+    seenStoreIds.add(s.id);
     const matchCity = isSameCity(s.city, formData.city);
     const notSelected = !selectedStoreIds.includes(s.id);
-    const query = venueSearch.toLowerCase().trim();
-    const matchQuery = !query || s.name.toLowerCase().includes(query) || s.district?.toLowerCase().includes(query);
-    return matchCity && notSelected && matchQuery;
+    const isActiveVenue = s.category !== 'MASSAGE_SPA' && s.status === 'ACTIVE';
+    const normalizedName = normalizeSearchText(s.name);
+    const matchQuery = !normalizedVenueQuery || normalizedName.includes(normalizedVenueQuery);
+    return matchCity && notSelected && isActiveVenue && matchQuery;
+  }).sort((a, b) => {
+    if (!normalizedVenueQuery) return String(a.name || '').localeCompare(String(b.name || ''), 'vi');
+    const aName = normalizeSearchText(a.name);
+    const bName = normalizeSearchText(b.name);
+    const aStarts = aName.startsWith(normalizedVenueQuery) ? 0 : 1;
+    const bStarts = bName.startsWith(normalizedVenueQuery) ? 0 : 1;
+    return aStarts - bStarts || aName.localeCompare(bName, 'vi');
   }).slice(0, 5);
 
   const priceLabel = (tier: number) => {
@@ -402,7 +450,7 @@ function AdminToursContent() {
 
       {/* Main Tour list table */}
       <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1fr 1fr 1fr 120px 40px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>Tour &amp; Hành trình</span><span>Khu vực</span><span>Điểm dừng</span><span>Chi phí</span><span>Trạng thái</span><span></span>
         </div>
 
@@ -419,11 +467,11 @@ function AdminToursContent() {
                 <div 
                   key={t.id}
                   onClick={() => openEditDrawer(t.id)}
-                  style={{ display: 'grid', gridTemplateColumns: '2.2fr 1fr 1fr 1fr 120px 40px', gap: '12px', alignItems: 'center', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.15s' }}
+                  style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', alignItems: 'center', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                     {t.coverUrl ? (
                       <span style={{ width: '38px', height: '38px', borderRadius: '10px', background: `url(${resolveClientUrl(t.coverUrl)}) center/cover no-repeat`, flex: 'none' }} />
                     ) : (
@@ -431,7 +479,7 @@ function AdminToursContent() {
                         {initial}
                       </div>
                     )}
-                    <div style={{ overflow: 'hidden' }}>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                       <div style={{ fontWeight: 700, color: '#f3f0ea', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{t.title}</div>
                       <div style={{ fontSize: '11px', color: '#8c8679', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', marginTop: '2.5px' }}>{t.subtitle || 'Chưa cấu hình mô tả ngắn'}</div>
                     </div>
@@ -738,7 +786,10 @@ function AdminToursContent() {
                             <span style={{ fontSize: '11px', fontWeight: 700, color: '#caa765' }}>Chọn</span>
                           </div>
                         ))}
-                        {candidates.length === 0 && (
+                        {isSearchingVenues && candidates.length === 0 && (
+                          <div style={{ padding: '12px', color: '#8c8679', fontSize: '11px', textAlign: 'center' }}>Äang tÃ¬m quÃ¡n...</div>
+                        )}
+                        {!isSearchingVenues && candidates.length === 0 && (
                           <div style={{ padding: '12px', color: '#57534b', fontSize: '11px', textAlign: 'center' }}>Không tìm thấy quán phù hợp</div>
                         )}
                       </div>
