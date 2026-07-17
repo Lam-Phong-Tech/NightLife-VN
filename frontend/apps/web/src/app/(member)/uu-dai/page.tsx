@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  ChevronDown,
   Ticket,
 } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
@@ -95,36 +94,6 @@ const getCampaignImage = (campaign: CampaignItem, index: number) =>
   categoryImages[campaign.targetStore!.category] ??
   fallbackImages[index % fallbackImages.length];
 
-const normalizeCityLabel = (value: string, language: LanguageCode) => {
-  const normalized = normalizeText(value);
-  if (
-    normalized === "ho chi minh city" ||
-    normalized === "tp.hcm" ||
-    normalized === "tp hcm" ||
-    normalized === "hcm"
-  ) {
-    return {
-      vi: "TP.HCM",
-      en: "Ho Chi Minh City",
-      ja: "ホーチミン市",
-      ko: "호치민시",
-      zh: "胡志明市",
-    }[language];
-  }
-
-  if (normalized === "ha noi" || normalized === "hanoi") {
-    return {
-      vi: "Hà Nội",
-      en: "Hanoi",
-      ja: "ハノイ",
-      ko: "하노이",
-      zh: "河内",
-    }[language];
-  }
-
-  return translateText(value, language);
-};
-
 const campaignCopy = (language: LanguageCode) =>
   ({
     vi: {
@@ -180,7 +149,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       loadingLabel: "Đang tải ưu đãi",
       newest: "Mới nhất",
       sort: "Sắp xếp:",
-      subtitle: (city: string) => `Coupon & khuyến mãi từ các quán đối tác · ${city}`,
+      subtitle: "Coupon & khuyến mãi từ các quán đối tác",
       title: "Ưu đãi đêm nay",
       allCities: "Toàn quốc",
       urgentSoon: "Sắp hết hạn - còn 2 giờ",
@@ -201,7 +170,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       loadingLabel: "Loading deals",
       newest: "Newest",
       sort: "Sort:",
-      subtitle: (city: string) => `Coupons and promotions from partner venues · ${city}`,
+      subtitle: "Coupons and promotions from partner venues",
       title: "Tonight's deals",
       allCities: "All areas",
       urgentSoon: "Expiring soon - 2 hours left",
@@ -222,7 +191,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       loadingLabel: "特典を読み込み中",
       newest: "新着",
       sort: "並び替え:",
-      subtitle: (city: string) => `提携店舗のクーポン・キャンペーン · ${city}`,
+      subtitle: "提携店舗のクーポン・キャンペーン",
       title: "今夜の特典",
       allCities: "全エリア",
       urgentSoon: "まもなく終了 - 残り2時間",
@@ -243,7 +212,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       loadingLabel: "혜택 불러오는 중",
       newest: "최신순",
       sort: "정렬:",
-      subtitle: (city: string) => `제휴 매장의 쿠폰 및 프로모션 · ${city}`,
+      subtitle: "제휴 매장의 쿠폰 및 프로모션",
       title: "오늘 밤 혜택",
       allCities: "전체 지역",
       urgentSoon: "곧 만료 - 2시간 남음",
@@ -264,7 +233,7 @@ const campaignUiCopy = (language: LanguageCode) =>
       loadingLabel: "正在加载优惠",
       newest: "最新",
       sort: "排序:",
-      subtitle: (city: string) => `合作场所的优惠券和促销 · ${city}`,
+      subtitle: "合作场所的优惠券和促销",
       title: "今晚优惠",
       allCities: "全部地区",
       urgentSoon: "即将结束 - 剩余2小时",
@@ -363,10 +332,6 @@ export default function Page() {
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'>('ALL');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   
-  // Sorting: 'NEWEST' | 'DISCOUNT_DESC'
-  const [sortType, setSortType] = useState<'NEWEST' | 'DISCOUNT_DESC'>('NEWEST');
-  const [isSortOpen, setIsSortOpen] = useState(false);
-  
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -438,32 +403,10 @@ export default function Page() {
       });
     }
 
-    if (sortType === 'NEWEST') {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortType === 'DISCOUNT_DESC') {
-      result.sort((a, b) => b.discountValue - a.discountValue);
-    }
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return result;
-  }, [campaigns, activeFilter, selectedStoreId, searchTerm, sortType]);
-
-  const campaignCityLabel = useMemo(() => {
-    const cityKeys = new Map<string, string>();
-    const sourceCampaigns = filteredCampaigns.length ? filteredCampaigns : campaigns;
-
-    sourceCampaigns.forEach((campaign) => {
-      const city = campaign.targetStore?.city?.trim();
-      if (!city) return;
-      cityKeys.set(normalizeText(city), city);
-    });
-
-    if (cityKeys.size === 1) {
-      const city = Array.from(cityKeys.values())[0];
-      return city ? normalizeCityLabel(city, activeLanguage) : copy.allCities;
-    }
-
-    return copy.allCities;
-  }, [activeLanguage, campaigns, copy.allCities, filteredCampaigns]);
+  }, [campaigns, activeFilter, selectedStoreId, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
@@ -481,7 +424,6 @@ export default function Page() {
     setSearchTerm("");
     setActiveFilter("ALL");
     setSelectedStoreId(null);
-    setSortType("NEWEST");
     setCurrentPage(1);
   };
 
@@ -490,7 +432,7 @@ export default function Page() {
       <section className="campaign-shell">
         <header className="campaign-header-simple">
           <h1>{copy.title}</h1>
-          <p>{copy.subtitle(campaignCityLabel)}</p>
+          <p>{copy.subtitle}</p>
         </header>
 
         {loadError ? (
@@ -525,37 +467,6 @@ export default function Page() {
             </button>
           </div>
 
-          <div className="custom-sort-dropdown">
-            <button 
-              onClick={() => setIsSortOpen(!isSortOpen)} 
-              type="button" 
-              className="sort-trigger-btn"
-            >
-              {copy.sort} <strong>{sortType === 'NEWEST' ? copy.newest : copy.bestDiscount}</strong>
-              <ChevronDown size={14} />
-            </button>
-            {isSortOpen && (
-              <>
-                <div className="sort-backdrop" onClick={() => setIsSortOpen(false)} />
-                <div className="sort-options-menu">
-                  <button 
-                    onClick={() => { setSortType('NEWEST'); setIsSortOpen(false); }} 
-                    className={sortType === 'NEWEST' ? 'active' : ''}
-                    type="button"
-                  >
-                    {copy.newest}
-                  </button>
-                  <button 
-                    onClick={() => { setSortType('DISCOUNT_DESC'); setIsSortOpen(false); }} 
-                    className={sortType === 'DISCOUNT_DESC' ? 'active' : ''}
-                    type="button"
-                  >
-                    {copy.bestDiscount}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
         </div>
 
         {activeFilter === 'BY_STORE' && uniqueStores.length > 0 && (
@@ -791,77 +702,6 @@ export default function Page() {
         .store-sub-filters button.active,
         .store-sub-filters button:hover {
           background: rgba(212, 178, 106, 0.12);
-          color: #e3c27e;
-        }
-
-        .custom-sort-dropdown {
-          position: relative;
-          z-index: 10;
-          flex: 0 0 auto;
-        }
-
-        .sort-trigger-btn {
-          border: 0;
-          font: inherit;
-          cursor: pointer;
-          background: transparent;
-          color: #bdb4a5;
-          font-size: 13px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          border-radius: 6px;
-          white-space: nowrap;
-        }
-
-        .sort-trigger-btn:hover {
-          color: #f3f0ea;
-        }
-
-        .sort-trigger-btn strong {
-          color: #e3c27e;
-          font-weight: 700;
-        }
-
-        .sort-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 9;
-        }
-
-        .sort-options-menu {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 6px;
-          background: #111115;
-          border: 1px solid rgba(212, 178, 106, .22);
-          border-radius: 8px;
-          padding: 6px;
-          min-width: 160px;
-          display: grid;
-          gap: 4px;
-          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
-          z-index: 10;
-        }
-
-        .sort-options-menu button {
-          border: 0;
-          font: inherit;
-          cursor: pointer;
-          background: transparent;
-          text-align: left;
-          padding: 8px 12px;
-          font-size: 12.5px;
-          color: #bdb4a5;
-          border-radius: 6px;
-          transition: background .2s, color .2s;
-        }
-
-        .sort-options-menu button:hover,
-        .sort-options-menu button.active {
-          background: rgba(212, 178, 106, 0.1);
           color: #e3c27e;
         }
 
@@ -1205,29 +1045,6 @@ export default function Page() {
           color: #8f6a2a;
         }
 
-        html.vy-light .sort-trigger-btn {
-          color: #57534b;
-        }
-
-        html.vy-light .sort-trigger-btn strong {
-          color: #8f6a2a;
-        }
-
-        html.vy-light .sort-options-menu {
-          background: #fff;
-          border-color: rgba(168, 124, 52, .24);
-        }
-
-        html.vy-light .sort-options-menu button {
-          color: #57534b;
-        }
-
-        html.vy-light .sort-options-menu button:hover,
-        html.vy-light .sort-options-menu button.active {
-          background: rgba(168, 124, 52, 0.08);
-          color: #8f6a2a;
-        }
-
         html.vy-light .coupon-ticket {
           background: rgba(255, 255, 255, .82);
           border-color: rgba(150, 116, 52, .22);
@@ -1304,12 +1121,6 @@ export default function Page() {
             min-height: 34px;
             border-radius: 17px;
             padding: 0 12px;
-            font-size: 12px;
-          }
-
-          .sort-trigger-btn {
-            min-height: 34px;
-            padding: 0 2px 0 4px;
             font-size: 12px;
           }
 
