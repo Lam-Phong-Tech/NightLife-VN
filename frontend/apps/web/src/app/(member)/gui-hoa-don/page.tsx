@@ -1551,9 +1551,6 @@ export default function Page() {
                     />
                     <span className="nl-amount-suffix">₫</span>
                   </div>
-                  {amount > 0 ? (
-                    <span className="nl-amount-readable">{formatMoney(amount)}</span>
-                  ) : null}
                 </div>
 
                 <div className="nl-field">
@@ -1992,14 +1989,6 @@ export default function Page() {
           font-size: 15px;
           font-weight: 600;
           pointer-events: none;
-        }
-
-        .nl-amount-readable {
-          color: var(--vy-gold);
-          font-size: 12px;
-          font-weight: 800;
-          line-height: 1.25;
-          margin-top: 7px;
         }
 
         .nl-confirmed-time {
