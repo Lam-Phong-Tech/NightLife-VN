@@ -2598,8 +2598,6 @@ html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled::before {
 
 @media (max-width: 640px) {
   .nl-booking-ant-popup.ant-picker-dropdown {
-    position: fixed !important;
-    inset: max(10px, env(safe-area-inset-top)) 10px auto !important;
     width: auto !important;
     max-width: calc(100vw - 20px);
     z-index: 10020;
@@ -2607,7 +2605,7 @@ html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled::before {
 
   .nl-booking-ant-popup .ant-picker-panel-container {
     width: 100%;
-    max-height: min(430px, calc(100dvh - 20px - env(safe-area-inset-top)));
+    max-height: min(390px, calc(100dvh - 20px - env(safe-area-inset-top)));
     overflow: auto;
     border-radius: 14px;
   }
