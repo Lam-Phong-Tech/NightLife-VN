@@ -288,6 +288,7 @@ function AdminBookingsContent() {
         const bk = selectedBooking;
         const stStyle = getStatusStyle(bk.status);
         const stLabel = getDisplayStatus(bk.status);
+        const customerNote = bk.customerNote?.trim() || bk.note?.trim() || '';
         
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
@@ -310,7 +311,7 @@ function AdminBookingsContent() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Nguồn gửi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.source || 'Form web'}</span></div>
                 <div style={{ padding: '14px 0 4px' }}>
                   <div style={{ fontSize: '12.5px', color: '#8c8679', marginBottom: '7px' }}>Ghi chú</div>
-                  <div style={{ fontSize: '12.5px', color: '#c5c0b6', lineHeight: 1.6, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '11px', padding: '12px 14px', minHeight: '44px' }}>{bk.customerNote || 'Không có ghi chú.'}</div>
+                  <div style={{ fontSize: '12.5px', color: '#c5c0b6', lineHeight: 1.6, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '11px', padding: '12px 14px', minHeight: '44px' }}>{customerNote || 'Không có ghi chú.'}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', padding: '12px 14px', background: 'rgba(111,159,216,.06)', border: '1px solid rgba(111,159,216,.2)', borderRadius: '11px' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
