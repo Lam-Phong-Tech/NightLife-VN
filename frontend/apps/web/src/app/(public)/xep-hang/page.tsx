@@ -142,7 +142,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       back: "Quay lại",
       bookWithCast: "Đặt theo cast",
       callNow: "Gọi ngay",
-      dateLabel: "Tháng 6 năm 2026",
       emptyAction: "Xem tổng hợp",
       emptyBody: "Thử đổi khu vực để xem bảng khác.",
       emptyTitle: "Chưa có ranking phù hợp",
@@ -163,7 +162,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       back: "Back",
       bookWithCast: "Book with Cast",
       callNow: "Call now",
-      dateLabel: "June 2026",
       emptyAction: "View all",
       emptyBody: "Try another area to see a different ranking.",
       emptyTitle: "No matching ranking yet",
@@ -184,7 +182,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       back: "戻る",
       bookWithCast: "キャストで予約",
       callNow: "電話する",
-      dateLabel: "2026年6月",
       emptyAction: "総合を見る",
       emptyBody: "別のエリアに切り替えてランキングを確認してください。",
       emptyTitle: "該当するランキングはありません",
@@ -205,7 +202,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       back: "뒤로",
       bookWithCast: "Cast와 예약",
       callNow: "전화하기",
-      dateLabel: "2026년 6월",
       emptyAction: "전체 보기",
       emptyBody: "다른 지역으로 변경해 보세요.",
       emptyTitle: "일치하는 랭킹이 없습니다",
@@ -226,7 +222,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       back: "返回",
       bookWithCast: "预约 Cast",
       callNow: "立即致电",
-      dateLabel: "2026年6月",
       emptyAction: "查看综合",
       emptyBody: "尝试切换区域查看其他榜单。",
       emptyTitle: "暂无匹配排名",
@@ -660,7 +655,6 @@ export default function Page() {
     setShowDesktopCallPopup(Boolean(options?.desktopBlocked));
   };
 
-  const dateLabel = copy.dateLabel;
   const hasItems = list.length > 0;
   const visibleList = isExpanded ? list : list.slice(0, initialVisibleRankings);
   const hiddenRankingCount = Math.max(0, list.length - visibleList.length);
@@ -687,7 +681,6 @@ export default function Page() {
             </button>
             <div>
               <h1 id="vyr-ranking-title">{copy.title}</h1>
-              <p>{dateLabel}</p>
             </div>
           </div>
 
