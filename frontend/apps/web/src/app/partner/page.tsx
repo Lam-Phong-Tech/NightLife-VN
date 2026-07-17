@@ -3223,6 +3223,10 @@ export default function PartnerPage() {
   };
 
   const updateListingField = (key: keyof PartnerListingDraft, value: string) => {
+    if (isViewingLive) {
+      return;
+    }
+
     clearListingErrorsFor(String(key));
     setListingDraft((current) => ({ ...current, [key]: value }));
   };
@@ -5931,14 +5935,34 @@ export default function PartnerPage() {
             </FormField>
             <FormField label="Mô tả quán" className="partner-field-wide">
               <div className="partner-quill-shell">
-                <ReactQuill
-                  theme="snow"
-                  value={listingDraft.description}
-                  onChange={(value) => updateListingField('description', value)}
-                />
+                {isViewingLive ? (
+                  <div
+                    data-testid="partner-live-description"
+                    role="textbox"
+                    aria-label="Mô tả quán đang Go Live"
+                    aria-readonly="true"
+                    style={{
+                      minHeight: '158px',
+                      padding: '14px 16px',
+                      color: colors.text,
+                      background: colors.surface2,
+                      lineHeight: 1.65,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {listingDraft.description || 'Chưa có mô tả được đăng.'}
+                  </div>
+                ) : (
+                  <ReactQuill
+                    theme="snow"
+                    value={listingDraft.description}
+                    onChange={(value) => updateListingField('description', value)}
+                  />
+                )}
               </div>
               <textarea
                 value={listingDraft.description}
+                readOnly={isViewingLive}
                 onChange={(event) => updateListingField('description', event.target.value)}
                 placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
                 aria-label="Mô tả quán dạng text"

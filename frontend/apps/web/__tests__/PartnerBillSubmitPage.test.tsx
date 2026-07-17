@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   submitPartnerBill: vi.fn(),
   uploadEvidence: vi.fn(),
   listStores: vi.fn(),
+  searchParams: "panel=bill",
 }));
 
 vi.mock("@/lib/api/client", () => {
@@ -34,8 +35,30 @@ vi.mock("@/lib/api/client", () => {
 });
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams("panel=bill"),
+  useSearchParams: () => new URLSearchParams(mocks.searchParams),
 }));
+
+vi.mock("react-quill-new", async () => {
+  const React = await import("react");
+
+  return {
+    default: function MockReactQuill({
+      value = "",
+      onChange,
+    }: {
+      value?: string;
+      onChange?: (value: string) => void;
+    }) {
+      React.useEffect(() => {
+        if (onChange && value && !value.startsWith("<p>")) {
+          onChange(`<p>${value}</p>`);
+        }
+      }, [onChange, value]);
+
+      return React.createElement("div", { "data-testid": "mock-react-quill" }, value);
+    },
+  };
+});
 
 vi.mock("@/lib/auth/session", () => ({
   clearAuthSession: vi.fn(),
@@ -149,6 +172,7 @@ const listingDraftResponse = {
 
 describe("Partner bill submit page", () => {
   beforeEach(() => {
+    mocks.searchParams = "panel=bill";
     mocks.apiClient.mockImplementation((path: string) => {
       if (path === "/partner/stores") return Promise.resolve(partnerStores);
       if (path === "/partner/coupons") return Promise.resolve([]);
@@ -251,4 +275,49 @@ describe("Partner bill submit page", () => {
     fireEvent.click(screen.getByText("BILL-VELVET"));
     expect(screen.getByLabelText("Tổng tiền bill gốc *")).toHaveValue("2.200.000");
   });
+
+  it("renders the Go Live description without mounting the editable Quill or overwriting the draft", async () => {
+    mocks.searchParams = "panel=listing";
+    const listingWithLive = {
+      ...listingDraftResponse,
+      draft: {
+        storeName: "Velvet draft",
+        description: "Draft description",
+      },
+      live: {
+        storeName: "Velvet live",
+        description: "Live description",
+      },
+    };
+
+    mocks.apiClient.mockImplementation((path: string) => {
+      if (path === "/partner/stores") return Promise.resolve(partnerStores);
+      if (path === "/partner/coupons") return Promise.resolve([]);
+      if (path === "/partner/bookings") return Promise.resolve([]);
+      if (path === "/partner/bills") return Promise.resolve(partnerBills);
+      if (path.startsWith("/partner/dashboard-lite")) return Promise.resolve(dashboardLite);
+      if (path.startsWith("/partner/listing-draft/")) return Promise.resolve(listingWithLive);
+      return Promise.reject(new Error(`Unhandled apiClient path ${path}`));
+    });
+
+    render(
+      <SystemFeedbackProvider>
+        <PartnerPage />
+      </SystemFeedbackProvider>,
+    );
+
+    expect(await screen.findByTestId("mock-react-quill")).toHaveTextContent("Draft description");
+
+    fireEvent.click(screen.getByRole("button", { name: /Xem bản đang Go Live/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("mock-react-quill")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("partner-live-description")).toHaveTextContent("Live description");
+
+    fireEvent.click(screen.getByRole("button", { name: /Xem bản chỉnh sửa/i }));
+
+    expect(await screen.findByTestId("mock-react-quill")).toHaveTextContent("Draft description");
+    expect(screen.getByTestId("mock-react-quill")).not.toHaveTextContent("Live description");
+  }, 20_000);
 });
