@@ -139,11 +139,21 @@ body {
   font-family: var(--nl-font-sans);
 }
 
-.nl-favorite-login-dialog {
+.nl-favorite-login-backdrop {
   position: fixed;
-  left: 50%;
-  top: 50%;
+  inset: 0;
   z-index: 10000;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100dvh;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  box-sizing: border-box;
+}
+
+.nl-favorite-login-dialog {
+  position: relative;
   width: min(360px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   border: 1px solid var(--vy-border-gold-22);
@@ -155,7 +165,6 @@ body {
   font-family: var(--nl-font-sans);
   box-sizing: border-box;
   pointer-events: auto;
-  transform: translate(-50%, -50%);
 }
 
 .nl-favorite-login-dialog h2 {

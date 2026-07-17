@@ -29,11 +29,17 @@ export function redirectToLoginForFavorite() {
 
   closeFavoriteLoginPrompt();
 
+  const backdrop = document.createElement("div");
+  backdrop.id = favoriteLoginPromptId;
+  backdrop.className = "nl-favorite-login-backdrop";
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) closeFavoriteLoginPrompt();
+  });
+
   const dialog = document.createElement("section");
-  dialog.id = favoriteLoginPromptId;
   dialog.className = "nl-favorite-login-dialog";
   dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "false");
+  dialog.setAttribute("aria-modal", "true");
   dialog.setAttribute("aria-labelledby", "nl-favorite-login-title");
   dialog.setAttribute("aria-describedby", "nl-favorite-login-description");
 
@@ -62,9 +68,10 @@ export function redirectToLoginForFavorite() {
 
   actions.append(continueButton, loginLink);
   dialog.append(title, description, actions);
+  backdrop.append(dialog);
 
   document.addEventListener("keydown", handleFavoriteLoginPromptKeydown);
-  document.body.append(dialog);
+  document.body.append(backdrop);
 }
 
 export function requireMemberFavoriteAccess() {
