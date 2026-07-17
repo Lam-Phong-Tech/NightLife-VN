@@ -4739,6 +4739,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "无法发送预订请求。",
   },
   {
+    vi: "Bạn gửi yêu cầu đặt bàn quá nhanh. Vui lòng chờ một chút rồi thử lại.",
+    en: "Too many booking requests. Please wait a moment and try again.",
+    ja: "予約リクエストが多すぎます。少し待ってからもう一度お試しください。",
+    ko: "예약 요청이 너무 빠릅니다. 잠시 후 다시 시도해 주세요.",
+    zh: "预订请求过于频繁。请稍等片刻后再试。",
+  },
+  {
     vi: "Chọn buổi đặt bàn",
     en: "Choose reservation period",
     ja: "予約時間帯を選択",

@@ -262,6 +262,7 @@ export function BookingDateTimeFields({
         }}
         onOpenChange={(open) => setDatePickerOpen(open && !disabled)}
         open={isDatePickerOpen && !disabled}
+        placement="bottomLeft"
         placeholder={selectDateText}
         popupClassName="nl-booking-ant-popup"
         value={currentDate}

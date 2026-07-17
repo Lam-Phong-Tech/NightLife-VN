@@ -2596,6 +2596,56 @@ html.vy-light .nl-booking-ant-popup .ant-picker-cell-disabled::before {
   color: var(--vy-on-gold) !important;
 }
 
+@media (max-width: 640px) {
+  .nl-booking-ant-popup.ant-picker-dropdown {
+    position: fixed !important;
+    inset: max(10px, env(safe-area-inset-top)) 10px auto !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px);
+    z-index: 10020;
+  }
+
+  .nl-booking-ant-popup .ant-picker-panel-container {
+    width: 100%;
+    max-height: min(430px, calc(100dvh - 20px - env(safe-area-inset-top)));
+    overflow: auto;
+    border-radius: 14px;
+  }
+
+  .nl-booking-ant-popup .ant-picker-panel,
+  .nl-booking-ant-popup .ant-picker-date-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .nl-booking-ant-popup .ant-picker-header {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+
+  .nl-booking-ant-popup .ant-picker-body {
+    padding: 6px 8px 8px;
+  }
+
+  .nl-booking-ant-popup .ant-picker-content {
+    width: 100%;
+  }
+
+  .nl-booking-ant-popup .ant-picker-content th {
+    height: 28px;
+  }
+
+  .nl-booking-ant-popup .ant-picker-cell {
+    padding: 2px 0;
+  }
+
+  .nl-booking-ant-popup .ant-picker-cell-inner {
+    min-width: 30px;
+    height: 28px;
+    line-height: 28px;
+  }
+}
+
 .nl-booking-empty-message {
   display: block;
   margin-top: 8px;
