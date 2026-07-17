@@ -139,11 +139,30 @@ describe('AccessService', () => {
     await expect(
       service.canApproveBill({ id: 'admin-1', role: 'ADMIN' }, 'bill-1'),
     ).resolves.toBe(true);
+    await expect(
+      service.canApproveBill(
+        { id: 'super-admin-1', role: 'SUPER_ADMIN' },
+        'bill-2',
+      ),
+    ).resolves.toBe(true);
 
-    expect(prisma.rolePermission.findFirst).toHaveBeenCalledWith({
+    expect(prisma.rolePermission.findFirst).toHaveBeenNthCalledWith(1, {
       where: {
         role: {
           key: 'admin',
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        permission: {
+          key: 'bill.approve',
+        },
+      },
+      select: { id: true },
+    });
+    expect(prisma.rolePermission.findFirst).toHaveBeenNthCalledWith(2, {
+      where: {
+        role: {
+          key: 'super_admin',
           status: 'ACTIVE',
           deletedAt: null,
         },

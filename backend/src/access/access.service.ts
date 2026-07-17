@@ -13,6 +13,7 @@ export type AuthenticatedUser = {
 };
 
 const USER_ROLE_TO_ROLE_KEY: Record<string, string> = {
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   PARTNER: 'partner',
   OPERATOR: 'operator',
@@ -24,8 +25,12 @@ const USER_ROLE_TO_ROLE_KEY: Record<string, string> = {
 export class AccessService {
   constructor(private readonly prisma: PrismaService) {}
 
+  isSuperAdmin(user: AuthenticatedUser) {
+    return user.role === 'SUPER_ADMIN';
+  }
+
   isAdmin(user: AuthenticatedUser) {
-    return user.role === 'ADMIN';
+    return user.role === 'ADMIN' || this.isSuperAdmin(user);
   }
 
   isOperator(user: AuthenticatedUser) {
