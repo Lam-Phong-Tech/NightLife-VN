@@ -6294,6 +6294,48 @@ export default function PartnerPage() {
                 </tbody>
               </table>
             </div>
+            <div className="partner-bill-mobile-list">
+              {scopedBillRows.length ? (
+                scopedBillRows.map((bill, index) => {
+                  const active = selectedBillId === bill.id;
+                  const billCode = bill.billNumber ?? bill.id.slice(0, 8);
+                  const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
+                  const bookingText = bill.booking
+                    ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}`
+                    : 'Không liên kết booking';
+                  const statusTone = bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold';
+
+                  return (
+                    <button
+                      key={bill.id}
+                      type="button"
+                      className={active ? 'partner-bill-mobile-card active' : 'partner-bill-mobile-card'}
+                      onClick={() => fillBillFormFromRow(bill)}
+                    >
+                      <div className="partner-bill-mobile-head">
+                        <span className="partner-bill-mobile-index">#{index + 1}</span>
+                        <span className="partner-bill-mobile-code">{billCode}</span>
+                        <StatusPill tone={statusTone}>{translateBillStatus(bill.status)}</StatusPill>
+                      </div>
+                      <div className="partner-bill-mobile-store">{storeName}</div>
+                      <div className="partner-bill-mobile-grid">
+                        <span>
+                          <small>Tổng tiền</small>
+                          <b>{moneyVnd(bill.totalVnd ?? 0)}</b>
+                        </span>
+                        <span>
+                          <small>Thời gian</small>
+                          <b>{formatDateTime(bill.usedAt ?? bill.submittedAt)}</b>
+                        </span>
+                      </div>
+                      <div className="partner-bill-mobile-booking">{bookingText}</div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="partner-bill-mobile-empty">Chưa có hóa đơn trong quán đang chọn.</div>
+              )}
+            </div>
           </PanelCard>
         </div>
 
@@ -7576,6 +7618,9 @@ export default function PartnerPage() {
         .partner-cast-table {
           white-space: nowrap;
         }
+        .partner-bill-mobile-list {
+          display: none;
+        }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -7921,6 +7966,122 @@ export default function PartnerPage() {
           .partner-table-scroll {
             margin: 0 -16px -4px;
             padding: 0 16px 4px;
+          }
+          .partner-bill-table-scroll {
+            display: none !important;
+          }
+          .partner-bill-mobile-list {
+            display: grid;
+            gap: 10px;
+          }
+          .partner-bill-mobile-card {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid ${colors.borderHair};
+            border-radius: 14px;
+            background: ${colors.surface2};
+            color: ${colors.text};
+            cursor: pointer;
+            display: grid;
+            gap: 10px;
+            font-family: inherit;
+            padding: 12px;
+            text-align: left;
+          }
+          .partner-bill-mobile-card.active {
+            border-color: ${colors.borderGold40};
+            background: rgba(212, 178, 106, .12);
+          }
+          .partner-bill-mobile-head {
+            align-items: center;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+          }
+          .partner-bill-mobile-index {
+            align-items: center;
+            background: rgba(212,178,106,.16);
+            border: 1px solid ${colors.borderGold22};
+            border-radius: 999px;
+            color: ${colors.goldBright};
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 900;
+            height: 26px;
+            justify-content: center;
+            min-width: 34px;
+            padding: 0 8px;
+          }
+          .partner-bill-mobile-code {
+            color: ${colors.goldBright};
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.35;
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+          .partner-bill-mobile-head .partner-status-pill {
+            max-width: 112px;
+            min-height: 24px !important;
+            overflow: hidden;
+            padding: 0 8px !important;
+            text-overflow: ellipsis;
+          }
+          .partner-bill-mobile-store {
+            color: ${colors.text};
+            display: -webkit-box;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.35;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+          }
+          .partner-bill-mobile-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          }
+          .partner-bill-mobile-grid span {
+            background: rgba(255,255,255,.035);
+            border: 1px solid ${colors.borderSoft};
+            border-radius: 12px;
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+            padding: 9px 10px;
+          }
+          .partner-bill-mobile-grid small {
+            color: ${colors.muted};
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.2;
+          }
+          .partner-bill-mobile-grid b {
+            color: ${colors.goldPale};
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .partner-bill-mobile-booking {
+            border-top: 1px solid ${colors.borderHair};
+            color: ${colors.text2};
+            font-size: 11.5px;
+            font-weight: 700;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+            padding-top: 10px;
+          }
+          .partner-bill-mobile-empty {
+            border: 1px solid ${colors.borderHair};
+            border-radius: 14px;
+            color: ${colors.text2};
+            font-size: 13px;
+            padding: 16px 12px;
+            text-align: center;
           }
           .partner-settlement-table {
             min-width: 760px !important;
