@@ -304,26 +304,6 @@ type BillApprovalPreview = {
   };
 };
 
-type CommissionOverride = {
-  couponId: string | null;
-  couponCode: string;
-  couponName: string | null;
-  commissionPercent: number;
-  active: boolean;
-  note: string | null;
-  updatedAt: string | null;
-  store?: { id: string; name: string; slug?: string | null };
-};
-
-type CommissionOverrideFormState = {
-  storeId: string;
-  couponId: string;
-  couponCode: string;
-  commissionPercent: string;
-  note: string;
-  active: boolean;
-};
-
 type AdminPartnerRequest = {
   id: string;
   notificationId: string | null;
@@ -490,15 +470,6 @@ type PartnerRequestFilterState = {
   keyword: string;
   page: string;
   limit: string;
-};
-
-const defaultCommissionOverrideForm: CommissionOverrideFormState = {
-  storeId: "",
-  couponId: "",
-  couponCode: "",
-  commissionPercent: "",
-  note: "",
-  active: true,
 };
 
 const defaultPartnerRequestFilters: PartnerRequestFilterState = {
@@ -1750,11 +1721,6 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
   const [couponIssueActionId, setCouponIssueActionId] = useState<string | null>(null);
   const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
-  const [commissionOverrides, setCommissionOverrides] = useState<CommissionOverride[]>([]);
-  const [commissionOverrideForm, setCommissionOverrideForm] = useState<CommissionOverrideFormState>(
-    defaultCommissionOverrideForm,
-  );
-  const [savingCommissionOverride, setSavingCommissionOverride] = useState(false);
   const [billPreviews, setBillPreviews] = useState<Record<string, BillApprovalPreview["preview"]>>({});
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -1813,7 +1779,6 @@ export default function AdminConsole({ section }: { section?: string }) {
         contentData,
         bookingChangeRequestData,
         cancelAnalyticsData,
-        commissionOverrideData,
       ] = await Promise.all([
         apiClient<AdminStore[]>("/partner/stores"),
         apiClient<AdminCast[] | { data: AdminCast[] }>("/admin/casts", { params: { limit: 100 } }),
@@ -1835,7 +1800,6 @@ export default function AdminConsole({ section }: { section?: string }) {
         contentApi.adminList({ limit: 100 }),
         bookingApi.listAdminBookingChangeRequests({ status: "REQUESTED" }),
         bookingApi.getAdminCancelAnalytics(30),
-        apiClient<{ data: CommissionOverride[] }>("/admin/commission-overrides").catch(() => ({ data: [] })),
       ]);
 
       setStores(storeData);
@@ -1850,7 +1814,6 @@ export default function AdminConsole({ section }: { section?: string }) {
       setContentItems(contentData);
       setBookingChangeRequests(bookingChangeRequestData);
       setCancelAnalytics(cancelAnalyticsData);
-      setCommissionOverrides(Array.isArray(commissionOverrideData.data) ? commissionOverrideData.data : []);
       setBookingPolicyStoreId((current) => current || storeData[0]?.id || "");
       setStatusMessage("Đang xem bằng token ADMIN.");
       setRankingStatusMessage(`Đã tải ${rankingData.length} cấu hình ranking.`);
@@ -2532,61 +2495,6 @@ export default function AdminConsole({ section }: { section?: string }) {
         }
       }
     });
-  };
-
-  const updateCommissionOverrideForm = (key: keyof CommissionOverrideFormState, value: string | boolean) => {
-    setCommissionOverrideForm((current) => ({ ...current, [key]: value }));
-  };
-
-  const saveCommissionOverride = async () => {
-    const percent = Number(commissionOverrideForm.commissionPercent);
-    if (!commissionOverrideForm.storeId || (!commissionOverrideForm.couponId && !commissionOverrideForm.couponCode)) {
-      setStatusMessage("Chon quan va nhap coupon id/code truoc khi luu override.");
-      return;
-    }
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-      setStatusMessage("Commission override phai tu 0 den 100%.");
-      return;
-    }
-
-    setSavingCommissionOverride(true);
-    try {
-      await apiClient("/admin/commission-overrides", {
-        method: "POST",
-        data: {
-          storeId: commissionOverrideForm.storeId,
-          couponId: commissionOverrideForm.couponId || undefined,
-          couponCode: commissionOverrideForm.couponCode || undefined,
-          commissionPercent: Math.round(percent),
-          note: commissionOverrideForm.note || undefined,
-          active: commissionOverrideForm.active,
-        },
-      });
-      setStatusMessage("Da luu campaign commission override.");
-      setCommissionOverrideForm(defaultCommissionOverrideForm);
-      await loadAdminData();
-    } catch (error) {
-      setStatusMessage(error instanceof ApiError ? error.message : "Khong luu duoc commission override.");
-    } finally {
-      setSavingCommissionOverride(false);
-    }
-  };
-
-  const disableCommissionOverride = async (override: CommissionOverride) => {
-    if (!override.store?.id || !override.couponId) return;
-
-    setSavingCommissionOverride(true);
-    try {
-      await apiClient(`/admin/commission-overrides/${override.store.id}/${override.couponId}`, {
-        method: "DELETE",
-      });
-      setStatusMessage("Da tat campaign commission override.");
-      await loadAdminData();
-    } catch (error) {
-      setStatusMessage(error instanceof ApiError ? error.message : "Khong tat duoc commission override.");
-    } finally {
-      setSavingCommissionOverride(false);
-    }
   };
 
   const reviewPartnerRequest = async (requestId: string, approve: boolean, customReason?: string) => {
@@ -4269,119 +4177,21 @@ export default function AdminConsole({ section }: { section?: string }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(0,1.1fr)", gap: 16 }}>
         <Panel style={{ padding: 18 }}>
-          <SectionTitle title="Commission override" eyebrow="CAMPAIGN RULES" />
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
-              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
-                Quán
-                <select
-                  value={commissionOverrideForm.storeId}
-                  onChange={(event) => updateCommissionOverrideForm("storeId", event.target.value)}
-                  style={inputStyle({ minHeight: 38 })}
-                >
-                  <option value="">Chọn quán</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
-                Coupon ID
-                <input
-                  value={commissionOverrideForm.couponId}
-                  onChange={(event) => updateCommissionOverrideForm("couponId", event.target.value)}
-                  style={inputStyle({ minHeight: 38 })}
-                  placeholder="UUID"
-                />
-              </label>
-              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
-                Coupon code
-                <input
-                  value={commissionOverrideForm.couponCode}
-                  onChange={(event) => updateCommissionOverrideForm("couponCode", event.target.value)}
-                  style={inputStyle({ minHeight: 38 })}
-                  placeholder="VIP10"
-                />
-              </label>
-              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
-                Commission %
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={commissionOverrideForm.commissionPercent}
-                  onChange={(event) => updateCommissionOverrideForm("commissionPercent", event.target.value)}
-                  style={inputStyle({ minHeight: 38 })}
-                />
-              </label>
-            </div>
-            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
-              Note
-              <input
-                value={commissionOverrideForm.note}
-                onChange={(event) => updateCommissionOverrideForm("note", event.target.value)}
-                style={inputStyle({ minHeight: 38 })}
-                placeholder="PM approved launch override"
-              />
-            </label>
-            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.text2, fontSize: 12 }}>
-                <input
-                  type="checkbox"
-                  checked={commissionOverrideForm.active}
-                  onChange={(event) => updateCommissionOverrideForm("active", event.target.checked)}
-                />
-                Active
-              </label>
-              <button
-                type="button"
-                disabled={savingCommissionOverride}
-                onClick={() => void saveCommissionOverride()}
-                style={buttonStyle("primary")}
-              >
-                <Save size={14} />
-                Lưu override
-              </button>
-            </span>
-            <div style={{ display: "grid", gap: 8 }}>
-              {commissionOverrides.slice(0, 6).map((override) => (
-                <div
-                  key={`${override.store?.id ?? "store"}-${override.couponId ?? override.couponCode}`}
-                  style={{
-                    border: `1px solid ${colors.borderSoft}`,
-                    background: colors.surface2,
-                    padding: 12,
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
-                  <span>
-                    <b style={{ color: colors.text }}>{override.couponCode}</b>
-                    <span style={{ display: "block", color: colors.muted, fontSize: 12, marginTop: 3 }}>
-                      {override.store?.name ?? "-"} · {override.commissionPercent}% · {override.note ?? "no note"}
-                    </span>
-                  </span>
-                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <Badge tone={override.active ? "ACTIVE" : "INACTIVE"}>{override.active ? "ACTIVE" : "INACTIVE"}</Badge>
-                    {override.active ? (
-                      <button
-                        type="button"
-                        disabled={savingCommissionOverride || !override.couponId}
-                        onClick={() => void disableCommissionOverride(override)}
-                        style={buttonStyle("danger")}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : null}
-                  </span>
-                </div>
-              ))}
-              {!commissionOverrides.length ? <EmptyState>Chưa có commission override.</EmptyState> : null}
-            </div>
+          <SectionTitle title="Cấu hình hoa hồng" eyebrow="DISABLED" />
+          <div
+            style={{
+              border: `1px solid ${colors.borderSoft}`,
+              background: colors.surface2,
+              padding: 14,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <Badge tone="INACTIVE">Đã tắt</Badge>
+            <p style={{ margin: 0, color: colors.text2, fontSize: 13, lineHeight: 1.55 }}>
+              Hệ thống không còn sử dụng CommissionConfig hoặc campaign commission override. Bill được duyệt với
+              commissionAmountVnd = 0.
+            </p>
           </div>
         </Panel>
         <Panel style={{ padding: 18 }}>
@@ -4976,7 +4786,6 @@ export default function AdminConsole({ section }: { section?: string }) {
               >
                 <option value="all">All flags</option>
                 <option value="NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED">Negative commission</option>
-                <option value="MISSING_ACTIVE_COMMISSION_CONFIG">Missing config</option>
               </select>
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>

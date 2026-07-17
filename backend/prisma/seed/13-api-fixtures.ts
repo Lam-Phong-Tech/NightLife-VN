@@ -544,51 +544,6 @@ export async function seedApiFixtures(
     });
   }
 
-  const commissionConfig = await prisma.commissionConfig.findFirst({
-    where: { storeId: stores['moonlight-bar'].id, status: 'ACTIVE' },
-    orderBy: { activeFrom: 'desc' },
-  });
-  const overrideCoupon = coupons.GUEST5;
-  if (commissionConfig && overrideCoupon) {
-    const current =
-      commissionConfig.ruleSnapshot &&
-      typeof commissionConfig.ruleSnapshot === 'object' &&
-      !Array.isArray(commissionConfig.ruleSnapshot)
-        ? commissionConfig.ruleSnapshot
-        : {};
-    const override = {
-      couponId: overrideCoupon.id,
-      couponCode: overrideCoupon.code,
-      couponName: overrideCoupon.name,
-      commissionPercent: 18,
-      active: true,
-      note: 'Seed campaign commission override',
-      createdAt: seedDate(now, -30).toISOString(),
-      createdById: users.admin?.id ?? null,
-      updatedAt: now.toISOString(),
-      updatedById: users.admin?.id ?? null,
-    };
-    await prisma.commissionConfig.update({
-      where: { id: commissionConfig.id },
-      data: {
-        ruleSnapshot: {
-          ...current,
-          campaignCommissionOverrides: [override],
-          campaignCommissionRates: {
-            [overrideCoupon.id]: {
-              commissionPercent: override.commissionPercent,
-              active: true,
-            },
-            [overrideCoupon.code]: {
-              commissionPercent: override.commissionPercent,
-              active: true,
-            },
-          },
-        },
-      },
-    });
-  }
-
   // --- Seed MemberFavoriteStore ---
   const favoriteStorePairs = [
     ['member', 'moonlight-bar'],

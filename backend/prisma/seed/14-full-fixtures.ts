@@ -422,27 +422,6 @@ export async function seedFullFixtures(
     },
   });
 
-  for (const [index, status] of (['INACTIVE', 'ARCHIVED'] as const).entries()) {
-    const id = seedUuid(`full-commission:${status}`);
-    const data = {
-      storeId: stores['moonlight-bar'].id,
-      createdById: users.admin?.id ?? null,
-      commissionType:
-        index === 0 ? ('FIXED_AMOUNT' as const) : ('PERCENT' as const),
-      commissionValue: index === 0 ? 250_000 : 15,
-      pointEarnRate: 0.01,
-      status,
-      activeFrom: seedDate(now, -60, 0),
-      activeTo: seedDate(now, -30, 23, 59),
-      ruleSnapshot: { seed: true, lifecycleStatus: status },
-    };
-    await prisma.commissionConfig.upsert({
-      where: { id },
-      update: data,
-      create: { id, ...data },
-    });
-  }
-
   const earnLedger =
     transactions.pointLedgers['completed-member-paid'] ??
     Object.values(transactions.pointLedgers)[0];

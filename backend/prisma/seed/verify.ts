@@ -63,7 +63,6 @@ export async function verifySeedCoverage(
     Coupon: await prisma.coupon.count(),
     CouponIssue: await prisma.couponIssue.count(),
     Bill: await prisma.bill.count(),
-    CommissionConfig: await prisma.commissionConfig.count(),
     PointLedger: await prisma.pointLedger.count(),
     Media: await prisma.media.count(),
     Content: await prisma.content.count(),
@@ -108,7 +107,6 @@ export async function verifySeedCoverage(
     'Coupon',
     'CouponIssue',
     'Bill',
-    'CommissionConfig',
     'PointLedger',
     'Media',
     'Content',
@@ -236,7 +234,6 @@ export async function verifySeedCoverage(
     relationChain,
     telegramLogs,
     profileViews,
-    commissionConfigs,
   ] = await Promise.all([
     prisma.booking.count({ where: { note: { startsWith: 'Seed' } } }),
     prisma.bill.count({
@@ -285,24 +282,7 @@ export async function verifySeedCoverage(
     prisma.auditLog.count({
       where: { action: 'PROFILE_VIEW_RECORDED' },
     }),
-    prisma.commissionConfig.findMany({
-      where: { status: 'ACTIVE' },
-      select: { ruleSnapshot: true },
-    }),
   ]);
-  const commissionOverride = commissionConfigs.filter((config) => {
-    if (
-      !config.ruleSnapshot ||
-      typeof config.ruleSnapshot !== 'object' ||
-      Array.isArray(config.ruleSnapshot)
-    ) {
-      return false;
-    }
-
-    const overrides = (config.ruleSnapshot as Record<string, unknown>)
-      .campaignCommissionOverrides;
-    return Array.isArray(overrides) && overrides.length > 0;
-  }).length;
 
   requireCondition(
     deterministicBookings === 20,
@@ -328,10 +308,6 @@ export async function verifySeedCoverage(
     'admin Telegram dashboard logs are missing',
   );
   requireCondition(profileViews > 0, 'profile view audit fixtures are missing');
-  requireCondition(
-    commissionOverride > 0,
-    'campaign commission override is missing',
-  );
 
   if (profile === 'full') {
     const [
@@ -344,7 +320,6 @@ export async function verifySeedCoverage(
       storeRows,
       castRows,
       couponRows,
-      commissionRows,
       pointRows,
       mediaRows,
       contentRows,
@@ -357,7 +332,6 @@ export async function verifySeedCoverage(
       chatSenderTypes,
       chatTopics,
       discountTypes,
-      commissionTypes,
       pointTypes,
       mediaTypes,
       mediaAccess,
@@ -385,10 +359,6 @@ export async function verifySeedCoverage(
       prisma.store.findMany({ distinct: ['status'], select: { status: true } }),
       prisma.cast.findMany({ distinct: ['status'], select: { status: true } }),
       prisma.coupon.findMany({
-        distinct: ['status'],
-        select: { status: true },
-      }),
-      prisma.commissionConfig.findMany({
         distinct: ['status'],
         select: { status: true },
       }),
@@ -430,10 +400,6 @@ export async function verifySeedCoverage(
       prisma.coupon.findMany({
         distinct: ['discountType'],
         select: { discountType: true },
-      }),
-      prisma.commissionConfig.findMany({
-        distinct: ['commissionType'],
-        select: { commissionType: true },
       }),
       prisma.pointLedger.findMany({
         distinct: ['type'],
@@ -494,11 +460,6 @@ export async function verifySeedCoverage(
       'EXPIRED',
       'ARCHIVED',
       'DELETED',
-    ]);
-    requireStatuses('CommissionConfig', commissionRows, [
-      'ACTIVE',
-      'INACTIVE',
-      'ARCHIVED',
     ]);
     requireStatuses('PointLedger', pointRows, [
       'PENDING',
@@ -577,11 +538,6 @@ export async function verifySeedCoverage(
     requireValues(
       'DiscountType',
       discountTypes.map((row) => row.discountType),
-      ['PERCENT', 'FIXED_AMOUNT'],
-    );
-    requireValues(
-      'CommissionType',
-      commissionTypes.map((row) => row.commissionType),
       ['PERCENT', 'FIXED_AMOUNT'],
     );
     requireValues(

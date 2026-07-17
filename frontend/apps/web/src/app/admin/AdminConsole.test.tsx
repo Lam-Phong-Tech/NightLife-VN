@@ -600,22 +600,6 @@ describe("AdminConsole coupon issue panel", () => {
       );
     });
 
-    fireEvent.change(screen.getByLabelText("Revenue report commission flag"), {
-      target: { value: "MISSING_ACTIVE_COMMISSION_CONFIG" },
-    });
-    fireEvent.click(screen.getByLabelText("Apply revenue report date filters"));
-
-    await waitFor(() => {
-      expect(mocks.apiClient).toHaveBeenCalledWith(
-        "/admin/reports/revenue",
-        expect.objectContaining({
-          params: expect.objectContaining({
-            flag: "MISSING_ACTIVE_COMMISSION_CONFIG",
-          }),
-        }),
-      );
-    });
-
     fireEvent.click(screen.getByLabelText("Revenue coupon drilldown WELCOME20"));
     expect(within(panel).getAllByText("BILL-20260701-VERIFIED").length).toBeGreaterThan(0);
 

@@ -27,7 +27,10 @@ export class AdminCommissionOverrideQueryDto {
 }
 
 export class CreateCommissionOverrideDto {
-  @ApiProperty({ description: 'Store that owns the active CommissionConfig.' })
+  @ApiProperty({
+    description:
+      'Deprecated input. Commission override APIs are disabled and return 410 Gone.',
+  })
   @IsUUID()
   storeId: string;
 
@@ -50,7 +53,8 @@ export class CreateCommissionOverrideDto {
     example: 18,
     minimum: 0,
     maximum: 100,
-    description: 'Override commission percent for this campaign.',
+    description:
+      'Deprecated input. Commission override APIs are disabled and return 410 Gone.',
   })
   @Type(() => Number)
   @IsInt()
@@ -75,7 +79,8 @@ export class UpdateCommissionOverrideDto {
     example: 18,
     minimum: 0,
     maximum: 100,
-    description: 'Override commission percent for this campaign.',
+    description:
+      'Deprecated input. Commission override APIs are disabled and return 410 Gone.',
   })
   @IsOptional()
   @Type(() => Number)

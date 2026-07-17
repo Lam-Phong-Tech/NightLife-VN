@@ -1111,7 +1111,7 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
-    summary: 'Admin action: list campaign commission overrides',
+    summary: 'Deprecated: campaign commission overrides are disabled',
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1123,7 +1123,7 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
-    summary: 'Admin action: create campaign commission override',
+    summary: 'Deprecated: campaign commission override creation is disabled',
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1139,7 +1139,7 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
-    summary: 'Admin action: update campaign commission override',
+    summary: 'Deprecated: campaign commission override updates are disabled',
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1159,7 +1159,7 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
-    summary: 'Admin action: delete campaign commission override',
+    summary: 'Deprecated: campaign commission override deletion is disabled',
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)

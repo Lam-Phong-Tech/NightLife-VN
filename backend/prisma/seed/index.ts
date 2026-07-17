@@ -10,7 +10,6 @@ import { seedStores } from './04-stores';
 import { seedCasts } from './05-casts';
 import { seedMedia } from './06-media';
 import { seedCoupons } from './07-coupons';
-import { seedCommissions } from './08-commissions';
 import { seedContents } from './09-contents';
 import { seedRankings } from './10-rankings';
 import { seedStorePermissions } from './11-store-permissions';
@@ -41,7 +40,6 @@ export async function seedAll(
   const casts = await seedCasts(prisma, stores);
   await seedMedia(prisma, stores, casts);
   const coupons = await seedCoupons(prisma, stores);
-  await seedCommissions(prisma, stores, users);
   await seedContents(prisma, users);
   await seedRankings(prisma, stores, casts, users);
   const transactions = await seedBookingsAndBills(
@@ -107,7 +105,7 @@ export async function seedAll(
     '    ↳ Videos: YouTube embed URLs (real bar/restaurant/club videos)',
   );
   console.log('  • Coupons:       5 (3 PERCENT + 2 FIXED)');
-  console.log('  • Commissions:   10 configs');
+  console.log('  • Commissions:   disabled (no configs seeded)');
   console.log('  • Contents:      5 (3 blogs + 2 policies)');
   console.log('  • Rankings:      10 (5 casts + 5 stores)');
   console.log('  • Guests:        10 walk-in customers');

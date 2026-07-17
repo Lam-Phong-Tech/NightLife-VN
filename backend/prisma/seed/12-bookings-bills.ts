@@ -434,20 +434,6 @@ export async function seedBookingsAndBills(
     });
   }
 
-  const commissionConfigs = await prisma.commissionConfig.findMany({
-    where: { status: 'ACTIVE' },
-    orderBy: { activeFrom: 'desc' },
-  });
-  const commissionPercentByStore = new Map<string, number>();
-  for (const config of commissionConfigs) {
-    if (!commissionPercentByStore.has(config.storeId)) {
-      commissionPercentByStore.set(
-        config.storeId,
-        config.commissionType === 'PERCENT' ? config.commissionValue : 0,
-      );
-    }
-  }
-
   const balances = new Map<string, number>();
 
   for (const fixture of BOOKINGS) {
@@ -624,10 +610,8 @@ export async function seedBookingsAndBills(
     const serviceChargeVnd = Math.round(totalVnd * 0.05);
     const taxVnd = Math.round(totalVnd * 0.1);
     const paidVnd = totalVnd + serviceChargeVnd + taxVnd;
-    const commissionPercent = commissionPercentByStore.get(store.id) ?? 15;
-    const commissionAmountVnd =
-      Math.round((fixture.subtotalVnd * commissionPercent) / 100) -
-      fixture.discountVnd;
+    const commissionPercent = 0;
+    const commissionAmountVnd = 0;
     const reviewedStatuses: BillStatus[] = [
       'PENDING_PM_BA',
       'VERIFIED',
@@ -644,7 +628,7 @@ export async function seedBookingsAndBills(
     const reviewedAt = reviewedStatuses.includes(fixture.billStatus)
       ? new Date(submittedAt.getTime() + 30 * 60 * 1000)
       : null;
-    const flags = commissionAmountVnd < 0 ? ['NEGATIVE_COMMISSION'] : [];
+    const flags: string[] = [];
     const billData = {
       bookingId: booking.id,
       userId: user?.id ?? null,
@@ -687,12 +671,13 @@ export async function seedBookingsAndBills(
       commissionRuleSnapshot: {
         version: 'bill-revenue-v1',
         basis: 'bill_gross_before_discount',
-        formula: 'grossVnd * commission_rate - discountVnd',
+        formula: 'commission disabled',
+        source: 'COMMISSION_DISABLED',
         commissionPercent,
         grossVnd: fixture.subtotalVnd,
         discountVnd: fixture.discountVnd,
         commissionAmountVnd,
-        requiresPmBaConfirmation: commissionAmountVnd < 0,
+        requiresPmBaConfirmation: false,
         flags,
       },
       pointRuleSnapshot: {

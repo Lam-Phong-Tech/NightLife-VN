@@ -892,7 +892,7 @@ function AdminStoresContent() {
             CẢNH BÁO: Xóa cứng quán sẽ xóa vĩnh viễn toàn bộ dữ liệu liên quan:
           </div>
           <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px', color: '#c5c0b6' }}>
-            <li>Xóa các quyền truy cập quán (StorePermission) và cấu hình hoa hồng (CommissionConfig).</li>
+            <li>Xóa các quyền truy cập quán (StorePermission) và dữ liệu cấu hình legacy nếu còn.</li>
             <li>Xóa các đơn đặt bàn (Booking), hóa đơn (Bill), tin nhắn/mã QR liên quan đến bàn đó.</li>
             <li>Xóa các mã giảm giá (Coupon) đã phát hành của quán.</li>
             <li>Xóa nhân viên (Cast) và các lượt yêu thích nhân viên.</li>

@@ -2315,7 +2315,7 @@ export function AdminRevenueReportContract() {
       name: 'flag',
       required: false,
       description:
-        'Optional commission flag filter: NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED or MISSING_ACTIVE_COMMISSION_CONFIG.',
+        'Optional legacy commission flag filter: NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED.',
     }),
     ApiQuery({
       name: 'partnerAccountId',
@@ -2354,7 +2354,7 @@ export function ReviewSensitiveBillContract() {
     ApiOperation({
       summary: 'Admin action: review a sensitive bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canApproveBill). Writes AuditLog beforeJson/afterJson snapshots. Negative commission approval moves to PENDING_PM_BA until PM/BA confirmation reason is provided; verified/rejected notifications are only sent for final VERIFIED/REJECTED outcomes.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canApproveBill). Writes AuditLog beforeJson/afterJson snapshots. CommissionConfig is no longer required for bill approval; commission is recorded as disabled/0. Verified/rejected notifications are only sent for final VERIFIED/REJECTED outcomes.',
     }),
     ApiParam({ name: 'billId', example: 'bill_01' }),
     ApiBody({ type: ReviewBillDto }),
@@ -2392,15 +2392,11 @@ export function ReviewSensitiveBillContract() {
     }),
     ApiUnprocessableEntityResponse({
       description:
-        'Bill exists but cannot be reviewed in the requested state or is missing required approval rules.',
+        'Bill exists but cannot be reviewed in the requested state.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Missing active CommissionConfig for bill approval',
-          code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
-          flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
-          reason:
-            'Bill approval requires an active CommissionConfig before commission can be calculated.',
+          message: 'Bill is not in a reviewable status',
           error: 'Unprocessable Entity',
         },
       },

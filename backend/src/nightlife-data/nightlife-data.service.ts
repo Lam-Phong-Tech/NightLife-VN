@@ -137,7 +137,6 @@ const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
 const NEGATIVE_COMMISSION_FLAG =
   'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED';
-const MISSING_COMMISSION_CONFIG_FLAG = 'MISSING_ACTIVE_COMMISSION_CONFIG';
 const DEFAULT_REVENUE_REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES: Record<string, number> = {
   'Asia/Ho_Chi_Minh': 7 * 60,
@@ -7586,49 +7585,15 @@ export class NightlifeDataService {
   ) {
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
-    const configs = await this.prisma.commissionConfig.findMany({
-      where: {
-        status: 'ACTIVE',
-        ...(storeId ? { storeId } : {}),
-      },
-      orderBy: [{ storeId: 'asc' }, { activeFrom: 'desc' }],
-      select: {
-        id: true,
-        storeId: true,
-        commissionType: true,
-        commissionValue: true,
-        ruleSnapshot: true,
-        activeFrom: true,
-        activeTo: true,
-        store: { select: { id: true, name: true, slug: true } },
-      },
-    });
-
-    const data = configs.flatMap((config) =>
-      this.readCampaignCommissionOverrides(
-        this.asRecord(config.ruleSnapshot) ?? {},
-      )
-        .filter((override) => !couponId || override.couponId === couponId)
-        .map((override) => ({
-          ...override,
-          commissionConfig: {
-            id: config.id,
-            storeId: config.storeId,
-            commissionType: config.commissionType,
-            commissionValue: config.commissionValue,
-            activeFrom: config.activeFrom.toISOString(),
-            activeTo: config.activeTo?.toISOString() ?? null,
-          },
-          store: config.store,
-        })),
-    );
 
     return {
-      data,
+      data: [],
       meta: {
-        total: data.length,
+        total: 0,
         storeId: storeId || null,
         couponId: couponId || null,
+        disabled: true,
+        reason: 'Commission configuration is no longer used.',
       },
     };
   }
@@ -7637,7 +7602,9 @@ export class NightlifeDataService {
     adminId: string,
     dto: CreateCommissionOverrideDto,
   ) {
-    return this.upsertAdminCommissionOverride(adminId, dto.storeId, dto);
+    void adminId;
+    void dto;
+    throw new GoneException('Commission override is no longer used');
   }
 
   async updateAdminCommissionOverride(
@@ -7646,10 +7613,11 @@ export class NightlifeDataService {
     couponId: string,
     dto: UpdateCommissionOverrideDto,
   ) {
-    return this.upsertAdminCommissionOverride(adminId, storeId, {
-      ...dto,
-      couponId,
-    });
+    void adminId;
+    void storeId;
+    void couponId;
+    void dto;
+    throw new GoneException('Commission override is no longer used');
   }
 
   async deleteAdminCommissionOverride(
@@ -7657,11 +7625,10 @@ export class NightlifeDataService {
     storeId: string,
     couponId: string,
   ) {
-    return this.upsertAdminCommissionOverride(adminId, storeId, {
-      couponId,
-      active: false,
-      note: 'Disabled by admin',
-    });
+    void adminId;
+    void storeId;
+    void couponId;
+    throw new GoneException('Commission override is no longer used');
   }
 
   async previewSensitiveBillApproval(adminId: string, billId: string) {
@@ -9369,85 +9336,9 @@ export class NightlifeDataService {
     reviewedAt: Date;
   }) {
     const storeId = input.bill.store?.id ?? null;
-    const commissionConfig = storeId
-      ? await this.prisma.commissionConfig.findFirst({
-          where: {
-            storeId,
-            status: 'ACTIVE',
-            activeFrom: { lte: input.reviewedAt },
-            AND: [
-              {
-                OR: [
-                  { activeTo: null },
-                  { activeTo: { gt: input.reviewedAt } },
-                ],
-              },
-              {
-                OR: [
-                  { minBillVnd: null },
-                  { minBillVnd: { lte: input.grossVnd } },
-                ],
-              },
-            ],
-          },
-          orderBy: [{ activeFrom: 'desc' }, { createdAt: 'desc' }],
-          select: {
-            id: true,
-            commissionType: true,
-            commissionValue: true,
-            minBillVnd: true,
-            ruleSnapshot: true,
-            activeFrom: true,
-            activeTo: true,
-          },
-        })
-      : null;
-    if (storeId && !commissionConfig) {
-      throw new UnprocessableEntityException({
-        message: 'Missing active CommissionConfig for bill approval',
-        error: 'Unprocessable Entity',
-        code: MISSING_COMMISSION_CONFIG_FLAG,
-        reason:
-          'Bill approval requires an active CommissionConfig before commission can be calculated.',
-        flags: [MISSING_COMMISSION_CONFIG_FLAG],
-        bill: {
-          id: input.bill.id ?? null,
-        },
-        store: {
-          id: storeId,
-          name: input.bill.store?.name ?? null,
-          slug: input.bill.store?.slug ?? null,
-        },
-      });
-    }
-
-    const configRuleSnapshot = this.asRecord(commissionConfig?.ruleSnapshot);
-    const campaignOverride = this.resolveCampaignCommissionPercent(
-      configRuleSnapshot,
-      input.bill.coupon,
-    );
-    const sourceCommissionPercent =
-      campaignOverride.percent ??
-      (commissionConfig?.commissionType === 'PERCENT'
-        ? this.normalizePercent(commissionConfig.commissionValue)
-        : null);
-    const grossCommissionVnd =
-      commissionConfig?.commissionType === 'FIXED_AMOUNT'
-        ? this.nonNegativeVnd(commissionConfig.commissionValue)
-        : sourceCommissionPercent !== null
-          ? Math.round(
-              input.grossVnd * this.percentToRate(sourceCommissionPercent),
-            )
-          : 0;
-    const commissionPercent = this.amountToPercent(
-      grossCommissionVnd,
-      input.grossVnd,
-    );
-    const commissionVnd = grossCommissionVnd - input.discountVnd;
-    const requiresPmBaConfirmation = commissionVnd < 0;
-    const flags = [
-      ...(requiresPmBaConfirmation ? [NEGATIVE_COMMISSION_FLAG] : []),
-    ];
+    const grossCommissionVnd = 0;
+    const commissionPercent = 0;
+    const commissionVnd = 0;
 
     return {
       commissionVnd,
@@ -9455,10 +9346,8 @@ export class NightlifeDataService {
         version: BILL_REVENUE_RULE_VERSION,
         snapshotAt: input.reviewedAt.toISOString(),
         basis: 'bill_gross_before_discount',
-        formula: 'grossVnd * (commission_rate - discount_rate)',
-        source: commissionConfig
-          ? (campaignOverride.source ?? 'STORE_COMMISSION_CONFIG')
-          : 'NO_STORE_COMMISSION_CONFIG',
+        formula: 'commission disabled',
+        source: 'COMMISSION_DISABLED',
         grossVnd: input.grossVnd,
         grossRevenueVnd: input.grossVnd,
         discountVnd: input.discountVnd,
@@ -9473,11 +9362,9 @@ export class NightlifeDataService {
         commissionRate: this.percentToRate(commissionPercent),
         discountPercent: input.discountPercent,
         discountRate: this.percentToRate(input.discountPercent),
-        requiresPmBaConfirmation,
-        pmBaConfirmationReason: requiresPmBaConfirmation
-          ? 'Commission is negative because discount rate is higher than commission rate.'
-          : null,
-        flags,
+        requiresPmBaConfirmation: false,
+        pmBaConfirmationReason: null,
+        flags: [],
         store: {
           id: storeId,
           name: input.bill.store?.name ?? null,
@@ -9497,359 +9384,9 @@ export class NightlifeDataService {
               status: input.bill.couponIssue.status,
             }
           : null,
-        commissionConfig: commissionConfig
-          ? {
-              id: commissionConfig.id,
-              commissionType: commissionConfig.commissionType,
-              commissionValue: commissionConfig.commissionValue,
-              minBillVnd: commissionConfig.minBillVnd,
-              activeFrom: commissionConfig.activeFrom.toISOString(),
-              activeTo: commissionConfig.activeTo?.toISOString() ?? null,
-              ruleSnapshot: configRuleSnapshot ?? null,
-            }
-          : null,
+        commissionConfig: null,
+        disabledReason: 'CommissionConfig logic was removed by product decision.',
       },
-    };
-  }
-
-  private async upsertAdminCommissionOverride(
-    adminId: string,
-    storeId: string,
-    dto: (CreateCommissionOverrideDto | UpdateCommissionOverrideDto) & {
-      couponId?: string;
-      couponCode?: string;
-    },
-  ) {
-    const couponId = this.cleanText(dto.couponId);
-    const couponCode = this.cleanText(dto.couponCode);
-
-    if (!couponId && !couponCode) {
-      throw new BadRequestException('couponId or couponCode is required');
-    }
-
-    const [config, coupon] = await Promise.all([
-      this.prisma.commissionConfig.findFirst({
-        where: {
-          storeId,
-          status: 'ACTIVE',
-          activeFrom: { lte: new Date() },
-          OR: [{ activeTo: null }, { activeTo: { gt: new Date() } }],
-        },
-        orderBy: [{ activeFrom: 'desc' }, { createdAt: 'desc' }],
-        select: {
-          id: true,
-          storeId: true,
-          commissionType: true,
-          commissionValue: true,
-          ruleSnapshot: true,
-          store: { select: { id: true, name: true, slug: true } },
-        },
-      }),
-      this.prisma.coupon.findFirst({
-        where: {
-          storeId,
-          deletedAt: null,
-          ...(couponId ? { id: couponId } : { code: couponCode }),
-        },
-        select: { id: true, code: true, name: true, storeId: true },
-      }),
-    ]);
-
-    if (!config) {
-      throw new UnprocessableEntityException({
-        message: 'Missing active CommissionConfig for override',
-        code: MISSING_COMMISSION_CONFIG_FLAG,
-        flags: [MISSING_COMMISSION_CONFIG_FLAG],
-        store: { id: storeId },
-      });
-    }
-
-    if (!coupon) {
-      throw new NotFoundException('Coupon campaign not found for store');
-    }
-
-    const currentSnapshot = this.asRecord(config.ruleSnapshot) ?? {};
-    const overrides = this.readCampaignCommissionOverrides(currentSnapshot);
-    const existing = overrides.find(
-      (override) =>
-        override.couponId === coupon.id || override.couponCode === coupon.code,
-    );
-
-    if (
-      dto.commissionPercent === undefined &&
-      dto.active !== false &&
-      !existing
-    ) {
-      throw new NotFoundException('Commission override not found');
-    }
-
-    const now = new Date().toISOString();
-    const nextOverride = {
-      couponId: coupon.id,
-      couponCode: coupon.code,
-      couponName: coupon.name,
-      commissionPercent:
-        dto.commissionPercent ?? existing?.commissionPercent ?? 0,
-      active: dto.active ?? existing?.active ?? true,
-      note: this.cleanText(dto.note) || existing?.note || null,
-      createdAt: existing?.createdAt ?? now,
-      createdById: existing?.createdById ?? adminId,
-      updatedAt: now,
-      updatedById: adminId,
-    };
-
-    const nextOverrides = [
-      ...overrides.filter(
-        (override) =>
-          override.couponId !== coupon.id &&
-          override.couponCode !== coupon.code,
-      ),
-      nextOverride,
-    ];
-    const nextSnapshot = this.withCampaignCommissionOverrides(
-      currentSnapshot,
-      nextOverrides,
-    );
-
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const commissionConfig = await tx.commissionConfig.update({
-        where: { id: config.id },
-        data: { ruleSnapshot: this.toPrismaJson(nextSnapshot) },
-        select: {
-          id: true,
-          storeId: true,
-          commissionType: true,
-          commissionValue: true,
-          ruleSnapshot: true,
-          updatedAt: true,
-          store: { select: { id: true, name: true, slug: true } },
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          actorId: adminId,
-          action: nextOverride.active
-            ? existing
-              ? 'commission.override.update'
-              : 'commission.override.create'
-            : 'commission.override.disable',
-          targetType: 'CommissionConfig',
-          targetId: config.id,
-          beforeJson: this.toPrismaJson({
-            override: existing ?? null,
-            ruleSnapshot: currentSnapshot,
-          }),
-          afterJson: this.toPrismaJson({
-            override: nextOverride,
-            ruleSnapshot: nextSnapshot,
-          }),
-          metadata: this.toPrismaJson({
-            storeId,
-            couponId: coupon.id,
-            couponCode: coupon.code,
-            commissionPercent: nextOverride.commissionPercent,
-            active: nextOverride.active,
-          }),
-        },
-      });
-
-      return commissionConfig;
-    });
-
-    return {
-      ...nextOverride,
-      commissionConfig: {
-        id: updated.id,
-        storeId: updated.storeId,
-        commissionType: updated.commissionType,
-        commissionValue: updated.commissionValue,
-        updatedAt: updated.updatedAt.toISOString(),
-      },
-      store: updated.store,
-    };
-  }
-
-  private resolveCampaignCommissionPercent(
-    ruleSnapshot: Record<string, unknown> | undefined,
-    coupon?: { id: string; code: string } | null,
-  ) {
-    if (!ruleSnapshot || !coupon) {
-      return { percent: null, source: null };
-    }
-
-    const explicitOverride = this.readCampaignCommissionOverrides(
-      ruleSnapshot,
-    ).find(
-      (override) =>
-        override.active &&
-        (override.couponId === coupon.id ||
-          override.couponCode === coupon.code),
-    );
-
-    if (explicitOverride) {
-      return {
-        percent: explicitOverride.commissionPercent,
-        source: 'CAMPAIGN_COMMISSION_OVERRIDE',
-      };
-    }
-
-    const campaignGroups = [
-      this.asRecord(ruleSnapshot.campaignCommissionRates),
-      this.asRecord(ruleSnapshot.campaignRates),
-      this.asRecord(ruleSnapshot.couponCommissionRates),
-      this.asRecord(ruleSnapshot.couponRates),
-    ].filter((group): group is Record<string, unknown> => Boolean(group));
-    const campaignKeys = [coupon.id, coupon.code].filter(Boolean);
-
-    for (const group of campaignGroups) {
-      for (const key of campaignKeys) {
-        const percent = this.extractCommissionPercent(group[key]);
-        if (percent !== null) {
-          return { percent, source: 'CAMPAIGN_COMMISSION_OVERRIDE' };
-        }
-      }
-    }
-
-    const directCouponId =
-      typeof ruleSnapshot.couponId === 'string' ? ruleSnapshot.couponId : null;
-    const directCouponCode =
-      typeof ruleSnapshot.couponCode === 'string'
-        ? ruleSnapshot.couponCode
-        : null;
-    if (directCouponId === coupon.id || directCouponCode === coupon.code) {
-      const percent = this.extractCommissionPercent(ruleSnapshot);
-      if (percent !== null) {
-        return { percent, source: 'CAMPAIGN_COMMISSION_OVERRIDE' };
-      }
-    }
-
-    return { percent: null, source: null };
-  }
-
-  private readCampaignCommissionOverrides(
-    ruleSnapshot: Record<string, unknown>,
-  ) {
-    const entries = new Map<
-      string,
-      {
-        couponId: string | null;
-        couponCode: string;
-        couponName: string | null;
-        commissionPercent: number;
-        active: boolean;
-        note: string | null;
-        createdAt: string | null;
-        createdById: string | null;
-        updatedAt: string | null;
-        updatedById: string | null;
-      }
-    >();
-    const addEntry = (
-      raw: unknown,
-      fallback: { couponId?: string | null; couponCode?: string | null } = {},
-    ) => {
-      const record = this.asRecord(raw);
-      const percent = this.extractCommissionPercent(raw);
-      const couponId =
-        (typeof record?.couponId === 'string' ? record.couponId : null) ??
-        fallback.couponId ??
-        null;
-      const couponCode =
-        (typeof record?.couponCode === 'string' ? record.couponCode : null) ??
-        fallback.couponCode ??
-        couponId;
-
-      if (percent === null || !couponCode) {
-        return;
-      }
-
-      entries.set(couponId ?? couponCode, {
-        couponId,
-        couponCode,
-        couponName:
-          typeof record?.couponName === 'string'
-            ? record.couponName
-            : typeof record?.name === 'string'
-              ? record.name
-              : null,
-        commissionPercent: percent,
-        active: record?.active !== false,
-        note: typeof record?.note === 'string' ? record.note : null,
-        createdAt:
-          typeof record?.createdAt === 'string' ? record.createdAt : null,
-        createdById:
-          typeof record?.createdById === 'string' ? record.createdById : null,
-        updatedAt:
-          typeof record?.updatedAt === 'string' ? record.updatedAt : null,
-        updatedById:
-          typeof record?.updatedById === 'string' ? record.updatedById : null,
-      });
-    };
-
-    const overrideList = Array.isArray(ruleSnapshot.campaignCommissionOverrides)
-      ? ruleSnapshot.campaignCommissionOverrides
-      : [];
-    overrideList.forEach((override) => addEntry(override));
-
-    [
-      this.asRecord(ruleSnapshot.campaignCommissionRates),
-      this.asRecord(ruleSnapshot.campaignRates),
-      this.asRecord(ruleSnapshot.couponCommissionRates),
-      this.asRecord(ruleSnapshot.couponRates),
-    ]
-      .filter((group): group is Record<string, unknown> => Boolean(group))
-      .forEach((group) => {
-        Object.entries(group).forEach(([key, value]) => {
-          addEntry(value, { couponId: key, couponCode: key });
-        });
-      });
-
-    return Array.from(entries.values());
-  }
-
-  private withCampaignCommissionOverrides(
-    ruleSnapshot: Record<string, unknown>,
-    overrides: Array<{
-      couponId: string | null;
-      couponCode: string;
-      couponName: string | null;
-      commissionPercent: number;
-      active: boolean;
-      note: string | null;
-      createdAt: string | null;
-      createdById: string | null;
-      updatedAt: string | null;
-      updatedById: string | null;
-    }>,
-  ) {
-    const activeRateMap = overrides.reduce<Record<string, unknown>>(
-      (map, override) => {
-        if (!override.active) {
-          return map;
-        }
-
-        const value = {
-          commissionPercent: override.commissionPercent,
-          active: override.active,
-          note: override.note,
-          updatedAt: override.updatedAt,
-        };
-
-        if (override.couponId) {
-          map[override.couponId] = value;
-        }
-        map[override.couponCode] = value;
-        return map;
-      },
-      {},
-    );
-
-    return {
-      ...ruleSnapshot,
-      version: BILL_REVENUE_RULE_VERSION,
-      campaignCommissionOverrides: overrides,
-      campaignCommissionRates: activeRateMap,
     };
   }
 
@@ -9893,26 +9430,6 @@ export class NightlifeDataService {
           }
         : null,
     };
-  }
-
-  private extractCommissionPercent(value: unknown) {
-    const record = this.asRecord(value);
-    if (!record) {
-      return this.normalizePercent(value);
-    }
-
-    if (record.active === false) {
-      return null;
-    }
-
-    return (
-      this.normalizePercent(record.commissionPercent) ??
-      this.normalizePercent(record.commissionRatePercent) ??
-      this.normalizePercent(record.ratePercent) ??
-      this.normalizePercent(record.percent) ??
-      this.normalizePercent(record.value) ??
-      this.normalizePercent(record.rate)
-    );
   }
 
   private nonNegativeVnd(value: unknown) {

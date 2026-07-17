@@ -9,7 +9,6 @@ import {
 
 export const ADMIN_REVENUE_REPORT_FLAG_FILTERS = [
   'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED',
-  'MISSING_ACTIVE_COMMISSION_CONFIG',
 ] as const;
 
 export type AdminRevenueReportFlagFilter =
@@ -105,7 +104,7 @@ export class AdminRevenueReportQueryDto {
   @ApiPropertyOptional({
     enum: ADMIN_REVENUE_REPORT_FLAG_FILTERS,
     description:
-      'Optional commission snapshot flag filter for negative commission or legacy missing config records.',
+      'Optional legacy commission snapshot flag filter.',
   })
   @IsOptional()
   @IsIn(ADMIN_REVENUE_REPORT_FLAG_FILTERS)
