@@ -34,49 +34,25 @@ const trimLowerEmail = ({ value }: TransformFnParams): unknown => {
   return trimmed || undefined;
 };
 
-const commonEmailDomainTypoLabels = new Set([
-  'gmai',
-  'gmeo',
-  'gmial',
-  'gamil',
-  'gnail',
-  'gmal',
-  'gmali',
-  'gmaiil',
-]);
-const commonEmailDomainTypos = new Set([
-  'gmail.cm',
-  'gmail.cmo',
-  'gmail.con',
-  'gmail.coom',
-  'gmail.om',
-  'gmail.comm',
-]);
-
-const hasCommonEmailDomainTypo = (value: string) => {
+const isGmailAddress = (value: string) => {
   const domainPart = value.trim().toLowerCase().split('@')[1] ?? '';
-  const domainLabels = domainPart.split('.');
-  const rootDomainLabel = domainLabels[0] ?? '';
 
-  return (
-    commonEmailDomainTypoLabels.has(rootDomainLabel) ||
-    commonEmailDomainTypos.has(domainPart)
-  );
+  return domainPart === 'gmail.com';
 };
 
-const IsNotCommonEmailDomainTypo = (validationOptions?: ValidationOptions) =>
+const IsGmailAddress = (validationOptions?: ValidationOptions) =>
   ValidateBy(
     {
-      name: 'isNotCommonEmailDomainTypo',
+      name: 'isGmailAddress',
       validator: {
         validate(value: unknown) {
           if (value === undefined || value === null || value === '')
             return true;
 
-          return typeof value === 'string' && !hasCommonEmailDomainTypo(value);
+          return typeof value === 'string' && isGmailAddress(value);
         },
         defaultMessage() {
-          return 'email must use a valid email domain';
+          return 'email must be a gmail.com address';
         },
       },
     },
@@ -154,15 +130,15 @@ export class CreateBookingDto {
   displayName: string;
 
   @ApiPropertyOptional({
-    example: 'guest@example.com',
+    example: 'guest@gmail.com',
     description:
       'Email used for guest booking confirmation and QR delivery. Required for new guest booking forms.',
   })
   @Transform(trimLowerEmail)
   @IsOptional()
   @IsEmail()
-  @IsNotCommonEmailDomainTypo({
-    message: 'email must use a valid email domain',
+  @IsGmailAddress({
+    message: 'email must be a gmail.com address',
   })
   @MaxLength(254)
   email?: string;

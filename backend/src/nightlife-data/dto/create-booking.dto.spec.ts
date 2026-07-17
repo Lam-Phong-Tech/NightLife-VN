@@ -23,17 +23,18 @@ describe('CreateBookingDto', () => {
     return validate(dto);
   };
 
-  it('rejects common mistyped booking email domains', async () => {
+  it('rejects non-gmail booking email domains', async () => {
     for (const email of [
       'guest@gmai.com',
       'guest@gmeo.com',
       'guest@gmail.con',
+      'guest@yahoo.com',
     ]) {
       const errors = await validateBookingEmail(email);
       const emailError = errors.find((error) => error.property === 'email');
 
       expect(emailError?.constraints).toMatchObject({
-        isNotCommonEmailDomainTypo: 'email must use a valid email domain',
+        isGmailAddress: 'email must be a gmail.com address',
       });
     }
   });

@@ -4851,6 +4851,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "@ 后面必须是有效域名，例如 gmail.com。",
   },
   {
+    vi: "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.",
+    en: "Please enter a valid Gmail address, for example name@gmail.com.",
+    ja: "name@gmail.com のような有効な Gmail アドレスを入力してください。",
+    ko: "name@gmail.com 형식의 올바른 Gmail 주소를 입력해 주세요.",
+    zh: "请输入正确格式的 Gmail 地址，例如 name@gmail.com。",
+  },
+  {
     vi: "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.",
     en: "Each domain label after @ must not exceed 63 characters.",
     ja: "@より後の各ドメイン部分は63文字以内にしてください。",

@@ -52,10 +52,13 @@ describe("booking validation", () => {
     );
   });
 
-  it("rejects common mistyped booking email domains before submit", () => {
-    expect(validateBookingEmail("guest@gmai.com")).toBe("Email chưa đúng định dạng.");
-    expect(validateBookingEmail("guest@gmeo.com")).toBe("Email chưa đúng định dạng.");
-    expect(validateBookingEmail("guest@gmail.con")).toBe("Email chưa đúng định dạng.");
+  it("only accepts booking emails from gmail.com before submit", () => {
+    const gmailOnlyMessage = "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.";
+
+    expect(validateBookingEmail("guest@gmai.com")).toBe(gmailOnlyMessage);
+    expect(validateBookingEmail("guest@gmeo.com")).toBe(gmailOnlyMessage);
+    expect(validateBookingEmail("guest@gmail.con")).toBe(gmailOnlyMessage);
+    expect(validateBookingEmail("guest@yahoo.com")).toBe(gmailOnlyMessage);
     expect(validateBookingEmail("guest@gmail.com")).toBe("");
   });
 
