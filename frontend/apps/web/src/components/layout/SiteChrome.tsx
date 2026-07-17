@@ -48,6 +48,7 @@ import {
   type MemberNotificationTone,
 } from "@/lib/api/notifications";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
+import { AuthRedirectNotice } from "@/components/auth/AuthRedirectNotice";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
 import { SupportChatWidget } from "./SupportChatWidget";
@@ -2055,6 +2056,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   if (hideChrome) {
     return (
       <SystemFeedbackProvider>
+        <AuthRedirectNotice />
         {customerRouteMotionEnabled ? (
           <>
             {routePreloader}
@@ -2071,6 +2073,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <SystemFeedbackProvider>
+      <AuthRedirectNotice />
       <div
         style={{
           minHeight: "100vh",

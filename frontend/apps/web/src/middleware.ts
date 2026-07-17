@@ -70,11 +70,32 @@ function getAuthenticatedHomePath(request: NextRequest) {
 
     const role = getSessionRole(request, token, session.prefix);
     if (role && session.roles.some((allowedRole) => allowedRole === role)) {
-      return session.homePath;
+      return {
+        homePath: session.homePath,
+        role,
+      };
     }
   }
 
   return null;
+}
+
+function getRequestedPortal(pathname: string) {
+  if (pathname.startsWith('/admin')) return 'admin';
+  if (pathname.startsWith('/partner') || pathname === '/dang-nhap-doi-tac') return 'partner';
+  return 'member';
+}
+
+function redirectActiveSession(
+  request: NextRequest,
+  session: NonNullable<ReturnType<typeof getAuthenticatedHomePath>>,
+  requestedPathname: string,
+) {
+  const redirectUrl = new URL(session.homePath, request.url);
+  redirectUrl.searchParams.set('auth_notice', 'login-blocked');
+  redirectUrl.searchParams.set('requested_portal', getRequestedPortal(requestedPathname));
+  redirectUrl.searchParams.set('active_role', session.role);
+  return NextResponse.redirect(redirectUrl);
 }
 
 export function middleware(request: NextRequest) {
@@ -86,9 +107,9 @@ export function middleware(request: NextRequest) {
   const isAdminPath = pathname.startsWith('/admin') && !isAdminLoginPath;
 
   if (loginPaths.has(pathname)) {
-    const authenticatedHomePath = getAuthenticatedHomePath(request);
-    if (authenticatedHomePath) {
-      return NextResponse.redirect(new URL(authenticatedHomePath, request.url));
+    const authenticatedSession = getAuthenticatedHomePath(request);
+    if (authenticatedSession) {
+      return redirectActiveSession(request, authenticatedSession, pathname);
     }
   }
 
@@ -104,6 +125,11 @@ export function middleware(request: NextRequest) {
 
   // Protect paths requiring authentication
   if ((isMemberPath || isPartnerPath || isAdminPath) && (!token || !userRole)) {
+    const authenticatedSession = getAuthenticatedHomePath(request);
+    if (authenticatedSession) {
+      return redirectActiveSession(request, authenticatedSession, pathname);
+    }
+
     const loginUrl = new URL(isPartnerPath ? '/dang-nhap-doi-tac' : isAdminPath ? '/admin/dang-nhap' : '/dang-nhap', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);

@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, LogIn, Sun, Moon } from 'lucide-react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { activateExclusiveAuthSession, loginPartner } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
+import { LoginPageSessionRedirect } from '@/components/auth/LoginPageSessionRedirect';
 
 type PartnerTheme = 'dark' | 'light';
 
@@ -213,6 +214,7 @@ function LoginContent({
           boxSizing: 'border-box',
         }}
       >
+        <LoginPageSessionRedirect requestedPortal="partner" />
         <div
           style={{
             height: isMobile ? '300px' : '100%',

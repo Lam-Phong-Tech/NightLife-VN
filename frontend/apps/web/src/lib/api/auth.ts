@@ -251,8 +251,8 @@ const revokeAuthTokens = async (tokens: string[]) => {
 export const activateExclusiveAuthSession = async (session: AuthResponse) => {
   const previousTokens = getAllAuthSessionTokens().filter((token) => token !== session.accessToken);
 
-  setAuthSession(session);
   await revokeAuthTokens(previousTokens);
+  setAuthSession(session);
 };
 
 export const logoutBrowserProfile = async () => {

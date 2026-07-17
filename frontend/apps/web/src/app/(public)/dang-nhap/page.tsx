@@ -12,6 +12,7 @@ import {
   registerMember,
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
+import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
@@ -498,6 +499,7 @@ export default function Page() {
       className="nl-auth-page nl-login-page"
       style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}
     >
+      <LoginPageSessionRedirect requestedPortal="member" />
       <div
         className="nl-login-shell"
         style={{

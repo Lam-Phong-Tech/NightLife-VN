@@ -27,15 +27,41 @@ const runMiddleware = (pathname: string, cookies: Record<string, string> = {}) =
   return middleware(request);
 };
 
+const expectBlockedRedirect = (
+  response: ReturnType<typeof middleware>,
+  expected: {
+    pathname: string;
+    requestedPortal: string;
+    activeRole: string;
+  },
+) => {
+  const location = response.headers.get('location');
+  expect(location).not.toBeNull();
+
+  const url = new URL(location || 'https://nightlife.test');
+  expect(url.pathname).toBe(expected.pathname);
+  expect(url.searchParams.get('auth_notice')).toBe('login-blocked');
+  expect(url.searchParams.get('requested_portal')).toBe(expected.requestedPortal);
+  expect(url.searchParams.get('active_role')).toBe(expected.activeRole);
+};
+
 describe('auth middleware login-page redirects', () => {
-  it.each(['/admin/dang-nhap', '/dang-nhap-doi-tac', '/dang-nhap'])(
+  it.each([
+    ['/admin/dang-nhap', 'admin'],
+    ['/dang-nhap-doi-tac', 'partner'],
+    ['/dang-nhap', 'member'],
+  ])(
     'redirects an authenticated admin away from %s',
-    (pathname) => {
+    (pathname, requestedPortal) => {
       const response = runMiddleware(pathname, {
         admin_auth_token: createToken('SUPER_ADMIN'),
       });
 
-      expect(response.headers.get('location')).toBe('https://nightlife.test/admin');
+      expectBlockedRedirect(response, {
+        pathname: '/admin',
+        requestedPortal,
+        activeRole: 'SUPER_ADMIN',
+      });
     },
   );
 
@@ -44,7 +70,11 @@ describe('auth middleware login-page redirects', () => {
       partner_auth_token: createToken('PARTNER'),
     });
 
-    expect(response.headers.get('location')).toBe('https://nightlife.test/partner');
+    expectBlockedRedirect(response, {
+      pathname: '/partner',
+      requestedPortal: 'partner',
+      activeRole: 'PARTNER',
+    });
   });
 
   it('redirects an authenticated member to the member account page', () => {
@@ -52,7 +82,23 @@ describe('auth middleware login-page redirects', () => {
       auth_token: createToken('USER'),
     });
 
-    expect(response.headers.get('location')).toBe('https://nightlife.test/tai-khoan');
+    expectBlockedRedirect(response, {
+      pathname: '/tai-khoan',
+      requestedPortal: 'member',
+      activeRole: 'USER',
+    });
+  });
+
+  it('redirects directly to the active admin portal when another protected portal is requested', () => {
+    const response = runMiddleware('/partner', {
+      admin_auth_token: createToken('ADMIN'),
+    });
+
+    expectBlockedRedirect(response, {
+      pathname: '/admin',
+      requestedPortal: 'partner',
+      activeRole: 'ADMIN',
+    });
   });
 
   it('allows the login page when the stored token has expired', () => {

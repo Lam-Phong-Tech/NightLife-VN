@@ -15,6 +15,11 @@ export type AuthResponse = {
   user: AuthUser;
 };
 
+export type ActiveBrowserAuthSession = {
+  role: AuthRole;
+  homePath: "/admin" | "/partner" | "/tai-khoan";
+};
+
 const sessionCookieMaxAge = 60 * 60 * 24;
 const sessionScopePrefixes = ["", "partner_", "admin_"] as const;
 const sessionCookieNames = ["auth_token", "user_role", "user_email", "user_name"] as const;
@@ -70,18 +75,25 @@ const decodeBase64Url = (value: string) => {
   return atob(padded);
 };
 
-const readTokenExpiresAt = (token: string) => {
+const readTokenPayload = (token: string) => {
   if (!token || typeof window === "undefined") return null;
 
   const [, payload] = token.split(".");
   if (!payload) return null;
 
   try {
-    const decoded = JSON.parse(decodeBase64Url(payload)) as { exp?: unknown };
-    return typeof decoded.exp === "number" ? decoded.exp * 1000 : null;
+    return JSON.parse(decodeBase64Url(payload)) as {
+      exp?: unknown;
+      role?: unknown;
+    };
   } catch {
     return null;
   }
+};
+
+const readTokenExpiresAt = (token: string) => {
+  const payload = readTokenPayload(token);
+  return typeof payload?.exp === "number" ? payload.exp * 1000 : null;
 };
 
 const getSessionCookieMaxAge = (token: string) => {
@@ -129,6 +141,49 @@ export const getAllAuthSessionTokens = () => {
       sessionScopePrefixes.map((prefix) => cookies[`${prefix}auth_token`] || "").filter(Boolean),
     ),
   );
+};
+
+export const getActiveBrowserAuthSession = (): ActiveBrowserAuthSession | null => {
+  if (typeof window === "undefined") return null;
+
+  const cookies = parseCookies();
+  const scopes: Array<{
+    prefix: (typeof sessionScopePrefixes)[number];
+    roles: AuthRole[];
+    homePath: ActiveBrowserAuthSession["homePath"];
+  }> = [
+    {
+      prefix: "admin_",
+      roles: ["ADMIN", "SUPER_ADMIN", "STAFF"],
+      homePath: "/admin",
+    },
+    {
+      prefix: "partner_",
+      roles: ["PARTNER", "OPERATOR"],
+      homePath: "/partner",
+    },
+    {
+      prefix: "",
+      roles: ["USER"],
+      homePath: "/tai-khoan",
+    },
+  ];
+
+  for (const scope of scopes) {
+    const token = cookies[`${scope.prefix}auth_token`] || "";
+    if (!token || isTokenExpired(token)) continue;
+
+    const tokenRole = readTokenPayload(token)?.role;
+    const role = String(tokenRole || cookies[`${scope.prefix}user_role`] || "").toUpperCase();
+    if (scope.roles.includes(role as AuthRole)) {
+      return {
+        role: role as AuthRole,
+        homePath: scope.homePath,
+      };
+    }
+  }
+
+  return null;
 };
 
 export const getAuthSessionExpiresAt = () => {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { activateExclusiveAuthSession, logoutBrowserProfile } from "@/lib/api/auth";
 import {
   clearAuthSession,
+  getActiveBrowserAuthSession,
   getAllAuthSessionTokens,
   setAuthSession,
   type AuthResponse,
@@ -107,22 +108,39 @@ describe("exclusive browser auth session", () => {
     expect(window.localStorage.getItem("nightlife_admin_user")).toBeNull();
   });
 
+  it("detects the active identity across portal URLs for the client-side login guard", () => {
+    setAuthSession(adminSession);
+    window.history.replaceState({}, "", "/dang-nhap-doi-tac");
+
+    expect(getActiveBrowserAuthSession()).toEqual({
+      role: "ADMIN",
+      homePath: "/admin",
+    });
+  });
+
   it("revokes all previous tokens before completing an identity switch", async () => {
     document.cookie = "auth_token=old-member-token; path=/";
     document.cookie = "partner_auth_token=old-partner-token; path=/";
     window.history.replaceState({}, "", "/admin/dang-nhap");
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}", { status: 201 }));
+    let finishRevocation: (() => void) | undefined;
+    const revocationPending = new Promise<Response>((resolve) => {
+      finishRevocation = () => resolve(new Response("{}", { status: 201 }));
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockReturnValue(revocationPending);
 
-    await activateExclusiveAuthSession(adminSession);
+    const activation = activateExclusiveAuthSession(adminSession);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(getAllAuthSessionTokens()).toEqual(["old-member-token", "old-partner-token"]);
     expect(
       fetchMock.mock.calls.map(
         ([, options]) => (options?.headers as Record<string, string>).Authorization,
       ),
     ).toEqual(expect.arrayContaining(["Bearer old-member-token", "Bearer old-partner-token"]));
+
+    finishRevocation?.();
+    await activation;
+
     expect(getAllAuthSessionTokens()).toEqual(["new-admin-token"]);
   });
 

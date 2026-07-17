@@ -10,6 +10,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import { activateExclusiveAuthSession, loginAdmin } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
+import { LoginPageSessionRedirect } from '@/components/auth/LoginPageSessionRedirect';
 
 const colors = {
   bg: '#0c0c0f',
@@ -64,6 +65,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className="nl-auth-page nl-admin-login-page" style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
+      <LoginPageSessionRedirect requestedPortal="admin" />
       <div className="nl-admin-login-layout" style={{ minHeight: 'calc(100vh - 68px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <section
           className="nl-admin-login-card"
