@@ -4762,7 +4762,7 @@ export default function PartnerPage() {
               style={inputStyle}
             />
           </FormField>
-          <FormField label="Từ ngày">
+          <FormField label="Từ ngày" className="partner-date-field">
             <input
               value={settlementFilters.fromDate}
               onChange={(event) => updateSettlementFilter('fromDate', event.target.value)}
@@ -4770,7 +4770,7 @@ export default function PartnerPage() {
               style={inputStyle}
             />
           </FormField>
-          <FormField label="Đến ngày">
+          <FormField label="Đến ngày" className="partner-date-field">
             <input
               value={settlementFilters.toDate}
               onChange={(event) => updateSettlementFilter('toDate', event.target.value)}
@@ -5764,15 +5764,17 @@ export default function PartnerPage() {
   const canWriteListing = Boolean(listingStoreId) && !isListingBusy;
 
   const renderListingPanel = () => (
-    <PanelCard>
+    <PanelCard className="partner-listing-panel">
       <SectionHeading
+        className="partner-listing-heading"
         eyebrow="DRAFT & APPROVAL"
         title="Thông tin hiển thị trên trang quán"
         action={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="partner-listing-review-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {liveData && (
-              <div style={{ display: 'flex', gap: '8px', borderRight: `1px solid ${colors.borderSoft}`, paddingRight: '12px' }}>
+              <div className="partner-listing-version-switcher" style={{ display: 'flex', gap: '8px', borderRight: `1px solid ${colors.borderSoft}`, paddingRight: '12px' }}>
                 <button
+                  className="partner-listing-version-button"
                   type="button"
                   onClick={() => setIsViewingLive(true)}
                   style={{
@@ -5788,6 +5790,7 @@ export default function PartnerPage() {
                   [Xem bản đang Go Live]
                 </button>
                 <button
+                  className="partner-listing-version-button"
                   type="button"
                   onClick={() => setIsViewingLive(false)}
                   style={{
@@ -5804,7 +5807,7 @@ export default function PartnerPage() {
                 </button>
               </div>
             )}
-            <StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>
+            <StatusPill tone={listingReviewTone} className="partner-listing-status-pill">{listingReviewLabel}</StatusPill>
           </div>
         }
       />
@@ -7235,8 +7238,30 @@ export default function PartnerPage() {
         .partner-settlement-filter-grid > * {
           min-width: 0;
         }
+        .partner-date-field,
+        .partner-date-field input[type="date"],
+        .partner-listing-review-actions,
+        .partner-listing-version-switcher {
+          min-width: 0;
+        }
+        .partner-date-field input[type="date"] {
+          display: block;
+          inline-size: 100%;
+          max-inline-size: 100%;
+          min-inline-size: 0;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+        .partner-date-field input[type="date"]::-webkit-date-and-time-value {
+          min-width: 0;
+          text-align: left;
+        }
         .partner-notification-popover button {
           font-family: inherit;
+        }
+        .partner-notification-popover {
+          z-index: 420 !important;
+          isolation: isolate;
         }
         .partner-panel-card,
         .partner-section-heading-copy,
@@ -7310,6 +7335,8 @@ export default function PartnerPage() {
             flex-direction: row !important;
             align-items: center !important;
             justify-content: space-between !important;
+            position: relative;
+            z-index: 360;
           }
           .partner-header-status-pill {
             display: none !important;
@@ -7335,6 +7362,11 @@ export default function PartnerPage() {
             right: 18px !important;
             width: auto !important;
             max-height: calc(100vh - 116px) !important;
+            z-index: 430 !important;
+            background: ${partnerTheme === 'light' ? 'rgb(255,252,247)' : 'rgb(18,18,22)'} !important;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 28px 80px -24px rgba(0,0,0,.92) !important;
           }
           .partner-mobile-bottom-nav {
             display: flex !important;
@@ -7488,6 +7520,40 @@ export default function PartnerPage() {
           .partner-section-heading-action {
             margin-left: auto;
           }
+          .partner-listing-heading .partner-section-heading-action {
+            margin-left: 0;
+            width: 100%;
+          }
+          .partner-listing-review-actions {
+            align-items: stretch !important;
+            flex-direction: column;
+            gap: 8px !important;
+            width: 100%;
+          }
+          .partner-listing-version-switcher {
+            border-right: 0 !important;
+            display: grid !important;
+            gap: 8px !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding-right: 0 !important;
+            width: 100%;
+          }
+          .partner-listing-version-button {
+            background: ${colors.surface2} !important;
+            border: 1px solid ${colors.borderGold22} !important;
+            border-radius: 12px;
+            line-height: 1.25;
+            min-height: 36px;
+            padding: 0 8px !important;
+            text-align: center;
+            white-space: normal;
+          }
+          .partner-listing-status-pill {
+            align-self: flex-start;
+            line-height: 1.25;
+            max-width: 100%;
+            white-space: normal;
+          }
           .partner-bar-chart {
             gap: 8px !important;
             height: 178px !important;
@@ -7540,6 +7606,28 @@ export default function PartnerPage() {
           .partner-settlement-filter-grid,
           .partner-bill-form-grid {
             gap: 10px !important;
+          }
+          .partner-settlement-filter-grid .partner-date-field {
+            max-width: 100%;
+            overflow: hidden;
+            width: 100%;
+          }
+          .partner-date-field input[type="date"] {
+            font-size: 14px !important;
+            inline-size: 100% !important;
+            max-inline-size: 100% !important;
+            min-inline-size: 0 !important;
+            overflow: hidden;
+            padding-left: 10px !important;
+            padding-right: 8px !important;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .partner-date-field input[type="date"]::-webkit-date-and-time-value {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
           .partner-table-scroll {
             margin: 0 -16px -4px;
