@@ -43,6 +43,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, useContext } 
 import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { logoutBrowserProfile } from '@/lib/api/auth';
 import { billApi } from '@/lib/api/bills';
+import {
+  memberNotificationCreatedEvent,
+  memberNotificationsRefreshEvent,
+  type MemberNotificationSocketPayload,
+} from '@/lib/api/notifications';
 import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
@@ -2407,6 +2412,77 @@ export default function PartnerPage() {
       ...current.filter((item) => item.id !== notification.id),
     ].slice(0, 4));
   }, []);
+
+  const refreshPartnerNotificationData = useCallback(() => {
+    void Promise.allSettled([
+      apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
+      apiClient<PartnerBill[]>('/partner/bills').then(setBills),
+      apiClient<PartnerBooking[]>('/partner/bookings').then(setBookings),
+    ]);
+  }, []);
+
+  useEffect(() => {
+    const handleMemberNotificationCreated = (event: Event) => {
+      const detail = (event as CustomEvent<MemberNotificationSocketPayload>).detail ?? {};
+      const createdAt = detail.createdAt ?? new Date().toISOString();
+      const category = detail.category ?? 'system';
+      const isBill = category === 'bill' || Boolean(detail.billId);
+      const isBooking = category === 'booking' || Boolean(detail.bookingId);
+
+      pushPartnerNotificationEvent({
+        id: `realtime:${detail.id ?? detail.billId ?? detail.bookingId ?? createdAt}`,
+        category: isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
+        title: isBill
+          ? 'Có cập nhật bill mới'
+          : isBooking
+            ? 'Có cập nhật booking mới'
+            : 'Có thông báo mới từ hệ thống',
+        message: isBill
+          ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
+          : isBooking
+            ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
+            : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
+        meta: `Realtime · ${formatDateTime(createdAt)}`,
+        actionLabel: isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
+        panel: isBill ? 'bill' : isBooking ? 'scan' : 'overview',
+        tone: isBill ? 'gold' : isBooking ? 'info' : 'warning',
+        icon: isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
+      });
+      refreshPartnerNotificationData();
+    };
+
+    const handleRefresh = () => {
+      refreshPartnerNotificationData();
+    };
+
+    const handleBookingStatusUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string; scheduledAt?: string; store?: { name?: string } }>).detail ?? {};
+      const createdAt = new Date().toISOString();
+
+      pushPartnerNotificationEvent({
+        id: `realtime:booking:${detail.id ?? createdAt}`,
+        category: 'Đặt chỗ',
+        title: 'Có cập nhật booking mới',
+        message: `${detail.store?.name ?? storeName} vừa có cập nhật booking. Mở màn quét QR để kiểm tra và xử lý kịp thời.`,
+        meta: detail.scheduledAt ? `Lịch: ${formatDateTime(detail.scheduledAt)}` : `Realtime · ${formatDateTime(createdAt)}`,
+        actionLabel: 'Xem booking',
+        panel: 'scan',
+        tone: 'info',
+        icon: CalendarDays,
+      });
+      refreshPartnerNotificationData();
+    };
+
+    window.addEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
+    window.addEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
+    window.addEventListener(memberNotificationsRefreshEvent, handleRefresh);
+
+    return () => {
+      window.removeEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
+      window.removeEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
+      window.removeEventListener(memberNotificationsRefreshEvent, handleRefresh);
+    };
+  }, [pushPartnerNotificationEvent, refreshPartnerNotificationData, storeName]);
 
   const partnerNotifications = useMemo<PartnerNotification[]>(() => {
     const readIds = new Set(readNotificationIds);
