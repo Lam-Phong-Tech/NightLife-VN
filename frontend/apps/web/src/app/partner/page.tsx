@@ -375,7 +375,7 @@ type PartnerLiteDashboard = {
 };
 
 type PartnerScanIssue = {
-  scanType?: 'COUPON_ISSUE' | 'BOOKING_QR';
+  scanType?: 'COUPON_ISSUE' | 'BOOKING_QR' | 'TOUR_BOOKING_QR';
   id: string;
   code: string;
   status: string;
@@ -399,6 +399,18 @@ type PartnerScanIssue = {
   couponIssue?: { id: string; code: string; status: string } | null;
   discountPercent?: number | null;
   discountRuleSnapshot?: DiscountRuleSnapshot | null;
+  scanSessionToken?: string | null;
+  tour?: {
+    id: string;
+    bookingId: string;
+    title: string;
+    status: string;
+    stopOrder?: number | null;
+    progress: {
+      checkedIn: number;
+      total: number;
+    };
+  } | null;
 };
 
 type BarcodeDetectorResult = { rawValue?: string };
@@ -435,7 +447,7 @@ type OfflineScanQueueItem = {
 };
 
 type NormalizedScanPayload = {
-  kind: 'booking' | 'signed' | 'coupon';
+  kind: 'booking' | 'tour' | 'signed' | 'coupon';
   payload: string;
   raw: string;
   label: string;
@@ -559,6 +571,11 @@ const normalizePartnerScanPayload = (
         raw,
         label: 'link đặt chỗ',
       };
+    }
+
+    const tourToken = url.searchParams.get('tourScanToken');
+    if (tourToken) {
+      return { kind: 'tour', payload: raw, raw, label: 'QR tour' };
     }
 
     const token = url.searchParams.get('scanToken') ?? url.searchParams.get('token');
@@ -1530,6 +1547,7 @@ export default function PartnerPage() {
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
+  const [scanStoreId, setScanStoreId] = useState('');
   const [scanIssue, setScanIssue] = useState<PartnerScanIssue | null>(null);
   const [scannedTime, setScannedTime] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
@@ -1894,6 +1912,10 @@ export default function PartnerPage() {
         }
         return false;
       }
+      if (normalizedPayload.kind === 'tour' && !scanStoreId) {
+        setScanMessage('Cần chọn quán đang thực hiện quét QR tour.');
+        return false;
+      }
 
       setIsScanning(true);
       setScanMessage(
@@ -1908,6 +1930,15 @@ export default function PartnerPage() {
                 offline: Boolean(options.fromQueue),
               },
             })
+          : normalizedPayload.kind === 'tour'
+            ? await apiClient<PartnerScanIssue>('/partner/tour-booking-qrs/scan', {
+                data: {
+                  payload: normalizedPayload.payload,
+                  activeStoreId: scanStoreId,
+                  offline: Boolean(options.fromQueue),
+                  clientScannedAt: new Date().toISOString(),
+                },
+              })
           : normalizedPayload.kind === 'signed'
             ? await apiClient<PartnerScanIssue>('/partner/coupon-issues/scan', {
                 data: {
@@ -1952,7 +1983,7 @@ export default function PartnerPage() {
         setIsScanning(false);
       }
     },
-    [queueOfflineScan],
+    [queueOfflineScan, scanStoreId],
   );
 
   const startCameraScan = useCallback(async () => {
@@ -2073,11 +2104,34 @@ export default function PartnerPage() {
 
     setIsConfirmingScan(true);
     setScanMessage(
-      scanIssue.scanType === 'BOOKING_QR'
+      scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
         ? 'Đang xác nhận khách đã đến...'
         : 'Đang xác nhận sử dụng coupon...',
     );
     try {
+      if (scanIssue.scanType === 'TOUR_BOOKING_QR') {
+        if (!scanIssue.scanSessionToken) {
+          setScanMessage('Phiên quét QR tour đã hết hạn. Vui lòng quét lại mã trước khi xác nhận.');
+          return;
+        }
+        const nextIssue = await apiClient<PartnerScanIssue>(
+          '/partner/tour-booking-qrs/confirm-check-in',
+          {
+            data: {
+              scanSessionToken: scanIssue.scanSessionToken,
+              idempotencyKey: crypto.randomUUID(),
+              clientScannedAt: new Date().toISOString(),
+              offline: false,
+            },
+          },
+        );
+        setScanIssue(nextIssue);
+        setScannedTime(new Date().toLocaleString('vi-VN'));
+        setScanMessage(
+          `${nextIssue.statusLabel ?? nextIssue.status} - điểm dừng này không thể check-in lại.`,
+        );
+        return;
+      }
       const confirmEndpoint =
         scanIssue.scanType === 'BOOKING_QR'
           ? `/partner/booking-qrs/${encodeURIComponent(scanIssue.id)}/confirm-check-in`
@@ -2141,6 +2195,7 @@ export default function PartnerPage() {
         if (!isMounted) return;
 
         setStores(storeData);
+        setScanStoreId((current) => current || storeData[0]?.id || '');
         setListingStoreId((current) => current || storeData[0]?.id || '');
         setBillStoreId((current) => current || storeData[0]?.id || '');
         setSettingsStoreId((current) => current || storeData[0]?.id || '');
@@ -2231,9 +2286,11 @@ export default function PartnerPage() {
   }, []);
 
   useEffect(() => {
+    const tourScanToken = searchParams.get('tourScanToken');
     const scanToken = searchParams.get('scanToken') ?? searchParams.get('token');
     const bookingId = searchParams.get('bookingId');
     const token =
+      tourScanToken ??
       scanToken ??
       bookingId;
     if (!token) {
@@ -2242,9 +2299,11 @@ export default function PartnerPage() {
 
     const timer = window.setTimeout(() => {
       setActivePanel('scan');
-      const scanValue = bookingId && !scanToken
+      const scanValue = bookingId && !scanToken && !tourScanToken
         ? bookingPayloadFromId(bookingId, searchParams.get('code'))
-        : token;
+        : tourScanToken
+          ? window.location.href
+          : token;
       setScanPayload(scanValue);
       void scanCouponPayload(scanValue);
     }, 0);
@@ -2406,7 +2465,12 @@ export default function PartnerPage() {
     if (scanIssue) {
       notifications.push({
         id: `scan-result:${scanIssue.scanType ?? 'COUPON'}:${scanIssue.id}:${scanIssue.status}`,
-        category: scanIssue.scanType === 'BOOKING_QR' ? 'QR đặt chỗ' : 'QR coupon',
+        category:
+          scanIssue.scanType === 'TOUR_BOOKING_QR'
+            ? 'QR tour'
+            : scanIssue.scanType === 'BOOKING_QR'
+              ? 'QR đặt chỗ'
+              : 'QR coupon',
         title:
           scanIssue.status === 'ISSUED'
             ? 'QR hợp lệ, cần xác nhận check-in'
@@ -4518,6 +4582,23 @@ export default function PartnerPage() {
           </div>
         ) : null}
 
+        <div style={{ marginTop: '16px' }}>
+          <FormField label="Quán đang thực hiện quét">
+            <ThemedListingSelect
+              value={scanStoreId}
+              onChange={(value) => {
+                setScanStoreId(value);
+                setScanIssue(null);
+              }}
+              placeholder="Chọn quán"
+              options={stores.map((store) => ({
+                value: store.id,
+                label: store.name,
+              }))}
+            />
+          </FormField>
+        </div>
+
         <form
           className="partner-scan-form"
           onSubmit={(event) => {
@@ -4573,9 +4654,11 @@ export default function PartnerPage() {
                       fontWeight: 800,
                     }}
                   >
-                    {scanIssue.scanType === 'BOOKING_QR'
-                      ? 'Đơn đặt chỗ'
-                      : scanIssue.coupon?.name ?? 'Coupon'}{' '}
+                    {scanIssue.scanType === 'TOUR_BOOKING_QR'
+                      ? `Tour · điểm ${scanIssue.tour?.stopOrder ?? '-'}`
+                      : scanIssue.scanType === 'BOOKING_QR'
+                        ? 'Đơn đặt chỗ'
+                        : scanIssue.coupon?.name ?? 'Coupon'}{' '}
                     ·{' '}
                     {scanIssue.coupon?.store?.name ?? storeName}
                   </div>
@@ -4587,7 +4670,23 @@ export default function PartnerPage() {
             </div>
 
             {[
-              ['Loại mã', scanIssue.scanType === 'BOOKING_QR' ? 'QR đặt chỗ' : 'Coupon'],
+              [
+                'Loại mã',
+                scanIssue.scanType === 'TOUR_BOOKING_QR'
+                  ? 'QR tour'
+                  : scanIssue.scanType === 'BOOKING_QR'
+                    ? 'QR đặt chỗ'
+                    : 'Coupon',
+              ],
+              ...(scanIssue.tour
+                ? [
+                    ['Tour', scanIssue.tour.title],
+                    [
+                      'Tiến độ',
+                      `${scanIssue.tour.progress.checkedIn}/${scanIssue.tour.progress.total} điểm đã check-in`,
+                    ],
+                  ]
+                : []),
               ['Quán áp dụng', scanIssue.coupon?.store?.name ?? storeName],
               ...(scannedDiscountLabel ? [['Mức giảm', scannedDiscountLabel]] : []),
               ['Trạng thái', scanIssue.statusLabel ?? scanIssue.status],
@@ -4622,12 +4721,12 @@ export default function PartnerPage() {
               >
                 <CheckCircle2 size={16} />
                 {scanIssue.status === 'USED'
-                  ? scanIssue.scanType === 'BOOKING_QR'
+                  ? scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
                     ? 'Đã check-in'
                     : 'Đã sử dụng'
                   : isConfirmingScan
                     ? 'Đang xác nhận'
-                    : scanIssue.scanType === 'BOOKING_QR'
+                    : scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
                       ? 'Xác nhận check-in'
                       : 'Xác nhận'}
               </PrimaryButton>

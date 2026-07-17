@@ -20,15 +20,12 @@ import {
 } from "lucide-react";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
-import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
+import { bookingApi, rememberLastBooking, type CreateTourBookingPayload } from "@/lib/api/bookings";
 import { ApiError, getAuthToken, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import type { PublicTour, TourStopStore, TourStoreCast } from "@/lib/api/tours";
 import { getAuthUser } from "@/lib/auth/session";
-import {
-  buildBookingTimeSlots,
-  buildScheduledAtFromBookingSlot,
-} from "@/lib/booking-time-slots";
+import { buildBookingTimeSlots, buildScheduledAtFromBookingSlot } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
   clampBookingGuestCount,
@@ -38,10 +35,7 @@ import {
   sanitizeBookingDisplayNameInput,
   sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
-import {
-  getBookingDateAfterDays,
-  getTodayBookingDate,
-} from "@/lib/booking-date";
+import { getBookingDateAfterDays, getTodayBookingDate } from "@/lib/booking-date";
 import {
   buildBookingFieldErrors,
   firstBookingFieldErrorKey,
@@ -175,11 +169,7 @@ const castName = (cast: TourStoreCast) => cast.publicAlias || cast.stageName;
 
 const castOptionKey = (cast: Pick<TourCastOption, "storeId" | "id">) => `${cast.storeId}:${cast.id}`;
 
-const localizedApiErrorMessage = (
-  error: unknown,
-  language: LanguageCode,
-  fallback: string,
-) => {
+const localizedApiErrorMessage = (error: unknown, language: LanguageCode, fallback: string) => {
   const vietnameseMessage =
     error instanceof ApiError
       ? translateApiMessage(error.message, error.status, fallback)
@@ -419,45 +409,7 @@ const tourUiCopy = {
 
 type TourUiCopyKey = keyof typeof tourUiCopy;
 
-const tourUiText = (key: TourUiCopyKey, language: LanguageCode) =>
-  tourUiCopy[key][language] ?? tourUiCopy[key].vi;
-
-const tourBookingSummary = (tour: PublicTour, selectedCasts: TourCastOption[]) =>
-  tour.stops.map((stop, index) => {
-    const casts = selectedCasts
-      .filter((cast) => cast.storeId === stop.store.id)
-      .map((cast) => ({
-        id: cast.id,
-        slug: cast.slug,
-        name: castName(cast),
-      }));
-
-    return {
-      order: stop.order || index + 1,
-      storeId: stop.store.id,
-      storeSlug: stop.store.slug,
-      storeName: stop.store.name,
-      casts,
-    };
-  });
-
-const tourBookingNote = (tour: PublicTour, selectedCasts: TourCastOption[], customerNote: string) => {
-  const stopNames = tour.stops.map((stop) => stop.store.name).join(" > ");
-  const castByStop = tourBookingSummary(tour, selectedCasts)
-    .map((stop) => {
-      const castText = stop.casts.length ? stop.casts.map((cast) => cast.name).join(", ") : "khong chon cast";
-      return `${stop.order}. ${stop.storeName}: ${castText}`;
-    })
-    .join("; ");
-  const lines = [
-    `Tour: ${tour.title}`,
-    stopNames ? `Diem dung: ${stopNames}` : "",
-    castByStop ? `Cast theo quan: ${castByStop}` : "",
-    customerNote ? `Ghi chu khach: ${customerNote}` : "",
-  ].filter(Boolean);
-
-  return normalizeBookingNote(lines.join(" | ")).slice(0, bookingValidationLimits.maxNoteLength);
-};
+const tourUiText = (key: TourUiCopyKey, language: LanguageCode) => tourUiCopy[key][language] ?? tourUiCopy[key].vi;
 
 export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const router = useRouter();
@@ -494,19 +446,15 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     [tour.stops],
   );
   const selectedCasts = useMemo(
-    () => selectedCastKeys.map((key) => tourCasts.find((cast) => castOptionKey(cast) === key)).filter(Boolean) as TourCastOption[],
+    () =>
+      selectedCastKeys
+        .map((key) => tourCasts.find((cast) => castOptionKey(cast) === key))
+        .filter(Boolean) as TourCastOption[],
     [selectedCastKeys, tourCasts],
   );
-  const singleSelectedCast = selectedCasts.length === 1 ? selectedCasts[0] : null;
-  const bookingStore =
-    singleSelectedCast && tour.stops.find((stop) => stop.store.slug === singleSelectedCast.storeSlug)?.store
-      ? tour.stops.find((stop) => stop.store.slug === singleSelectedCast.storeSlug)!.store
-      : firstStore;
+  const bookingStore = firstStore;
   const explicitDepartureTimes = useMemo(
-    () =>
-      Array.from(
-        new Set(tour.departureTimes.map(normalizeTimeOption).filter(Boolean)),
-      ).sort(),
+    () => Array.from(new Set(tour.departureTimes.map(normalizeTimeOption).filter(Boolean))).sort(),
     [tour.departureTimes],
   );
   const bookingTimeOptions = useMemo(
@@ -598,16 +546,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
         scheduledAt: scheduledPreviewAt,
         todayDate: getTodayDate(),
       }),
-    [
-      bookingDate,
-      bookingTime,
-      bookingTimeOptions,
-      email,
-      guestName,
-      guests,
-      note,
-      scheduledPreviewAt,
-    ],
+    [bookingDate, bookingTime, bookingTimeOptions, email, guestName, guests, note, scheduledPreviewAt],
   );
   const visibleFieldErrors = useMemo(
     () => visibleBookingFieldErrors(fieldErrors, touchedFields, submitAttempted),
@@ -663,14 +602,19 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       return;
     }
 
-    const payload: CreateBookingPayload = {
-      storeSlug: bookingStore.slug,
-      ...(singleSelectedCast ? { castSlug: singleSelectedCast.slug } : {}),
+    const castSelections = tour.stops
+      .map((stop) => ({
+        storeId: stop.store.id,
+        castIds: selectedCasts.filter((cast) => cast.storeId === stop.store.id).map((cast) => cast.id),
+      }))
+      .filter((selection) => selection.castIds.length > 0);
+    const payload: CreateTourBookingPayload = {
       displayName,
       email: normalizedEmail,
       scheduledAt,
       partySize: guests,
-      note: tourBookingNote(tour, selectedCasts, trimmedNote),
+      ...(trimmedNote ? { note: trimmedNote } : {}),
+      ...(castSelections.length ? { castSelections } : {}),
     };
 
     try {
@@ -682,36 +626,26 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
 
       if (shouldUseMemberBooking) {
         try {
-          booking = await bookingApi.createMemberBooking(payload);
+          booking = await bookingApi.createMemberTourBooking(tour.id, payload);
           savedAsMemberBooking = true;
         } catch (error) {
           if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
             throw error;
           }
 
-          booking = await bookingApi.createGuestBooking(payload);
+          booking = await bookingApi.createGuestTourBooking(tour.id, payload);
         }
       } else {
-        booking = await bookingApi.createGuestBooking(payload);
+        booking = await bookingApi.createGuestTourBooking(tour.id, payload);
       }
 
-      const tourBooking = {
-        ...booking,
-        tour: {
-          id: tour.id,
-          title: tour.title,
-          stops: tourBookingSummary(tour, selectedCasts),
-        },
-      };
-      rememberLastBooking(tourBooking, { history: true });
+      rememberLastBooking(booking, { history: true });
       if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
-      setErrorMessage(
-        localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi")),
-      );
+      setErrorMessage(localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi")));
     } finally {
       setIsSubmitting(false);
     }
@@ -721,9 +655,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     <main className={styles.page} data-no-scroll-reveal="true">
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <Link href="/">
-            {tx("home")}
-          </Link>
+          <Link href="/">{tx("home")}</Link>
           <ChevronRight size={14} />
           <Link href="/tour">Tour</Link>
           <ChevronRight size={14} />
@@ -751,11 +683,15 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               </PlaceholderMedia>
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
-                  <strong>{tour.stops.length} {tx("stopsUnit")}</strong>
+                  <strong>
+                    {tour.stops.length} {tx("stopsUnit")}
+                  </strong>
                   <span>{tx("stopStatsLabel")}</span>
                 </div>
                 <div className={styles.heroStat}>
-                  <strong>{tour.durationHours} {tx("hoursUnit")}</strong>
+                  <strong>
+                    {tour.durationHours} {tx("hoursUnit")}
+                  </strong>
                   <span>{tx("durationLabel")}</span>
                 </div>
                 <div className={styles.heroStat}>
@@ -844,7 +780,11 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                           className={styles.castAvatar}
                           role={cast.thumbnailUrl ? "img" : undefined}
                           aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
-                          style={cast.thumbnailUrl ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` } : undefined}
+                          style={
+                            cast.thumbnailUrl
+                              ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` }
+                              : undefined
+                          }
                         />
                         <span className={styles.castCopy}>
                           <span className={styles.castName}>{castName(cast)}</span>

@@ -1,12 +1,6 @@
 import { apiClient } from "./client";
 
-export type BookingStatus =
-  | "REQUESTED"
-  | "CONFIRMED"
-  | "CHECKED_IN"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "NO_SHOW";
+export type BookingStatus = "REQUESTED" | "CONFIRMED" | "CHECKED_IN" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 export type BookingStatusGroup = "Mới" | "Hoàn tất" | "Đã hủy";
 
@@ -23,6 +17,7 @@ type BookingDiscountSnapshot = {
 export type BookingRecord = {
   id: string;
   bookingCode: string;
+  tourBookingId?: string;
   storeId?: string;
   castId?: string | null;
   status: BookingStatus;
@@ -52,7 +47,12 @@ export type BookingRecord = {
     publicAlias?: string | null;
     media?: Array<{ url: string }>;
   } | null;
-  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
+  guest?: {
+    id: string;
+    displayName?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
   user?: {
     id: string;
     displayName?: string | null;
@@ -89,20 +89,31 @@ export type BookingRecord = {
     status: string;
     usedAt?: string | null;
     expiresAt?: string | null;
+    payload?: string | null;
   } | null;
   tour?: {
     id: string;
     title: string;
+    status?: string;
+    progress?: {
+      checkedIn: number;
+      total: number;
+    };
     stops: Array<{
       order: number;
+      bookingId?: string;
       storeId: string;
       storeSlug: string;
       storeName: string;
+      status?: BookingStatus;
+      checkedInAt?: string | null;
       casts: Array<{
         id: string;
         slug: string;
         name: string;
       }>;
+      coupon?: BookingRecord["coupon"];
+      couponIssue?: BookingRecord["couponIssue"];
     }>;
   };
 };
@@ -176,6 +187,19 @@ export type CreateBookingPayload = {
   note?: string;
 };
 
+export type CreateTourBookingPayload = {
+  displayName: string;
+  email: string;
+  phone?: string;
+  scheduledAt: string;
+  partySize: number;
+  note?: string;
+  castSelections?: Array<{
+    storeId: string;
+    castIds: string[];
+  }>;
+};
+
 export type CancelGuestBookingPayload = {
   phone: string;
   reason?: string;
@@ -216,7 +240,12 @@ export type BookingChangeRequest = {
     publicAlias?: string | null;
   } | null;
   requestedBy?: { id: string; displayName?: string | null } | null;
-  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
+  guest?: {
+    id: string;
+    displayName?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
   reviewedBy?: { id: string; displayName?: string | null } | null;
 };
 
@@ -323,11 +352,7 @@ export const bookingStatusGroup = (status: string, scheduledAt?: string): Bookin
   if (completedBookingStatuses.has(normalizedStatus)) return "Hoàn tất";
   if (cancelledBookingStatuses.has(normalizedStatus)) return "Đã hủy";
   const scheduledTime = toBookingTimestamp(scheduledAt);
-  if (
-    openBookingStatuses.has(normalizedStatus) &&
-    scheduledTime > 0 &&
-    scheduledTime < Date.now()
-  ) {
+  if (openBookingStatuses.has(normalizedStatus) && scheduledTime > 0 && scheduledTime < Date.now()) {
     return "Hoàn tất";
   }
   return "Mới";
@@ -336,11 +361,7 @@ export const bookingStatusGroup = (status: string, scheduledAt?: string): Bookin
 export const bookingStatusLabel = (status: string, scheduledAt?: string) => {
   const normalizedStatus = status.trim().toUpperCase();
   const scheduledTime = toBookingTimestamp(scheduledAt);
-  if (
-    openBookingStatuses.has(normalizedStatus) &&
-    scheduledTime > 0 &&
-    scheduledTime < Date.now()
-  ) {
+  if (openBookingStatuses.has(normalizedStatus) && scheduledTime > 0 && scheduledTime < Date.now()) {
     return "Đã qua giờ";
   }
 
@@ -368,8 +389,7 @@ export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "schedu
     return false;
   }
 
-  const cutoffMinutes =
-    booking.store?.bookingCancelCutoffMinutes ?? defaultBookingCancelCutoffMinutes;
+  const cutoffMinutes = booking.store?.bookingCancelCutoffMinutes ?? defaultBookingCancelCutoffMinutes;
   const scheduledAt = new Date(booking.scheduledAt).getTime();
   return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= cutoffMinutes * 60 * 1000;
 };
@@ -377,14 +397,9 @@ export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "schedu
 const bookingCreatedTimeValue = (booking: BookingRecord) =>
   toBookingTimestamp(booking.createdAt) || toBookingTimestamp(booking.scheduledAt);
 
-const bookingScheduledTimeValue = (booking: BookingRecord) =>
-  toBookingTimestamp(booking.scheduledAt);
+const bookingScheduledTimeValue = (booking: BookingRecord) => toBookingTimestamp(booking.scheduledAt);
 
-const bookingHistoryRank = (
-  booking: BookingRecord,
-  nowMs: number,
-  pinnedBookingIds: Set<string>,
-) => {
+const bookingHistoryRank = (booking: BookingRecord, nowMs: number, pinnedBookingIds: Set<string>) => {
   const normalizedStatus = booking.status.trim().toUpperCase();
   if (pinnedBookingIds.has(booking.id) && openBookingStatuses.has(normalizedStatus)) return -1;
   if (cancelledBookingStatuses.has(normalizedStatus)) return 3;
@@ -407,8 +422,7 @@ export const sortBookingHistories = (
   const pinnedIds = new Set(pinnedBookingIds.filter(Boolean));
 
   return [...bookings].sort((a, b) => {
-    const rankDiff =
-      bookingHistoryRank(a, nowMs, pinnedIds) - bookingHistoryRank(b, nowMs, pinnedIds);
+    const rankDiff = bookingHistoryRank(a, nowMs, pinnedIds) - bookingHistoryRank(b, nowMs, pinnedIds);
     if (rankDiff !== 0) return rankDiff;
 
     if (pinnedIds.size) {
@@ -436,10 +450,7 @@ export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
       }
 
       const existing = bookingsById.get(booking.id);
-      bookingsById.set(
-        booking.id,
-        existing ? mergeBookingRecord(existing, booking) : normalizeBookingRecord(booking),
-      );
+      bookingsById.set(booking.id, existing ? mergeBookingRecord(existing, booking) : normalizeBookingRecord(booking));
     }
   }
 
@@ -466,10 +477,7 @@ const writeStoredBookings = (bookings: BookingRecord[]) => {
     return;
   }
 
-  window.localStorage.setItem(
-    guestBookingsKey,
-    JSON.stringify(bookings.slice(0, maxStoredBookings)),
-  );
+  window.localStorage.setItem(guestBookingsKey, JSON.stringify(bookings.slice(0, maxStoredBookings)));
 };
 
 export const rememberLastBooking = (
@@ -511,10 +519,15 @@ export const getLastBooking = (bookingId?: string | null) => {
 export const getGuestBookingHistory = readStoredBookings;
 
 export const bookingApi = {
-  createGuestBooking: (payload: CreateBookingPayload) =>
-    apiClient<BookingRecord>("/bookings", { data: payload }),
+  createGuestBooking: (payload: CreateBookingPayload) => apiClient<BookingRecord>("/bookings", { data: payload }),
   createMemberBooking: (payload: CreateBookingPayload) =>
     apiClient<BookingRecord>("/member/bookings", { data: payload }),
+  createGuestTourBooking: (tourId: string, payload: CreateTourBookingPayload) =>
+    apiClient<BookingRecord>(`/tours/${encodeURIComponent(tourId)}/bookings`, { data: payload }),
+  createMemberTourBooking: (tourId: string, payload: CreateTourBookingPayload) =>
+    apiClient<BookingRecord>(`/member/tours/${encodeURIComponent(tourId)}/bookings`, {
+      data: payload,
+    }),
   getGuestBookingByCode: (bookingCode: string, phone: string) =>
     apiClient<BookingRecord>(
       `/bookings/${encodeURIComponent(bookingCode)}?${new URLSearchParams({ phone }).toString()}`,

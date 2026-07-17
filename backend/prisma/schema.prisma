@@ -113,6 +113,22 @@ enum BookingQrStatus {
   REVOKED
 }
 
+enum TourBookingStatus {
+  REQUESTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TourBookingQrStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  REVOKED
+}
+
 enum BookingChangeRequestType {
   RESCHEDULE
 }
@@ -323,6 +339,7 @@ model User {
   supportTicketsUser            SupportTicket[]        @relation("SupportTicketUser")
   supportTicketsAdmin           SupportTicket[]        @relation("SupportTicketAdmin")
   supportMessages               SupportMessage[]       @relation("SupportMessageSender")
+  tourBookings                  TourBooking[]
   createdAt                     DateTime               @default(now()) @map("created_at")
   updatedAt                     DateTime               @updatedAt @map("updated_at")
   deletedAt                     DateTime?              @map("deleted_at")
@@ -347,6 +364,7 @@ model Guest {
   notifications         NotificationLog[]
   bookingChangeRequests BookingChangeRequest[]
   bookingChatMessages   BookingChatMessage[]
+  tourBookings          TourBooking[]
   createdAt             DateTime               @default(now()) @map("created_at")
   updatedAt             DateTime               @updatedAt @map("updated_at")
   deletedAt             DateTime?              @map("deleted_at")
@@ -524,6 +542,7 @@ model Store {
   userPermissions            StorePermission[]
   memberFavorites            MemberFavoriteStore[]
   tourStops                  TourStop[]
+  tourCheckIns               TourBookingCheckIn[]
   createdAt                  DateTime               @default(now()) @map("created_at")
   updatedAt                  DateTime               @updatedAt @map("updated_at")
   deletedAt                  DateTime?              @map("deleted_at")
@@ -612,12 +631,18 @@ model Booking {
   castId                 String?                @map("cast_id") @db.Uuid
   couponId               String?                @map("coupon_id") @db.Uuid
   couponIssueId          String?                @unique @map("coupon_issue_id") @db.Uuid
+  tourBookingId          String?                @map("tour_booking_id") @db.Uuid
+  tourStopId             String?                @map("tour_stop_id") @db.Uuid
+  tourStopOrder          Int?                   @map("tour_stop_order")
   user                   User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   guest                  Guest?                 @relation(fields: [guestId], references: [id], onDelete: SetNull)
   store                  Store                  @relation(fields: [storeId], references: [id], onDelete: Restrict)
   cast                   Cast?                  @relation(fields: [castId], references: [id], onDelete: SetNull)
   coupon                 Coupon?                @relation(fields: [couponId], references: [id], onDelete: SetNull)
   couponIssue            CouponIssue?           @relation("BookingCouponIssue", fields: [couponIssueId], references: [id], onDelete: SetNull)
+  tourBooking            TourBooking?           @relation(fields: [tourBookingId], references: [id], onDelete: Cascade)
+  tourStop               TourStop?              @relation(fields: [tourStopId], references: [id], onDelete: SetNull)
+  tourCheckIn            TourBookingCheckIn?
   bill                   Bill?
   pointLedgers           PointLedger[]
   notifications          NotificationLog[]
@@ -641,6 +666,7 @@ model Booking {
   cancelledAt            DateTime?              @map("cancelled_at")
   deletedAt              DateTime?              @map("deleted_at")
 
+  @@unique([tourBookingId, storeId])
   @@index([userId])
   @@index([guestId])
   @@index([storeId])
@@ -648,6 +674,8 @@ model Booking {
   @@index([couponId])
   @@index([status])
   @@index([scheduledAt])
+  @@index([tourBookingId])
+  @@index([tourStopId])
   @@map("bookings")
 }
 
@@ -1343,17 +1371,17 @@ model SupportMessage {
 }
 
 model Campaign {
-  id              String         @id @default(uuid()) @db.Uuid
-  name            String
-  discountType    DiscountType   @map("discount_type")
-  discountValue   Int            @map("discount_value")
-  targetStoreId   String?        @map("target_store_id") @db.Uuid
-  targetStore     Store?         @relation(fields: [targetStoreId], references: [id], onDelete: SetNull)
-  startsAt        DateTime?      @map("starts_at")
-  endsAt          DateTime?      @map("ends_at")
-  status          CampaignStatus @default(DRAFT)
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  discountType  DiscountType   @map("discount_type")
+  discountValue Int            @map("discount_value")
+  targetStoreId String?        @map("target_store_id") @db.Uuid
+  targetStore   Store?         @relation(fields: [targetStoreId], references: [id], onDelete: SetNull)
+  startsAt      DateTime?      @map("starts_at")
+  endsAt        DateTime?      @map("ends_at")
+  status        CampaignStatus @default(DRAFT)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@index([targetStoreId])
   @@index([status])
@@ -1362,19 +1390,20 @@ model Campaign {
 }
 
 model Tour {
-  id             String          @id @default(uuid()) @db.Uuid
+  id             String        @id @default(uuid()) @db.Uuid
   title          String
   subtitle       String?
-  city           String          @default("Hanoi")
-  durationHours  Int             @default(4)       @map("duration_hours")
-  priceTier      Int             @default(3)       @map("price_tier")
-  coverUrl       String?         @map("cover_url")
-  status         ProfileStatus   @default(ACTIVE)
+  city           String        @default("Hanoi")
+  durationHours  Int           @default(4) @map("duration_hours")
+  priceTier      Int           @default(3) @map("price_tier")
+  coverUrl       String?       @map("cover_url")
+  status         ProfileStatus @default(ACTIVE)
   stops          TourStop[]
-  departureTimes String[]        @default([])      @map("departure_times")
-  createdAt      DateTime        @default(now())   @map("created_at")
-  updatedAt      DateTime        @updatedAt        @map("updated_at")
-  deletedAt      DateTime?       @map("deleted_at")
+  bookings       TourBooking[]
+  departureTimes String[]      @default([]) @map("departure_times")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
 
   @@index([status])
   @@index([city])
@@ -1382,13 +1411,14 @@ model Tour {
 }
 
 model TourStop {
-  id        String   @id @default(uuid()) @db.Uuid
-  tourId    String   @map("tour_id") @db.Uuid
-  storeId   String   @map("store_id") @db.Uuid
-  order     Int      @default(1)
-  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())   @map("created_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  tourId    String    @map("tour_id") @db.Uuid
+  storeId   String    @map("store_id") @db.Uuid
+  order     Int       @default(1)
+  tour      Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+  createdAt DateTime  @default(now()) @map("created_at")
 
   @@unique([tourId, storeId])
   @@index([tourId])
@@ -1396,3 +1426,79 @@ model TourStop {
   @@map("tour_stops")
 }
 
+model TourBooking {
+  id                    String               @id @default(uuid()) @db.Uuid
+  bookingCode           String               @unique @map("booking_code") @db.VarChar(15)
+  tourId                String               @map("tour_id") @db.Uuid
+  userId                String?              @map("user_id") @db.Uuid
+  guestId               String               @map("guest_id") @db.Uuid
+  status                TourBookingStatus    @default(REQUESTED)
+  scheduledAt           DateTime             @map("scheduled_at")
+  partySize             Int                  @default(1) @map("party_size")
+  durationHoursSnapshot Int                  @map("duration_hours_snapshot")
+  titleSnapshot         String               @map("title_snapshot")
+  itinerarySnapshot     Json                 @map("itinerary_snapshot")
+  note                  String?
+  completedAt           DateTime?            @map("completed_at")
+  cancelledAt           DateTime?            @map("cancelled_at")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+  tour                  Tour                 @relation(fields: [tourId], references: [id], onDelete: Restrict)
+  user                  User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest                 Guest                @relation(fields: [guestId], references: [id], onDelete: Restrict)
+  bookings              Booking[]
+  qr                    TourBookingQr?
+  checkIns              TourBookingCheckIn[]
+
+  @@index([tourId])
+  @@index([userId])
+  @@index([guestId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("tour_bookings")
+}
+
+model TourBookingQr {
+  id            String               @id @default(uuid()) @db.Uuid
+  tourBookingId String               @unique @map("tour_booking_id") @db.Uuid
+  code          String               @unique
+  qrPayloadHash String               @unique @map("qr_payload_hash")
+  status        TourBookingQrStatus  @default(ACTIVE)
+  validFrom     DateTime             @map("valid_from")
+  expiresAt     DateTime             @map("expires_at")
+  completedAt   DateTime?            @map("completed_at")
+  revokedAt     DateTime?            @map("revoked_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  tourBooking   TourBooking          @relation(fields: [tourBookingId], references: [id], onDelete: Cascade)
+  checkIns      TourBookingCheckIn[]
+
+  @@index([status])
+  @@index([expiresAt])
+  @@map("tour_booking_qrs")
+}
+
+model TourBookingCheckIn {
+  id              String        @id @default(uuid()) @db.Uuid
+  tourBookingId   String        @map("tour_booking_id") @db.Uuid
+  bookingId       String        @unique @map("booking_id") @db.Uuid
+  tourBookingQrId String        @map("tour_booking_qr_id") @db.Uuid
+  storeId         String        @map("store_id") @db.Uuid
+  actorId         String?       @map("actor_id") @db.Uuid
+  idempotencyKey  String?       @unique @map("idempotency_key")
+  source          String        @default("ONLINE")
+  clientScannedAt DateTime?     @map("client_scanned_at")
+  checkedInAt     DateTime      @default(now()) @map("checked_in_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  tourBooking     TourBooking   @relation(fields: [tourBookingId], references: [id], onDelete: Cascade)
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  qr              TourBookingQr @relation(fields: [tourBookingQrId], references: [id], onDelete: Restrict)
+  store           Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+
+  @@index([tourBookingId])
+  @@index([tourBookingQrId])
+  @@index([storeId])
+  @@index([actorId])
+  @@index([checkedInAt])
+  @@map("tour_booking_check_ins")
+}

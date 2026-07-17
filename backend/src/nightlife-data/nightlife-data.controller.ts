@@ -107,6 +107,11 @@ import {
 } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
+  ConfirmTourBookingCheckInDto,
+  CreateTourBookingDto,
+  ScanTourBookingQrDto,
+} from './dto/tour-booking.dto';
+import {
   AdminPartnerRequestQueryDto,
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
@@ -404,6 +409,19 @@ export class NightlifeDataController {
     );
   }
 
+  @Post('tours/:tourId/bookings')
+  createGuestTourBooking(
+    @Req() request: express.Request,
+    @Param('tourId') tourId: string,
+    @Body() dto: CreateTourBookingDto,
+  ) {
+    return this.nightlifeDataService.createGuestTourBooking(
+      tourId,
+      dto,
+      this.couponRequestContext(request),
+    );
+  }
+
   @CancelGuestBookingContract()
   @Patch('bookings/:bookingId/cancel')
   cancelGuestBooking(
@@ -643,6 +661,32 @@ export class NightlifeDataController {
     );
   }
 
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/tour-booking-qrs/scan')
+  scanPartnerTourBookingQr(
+    @Req() request: RequestWithUser,
+    @Body() dto: ScanTourBookingQrDto,
+  ) {
+    return this.nightlifeDataService.scanPartnerTourBookingQr(
+      dto,
+      request.user,
+    );
+  }
+
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/tour-booking-qrs/confirm-check-in')
+  confirmPartnerTourBookingQrCheckIn(
+    @Req() request: RequestWithUser,
+    @Body() dto: ConfirmTourBookingCheckInDto,
+  ) {
+    return this.nightlifeDataService.confirmPartnerTourBookingQrCheckIn(
+      dto,
+      request.user,
+    );
+  }
+
   @PartnerConfirmCheckInContract('id')
   @ActionPolicy('canConfirmCheckIn')
   @Roles('PARTNER', 'ADMIN', 'OPERATOR')
@@ -841,6 +885,22 @@ export class NightlifeDataController {
   ) {
     return this.nightlifeDataService.createMemberBooking(
       request.user,
+      dto,
+      this.couponRequestContext(request),
+    );
+  }
+
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/tours/:tourId/bookings')
+  createMemberTourBooking(
+    @Req() request: RequestWithUser,
+    @Param('tourId') tourId: string,
+    @Body() dto: CreateTourBookingDto,
+  ) {
+    return this.nightlifeDataService.createMemberTourBooking(
+      request.user,
+      tourId,
       dto,
       this.couponRequestContext(request),
     );

@@ -125,9 +125,27 @@ describe('NightlifeDataService', () => {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       groupBy: jest.fn(),
     },
     bookingQr: {
+      count: jest.fn(),
+    },
+    tourBooking: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    tourBookingQr: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    tourBookingCheckIn: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
       count: jest.fn(),
     },
     bill: {
@@ -319,8 +337,10 @@ describe('NightlifeDataService', () => {
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.count.mockResolvedValue(0);
     prisma.booking.count.mockResolvedValue(0);
+    prisma.tourBookingCheckIn.count.mockResolvedValue(0);
     prisma.booking.findFirst.mockResolvedValue(null);
     prisma.bookingQr.count.mockResolvedValue(0);
+    prisma.tourBooking.findMany.mockResolvedValue([]);
     prisma.bill.count.mockResolvedValue(0);
     prisma.bill.findFirst.mockResolvedValue(null);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
@@ -3064,6 +3084,7 @@ describe('NightlifeDataService', () => {
       where: {
         userId: 'member-1',
         deletedAt: null,
+        tourBookingId: null,
       },
       orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
       select: expect.objectContaining({
@@ -3098,6 +3119,392 @@ describe('NightlifeDataService', () => {
         },
       }),
     });
+  });
+
+  it('resolves a master tour QR to the child booking of the active store', async () => {
+    const qrId = '11111111-1111-4111-8111-111111111111';
+    const storeId = '22222222-2222-4222-8222-222222222222';
+    const childBookingId = '33333333-3333-4333-8333-333333333333';
+    const qrPayload = (
+      service as unknown as {
+        buildTourBookingQrPayload(id: string): string;
+      }
+    ).buildTourBookingQrPayload(qrId);
+    prisma.tourBookingQr.findUnique.mockResolvedValue({
+      id: qrId,
+      tourBookingId: '44444444-4444-4444-8444-444444444444',
+      code: 'TQR-TEST',
+      status: 'ACTIVE',
+      validFrom: new Date(Date.now() - 60_000),
+      expiresAt: new Date(Date.now() + 60_000),
+      completedAt: null,
+      tourBooking: {
+        id: '44444444-4444-4444-8444-444444444444',
+        userId: 'member-1',
+        status: 'CONFIRMED',
+        titleSnapshot: 'Saigon Night Tour',
+        tour: { id: '55555555-5555-4555-8555-555555555555' },
+        user: { id: 'member-1', displayName: 'Member', tier: 'REGULAR' },
+        guest: null,
+        checkIns: [],
+        bookings: [
+          {
+            id: childBookingId,
+            bookingCode: 'BK-STOP-1',
+            storeId,
+            status: 'CONFIRMED',
+            scheduledAt: new Date('2099-07-17T13:00:00.000Z'),
+            tourStopOrder: 1,
+            discountSnapshot: null,
+            store: { id: storeId, name: 'Moonlight Bar', slug: 'moonlight' },
+            coupon: null,
+            couponIssue: null,
+          },
+        ],
+      },
+    });
+
+    const result = await service.scanPartnerTourBookingQr(
+      {
+        payload: qrPayload,
+        activeStoreId: storeId,
+      },
+      { id: 'partner-1', role: 'PARTNER' },
+    );
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      storeId,
+      'checkin.confirm',
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        scanType: 'TOUR_BOOKING_QR',
+        id: childBookingId,
+        status: 'ISSUED',
+        scanSessionToken: expect.any(String),
+        tour: expect.objectContaining({
+          stopOrder: 1,
+          progress: { checkedIn: 0, total: 1 },
+        }),
+      }),
+    );
+  });
+
+  it('rejects a tour QR when the selected store is not in its itinerary', async () => {
+    const qrId = '66666666-6666-4666-8666-666666666666';
+    const selectedStoreId = '77777777-7777-4777-8777-777777777777';
+    const qrPayload = (
+      service as unknown as {
+        buildTourBookingQrPayload(id: string): string;
+      }
+    ).buildTourBookingQrPayload(qrId);
+    prisma.tourBookingQr.findUnique.mockResolvedValue({
+      id: qrId,
+      tourBookingId: '88888888-8888-4888-8888-888888888888',
+      code: 'TQR-WRONG-STORE',
+      status: 'ACTIVE',
+      validFrom: new Date(Date.now() - 60_000),
+      expiresAt: new Date(Date.now() + 60_000),
+      tourBooking: {
+        id: '88888888-8888-4888-8888-888888888888',
+        status: 'CONFIRMED',
+        bookings: [
+          {
+            id: '99999999-9999-4999-8999-999999999999',
+            storeId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          },
+        ],
+        checkIns: [],
+      },
+    });
+
+    await expect(
+      service.scanPartnerTourBookingQr(
+        {
+          payload: qrPayload,
+          activeStoreId: selectedStoreId,
+        },
+        { id: 'partner-1', role: 'PARTNER' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          result: 'FAILED',
+          reason: 'WRONG_STORE',
+          targetId: '88888888-8888-4888-8888-888888888888',
+        }),
+      }),
+    );
+  });
+
+  it('completes the master tour QR when the final store confirms check-in', async () => {
+    const qrId = '10101010-1010-4010-8010-101010101010';
+    const tourBookingId = '20202020-2020-4020-8020-202020202020';
+    const currentBookingId = '30303030-3030-4030-8030-303030303030';
+    const previousBookingId = '40404040-4040-4040-8040-404040404040';
+    const storeId = '50505050-5050-4050-8050-505050505050';
+    const sessionToken = (
+      service as unknown as {
+        buildTourScanSessionToken(input: {
+          qrId: string;
+          tourBookingId: string;
+          bookingId: string;
+          storeId: string;
+          actorId: string;
+        }): string;
+      }
+    ).buildTourScanSessionToken({
+      qrId,
+      tourBookingId,
+      bookingId: currentBookingId,
+      storeId,
+      actorId: 'partner-1',
+    });
+    const currentChild = {
+      id: currentBookingId,
+      bookingCode: 'BK-STOP-2',
+      storeId,
+      status: 'CONFIRMED',
+      scheduledAt: new Date('2099-07-17T14:00:00.000Z'),
+      tourStopOrder: 2,
+      couponId: null,
+      couponIssueId: null,
+      couponIssue: null,
+      discountSnapshot: null,
+      store: { id: storeId, name: 'Sakura Lounge', slug: 'sakura' },
+      coupon: null,
+    };
+    const previousChild = {
+      id: previousBookingId,
+      bookingCode: 'BK-STOP-1',
+      storeId: '60606060-6060-4060-8060-606060606060',
+      status: 'CHECKED_IN',
+      scheduledAt: new Date('2099-07-17T13:00:00.000Z'),
+      tourStopOrder: 1,
+      couponId: null,
+      couponIssueId: null,
+      couponIssue: null,
+      discountSnapshot: null,
+      store: {
+        id: '60606060-6060-4060-8060-606060606060',
+        name: 'Moonlight Bar',
+        slug: 'moonlight',
+      },
+      coupon: null,
+    };
+    const baseQr = {
+      id: qrId,
+      tourBookingId,
+      code: 'TQR-FINAL',
+      status: 'ACTIVE',
+      validFrom: new Date(Date.now() - 60_000),
+      expiresAt: new Date(Date.now() + 60_000),
+      completedAt: null,
+      tourBooking: {
+        id: tourBookingId,
+        userId: 'member-1',
+        status: 'IN_PROGRESS',
+        titleSnapshot: 'Saigon Night Tour',
+        tour: { id: '70707070-7070-4070-8070-707070707070' },
+        user: { id: 'member-1', displayName: 'Member', tier: 'REGULAR' },
+        guest: null,
+        bookings: [previousChild, currentChild],
+        checkIns: [{ bookingId: previousBookingId }],
+      },
+    };
+    prisma.tourBookingQr.findUnique
+      .mockResolvedValueOnce(baseQr)
+      .mockResolvedValueOnce({
+        ...baseQr,
+        status: 'COMPLETED',
+        completedAt: new Date(),
+        tourBooking: {
+          ...baseQr.tourBooking,
+          status: 'COMPLETED',
+          checkIns: [
+            { bookingId: previousBookingId },
+            { bookingId: currentBookingId, checkedInAt: new Date() },
+          ],
+          bookings: [previousChild, { ...currentChild, status: 'CHECKED_IN' }],
+        },
+      });
+    prisma.tourBookingCheckIn.create.mockResolvedValue({ id: 'check-in-2' });
+    prisma.booking.update.mockResolvedValue({
+      ...currentChild,
+      status: 'CHECKED_IN',
+    });
+    prisma.tourBooking.update.mockResolvedValue({
+      id: tourBookingId,
+      status: 'COMPLETED',
+    });
+    prisma.tourBookingQr.update.mockResolvedValue({
+      id: qrId,
+      status: 'COMPLETED',
+    });
+    prisma.booking.count.mockResolvedValue(2);
+    prisma.tourBookingCheckIn.count.mockResolvedValue(2);
+
+    const result = await service.confirmPartnerTourBookingQrCheckIn(
+      {
+        scanSessionToken: sessionToken,
+        idempotencyKey: '80808080-8080-4080-8080-808080808080',
+      },
+      { id: 'partner-1', role: 'PARTNER' },
+    );
+
+    expect(prisma.tourBooking.update).toHaveBeenCalledWith({
+      where: { id: tourBookingId },
+      data: {
+        status: 'COMPLETED',
+        completedAt: expect.any(Date),
+      },
+    });
+    expect(prisma.tourBookingQr.update).toHaveBeenCalledWith({
+      where: { id: qrId },
+      data: { status: 'COMPLETED', completedAt: expect.any(Date) },
+    });
+    expect(prisma.tourBooking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: tourBookingId,
+        status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+      },
+      data: { status: 'COMPLETED', completedAt: expect.any(Date) },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        scanType: 'TOUR_BOOKING_QR',
+        status: 'USED',
+        scanSessionToken: null,
+        tour: expect.objectContaining({
+          status: 'COMPLETED',
+          progress: { checkedIn: 2, total: 2 },
+        }),
+      }),
+    );
+  });
+
+  it('cancels every remaining stop and revokes the master QR together', async () => {
+    const tourBookingId = '90909090-9090-4090-8090-909090909090';
+    const primaryBooking = {
+      id: '91919191-9191-4191-8191-919191919191',
+      bookingCode: 'BK-TOUR-1',
+      tourBookingId,
+      storeId: '92929292-9292-4292-8292-929292929292',
+      userId: 'member-1',
+      guestId: 'guest-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2099-07-17T13:00:00.000Z'),
+      partySize: 2,
+      cancelledAt: null,
+      store: {
+        id: '92929292-9292-4292-8292-929292929292',
+        name: 'Moonlight Bar',
+        slug: 'moonlight',
+        bookingCancelCutoffMinutes: 60,
+      },
+      cast: null,
+      coupon: null,
+      couponIssue: null,
+      user: {
+        id: 'member-1',
+        email: 'member@example.com',
+        displayName: 'Member',
+        tier: 'REGULAR',
+      },
+      guest: {
+        id: 'guest-1',
+        displayName: 'Member',
+        phone: '+84901234567',
+        email: 'member@example.com',
+      },
+    };
+    const tourBooking = {
+      id: tourBookingId,
+      bookingCode: 'TR-CANCEL',
+      status: 'REQUESTED',
+      scheduledAt: primaryBooking.scheduledAt,
+      partySize: 2,
+      titleSnapshot: 'Saigon Night Tour',
+      itinerarySnapshot: [],
+      note: null,
+      tour: { id: '93939393-9393-4393-8393-939393939393' },
+      user: primaryBooking.user,
+      guest: primaryBooking.guest,
+      qr: {
+        id: '94949494-9494-4494-8494-949494949494',
+        code: 'TQR-CANCEL',
+        status: 'ACTIVE',
+        expiresAt: new Date('2099-07-18T01:00:00.000Z'),
+      },
+      checkIns: [],
+      bookings: [
+        primaryBooking,
+        {
+          ...primaryBooking,
+          id: '95959595-9595-4595-8595-959595959595',
+          bookingCode: 'BK-TOUR-2',
+          storeId: '96969696-9696-4696-8696-969696969696',
+          store: {
+            id: '96969696-9696-4696-8696-969696969696',
+            name: 'Sakura Lounge',
+            slug: 'sakura',
+            bookingCancelCutoffMinutes: 60,
+          },
+        },
+      ],
+    };
+    prisma.booking.findFirst.mockResolvedValue(primaryBooking);
+    prisma.tourBooking.findUnique.mockResolvedValue(tourBooking);
+    prisma.booking.updateMany.mockResolvedValue({ count: 2 });
+    prisma.tourBooking.update.mockResolvedValue({
+      id: tourBookingId,
+      status: 'CANCELLED',
+    });
+    prisma.tourBookingQr.updateMany.mockResolvedValue({ count: 1 });
+    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue({
+      ...tourBooking,
+      status: 'CANCELLED',
+      cancelledAt: new Date(),
+      qr: { ...tourBooking.qr, status: 'REVOKED' },
+      bookings: tourBooking.bookings.map((booking) => ({
+        ...booking,
+        status: 'CANCELLED',
+      })),
+    });
+    prisma.notificationLog.create.mockResolvedValue({
+      id: 'notification-tour-cancelled',
+    });
+
+    const result = await service.cancelMemberBooking(
+      { id: 'member-1', role: 'USER' },
+      primaryBooking.id,
+      { reason: 'Đổi kế hoạch' },
+    );
+
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        tourBookingId,
+        status: { in: ['REQUESTED', 'CONFIRMED'] },
+      },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: expect.any(Date),
+        cancelReason: 'Đổi kế hoạch',
+      },
+    });
+    expect(prisma.tourBookingQr.updateMany).toHaveBeenCalledWith({
+      where: { tourBookingId, status: 'ACTIVE' },
+      data: { status: 'REVOKED', revokedAt: expect.any(Date) },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        tourBookingId,
+        status: 'CANCELLED',
+        tour: expect.objectContaining({ status: 'CANCELLED' }),
+      }),
+    );
   });
 
   it('rate-limits repeated member cancellation attempts', async () => {

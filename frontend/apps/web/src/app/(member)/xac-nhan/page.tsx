@@ -6,11 +6,7 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { translateText } from "@/lib/i18n/client-translations";
-import {
-  intlLocaleByLanguage,
-  useActiveLanguage,
-  type LanguageCode,
-} from "@/lib/i18n/use-active-language";
+import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
@@ -23,7 +19,6 @@ const formatDateTime = (value: string | undefined, language: LanguageCode) => {
     timeStyle: "short",
   }).format(new Date(value));
 };
-
 
 const bookingQrFileName = (booking: BookingRecord) =>
   `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
@@ -39,18 +34,13 @@ const couponIssueQrPayload = (booking: BookingRecord) => {
 };
 
 const bookingQrPayload = (booking: BookingRecord) =>
+  (booking.tour ? booking.qr?.payload?.trim() : "") ||
   couponIssueQrPayload(booking) ||
-  [
-    "NLBOOKING",
-    booking.id,
-    booking.bookingCode,
-    booking.store?.slug ?? "nightlife",
-    booking.scheduledAt,
-  ].join("|");
+  ["NLBOOKING", booking.id, booking.bookingCode, booking.store?.slug ?? "nightlife", booking.scheduledAt].join("|");
 
 const bookingQrImageUrl = (booking: BookingRecord) => {
   const issueQrImage = booking.couponIssue?.qrImageDataUrl || booking.couponIssue?.qrImageUrl;
-  if (issueQrImage) return issueQrImage;
+  if (!booking.tour && issueQrImage) return issueQrImage;
 
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
     bookingQrPayload(booking),
@@ -92,9 +82,7 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
   };
 
   const recordValue = (value: unknown) =>
-    value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
+    value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
   const discountFromSnapshot = (snapshot: unknown): BookingDiscountInfo | null => {
     const record = recordValue(snapshot);
@@ -188,8 +176,7 @@ export default function Page() {
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
-  const guestEmailLabel =
-    booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
+  const guestEmailLabel = booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
   const guestConfirmationMessage = isTourBooking
     ? `${translateText("Thông tin đặt tour và mã QR đã được gửi về", activeLanguage)} ${guestEmailLabel}. ${translateText("Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.", activeLanguage)}`
     : `${translateText(
@@ -326,11 +313,7 @@ export default function Page() {
                   {discountLabelText !== null ? (
                     <SummaryRow
                       label={translateText("Mức giảm", activeLanguage)}
-                      value={
-                        <span className={styles.discountValue}>
-                          {discountLabelText}
-                        </span>
-                      }
+                      value={<span className={styles.discountValue}>{discountLabelText}</span>}
                     />
                   ) : null}
                 </>
@@ -357,7 +340,9 @@ export default function Page() {
                 <strong>{translateText("QR giảm giá của bạn", activeLanguage)}</strong>
                 <p>
                   {translateText(
-                    "Đưa mã này cho nhân viên quán quét khi tới nơi. QR được gắn với booking và chỉ dùng một lần.",
+                    isTourBooking
+                      ? "Dùng cùng mã QR này tại từng điểm dừng trong tour. Mỗi quán chỉ có thể xác nhận điểm dừng của chính mình một lần."
+                      : "Đưa mã này cho nhân viên quán quét khi tới nơi. QR được gắn với booking và chỉ dùng một lần.",
                     activeLanguage,
                   )}
                 </p>
@@ -374,10 +359,12 @@ export default function Page() {
             <span>
               {translateText(
                 canShowQr
-                  ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
+                  ? isTourBooking
+                    ? "Mã QR tour được dùng xuyên suốt hành trình; mỗi quán chỉ check-in được điểm dừng được gán cho quán đó. Mã hết hiệu lực khi tất cả điểm dừng hoàn tất."
+                    : "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
                   : isTourBooking
                     ? "Tour sẽ được admin điều phối theo từng điểm dừng. Nếu cần đổi lịch trình, hãy chat Admin hoặc hủy yêu cầu tour cũ trước giờ hẹn."
-                  : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
+                    : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
                 activeLanguage,
               )}
             </span>
@@ -391,7 +378,9 @@ export default function Page() {
               </div>
             ) : (
               <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
-                <strong>{translateText(isTourBooking ? "Xem đơn tour của tôi" : "Xem đặt chỗ của tôi", activeLanguage)}</strong>
+                <strong>
+                  {translateText(isTourBooking ? "Xem đơn tour của tôi" : "Xem đặt chỗ của tôi", activeLanguage)}
+                </strong>
               </Link>
             )}
           </div>
@@ -410,13 +399,7 @@ function SummaryRow({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
-function TourVenueSummary({
-  booking,
-  language,
-}: {
-  booking: BookingRecord;
-  language: LanguageCode;
-}) {
+function TourVenueSummary({ booking, language }: { booking: BookingRecord; language: LanguageCode }) {
   const stops = booking.tour?.stops ?? [];
 
   if (!stops.length) {
@@ -450,9 +433,7 @@ function TourVenueSummary({
                     </span>
                   ))
                 ) : (
-                  <span className={styles.tourCastEmpty}>
-                    {translateText("Không chọn cast", language)}
-                  </span>
+                  <span className={styles.tourCastEmpty}>{translateText("Không chọn cast", language)}</span>
                 )}
               </span>
             </span>

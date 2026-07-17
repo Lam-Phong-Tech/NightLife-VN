@@ -94,6 +94,11 @@ import {
 import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
+  ConfirmTourBookingCheckInDto,
+  CreateTourBookingDto,
+  ScanTourBookingQrDto,
+} from './dto/tour-booking.dto';
+import {
   AdminPartnerRequestQueryDto,
   CreatePartnerRequestDto,
   PartnerRequestCastDto,
@@ -154,6 +159,9 @@ const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const BOOKING_CREATE_RATE_LIMIT = 5;
 const BOOKING_CANCEL_RATE_LIMIT = 5;
+const TOUR_QR_VALID_BEFORE_MS = 2 * 60 * 60 * 1000;
+const TOUR_QR_GRACE_AFTER_MS = 6 * 60 * 60 * 1000;
+const TOUR_SCAN_SESSION_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_DUPLICATE_BOOKING_STATUSES: BookingStatus[] = [
   'REQUESTED',
   'CONFIRMED',
@@ -200,6 +208,7 @@ type BookingStatusActorType =
 
 type BookingCancelTarget = {
   id: string;
+  tourBookingId?: string | null;
   storeId?: string | null;
   castId?: string | null;
   userId?: string | null;
@@ -3344,6 +3353,7 @@ export class NightlifeDataService {
       orderBy: { scheduledAt: 'desc' },
       select: {
         id: true,
+        tourBookingId: true,
         storeId: true,
         status: true,
         scheduledAt: true,
@@ -3523,6 +3533,421 @@ export class NightlifeDataService {
     return booking;
   }
 
+  async createGuestTourBooking(
+    tourId: string,
+    dto: CreateTourBookingDto,
+    context: CouponClaimContext = {},
+  ) {
+    const contact = this.sanitizeBookingContact(dto as CreateBookingDto);
+    const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
+    this.assertBookingRateLimit(
+      `tour-booking:create:guest:${contact.email ?? contact.phone}`,
+      BOOKING_CREATE_RATE_LIMIT,
+      'Too many tour booking requests. Please try again shortly.',
+    );
+    const guest = await this.prisma.guest.create({
+      data: {
+        displayName: contact.displayName,
+        phone: contact.phone || undefined,
+        email: contact.email || '',
+      },
+      select: { id: true },
+    });
+
+    return this.createTourBookingRecord({
+      tourId,
+      dto,
+      guestId: guest.id,
+      note: contact.note,
+      email: contact.email,
+      phone: contact.phone,
+      context,
+    });
+  }
+
+  async createMemberTourBooking(
+    user: AuthenticatedUser,
+    tourId: string,
+    dto: CreateTourBookingDto,
+    context: CouponClaimContext = {},
+  ) {
+    const contact = this.sanitizeBookingContact(dto as CreateBookingDto);
+    const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
+    this.assertBookingRateLimit(
+      `tour-booking:create:member:${user.id}`,
+      BOOKING_CREATE_RATE_LIMIT,
+      'Too many tour booking requests. Please try again shortly.',
+    );
+    const guest = await this.prisma.guest.create({
+      data: {
+        convertedUserId: user.id,
+        displayName: contact.displayName,
+        phone: contact.phone || undefined,
+        email: contact.email || user.email || '',
+      },
+      select: { id: true },
+    });
+
+    const result = await this.createTourBookingRecord({
+      tourId,
+      dto,
+      user,
+      userId: user.id,
+      guestId: guest.id,
+      note: contact.note,
+      email: contact.email || user.email,
+      phone: contact.phone,
+      context: {
+        ...context,
+        sessionId: context.sessionId ?? user.jti ?? null,
+      },
+    });
+
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: user.id,
+        guestId: guest.id,
+        bookingId: result.id,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: user.id,
+        templateKey: 'customer.booking.tour_created.v1',
+        payload: this.toPrismaJson({
+          bookingId: result.id,
+          tourBookingId: result.tourBookingId,
+          bookingCode: result.bookingCode,
+          tourTitle: result.tour.title,
+          scheduledAt: result.scheduledAt,
+          partySize: result.partySize,
+          stopCount: result.tour.stops.length,
+        }),
+      },
+    });
+
+    return result;
+  }
+
+  async scanPartnerTourBookingQr(
+    dto: ScanTourBookingQrDto,
+    user: AuthenticatedUser,
+  ) {
+    const token = this.resolveTourBookingQrToken(dto.payload);
+    await this.accessService.ensureStoreAccess(
+      user,
+      dto.activeStoreId,
+      'checkin.confirm',
+    );
+
+    const qr = await this.prisma.tourBookingQr.findUnique({
+      where: { id: token.qrId },
+      include: this.tourBookingQrPartnerInclude(),
+    });
+    if (!qr) {
+      throw new NotFoundException('Tour booking QR not found');
+    }
+
+    this.assertTourBookingQrUsable(qr);
+    const childBooking = qr.tourBooking.bookings.find(
+      (booking) => booking.storeId === dto.activeStoreId,
+    );
+    if (!childBooking) {
+      await this.writeTourScanAudit({
+        user,
+        qrId: qr.id,
+        tourBookingId: qr.tourBookingId,
+        storeId: dto.activeStoreId,
+        result: 'FAILED',
+        reason: 'WRONG_STORE',
+        offline: Boolean(dto.offline),
+      });
+      throw new ForbiddenException(
+        'Quán đang chọn không thuộc hành trình của booking tour này.',
+      );
+    }
+
+    const scanSessionToken = this.buildTourScanSessionToken({
+      qrId: qr.id,
+      tourBookingId: qr.tourBookingId,
+      bookingId: childBooking.id,
+      storeId: childBooking.storeId,
+      actorId: user.id,
+    });
+    await this.writeTourScanAudit({
+      user,
+      qrId: qr.id,
+      tourBookingId: qr.tourBookingId,
+      bookingId: childBooking.id,
+      storeId: childBooking.storeId,
+      result: 'SUCCESS',
+      reason: 'PREVIEW',
+      offline: Boolean(dto.offline),
+    });
+
+    return this.decoratePartnerTourBookingQr(
+      qr,
+      childBooking.id,
+      scanSessionToken,
+    );
+  }
+
+  async confirmPartnerTourBookingQrCheckIn(
+    dto: ConfirmTourBookingCheckInDto,
+    user: AuthenticatedUser,
+  ) {
+    const session = this.resolveTourScanSessionToken(dto.scanSessionToken);
+    if (session.actorId !== user.id) {
+      throw new ForbiddenException(
+        'Phiên xác nhận QR không thuộc tài khoản hiện tại.',
+      );
+    }
+    await this.accessService.ensureStoreAccess(
+      user,
+      session.storeId,
+      'checkin.confirm',
+    );
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const qr = await tx.tourBookingQr.findUnique({
+          where: { id: session.qrId },
+          include: {
+            tourBooking: {
+              include: {
+                bookings: {
+                  select: {
+                    id: true,
+                    storeId: true,
+                    status: true,
+                    couponId: true,
+                    couponIssueId: true,
+                    couponIssue: {
+                      select: { id: true, status: true },
+                    },
+                  },
+                },
+                checkIns: { select: { bookingId: true } },
+              },
+            },
+          },
+        });
+        if (
+          !qr ||
+          qr.tourBookingId !== session.tourBookingId ||
+          qr.tourBooking.id !== session.tourBookingId
+        ) {
+          throw new NotFoundException('Tour booking QR not found');
+        }
+        this.assertTourBookingQrUsable(qr);
+
+        const childBooking = qr.tourBooking.bookings.find(
+          (booking) =>
+            booking.id === session.bookingId &&
+            booking.storeId === session.storeId,
+        );
+        if (!childBooking) {
+          throw new ForbiddenException(
+            'Booking điểm dừng không thuộc quán đang xác nhận.',
+          );
+        }
+        if (['CANCELLED', 'NO_SHOW'].includes(childBooking.status)) {
+          throw new UnprocessableEntityException(
+            'Điểm dừng này không còn khả dụng để check-in.',
+          );
+        }
+
+        const existingCheckIn = qr.tourBooking.checkIns.some(
+          (checkIn) => checkIn.bookingId === childBooking.id,
+        );
+        if (existingCheckIn) {
+          return;
+        }
+
+        const now = new Date();
+        await tx.tourBookingCheckIn.create({
+          data: {
+            tourBookingId: qr.tourBookingId,
+            bookingId: childBooking.id,
+            tourBookingQrId: qr.id,
+            storeId: childBooking.storeId,
+            actorId: user.id,
+            idempotencyKey: dto.idempotencyKey,
+            source: dto.offline ? 'OFFLINE_REPLAY' : 'ONLINE',
+            clientScannedAt: dto.clientScannedAt
+              ? new Date(dto.clientScannedAt)
+              : undefined,
+            checkedInAt: now,
+          },
+        });
+
+        if (childBooking.couponIssueId) {
+          const usedIssue = await tx.couponIssue.updateMany({
+            where: {
+              id: childBooking.couponIssueId,
+              status: 'ISSUED',
+              OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+            data: {
+              status: 'USED',
+              usedAt: now,
+              scannedById: user.id,
+            },
+          });
+          if (
+            usedIssue.count === 0 &&
+            childBooking.couponIssue?.status !== 'USED'
+          ) {
+            throw new UnprocessableEntityException(
+              'Ưu đãi của điểm dừng đã hết hạn hoặc không còn khả dụng.',
+            );
+          }
+          if (usedIssue.count === 1 && childBooking.couponId) {
+            await tx.coupon.update({
+              where: { id: childBooking.couponId },
+              data: { usedCount: { increment: 1 } },
+            });
+          }
+        }
+
+        if (!['CHECKED_IN', 'COMPLETED'].includes(childBooking.status)) {
+          await tx.booking.update({
+            where: { id: childBooking.id },
+            data: { status: 'CHECKED_IN' },
+          });
+        }
+
+        const totalStops = qr.tourBooking.bookings.length;
+        const completedStops = qr.tourBooking.checkIns.length + 1;
+        const isComplete = completedStops >= totalStops;
+        await tx.tourBooking.update({
+          where: { id: qr.tourBookingId },
+          data: {
+            status: isComplete ? 'COMPLETED' : 'IN_PROGRESS',
+            completedAt: isComplete ? now : null,
+          },
+        });
+        if (isComplete) {
+          await tx.tourBookingQr.update({
+            where: { id: qr.id },
+            data: { status: 'COMPLETED', completedAt: now },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorId: user.id,
+            actorRole: user.role,
+            module: 'TOUR_BOOKING',
+            action: 'TOUR_BOOKING_STOP_CHECKED_IN',
+            targetType: 'TourBooking',
+            targetId: qr.tourBookingId,
+            result: 'SUCCESS',
+            changedFields: ['booking.status', 'tourBooking.status'],
+            afterJson: this.toPrismaJson({
+              childBookingId: childBooking.id,
+              childBookingStatus: 'CHECKED_IN',
+              tourBookingStatus: isComplete ? 'COMPLETED' : 'IN_PROGRESS',
+              completedStops,
+              totalStops,
+            }),
+            metadata: this.toPrismaJson({
+              qrId: qr.id,
+              storeId: childBooking.storeId,
+              offline: Boolean(dto.offline),
+              idempotencyKey: dto.idempotencyKey ?? null,
+            }),
+          },
+        });
+      });
+    } catch (error) {
+      if (this.isPrismaUniqueConstraintError(error)) {
+        const duplicate = await this.prisma.tourBookingCheckIn.findFirst({
+          where: {
+            OR: [
+              { bookingId: session.bookingId },
+              ...(dto.idempotencyKey
+                ? [{ idempotencyKey: dto.idempotencyKey }]
+                : []),
+            ],
+          },
+          select: { id: true },
+        });
+        if (!duplicate) throw error;
+      } else {
+        await this.writeTourScanAudit({
+          user,
+          qrId: session.qrId,
+          tourBookingId: session.tourBookingId,
+          bookingId: session.bookingId,
+          storeId: session.storeId,
+          result: 'FAILED',
+          reason: this.errorMessage(error),
+          offline: Boolean(dto.offline),
+        }).catch(() => undefined);
+        throw error;
+      }
+    }
+
+    await this.reconcileTourBookingCheckInProgress(
+      session.tourBookingId,
+      session.qrId,
+    );
+    const updatedQr = await this.prisma.tourBookingQr.findUnique({
+      where: { id: session.qrId },
+      include: this.tourBookingQrPartnerInclude(),
+    });
+    if (!updatedQr) {
+      throw new NotFoundException('Tour booking QR not found');
+    }
+    return this.decoratePartnerTourBookingQr(
+      updatedQr,
+      session.bookingId,
+      null,
+    );
+  }
+
+  private async reconcileTourBookingCheckInProgress(
+    tourBookingId: string,
+    qrId: string,
+  ) {
+    const [totalStops, completedStops] = await Promise.all([
+      this.prisma.booking.count({
+        where: { tourBookingId, deletedAt: null },
+      }),
+      this.prisma.tourBookingCheckIn.count({
+        where: { tourBookingId },
+      }),
+    ]);
+    if (totalStops === 0 || completedStops === 0) {
+      return;
+    }
+
+    if (completedStops >= totalStops) {
+      const now = new Date();
+      await Promise.all([
+        this.prisma.tourBooking.updateMany({
+          where: {
+            id: tourBookingId,
+            status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+          },
+          data: { status: 'COMPLETED', completedAt: now },
+        }),
+        this.prisma.tourBookingQr.updateMany({
+          where: { id: qrId, status: 'ACTIVE' },
+          data: { status: 'COMPLETED', completedAt: now },
+        }),
+      ]);
+      return;
+    }
+
+    await this.prisma.tourBooking.updateMany({
+      where: {
+        id: tourBookingId,
+        status: { in: ['REQUESTED', 'CONFIRMED'] },
+      },
+      data: { status: 'IN_PROGRESS' },
+    });
+  }
+
   async cancelMemberBooking(
     user: AuthenticatedUser,
     bookingId: string,
@@ -3541,6 +3966,7 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        tourBookingId: true,
         storeId: true,
         userId: true,
         guestId: true,
@@ -3588,6 +4014,7 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        tourBookingId: true,
         storeId: true,
         userId: true,
         guestId: true,
@@ -4143,6 +4570,12 @@ export class NightlifeDataService {
     this.assertBookingCanBeCancelled(input.booking, {
       enforceCutoff: input.enforceCutoff ?? true,
     });
+    if (input.booking.tourBookingId) {
+      return this.cancelTourBookingRecord({
+        ...input,
+        tourBookingId: input.booking.tourBookingId,
+      });
+    }
 
     const now = new Date();
     const reason = this.cleanText(input.reason);
@@ -4157,6 +4590,102 @@ export class NightlifeDataService {
       data: { cancelledAt: now },
     });
 
+    await this.adminNotificationService?.notifyBookingCancelled(result, {
+      reason,
+    });
+
+    return result;
+  }
+
+  private async cancelTourBookingRecord(input: {
+    booking: BookingCancelTarget;
+    tourBookingId: string;
+    actorId?: string | null;
+    actorType: BookingStatusActorType;
+    reason?: string | null;
+  }) {
+    const now = new Date();
+    const reason = this.cleanText(input.reason);
+    const cancelled = await this.prisma.$transaction(async (prisma) => {
+      const tourBooking = await prisma.tourBooking.findUnique({
+        where: { id: input.tourBookingId },
+        include: this.tourBookingCustomerInclude(),
+      });
+      if (!tourBooking) {
+        throw new NotFoundException('Tour booking not found');
+      }
+      if (tourBooking.status === 'CANCELLED') {
+        throw new UnprocessableEntityException(
+          'Tour booking has already been cancelled',
+        );
+      }
+      if (
+        tourBooking.bookings.some((booking) =>
+          ['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status),
+        )
+      ) {
+        throw new UnprocessableEntityException(
+          'Tour booking cannot be cancelled after a stop has started',
+        );
+      }
+
+      await prisma.booking.updateMany({
+        where: {
+          tourBookingId: input.tourBookingId,
+          status: { in: ['REQUESTED', 'CONFIRMED'] },
+        },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: now,
+          cancelReason: reason || null,
+        },
+      });
+      await prisma.tourBooking.update({
+        where: { id: input.tourBookingId },
+        data: { status: 'CANCELLED', cancelledAt: now },
+      });
+      await prisma.tourBookingQr.updateMany({
+        where: {
+          tourBookingId: input.tourBookingId,
+          status: 'ACTIVE',
+        },
+        data: { status: 'REVOKED', revokedAt: now },
+      });
+      await prisma.auditLog.create({
+        data: {
+          actorId: input.actorId ?? undefined,
+          actorRole: input.actorType,
+          module: 'TOUR_BOOKING',
+          action: 'TOUR_BOOKING_CANCELLED',
+          targetType: 'TourBooking',
+          targetId: input.tourBookingId,
+          result: 'SUCCESS',
+          beforeJson: this.toPrismaJson({
+            status: tourBooking.status,
+            childBookingIds: tourBooking.bookings.map((booking) => booking.id),
+          }),
+          afterJson: this.toPrismaJson({
+            status: 'CANCELLED',
+            cancelledAt: now.toISOString(),
+          }),
+          metadata: this.toPrismaJson({
+            actorType: input.actorType,
+            reason: reason || null,
+          }),
+        },
+      });
+
+      return prisma.tourBooking.findUniqueOrThrow({
+        where: { id: input.tourBookingId },
+        include: this.tourBookingCustomerInclude(),
+      });
+    });
+    const result = this.decorateCustomerTourBooking(cancelled);
+
+    await this.notifyBookingCustomerStatusChange(result, {
+      reason,
+      actorType: input.actorType,
+    });
     await this.adminNotificationService?.notifyBookingCancelled(result, {
       reason,
     });
@@ -5354,91 +5883,110 @@ export class NightlifeDataService {
     return { updatedCount: result.count };
   }
 
-  listMemberBookings(userId: string) {
-    return this.prisma.booking.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-      },
-      orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
-      select: {
-        id: true,
-        bookingCode: true,
-        status: true,
-        scheduledAt: true,
-        partySize: true,
-        subtotalVnd: true,
-        discountVnd: true,
-        totalVnd: true,
-        store: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            openingHours: true,
-            bookingCancelCutoffMinutes: true,
-            media: {
-              where: {
-                deletedAt: null,
-                access: 'PUBLIC',
-                status: 'READY',
-                type: 'IMAGE',
+  async listMemberBookings(userId: string) {
+    const [bookings, tourBookings] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+          tourBookingId: null,
+        },
+        orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
+        select: {
+          id: true,
+          bookingCode: true,
+          status: true,
+          scheduledAt: true,
+          partySize: true,
+          subtotalVnd: true,
+          discountVnd: true,
+          totalVnd: true,
+          store: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              openingHours: true,
+              bookingCancelCutoffMinutes: true,
+              media: {
+                where: {
+                  deletedAt: null,
+                  access: 'PUBLIC',
+                  status: 'READY',
+                  type: 'IMAGE',
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { url: true },
               },
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { url: true },
             },
           },
-        },
-        cast: {
-          select: {
-            id: true,
-            slug: true,
-            stageName: true,
-            publicAlias: true,
-            media: {
-              where: {
-                deletedAt: null,
-                access: 'PUBLIC',
-                status: 'READY',
-                type: 'IMAGE',
+          cast: {
+            select: {
+              id: true,
+              slug: true,
+              stageName: true,
+              publicAlias: true,
+              media: {
+                where: {
+                  deletedAt: null,
+                  access: 'PUBLIC',
+                  status: 'READY',
+                  type: 'IMAGE',
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { url: true },
               },
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { url: true },
             },
           },
-        },
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
+          coupon: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              discountType: true,
+              discountValue: true,
+              maxDiscountVnd: true,
+              minSpendVnd: true,
+            },
           },
-        },
-        couponIssue: {
-          select: { id: true, code: true, status: true, usedAt: true },
-        },
-        qr: {
-          select: {
-            id: true,
-            code: true,
-            status: true,
-            usedAt: true,
-            expiresAt: true,
+          couponIssue: {
+            select: { id: true, code: true, status: true, usedAt: true },
           },
+          qr: {
+            select: {
+              id: true,
+              code: true,
+              status: true,
+              usedAt: true,
+              expiresAt: true,
+            },
+          },
+          user: { select: { id: true, displayName: true, tier: true } },
+          guest: { select: { id: true, displayName: true, phone: true } },
+          note: true,
+          createdAt: true,
+          updatedAt: true,
         },
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true, phone: true } },
-        note: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+      }),
+      this.prisma.tourBooking.findMany({
+        where: { userId },
+        orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
+        include: this.tourBookingCustomerInclude(),
+      }),
+    ]);
+
+    return [
+      ...bookings,
+      ...tourBookings.map((tourBooking) =>
+        this.decorateCustomerTourBooking(tourBooking),
+      ),
+    ].sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
+    );
   }
 
   async getMemberPointSummary(userId: string) {
@@ -9383,7 +9931,8 @@ export class NightlifeDataService {
             }
           : null,
         commissionConfig: null,
-        disabledReason: 'CommissionConfig logic was removed by product decision.',
+        disabledReason:
+          'CommissionConfig logic was removed by product decision.',
       },
     };
   }
@@ -11045,6 +11594,497 @@ export class NightlifeDataService {
         bookingCode: booking.bookingCode ?? bookingCode,
       };
     });
+  }
+
+  private async createTourBookingRecord(input: {
+    tourId: string;
+    dto: CreateTourBookingDto;
+    user?: AuthenticatedUser;
+    userId?: string;
+    guestId: string;
+    email?: string;
+    phone?: string;
+    note?: string;
+    context?: CouponClaimContext;
+  }) {
+    const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
+    const tour = await this.prisma.tour.findFirst({
+      where: {
+        id: input.tourId,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      include: {
+        stops: {
+          where: {
+            store: {
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
+          },
+          orderBy: { order: 'asc' },
+          include: {
+            store: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                category: true,
+                openingHours: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!tour || tour.stops.length === 0) {
+      throw new NotFoundException('Tour not found');
+    }
+
+    const stopStoreIds = new Set(tour.stops.map((stop) => stop.storeId));
+    const selectionEntries = input.dto.castSelections ?? [];
+    if (
+      selectionEntries.some((selection) => !stopStoreIds.has(selection.storeId))
+    ) {
+      throw new BadRequestException(
+        'Cast selection contains a store outside this tour.',
+      );
+    }
+    const selectedCastIds = [
+      ...new Set(selectionEntries.flatMap((selection) => selection.castIds)),
+    ];
+    const selectedCasts = selectedCastIds.length
+      ? await this.prisma.cast.findMany({
+          where: {
+            id: { in: selectedCastIds },
+            status: 'ACTIVE',
+            isPublic: true,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            storeId: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        })
+      : [];
+    if (selectedCasts.length !== selectedCastIds.length) {
+      throw new BadRequestException(
+        'One or more selected casts are unavailable.',
+      );
+    }
+    const castById = new Map(selectedCasts.map((cast) => [cast.id, cast]));
+    for (const selection of selectionEntries) {
+      if (
+        selection.castIds.some(
+          (castId) => castById.get(castId)?.storeId !== selection.storeId,
+        )
+      ) {
+        throw new BadRequestException(
+          'Selected cast does not belong to the selected tour store.',
+        );
+      }
+    }
+
+    const selectionsByStore = new Map(
+      selectionEntries.map((selection) => [
+        selection.storeId,
+        selection.castIds.map((castId) => castById.get(castId)!),
+      ]),
+    );
+    const itinerarySnapshot = tour.stops.map((stop) => ({
+      tourStopId: stop.id,
+      order: stop.order,
+      storeId: stop.store.id,
+      storeSlug: stop.store.slug,
+      storeName: stop.store.name,
+      casts: (selectionsByStore.get(stop.store.id) ?? []).map((cast) => ({
+        id: cast.id,
+        slug: cast.slug,
+        name: cast.publicAlias ?? cast.stageName,
+      })),
+    }));
+
+    const created = await this.prisma.$transaction(async (prisma) => {
+      const tourBooking = await prisma.tourBooking.create({
+        data: {
+          bookingCode: this.generateTourBookingCode(),
+          tourId: tour.id,
+          userId: input.userId,
+          guestId: input.guestId,
+          status: 'REQUESTED',
+          scheduledAt,
+          partySize: input.dto.partySize,
+          durationHoursSnapshot: tour.durationHours,
+          titleSnapshot: tour.title,
+          itinerarySnapshot: itinerarySnapshot as Prisma.InputJsonValue,
+          note: input.note,
+        },
+      });
+
+      const childBookings: Array<{ id: string }> = [];
+      for (const stop of tour.stops) {
+        await this.assertNoDuplicateActiveBooking({
+          storeId: stop.store.id,
+          scheduledAt,
+          userId: input.userId,
+          email: input.email,
+          phone: input.phone,
+          prisma,
+        });
+        const selectedStoreCasts = selectionsByStore.get(stop.store.id) ?? [];
+        const primaryCast = selectedStoreCasts[0];
+        const target: BookingTarget = {
+          store: stop.store,
+          ...(primaryCast
+            ? {
+                cast: {
+                  id: primaryCast.id,
+                  slug: primaryCast.slug,
+                  stageName: primaryCast.stageName,
+                  publicAlias: primaryCast.publicAlias,
+                },
+              }
+            : {}),
+        };
+        const bookingDto: CreateBookingDto = {
+          storeId: stop.store.id,
+          ...(primaryCast ? { castId: primaryCast.id } : {}),
+          displayName: input.dto.displayName,
+          email: input.dto.email,
+          phone: input.dto.phone,
+          scheduledAt: input.dto.scheduledAt,
+          partySize: input.dto.partySize,
+          note: input.note,
+        };
+        const couponLink = await this.resolveBookingCouponLink({
+          dto: bookingDto,
+          target,
+          userId: input.userId,
+          user: input.user,
+          phone: input.phone,
+          prisma,
+        });
+        const couponIssueId =
+          couponLink.couponIssueId ??
+          (couponLink.couponId
+            ? (
+                await this.issueBookingCouponQr({
+                  couponId: couponLink.couponId,
+                  target,
+                  user: input.user,
+                  guestId: input.guestId,
+                  phone: input.phone,
+                  scheduledAt,
+                  context: input.context,
+                  prisma,
+                })
+              ).id
+            : undefined);
+
+        const child = await prisma.booking.create({
+          data: {
+            bookingCode: this.generateBookingCode(),
+            userId: input.userId,
+            guestId: input.guestId,
+            storeId: stop.store.id,
+            castId: primaryCast?.id,
+            couponId: couponLink.couponId,
+            couponIssueId,
+            tourBookingId: tourBooking.id,
+            tourStopId: stop.id,
+            tourStopOrder: stop.order,
+            status: 'REQUESTED',
+            scheduledAt,
+            partySize: input.dto.partySize,
+            note: input.note,
+            discountSnapshot: {
+              couponId: couponLink.couponId ?? null,
+              couponIssueId: couponIssueId ?? null,
+              tourBookingId: tourBooking.id,
+              tourStopOrder: stop.order,
+            },
+          },
+          select: { id: true },
+        });
+        childBookings.push(child);
+      }
+
+      const qrId = randomUUID();
+      const qrPayload = this.buildTourBookingQrPayload(qrId);
+      await prisma.tourBookingQr.create({
+        data: {
+          id: qrId,
+          tourBookingId: tourBooking.id,
+          code: `TQR-${randomUUID().slice(0, 8).toUpperCase()}`,
+          qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
+          validFrom: new Date(scheduledAt.getTime() - TOUR_QR_VALID_BEFORE_MS),
+          expiresAt: new Date(
+            scheduledAt.getTime() +
+              tour.durationHours * 60 * 60 * 1000 +
+              TOUR_QR_GRACE_AFTER_MS,
+          ),
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: input.userId,
+          actorRole: input.user?.role ?? 'GUEST',
+          module: 'TOUR_BOOKING',
+          action: 'TOUR_BOOKING_CREATED',
+          targetType: 'TourBooking',
+          targetId: tourBooking.id,
+          result: 'SUCCESS',
+          afterJson: this.toPrismaJson({
+            status: 'REQUESTED',
+            childBookingIds: childBookings.map((booking) => booking.id),
+            storeIds: tour.stops.map((stop) => stop.store.id),
+          }),
+          metadata: this.toPrismaJson({
+            tourId: tour.id,
+            stopCount: tour.stops.length,
+            scheduledAt: scheduledAt.toISOString(),
+          }),
+        },
+      });
+
+      return prisma.tourBooking.findUniqueOrThrow({
+        where: { id: tourBooking.id },
+        include: this.tourBookingCustomerInclude(),
+      });
+    });
+
+    for (const child of created.bookings) {
+      await this.adminNotificationService
+        ?.notifyBookingCreated(child as any)
+        .catch((error) =>
+          this.logger.warn(
+            `Failed to notify tour child booking ${child.id}: ${this.errorMessage(error)}`,
+          ),
+        );
+    }
+
+    return this.decorateCustomerTourBooking(created);
+  }
+
+  private tourBookingCustomerInclude() {
+    return {
+      tour: { select: { id: true, title: true } },
+      user: {
+        select: { id: true, email: true, displayName: true, tier: true },
+      },
+      guest: {
+        select: {
+          id: true,
+          displayName: true,
+          phone: true,
+          email: true,
+        },
+      },
+      qr: true,
+      checkIns: { select: { bookingId: true, checkedInAt: true } },
+      bookings: {
+        orderBy: { tourStopOrder: 'asc' as const },
+        select: this.bookingNotificationSelect(),
+      },
+    } satisfies Prisma.TourBookingInclude;
+  }
+
+  private decorateCustomerTourBooking(tourBooking: any) {
+    const primary = tourBooking.bookings[0];
+    if (!primary) {
+      throw new NotFoundException('Tour booking has no stops');
+    }
+    const itinerary = Array.isArray(tourBooking.itinerarySnapshot)
+      ? tourBooking.itinerarySnapshot
+      : [];
+    const checkedInByBookingId = new Map(
+      (tourBooking.checkIns ?? []).map((checkIn: any) => [
+        checkIn.bookingId,
+        checkIn.checkedInAt,
+      ]),
+    );
+    const qrPayload = tourBooking.qr
+      ? this.buildTourBookingQrPayload(tourBooking.qr.id)
+      : null;
+    const customerStatusByTourStatus: Record<string, string> = {
+      REQUESTED: 'REQUESTED',
+      CONFIRMED: 'CONFIRMED',
+      IN_PROGRESS: 'CHECKED_IN',
+      COMPLETED: 'COMPLETED',
+      CANCELLED: 'CANCELLED',
+      NO_SHOW: 'NO_SHOW',
+    };
+
+    return {
+      ...primary,
+      bookingCode: tourBooking.bookingCode,
+      status: customerStatusByTourStatus[tourBooking.status] ?? primary.status,
+      tourBookingId: tourBooking.id,
+      scheduledAt: tourBooking.scheduledAt,
+      partySize: tourBooking.partySize,
+      note: tourBooking.note,
+      qr: tourBooking.qr
+        ? {
+            id: tourBooking.qr.id,
+            code: tourBooking.qr.code,
+            status: tourBooking.qr.status,
+            expiresAt: tourBooking.qr.expiresAt,
+            usedAt: tourBooking.qr.completedAt,
+            payload: qrPayload,
+          }
+        : null,
+      tour: {
+        id: tourBooking.tour.id,
+        title: tourBooking.titleSnapshot,
+        status: tourBooking.status,
+        progress: {
+          checkedIn: (tourBooking.checkIns ?? []).length,
+          total: tourBooking.bookings.length,
+        },
+        stops: tourBooking.bookings.map((booking: any, index: number) => {
+          const snapshot = itinerary.find(
+            (item: any) => item.storeId === booking.storeId,
+          );
+          return {
+            order: booking.tourStopOrder ?? snapshot?.order ?? index + 1,
+            bookingId: booking.id,
+            storeId: booking.store.id,
+            storeSlug: booking.store.slug,
+            storeName: booking.store.name,
+            status: booking.status,
+            checkedInAt: checkedInByBookingId.get(booking.id) ?? null,
+            casts: snapshot?.casts ?? (booking.cast ? [booking.cast] : []),
+            coupon: booking.coupon,
+            couponIssue: booking.couponIssue,
+          };
+        }),
+      },
+    };
+  }
+
+  private tourBookingQrPartnerInclude() {
+    return {
+      tourBooking: {
+        include: {
+          tour: { select: { id: true, title: true } },
+          user: {
+            select: { id: true, displayName: true, tier: true },
+          },
+          guest: {
+            select: { id: true, displayName: true, phone: true },
+          },
+          checkIns: {
+            select: {
+              bookingId: true,
+              storeId: true,
+              checkedInAt: true,
+            },
+          },
+          bookings: {
+            orderBy: { tourStopOrder: 'asc' as const },
+            select: {
+              id: true,
+              bookingCode: true,
+              storeId: true,
+              status: true,
+              scheduledAt: true,
+              tourStopOrder: true,
+              discountSnapshot: true,
+              store: { select: { id: true, name: true, slug: true } },
+              coupon: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  discountType: true,
+                  discountValue: true,
+                  maxDiscountVnd: true,
+                  minSpendVnd: true,
+                },
+              },
+              couponIssue: {
+                select: {
+                  id: true,
+                  code: true,
+                  status: true,
+                  usedAt: true,
+                  metadata: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    } satisfies Prisma.TourBookingQrInclude;
+  }
+
+  private decoratePartnerTourBookingQr(
+    qr: any,
+    childBookingId: string,
+    scanSessionToken: string | null,
+  ) {
+    const child = qr.tourBooking.bookings.find(
+      (booking: any) => booking.id === childBookingId,
+    );
+    if (!child) {
+      throw new NotFoundException('Tour booking stop not found');
+    }
+    const checkIn = qr.tourBooking.checkIns.find(
+      (item: any) => item.bookingId === child.id,
+    );
+    const completedStops = qr.tourBooking.checkIns.length;
+    const totalStops = qr.tourBooking.bookings.length;
+    const isUsed = Boolean(checkIn);
+
+    return {
+      scanType: 'TOUR_BOOKING_QR',
+      id: child.id,
+      code: qr.code,
+      status: isUsed ? 'USED' : 'ISSUED',
+      statusLabel: isUsed
+        ? 'Điểm dừng đã check-in'
+        : 'QR tour hợp lệ tại quán này',
+      expiresAt: qr.expiresAt,
+      usedAt: checkIn?.checkedInAt ?? null,
+      scanSessionToken: isUsed ? null : scanSessionToken,
+      customer: {
+        type: qr.tourBooking.userId ? 'MEMBER' : 'GUEST',
+        label: qr.tourBooking.userId ? 'Hội viên' : 'Khách vãng lai',
+      },
+      booking: {
+        id: child.id,
+        status: child.status,
+        scheduledAt: child.scheduledAt,
+      },
+      coupon: child.coupon
+        ? { ...child.coupon, store: child.store }
+        : {
+            id: child.id,
+            code: 'TOUR_BOOKING',
+            name: 'Điểm dừng tour',
+            store: child.store,
+          },
+      couponIssue: child.couponIssue,
+      discountRuleSnapshot:
+        this.asRecord(child.couponIssue?.metadata)?.discountRuleSnapshot ??
+        child.discountSnapshot ??
+        null,
+      tour: {
+        id: qr.tourBooking.tour.id,
+        bookingId: qr.tourBooking.id,
+        title: qr.tourBooking.titleSnapshot,
+        status: qr.tourBooking.status,
+        stopOrder: child.tourStopOrder,
+        progress: {
+          checkedIn: completedStops,
+          total: totalStops,
+        },
+      },
+    };
   }
 
   private resolveBookingScheduledAt(value: string) {
@@ -17155,6 +18195,204 @@ export class NightlifeDataService {
     return url.toString();
   }
 
+  private generateTourBookingCode() {
+    const characters = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const bytes = require('crypto').randomBytes(8);
+    let result = '';
+    for (let index = 0; index < bytes.length; index += 1) {
+      result += characters[bytes[index] % characters.length];
+    }
+    return `TR-${result}`;
+  }
+
+  private buildTourBookingQrPayload(qrId: string) {
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        type: 'tour_booking',
+        qrId,
+      }),
+    ).toString('base64url');
+    const token = `${encodedPayload}.${this.signCouponQrPayload(encodedPayload)}`;
+    const url = new URL(this.couponQrPartnerUrl());
+    url.searchParams.set('tourScanToken', token);
+    return url.toString();
+  }
+
+  private resolveTourBookingQrToken(payload: string) {
+    const parsed = this.resolveSignedTourPayload(payload, 'tour_booking');
+    if (!parsed.qrId || typeof parsed.qrId !== 'string') {
+      throw new BadRequestException('Invalid tour booking QR payload');
+    }
+    return {
+      qrId: parsed.qrId,
+      tokenHash: this.buildCouponQrTokenHash(this.extractTourQrToken(payload)),
+    };
+  }
+
+  private buildTourScanSessionToken(input: {
+    qrId: string;
+    tourBookingId: string;
+    bookingId: string;
+    storeId: string;
+    actorId: string;
+  }) {
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        type: 'tour_checkin_session',
+        ...input,
+        exp: Date.now() + TOUR_SCAN_SESSION_TTL_MS,
+        nonce: randomUUID(),
+      }),
+    ).toString('base64url');
+    return `${encodedPayload}.${this.signCouponQrPayload(encodedPayload)}`;
+  }
+
+  private resolveTourScanSessionToken(payload: string) {
+    const parsed = this.resolveSignedTourPayload(
+      payload,
+      'tour_checkin_session',
+    );
+    const requiredKeys = [
+      'qrId',
+      'tourBookingId',
+      'bookingId',
+      'storeId',
+      'actorId',
+    ] as const;
+    if (
+      requiredKeys.some(
+        (key) => typeof parsed[key] !== 'string' || !parsed[key],
+      ) ||
+      typeof parsed.exp !== 'number' ||
+      parsed.exp <= Date.now()
+    ) {
+      throw new UnprocessableEntityException(
+        'Phiên xác nhận QR đã hết hạn hoặc không hợp lệ.',
+      );
+    }
+    return parsed as {
+      qrId: string;
+      tourBookingId: string;
+      bookingId: string;
+      storeId: string;
+      actorId: string;
+      exp: number;
+    };
+  }
+
+  private resolveSignedTourPayload(payload: string, expectedType: string) {
+    const token = this.extractTourQrToken(payload);
+    const [encodedPayload, signature] = token.split('.');
+    if (!encodedPayload || !signature) {
+      throw new BadRequestException('Invalid signed tour QR payload');
+    }
+    const signatureMatches = this.couponQrVerificationSecrets().some((secret) =>
+      this.safeCompare(
+        signature,
+        this.signCouponQrPayload(encodedPayload, secret),
+      ),
+    );
+    if (!signatureMatches) {
+      throw new BadRequestException('Invalid tour QR signature');
+    }
+    try {
+      const parsed = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as Record<string, unknown>;
+      if (parsed.type !== expectedType) {
+        throw new Error('Unexpected tour QR token type');
+      }
+      return parsed;
+    } catch {
+      throw new BadRequestException('Invalid tour QR payload');
+    }
+  }
+
+  private extractTourQrToken(payload: string) {
+    const value = this.cleanText(payload);
+    if (!value) {
+      throw new BadRequestException('payload is required');
+    }
+    try {
+      const url = new URL(value);
+      return (
+        url.searchParams.get('tourScanToken') ??
+        url.searchParams.get('scanSessionToken') ??
+        url.searchParams.get('scanToken') ??
+        value
+      );
+    } catch {
+      return value;
+    }
+  }
+
+  private assertTourBookingQrUsable(qr: {
+    status: string;
+    validFrom: Date | string;
+    expiresAt: Date | string;
+    tourBooking: { status: string };
+  }) {
+    const now = Date.now();
+    if (qr.status === 'REVOKED') {
+      throw new UnprocessableEntityException('QR tour đã bị vô hiệu.');
+    }
+    if (qr.status === 'EXPIRED' || new Date(qr.expiresAt).getTime() <= now) {
+      throw new UnprocessableEntityException('QR tour đã hết hạn.');
+    }
+    if (new Date(qr.validFrom).getTime() > now) {
+      throw new UnprocessableEntityException(
+        'QR tour chưa đến thời gian dùng.',
+      );
+    }
+    if (['CANCELLED', 'NO_SHOW'].includes(qr.tourBooking.status)) {
+      throw new UnprocessableEntityException(
+        'Đơn tour không còn khả dụng để check-in.',
+      );
+    }
+  }
+
+  private async writeTourScanAudit(input: {
+    user: AuthenticatedUser;
+    qrId: string;
+    tourBookingId: string;
+    bookingId?: string;
+    storeId: string;
+    result: 'SUCCESS' | 'FAILED';
+    reason: string;
+    offline: boolean;
+  }) {
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.user.id,
+        actorRole: input.user.role,
+        module: 'TOUR_BOOKING',
+        action: 'TOUR_BOOKING_QR_SCANNED',
+        targetType: 'TourBooking',
+        targetId: input.tourBookingId,
+        result: input.result,
+        reason: input.reason,
+        metadata: this.toPrismaJson({
+          qrId: input.qrId,
+          bookingId: input.bookingId ?? null,
+          storeId: input.storeId,
+          offline: input.offline,
+        }),
+      },
+    });
+  }
+
+  private isPrismaUniqueConstraintError(error: unknown) {
+    return (
+      error !== null &&
+      error !== undefined &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    );
+  }
+
   private couponQrPartnerUrl() {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     const configuredUrl =
@@ -18339,6 +19577,30 @@ export class NightlifeDataService {
         user: true,
       },
     });
+
+    if (booking.tourBookingId && status === 'CONFIRMED') {
+      const tourStops = await this.prisma.booking.findMany({
+        where: {
+          tourBookingId: booking.tourBookingId,
+          deletedAt: null,
+        },
+        select: { status: true },
+      });
+      if (
+        tourStops.length > 0 &&
+        tourStops.every((stop) =>
+          ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(stop.status),
+        )
+      ) {
+        await this.prisma.tourBooking.updateMany({
+          where: {
+            id: booking.tourBookingId,
+            status: 'REQUESTED',
+          },
+          data: { status: 'CONFIRMED' },
+        });
+      }
+    }
 
     if (booking.user?.id) {
       this.socketGateway?.notifyBookingStatusUpdate(booking.user.id, booking);
