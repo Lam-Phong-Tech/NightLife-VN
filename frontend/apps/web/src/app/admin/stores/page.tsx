@@ -285,7 +285,7 @@ function AdminStoresContent() {
   const router = useRouter();
   const pathname = usePathname();
   const rawCity = searchParams.get('city') || '';
-  const filterCity = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' ? rawCity : 'Hanoi';
+  const filterCity = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' || rawCity === 'all' ? rawCity : 'all';
   const filterCategory = searchParams.get('category') || '';
   
   const [filterStatus, setFilterStatus] = useState<string>('all');

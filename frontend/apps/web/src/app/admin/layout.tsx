@@ -135,10 +135,11 @@ function TopRegionFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
-  const activeCity = city === 'Hanoi' || city === 'Ho Chi Minh City' ? city : 'Hanoi';
+  const activeCity = city === 'Hanoi' || city === 'Ho Chi Minh City' || city === 'all' ? city : 'all';
   const [open, setOpen] = useState(false);
 
   const opts = [
+    { v: 'all', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Tất cả các quán tại Hà Nội & TP. HCM' },
     { v: 'Hanoi', label: 'Hà Nội', short: 'HN', sub: 'Các quán tại Hà Nội' },
     { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' }
   ];

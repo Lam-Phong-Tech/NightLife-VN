@@ -17121,9 +17121,9 @@ export class NightlifeDataService {
 
     if (cityScope === 'hn' || cityScope === 'hcm') {
       and.push(this.buildAdminDashboardCityWhere(cityScope));
-    } else if (cityScope === 'other') {
+    } else {
       and.push({
-        NOT: [
+        OR: [
           this.buildAdminDashboardCityWhere('hn'),
           this.buildAdminDashboardCityWhere('hcm'),
         ],
