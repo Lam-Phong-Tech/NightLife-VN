@@ -95,8 +95,6 @@ const toParams = (params: DiscoveryParams = {}) => {
   return searchParams;
 };
 
-const p0CityCodes = new Set(["hn", "hcm"]);
-
 const demoAreas: PublicArea[] = [
   {
     id: "area-hn-hoan-kiem",
@@ -445,9 +443,6 @@ const matchesCity = (
   return [item.cityCode, item.city].some((value) => normalize(value) === normalizedCity);
 };
 
-const isP0City = (item: Pick<PublicStore | PublicArea, "city" | "cityCode">) =>
-  p0CityCodes.has(normalize(item.cityCode));
-
 const matchesCategory = (category: string | undefined, store: PublicStore) => {
   const normalizedCategory = normalize(category);
 
@@ -556,11 +551,10 @@ const paginateItems = <T>(items: T[], params: DiscoveryParams = {}) => {
 };
 
 const getFallbackAreas = (params: Pick<DiscoveryParams, "city"> = {}) =>
-  demoAreas.filter(isP0City).filter((area) => matchesCity(params.city, area));
+  demoAreas.filter((area) => matchesCity(params.city, area));
 
 const getFallbackStores = (params: DiscoveryParams = {}) => {
   const stores = demoStores
-    .filter(isP0City)
     .filter((store) => matchesCity(params.city, store))
     .filter((store) => matchesCategory(params.category, store))
     .filter((store) => matchesArea(params.area, store))
@@ -586,7 +580,6 @@ const getFallbackStores = (params: DiscoveryParams = {}) => {
 
 const getFallbackCasts = (params: DiscoveryParams = {}) => {
   const casts = demoCasts
-    .filter((cast) => isP0City(cast.store))
     .filter((cast) => matchesCity(params.city, cast.store))
     .filter((cast) => matchesCategory(params.category, cast.store))
     .filter((cast) => matchesArea(params.area, cast.store))

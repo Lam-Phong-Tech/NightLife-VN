@@ -630,7 +630,7 @@ function AdminRankingsClient() {
         <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
           <span onClick={() => updateCityTab('HN')} style={getTabStyle('HN')}>Hà Nội</span>
           <span onClick={() => updateCityTab('HCM')} style={getTabStyle('HCM')}>TP. Hồ Chí Minh</span>
-          <span onClick={() => updateCityTab('ALL')} style={getTabStyle('ALL')}>Tổng hợp</span>
+          <span onClick={() => updateCityTab('ALL')} style={getTabStyle('ALL')}>Tất cả</span>
         </div>
         <div style={{ flex: 1 }}></div>
         <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Kéo · dùng mũi tên để đổi thứ hạng</span>

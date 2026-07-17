@@ -933,7 +933,6 @@ function AdminStoresContent() {
   };
 
   const filteredStores = stores.filter((v: any) => {
-    if (v.area !== 'HN' && v.area !== 'HCM') return false;
     if (filterCity === 'Hanoi' && v.area !== 'HN') return false;
     if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM') return false;
     

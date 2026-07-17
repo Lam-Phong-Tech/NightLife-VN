@@ -265,12 +265,12 @@ const rankingAreaOptions = (language: LanguageCode): Array<SelectOption<RankingC
     key: "all",
     label:
       {
-        vi: "Tổng hợp",
+        vi: "Tất cả",
         en: "All areas",
         ja: "全エリア",
         ko: "전체 지역",
         zh: "全部区域",
-      }[language] ?? "Tổng hợp",
+      }[language] ?? "Tất cả",
   },
 ];
 

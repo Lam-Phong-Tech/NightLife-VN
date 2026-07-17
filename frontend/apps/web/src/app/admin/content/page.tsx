@@ -62,7 +62,7 @@ export default function AdminContentPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [showVideoToast, setShowVideoToast] = useState(false);
-  const [videoRegion, setVideoRegion] = useState('Tổng hợp');
+  const [videoRegion, setVideoRegion] = useState('Tất cả');
   const [hotVideos, setHotVideos] = useState<any[]>([]);
   const [searchVideos, setSearchVideos] = useState<any[]>([]);
   const [searchVideoQuery, setSearchVideoQuery] = useState('');
@@ -461,7 +461,7 @@ export default function AdminContentPage() {
 
 
   const fetchHotVideos = async (region: string) => {
-    const code = region === 'Tổng hợp' ? 'all' : region === 'Hà Nội' ? 'hn' : 'hcm';
+    const code = region === 'Hà Nội' ? 'hn' : region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all';
     try {
       setIsLoadingHotVideos(true);
       const data = await apiClient<any[]>(`/admin/content/hot-videos/${code}`);
@@ -476,7 +476,7 @@ export default function AdminContentPage() {
   const fetchStoreVideos = async (query: string, page: number, region?: string) => {
     try {
       setIsSearchingVideo(true);
-      const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'other');
+      const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all');
       const data = await apiClient<any>('/admin/media/store-videos', {
         params: { search: query, page, limit: 10, cityCode }
       });
@@ -508,7 +508,7 @@ export default function AdminContentPage() {
   };
 
   const handleSaveHotVideos = async () => {
-    const code = videoRegion === 'Tổng hợp' ? 'all' : videoRegion === 'Hà Nội' ? 'hn' : 'hcm';
+    const code = videoRegion === 'Hà Nội' ? 'hn' : videoRegion === 'TP. Hồ Chí Minh' ? 'hcm' : 'all';
     try {
       await apiClient(`/admin/content/hot-videos/${code}`, {
         method: 'PUT',
@@ -1270,7 +1270,7 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tổng hợp</span>
+              <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tất cả</span>
               <span style={featuredCity === 'hn' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hn')}>Hà Nội</span>
               <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')}>TP. Hồ Chí Minh</span>
             </div>
@@ -1526,7 +1526,7 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-              {['Tổng hợp', 'Hà Nội', 'TP. Hồ Chí Minh'].map(region => (
+              {['Tất cả', 'Hà Nội', 'TP. Hồ Chí Minh'].map(region => (
                 <span 
                   key={region}
                   onClick={() => setVideoRegion(region)}

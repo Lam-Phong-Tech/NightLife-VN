@@ -173,7 +173,7 @@ const serviceTabs = [
 const serviceRegionTabs = [
   { id: "hanoi", label: "Hà Nội" },
   { id: "hcm", label: "Hồ Chí Minh" },
-  { id: "all", label: "Tổng hợp" },
+  { id: "all", label: "Tất cả" },
 ] as const;
 
 const rankTabs = [

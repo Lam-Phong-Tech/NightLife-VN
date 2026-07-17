@@ -166,9 +166,8 @@ function AdminCastsContent() {
         ? 'HCM'
         : storeCity === 'Hanoi' || storeCity === 'Hà Nội' || storeCity === 'Ha Noi'
         ? 'HN'
-        : 'Tổng hợp';
+        : 'OTHER';
 
-    if (storeArea !== 'HN' && storeArea !== 'HCM') return false;
     if (filterCity === 'Hanoi' && storeArea !== 'HN') return false;
     if (filterCity === 'Ho Chi Minh City' && storeArea !== 'HCM') return false;
 

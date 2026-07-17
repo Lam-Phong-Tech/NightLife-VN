@@ -15003,11 +15003,7 @@ export class NightlifeDataService {
   private buildPublicRankingConfigCityWhere(
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
-    if (cityCode) {
-      return { cityCode };
-    }
-
-    return { cityCode: 'all' };
+    return cityCode ? { cityCode } : {};
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
@@ -17077,7 +17073,11 @@ export class NightlifeDataService {
       return undefined;
     }
 
-    if (['other', 'others', 'khac', 'tinh-khac', 'tong-hop'].includes(token)) {
+    if (['all', 'tat-ca', 'tong-hop'].includes(token)) {
+      return undefined;
+    }
+
+    if (['other', 'others', 'khac', 'tinh-khac'].includes(token)) {
       return 'other';
     }
 
@@ -19554,7 +19554,7 @@ export class NightlifeDataService {
                 store.city === 'Hà Nội' ||
                 store.city === 'Ha Noi'
               ? 'HN'
-              : 'Tổng hợp',
+              : store.city || 'Tất cả',
         commission: '15%',
         casts: store._count.casts,
         status: store.deletedAt ? 'DELETED' : store.status,
@@ -20297,7 +20297,7 @@ export class NightlifeDataService {
               store.city === 'Hà Nội' ||
               store.city === 'Ha Noi'
             ? 'HN'
-            : 'Tổng hợp',
+            : store.city || 'Tất cả',
       commission: '15%',
       casts: store._count.casts,
       status: store.deletedAt ? 'DELETED' : store.status,

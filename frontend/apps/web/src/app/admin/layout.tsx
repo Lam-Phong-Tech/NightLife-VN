@@ -139,7 +139,7 @@ function TopRegionFilter() {
   const [open, setOpen] = useState(false);
 
   const opts = [
-    { v: 'all', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Tất cả các quán tại Hà Nội & TP. HCM' },
+    { v: 'all', label: 'Tất cả', short: 'Tất cả', sub: 'Tất cả tỉnh/thành phố Việt Nam' },
     { v: 'Hanoi', label: 'Hà Nội', short: 'HN', sub: 'Các quán tại Hà Nội' },
     { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' }
   ];
