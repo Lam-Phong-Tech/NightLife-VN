@@ -1161,9 +1161,9 @@
   margin-top: 10px;
 }
 
-.summaryCard .summaryRow:has(.tourVenueSummary) + .summaryRow {
-  margin-top: 18px;
-  padding-top: 16px;
+.summaryCard .tourVenueSection + .summaryRow {
+  margin-top: 20px;
+  padding-top: 14px;
   border-top: 1px solid var(--vy-border);
 }
 
