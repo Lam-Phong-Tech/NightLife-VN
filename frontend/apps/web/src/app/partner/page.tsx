@@ -1289,14 +1289,28 @@ function StatusPill({
   tone?: 'neutral' | 'gold' | 'success' | 'danger';
   className?: string;
 }) {
-  const toneColor =
-    tone === 'success'
-      ? colors.success
-      : tone === 'danger'
-        ? colors.danger
-        : tone === 'gold'
-          ? colors.goldBright
-          : colors.text2;
+  const toneStyle = {
+    neutral: {
+      border: colors.borderSoft,
+      background: 'rgba(255, 255, 255, .08)',
+      color: colors.text2,
+    },
+    gold: {
+      border: 'rgba(244, 210, 137, .46)',
+      background: 'rgba(212, 178, 106, .22)',
+      color: colors.goldBright,
+    },
+    success: {
+      border: 'rgba(129, 216, 157, .48)',
+      background: 'rgba(129, 216, 157, .18)',
+      color: '#a7f3c0',
+    },
+    danger: {
+      border: 'rgba(255, 120, 143, .52)',
+      background: 'rgba(255, 120, 143, .16)',
+      color: '#ffb8c6',
+    },
+  }[tone];
 
   return (
     <span
@@ -1304,9 +1318,9 @@ function StatusPill({
       style={{
         minHeight: '26px',
         borderRadius: '999px',
-        border: `1px solid ${tone === 'neutral' ? colors.borderSoft : colors.borderGold22}`,
-        background: tone === 'gold' ? 'rgba(212,178,106,.14)' : colors.surface3,
-        color: toneColor,
+        border: `1px solid ${toneStyle.border}`,
+        background: toneStyle.background,
+        color: toneStyle.color,
         padding: '0 10px',
         display: 'inline-flex',
         alignItems: 'center',
@@ -6359,14 +6373,44 @@ export default function PartnerPage() {
 
             <div className="partner-bill-form-grid">
               <FormField label="Tổng tiền bill gốc *" htmlFor="bill-amount-input">
-                <input
-                  id="bill-amount-input"
-                  inputMode="numeric"
-                  placeholder="VD: 1.800.000"
-                  value={billAmountInput}
-                  onChange={(event) => handleBillAmountChange(event.target.value)}
-                  style={inputStyle}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="bill-amount-input"
+                    inputMode="numeric"
+                    placeholder="VD: 1.800.000"
+                    value={billAmountInput}
+                    onChange={(event) => handleBillAmountChange(event.target.value)}
+                    style={{ ...inputStyle, paddingRight: '48px' }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      right: '13px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: colors.goldBright,
+                      fontSize: '12px',
+                      fontWeight: 900,
+                      letterSpacing: '.03em',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    VND
+                  </span>
+                </div>
+                {billAmount > 0 ? (
+                  <div
+                    style={{
+                      marginTop: '7px',
+                      color: colors.goldBright,
+                      fontSize: '12px',
+                      fontWeight: 900,
+                    }}
+                  >
+                    {moneyVnd(billAmount)}
+                  </div>
+                ) : null}
               </FormField>
               <FormField label="Thời gian sử dụng *" htmlFor="bill-used-at-hidden">
                 <div

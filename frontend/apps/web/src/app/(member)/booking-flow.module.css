@@ -1162,8 +1162,8 @@
 }
 
 .summaryCard .summaryRow:has(.tourVenueSummary) + .summaryRow {
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
   border-top: 1px solid var(--vy-border);
 }
 
