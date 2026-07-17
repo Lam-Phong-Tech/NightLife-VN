@@ -156,8 +156,187 @@ const formatDiscountText = (discount: BookingDiscountInfo | null, language: Lang
   return null;
 };
 
+type TourConfirmCopy = {
+  adminWillContact: string;
+  cancelledTitle: string;
+  confirmedText: string;
+  confirmedTitle: string;
+  emailSentPrefix: string;
+  guestEmailFallback: string;
+  itineraryLabel: string;
+  noCast: string;
+  pendingText: string;
+  pendingTitle: string;
+  qrDescription: string;
+  qrNote: string;
+  qrTitle: string;
+  reservationCode: string;
+  statusCancelled: string;
+  statusConfirmed: string;
+  statusLabel: string;
+  statusPending: string;
+  summaryAria: string;
+  timeLabel: string;
+  tourLabel: string;
+  viewMyTour: string;
+  bookerLabel: string;
+  partySizeLabel: string;
+};
+
+const tourConfirmCopy: Record<LanguageCode, TourConfirmCopy> = {
+  vi: {
+    adminWillContact: "Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.",
+    cancelledTitle: "Đặt tour đã hủy",
+    confirmedText: "Admin đã xác nhận yêu cầu tour. Lịch trình sẽ được điều phối theo từng điểm dừng.",
+    confirmedTitle: "Đặt tour đã xác nhận",
+    emailSentPrefix: "Thông tin đặt tour và mã QR đã được gửi về",
+    guestEmailFallback: "email của bạn",
+    itineraryLabel: "Lịch trình tour",
+    noCast: "Không chọn cast",
+    pendingText: "Yêu cầu đặt tour đã gửi thành công. Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình.",
+    pendingTitle: "Đã gửi yêu cầu đặt tour",
+    qrDescription: "Dùng cùng mã QR này tại từng điểm dừng trong tour. Mỗi quán chỉ có thể xác nhận điểm dừng của chính mình một lần.",
+    qrNote: "Mã QR tour được dùng xuyên suốt hành trình; mỗi quán chỉ check-in được điểm dừng được gán cho quán đó. Mã hết hiệu lực khi tất cả điểm dừng hoàn tất.",
+    qrTitle: "QR tour của bạn",
+    reservationCode: "Mã đặt tour",
+    statusCancelled: "Đã hủy",
+    statusConfirmed: "Đã xác nhận tour · QR đã cấp",
+    statusLabel: "Trạng thái",
+    statusPending: "Mới · chờ điều phối tour · QR đã cấp",
+    summaryAria: "Tóm tắt đặt tour",
+    timeLabel: "Thời gian",
+    tourLabel: "Tour",
+    viewMyTour: "Xem đơn tour của tôi",
+    bookerLabel: "Người đặt",
+    partySizeLabel: "Số người",
+  },
+  en: {
+    adminWillContact: "Admin will contact you to confirm the itinerary and each stop.",
+    cancelledTitle: "Tour request cancelled",
+    confirmedText: "Admin has confirmed your tour request. The itinerary will be coordinated stop by stop.",
+    confirmedTitle: "Tour request confirmed",
+    emailSentPrefix: "Tour details and QR code have been sent to",
+    guestEmailFallback: "your email",
+    itineraryLabel: "Tour itinerary",
+    noCast: "No cast selected",
+    pendingText: "Your tour request was sent successfully. Admin will check the venues and cast for each stop.",
+    pendingTitle: "Tour request sent",
+    qrDescription: "Use this same QR at every stop in the tour. Each venue can confirm only its assigned stop once.",
+    qrNote: "The tour QR is used throughout the itinerary. Each venue can check in only its assigned stop, and the QR expires after every stop is completed.",
+    qrTitle: "Your tour QR",
+    reservationCode: "Tour code",
+    statusCancelled: "Cancelled",
+    statusConfirmed: "Tour confirmed · QR issued",
+    statusLabel: "Status",
+    statusPending: "New · tour coordination pending · QR issued",
+    summaryAria: "Tour booking summary",
+    timeLabel: "Time",
+    tourLabel: "Tour",
+    viewMyTour: "View my tour request",
+    bookerLabel: "Guest",
+    partySizeLabel: "Guests",
+  },
+  ja: {
+    adminWillContact: "管理者が行程と各立ち寄り先を確認するために連絡します。",
+    cancelledTitle: "ツアー予約はキャンセルされました",
+    confirmedText: "ツアー予約は確認済みです。行程は各立ち寄り先ごとに調整されます。",
+    confirmedTitle: "ツアー予約が確認されました",
+    emailSentPrefix: "ツアー情報とQRコードを送信しました:",
+    guestEmailFallback: "登録メール",
+    itineraryLabel: "ツアー行程",
+    noCast: "キャスト未選択",
+    pendingText: "ツアー予約リクエストを送信しました。管理者が各立ち寄り先の店舗とキャストを確認します。",
+    pendingTitle: "ツアー予約リクエストを送信しました",
+    qrDescription: "このQRをツアーの各立ち寄り先で使用します。各店舗は割り当てられた立ち寄り先を1回だけ確認できます。",
+    qrNote: "ツアーQRは行程全体で使用します。各店舗は割り当てられた立ち寄り先のみチェックインでき、全て完了すると無効になります。",
+    qrTitle: "ツアーQR",
+    reservationCode: "ツアー予約コード",
+    statusCancelled: "キャンセル済み",
+    statusConfirmed: "ツアー確認済み · QR発行済み",
+    statusLabel: "ステータス",
+    statusPending: "新規 · ツアー調整待ち · QR発行済み",
+    summaryAria: "ツアー予約概要",
+    timeLabel: "時間",
+    tourLabel: "ツアー",
+    viewMyTour: "ツアー予約を確認",
+    bookerLabel: "予約者",
+    partySizeLabel: "人数",
+  },
+  ko: {
+    adminWillContact: "관리자가 일정과 각 방문 지점을 확정하기 위해 연락드립니다.",
+    cancelledTitle: "투어 예약이 취소되었습니다",
+    confirmedText: "투어 요청이 확인되었습니다. 일정은 각 방문 지점별로 조율됩니다.",
+    confirmedTitle: "투어 예약이 확인되었습니다",
+    emailSentPrefix: "투어 정보와 QR 코드가 다음 이메일로 전송되었습니다:",
+    guestEmailFallback: "등록 이메일",
+    itineraryLabel: "투어 일정",
+    noCast: "캐스트 미선택",
+    pendingText: "투어 예약 요청이 전송되었습니다. 관리자가 각 지점의 매장과 캐스트를 확인합니다.",
+    pendingTitle: "투어 예약 요청 전송 완료",
+    qrDescription: "이 QR을 투어의 각 방문 지점에서 사용합니다. 각 매장은 배정된 지점만 한 번 확인할 수 있습니다.",
+    qrNote: "투어 QR은 전체 일정에서 사용됩니다. 각 매장은 배정된 지점만 체크인할 수 있으며 모든 지점 완료 후 만료됩니다.",
+    qrTitle: "내 투어 QR",
+    reservationCode: "투어 예약 코드",
+    statusCancelled: "취소됨",
+    statusConfirmed: "투어 확인됨 · QR 발급됨",
+    statusLabel: "상태",
+    statusPending: "신규 · 투어 조율 대기 · QR 발급됨",
+    summaryAria: "투어 예약 요약",
+    timeLabel: "시간",
+    tourLabel: "투어",
+    viewMyTour: "내 투어 예약 보기",
+    bookerLabel: "예약자",
+    partySizeLabel: "인원",
+  },
+  zh: {
+    adminWillContact: "管理员会联系你确认行程和每个停靠点。",
+    cancelledTitle: "行程预约已取消",
+    confirmedText: "行程预约已确认。行程会按每个停靠点进行协调。",
+    confirmedTitle: "行程预约已确认",
+    emailSentPrefix: "行程信息和 QR 码已发送至",
+    guestEmailFallback: "你的邮箱",
+    itineraryLabel: "行程路线",
+    noCast: "未选择 Cast",
+    pendingText: "行程预约请求已成功发送。管理员会检查每个停靠点的店铺和 Cast。",
+    pendingTitle: "行程预约请求已发送",
+    qrDescription: "此 QR 码可在行程的每个停靠点使用。每家店只能确认一次分配给自己的停靠点。",
+    qrNote: "行程 QR 将贯穿整个路线使用。每家店只能为分配给自己的停靠点签到，所有停靠点完成后失效。",
+    qrTitle: "你的行程 QR",
+    reservationCode: "行程预约码",
+    statusCancelled: "已取消",
+    statusConfirmed: "行程已确认 · QR 已发放",
+    statusLabel: "状态",
+    statusPending: "新建 · 行程协调中 · QR 已发放",
+    summaryAria: "行程预约摘要",
+    timeLabel: "时间",
+    tourLabel: "行程",
+    viewMyTour: "查看我的行程预约",
+    bookerLabel: "预约人",
+    partySizeLabel: "人数",
+  },
+};
+
+const getTourConfirmCopy = (language: LanguageCode) =>
+  tourConfirmCopy[language] ?? tourConfirmCopy.vi;
+
+const formatPartySize = (count: number, language: LanguageCode) => {
+  if (language === "ja" || language === "zh") return `${count}名`;
+  if (language === "ko") return `${count}명`;
+  if (language === "en") return `${count} ${count === 1 ? "guest" : "guests"}`;
+  return `${count} người`;
+};
+
+const formatTourStopCount = (count: number, language: LanguageCode) => {
+  if (language === "ja") return `${count}件`;
+  if (language === "ko") return `${count}개 지점`;
+  if (language === "zh") return `${count}个停靠点`;
+  if (language === "en") return `${count} ${count === 1 ? "stop" : "stops"}`;
+  return `${count} điểm dừng`;
+};
+
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const tourCopy = getTourConfirmCopy(activeLanguage);
   const [booking, setBooking] = useState<BookingRecord | null>(null);
 
   useEffect(() => {
@@ -176,55 +355,61 @@ export default function Page() {
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
-  const guestEmailLabel = booking?.guest?.email ?? translateText("email của bạn", activeLanguage);
+  const guestEmailLabel = booking?.guest?.email ?? (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
   const guestConfirmationMessage = isTourBooking
-    ? `${translateText("Thông tin đặt tour và mã QR đã được gửi về", activeLanguage)} ${guestEmailLabel}. ${translateText("Admin sẽ liên hệ lại để chốt lịch trình và từng điểm dừng.", activeLanguage)}`
+    ? `${tourCopy.emailSentPrefix} ${guestEmailLabel}. ${tourCopy.adminWillContact}`
     : `${translateText(
         "Thông tin đặt chỗ và mã QR đã được gửi về",
         activeLanguage,
       )} ${guestEmailLabel}. ${translateText("Vui lòng kiểm tra email trước khi tới quán.", activeLanguage)}`;
-  const heroTitle = translateText(
-    !booking
-      ? "Chưa tìm thấy booking"
-      : isCancelled
-        ? "Đặt chỗ đã hủy"
-        : isConfirmed
-          ? isTourBooking
-            ? "Đặt tour đã xác nhận"
-            : "Đặt chỗ đã xác nhận"
-          : isTourBooking
-            ? "Đã gửi yêu cầu đặt tour"
-            : "Đã gửi yêu cầu đặt bàn",
-    activeLanguage,
-  );
-  const heroText = translateText(
-    !booking
-      ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
-      : isCancelled
-        ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
-        : isConfirmed
-          ? isTourBooking
-            ? "Admin đã xác nhận yêu cầu tour. Lịch trình sẽ được điều phối theo từng điểm dừng."
-            : "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
-          : isTourBooking
-            ? "Yêu cầu đặt tour đã gửi thành công. Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình."
-            : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.",
-    activeLanguage,
-  );
-  const statusText = translateText(
-    !booking
-      ? "Không có dữ liệu"
-      : isCancelled
-        ? "Đã hủy"
-        : isConfirmed
-          ? isTourBooking
-            ? "Đã xác nhận tour · QR đã cấp"
-            : "Đã xác nhận · QR đã cấp"
-          : isTourBooking
-            ? "Mới · chờ điều phối tour · QR đã cấp"
-            : "Mới · QR đã cấp",
-    activeLanguage,
-  );
+  const heroTitle = isTourBooking
+    ? isCancelled
+      ? tourCopy.cancelledTitle
+      : isConfirmed
+        ? tourCopy.confirmedTitle
+        : tourCopy.pendingTitle
+    : translateText(
+        !booking
+          ? "Chưa tìm thấy booking"
+          : isCancelled
+            ? "Đặt chỗ đã hủy"
+            : isConfirmed
+              ? "Đặt chỗ đã xác nhận"
+              : "Đã gửi yêu cầu đặt bàn",
+        activeLanguage,
+      );
+  const heroText = isTourBooking
+    ? isCancelled
+      ? translateText("Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch.", activeLanguage)
+      : isConfirmed
+        ? tourCopy.confirmedText
+        : tourCopy.pendingText
+    : translateText(
+        !booking
+          ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
+          : isCancelled
+            ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
+            : isConfirmed
+              ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
+              : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.",
+        activeLanguage,
+      );
+  const statusText = isTourBooking
+    ? isCancelled
+      ? tourCopy.statusCancelled
+      : isConfirmed
+        ? tourCopy.statusConfirmed
+        : tourCopy.statusPending
+    : translateText(
+        !booking
+          ? "Không có dữ liệu"
+          : isCancelled
+            ? "Đã hủy"
+            : isConfirmed
+              ? "Đã xác nhận · QR đã cấp"
+              : "Mới · QR đã cấp",
+        activeLanguage,
+      );
 
   const saveQrImage = async () => {
     if (!booking || !qrImageUrl) {
@@ -271,37 +456,37 @@ export default function Page() {
             <p className={styles.confirmText}>{heroText}</p>
             <span className={styles.statusBadge}>
               <span className={styles.statusDot} />
-              {translateText("Trạng thái", activeLanguage)}: {statusText}
+              {isTourBooking ? tourCopy.statusLabel : translateText("Trạng thái", activeLanguage)}: {statusText}
             </span>
           </div>
 
           {booking ? (
             <section
               className={styles.summaryCard}
-              aria-label={translateText(isTourBooking ? "Tóm tắt đặt tour" : "Tóm tắt đặt chỗ", activeLanguage)}
+              aria-label={isTourBooking ? tourCopy.summaryAria : translateText("Tóm tắt đặt chỗ", activeLanguage)}
             >
               <SummaryRow
-                label={translateText(isTourBooking ? "Mã đặt tour" : "Mã đặt chỗ", activeLanguage)}
+                label={isTourBooking ? tourCopy.reservationCode : translateText("Mã đặt chỗ", activeLanguage)}
                 value={<span className={styles.bookingCode}>{booking.bookingCode}</span>}
               />
               {booking.tour ? (
                 <>
-                  <SummaryRow label={translateText("Tour", activeLanguage)} value={title} />
+                  <SummaryRow label={tourCopy.tourLabel} value={title} />
                   <TourVenueSummary booking={booking} language={activeLanguage} />
                 </>
               ) : (
                 <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
               )}
               <SummaryRow
-                label={translateText("Thời gian", activeLanguage)}
+                label={isTourBooking ? tourCopy.timeLabel : translateText("Thời gian", activeLanguage)}
                 value={formatDateTime(booking.scheduledAt, activeLanguage)}
               />
               <SummaryRow
-                label={translateText("Số người", activeLanguage)}
-                value={translateText(`${booking.partySize} người`, activeLanguage)}
+                label={isTourBooking ? tourCopy.partySizeLabel : translateText("Số người", activeLanguage)}
+                value={isTourBooking ? formatPartySize(booking.partySize, activeLanguage) : translateText(`${booking.partySize} người`, activeLanguage)}
               />
               <SummaryRow
-                label={translateText("Người đặt", activeLanguage)}
+                label={isTourBooking ? tourCopy.bookerLabel : translateText("Người đặt", activeLanguage)}
                 value={guestLabel(booking, activeLanguage)}
               />
               {booking.couponIssue ? (
@@ -326,25 +511,25 @@ export default function Page() {
           )}
 
           {booking && canShowQr ? (
-            <section className={styles.qrPanel} aria-label={translateText("Mã QR đặt chỗ", activeLanguage)}>
+            <section className={styles.qrPanel} aria-label={isTourBooking ? tourCopy.qrTitle : translateText("Mã QR đặt chỗ", activeLanguage)}>
               <div className={styles.qrBox}>
                 <Image
                   src={qrImageUrl}
-                  alt={`${translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`}
+                  alt={`${isTourBooking ? tourCopy.qrTitle : translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`}
                   width={156}
                   height={156}
                   unoptimized
                 />
               </div>
               <div className={styles.qrCopy}>
-                <strong>{translateText("QR giảm giá của bạn", activeLanguage)}</strong>
+                <strong>{isTourBooking ? tourCopy.qrTitle : translateText("QR giảm giá của bạn", activeLanguage)}</strong>
                 <p>
-                  {translateText(
-                    isTourBooking
-                      ? "Dùng cùng mã QR này tại từng điểm dừng trong tour. Mỗi quán chỉ có thể xác nhận điểm dừng của chính mình một lần."
-                      : "Đưa mã này cho nhân viên quán quét khi tới nơi. QR được gắn với booking và chỉ dùng một lần.",
-                    activeLanguage,
-                  )}
+                  {isTourBooking
+                    ? tourCopy.qrDescription
+                    : translateText(
+                        "Đưa mã này cho nhân viên quán quét khi tới nơi. QR được gắn với booking và chỉ dùng một lần.",
+                        activeLanguage,
+                      )}
                 </p>
                 <button type="button" className={styles.qrDownloadButton} onClick={saveQrImage}>
                   <Download size={15} />
@@ -357,16 +542,14 @@ export default function Page() {
           <div className={`${styles.infoNote} ${styles.confirmNote}`}>
             <Clock3 size={15} />
             <span>
-              {translateText(
-                canShowQr
-                  ? isTourBooking
-                    ? "Mã QR tour được dùng xuyên suốt hành trình; mỗi quán chỉ check-in được điểm dừng được gán cho quán đó. Mã hết hiệu lực khi tất cả điểm dừng hoàn tất."
-                    : "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
-                  : isTourBooking
-                    ? "Tour sẽ được admin điều phối theo từng điểm dừng. Nếu cần đổi lịch trình, hãy chat Admin hoặc hủy yêu cầu tour cũ trước giờ hẹn."
-                    : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
-                activeLanguage,
-              )}
+              {isTourBooking
+                ? canShowQr ? tourCopy.qrNote : tourCopy.adminWillContact
+                : translateText(
+                    canShowQr
+                      ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
+                      : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
+                    activeLanguage,
+                  )}
             </span>
           </div>
 
@@ -379,7 +562,7 @@ export default function Page() {
             ) : (
               <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
                 <strong>
-                  {translateText(isTourBooking ? "Xem đơn tour của tôi" : "Xem đặt chỗ của tôi", activeLanguage)}
+                  {isTourBooking ? tourCopy.viewMyTour : translateText("Xem đặt chỗ của tôi", activeLanguage)}
                 </strong>
               </Link>
             )}
@@ -401,12 +584,13 @@ function SummaryRow({ label, value }: { label: string; value: React.ReactNode })
 
 function TourVenueSummary({ booking, language }: { booking: BookingRecord; language: LanguageCode }) {
   const stops = booking.tour?.stops ?? [];
+  const copy = getTourConfirmCopy(language);
 
   if (!stops.length) {
     return (
       <div className={styles.tourVenueSection}>
         <div className={styles.tourVenueHeader}>
-          <span>{translateText("Lịch trình tour", language)}</span>
+          <span>{copy.itineraryLabel}</span>
         </div>
         <strong className={styles.tourVenueFallback}>{bookingTitle(booking)}</strong>
       </div>
@@ -416,8 +600,8 @@ function TourVenueSummary({ booking, language }: { booking: BookingRecord; langu
   return (
     <div className={styles.tourVenueSection}>
       <div className={styles.tourVenueHeader}>
-        <span>{translateText("Lịch trình tour", language)}</span>
-        <strong>{translateText(`${stops.length} điểm dừng`, language)}</strong>
+        <span>{copy.itineraryLabel}</span>
+        <strong>{formatTourStopCount(stops.length, language)}</strong>
       </div>
       <div className={styles.tourVenueSummary}>
         {stops.map((stop, index) => (
@@ -433,7 +617,7 @@ function TourVenueSummary({ booking, language }: { booking: BookingRecord; langu
                     </span>
                   ))
                 ) : (
-                  <span className={styles.tourCastEmpty}>{translateText("Không chọn cast", language)}</span>
+                  <span className={styles.tourCastEmpty}>{copy.noCast}</span>
                 )}
               </span>
             </span>
