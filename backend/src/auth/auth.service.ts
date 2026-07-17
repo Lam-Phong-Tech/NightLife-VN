@@ -911,6 +911,7 @@ export class AuthService {
       secure: this.shouldUseSecureCookies(),
     };
 
+    this.clearAuthCookies(response);
     response.cookie('auth_token', authResponse.accessToken, cookieOptions);
     response.cookie('user_role', authResponse.user.role, cookieOptions);
     response.cookie('user_email', authResponse.user.email, cookieOptions);

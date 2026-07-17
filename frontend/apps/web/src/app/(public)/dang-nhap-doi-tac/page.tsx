@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { ArrowLeft, Eye, EyeOff, LogIn, Sun, Moon } from 'lucide-react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { loginPartner } from '@/lib/api/auth';
+import { activateExclusiveAuthSession, loginPartner } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
-import { setAuthSession } from '@/lib/auth/session';
 
 type PartnerTheme = 'dark' | 'light';
 
@@ -117,7 +116,7 @@ function LoginContent({
         password,
       });
 
-      setAuthSession(session);
+      await activateExclusiveAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
       const detail = error instanceof ApiError ? error.message : 'Không kết nối được API đăng nhập.';

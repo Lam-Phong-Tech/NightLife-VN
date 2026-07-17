@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
+import { logoutBrowserProfile } from "@/lib/api/auth";
 
 const colors = {
   bg: "#0c0c0f",
@@ -36,11 +37,26 @@ const emailConsentBenefits = [
 
 export default function LineEmailConsentPage() {
   const [accepted, setAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [redirectTo] = useState(() =>
     typeof window === "undefined"
       ? "/tai-khoan"
       : normalizeRedirect(new URLSearchParams(window.location.search).get("redirect")),
   );
+
+  const continueWithLine = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accepted || isSubmitting) return;
+
+    setIsSubmitting(true);
+    await logoutBrowserProfile();
+
+    const params = new URLSearchParams({
+      redirect: redirectTo,
+      lineEmailConsent: "accepted",
+    });
+    window.location.href = `/api/backend/auth/line/start?${params.toString()}`;
+  };
 
   return (
     <main className="nl-line-consent-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
@@ -174,7 +190,12 @@ export default function LineEmailConsentPage() {
               Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.
             </p>
 
-            <form className="nl-line-consent-form" method="GET" action="/api/backend/auth/line/start">
+            <form
+              className="nl-line-consent-form"
+              method="GET"
+              action="/api/backend/auth/line/start"
+              onSubmit={continueWithLine}
+            >
               <input type="hidden" name="redirect" value={redirectTo} />
             <label
               className="nl-line-consent-check"
@@ -208,6 +229,7 @@ export default function LineEmailConsentPage() {
             <button
               className="nl-line-consent-submit"
               type="submit"
+              disabled={isSubmitting}
               style={{
                 marginTop: 18,
                 width: "100%",

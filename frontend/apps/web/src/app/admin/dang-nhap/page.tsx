@@ -8,9 +8,8 @@ import {
   Mail,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { loginAdmin } from '@/lib/api/auth';
+import { activateExclusiveAuthSession, loginAdmin } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
-import { setAuthSession } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -53,7 +52,7 @@ export default function AdminLoginPage() {
         password,
       });
 
-      setAuthSession(session);
+      await activateExclusiveAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
       const detail = error instanceof ApiError ? error.message : 'Khong ket noi duoc API dang nhap.';

@@ -7,7 +7,7 @@ import {
   getAuthUser,
   type AuthUser,
 } from "@/lib/auth/session";
-import { logoutCurrentUser } from "@/lib/api/auth";
+import { logoutBrowserProfile } from "@/lib/api/auth";
 import { memberApi, type MemberPointSummary } from "@/lib/api/member";
 import {
   CalendarDays,
@@ -153,9 +153,9 @@ export default function Page() {
     event.preventDefault();
 
     try {
-      await logoutCurrentUser();
+      await logoutBrowserProfile();
     } catch {
-      // Local logout still clears the browser session if the server token is already invalid.
+      // Local logout still clears the browser session if token revocation is unavailable.
     } finally {
       clearAuthSession();
       window.location.replace("/dang-nhap");

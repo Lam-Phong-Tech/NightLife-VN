@@ -1,5 +1,11 @@
-import { ApiError, apiClient } from "./client";
-import type { AuthResponse, AuthRole } from "../auth/session";
+import { ApiError, apiClient, buildApiUrl } from "./client";
+import {
+  clearAuthSession,
+  getAllAuthSessionTokens,
+  setAuthSession,
+  type AuthResponse,
+  type AuthRole,
+} from "../auth/session";
 
 export type LoginPayload = {
   email: string;
@@ -225,6 +231,34 @@ export const logoutCurrentUser = () => {
     method: "POST",
     data: {},
   });
+};
+
+const revokeAuthToken = async (token: string) => {
+  await fetch(buildApiUrl("/auth/logout"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: "{}",
+  });
+};
+
+const revokeAuthTokens = async (tokens: string[]) => {
+  await Promise.allSettled(Array.from(new Set(tokens.filter(Boolean))).map(revokeAuthToken));
+};
+
+export const activateExclusiveAuthSession = async (session: AuthResponse) => {
+  const previousTokens = getAllAuthSessionTokens().filter((token) => token !== session.accessToken);
+
+  setAuthSession(session);
+  await revokeAuthTokens(previousTokens);
+};
+
+export const logoutBrowserProfile = async () => {
+  const tokens = getAllAuthSessionTokens();
+  clearAuthSession();
+  await revokeAuthTokens(tokens);
 };
 
 export const requestPasswordReset = (payload: RequestPasswordResetPayload) => {

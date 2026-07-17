@@ -41,6 +41,7 @@ import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
 import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { logoutBrowserProfile } from '@/lib/api/auth';
 import { billApi } from '@/lib/api/bills';
 import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
@@ -4200,13 +4201,8 @@ export default function PartnerPage() {
     }
   };
 
-  const logout = () => {
-    try {
-      const clearFn = authSession.clearAuthSession;
-      if (typeof clearFn === 'function') {
-        clearFn();
-      }
-    } catch {}
+  const logout = async () => {
+    await logoutBrowserProfile();
     window.location.href = '/dang-nhap-doi-tac';
   };
 

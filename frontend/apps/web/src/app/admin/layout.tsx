@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
-import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
+import { logoutBrowserProfile } from '@/lib/api/auth';
+import { getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
 import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, Settings, CheckCheck, LucideIcon } from 'lucide-react';
 
@@ -826,7 +827,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {currentUser?.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser?.role === 'ADMIN' ? 'Admin' : (currentUser?.role || 'Staff'))}
               </div>
             </div>
-            <button onClick={() => { clearAuthSession(); window.location.href = '/admin/dang-nhap'; }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}>
+            <button onClick={async () => { await logoutBrowserProfile(); window.location.href = '/admin/dang-nhap'; }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
             </button>
           </div>

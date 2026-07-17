@@ -503,6 +503,22 @@ describe('AuthService', () => {
         secure: true,
       }),
     );
+    expect(response.clearCookie).toHaveBeenCalledWith(
+      'admin_auth_token',
+      expect.objectContaining({
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      }),
+    );
+    expect(response.clearCookie).toHaveBeenCalledWith(
+      'partner_auth_token',
+      expect.objectContaining({
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      }),
+    );
     expect(response.redirect).toHaveBeenCalledWith(
       'https://demonightlight.test9.io.vn/tai-khoan',
     );

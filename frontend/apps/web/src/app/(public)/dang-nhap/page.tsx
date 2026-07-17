@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, Sparkles } from "lucide-react";
 import {
+  activateExclusiveAuthSession,
   getGoogleLoginConfig,
   getLineLoginConfig,
   loginGoogleMember,
@@ -11,7 +12,6 @@ import {
   registerMember,
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
-import { setAuthSession } from "@/lib/auth/session";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
@@ -264,13 +264,13 @@ export default function Page() {
           password: normalizedPassword,
           displayName: trimmedDisplayName,
         });
-        setAuthSession(session);
+        await activateExclusiveAuthSession(session);
         window.location.href = redirectTo;
         return;
       }
 
       const session = await loginMember({ email: normalizedEmail, password: normalizedPassword });
-      setAuthSession(session);
+      await activateExclusiveAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
       const detail =
@@ -301,7 +301,7 @@ export default function Page() {
         const session = await loginGoogleMember({
           accessToken: response.access_token,
         });
-        setAuthSession(session);
+        await activateExclusiveAuthSession(session);
         window.location.href = redirectTo;
       } catch (error) {
         const detail =
