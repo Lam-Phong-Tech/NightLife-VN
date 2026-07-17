@@ -17,7 +17,106 @@ const vietnamProvinceArea = (
 });
 
 export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
+  vietnamProvinceArea('caobang', 'Cao Bằng', ['Cao Bang']),
+  vietnamProvinceArea('dienbien', 'Điện Biên', ['Dien Bien']),
+  vietnamProvinceArea('hatinh', 'Hà Tĩnh', ['Ha Tinh']),
+  vietnamProvinceArea('laichau', 'Lai Châu', ['Lai Chau']),
+  vietnamProvinceArea('langson', 'Lạng Sơn', ['Lang Son']),
+  vietnamProvinceArea('nghean', 'Nghệ An', ['Nghe An']),
+  vietnamProvinceArea('quangninh', 'Quảng Ninh', [
+    'Quang Ninh',
+    'Hạ Long',
+    'Ha Long',
+  ]),
+  vietnamProvinceArea('sonla', 'Sơn La', ['Son La']),
+  vietnamProvinceArea('thanhhoa', 'Thanh Hóa', ['Thanh Hoa']),
   vietnamProvinceArea('hn', 'Hà Nội', ['Ha Noi', 'Hanoi', 'HN']),
+  vietnamProvinceArea('hue', 'Huế', [
+    'Hue',
+    'Thừa Thiên Huế',
+    'Thua Thien Hue',
+  ]),
+  vietnamProvinceArea('laocai', 'Lào Cai', [
+    'Lao Cai',
+    'Yên Bái',
+    'Yen Bai',
+  ]),
+  vietnamProvinceArea('thainguyen', 'Thái Nguyên', [
+    'Thai Nguyen',
+    'Bắc Kạn',
+    'Bac Kan',
+  ]),
+  vietnamProvinceArea('phutho', 'Phú Thọ', [
+    'Phu Tho',
+    'Vĩnh Phúc',
+    'Vinh Phuc',
+    'Hòa Bình',
+    'Hoa Binh',
+  ]),
+  vietnamProvinceArea('bacninh', 'Bắc Ninh', [
+    'Bac Ninh',
+    'Bắc Giang',
+    'Bac Giang',
+  ]),
+  vietnamProvinceArea('hungyen', 'Hưng Yên', [
+    'Hung Yen',
+    'Thái Bình',
+    'Thai Binh',
+  ]),
+  vietnamProvinceArea('hp', 'Hải Phòng', [
+    'Hai Phong',
+    'Hải Dương',
+    'Hai Duong',
+  ]),
+  vietnamProvinceArea('ninhbinh', 'Ninh Bình', [
+    'Ninh Binh',
+    'Hà Nam',
+    'Ha Nam',
+    'Nam Định',
+    'Nam Dinh',
+  ]),
+  vietnamProvinceArea('quangtri', 'Quảng Trị', [
+    'Quang Tri',
+    'Quảng Bình',
+    'Quang Binh',
+  ]),
+  vietnamProvinceArea('dn', 'Đà Nẵng', [
+    'Da Nang',
+    'Danang',
+    'Quảng Nam',
+    'Quang Nam',
+    'Hội An',
+    'Hoi An',
+  ]),
+  vietnamProvinceArea('quangngai', 'Quảng Ngãi', [
+    'Quang Ngai',
+    'Kon Tum',
+  ]),
+  vietnamProvinceArea('gialai', 'Gia Lai', [
+    'Bình Định',
+    'Binh Dinh',
+  ]),
+  vietnamProvinceArea('khanhhoa', 'Khánh Hòa', [
+    'Khanh Hoa',
+    'Ninh Thuận',
+    'Ninh Thuan',
+    'Nha Trang',
+  ]),
+  vietnamProvinceArea('lamdong', 'Lâm Đồng', [
+    'Lam Dong',
+    'Đắk Nông',
+    'Dak Nong',
+    'Bình Thuận',
+    'Binh Thuan',
+    'Đà Lạt',
+    'Da Lat',
+  ]),
+  vietnamProvinceArea('daklak', 'Đắk Lắk', [
+    'Dak Lak',
+    'Đak Lak',
+    'Phú Yên',
+    'Phu Yen',
+  ]),
   vietnamProvinceArea('hcm', 'Hồ Chí Minh', [
     'Ho Chi Minh',
     'Ho Chi Minh City',
@@ -33,6 +132,52 @@ export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
     'Bà Rịa Vũng Tàu',
     'Binh Duong',
     'Bình Dương',
+  ]),
+  vietnamProvinceArea('dongnai', 'Đồng Nai', [
+    'Dong Nai',
+    'Bình Phước',
+    'Binh Phuoc',
+  ]),
+  vietnamProvinceArea('tayninh', 'Tây Ninh', [
+    'Tay Ninh',
+    'Long An',
+  ]),
+  vietnamProvinceArea('cantho', 'Cần Thơ', [
+    'Can Tho',
+    'Sóc Trăng',
+    'Soc Trang',
+    'Hậu Giang',
+    'Hau Giang',
+  ]),
+  vietnamProvinceArea('vinhlong', 'Vĩnh Long', [
+    'Vinh Long',
+    'Bến Tre',
+    'Ben Tre',
+    'Trà Vinh',
+    'Tra Vinh',
+  ]),
+  vietnamProvinceArea('dongthap', 'Đồng Tháp', [
+    'Dong Thap',
+    'Tiền Giang',
+    'Tien Giang',
+    'Mỹ Tho',
+    'My Tho',
+  ]),
+  vietnamProvinceArea('camau', 'Cà Mau', [
+    'Ca Mau',
+    'Bạc Liêu',
+    'Bac Lieu',
+  ]),
+  vietnamProvinceArea('angiang', 'An Giang', [
+    'Kiên Giang',
+    'Kien Giang',
+    'Phú Quốc',
+    'Phu Quoc',
+  ]),
+  vietnamProvinceArea('tuyenquang', 'Tuyên Quang', [
+    'Tuyen Quang',
+    'Hà Giang',
+    'Ha Giang',
   ]),
 ];
 

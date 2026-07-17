@@ -16638,11 +16638,26 @@ export class NightlifeDataService {
 
     if (cityScope === 'hn' || cityScope === 'hcm') {
       and.push(this.buildAdminDashboardCityWhere(cityScope));
-    } else {
+    } else if (cityScope === 'other') {
+      and.push({
+        NOT: {
+          OR: [
+            this.buildAdminDashboardCityWhere('hn'),
+            this.buildAdminDashboardCityWhere('hcm'),
+          ],
+        },
+      });
+    } else if (cityScope) {
       and.push({
         OR: [
-          this.buildAdminDashboardCityWhere('hn'),
-          this.buildAdminDashboardCityWhere('hcm'),
+          { city: { in: vietnamAreaCityLookupNames(cityScope) } },
+          {
+            area: {
+              is: {
+                ...this.buildMvpAreaCodeWhere(cityScope),
+              },
+            },
+          },
         ],
       });
     }
@@ -20063,9 +20078,7 @@ export class NightlifeDataService {
         scope: 'recommend-home',
         status: 'ACTIVE',
         deletedAt: null,
-        ...this.buildPublicRankingConfigCityWhere(
-          cityCode === 'all' ? undefined : cityCode,
-        ),
+        ...this.buildPublicRankingConfigCityWhere(cityCode),
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
       },
