@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { formatBookingRequestTelegramMessage } from '../notifications/admin-telegram-message.formatter';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TelegramService {
@@ -12,6 +13,7 @@ export class TelegramService {
   constructor(
     @InjectBot() private bot: Telegraf,
     private configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {
     this.chatId =
       this.configService.get<string>('TELEGRAM_CHAT_ID') ||
@@ -26,7 +28,9 @@ export class TelegramService {
     }
 
     try {
+      const bookingSequenceCode = await this.bookingSequenceCode(booking);
       const message = formatBookingRequestTelegramMessage({
+        bookingSequenceCode,
         bookingCode: booking.bookingCode,
         storeName: booking.store?.name,
         customerName: booking.user?.displayName ?? booking.guest?.displayName,
@@ -55,5 +59,55 @@ export class TelegramService {
         error.stack,
       );
     }
+  }
+
+  private async bookingSequenceCode(booking: any) {
+    try {
+      const sequence = await this.bookingSequenceNumber(booking);
+      return sequence ? `NLF-${sequence}` : null;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve booking Telegram STT: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  private async bookingSequenceNumber(booking: any) {
+    let anchorCreatedAt = this.toValidDate(booking?.createdAt);
+
+    if (booking?.tourBookingId) {
+      const tourBooking = await this.prisma.tourBooking.findUnique({
+        where: { id: booking.tourBookingId },
+        select: { createdAt: true },
+      });
+      anchorCreatedAt = tourBooking?.createdAt ?? anchorCreatedAt;
+    }
+
+    const createdAtWhere = anchorCreatedAt
+      ? { createdAt: { lte: anchorCreatedAt } }
+      : {};
+    const [standaloneBookingCount, tourBookingCount] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          tourBookingId: null,
+          ...createdAtWhere,
+        },
+      }),
+      this.prisma.tourBooking.count({
+        where: createdAtWhere,
+      }),
+    ]);
+
+    return standaloneBookingCount + tourBookingCount;
+  }
+
+  private toValidDate(value?: Date | string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 }
