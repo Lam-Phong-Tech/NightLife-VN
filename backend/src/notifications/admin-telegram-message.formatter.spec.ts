@@ -7,6 +7,7 @@ describe('admin telegram message formatter', () => {
   it('formats booking requests like the Telegram admin sample', () => {
     expect(
       formatBookingRequestTelegramMessage({
+        bookingSequenceCode: 'NLF-1',
         bookingCode: 'BK-000123',
         customerName: 'Nguyễn A',
         customerEmail: 'a@example.com',
@@ -23,6 +24,7 @@ describe('admin telegram message formatter', () => {
       [
         '🆕 [BOOKING MỚI]',
         '',
+        '🔢 STT: NLF-1',
         '🧾 Mã booking: BK-000123',
         '👤 Khách: Nguyễn A',
         '📧 Email: a@example.com',

@@ -41,9 +41,12 @@ type AdminTelegramNotification = AdminNotificationRelations & {
 
 export type BookingAdminNotification = {
   id: string;
+  bookingSequenceCode?: string | null;
   bookingCode?: string | null;
+  tourBookingId?: string | null;
   status: string;
   scheduledAt?: Date | string | null;
+  createdAt?: Date | string | null;
   partySize?: number | null;
   discountSnapshot?: unknown;
   note?: string | null;
@@ -147,7 +150,10 @@ export class AdminNotificationService {
     private readonly prisma: PrismaService,
   ) {}
 
-  notifyBookingCreated(booking: BookingAdminNotification) {
+  async notifyBookingCreated(booking: BookingAdminNotification) {
+    const bookingSequenceCode =
+      booking.bookingSequenceCode ?? (await this.bookingSequenceCode(booking));
+
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCreated,
       title: 'Yêu cầu đặt bàn mới',
@@ -160,9 +166,10 @@ export class AdminNotificationService {
         ? `/stores/${booking.store.slug}`
         : undefined,
       message: formatBookingRequestTelegramMessage(
-        this.bookingMessageInput(booking),
+        this.bookingMessageInput(booking, bookingSequenceCode),
       ),
       lines: [
+        ['STT', bookingSequenceCode],
         ['Booking', booking.bookingCode],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
@@ -174,7 +181,7 @@ export class AdminNotificationService {
         ['Cast', this.castLabel(booking.cast)],
         ['Ghi chú', booking.note],
       ],
-      payload: this.bookingPayload(booking),
+      payload: this.bookingPayload(booking, bookingSequenceCode),
     });
   }
 
@@ -481,6 +488,50 @@ export class AdminNotificationService {
     }
   }
 
+  private async bookingSequenceCode(booking: BookingAdminNotification) {
+    try {
+      const sequence = await this.bookingSequenceNumber(booking);
+      return sequence ? `NLF-${sequence}` : null;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve booking Telegram STT: ${this.errorMessage(error)}`,
+      );
+      return null;
+    }
+  }
+
+  private async bookingSequenceNumber(booking: BookingAdminNotification) {
+    let anchorCreatedAt = this.toValidDate(booking.createdAt);
+
+    if (booking.tourBookingId) {
+      const tourBooking = await this.prisma.tourBooking.findUnique({
+        where: { id: booking.tourBookingId },
+        select: { createdAt: true },
+      });
+      anchorCreatedAt = tourBooking?.createdAt ?? anchorCreatedAt;
+    }
+
+    const bookingCreatedAtWhere: Prisma.BookingWhereInput = anchorCreatedAt
+      ? { createdAt: { lte: anchorCreatedAt } }
+      : {};
+    const tourCreatedAtWhere: Prisma.TourBookingWhereInput = anchorCreatedAt
+      ? { createdAt: { lte: anchorCreatedAt } }
+      : {};
+    const [standaloneBookingCount, tourBookingCount] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          tourBookingId: null,
+          ...bookingCreatedAtWhere,
+        },
+      }),
+      this.prisma.tourBooking.count({
+        where: tourCreatedAtWhere,
+      }),
+    ]);
+
+    return standaloneBookingCount + tourBookingCount;
+  }
+
   private telegramAdminChatId() {
     return (
       this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID')?.trim() ||
@@ -515,9 +566,13 @@ export class AdminNotificationService {
     ].join('\n');
   }
 
-  private bookingPayload(booking: BookingAdminNotification) {
+  private bookingPayload(
+    booking: BookingAdminNotification,
+    bookingSequenceCode?: string | null,
+  ) {
     return {
       bookingId: booking.id,
+      bookingSequenceCode: bookingSequenceCode ?? null,
       bookingCode: booking.bookingCode,
       status: booking.status,
       statusLabel: this.bookingStatusLabel(booking.status),
@@ -595,8 +650,12 @@ export class AdminNotificationService {
     };
   }
 
-  private bookingMessageInput(booking: BookingAdminNotification) {
+  private bookingMessageInput(
+    booking: BookingAdminNotification,
+    bookingSequenceCode?: string | null,
+  ) {
     return {
+      bookingSequenceCode,
       bookingCode: booking.bookingCode,
       storeName: booking.store?.name,
       customerName: this.customerName(booking),
@@ -834,6 +893,15 @@ export class AdminNotificationService {
 
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
+  }
+
+  private toValidDate(value?: Date | string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   private absoluteUrl(baseUrl: string, path: string) {
