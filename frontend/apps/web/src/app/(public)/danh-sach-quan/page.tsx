@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Heart,
+  History,
   LocateFixed,
   MapPin,
   RotateCcw,
@@ -86,9 +87,7 @@ type VenueSearchCopy = {
   mobileSubtitle: string;
   mobileTitle: string;
   nearMe: string;
-  closedNow: string;
   openFilters: string;
-  openNow: string;
   topRanking: string;
   resetFilters: string;
   saveVenue: string;
@@ -175,6 +174,9 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
+const recentVenueSearches = ["Tokyo Kitchen", "Spa Tây Hồ", "Bar Hoàn Kiếm"];
+const popularVenueKeywords = ["Top ranking", "Có ưu đãi", "Lounge", "Nhà hàng"];
+
 const venueCopyVi: VenueSearchCopy = {
   all: "Tất cả",
   bookTable: "Đặt bàn",
@@ -208,9 +210,7 @@ const venueCopyVi: VenueSearchCopy = {
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Tìm quán",
   nearMe: "Gần tôi",
-  closedNow: "Đang đóng",
   openFilters: "Mở bộ lọc",
-  openNow: "Đang mở",
   topRanking: "Top ranking",
   resetFilters: "Đặt lại bộ lọc",
   saveVenue: "Lưu quán",
@@ -257,9 +257,7 @@ const venueCopyEn: VenueSearchCopy = {
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Find venues",
   nearMe: "Nearby",
-  closedNow: "Closed now",
   openFilters: "Open filters",
-  openNow: "Open now",
   topRanking: "Top ranking",
   resetFilters: "Reset filters",
   saveVenue: "Save venue",
@@ -351,6 +349,22 @@ const getLocalizedAreaLabel = (areaName: string, language: LanguageCode) => {
   const base = areaLabels[areaName] ?? areaName;
   if (language === "en") return stripVietnameseMarks(areaName);
   return translateText(base, language);
+};
+
+const highlightMatch = (text: string, query: string) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedText = text.toLowerCase();
+  const index = normalizedText.indexOf(normalizedQuery);
+
+  if (!normalizedQuery || index < 0) return text;
+
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark>{text.slice(index, index + normalizedQuery.length)}</mark>
+      {text.slice(index + normalizedQuery.length)}
+    </>
+  );
 };
 
 const toRankingCity = (cityCode: string): RankingCity =>
@@ -569,8 +583,8 @@ type VenueDirectoryPageProps = {
 type LocationDialogMode = "permission" | "blocked";
 
 export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
-  const defaultOpenNow = !fixedCategory;
   const [query, setQuery] = useState("");
+  const [isSearchFocused, setSearchFocused] = useState(false);
   const [city, setCity] = useState("hn");
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
@@ -579,8 +593,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
-  const [openNow, setOpenNow] = useState(defaultOpenNow);
-  const [closedNow, setClosedNow] = useState(false);
   const [openingClock, setOpeningClock] = useState(() => Date.now());
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
@@ -829,8 +841,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       ],
     }))
       .map((store) => toVenueView(store, activeLanguage, openingNow))
-      .filter((venue) => !openNow || venue.isOpenNow)
-      .filter((venue) => !closedNow || !venue.isOpenNow)
       .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
 
     if (!topRankingOnly) return searchSortedVenues;
@@ -840,7 +850,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         (topRankingOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [activeLanguage, closedNow, openNow, openingNow, query, stores, topRankingOnly, topRankingOrder]);
+  }, [activeLanguage, openingNow, query, stores, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
   const selectedCityLabel = cityLabel;
@@ -993,9 +1003,10 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     sort !== "priority",
     hasActiveCoupon,
     topRankingOnly,
-    closedNow || openNow !== defaultOpenNow,
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
+  const suggestions = useMemo(() => venues.slice(0, 4), [venues]);
+  const showSuggestions = isSearchFocused && query.trim().length > 0;
   const pageTitle = fixedCategory
     ? formatCategoryVenueSearchTitle(fixedCategory, cityLabel, activeLanguage)
     : formatVenueSearchTitle(cityLabel, activeLanguage, copy);
@@ -1013,22 +1024,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setSort("priority");
     setHasActiveCoupon(false);
     setTopRankingOnly(false);
-    setOpenNow(defaultOpenNow);
-    setClosedNow(false);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
-  };
-
-  const toggleOpenNow = () => {
-    const nextOpenNow = !openNow;
-    setOpenNow(nextOpenNow);
-    if (nextOpenNow) setClosedNow(false);
-  };
-
-  const toggleClosedNow = () => {
-    const nextClosedNow = !closedNow;
-    setClosedNow(nextClosedNow);
-    if (nextClosedNow) setOpenNow(false);
   };
 
   const handleFilterButtonClick = () => {
@@ -1045,9 +1042,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   };
 
   const toggleTopRankingOnly = () => {
-    const nextValue = !topRankingOnly;
-    setTopRankingOnly(nextValue);
-    if (nextValue) setOpenNow(false);
+    setTopRankingOnly((current) => !current);
   };
 
   const toggleVenueFavorite = async (venue: VenueView) => {
@@ -1117,13 +1112,25 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
         <section className="venue-search-controls" aria-label={copy.searchAria}>
           <div className="venue-search-field" ref={desktopFilterRef}>
-            <label className="venue-search-input">
+            <label className={`venue-search-input ${isSearchFocused ? "is-focused" : ""}`}>
               <Search size={18} />
               <input
                 value={query}
+                onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
                 onChange={(event) => setQuery(event.target.value)}
+                onFocus={() => setSearchFocused(true)}
                 placeholder={copy.searchPlaceholder}
               />
+              {query ? (
+                <button
+                  type="button"
+                  aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
+                  className="venue-input-clear"
+                  onClick={() => setQuery("")}
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
               <button
                 type="button"
                 aria-label={copy.openFilters}
@@ -1140,6 +1147,17 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
               </button>
             </label>
 
+            {showSuggestions ? (
+              <VenueSearchSuggestions
+                onKeyword={setQuery}
+                onRecent={setQuery}
+                popularKeywords={popularVenueKeywords}
+                query={query}
+                recentSearches={recentVenueSearches}
+                venues={suggestions}
+              />
+            ) : null}
+
             {isDesktopFilterOpen ? (
               <DesktopVenueFilterPopover
                 area={area}
@@ -1149,11 +1167,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 categoryOptions={categoryOptions}
                 city={city}
                 cityOptions={localizedCityOptions}
-                closedNow={closedNow}
                 copy={copy}
                 hasActiveCoupon={hasActiveCoupon}
                 hideCategory={isCategoryLocked}
-                openNow={openNow}
                 topRankingOnly={topRankingOnly}
                 sort={sort}
                 sortOptions={localizedSortOptions}
@@ -1165,8 +1181,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 onReset={resetFilters}
                 onSort={handleSortChange}
                 onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
-                onToggleClosedNow={toggleClosedNow}
-                onToggleOpenNow={toggleOpenNow}
                 onToggleTopRanking={toggleTopRankingOnly}
               />
             ) : null}
@@ -1215,20 +1229,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         </section>
 
         <nav className="venue-chip-row hscroll" aria-label={copy.filterAria}>
-          <button
-            type="button"
-            className={`venue-chip ${openNow ? "is-active" : ""}`}
-            onClick={toggleOpenNow}
-          >
-            {copy.openNow}
-          </button>
-          <button
-            type="button"
-            className={`venue-chip ${closedNow ? "is-active" : ""}`}
-            onClick={toggleClosedNow}
-          >
-            {copy.closedNow}
-          </button>
           <button
             type="button"
             className={`venue-chip ${sort === "nearest" ? "is-active" : ""}`}
@@ -1343,11 +1343,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           categoryOptions={categoryOptions}
           city={city}
           cityOptions={localizedCityOptions}
-          closedNow={closedNow}
           copy={copy}
           hasActiveCoupon={hasActiveCoupon}
           hideCategory={isCategoryLocked}
-          openNow={openNow}
           topRankingOnly={topRankingOnly}
           sort={sort}
           sortOptions={localizedSortOptions}
@@ -1359,8 +1357,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           onReset={resetFilters}
           onSort={handleSortChange}
           onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
-          onToggleClosedNow={toggleClosedNow}
-          onToggleOpenNow={toggleOpenNow}
           onToggleTopRanking={toggleTopRankingOnly}
         />
       ) : null}
@@ -1428,6 +1424,90 @@ function LocationPermissionDialog({
   return createPortal(dialog, document.body);
 }
 
+function VenueSearchSuggestions({
+  onKeyword,
+  onRecent,
+  popularKeywords,
+  query,
+  recentSearches,
+  venues,
+}: {
+  onKeyword: (value: string) => void;
+  onRecent: (value: string) => void;
+  popularKeywords: string[];
+  query: string;
+  recentSearches: string[];
+  venues: VenueView[];
+}) {
+  return (
+    <div className="venue-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
+      <div className="venue-suggestion-searchline">
+        <Search size={18} />
+        <span>
+          {query}
+          <i />
+        </span>
+      </div>
+
+      {venues.length ? (
+        <>
+          <div className="venue-suggestion-label">Gợi ý quán</div>
+          {venues.map((venue) => (
+            <Link key={venue.id} href={`/stores/${venue.id}`} className="venue-suggestion-row">
+              <span
+                className="venue-suggestion-thumb"
+                aria-hidden="true"
+                style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
+              />
+              <span>
+                <b>{highlightMatch(venue.name, query)}</b>
+                <small>
+                  {venue.categoryLabel} · {venue.areaLabel} · {venue.cityLabel}
+                </small>
+              </span>
+              <ChevronRight size={15} />
+            </Link>
+          ))}
+        </>
+      ) : (
+        <div className="venue-suggestion-empty">Không có gợi ý trùng khớp.</div>
+      )}
+
+      <div className="venue-suggestion-split">
+        <span>Tìm gần đây</span>
+        <button type="button">Xóa lịch sử</button>
+      </div>
+      <div className="venue-suggestion-tags">
+        {recentSearches.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onRecent(item)}
+          >
+            <History size={13} />
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <div className="venue-suggestion-label">Từ khóa phổ biến</div>
+      <div className="venue-suggestion-tags is-gold">
+        {popularKeywords.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onKeyword(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DesktopVenueFilterPopover({
   area,
   areaOptions,
@@ -1436,11 +1516,9 @@ function DesktopVenueFilterPopover({
   categoryOptions,
   city,
   cityOptions,
-  closedNow,
   copy,
   hasActiveCoupon,
   hideCategory,
-  openNow,
   topRankingOnly,
   sort,
   sortOptions,
@@ -1452,8 +1530,6 @@ function DesktopVenueFilterPopover({
   onReset,
   onSort,
   onToggleCoupon,
-  onToggleClosedNow,
-  onToggleOpenNow,
   onToggleTopRanking,
 }: {
   area: string;
@@ -1463,11 +1539,9 @@ function DesktopVenueFilterPopover({
   categoryOptions: FilterOption[];
   city: string;
   cityOptions: FilterOption[];
-  closedNow: boolean;
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   hideCategory?: boolean;
-  openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
   sortOptions: Array<{ value: DiscoverySort; label: string }>;
@@ -1479,8 +1553,6 @@ function DesktopVenueFilterPopover({
   onReset: () => void;
   onSort: (value: DiscoverySort) => void;
   onToggleCoupon: () => void;
-  onToggleClosedNow: () => void;
-  onToggleOpenNow: () => void;
   onToggleTopRanking: () => void;
 }) {
   return (
@@ -1500,12 +1572,6 @@ function DesktopVenueFilterPopover({
         <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
           <h3>{copy.filterNeeds}</h3>
           <div className="venue-desktop-filter-options">
-            <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
-              {copy.openNow}
-            </button>
-            <button type="button" className={closedNow ? "is-active" : ""} onClick={onToggleClosedNow}>
-              {copy.closedNow}
-            </button>
             <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
               {copy.hasDeals}
             </button>
@@ -1594,11 +1660,9 @@ function MobileVenueFilterSheet({
   categoryOptions,
   city,
   cityOptions,
-  closedNow,
   copy,
   hasActiveCoupon,
   hideCategory,
-  openNow,
   topRankingOnly,
   sort,
   sortOptions,
@@ -1610,8 +1674,6 @@ function MobileVenueFilterSheet({
   onReset,
   onSort,
   onToggleCoupon,
-  onToggleClosedNow,
-  onToggleOpenNow,
   onToggleTopRanking,
 }: {
   area: string;
@@ -1621,11 +1683,9 @@ function MobileVenueFilterSheet({
   categoryOptions: FilterOption[];
   city: string;
   cityOptions: FilterOption[];
-  closedNow: boolean;
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   hideCategory?: boolean;
-  openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
   sortOptions: Array<{ value: DiscoverySort; label: string }>;
@@ -1637,8 +1697,6 @@ function MobileVenueFilterSheet({
   onReset: () => void;
   onSort: (value: DiscoverySort) => void;
   onToggleCoupon: () => void;
-  onToggleClosedNow: () => void;
-  onToggleOpenNow: () => void;
   onToggleTopRanking: () => void;
 }) {
   const sheet = (
@@ -1687,12 +1745,6 @@ function MobileVenueFilterSheet({
           <section className="venue-filter-group" aria-label={copy.filterNeeds}>
             <h3>{copy.filterNeeds}</h3>
             <div>
-              <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
-                {copy.openNow}
-              </button>
-              <button type="button" className={closedNow ? "is-active" : ""} onClick={onToggleClosedNow}>
-                {copy.closedNow}
-              </button>
               <button
                 type="button"
                 className={hasActiveCoupon ? "is-active" : ""}
@@ -1975,6 +2027,195 @@ const venueSearchCss = `
 
   .venue-search-input input::placeholder {
     color: var(--vy-muted);
+  }
+
+  .venue-search-input.is-focused {
+    border-color: var(--vy-border-gold-40);
+    box-shadow: 0 18px 42px -34px rgba(212, 178, 106, .72);
+  }
+
+  .venue-input-clear {
+    width: 28px;
+    height: 28px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+    color: var(--vy-muted);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .venue-input-clear:hover,
+  .venue-input-clear:focus-visible {
+    background: rgba(212, 178, 106, .14);
+    color: var(--vy-gold-pale);
+    outline: 0;
+  }
+
+  .venue-suggestions {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    z-index: 70;
+    width: min(560px, 100%);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 16px;
+    background: #16141b;
+    color: #f3f0ea;
+    box-shadow: 0 30px 70px -28px rgba(0, 0, 0, .8);
+  }
+
+  .venue-suggestion-searchline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, .07);
+  }
+
+  .venue-suggestion-searchline svg {
+    color: var(--vy-gold);
+  }
+
+  .venue-suggestion-searchline span {
+    flex: 1;
+    min-width: 0;
+    color: #f3f0ea;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .venue-suggestion-searchline i {
+    display: inline-block;
+    width: 2px;
+    height: 17px;
+    margin-left: 1px;
+    vertical-align: -3px;
+    background: #d4b26a;
+  }
+
+  .venue-suggestions mark {
+    background: transparent;
+    color: #e3c27e;
+    font-weight: 800;
+  }
+
+  .venue-suggestion-label,
+  .venue-suggestion-split {
+    color: var(--vy-muted);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  .venue-suggestion-label {
+    padding: 14px 16px 4px;
+  }
+
+  .venue-suggestion-row {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+    color: #f3f0ea;
+    text-decoration: none;
+  }
+
+  .venue-suggestion-thumb {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border: 1px solid rgba(212, 178, 106, .36);
+    border-radius: 12px;
+    background-color: rgba(212, 178, 106, .12);
+    background-position: center;
+    background-size: cover;
+  }
+
+  .venue-suggestion-row > span:last-of-type {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 2px;
+  }
+
+  .venue-suggestion-row b,
+  .venue-suggestion-row small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .venue-suggestion-row b {
+    color: #f3f0ea;
+    font-size: 14px;
+  }
+
+  .venue-suggestion-row small {
+    color: var(--vy-muted);
+    font-size: 11px;
+  }
+
+  .venue-suggestion-row > svg {
+    color: #6f6b62;
+  }
+
+  .venue-suggestion-empty {
+    padding: 16px;
+    color: #9b958a;
+    font-size: 13px;
+  }
+
+  .venue-suggestion-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 8px;
+  }
+
+  .venue-suggestion-split button {
+    border: 0;
+    background: transparent;
+    color: #9b958a;
+    font-family: var(--nl-font-sans);
+    font-size: 11px;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .venue-suggestion-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 16px 14px;
+  }
+
+  .venue-suggestion-tags button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .05);
+    color: var(--vy-muted);
+    padding: 7px 13px;
+    font-family: var(--nl-font-sans);
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+
+  .venue-suggestion-tags.is-gold button {
+    border-color: rgba(212, 178, 106, .26);
+    background: rgba(212, 178, 106, .1);
+    color: #d9c08a;
   }
 
   .venue-filter-icon {
@@ -3036,6 +3277,68 @@ const venueSearchCss = `
     color: #241a0a;
   }
 
+  html.vy-light .venue-search-input.is-focused {
+    border-color: rgba(150, 116, 52, .42);
+    box-shadow: 0 18px 42px -34px rgba(68, 48, 18, .58);
+  }
+
+  html.vy-light .venue-input-clear {
+    background: rgba(35, 27, 14, .08);
+    color: #8c806e;
+  }
+
+  html.vy-light .venue-input-clear:hover,
+  html.vy-light .venue-input-clear:focus-visible {
+    background: rgba(212, 178, 106, .18);
+    color: #7b591f;
+  }
+
+  html.vy-light .venue-suggestions {
+    border-color: rgba(150, 116, 52, .24);
+    background: #fffaf1;
+    color: #241a0a;
+    box-shadow: 0 24px 70px -36px rgba(68, 48, 18, .52);
+  }
+
+  html.vy-light .venue-suggestion-searchline,
+  html.vy-light .venue-suggestion-row {
+    border-color: rgba(150, 116, 52, .14);
+  }
+
+  html.vy-light .venue-suggestion-searchline span,
+  html.vy-light .venue-suggestion-row b {
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-suggestion-row small,
+  html.vy-light .venue-suggestion-label,
+  html.vy-light .venue-suggestion-split,
+  html.vy-light .venue-suggestion-empty {
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-suggestions mark {
+    color: #9d742b;
+  }
+
+  html.vy-light .venue-suggestion-thumb {
+    border-color: rgba(150, 116, 52, .28);
+    background-color: rgba(212, 178, 106, .14);
+  }
+
+  html.vy-light .venue-suggestion-tags button,
+  html.vy-light .venue-suggestion-split button {
+    border-color: rgba(150, 116, 52, .18);
+    background: rgba(255, 255, 255, .78);
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-suggestion-tags.is-gold button {
+    border-color: rgba(150, 116, 52, .26);
+    background: rgba(255, 232, 170, .42);
+    color: #8f6a2a;
+  }
+
   html.vy-light .venue-filter-icon {
     border-color: rgba(150, 116, 52, .28);
     background: rgba(255, 255, 255, .72);
@@ -3192,6 +3495,50 @@ const venueSearchCss = `
     .venue-search-input svg {
       width: 14px;
       height: 14px;
+    }
+
+    .venue-input-clear {
+      width: 22px;
+      height: 22px;
+    }
+
+    .venue-suggestions {
+      top: calc(100% + 8px);
+      width: min(100%, calc(100vw - 28px));
+      border-radius: 14px;
+    }
+
+    .venue-suggestion-searchline {
+      padding: 12px 14px;
+    }
+
+    .venue-suggestion-row {
+      min-height: 54px;
+      padding: 9px 14px;
+    }
+
+    .venue-suggestion-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+
+    .venue-suggestion-tags {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scrollbar-width: none;
+    }
+
+    .venue-suggestion-tags::-webkit-scrollbar {
+      display: none;
+    }
+
+    .venue-suggestion-tags button {
+      flex: none;
+      padding: 6px 11px;
+      font-size: 11.5px;
+      white-space: nowrap;
     }
 
     .venue-filter-icon {
