@@ -32,10 +32,10 @@ const getPillStyle = (kind: string) => {
   return { ...chip, fontSize: '11px', fontWeight: 600, padding: '4px 11px', borderRadius: '20px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px' };
 };
 
-const ALL_TIME_SLOTS = [
-  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
-  '22:00', '22:30', '23:00', '23:30', '00:00', '00:30', '01:00', '01:30', '02:00'
-];
+const ALL_TIME_SLOTS = Array.from(
+  { length: 24 },
+  (_, hour) => `${String(hour).padStart(2, '0')}:00`,
+);
 
 const isSameCity = (c1: string, c2: string) => {
   const norm = (c: string) => {
