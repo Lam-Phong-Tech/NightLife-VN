@@ -231,7 +231,7 @@ export default function AdminBillsPage() {
   const handleApproveSubmit = async () => {
     setIsProcessing(true);
     try {
-      await apiClient(`/admin/bills/${approveBillId}/status`, { method: 'PUT', data: { status: 'VERIFIED' } });
+      await apiClient(`/admin/sensitive-bills/${approveBillId}/review`, { method: 'PATCH', data: { approve: true } });
       fetchBills();
       setShowApproveModal(false);
       setSelectedBill(null);
@@ -259,7 +259,10 @@ export default function AdminBillsPage() {
     
     setIsProcessing(true);
     try {
-      await apiClient(`/admin/bills/${rejectBillId}/status`, { method: 'PUT', data: { status: 'REJECTED', reason: finalReason } });
+      await apiClient(`/admin/sensitive-bills/${rejectBillId}/review`, {
+        method: 'PATCH',
+        data: { approve: false, rejectReason: finalReason },
+      });
       setShowRejectModal(false);
       fetchBills();
       setSelectedBill(null);
