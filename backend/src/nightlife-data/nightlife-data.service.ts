@@ -1220,9 +1220,7 @@ export class NightlifeDataService {
 
   async listPublicRankings(query: PublicRankingQueryDto = {}) {
     const targetType = this.resolveRankingTargetType(query.targetType);
-    const cityCode = this.normalizeCityCode(query.city ?? 'all', {
-      strict: true,
-    });
+    const cityCode = this.resolveAdminRankingCityCode(query.city);
     const category = this.normalizeCategory(query.category, { strict: true });
     const scope = this.resolveAdminRankingScope(query.scope);
     const limit = this.resolveRankingLimit(query.limit);

@@ -61,6 +61,7 @@ export async function seedRankings(
 ): Promise<void> {
   console.log('  🏆 Seeding ranking configs...');
   const adminId = users['admin']?.id ?? null;
+  const storeById = new Map(Object.values(stores).map((store) => [store.id, store]));
   let count = 0;
 
   // ── Cast rankings (priority per RAN-08: Cast trước, Quán sau) ──
@@ -75,9 +76,10 @@ export async function seedRankings(
       where: { targetType: 'CAST', targetId: cast.id, status: 'ACTIVE' },
     });
 
+    const store = storeById.get(cast.storeId);
     const data = {
-      cityCode: getCityCode(cast.store?.city),
-      category: cast.store?.category || null,
+      cityCode: getCityCode(store?.city),
+      category: store?.category || null,
       scope: 'global',
       manualScore: 100 - (r.pinRank - 1) * 10,
       pinRank: r.pinRank,
