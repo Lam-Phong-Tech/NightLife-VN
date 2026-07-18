@@ -328,6 +328,11 @@ function AdminBookingsContent() {
                     </div>
                   </>
                 )}
+                {bk.status === 'CHECKED_IN' && (
+                  <div style={{ display: 'flex' }}>
+                    <span onClick={() => !isActionLoading && handleUpdateStatus(bk.id, 'COMPLETED')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '13px', borderRadius: '11px', cursor: isActionLoading ? 'not-allowed' : 'pointer', opacity: isActionLoading ? 0.6 : 1 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Hoàn tất</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
