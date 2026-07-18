@@ -187,11 +187,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
               fontWeight: 800,
             }}
           >
-            <span>{post.author}</span>
-            <span aria-hidden="true">·</span>
             <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
-            <span aria-hidden="true">·</span>
-            <span>{post.readTime}</span>
           </div>
         </header>
 

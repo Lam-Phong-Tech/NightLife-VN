@@ -1,4 +1,4 @@
-import { contentApi, type CmsContentItem } from "@/lib/api/content";
+import { contentApi, getCmsContentImageUrl, type CmsContentItem } from "@/lib/api/content";
 
 export type BlogStatus = "DRAFT" | "PUBLISHED";
 
@@ -73,6 +73,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
   const createdAt = content.createdAt;
   const publishedAt = content.publishedAt?.slice(0, 10) ?? content.createdAt.slice(0, 10);
   const sections = asSections(metadata.sections);
+  const image = getCmsContentImageUrl(content);
 
   return {
     slug: content.slug,
@@ -90,9 +91,8 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
       content.author?.displayName ??
       (typeof metadata.author === "string" ? metadata.author : "Đội ngũ Vietyoru"),
     image:
-      typeof metadata.image === "string"
-        ? metadata.image
-        : "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=78",
+      image ??
+      "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=78",
     imageAlt:
       typeof metadata.imageAlt === "string" ? metadata.imageAlt : `Ảnh minh họa cho ${content.title}`,
     featured: metadata.featured === true,

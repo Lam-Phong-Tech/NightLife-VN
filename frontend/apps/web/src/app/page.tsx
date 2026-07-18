@@ -39,6 +39,7 @@ import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
 import {
   contentApi,
+  getCmsContentImageUrl,
   type CmsContentItem,
   type PublicHomeRecommendation,
   type PublicHotVideo,
@@ -598,18 +599,7 @@ function mapTourToHomeItem(
 
 function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
   const metadata = content.metadata ?? {};
-  const seo = metadata.seo && typeof metadata.seo === "object" && !Array.isArray(metadata.seo)
-    ? (metadata.seo as Record<string, unknown>)
-    : {};
-  const image = firstContentImage(
-    typeof metadata.image === "string" ? metadata.image : null,
-    typeof metadata.imageUrl === "string" ? metadata.imageUrl : null,
-    typeof metadata.thumbnailUrl === "string" ? metadata.thumbnailUrl : null,
-    typeof metadata.coverImage === "string" ? metadata.coverImage : null,
-    typeof metadata.coverUrl === "string" ? metadata.coverUrl : null,
-    typeof metadata.posterUrl === "string" ? metadata.posterUrl : null,
-    typeof seo.ogImage === "string" ? seo.ogImage : null,
-  );
+  const image = firstContentImage(getCmsContentImageUrl(content));
   const category = typeof metadata.category === "string" && metadata.category.trim()
     ? metadata.category.trim()
     : content.type === "BLOG"

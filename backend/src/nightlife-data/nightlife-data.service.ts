@@ -20,6 +20,9 @@ import {
   ContentStatus,
   ContentType,
   CouponIssueStatus,
+  MediaAccess,
+  MediaStatus,
+  MediaType,
   Prisma,
   RankingConfigStatus,
   RankingTargetType,
@@ -896,6 +899,14 @@ type ContentRecord = {
     name: string;
     slug: string;
   } | null;
+  media: Array<{
+    id: string;
+    url: string;
+    purpose: string | null;
+    type: MediaType;
+    access: MediaAccess;
+    status: MediaStatus;
+  }>;
 };
 
 type BookingTarget = {
@@ -18035,11 +18046,36 @@ export class NightlifeDataService {
           slug: true,
         },
       },
+      media: {
+        where: {
+          deletedAt: null,
+          status: MediaStatus.READY,
+          access: MediaAccess.PUBLIC,
+          type: MediaType.IMAGE,
+        },
+        orderBy: [{ createdAt: 'desc' }],
+        select: {
+          id: true,
+          url: true,
+          purpose: true,
+          type: true,
+          access: true,
+          status: true,
+        },
+      },
     };
   }
 
   private mapContent(content: ContentRecord) {
     const metadata = this.asRecord(content.metadata) ?? {};
+    const mediaCover =
+      content.media.find(
+        (item) => item.purpose?.trim().toUpperCase() === 'BLOG_COVER',
+      ) ?? content.media[0] ?? null;
+    const metadataImage =
+      typeof metadata.image === 'string' && metadata.image.trim()
+        ? metadata.image.trim()
+        : null;
 
     return {
       id: content.id,
@@ -18050,6 +18086,7 @@ export class NightlifeDataService {
       excerpt: content.excerpt,
       body: content.body,
       metadata,
+      imageUrl: metadataImage ?? mediaCover?.url ?? null,
       noindex: metadata.noindex === true,
       publishedAt: content.publishedAt?.toISOString() ?? null,
       createdAt: content.createdAt.toISOString(),

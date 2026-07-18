@@ -12,6 +12,7 @@ export type CmsContentItem = {
   excerpt?: string | null;
   body?: string | null;
   metadata?: Record<string, unknown> | null;
+  imageUrl?: string | null;
   noindex?: boolean;
   publishedAt?: string | null;
   createdAt: string;
@@ -26,10 +27,48 @@ export type CmsContentItem = {
     name: string;
     slug: string;
   } | null;
+  media?: Array<{
+    id: string;
+    url: string;
+    purpose?: string | null;
+    type?: string | null;
+    access?: string | null;
+    status?: string | null;
+  }>;
 };
 
 export type CmsContentListResponse = {
   data: CmsContentItem[];
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const cleanString = (value: unknown) =>
+  typeof value === "string" && value.trim() ? value.trim() : null;
+
+export const getCmsContentImageUrl = (content: CmsContentItem) => {
+  const metadata = asRecord(content.metadata) ?? {};
+  const seo = asRecord(metadata.seo) ?? {};
+  const mediaCover =
+    content.media?.find((item) => item.purpose?.trim().toUpperCase() === "BLOG_COVER" && cleanString(item.url))
+      ?.url ??
+    content.media?.find((item) => cleanString(item.url))?.url ??
+    null;
+
+  return (
+    cleanString(content.imageUrl) ??
+    cleanString(metadata.image) ??
+    cleanString(metadata.imageUrl) ??
+    cleanString(metadata.thumbnailUrl) ??
+    cleanString(metadata.coverImage) ??
+    cleanString(metadata.coverUrl) ??
+    cleanString(metadata.posterUrl) ??
+    cleanString(seo.ogImage) ??
+    cleanString(mediaCover)
+  );
 };
 
 export type PublicCmsContentListParams = {
