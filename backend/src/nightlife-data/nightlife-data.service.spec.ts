@@ -1271,7 +1271,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('does not restrict featured public rankings by city when city is all', async () => {
+  it('includes every Vietnam city code for featured public rankings when city is all', async () => {
     prisma.rankingConfig.findMany.mockResolvedValue([
       {
         targetId: 'store-hn',
@@ -1345,9 +1345,12 @@ describe('NightlifeDataService', () => {
     ]);
     const rankingWhere = (prisma.rankingConfig.findMany as jest.Mock).mock
       .calls[0][0].where;
-    expect(rankingWhere).not.toHaveProperty('cityCode');
-    expect(rankingWhere.AND).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ cityCode: 'all' })]),
+    expect(rankingWhere.AND).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
+        }),
+      ]),
     );
   });
 
@@ -9517,7 +9520,7 @@ describe('NightlifeDataService', () => {
       );
     });
 
-    it('does not restrict ranking configs by city when query.cityCode is not specified or is all', async () => {
+    it('includes every Vietnam city code when query.cityCode is not specified or is all', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([] as never);
       prisma.store.findMany.mockResolvedValue([] as never);
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
@@ -9537,7 +9540,11 @@ describe('NightlifeDataService', () => {
         .calls;
       expect(
         defaultCityCalls[defaultCityCalls.length - 1][0].where,
-      ).not.toHaveProperty('cityCode');
+      ).toEqual(
+        expect.objectContaining({
+          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
+        }),
+      );
 
       // Call with 'all'
       await service.listPublicHomeRecommendations({
@@ -9556,7 +9563,11 @@ describe('NightlifeDataService', () => {
         .calls;
       expect(
         allCityCalls[allCityCalls.length - 1][0].where,
-      ).not.toHaveProperty('cityCode');
+      ).toEqual(
+        expect.objectContaining({
+          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
+        }),
+      );
     });
   });
 });

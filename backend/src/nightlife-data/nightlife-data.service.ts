@@ -130,6 +130,7 @@ import {
 import {
   resolveVietnamProvinceArea,
   VIETNAM_CITY_ALIASES,
+  VIETNAM_CITY_CODES,
   vietnamAreaCityLookupNames,
 } from './vietnam-admin-units';
 
@@ -15749,11 +15750,11 @@ export class NightlifeDataService {
   private buildPublicRankingConfigCityWhere(
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
-    if (!cityCode || cityCode === 'all') {
-      return {};
+    if (cityCode && cityCode !== 'all') {
+      return { cityCode };
     }
 
-    return { cityCode };
+    return { cityCode: { in: ['all', ...VIETNAM_CITY_CODES] } };
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
