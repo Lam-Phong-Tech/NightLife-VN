@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 
 export type AdminDashboardReportQuery = {
   timeframe?: string;
@@ -133,6 +134,70 @@ const timeframeLabels: Record<string, string> = {
 const currencyFormat = '#,##0" ₫"';
 const dateFormat = 'dd/mm/yyyy';
 const dateTimeFormat = 'dd/mm/yyyy hh:mm';
+
+const fontChildOrder = new Map(
+  [
+    'b',
+    'i',
+    'strike',
+    'outline',
+    'shadow',
+    'condense',
+    'extend',
+    'sz',
+    'color',
+    'name',
+    'family',
+    'charset',
+    'scheme',
+  ].map((name, index) => [name, index]),
+);
+
+const canonicalizeFontChildren = (stylesXml: string) =>
+  stylesXml.replace(/<font>([\s\S]*?)<\/font>/g, (fontXml, children: string) => {
+    const tagPattern = /<([A-Za-z][\w.-]*)\b[^>]*\/>/g;
+    const tags = Array.from(children.matchAll(tagPattern)).map(
+      (match, index) => ({
+        xml: match[0],
+        name: match[1],
+        index,
+      }),
+    );
+    const residue = children.replace(tagPattern, '').trim();
+
+    if (
+      residue ||
+      !tags.length ||
+      tags.some((tag) => !fontChildOrder.has(tag.name))
+    ) {
+      return fontXml;
+    }
+
+    tags.sort(
+      (left, right) =>
+        fontChildOrder.get(left.name)! - fontChildOrder.get(right.name)! ||
+        left.index - right.index,
+    );
+    return `<font>${tags.map((tag) => tag.xml).join('')}</font>`;
+  });
+
+const normalizeExcelStyles = async (buffer: Buffer) => {
+  const archive = await JSZip.loadAsync(buffer);
+  const stylesPart = archive.file('xl/styles.xml');
+  if (!stylesPart) {
+    throw new Error('Generated Excel report is missing xl/styles.xml');
+  }
+
+  const stylesXml = await stylesPart.async('string');
+  const normalizedStylesXml = canonicalizeFontChildren(stylesXml);
+  archive.file('xl/styles.xml', normalizedStylesXml);
+
+  return archive.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
+};
 
 const toDateOnly = (value: Date) =>
   new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
@@ -401,11 +466,6 @@ const writeDetailSheets = (
     bookingSheet.getColumn(column).numFmt = currencyFormat;
   });
   bookingSheet.getColumn(9).alignment = { horizontal: 'center' };
-  bookingSheet.autoFilter = {
-    from: 'A5',
-    to: `N${Math.max(5, 5 + input.bookings.length)}`,
-  };
-
   const billSheet = workbook.addWorksheet('Hóa đơn', {
     properties: { tabColor: { argb: COLORS.greenText } },
   });
@@ -495,11 +555,6 @@ const writeDetailSheets = (
   [7, 8, 9, 10, 11, 12, 13].forEach((column) => {
     billSheet.getColumn(column).numFmt = currencyFormat;
   });
-  billSheet.autoFilter = {
-    from: 'A5',
-    to: `N${Math.max(5, 5 + input.bills.length)}`,
-  };
-
   return { bookingSheet, billSheet };
 };
 
@@ -614,10 +669,6 @@ const writeStoreSheet = (
   [9, 10, 11, 12].forEach((column) => {
     sheet.getColumn(column).numFmt = currencyFormat;
   });
-  sheet.autoFilter = {
-    from: 'A5',
-    to: `L${Math.max(5, 5 + rows.length)}`,
-  };
   return { sheet, rows };
 };
 
@@ -937,8 +988,6 @@ export async function buildAdminDashboardReport(
   workbook.lastModifiedBy = 'NightLife VN Admin';
   workbook.created = input.generatedAt;
   workbook.modified = input.generatedAt;
-  workbook.calcProperties.fullCalcOnLoad = true;
-
   const subtitle = reportFilterLabel(input);
   const overviewSheet = workbook.addWorksheet('Tổng quan', {
     properties: { tabColor: { argb: COLORS.gold } },
@@ -947,6 +996,6 @@ export async function buildAdminDashboardReport(
   const storeResult = writeStoreSheet(workbook, input, subtitle);
   writeOverviewSheet(overviewSheet, input, subtitle, storeResult.rows);
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  return Buffer.from(buffer);
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  return Buffer.from(await normalizeExcelStyles(buffer));
 }

@@ -44,6 +44,7 @@
     "class-validator": "^0.15.1",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
+    "jszip": "^3.10.1",
     "nestjs-telegraf": "^2.9.1",
     "nodemailer": "^9.0.3",
     "passport": "^0.7.0",
