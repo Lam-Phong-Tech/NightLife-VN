@@ -24,6 +24,7 @@ import {
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
 import { translateText } from "@/lib/i18n/client-translations";
+import { useUserActionFeedback } from "@/lib/user-action-feedback";
 import {
   AlertCircle,
   CheckCircle2,
@@ -919,6 +920,7 @@ const cleanApiMessage = (error: unknown) => {
 export default function Page() {
   const searchParams = useSearchParams();
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const t = useMemo(
     () => (value: string) => localize(value, activeLanguage),
     [activeLanguage],
@@ -1000,11 +1002,15 @@ export default function Page() {
     return "";
   };
 
-  const handleReadEvidence = async () => {
+  const readEvidencePreview = async () => {
     if (!evidenceFile) return;
     const fileError = validateEvidenceFile(evidenceFile);
     if (fileError) {
       setNotice({ tone: "danger", message: fileError });
+      userFeedback.error({
+        title: "Không đọc được hóa đơn",
+        description: t(fileError),
+      });
       return;
     }
 
@@ -1025,11 +1031,32 @@ export default function Page() {
           ? t("Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.")
           : t("Công cụ đọc hóa đơn đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc đã xác nhận."),
       });
+      userFeedback.success({
+        title: "Đã đọc hóa đơn",
+        description: preview.requiresManualReview
+          ? t("Vui lòng kiểm tra lại dữ liệu gợi ý trước khi gửi.")
+          : t("Tổng tiền đã được điền theo dữ liệu hóa đơn."),
+      });
     } catch (error) {
-      setNotice({ tone: "danger", message: t(cleanApiMessage(error)) });
+      const message = t(cleanApiMessage(error));
+      setNotice({ tone: "danger", message });
+      userFeedback.error({
+        title: "Đọc hóa đơn thất bại",
+        description: message,
+      });
     } finally {
       setIsReadingEvidence(false);
     }
+  };
+
+  const handleReadEvidence = () => {
+    if (!evidenceFile) return;
+    userFeedback.confirmAction({
+      title: "Đọc dữ liệu hóa đơn?",
+      description: "Hệ thống sẽ đọc file đã chọn và gợi ý tổng tiền nếu có thể.",
+      confirmLabel: "Đọc hóa đơn",
+      onConfirm: readEvidencePreview,
+    });
   };
 
   useEffect(() => {
@@ -1282,18 +1309,7 @@ export default function Page() {
     setAmountInput(sanitizeMoneyInput(value));
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNotice(null);
-
-    if (billValidationMessage) {
-      setNotice({
-        tone: "danger",
-        message: billValidationMessage,
-      });
-      return;
-    }
-
+  const submitBill = async () => {
     setIsSubmitting(true);
     try {
       const payload = {
@@ -1310,16 +1326,23 @@ export default function Page() {
       };
       const bill = await billApi.submitMemberBill(payload);
 
-    let uploadWarning = "";
-    if (evidenceFile) {
-      try {
-        await billApi.uploadEvidence(bill.id, evidenceFile);
-      } catch {
+      let uploadWarning = "";
+      if (evidenceFile) {
+        try {
+          await billApi.uploadEvidence(bill.id, evidenceFile);
+        } catch {
           uploadWarning = ` ${t("Hóa đơn đã được gửi, nhưng ảnh hoặc chứng từ chưa tải lên được.")}`;
+        }
       }
-    }
 
       setSubmittedBills((current) => [bill, ...current]);
+      const showBillToast = uploadWarning ? userFeedback.warning : userFeedback.success;
+      showBillToast({
+        title: uploadWarning ? "Đã gửi hóa đơn" : "Gửi hóa đơn thành công",
+        description: uploadWarning
+          ? t("Hóa đơn đã được gửi nhưng chứng từ chưa tải lên được.")
+          : t("Hóa đơn đã được gửi để quản trị viên duyệt."),
+      });
       setNotice({
         tone: uploadWarning ? "warning" : "success",
         message: `${t("Đã gửi hóa đơn")} ${bill.id.slice(0, 8)} ${t("để quản trị viên duyệt.")}${uploadWarning}`,
@@ -1335,10 +1358,39 @@ export default function Page() {
         setPreviewUrl(null);
       }
     } catch (error) {
-      setNotice({ tone: "danger", message: t(cleanApiMessage(error)) });
+      const message = t(cleanApiMessage(error));
+      setNotice({ tone: "danger", message });
+      userFeedback.error({
+        title: "Gửi hóa đơn thất bại",
+        description: message,
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNotice(null);
+
+    if (billValidationMessage) {
+      setNotice({
+        tone: "danger",
+        message: billValidationMessage,
+      });
+      userFeedback.error({
+        title: "Chưa thể gửi hóa đơn",
+        description: billValidationMessage,
+      });
+      return;
+    }
+
+    userFeedback.confirmAction({
+      title: "Xác nhận gửi hóa đơn?",
+      description: "Bạn có chắc muốn gửi hóa đơn này để quản trị viên duyệt không?",
+      confirmLabel: "Gửi hóa đơn",
+      onConfirm: submitBill,
+    });
   };
 
   return (
@@ -1483,7 +1535,7 @@ export default function Page() {
                       <div className="nl-receipt-row">
                         <span className="nl-receipt-label">{t("Mã ưu đãi/QR")}</span>
                         <div className="nl-receipt-line"></div>
-                        <span className="nl-receipt-value">
+                        <span className="nl-receipt-value nl-receipt-value-wrap">
                           {selectedBooking.coupon?.name ??
                             selectedBooking.couponIssue?.code ??
                             t("QR đặt chỗ")}
@@ -2082,6 +2134,7 @@ export default function Page() {
           justify-content: space-between;
           align-items: center;
           font-size: 12px;
+          min-width: 0;
         }
 
         .nl-receipt-label {
@@ -2103,6 +2156,16 @@ export default function Page() {
           flex-shrink: 0;
         }
 
+        .nl-receipt-value-wrap {
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: 58%;
+          text-align: right;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.35;
+        }
+
         .nl-receipt-value.highlight {
           color: var(--vy-gold-pale);
         }
@@ -2116,22 +2179,25 @@ export default function Page() {
           width: 100%;
         }
 
-        .nl-upload-zone {
+        .nl-field .nl-upload-zone {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          gap: 0;
           border: 1px dashed var(--vy-border-gold-32);
           border-radius: 12px;
           background: rgba(255, 255, 255, 0.01);
           padding: 24px 16px;
           cursor: pointer;
           text-align: center;
+          text-transform: none;
+          letter-spacing: 0;
           transition: all 0.3s ease;
           width: 100%;
         }
 
-        .nl-upload-zone:hover {
+        .nl-field .nl-upload-zone:hover {
           border-color: var(--vy-gold);
           background: rgba(212, 178, 106, 0.02);
         }
@@ -2140,6 +2206,8 @@ export default function Page() {
           color: var(--vy-gold);
           margin-bottom: 8px;
           opacity: 0.8;
+          align-self: center;
+          flex: none;
         }
 
         .nl-upload-title {
@@ -2147,17 +2215,28 @@ export default function Page() {
           font-weight: 600;
           color: var(--vy-text);
           margin-bottom: 4px;
+          display: block;
+          width: 100%;
+          text-align: center;
         }
 
         .nl-upload-subtitle {
           font-size: 10.5px;
           color: var(--vy-muted);
           margin-bottom: 8px;
+          display: block;
+          width: 100%;
+          text-align: center;
+          line-height: 1.35;
         }
 
         .nl-upload-hint {
           font-size: 11px;
           color: var(--vy-faint);
+          display: block;
+          width: 100%;
+          text-align: center;
+          line-height: 1.35;
         }
 
         .nl-upload-input-hidden {

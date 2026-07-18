@@ -47,6 +47,7 @@ import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors 
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
+import { isNearStartTime, useUserActionFeedback } from "@/lib/user-action-feedback";
 import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -254,6 +255,7 @@ const parseContext = () => {
 export default function Page() {
   const router = useRouter();
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const [mode, setMode] = useState<"guest" | "member">("guest");
   const [context, setContext] = useState<BookingContext>(defaultContext);
   const [guestName, setGuestName] = useState("");
@@ -639,7 +641,49 @@ export default function Page() {
     return nextGuests;
   };
 
+  const createBooking = async (
+    payload: CreateBookingPayload,
+    normalizedEmail: string,
+    actionLabel: "đặt bàn" | "đặt cast",
+  ) => {
+    try {
+      setIsSubmitting(true);
+      const booking = isMemberMode
+        ? await bookingApi.createMemberBooking(payload)
+        : await bookingApi.createGuestBooking(payload);
+
+      rememberLastBooking(booking);
+      if (isMemberMode) {
+        requestMemberNotificationsRefresh();
+      }
+      userFeedback.success({
+        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+        description: "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
+      });
+      const confirmParams = new URLSearchParams({ bookingId: booking.id });
+      if (!isMemberMode) {
+        confirmParams.set("email", normalizedEmail);
+      }
+      router.push(`/xac-nhan?${confirmParams.toString()}`);
+    } catch (error) {
+      const message = localizedApiErrorMessage(
+        error,
+        activeLanguage,
+        "Không gửi được yêu cầu đặt chỗ.",
+      );
+      setErrorMessage(message);
+      userFeedback.error({
+        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thất bại`,
+        description: message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const submit = async () => {
+    if (isSubmitting) return;
+
     setErrorMessage("");
     setSubmitAttempted(true);
     setTouchedFields(touchAllBookingFields());
@@ -704,28 +748,20 @@ export default function Page() {
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };
 
-    try {
-      setIsSubmitting(true);
-      const booking = isMemberMode
-        ? await bookingApi.createMemberBooking(payload)
-        : await bookingApi.createGuestBooking(payload);
+    const actionLabel = bookingCastSlug ? "đặt cast" : "đặt bàn";
+    const nearStart = isNearStartTime(scheduledAt);
 
-      rememberLastBooking(booking);
-      if (isMemberMode) {
-        requestMemberNotificationsRefresh();
-      }
-      const confirmParams = new URLSearchParams({ bookingId: booking.id });
-      if (!isMemberMode) {
-        confirmParams.set("email", normalizedEmail);
-      }
-      router.push(`/xac-nhan?${confirmParams.toString()}`);
-    } catch (error) {
-      setErrorMessage(
-        localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt chỗ."),
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    userFeedback.confirmAction({
+      title: nearStart
+        ? `Xác nhận ${actionLabel} sát giờ`
+        : `Xác nhận ${actionLabel}`,
+      description: nearStart
+        ? `Lịch ${bookingTime} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${bookingTime} ngày ${bookingDate}?`,
+      confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
+      tone: nearStart ? "warning" : "gold",
+      onConfirm: () => createBooking(payload, normalizedEmail, actionLabel),
+    });
   };
 
   return (

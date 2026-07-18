@@ -73,6 +73,7 @@ import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-f
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -2484,6 +2485,7 @@ function BottomNav() {
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const { rates } = useMoneyFormatter(activeLanguage);
   const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
@@ -2892,13 +2894,8 @@ export default function Page() {
     });
   }, [homeHotVideosEnabled, homeVideos]);
 
-  const toggleHomeStoreFavorite = async (item: HomeStoreCard) => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
+  const applyHomeStoreFavorite = async (item: HomeStoreCard, nextValue: boolean) => {
     const snapshot = favoriteSnapshotFromHomeCard(item);
-    const nextValue = !favoriteStoreSlugs.includes(item.slug);
     const applyFavorite = (favorited: boolean) => {
       writeFavoriteStore(snapshot, favorited);
       setFavoriteStoreSlugs((current) =>
@@ -2921,6 +2918,12 @@ export default function Page() {
         ? await storeFavoriteApi.favorite(item.slug)
         : await storeFavoriteApi.unfavorite(item.slug);
       applyFavorite(state.favorited);
+      userFeedback.success({
+        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        description: state.favorited
+          ? `${item.name} đã được lưu vào danh sách yêu thích.`
+          : `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         applyFavorite(false);
@@ -2929,7 +2932,29 @@ export default function Page() {
       }
 
       applyFavorite(!nextValue);
+      userFeedback.error({
+        title: "Không cập nhật được yêu thích",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
     }
+  };
+
+  const toggleHomeStoreFavorite = (item: HomeStoreCard) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !favoriteStoreSlugs.includes(item.slug);
+    userFeedback.confirmAction({
+      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      description: nextValue
+        ? `Thêm ${item.name} vào danh sách yêu thích của bạn.`
+        : `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+      tone: nextValue ? "gold" : "warning",
+      destructive: !nextValue,
+      onConfirm: () => applyHomeStoreFavorite(item, nextValue),
+    });
   };
 
   return (

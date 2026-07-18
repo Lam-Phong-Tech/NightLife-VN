@@ -29,6 +29,7 @@ import {
   requireMemberFavoriteAccess,
 } from "@/lib/member-favorite-auth";
 import { isFavoriteCast, writeFavoriteCast } from "@/lib/member-favorites";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 type CastProfileClientProps = {
   cast: PublicCastDetail;
@@ -36,6 +37,7 @@ type CastProfileClientProps = {
 
 export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
   const gallery = profile.gallery.length ? profile.gallery : placeholderGallery;
   const area = buildCastArea(profile);
@@ -124,12 +126,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     };
   }, [favoriteSnapshot]);
 
-  const toggleFavorite = async () => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !isFavorite;
+  const applyFavoriteChange = async (nextValue: boolean) => {
     setIsFavorite(nextValue);
     writeFavoriteCast(favoriteSnapshot, nextValue);
     track("favorite", { favorited: nextValue });
@@ -140,6 +137,12 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
         : await castFavoriteApi.unfavorite(profile.slug);
       setIsFavorite(state.favorited);
       writeFavoriteCast(favoriteSnapshot, state.favorited);
+      userFeedback.success({
+        title: state.favorited ? "Đã thêm cast yêu thích" : "Đã bỏ lưu cast",
+        description: state.favorited
+          ? `${profile.name} đã được lưu vào danh sách yêu thích.`
+          : `${profile.name} đã được gỡ khỏi danh sách yêu thích.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         setIsFavorite(false);
@@ -150,7 +153,29 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
       setIsFavorite(!nextValue);
       writeFavoriteCast(favoriteSnapshot, !nextValue);
+      userFeedback.error({
+        title: "Không cập nhật được yêu thích",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
     }
+  };
+
+  const toggleFavorite = () => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !isFavorite;
+    userFeedback.confirmAction({
+      title: nextValue ? "Lưu cast yêu thích?" : "Bỏ lưu cast?",
+      description: nextValue
+        ? `Thêm ${profile.name} vào danh sách yêu thích của bạn.`
+        : `Gỡ ${profile.name} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: nextValue ? "Lưu cast" : "Bỏ lưu",
+      tone: nextValue ? "gold" : "warning",
+      destructive: !nextValue,
+      onConfirm: () => applyFavoriteChange(nextValue),
+    });
   };
 
   const selectMedia = (index: number, action: CastGalleryAction = "select") => {

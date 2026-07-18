@@ -51,6 +51,7 @@ import {
   hasTourDepartureSchedule,
   tourDepartureTimesForDate,
 } from "@/lib/tour-departure-schedule";
+import { isNearStartTime, useUserActionFeedback } from "@/lib/user-action-feedback";
 import styles from "./TourDetailClient.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -418,6 +419,7 @@ const tourUiText = (key: TourUiCopyKey, language: LanguageCode) => tourUiCopy[ke
 export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const router = useRouter();
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const t = (value: string) => translateText(value, activeLanguage);
   const tx = (key: TourUiCopyKey) => tourUiText(key, activeLanguage);
   const [guestName, setGuestName] = useState("");
@@ -573,6 +575,57 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const targetLabel = tour.title || firstStore?.name;
   const canSubmit = Boolean(firstStore && bookingStore && bookingTimeOptions.length);
 
+  const createTourBooking = async (
+    payload: CreateTourBookingPayload,
+    normalizedEmail: string,
+  ) => {
+    try {
+      setIsSubmitting(true);
+      const currentUser = getAuthUser();
+      const shouldUseMemberBooking = currentUser?.role?.toUpperCase() === "USER" && Boolean(getAuthToken());
+      let savedAsMemberBooking = false;
+      let booking;
+
+      if (shouldUseMemberBooking) {
+        try {
+          booking = await bookingApi.createMemberTourBooking(tour.id, payload);
+          savedAsMemberBooking = true;
+        } catch (error) {
+          if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
+            throw error;
+          }
+
+          booking = await bookingApi.createGuestTourBooking(tour.id, payload);
+        }
+      } else {
+        booking = await bookingApi.createGuestTourBooking(tour.id, payload);
+      }
+
+      rememberLastBooking(booking, { history: true });
+      if (savedAsMemberBooking) {
+        requestMemberNotificationsRefresh();
+      }
+      userFeedback.success({
+        title: "Đặt tour thành công",
+        description: "Yêu cầu tour đã được ghi nhận, đang chuyển sang trang xác nhận.",
+      });
+      const confirmParams = new URLSearchParams({ bookingId: booking.id });
+      if (!savedAsMemberBooking) {
+        confirmParams.set("email", normalizedEmail);
+      }
+      router.push(`/xac-nhan?${confirmParams.toString()}`);
+    } catch (error) {
+      const message = localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi"));
+      setErrorMessage(message);
+      userFeedback.error({
+        title: "Đặt tour thất bại",
+        description: message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const submitBooking = async () => {
     if (isSubmitting) return;
 
@@ -630,42 +683,17 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       ...(castSelections.length ? { castSelections } : {}),
     };
 
-    try {
-      setIsSubmitting(true);
-      const currentUser = getAuthUser();
-      const shouldUseMemberBooking = currentUser?.role?.toUpperCase() === "USER" && Boolean(getAuthToken());
-      let savedAsMemberBooking = false;
-      let booking;
+    const nearStart = isNearStartTime(scheduledAt);
 
-      if (shouldUseMemberBooking) {
-        try {
-          booking = await bookingApi.createMemberTourBooking(tour.id, payload);
-          savedAsMemberBooking = true;
-        } catch (error) {
-          if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
-            throw error;
-          }
-
-          booking = await bookingApi.createGuestTourBooking(tour.id, payload);
-        }
-      } else {
-        booking = await bookingApi.createGuestTourBooking(tour.id, payload);
-      }
-
-      rememberLastBooking(booking, { history: true });
-      if (savedAsMemberBooking) {
-        requestMemberNotificationsRefresh();
-      }
-      const confirmParams = new URLSearchParams({ bookingId: booking.id });
-      if (!savedAsMemberBooking) {
-        confirmParams.set("email", normalizedEmail);
-      }
-      router.push(`/xac-nhan?${confirmParams.toString()}`);
-    } catch (error) {
-      setErrorMessage(localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi")));
-    } finally {
-      setIsSubmitting(false);
-    }
+    userFeedback.confirmAction({
+      title: nearStart ? "Xác nhận đặt tour sát giờ" : "Xác nhận đặt tour",
+      description: nearStart
+        ? `Lịch tour ${bookingTime} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn đặt giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu đặt tour ${targetLabel} lúc ${bookingTime} ngày ${bookingDate}?`,
+      confirmLabel: nearStart ? "Vẫn đặt tour" : "Xác nhận đặt tour",
+      tone: nearStart ? "warning" : "gold",
+      onConfirm: () => createTourBooking(payload, normalizedEmail),
+    });
   };
 
   return (

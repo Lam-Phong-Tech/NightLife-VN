@@ -45,6 +45,7 @@ import {
   writeFavoriteCast,
   type SavedFavoriteCast,
 } from "@/lib/member-favorites";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 type AgeRange = {
   min: number;
@@ -439,6 +440,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const filterPanelRef = useRef<HTMLElement | null>(null);
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const copy = useMemo(() => getCastCopy(activeLanguage), [activeLanguage]);
 
   useEffect(() => {
@@ -773,12 +775,7 @@ export default function Page() {
     setFavoriteCastSlugs((current) => nextFavoriteSlugs(current, cast.slug, favorited));
   };
 
-  const toggleCastFavorite = async (cast: PublicCast) => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !favoriteCastSlugs.includes(cast.slug);
+  const applyCastFavoriteChange = async (cast: PublicCast, nextValue: boolean) => {
     applyCastFavorite(cast, nextValue);
 
     try {
@@ -786,6 +783,13 @@ export default function Page() {
         ? await castFavoriteApi.favorite(cast.slug)
         : await castFavoriteApi.unfavorite(cast.slug);
       applyCastFavorite(cast, state.favorited);
+      const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+      userFeedback.success({
+        title: state.favorited ? "Đã thêm cast yêu thích" : "Đã bỏ lưu cast",
+        description: state.favorited
+          ? `${castName} đã được lưu vào danh sách yêu thích.`
+          : `${castName} đã được gỡ khỏi danh sách yêu thích.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         applyCastFavorite(cast, false);
@@ -794,7 +798,30 @@ export default function Page() {
       }
 
       applyCastFavorite(cast, !nextValue);
+      userFeedback.error({
+        title: "Không cập nhật được yêu thích",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
     }
+  };
+
+  const toggleCastFavorite = (cast: PublicCast) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !favoriteCastSlugs.includes(cast.slug);
+    const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+    userFeedback.confirmAction({
+      title: nextValue ? "Lưu cast yêu thích?" : "Bỏ lưu cast?",
+      description: nextValue
+        ? `Thêm ${castName} vào danh sách yêu thích của bạn.`
+        : `Gỡ ${castName} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: nextValue ? "Lưu cast" : "Bỏ lưu",
+      tone: nextValue ? "gold" : "warning",
+      destructive: !nextValue,
+      onConfirm: () => applyCastFavoriteChange(cast, nextValue),
+    });
   };
 
   const requestNearby = () => {
