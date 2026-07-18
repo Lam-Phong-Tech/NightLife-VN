@@ -124,6 +124,7 @@ describe('NightlifeDataService', () => {
       create: jest.fn(),
       count: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -2128,6 +2129,96 @@ describe('NightlifeDataService', () => {
         new: 1,
       }),
     );
+  });
+
+  it('creates a member notification when admin confirms a booking', async () => {
+    const scheduledAt = new Date('2026-07-09T14:00:00.000Z');
+    const booking = {
+      id: 'booking-1',
+      bookingCode: 'BK-BOOKING-',
+      tourBookingId: null,
+      storeId: 'store-1',
+      castId: null,
+      userId: 'member-1',
+      guestId: null,
+      status: 'REQUESTED',
+      scheduledAt,
+      partySize: 2,
+      subtotalVnd: null,
+      discountVnd: null,
+      totalVnd: null,
+      discountSnapshot: null,
+      note: null,
+      cancelledAt: null,
+      createdAt: new Date('2026-07-01T10:00:00.000Z'),
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        openingHours: null,
+        bookingCancelCutoffMinutes: 60,
+      },
+      cast: null,
+      user: {
+        id: 'member-1',
+        email: 'member@example.com',
+        displayName: 'Minh Tú',
+        tier: 'VIP',
+      },
+      guest: null,
+      coupon: null,
+      couponIssue: null,
+      qr: null,
+    };
+    prisma.booking.findUnique.mockResolvedValueOnce(booking as never);
+    prisma.booking.update.mockResolvedValueOnce({
+      ...booking,
+      status: 'CONFIRMED',
+    } as never);
+
+    await service.updateAdminBookingStatus('booking-1', 'CONFIRMED', {
+      id: 'admin-1',
+      role: 'ADMIN',
+      email: 'admin@example.com',
+    });
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        data: { status: 'CONFIRMED' },
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'BOOKING_STATUS_CHANGED',
+        targetType: 'Booking',
+        targetId: 'booking-1',
+        metadata: expect.objectContaining({
+          actorType: 'ADMIN',
+          beforeStatus: 'REQUESTED',
+          afterStatus: 'CONFIRMED',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        bookingId: 'booking-1',
+        storeId: 'store-1',
+        channel: 'IN_APP',
+        recipient: 'member-1',
+        templateKey: 'customer.booking.confirmed.v1',
+        payload: expect.objectContaining({
+          bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
+          status: 'CONFIRMED',
+          actorType: 'ADMIN',
+          scheduledAt: scheduledAt.toISOString(),
+          storeName: 'Neon Club',
+        }),
+      }),
+    });
   });
 
   it('creates a guest booking request for an active store', async () => {

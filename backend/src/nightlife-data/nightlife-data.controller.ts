@@ -1573,12 +1573,14 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/bookings/:bookingId/status')
   async updateAdminBookingStatus(
+    @Req() request: RequestWithUser,
     @Param('bookingId') bookingId: string,
     @Body() dto: import('./dto/admin-booking.dto').UpdateAdminBookingStatusDto,
   ) {
     return this.nightlifeDataService.updateAdminBookingStatus(
       bookingId,
       dto.status,
+      request.user,
     );
   }
 

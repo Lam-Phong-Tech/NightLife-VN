@@ -13932,6 +13932,11 @@ export class NightlifeDataService {
       body = `Yêu cầu đặt ${bookingTarget}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
       tone = 'amber';
       actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.confirmed.v1') {
+      title = 'Lịch đặt đã được xác nhận';
+      body = `Lịch đặt tại ${bookingTarget}${scheduleSuffix} đã được xác nhận. Vui lòng đến đúng giờ để sử dụng dịch vụ.`;
+      tone = 'green';
+      actionLabel = 'Xem lịch đặt';
     } else if (templateKey === 'customer.booking.rescheduled.v1') {
       title = 'Lịch đặt đã được đổi';
       body = `Lịch đặt tại ${bookingTarget}${changeSuffix} đã được cập nhật.`;
@@ -14164,6 +14169,10 @@ export class NightlifeDataService {
   }
 
   private customerBookingTemplateKey(status: string) {
+    if (status === 'CONFIRMED') {
+      return 'customer.booking.confirmed.v1';
+    }
+
     if (status === 'CANCELLED') {
       return 'customer.booking.cancelled.v1';
     }
@@ -19694,21 +19703,33 @@ export class NightlifeDataService {
   async updateAdminBookingStatus(
     id: string,
     status: import('@prisma/client').BookingStatus,
+    adminUser: AuthenticatedUser,
   ) {
-    const booking = await this.prisma.booking.update({
+    const booking = await this.prisma.booking.findUnique({
       where: { id },
-      data: { status },
-      include: {
-        store: true,
-        cast: true,
-        user: true,
-      },
+      select: this.bookingNotificationSelect(),
     });
 
-    if (booking.tourBookingId && status === 'CONFIRMED') {
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const updatedBooking =
+      booking.status === status
+        ? booking
+        : await this.updateBookingStatusWithAudit({
+            booking,
+            nextStatus: status,
+            actorId: adminUser.id,
+            actorType: this.bookingActorTypeFor(adminUser),
+            action: 'BOOKING_STATUS_CHANGED',
+            reason: 'Booking status updated by admin',
+          });
+
+    if (updatedBooking.tourBookingId && status === 'CONFIRMED') {
       const tourStops = await this.prisma.booking.findMany({
         where: {
-          tourBookingId: booking.tourBookingId,
+          tourBookingId: updatedBooking.tourBookingId,
           deletedAt: null,
         },
         select: { status: true },
@@ -19721,7 +19742,7 @@ export class NightlifeDataService {
       ) {
         await this.prisma.tourBooking.updateMany({
           where: {
-            id: booking.tourBookingId,
+            id: updatedBooking.tourBookingId,
             status: 'REQUESTED',
           },
           data: { status: 'CONFIRMED' },
@@ -19729,11 +19750,14 @@ export class NightlifeDataService {
       }
     }
 
-    if (booking.user?.id) {
-      this.socketGateway?.notifyBookingStatusUpdate(booking.user.id, booking);
+    if (updatedBooking.user?.id) {
+      this.socketGateway?.notifyBookingStatusUpdate(
+        updatedBooking.user.id,
+        updatedBooking,
+      );
     }
 
-    return booking;
+    return updatedBooking;
   }
 
   async listAdminBills(

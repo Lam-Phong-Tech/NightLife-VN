@@ -792,6 +792,20 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
     };
   }
 
+  if (key === "customer.booking.confirmed.v1") {
+    return {
+      ...notification,
+      title: "Lịch đặt đã được xác nhận",
+      body:
+        notification.title === "Cập nhật lịch đặt"
+          ? `Lịch đặt ${placeLabel} đã được xác nhận.`
+          : notification.body,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "green",
+    };
+  }
+
   if (key === "customer.booking.rescheduled.v1") {
     return {
       ...notification,
