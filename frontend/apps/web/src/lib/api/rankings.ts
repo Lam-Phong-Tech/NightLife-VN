@@ -1,7 +1,7 @@
 import { apiClient, resolveClientUrl } from "./client";
 
 export type RankingTargetType = "CAST" | "STORE";
-export type RankingCity = "all" | "hn" | "hcm";
+export type RankingCity = string;
 export type RankingCategory =
   | "bar"
   | "club"

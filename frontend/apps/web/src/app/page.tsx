@@ -177,6 +177,43 @@ const serviceRegionTabs = [
   { id: "all", label: "Tất cả" },
 ] as const;
 
+const vietnamServiceCityCodes = [
+  "caobang",
+  "dienbien",
+  "hatinh",
+  "laichau",
+  "langson",
+  "nghean",
+  "quangninh",
+  "sonla",
+  "thanhhoa",
+  "hn",
+  "hue",
+  "laocai",
+  "thainguyen",
+  "phutho",
+  "bacninh",
+  "hungyen",
+  "hp",
+  "ninhbinh",
+  "quangtri",
+  "dn",
+  "quangngai",
+  "gialai",
+  "khanhhoa",
+  "lamdong",
+  "daklak",
+  "hcm",
+  "dongnai",
+  "tayninh",
+  "cantho",
+  "vinhlong",
+  "dongthap",
+  "camau",
+  "angiang",
+  "tuyenquang",
+] as const;
+
 const rankTabs = [
   { id: "cast", label: "Cast" },
   { id: "quan", label: "Quán" },
@@ -323,6 +360,29 @@ function regionToCityCode(region: ServiceRegion): "all" | "hn" | "hcm" {
   if (region === "hanoi") return "hn";
   if (region === "hcm") return "hcm";
   return "all";
+}
+
+function mergeFeaturedRankingItems(items: PublicRankingItem[], limit: number) {
+  const itemByTargetId = new globalThis.Map<string, PublicRankingItem>();
+
+  items.forEach((item) => {
+    if (!itemByTargetId.has(item.targetId)) {
+      itemByTargetId.set(item.targetId, item);
+    }
+  });
+
+  return [...itemByTargetId.values()]
+    .sort((first, second) => {
+      const firstPin = first.pinRank ?? Number.POSITIVE_INFINITY;
+      const secondPin = second.pinRank ?? Number.POSITIVE_INFINITY;
+      if (firstPin !== secondPin) return firstPin - secondPin;
+
+      const scoreDiff = (second.manualScore ?? 0) - (first.manualScore ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+
+      return first.name.localeCompare(second.name);
+    })
+    .slice(0, limit);
 }
 
 function backgroundFromUrl(value?: string | null) {
@@ -2723,16 +2783,45 @@ export default function Page() {
       }
     });
 
-    rankingsApi
-      .list({
-        targetType: "STORE",
-        city: regionToCityCode(activeServiceRegion),
+    const loadFeaturedServices = async () => {
+      const limit = 8;
+      const baseParams = {
+        targetType: "STORE" as const,
         category,
         scope: "featured_home",
-        limit: 8,
-      })
-      .then((response) => {
-        if (!cancelled) setFeaturedServices(response.data.map(mapRankingToHomeCard));
+        limit,
+      };
+      const city = regionToCityCode(activeServiceRegion);
+
+      if (city !== "all") {
+        const response = await rankingsApi.list({ ...baseParams, city });
+        return response.data;
+      }
+
+      try {
+        const allResponse = await rankingsApi.list({ ...baseParams, city: "all" });
+        if (allResponse.data.length > 0) {
+          return allResponse.data.slice(0, limit);
+        }
+      } catch {
+        // Fall back to the admin-style all-city merge below.
+      }
+
+      const cityResponses = await Promise.allSettled(
+        vietnamServiceCityCodes.map((cityCode) =>
+          rankingsApi.list({ ...baseParams, city: cityCode }),
+        ),
+      );
+      const items = cityResponses.flatMap((result) =>
+        result.status === "fulfilled" ? result.value.data : [],
+      );
+
+      return mergeFeaturedRankingItems(items, limit);
+    };
+
+    loadFeaturedServices()
+      .then((items) => {
+        if (!cancelled) setFeaturedServices(items.map(mapRankingToHomeCard));
       })
       .catch(() => {
         if (!cancelled) {
