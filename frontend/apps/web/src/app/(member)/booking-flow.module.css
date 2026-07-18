@@ -1393,6 +1393,21 @@
   align-items: flex-start;
 }
 
+.historyItemTour .historyCopy {
+  display: contents;
+}
+
+.historyItemTour .historyHead,
+.historyItemTour .historyMeta,
+.historyItemTour .historyTourMeta {
+  grid-column: 2;
+}
+
+.historyItemTour .historyTourStops,
+.historyItemTour .historySubMeta {
+  grid-column: 1 / -1;
+}
+
 .historyItemMuted {
   opacity: 0.92;
 }
@@ -1483,7 +1498,7 @@
 .historyTourStops {
   display: grid;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 7px;
 }
 
 .historyTourStop {
@@ -2050,9 +2065,7 @@
   }
 
   .historyItemTour {
-    grid-template-columns: minmax(0, 1fr) 276px;
-    align-items: start;
-    gap: 16px;
+    display: block;
   }
 
   .historyItemTour .historyTourStops {
@@ -2069,7 +2082,13 @@
   }
 
   .historyItemTour .historyActions {
-    margin-top: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 10px;
+  }
+
+  .historyItemTour .historyActions .dangerCta,
+  .historyItemTour .historyActions .wideCta {
+    grid-column: auto;
   }
 }
 
@@ -2234,8 +2253,14 @@
   }
 
   .historyItemTour .historyActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
     margin-top: 9px;
+  }
+
+  .historyItemTour .historyActions .dangerCta,
+  .historyItemTour .historyActions .wideCta {
+    grid-column: 1 / -1;
   }
 
   .historyPagination {
