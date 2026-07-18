@@ -1271,6 +1271,86 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('does not restrict featured public rankings by city when city is all', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'store-hn',
+        cityCode: 'hn',
+        category: 'RESTAURANT',
+        scope: 'featured_home',
+        manualScore: 40,
+        pinRank: 1,
+        sponsored: false,
+        updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+      },
+      {
+        targetId: 'store-hcm',
+        cityCode: 'hcm',
+        category: 'RESTAURANT',
+        scope: 'featured_home',
+        manualScore: 30,
+        pinRank: 2,
+        sponsored: false,
+        updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+      },
+    ] as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-hn',
+        name: 'Tokyo Kitchen',
+        slug: 'tokyo-kitchen',
+        category: 'RESTAURANT',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        phone: null,
+        area: {
+          id: 'area-hn',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [],
+      },
+      {
+        id: 'store-hcm',
+        name: 'Hanami Dining',
+        slug: 'hanami-dining',
+        category: 'RESTAURANT',
+        city: 'TP.HCM',
+        district: 'Quan 3',
+        phone: null,
+        area: {
+          id: 'area-hcm',
+          code: 'hcm-q3',
+          name: 'Quan 3',
+          city: 'TP.HCM',
+          district: 'Quan 3',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicRankings({
+      targetType: 'STORE',
+      city: 'all',
+      category: 'RESTAURANT',
+      scope: 'featured_home',
+      limit: '8',
+    });
+
+    expect(result.data.map((item) => item.targetId)).toEqual([
+      'store-hn',
+      'store-hcm',
+    ]);
+    const rankingWhere = (prisma.rankingConfig.findMany as jest.Mock).mock
+      .calls[0][0].where;
+    expect(rankingWhere).not.toHaveProperty('cityCode');
+    expect(rankingWhere.AND).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ cityCode: 'all' })]),
+    );
+  });
+
   it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';
@@ -9437,7 +9517,7 @@ describe('NightlifeDataService', () => {
       );
     });
 
-    it('queries default cityCode as all when query.cityCode is not specified or is all', async () => {
+    it('does not restrict ranking configs by city when query.cityCode is not specified or is all', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([] as never);
       prisma.store.findMany.mockResolvedValue([] as never);
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
@@ -9450,10 +9530,14 @@ describe('NightlifeDataService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             scope: 'recommend-home',
-            cityCode: 'all',
           }),
         }),
       );
+      const defaultCityCalls = (prisma.rankingConfig.findMany as jest.Mock).mock
+        .calls;
+      expect(
+        defaultCityCalls[defaultCityCalls.length - 1][0].where,
+      ).not.toHaveProperty('cityCode');
 
       // Call with 'all'
       await service.listPublicHomeRecommendations({
@@ -9465,10 +9549,14 @@ describe('NightlifeDataService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             scope: 'recommend-home',
-            cityCode: 'all',
           }),
         }),
       );
+      const allCityCalls = (prisma.rankingConfig.findMany as jest.Mock).mock
+        .calls;
+      expect(
+        allCityCalls[allCityCalls.length - 1][0].where,
+      ).not.toHaveProperty('cityCode');
     });
   });
 });

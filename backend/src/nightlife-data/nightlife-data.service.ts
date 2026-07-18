@@ -15749,7 +15749,11 @@ export class NightlifeDataService {
   private buildPublicRankingConfigCityWhere(
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
-    return cityCode ? { cityCode } : {};
+    if (!cityCode || cityCode === 'all') {
+      return {};
+    }
+
+    return { cityCode };
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
