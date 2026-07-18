@@ -1389,23 +1389,16 @@
     var(--vy-surface-1);
 }
 
-.historyItemTour .historyMain {
-  align-items: flex-start;
+.historyMain.historyMainTour {
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
-.historyItemTour .historyCopy {
-  display: contents;
-}
-
-.historyItemTour .historyHead,
-.historyItemTour .historyMeta,
-.historyItemTour .historyTourMeta {
-  grid-column: 2;
-}
-
-.historyItemTour .historyTourStops,
-.historyItemTour .historySubMeta {
-  grid-column: 1 / -1;
+.historyTourHeader {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
 }
 
 .historyItemMuted {
@@ -1492,13 +1485,17 @@
   font-size: 11.5px;
   font-weight: 720;
   line-height: 1.35;
+  display: -webkit-box;
+  overflow: hidden;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .historyTourStops {
   display: grid;
   gap: 6px;
-  margin-top: 7px;
+  margin-top: 0;
 }
 
 .historyTourStop {
@@ -1555,6 +1552,10 @@
   color: #e3c27e;
 }
 
+.historyItemTour .historySubMeta {
+  margin-top: 0;
+}
+
 .historyActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1563,8 +1564,9 @@
   margin-top: 12px;
 }
 
-.historyItemTour .historyActions {
+.historyActionsTour {
   align-content: start;
+  margin-top: 8px;
 }
 
 .historyActions > * {
@@ -2081,13 +2083,13 @@
     margin-top: 0;
   }
 
-  .historyItemTour .historyActions {
+  .historyActionsTour {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
-  .historyItemTour .historyActions .dangerCta,
-  .historyItemTour .historyActions .wideCta {
+  .historyActionsTour .dangerCta,
+  .historyActionsTour .wideCta {
     grid-column: auto;
   }
 }
@@ -2218,7 +2220,12 @@
     padding: 11px;
   }
 
-  .historyItemTour .historyMain {
+  .historyItemTour .historyMainTour {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .historyItemTour .historyTourHeader {
     grid-template-columns: 48px minmax(0, 1fr);
     gap: 10px;
   }
@@ -2237,7 +2244,7 @@
 
   .historyItemTour .historyTourStops {
     gap: 5px;
-    margin-top: 7px;
+    margin-top: 0;
   }
 
   .historyItemTour .historyTourStop {
@@ -2252,14 +2259,14 @@
     height: 20px;
   }
 
-  .historyItemTour .historyActions {
+  .historyActionsTour {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
-    margin-top: 9px;
+    margin-top: 7px;
   }
 
-  .historyItemTour .historyActions .dangerCta,
-  .historyItemTour .historyActions .wideCta {
+  .historyActionsTour .dangerCta,
+  .historyActionsTour .wideCta {
     grid-column: 1 / -1;
   }
 

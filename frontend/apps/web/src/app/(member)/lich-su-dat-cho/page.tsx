@@ -1195,51 +1195,71 @@ function BookingCard({
       : group === "Đã hủy"
         ? `${styles.historyItem} ${styles.historyItemMuted} ${tourBooking ? styles.historyItemTour : ""}`
         : `${styles.historyItem} ${tourBooking ? styles.historyItemTour : ""}`;
+  const mainClass = tourBooking ? `${styles.historyMain} ${styles.historyMainTour}` : styles.historyMain;
+  const actionsClass = tourBooking
+    ? `${styles.historyActions} ${styles.historyActionsTour}`
+    : styles.historyActions;
+  const thumbnailStyle = {
+    backgroundImage: bookingThumbnail(booking, group),
+    filter: group === "Đã hủy" ? "grayscale(.4)" : undefined,
+  };
+  const subMetaClass = `${styles.historySubMeta} ${
+    group === "Hoàn tất" ? styles.historySubMetaGold : ""
+  }`;
 
   return (
     <article className={itemClass}>
       <Link
         href={bookingConfirmHref(booking)}
         onClick={() => rememberLastBooking(booking)}
-        className={styles.historyMain}
+        className={mainClass}
         aria-label={`${translateText("Chi tiết", activeLanguage)} ${bookingTitle(booking)}`}
       >
-        <span
-          className={styles.historyThumb}
-          style={{
-            backgroundImage: bookingThumbnail(booking, group),
-            filter: group === "Đã hủy" ? "grayscale(.4)" : undefined,
-          }}
-        />
-        <div className={styles.historyCopy}>
-          <div className={styles.historyHead}>
-            <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
-            {group !== "Đã hủy" ? (
-              <StatusBadge booking={booking} activeLanguage={activeLanguage} />
-            ) : null}
-          </div>
-          <div className={styles.historyMeta}>
-            {tourBooking ? <span className={styles.historyTypePill}>Tour</span> : null}
-            {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
-            {formatGuestCount(booking.partySize, activeLanguage)}
-          </div>
-          {tourBooking ? (
-            <div className={styles.historyTourMeta}>
-              {tourStopsPreview(booking, activeLanguage)}
+        {tourBooking ? (
+          <>
+            <div className={styles.historyTourHeader}>
+              <span className={styles.historyThumb} style={thumbnailStyle} />
+              <div className={styles.historyCopy}>
+                <div className={styles.historyHead}>
+                  <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
+                  {group !== "Đã hủy" ? (
+                    <StatusBadge booking={booking} activeLanguage={activeLanguage} />
+                  ) : null}
+                </div>
+                <div className={styles.historyMeta}>
+                  <span className={styles.historyTypePill}>Tour</span>
+                  {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
+                  {formatGuestCount(booking.partySize, activeLanguage)}
+                </div>
+                <div className={styles.historyTourMeta}>
+                  {tourStopsPreview(booking, activeLanguage)}
+                </div>
+              </div>
             </div>
-          ) : null}
-          {tourBooking ? (
             <TourStopsPreview booking={booking} activeLanguage={activeLanguage} />
-          ) : null}
-          <div
-            className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}
-          >
-            {statusMeta(booking, group, activeLanguage)}
-          </div>
-        </div>
+            <div className={subMetaClass}>{statusMeta(booking, group, activeLanguage)}</div>
+          </>
+        ) : (
+          <>
+            <span className={styles.historyThumb} style={thumbnailStyle} />
+            <div className={styles.historyCopy}>
+              <div className={styles.historyHead}>
+                <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
+                {group !== "Đã hủy" ? (
+                  <StatusBadge booking={booking} activeLanguage={activeLanguage} />
+                ) : null}
+              </div>
+              <div className={styles.historyMeta}>
+                {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
+                {formatGuestCount(booking.partySize, activeLanguage)}
+              </div>
+              <div className={subMetaClass}>{statusMeta(booking, group, activeLanguage)}</div>
+            </div>
+          </>
+        )}
       </Link>
 
-      <div className={styles.historyActions}>
+      <div className={actionsClass}>
         {isOpenBooking ? (
           <>
             <button type="button" onClick={() => onChat(booking)} className={styles.secondaryCta}>
