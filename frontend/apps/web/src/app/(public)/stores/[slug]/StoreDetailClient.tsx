@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Heart,
   ImageOff,
+  Loader2,
   Minus,
   Navigation,
   PhoneCall,
@@ -919,7 +920,11 @@ function BookingCard({
   };
 
   return (
-    <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
+    <aside
+      className={`booking-card${isSubmitting ? " is-submitting" : ""}`}
+      aria-label={translateText("Đặt bàn", activeLanguage)}
+      aria-busy={isSubmitting}
+    >
       <form
         {...bookingFormAutofillBlockProps}
         className="booking-card-form"
@@ -1131,6 +1136,15 @@ function BookingCard({
           </span>
         </div>
       </form>
+      {isSubmitting ? (
+        <div className="booking-submit-overlay" role="status" aria-live="polite">
+          <div className="booking-submit-status">
+            <Loader2 className="booking-submit-spinner" size={28} aria-hidden="true" />
+            <strong>{translateText("Đang gửi yêu cầu đặt bàn", activeLanguage)}</strong>
+            <span>{translateText("Hệ thống đang xử lý, vui lòng chờ trong giây lát.", activeLanguage)}</span>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
@@ -3104,6 +3118,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card {
+          position: relative;
           width: 100%;
           min-width: 0;
           max-width: 100%;
@@ -3120,6 +3135,62 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-width: 0;
           max-width: 100%;
           margin: 0;
+        }
+
+        .booking-card.is-submitting .booking-card-form {
+          opacity: .56;
+          filter: saturate(.82);
+        }
+
+        .booking-submit-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 12;
+          display: grid;
+          place-items: center;
+          padding: 18px;
+          background: linear-gradient(180deg, rgba(12, 12, 15, .62), rgba(12, 12, 15, .74));
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+        }
+
+        .booking-submit-status {
+          display: grid;
+          justify-items: center;
+          gap: 9px;
+          width: min(100%, 320px);
+          padding: 18px 16px;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 8px;
+          background: linear-gradient(180deg, rgba(28, 25, 22, .94), rgba(18, 17, 18, .96));
+          color: var(--vy-text);
+          text-align: center;
+          box-shadow: 0 22px 50px -26px rgba(0, 0, 0, .95);
+        }
+
+        .booking-submit-status strong {
+          color: var(--vy-gold-hi);
+          font-size: 14px;
+          font-weight: 900;
+          line-height: 1.3;
+        }
+
+        .booking-submit-status span {
+          color: var(--vy-text-2);
+          font-size: 12px;
+          font-weight: 750;
+          line-height: 1.45;
+        }
+
+        .booking-submit-spinner {
+          color: var(--vy-gold-hi);
+          animation: booking-submit-spin .78s linear infinite;
+        }
+
+        @keyframes booking-submit-spin {
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .booking-card *,
@@ -3765,6 +3836,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background: linear-gradient(180deg, #fff1f2, #ffe4e9);
           color: #8f1230;
           box-shadow: 0 12px 26px rgba(143, 18, 48, .14);
+        }
+
+        html.vy-light .store-detail-page .booking-submit-overlay {
+          background: linear-gradient(180deg, rgba(255, 250, 238, .66), rgba(255, 247, 229, .78));
+        }
+
+        html.vy-light .store-detail-page .booking-submit-status {
+          background: linear-gradient(180deg, rgba(255, 252, 245, .96), rgba(255, 246, 226, .98));
+          box-shadow: 0 22px 44px -24px rgba(126, 88, 20, .36);
         }
 
         html.vy-light .store-detail-page .booking-field-error,
