@@ -21429,6 +21429,7 @@ export class NightlifeDataService {
 
     const data = items.map((bk) => ({
       id: bk.id,
+      bookingNumber: bk.bookingNumber,
       bookingCode: bk.bookingCode,
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',

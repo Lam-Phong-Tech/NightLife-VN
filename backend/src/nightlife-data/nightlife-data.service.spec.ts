@@ -2090,6 +2090,7 @@ describe('NightlifeDataService', () => {
   it('lists admin bookings when searching by the BK code prefix', async () => {
     const booking = {
       id: 'booking-5542',
+      bookingNumber: 42,
       bookingCode: 'BK-5542',
       user: null,
       guest: {
@@ -2116,6 +2117,7 @@ describe('NightlifeDataService', () => {
     expect(result.data).toEqual([
       expect.objectContaining({
         id: 'booking-5542',
+        bookingNumber: 42,
         bookingCode: 'BK-5542',
       }),
     ]);

@@ -18,6 +18,7 @@ type AdminBookingMeta = {
 
 type AdminBookingRecord = {
   id: string;
+  bookingNumber: number;
   bookingCode?: string | null;
   customerName: string;
   customerEmail?: string | null;
@@ -244,8 +245,8 @@ function AdminBookingsContent() {
 
       {/* Table */}
       <div className="nl-admin-data-list" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '230px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>ID</span><span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '48px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <span>STT</span><span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
         {bookings.map((b) => {
           const stStyle = getStatusStyle(b.status);
@@ -255,16 +256,11 @@ function AdminBookingsContent() {
               key={b.id}
               onClick={() => setSelectedBooking(b)}
               className="nl-admin-table-row nl-admin-booking-row"
-              style={{ display: 'grid', gridTemplateColumns: '230px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
+              style={{ display: 'grid', gridTemplateColumns: '48px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span
-                title={b.id}
-                style={{ fontFamily: "'Inter'", fontSize: '11px', fontWeight: 500, color: '#8c8679', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              >
-                {b.id}
-              </span>
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{b.bookingNumber}</span>
               <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b)}</span>
               <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatEmail(b.customerEmail)}</div></div>
               <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name || b.store}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{typeof b.cast === 'object' ? (b.cast ? `Cast: ${b.cast.stageName}` : 'Không có') : (b.cast === 'Không cast' ? 'Không có' : b.cast)}</div></div>
