@@ -2345,8 +2345,8 @@ function RankingRegionDropdown({
             padding: "6px",
             borderRadius: "16px",
             border: `1px solid ${colors.line}`,
-            background: "var(--vy-surface-1)",
-            boxShadow: "var(--vy-shadow-card)",
+            background: "rgba(16, 14, 20, .98)",
+            boxShadow: "0 18px 44px rgba(0, 0, 0, .46)",
             backdropFilter: "blur(16px)",
           }}
         >
