@@ -57,6 +57,34 @@ export class SupportChatController {
     return this.supportChatService.getAdminTickets(adminId);
   }
 
+  @Post('messages')
+  async createMessage(
+    @Body()
+    body: {
+      ticketId?: string;
+      content: string;
+      guestSessionId?: string;
+      userId?: string;
+    },
+  ) {
+    const { ticket, ticketId, message } =
+      await this.supportChatService.createCustomerMessage(body);
+
+    if (ticket?.status === 'PENDING') {
+      this.supportChatGateway.server.to('support_admins').emit('new_ticket', {
+        ...ticket,
+        messages: [message],
+        latestMessage: message.content,
+      });
+    } else {
+      this.supportChatGateway.server
+        .to('support_admins')
+        .emit('receive_message', message);
+    }
+
+    return { ...message, ticketId };
+  }
+
   @Post('merge')
   // @UseGuards(JwtAuthGuard) // User must be logged in to merge
   async mergeSession(

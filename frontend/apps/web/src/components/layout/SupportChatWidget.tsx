@@ -49,6 +49,13 @@ type SupportSessionHistoryPayload = {
   messages?: SupportMessagePayload[];
 };
 
+type SendSupportMessagePayload = {
+  ticketId: string | null;
+  content: string;
+  guestSessionId: string;
+  userId?: string;
+};
+
 // Removed dead code initialMessages
 
 type SupportChatWidgetProps = {
@@ -79,6 +86,23 @@ function mapSupportMessageToChatMessage(
     text: message.content ?? "",
     time: formatChatTime(new Date(message.createdAt ?? Date.now()), language),
   };
+}
+
+async function sendSupportMessageByHttp(
+  payload: SendSupportMessagePayload,
+): Promise<SupportMessagePayload> {
+  const response = await fetch(`${getApiBaseUrl()}/api/support/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = (await response.json().catch(() => null)) as SupportMessagePayload | null;
+
+  if (!response.ok || data?.error || !data) {
+    throw new Error(data?.error || "Support message request failed");
+  }
+
+  return data;
 }
 
 function IconCircleButton({
@@ -822,7 +846,7 @@ export function SupportChatWidget({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = draft.trim();
-    if (!text || !socket) return;
+    if (!text || !guestSessionId) return;
 
     setDraft("");
 
@@ -837,27 +861,13 @@ export function SupportChatWidget({
       }
     ]);
 
-    socket.emit("send_message", {
+    const payload: SendSupportMessagePayload = {
       ticketId,
       content: text,
       guestSessionId,
       userId: currentUser?.id
-    }, (response?: SupportMessagePayload) => {
-      if (response?.error) {
-        setMessages((prev) => prev.filter((m) => m.id !== localTempId));
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `send-error-${Date.now().toString()}`,
-            from: "support",
-            text: "Tin nhắn chưa gửi được. Vui lòng thử lại.",
-            time: formatChatTime(new Date(), activeLanguageRef.current),
-          },
-        ]);
-        return;
-      }
-      
-      // Update real ID from server
+    };
+    const confirmPersistedMessage = (response?: SupportMessagePayload) => {
       const persistedMessageId = response?.id;
       if (persistedMessageId) {
         setMessages((currentMessages) =>
@@ -873,7 +883,45 @@ export function SupportChatWidget({
         setTicketId(response.ticketId);
         localStorage.setItem("vy_support_ticket_id", response.ticketId);
       }
-    });
+    };
+    const showSendError = () => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `send-error-${Date.now().toString()}`,
+          from: "support",
+          text: "Tin nhắn chưa gửi được. Vui lòng thử lại.",
+          time: formatChatTime(new Date(), activeLanguageRef.current),
+        },
+      ]);
+    };
+    const persistByHttp = async () => {
+      try {
+        const response = await sendSupportMessageByHttp(payload);
+        confirmPersistedMessage(response);
+      } catch (error) {
+        console.error("[SupportChat] HTTP fallback failed:", error);
+        showSendError();
+      }
+    };
+
+    if (!socket?.connected) {
+      void persistByHttp();
+      return;
+    }
+
+    socket.timeout(8000).emit(
+      "send_message",
+      payload,
+      (error: Error | null, response?: SupportMessagePayload) => {
+        if (error || response?.error) {
+          void persistByHttp();
+          return;
+        }
+
+        confirmPersistedMessage(response);
+      },
+    );
   };
 
   const panel = isMobile ? (

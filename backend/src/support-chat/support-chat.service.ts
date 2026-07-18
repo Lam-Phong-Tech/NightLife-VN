@@ -144,6 +144,37 @@ export class SupportChatService {
     });
   }
 
+  async createCustomerMessage(input: {
+    ticketId?: string;
+    content: string;
+    guestSessionId?: string;
+    userId?: string;
+  }) {
+    if (!input.content || input.content.trim() === '') {
+      throw new BadRequestException('Content is required');
+    }
+
+    let ticketId = input.ticketId;
+    let ticket;
+
+    if (!ticketId) {
+      ticket = await this.createOrGetTicket(input.guestSessionId, input.userId);
+      ticketId = ticket.id;
+    }
+
+    const senderType = input.userId
+      ? SupportSenderType.USER
+      : SupportSenderType.GUEST;
+    const message = await this.sendMessage(
+      ticketId as string,
+      senderType,
+      input.content.trim(),
+      input.userId || undefined,
+    );
+
+    return { ticket, ticketId: ticketId as string, message };
+  }
+
   async sendMessage(
     ticketId: string,
     senderType: SupportSenderType,

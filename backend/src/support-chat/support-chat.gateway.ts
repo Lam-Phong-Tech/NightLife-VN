@@ -114,33 +114,26 @@ export class SupportChatGateway
       if (!data.content || data.content.trim() === '')
         return { error: 'Content is required' };
 
-      let ticketId = data.ticketId;
-      let ticket;
-
-      if (!ticketId) {
-        ticket = await this.supportChatService.createOrGetTicket(
-          data.guestSessionId,
-          data.userId,
-        );
-        ticketId = ticket.id;
+      const isAdminSender = this.onlineAdmins.has(client.id);
+      if (isAdminSender && !data.ticketId) {
+        return { error: 'Ticket ID is required' };
       }
 
-      // Always ensure the sender is in the room so they receive their own broadcast (or rather, for future broadcasts)
+      const { ticket, ticketId, message } = isAdminSender
+        ? {
+            ticket: null,
+            ticketId: data.ticketId,
+            message: await this.supportChatService.sendMessage(
+              data.ticketId as string,
+              SupportSenderType.ADMIN,
+              data.content.trim(),
+              data.userId || undefined,
+            ),
+          }
+        : await this.supportChatService.createCustomerMessage(data);
+
+      // Always ensure the sender is in the room so they receive future broadcasts.
       client.join(`ticket_${ticketId}`);
-
-      const isAdminSender = this.onlineAdmins.has(client.id);
-      const senderType = isAdminSender
-        ? SupportSenderType.ADMIN
-        : data.userId
-          ? SupportSenderType.USER
-          : SupportSenderType.GUEST;
-
-      const message = await this.supportChatService.sendMessage(
-        ticketId as string,
-        senderType,
-        data.content,
-        data.userId || undefined,
-      );
 
       if (ticket?.status === 'PENDING') {
         this.server.to('support_admins').emit('new_ticket', {
