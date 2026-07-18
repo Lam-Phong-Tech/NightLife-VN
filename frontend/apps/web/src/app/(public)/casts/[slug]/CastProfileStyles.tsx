@@ -1524,7 +1524,11 @@ export function CastProfileStyles() {
 
         .cast-lightbox-media {
           width: min(1040px, 82vw);
+          height: 68vh;
+          max-height: calc(100vh - 190px);
           justify-self: center;
+          align-self: center;
+          overflow: hidden;
         }
 
         .cast-lightbox-media img,
