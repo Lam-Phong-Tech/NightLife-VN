@@ -4789,39 +4789,57 @@ export default function PartnerPage() {
         <SectionHeading title="Kết quả xác thực" hideLine />
         {scanIssue ? (
           <div style={{ display: 'grid', gap: '12px' }}>
-            <div style={{ ...softCardStyle, padding: '16px' }}>
+            <div
+              className="partner-scan-result-summary"
+              style={{
+                ...softCardStyle,
+                padding: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                gap: '10px 12px',
+                alignItems: 'start',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <div className="partner-scan-result-code" style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    color: colors.gold,
+                    fontSize: '18px',
+                    fontWeight: 900,
+                    lineHeight: 1.28,
+                    overflowWrap: 'anywhere',
+                  }}
+                >
+                  {scanIssue.code}
+                </div>
+              </div>
+              <StatusPill
+                className="partner-scan-result-status"
+                tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}
+              >
+                {scanIssue.statusLabel ?? scanIssue.status}
+              </StatusPill>
               <div
+                className="partner-scan-result-title"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  alignItems: 'flex-start',
+                  gridColumn: '1 / -1',
+                  color: colors.text,
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  lineHeight: 1.45,
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
                 }}
               >
-                <div>
-                  <div style={{ color: colors.gold, fontSize: '18px', fontWeight: 900 }}>
-                    {scanIssue.code}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '6px',
-                      color: colors.text,
-                      fontSize: '14px',
-                      fontWeight: 800,
-                    }}
-                  >
-                    {scanIssue.scanType === 'TOUR_BOOKING_QR'
-                      ? `Tour · điểm ${scanIssue.tour?.stopOrder ?? '-'}`
-                      : scanIssue.scanType === 'BOOKING_QR'
-                        ? 'Đơn đặt chỗ'
-                        : scanIssue.coupon?.name ?? 'Coupon'}{' '}
-                    ·{' '}
-                    {scanIssue.coupon?.store?.name ?? storeName}
-                  </div>
-                </div>
-                <StatusPill tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}>
-                  {scanIssue.statusLabel ?? scanIssue.status}
-                </StatusPill>
+                {scanIssue.scanType === 'TOUR_BOOKING_QR'
+                  ? `Tour · điểm ${scanIssue.tour?.stopOrder ?? '-'}`
+                  : scanIssue.scanType === 'BOOKING_QR'
+                    ? 'Đơn đặt chỗ'
+                    : scanIssue.coupon?.name ?? 'Coupon'}{' '}
+                ·{' '}
+                {scanIssue.coupon?.store?.name ?? storeName}
               </div>
             </div>
 
@@ -4852,21 +4870,48 @@ export default function PartnerPage() {
               ['Booking', scannedBookingLabel],
             ].map(([label, value]) => (
               <div
+                className="partner-scan-info-row"
                 key={label}
                 style={{
                   minHeight: '44px',
                   borderBottom: `1px solid ${colors.borderHair}`,
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(88px, .72fr) minmax(0, 1.42fr)',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
                   gap: '16px',
                   fontSize: '12.5px',
                 }}
               >
-                <span style={{ color: colors.muted }}>{label}</span>
-                <span style={{ color: colors.text, textAlign: 'right', fontWeight: 700 }}>
-                  {value}
-                </span>
+                <span style={{ color: colors.muted, minWidth: 0 }}>{label}</span>
+                {label === 'Mức giảm' || label === 'Trạng thái' ? (
+                  <StatusPill
+                    className="partner-scan-info-badge"
+                    tone={
+                      label === 'Trạng thái'
+                        ? scanIssue.status === 'ISSUED'
+                          ? 'success'
+                          : 'neutral'
+                        : 'gold'
+                    }
+                  >
+                    {value}
+                  </StatusPill>
+                ) : (
+                  <span
+                    className="partner-scan-info-value"
+                    style={{
+                      color: colors.text,
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      justifySelf: 'end',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
               </div>
             ))}
 
@@ -7688,6 +7733,25 @@ export default function PartnerPage() {
         .partner-panel-card {
           overflow: hidden;
         }
+        .partner-scan-result-summary,
+        .partner-scan-result-code,
+        .partner-scan-result-title,
+        .partner-scan-info-row,
+        .partner-scan-info-value {
+          min-width: 0;
+        }
+        .partner-scan-result-status {
+          justify-self: end;
+        }
+        .partner-scan-info-badge {
+          justify-self: end;
+          max-width: 100%;
+          min-height: 28px !important;
+          padding: 0 12px !important;
+          white-space: normal !important;
+          text-align: right;
+          line-height: 1.2;
+        }
         .partner-button {
           min-width: 0;
           line-height: 1;
@@ -7999,6 +8063,25 @@ export default function PartnerPage() {
           .partner-scan-form .partner-button,
           .partner-listing-actions .partner-button {
             width: 100%;
+          }
+          .partner-scan-result-summary {
+            padding: 14px !important;
+            gap: 9px 10px !important;
+          }
+          .partner-scan-result-code > div {
+            font-size: 16px !important;
+          }
+          .partner-scan-result-title {
+            font-size: 13px !important;
+          }
+          .partner-scan-info-row {
+            grid-template-columns: minmax(76px, .66fr) minmax(0, 1.55fr) !important;
+            gap: 10px !important;
+            min-height: 42px !important;
+          }
+          .partner-scan-info-badge {
+            min-height: 26px !important;
+            padding: 0 10px !important;
           }
           .partner-filter-head {
             align-items: stretch !important;
