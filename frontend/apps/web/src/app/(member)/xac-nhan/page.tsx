@@ -367,42 +367,44 @@ export default function Page() {
           setBooking(rememberedBooking);
           setIsBookingLoading(false);
         }
-        return;
       }
 
       if (bookingId) {
+        let resolvedBooking: BookingRecord | null = null;
+
         try {
           const memberBookings = await bookingApi.listMemberBookings();
           const memberBooking = memberBookings.find((item) => bookingMatchesLookup(item, bookingId));
           if (memberBooking) {
-            rememberLastBooking(memberBooking, { history: true });
-            if (alive) {
-              setBooking(memberBooking);
-              setIsBookingLoading(false);
-            }
-            return;
+            resolvedBooking = memberBooking;
           }
         } catch {
           // Guests and signed-out users continue to code/email lookup below.
         }
 
-        if (email || phone) {
+        if (!resolvedBooking && (email || phone)) {
           try {
             const guestBooking = await bookingApi.getGuestBookingByCode(bookingId, { email, phone });
-            rememberLastBooking(guestBooking, { history: true });
-            if (alive) {
-              setBooking(guestBooking);
-              setIsBookingLoading(false);
-            }
-            return;
+            resolvedBooking = guestBooking;
           } catch {
             // Keep the existing empty state when the booking cannot be recovered.
           }
         }
+
+        if (resolvedBooking) {
+          rememberLastBooking(resolvedBooking, { history: true });
+          if (alive) {
+            setBooking(resolvedBooking);
+            setIsBookingLoading(false);
+          }
+          return;
+        }
       }
 
       if (alive) {
-        setBooking(null);
+        if (!rememberedBooking) {
+          setBooking(null);
+        }
         setIsBookingLoading(false);
       }
     };
