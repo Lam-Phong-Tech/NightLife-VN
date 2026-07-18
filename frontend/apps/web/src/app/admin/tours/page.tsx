@@ -67,7 +67,7 @@ type AdminTourForm = {
   }[];
 };
 
-const tourTableColumns = 'minmax(0, 2.2fr) minmax(82px, 1fr) minmax(88px, 1fr) minmax(72px, 1fr) 120px 40px';
+const tourTableColumns = '52px minmax(0, 2.2fr) minmax(82px, 1fr) minmax(88px, 1fr) minmax(72px, 1fr) 120px 40px';
 
 const isSameCity = (c1: string, c2: string) => {
   const norm = (c: string) => {
@@ -518,7 +518,7 @@ function AdminToursContent() {
       {/* Main Tour list table */}
       <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>Tour &amp; Hành trình</span><span>Khu vực</span><span>Điểm dừng</span><span>Chi phí</span><span>Trạng thái</span><span></span>
+          <span style={{ textAlign: 'center' }}>STT</span><span>Tour &amp; Hành trình</span><span>Khu vực</span><span>Điểm dừng</span><span>Chi phí</span><span>Trạng thái</span><span></span>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -538,6 +538,9 @@ function AdminToursContent() {
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
+                  <div style={{ color: '#8c8679', fontWeight: 700, textAlign: 'center' }}>
+                    {(currentPage - 1) * adminPageSize + idx + 1}
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                     {t.coverUrl ? (
                       <span style={{ width: '38px', height: '38px', borderRadius: '10px', background: `url(${resolveClientUrl(t.coverUrl)}) center/cover no-repeat`, flex: 'none' }} />
