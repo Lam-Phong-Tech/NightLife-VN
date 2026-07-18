@@ -7,6 +7,7 @@ import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { TableLoadingRows } from '@/components/ui/DataLoading';
 
 const colors = {
   bg: '#0f0f13',
@@ -396,9 +397,7 @@ export default function AdminBillsPage() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
-              </tr>
+              <TableLoadingRows columns={8} rows={6} ariaLabel="Đang tải danh sách hóa đơn" />
             ) : loadError ? (
               <tr>
                 <td colSpan={8} style={{ padding: '28px 32px', textAlign: 'center' }}>

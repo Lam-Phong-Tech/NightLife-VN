@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 import {
   DndContext,
   closestCenter,
@@ -639,7 +640,12 @@ function AdminRankingsClient() {
 
 
       {isLoading ? (
-        <div style={{ color: '#8c8679', textAlign: 'center', marginTop: '100px' }}>Đang tải dữ liệu xếp hạng...</div>
+        <DataSkeleton
+          variant="list"
+          count={6}
+          ariaLabel="Đang tải dữ liệu xếp hạng"
+          style={{ marginTop: '20px' }}
+        />
       ) : (
         <>
           {/* CAST LIST */}
@@ -826,7 +832,7 @@ function AdminRankingsClient() {
 
 export default function AdminRankingsPage() {
   return (
-    <React.Suspense fallback={<div style={{ padding: '22px 26px', color: '#8c8679' }}>Đang tải dữ liệu xếp hạng...</div>}>
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '22px 26px' }} />}>
       <AdminRankingsClient />
     </React.Suspense>
   );

@@ -6,6 +6,7 @@ import { apiClient, apiFormDataClient } from '@/lib/api/client';
 import { useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 const colors = {
   bg: '#0f0f13',
@@ -41,7 +42,7 @@ const normalizeListResponse = (value: any): any[] => {
 
 export default function AdminCastsPage() {
   return (
-    <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '20px' }} />}>
       <AdminCastsContent />
     </React.Suspense>
   );
@@ -1063,7 +1064,7 @@ function AdminCastsContent() {
                     </div>
                   )}
                   {uploadingImage && (
-                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                    <DataSkeleton variant="media" count={1} compact ariaLabel="Đang tải ảnh đại diện" style={{ width: 120, height: 160, flexShrink: 0 }} />
                   )}
                   {!avatarImage && !uploadingImage && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
@@ -1094,7 +1095,7 @@ function AdminCastsContent() {
                     </div>
                   ))}
                   {uploadingAlbum && (
-                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                    <DataSkeleton variant="media" count={1} compact ariaLabel="Đang tải ảnh album" style={{ width: 120, height: 160, flexShrink: 0 }} />
                   )}
                   {albums.length === 0 && !uploadingAlbum && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
@@ -1129,7 +1130,7 @@ function AdminCastsContent() {
                     </div>
                   ))}
                   {uploadingVideo && (
-                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                    <DataSkeleton variant="media" count={1} compact ariaLabel="Đang tải video" style={{ width: 120, height: 160, flexShrink: 0 }} />
                   )}
                   {videos.length === 0 && !uploadingVideo && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>

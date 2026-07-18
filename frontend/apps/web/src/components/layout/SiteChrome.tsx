@@ -48,9 +48,10 @@ import {
   type MemberNotificationTone,
 } from "@/lib/api/notifications";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 import { AuthRedirectNotice } from "@/components/auth/AuthRedirectNotice";
 import { LanguagePicker } from "./LanguagePicker";
-import { MobileSimulator } from "./MobileSimulator";
+import { HybridPreloader } from "./HybridPreloader";
 import { SupportChatWidget } from "./SupportChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -84,7 +85,6 @@ const hiddenChromePaths = [
   "/dang-ky-doi-tac",
   "/partner",
   "/admin",
-  "/chon-giao-dien",
 ];
 
 const navLinks = [
@@ -900,6 +900,18 @@ type NotificationPanelProps = {
 };
 
 function NotificationEmptyState({ isLoading, error }: { isLoading: boolean; error: string }) {
+  if (isLoading) {
+    return (
+      <DataSkeleton
+        variant="list"
+        count={3}
+        compact
+        ariaLabel="Đang tải thông báo"
+        style={{ padding: "12px 16px" }}
+      />
+    );
+  }
+
   return (
     <div
       style={{
@@ -910,9 +922,7 @@ function NotificationEmptyState({ isLoading, error }: { isLoading: boolean; erro
         lineHeight: 1.55,
       }}
     >
-      {isLoading
-        ? "Đang tải thông báo..."
-        : error || "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây."}
+      {error || "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây."}
     </div>
   );
 }
@@ -1517,7 +1527,6 @@ function SiteFooter({
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
-  const [shouldSimulate, setShouldSimulate] = useState(false);
   const [appearanceBottomNav, setAppearanceBottomNav] = useState<BottomNavItem[]>(bottomNav);
   const [brand, setBrand] = useState<AppearanceBrand>(DEFAULT_APPEARANCE_CONFIG.brand);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -1538,9 +1547,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   );
   const hideFooter = pathname === "/xac-nhan";
   const customerRouteMotionEnabled =
-    !pathname.startsWith("/admin") &&
-    !pathname.startsWith("/partner") &&
-    pathname !== "/chon-giao-dien";
+    !pathname.startsWith("/admin") && !pathname.startsWith("/partner");
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showSupportChat = true; // Always show for both User and Guest
@@ -1669,21 +1676,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
-    const update = () => {
-      const match = document.cookie.match(new RegExp("(^| )device_preference=([^;]+)"));
-      const preference = match ? match[2] : null;
-      const viewportIsMobile = media.matches;
-      let isIframe = false;
-
-      try {
-        isIframe = window.top !== window.self;
-      } catch {
-        isIframe = true;
-      }
-
-      setIsMobile(preference === "mobile" || media.matches);
-      setShouldSimulate(preference === "mobile" && !viewportIsMobile && !isIframe);
-    };
+    const update = () => setIsMobile(media.matches);
 
     update();
     media.addEventListener("change", update);
@@ -2048,11 +2041,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     };
   }, [enableScrollReveal]);
 
-  if (shouldSimulate) return <MobileSimulator />;
-
-  const routePreloader = customerRouteMotionEnabled ? (
-    <div key={`route-preloader-${pathname}`} aria-hidden="true" className="nl-route-preloader" />
-  ) : null;
+  const hybridPreloader = customerRouteMotionEnabled ? <HybridPreloader /> : null;
 
   if (hideChrome) {
     return (
@@ -2060,7 +2049,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         <AuthRedirectNotice />
         {customerRouteMotionEnabled ? (
           <>
-            {routePreloader}
+            {hybridPreloader}
             <div key={`route-content-${pathname}`} className="nl-customer-route-content">
               {children}
             </div>
@@ -2356,7 +2345,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           )}
         </header>
 
-        {routePreloader}
+        {hybridPreloader}
 
         <div key={`route-content-${pathname}`} className="nl-page-content">
           {children}

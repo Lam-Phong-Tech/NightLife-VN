@@ -13,6 +13,7 @@ import {
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -267,9 +268,13 @@ function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMe
         </span>
       </div>
       {isLoadingHistory && (
-        <div style={{ textAlign: "center", fontSize: "12px", color: chatColors.gold, margin: "10px 0", fontWeight: 600 }}>
-          {translateText("Đang tải lịch sử...", activeLanguage)}
-        </div>
+        <DataSkeleton
+          variant="list"
+          count={2}
+          compact
+          ariaLabel={translateText("Đang tải lịch sử...", activeLanguage)}
+          style={{ margin: "8px 0" }}
+        />
       )}
       {messages.map((message) => (
         <ChatBubble

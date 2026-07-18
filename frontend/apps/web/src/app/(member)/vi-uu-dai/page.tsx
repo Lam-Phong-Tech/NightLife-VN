@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock3,
   Copy,
-  Loader2,
   QrCode,
   Store,
   Ticket,
@@ -20,6 +19,7 @@ import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 
 type WalletFilter = "all" | "active" | "used" | "expired";
 type IssueKind = "active" | "used" | "expired" | "inactive";
@@ -298,10 +298,12 @@ export default function Page() {
             </nav>
 
             {isLoading ? (
-              <section className="wallet-message">
-                <Loader2 className="spin" size={18} />
-                Đang tải ví ưu đãi
-              </section>
+              <DataSkeleton
+                variant="cards"
+                count={3}
+                columns={3}
+                ariaLabel="Đang tải ví ưu đãi"
+              />
             ) : null}
 
             {error ? (

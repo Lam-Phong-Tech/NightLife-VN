@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
 import {
   contentApi,
@@ -2208,6 +2209,25 @@ function HomeDataMessage({
   minHeight?: number | string;
 }) {
   const activeLanguage = useActiveLanguage();
+
+  if (text.trim().toLocaleLowerCase("vi").startsWith("đang tải")) {
+    return (
+      <DataSkeleton
+        variant="cards"
+        count={compact ? 2 : 3}
+        columns={compact ? 2 : 3}
+        compact={compact}
+        ariaLabel="Đang tải nội dung"
+        className="nl-home-data-skeleton"
+        style={{
+          minHeight: minHeight ?? (compact ? 92 : 118),
+          minWidth: compact ? 180 : 0,
+          gridColumn: "1 / -1",
+        }}
+      />
+    );
+  }
+
   return (
     <div
       className="nl-home-data-message"

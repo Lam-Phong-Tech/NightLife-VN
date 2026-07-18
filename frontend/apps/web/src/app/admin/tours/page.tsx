@@ -6,6 +6,7 @@ import { normalizeSearchText } from '@/lib/search-relevance';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 const getStatusMeta = (status: string) => {
   if (status === 'ACTIVE' || status === 'active') return { label: 'Hoạt động', style: 'success' };
@@ -53,7 +54,7 @@ const isSameCity = (c1: string, c2: string) => {
 
 export default function AdminToursPage() {
   return (
-    <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '20px' }} />}>
       <AdminToursContent />
     </React.Suspense>
   );

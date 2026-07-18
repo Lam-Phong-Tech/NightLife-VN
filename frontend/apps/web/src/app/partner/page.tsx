@@ -51,6 +51,7 @@ import {
 import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
+import { InlineLoading, TableLoadingRows } from '@/components/ui/DataLoading';
 
 const colors = {
   bg: 'var(--partner-bg, #0c0c0f)',
@@ -6396,7 +6397,7 @@ export default function PartnerPage() {
               >
                 {selectedBillStore
                   ? `${selectedBillStore.name}${selectedBillStore.district ? ` - ${selectedBillStore.district}` : ''}`
-                  : 'Đang tải quán được cấp quyền...'}
+                  : <InlineLoading label="Đang tải quán được cấp quyền" />}
               </div>
               <select
                 id="bill-store-select-hidden"
@@ -6952,11 +6953,7 @@ export default function PartnerPage() {
                   </thead>
                   <tbody>
                     {isLoadingStaff ? (
-                      <tr>
-                        <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
-                          Đang tải danh sách nhân viên...
-                        </td>
-                      </tr>
+                      <TableLoadingRows columns={5} rows={5} ariaLabel="Đang tải danh sách nhân viên" />
                     ) : staffList.length === 0 ? (
                       <tr>
                         <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>

@@ -16,13 +16,14 @@ import viVN from 'antd/locale/vi_VN';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/vi';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('vi');
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
-  loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
+  loading: () => <DataSkeleton variant="form" count={2} compact ariaLabel="Đang mở trình soạn thảo" style={{ minHeight: 190 }} />
 });
 
 const colors = {
@@ -559,7 +560,11 @@ export default function AdminContentPage() {
     setEditCampaignId(campaign.id);
     setCampaignName(campaign.name);
     setCampaignDiscountType(campaign.discountType === 'PERCENT' ? 'percent' : 'amount');
-    setCampaignDiscountValue(campaign.discountValue + (campaign.discountType === 'PERCENT' ? '%' : 'K'));
+    setCampaignDiscountValue(
+      campaign.discountType === 'PERCENT'
+        ? `${campaign.discountValue}%`
+        : `${campaign.discountValue.toLocaleString('vi-VN')}đ`
+    );
     setCampaignDates(campaign.startsAt ? [dayjs(campaign.startsAt), campaign.endsAt ? dayjs(campaign.endsAt) : null] : null);
     setCampaignStatus(campaign.status === 'ACTIVE' ? 'Hoạt động' : campaign.status === 'PAUSED' ? 'Tạm dừng' : 'Bản nháp');
     setCampaignLinkedStore(campaign.targetStore || null);
@@ -1119,15 +1124,17 @@ export default function AdminContentPage() {
       {/* CAMPAIGN CONTENT */}
       {activeTab === 'campaign' && (
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-            <span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+            <span style={{ textAlign: 'center' }}>STT</span><span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
           </div>
           
           {campaigns.length === 0 ? (
             <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có campaign nào.</div>
           ) : (
-            campaigns.map(camp => {
-              const discountText = camp.discountType === 'PERCENT' ? `−${camp.discountValue}%` : `−${camp.discountValue}K`;
+            campaigns.map((camp, index) => {
+              const discountText = camp.discountType === 'PERCENT'
+                ? `−${camp.discountValue}%`
+                : `−${camp.discountValue.toLocaleString('vi-VN')}đ`;
               const storeName = camp.targetStore?.name || 'Toàn hệ thống';
               const timeText = camp.startsAt ? `${dayjs(camp.startsAt).format('DD/MM')} – ${camp.endsAt ? dayjs(camp.endsAt).format('DD/MM') : '...'}` : 'Luôn áp dụng';
               
@@ -1140,7 +1147,8 @@ export default function AdminContentPage() {
               if (camp.status === 'EXPIRED') { statusColor = '#9ca3af'; statusBorder = 'rgba(156,163,175,0.3)'; statusText = 'Đã kết thúc'; }
 
               return (
-                <div key={camp.id} onClick={() => handleEditCampaign(camp)} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+                <div key={camp.id} onClick={() => handleEditCampaign(camp)} style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+                  <span style={{ color: '#8c8679', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>{index + 1}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>{discountText}</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>{camp.name}</span></div>
                   <span style={{ color: '#c5c0b6' }}>{storeName}</span>
                   <span style={{ color: '#8c8679', fontSize: '12px' }}>{timeText}</span>
@@ -1348,7 +1356,7 @@ export default function AdminContentPage() {
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có quán nào trong danh sách này</div>
             )}
             {isLoadingFeatured && (
-              <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>
+              <DataSkeleton variant="cards" count={3} columns={3} style={{ gridColumn: '1 / -1' }} />
             )}
           </div>
 
@@ -1459,7 +1467,7 @@ export default function AdminContentPage() {
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có quán nào trong danh sách đề xuất</div>
             )}
             {isLoadingRecommend && (
-              <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>
+              <DataSkeleton variant="cards" count={3} columns={3} style={{ gridColumn: '1 / -1' }} />
             )}
           </div>
         </div>
@@ -1562,7 +1570,7 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
             {isLoadingHotVideos ? (
-              <span style={{ color: colors.muted, fontSize: '13px', padding: '20px' }}>Đang tải...</span>
+              <DataSkeleton variant="media" count={3} columns={3} style={{ gridColumn: '1 / -1' }} />
             ) : hotVideos.length === 0 ? (
               <span style={{ color: colors.muted, fontSize: '13px', padding: '20px' }}>Chưa có video nào. Hãy tìm và thêm từ bên dưới.</span>
             ) : hotVideos.map((v, index) => (
@@ -2085,7 +2093,7 @@ export default function AdminContentPage() {
                     Giảm %
                   </button>
                   <button 
-                    onClick={() => { setCampaignDiscountType('amount'); setCampaignDiscountValue('100K'); }}
+                    onClick={() => { setCampaignDiscountType('amount'); setCampaignDiscountValue('100.000đ'); }}
                     style={{
                       flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', 
                       background: campaignDiscountType === 'amount' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
@@ -2118,7 +2126,7 @@ export default function AdminContentPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['50K', '100K', '200K', '300K', '500K'].map(val => (
+                    {['50.000đ', '100.000đ', '200.000đ', '300.000đ', '500.000đ'].map(val => (
                       <span 
                         key={val}
                         onClick={() => setCampaignDiscountValue(val)}
@@ -2138,16 +2146,29 @@ export default function AdminContentPage() {
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                   <input
-                    value={campaignDiscountValue.replace(/\D/g, '')}
+                    value={
+                      campaignDiscountType === 'percent'
+                        ? campaignDiscountValue.replace(/\D/g, '')
+                        : campaignDiscountValue.replace(/[^\d]/g, '')
+                          ? Number(campaignDiscountValue.replace(/[^\d]/g, '')).toLocaleString('vi-VN')
+                          : ''
+                    }
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, '');
-                      setCampaignDiscountValue(val ? val + (campaignDiscountType === 'percent' ? '%' : 'K') : '');
+                      setCampaignDiscountValue(
+                        val
+                          ? campaignDiscountType === 'percent'
+                            ? `${val}%`
+                            : `${Number(val).toLocaleString('vi-VN')}đ`
+                          : ''
+                      );
                     }}
                     placeholder={campaignDiscountType === 'percent' ? "Hoặc nhập % giảm..." : "Hoặc nhập số tiền giảm..."}
+                    inputMode="numeric"
                     style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, outline: 'none' }}
                   />
                   <span style={{ fontSize: '15px', fontWeight: 700, color: '#c5c0b6', width: '40px', textAlign: 'center' }}>
-                    {campaignDiscountType === 'percent' ? '%' : 'K'}
+                    {campaignDiscountType === 'percent' ? '%' : 'đ'}
                   </span>
                 </div>
               </div>

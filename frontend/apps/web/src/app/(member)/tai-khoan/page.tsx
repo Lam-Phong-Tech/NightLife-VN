@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { InlineLoading } from "@/components/ui/DataLoading";
 
 const colors = {
   bg: "var(--vy-bg)",
@@ -253,7 +254,7 @@ export default function Page() {
                 </div>
                 <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
                   {isLoadingPoints
-                    ? "Đang cập nhật điểm thưởng..."
+                    ? <InlineLoading label="Đang cập nhật điểm thưởng" />
                     : pointSummaryError
                       ? "Chưa tải được điểm thật, vui lòng thử lại."
                       : pointsToNextTier > 0

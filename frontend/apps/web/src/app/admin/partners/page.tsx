@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ImageIcon, Info, Loader2, XCircle } from "lucide-react";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 
 import { ApiError, apiClient, translateApiMessage } from "@/lib/api/client";
 
@@ -924,7 +925,9 @@ export default function AdminPartnersPage() {
               fontSize: 14,
             }}
           >
-            {isLoading ? "Đang tải yêu cầu đối tác..." : "Chọn một yêu cầu để xem chi tiết"}
+            {isLoading ? (
+              <DataSkeleton variant="form" count={3} compact ariaLabel="Đang tải yêu cầu đối tác" />
+            ) : "Chọn một yêu cầu để xem chi tiết"}
           </div>
         )}
       </div>

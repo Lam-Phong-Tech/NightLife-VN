@@ -47,6 +47,9 @@ export default function RootLayout({
                   var key = isAdmin ? 'vy-admin-theme' : 'vy-user-theme';
                   var t = localStorage.getItem(key);
                   if (t === 'light') document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
+                  if (sessionStorage.getItem('vy-brand-intro-seen') === '1') {
+                    document.documentElement.classList.add('nl-brand-intro-seen');
+                  }
                 } catch (e) { /* private mode */ }
               })();
             `,

@@ -7,6 +7,7 @@ import { getAuthUser } from '@/lib/auth/session';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { TableLoadingRows } from '@/components/ui/DataLoading';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -294,7 +295,7 @@ export default function AdminAuditLogsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: colors.muted, fontSize: '13px' }}>Đang tải...</td></tr>
+              <TableLoadingRows columns={6} rows={6} ariaLabel="Đang tải lịch sử thao tác" />
             ) : logs.length === 0 ? (
               <tr><td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: colors.muted, fontSize: '13px' }}>Không có lịch sử thao tác nào.</td></tr>
             ) : (

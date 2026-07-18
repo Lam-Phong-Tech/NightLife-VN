@@ -32,6 +32,8 @@ export function HomeLoadingSkeleton({ mobile = false }: { mobile?: boolean }) {
 
   return (
     <main
+      aria-busy="true"
+      aria-label="Đang tải nội dung"
       style={{
         minHeight: "100vh",
         background: "var(--vy-bg)",
@@ -87,6 +89,15 @@ function SkeletonStyle() {
       @keyframes nl-system-shimmer {
         100% {
           transform: translateX(100%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nl-system-skeleton::after {
+          animation: none;
+          transform: none;
+          opacity: .28;
+          background: var(--vy-gold-soft-bg);
         }
       }
     `}</style>

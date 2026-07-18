@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import { clearAuthSession } from "@/lib/auth/session";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
+import { DataSkeleton } from "@/components/ui/DataLoading";
 
 type AdminDashboardStats = {
   activeStores: number;
@@ -49,7 +50,7 @@ type AdminDashboardStats = {
 export default function AdminDashboardPage() {
   return (
     <Suspense
-      fallback={<div style={{ padding: "24px 26px 40px", color: "#8c8679" }}>Đang tải...</div>}
+      fallback={<DataSkeleton variant="stats" count={4} columns={4} style={{ padding: "24px 26px 40px" }} />}
     >
       <AdminDashboardContent />
     </Suspense>
@@ -346,9 +347,13 @@ function AdminDashboardContent() {
       </div>
 
       {isLoading && !stats && (
-        <div style={{ padding: "40px", textAlign: "center", color: "#8c8679", fontSize: "14px" }}>
-          Đang tải dữ liệu...
-        </div>
+        <DataSkeleton
+          variant="stats"
+          count={4}
+          columns={4}
+          ariaLabel="Đang tải dữ liệu tổng quan"
+          style={{ padding: "20px 0" }}
+        />
       )}
 
       {error && (

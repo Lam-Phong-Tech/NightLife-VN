@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { getAuthUser } from '@/lib/auth/session';
 import { useRouter } from 'next/navigation';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 export default function VpsStorageConfigPage() {
   const [loading, setLoading] = useState(true);
@@ -53,7 +54,7 @@ export default function VpsStorageConfigPage() {
   };
 
   if (loading) {
-    return <div style={{ padding: '24px', color: '#c5c0b6' }}>Đang tải...</div>;
+    return <DataSkeleton variant="form" count={3} ariaLabel="Đang tải cấu hình lưu trữ" style={{ padding: '24px' }} />;
   }
 
   return (

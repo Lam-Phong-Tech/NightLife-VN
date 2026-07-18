@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 type AdminBookingMeta = {
   total?: number;
@@ -37,7 +38,7 @@ type AdminBookingsResponse = {
 
 export default function AdminBookingsPage() {
   return (
-    <React.Suspense fallback={<div style={{ padding: '22px 26px', color: '#8c8679' }}>Đang tải...</div>}>
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '22px 26px' }} />}>
       <AdminBookingsContent />
     </React.Suspense>
   );

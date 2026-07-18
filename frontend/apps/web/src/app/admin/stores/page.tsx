@@ -8,10 +8,11 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { getAuthUser } from '@/lib/auth/session';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { DataSkeleton } from '@/components/ui/DataLoading';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
-  loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
+  loading: () => <DataSkeleton variant="form" count={2} compact ariaLabel="Đang mở trình soạn thảo" style={{ minHeight: 190 }} />
 });
 
 const getStatusMeta = (status: string) => {
@@ -288,7 +289,7 @@ const firstOpeningHourError = (errors: Record<string, Record<number, string>>) =
 
 export default function AdminStoresPage() {
   return (
-    <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '20px' }} />}>
       <AdminStoresContent />
     </React.Suspense>
   );
