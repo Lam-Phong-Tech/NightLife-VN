@@ -93,6 +93,11 @@ import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import {
+  isNearStartTime,
+  useUserActionFeedback,
+  userActionErrorMessage,
+} from "@/lib/user-action-feedback";
+import {
   categoryLabels,
   formatDateOption,
   mapEmbedUrl,
@@ -1317,6 +1322,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const searchParams = useSearchParams();
   const couponId = searchParams.get("couponId") || undefined;
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -1677,12 +1683,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
   };
-  const toggleFavorite = async () => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !isFavorite;
+  const applyFavoriteChange = async (nextValue: boolean) => {
     setIsFavorite(nextValue);
     writeFavoriteStore(favoriteSnapshot, nextValue);
     trackStoreDetailClick(store, "favorite", { favorited: nextValue });
@@ -1693,6 +1694,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         : await storeFavoriteApi.unfavorite(store.slug);
       setIsFavorite(state.favorited);
       writeFavoriteStore(favoriteSnapshot, state.favorited);
+      userFeedback.success({
+        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        description: state.favorited
+          ? `${displayName} đã được lưu vào danh sách yêu thích.`
+          : `${displayName} đã được gỡ khỏi danh sách yêu thích.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         setIsFavorite(false);
@@ -1703,7 +1710,28 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
       setIsFavorite(!nextValue);
       writeFavoriteStore(favoriteSnapshot, !nextValue);
+      userFeedback.error({
+        title: "Không cập nhật được yêu thích",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
     }
+  };
+  const toggleFavorite = () => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !isFavorite;
+    userFeedback.confirmAction({
+      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      description: nextValue
+        ? `Thêm ${displayName} vào danh sách yêu thích của bạn.`
+        : `Gỡ ${displayName} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+      tone: nextValue ? "gold" : "warning",
+      destructive: !nextValue,
+      onConfirm: () => applyFavoriteChange(nextValue),
+    });
   };
   const openGallery = (index: number, event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
@@ -1725,6 +1753,66 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       time: selectedTime,
       castSlug: activeSelectedCastSlug || undefined,
     });
+
+  const createDesktopBooking = async (
+    payload: CreateBookingPayload,
+    normalizedEmail: string,
+    actionLabel: "đặt bàn" | "đặt cast",
+  ) => {
+    try {
+      setIsBookingSubmitting(true);
+      trackBookingClick("desktop-booking-card");
+      const currentUser = getAuthUser();
+      const shouldUseMemberBooking =
+        isMemberBooking && currentUser?.role?.toUpperCase() === "USER" && Boolean(getAuthToken());
+
+      let booking: BookingRecord;
+      let savedAsMemberBooking = false;
+
+      if (shouldUseMemberBooking) {
+        try {
+          booking = await bookingApi.createMemberBooking(payload);
+          savedAsMemberBooking = true;
+        } catch (error) {
+          if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
+            throw error;
+          }
+
+          booking = await bookingApi.createGuestBooking(payload);
+        }
+      } else {
+        booking = await bookingApi.createGuestBooking(payload);
+      }
+
+      rememberLastBooking(booking, savedAsMemberBooking ? undefined : { guestHistory: true });
+      if (savedAsMemberBooking) {
+        requestMemberNotificationsRefresh();
+      }
+      userFeedback.success({
+        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+        description: "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
+      });
+      const confirmParams = new URLSearchParams({ bookingId: booking.id });
+      if (!savedAsMemberBooking) {
+        confirmParams.set("email", normalizedEmail);
+      }
+      router.push(`/xac-nhan?${confirmParams.toString()}`);
+    } catch (error) {
+      const message = localizedApiErrorMessage(
+        error,
+        activeLanguage,
+        "Không gửi được yêu cầu đặt bàn.",
+      );
+      setBookingErrorMessage(message);
+      userFeedback.error({
+        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thất bại`,
+        description: message,
+      });
+    } finally {
+      setIsBookingSubmitting(false);
+    }
+  };
+
   const submitDesktopBooking = async () => {
     if (isBookingSubmitting) return;
 
@@ -1775,47 +1863,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       ...(activeCouponId ? { couponId: activeCouponId } : {}),
     };
 
-    try {
-      setIsBookingSubmitting(true);
-      trackBookingClick("desktop-booking-card");
-      const currentUser = getAuthUser();
-      const shouldUseMemberBooking =
-        isMemberBooking && currentUser?.role?.toUpperCase() === "USER" && Boolean(getAuthToken());
+    const actionLabel = activeSelectedCastSlug ? "đặt cast" : "đặt bàn";
+    const nearStart = isNearStartTime(scheduledAt);
 
-      let booking: BookingRecord;
-      let savedAsMemberBooking = false;
-
-      if (shouldUseMemberBooking) {
-        try {
-          booking = await bookingApi.createMemberBooking(payload);
-          savedAsMemberBooking = true;
-        } catch (error) {
-          if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
-            throw error;
-          }
-
-          booking = await bookingApi.createGuestBooking(payload);
-        }
-      } else {
-        booking = await bookingApi.createGuestBooking(payload);
-      }
-
-      rememberLastBooking(booking, savedAsMemberBooking ? undefined : { guestHistory: true });
-      if (savedAsMemberBooking) {
-        requestMemberNotificationsRefresh();
-      }
-      const confirmParams = new URLSearchParams({ bookingId: booking.id });
-      if (!savedAsMemberBooking) {
-        confirmParams.set("email", normalizedEmail);
-      }
-      router.push(`/xac-nhan?${confirmParams.toString()}`);
-    } catch (error) {
-      setBookingErrorMessage(
-        localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt bàn."),
-      );
-    } finally {
-      setIsBookingSubmitting(false);
-    }
+    userFeedback.confirmAction({
+      title: nearStart
+        ? `Xác nhận ${actionLabel} sát giờ`
+        : `Xác nhận ${actionLabel}`,
+      description: nearStart
+        ? `Lịch ${selectedTime} ngày ${selectedDate.iso} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTime} ngày ${selectedDate.iso}?`,
+      confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
+      tone: nearStart ? "warning" : "gold",
+      onConfirm: () => createDesktopBooking(payload, normalizedEmail, actionLabel),
+    });
   };
 
   return (

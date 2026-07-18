@@ -20,6 +20,7 @@ import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { DataSkeleton } from "@/components/ui/DataLoading";
+import { useUserActionFeedback } from "@/lib/user-action-feedback";
 
 type WalletFilter = "all" | "active" | "used" | "expired";
 type IssueKind = "active" | "used" | "expired" | "inactive";
@@ -134,6 +135,7 @@ const issueTimestamp = (issue: CouponIssue) => {
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const { rates } = useMoneyFormatter(activeLanguage);
   const [authUser] = useState<AuthUser | null>(() => getAuthUser());
   const isMember = isMemberUser(authUser);
@@ -238,14 +240,32 @@ export default function Page() {
     setRefreshKey((current) => current + 1);
   };
 
-  const copyIssueCode = async (issue: CouponIssue) => {
+  const copyIssueCodeToClipboard = async (issue: CouponIssue) => {
     try {
       await navigator.clipboard.writeText(issue.code);
       setCopiedIssueId(issue.id);
+      userFeedback.success({
+        title: "Đã sao chép mã ưu đãi",
+        description: `${issue.code} đã được sao chép vào clipboard.`,
+      });
       window.setTimeout(() => setCopiedIssueId(null), 1800);
     } catch {
-      setError("Không sao chép được mã. Bạn có thể chọn và sao chép thủ công.");
+      const message = "Không sao chép được mã. Bạn có thể chọn và sao chép thủ công.";
+      setError(message);
+      userFeedback.error({
+        title: "Sao chép mã thất bại",
+        description: message,
+      });
     }
+  };
+
+  const copyIssueCode = (issue: CouponIssue) => {
+    userFeedback.confirmAction({
+      title: "Sao chép mã ưu đãi?",
+      description: `Sao chép mã ${issue.code} để sử dụng khi cần.`,
+      confirmLabel: "Sao chép",
+      onConfirm: () => copyIssueCodeToClipboard(issue),
+    });
   };
 
   return (

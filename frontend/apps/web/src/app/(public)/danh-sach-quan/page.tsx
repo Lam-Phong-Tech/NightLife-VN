@@ -29,6 +29,7 @@ import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } fro
 import { normalizeStoreOpeningHours } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 type Coordinates = {
   lat: number;
@@ -614,6 +615,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [error, setError] = useState<string | null>(null);
   const desktopFilterRef = useRef<HTMLDivElement | null>(null);
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
   const isCategoryLocked = Boolean(fixedCategory);
   const effectiveCategory = fixedCategory || category;
@@ -1065,12 +1067,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setTopRankingOnly((current) => !current);
   };
 
-  const toggleVenueFavorite = async (venue: VenueView) => {
-    if (!requireMemberFavoriteAccess()) {
-      return;
-    }
-
-    const nextValue = !favoriteStoreSlugs.includes(venue.id);
+  const applyVenueFavorite = async (venue: VenueView, nextValue: boolean) => {
     const snapshot = {
       slug: venue.id,
       name: venue.name,
@@ -1095,6 +1092,12 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         ? await storeFavoriteApi.favorite(venue.id)
         : await storeFavoriteApi.unfavorite(venue.id);
       applyFavorite(state.favorited);
+      userFeedback.success({
+        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        description: state.favorited
+          ? `${venue.name} đã được lưu vào danh sách yêu thích.`
+          : `${venue.name} đã được gỡ khỏi danh sách yêu thích.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         applyFavorite(false);
@@ -1103,7 +1106,29 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       }
 
       applyFavorite(!nextValue);
+      userFeedback.error({
+        title: "Không cập nhật được yêu thích",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
     }
+  };
+
+  const toggleVenueFavorite = (venue: VenueView) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
+    const nextValue = !favoriteStoreSlugs.includes(venue.id);
+    userFeedback.confirmAction({
+      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      description: nextValue
+        ? `Thêm ${venue.name} vào danh sách yêu thích của bạn.`
+        : `Gỡ ${venue.name} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+      tone: nextValue ? "gold" : "warning",
+      destructive: !nextValue,
+      onConfirm: () => applyVenueFavorite(venue, nextValue),
+    });
   };
 
   return (

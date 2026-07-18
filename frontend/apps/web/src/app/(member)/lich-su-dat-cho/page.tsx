@@ -55,6 +55,7 @@ import {
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
 import { translateText } from "@/lib/i18n/client-translations";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
@@ -334,6 +335,7 @@ export default function Page() {
   const router = useRouter();
   const { socket } = useSocket();
   const activeLanguage = useActiveLanguage();
+  const userFeedback = useUserActionFeedback();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -618,6 +620,10 @@ export default function Page() {
   const handleCancelBooking = (booking: BookingRecord) => {
     if (!canCancelBooking(booking)) {
       setMessage(supportCancelMessage);
+      userFeedback.warning({
+        title: "Không thể hủy booking",
+        description: supportCancelMessage,
+      });
       return;
     }
 
@@ -625,6 +631,10 @@ export default function Page() {
     const guestPhone = booking.guest?.phone?.trim() ?? "";
     if (!useMemberApi && !guestPhone) {
       setMessage(missingGuestCancelIdentityMessage);
+      userFeedback.warning({
+        title: "Không thể hủy booking",
+        description: missingGuestCancelIdentityMessage,
+      });
       return;
     }
 
@@ -652,6 +662,10 @@ export default function Page() {
     const useMemberApi = shouldUseMemberBookingApi(booking);
     if (!useMemberApi && !guestPhone) {
       setMessage(missingGuestCancelIdentityMessage);
+      userFeedback.warning({
+        title: "Không thể hủy booking",
+        description: missingGuestCancelIdentityMessage,
+      });
       return;
     }
 
@@ -674,9 +688,18 @@ export default function Page() {
       rememberLastBooking(mergedBooking);
       setPendingCancelBooking(null);
       setCancelReason("");
+      userFeedback.success({
+        title: "Đã hủy booking",
+        description: "Admin đã nhận thông báo.",
+      });
       setMessage("Đã hủy booking. Admin đã nhận thông báo.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không hủy được booking.");
+      const message = userActionErrorMessage(error, "Không hủy được booking.");
+      setMessage(message);
+      userFeedback.error({
+        title: "Hủy booking thất bại",
+        description: message,
+      });
     } finally {
       setCancelingId(null);
     }
@@ -685,6 +708,10 @@ export default function Page() {
   const handleRescheduleBooking = (booking: BookingRecord) => {
     if (!canCancelBooking(booking)) {
       setMessage(supportCancelMessage);
+      userFeedback.warning({
+        title: "Không thể đổi lịch",
+        description: supportCancelMessage,
+      });
       return;
     }
 
@@ -692,6 +719,10 @@ export default function Page() {
     const guestPhone = booking.guest?.phone?.trim() ?? "";
     if (!useMemberApi && !guestPhone) {
       setMessage(missingGuestRescheduleIdentityMessage);
+      userFeedback.warning({
+        title: "Không thể đổi lịch",
+        description: missingGuestRescheduleIdentityMessage,
+      });
       return;
     }
 
@@ -734,6 +765,10 @@ export default function Page() {
 
     if (isRescheduleHoursLoading) {
       setRescheduleError("Đang tải khung giờ của quán, vui lòng chờ một chút.");
+      userFeedback.warning({
+        title: "Chưa thể đổi lịch",
+        description: "Đang tải khung giờ của quán, vui lòng chờ một chút.",
+      });
       return;
     }
 
@@ -748,12 +783,20 @@ export default function Page() {
 
     if (validationError) {
       setRescheduleError(validationError);
+      userFeedback.warning({
+        title: "Chưa thể đổi lịch",
+        description: validationError,
+      });
       return;
     }
 
     if (!useMemberApi && !guestPhone) {
       setRescheduleError(missingGuestRescheduleIdentityMessage);
       setMessage(missingGuestRescheduleIdentityMessage);
+      userFeedback.warning({
+        title: "Không thể đổi lịch",
+        description: missingGuestRescheduleIdentityMessage,
+      });
       return;
     }
 
@@ -797,10 +840,17 @@ export default function Page() {
       setRescheduleReason("");
       setRescheduleError("");
       setMessage("Đã đổi lịch booking. Lịch mới đã được cập nhật.");
+      userFeedback.success({
+        title: "Đã đổi lịch booking",
+        description: "Lịch mới đã được cập nhật.",
+      });
     } catch (error) {
-      setRescheduleError(
-        error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.",
-      );
+      const message = userActionErrorMessage(error, "Không gửi được yêu cầu đổi lịch.");
+      setRescheduleError(message);
+      userFeedback.error({
+        title: "Đổi lịch thất bại",
+        description: message,
+      });
     } finally {
       setReschedulingId(null);
     }

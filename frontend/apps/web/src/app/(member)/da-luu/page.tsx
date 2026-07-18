@@ -20,6 +20,7 @@ import {
   writeFavoriteCast,
   writeFavoriteStore,
 } from "@/lib/member-favorites";
+import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 type SavedTab = "stores" | "casts";
 
@@ -108,6 +109,7 @@ const mergeCastItem = (
 };
 
 export default function Page() {
+  const userFeedback = useUserActionFeedback();
   const [activeTab, setActiveTab] = useState<SavedTab>("stores");
   const [stores, setStores] = useState<SavedFavoriteStore[]>([]);
   const [casts, setCasts] = useState<SavedFavoriteCast[]>([]);
@@ -200,16 +202,70 @@ export default function Page() {
     [activeTab, casts, stores],
   );
 
-  const removeStore = (item: SavedFavoriteStore) => {
+  const applyRemoveStore = async (item: SavedFavoriteStore) => {
     writeFavoriteStore(item, false);
     setStores((current) => current.filter((store) => store.slug !== item.slug));
-    void storeFavoriteApi.unfavorite(item.slug).catch(() => undefined);
+
+    try {
+      await storeFavoriteApi.unfavorite(item.slug);
+      userFeedback.success({
+        title: "Đã bỏ lưu quán",
+        description: `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+      });
+    } catch (error) {
+      writeFavoriteStore(item, true);
+      setStores((current) =>
+        current.some((store) => store.slug === item.slug) ? current : [item, ...current],
+      );
+      userFeedback.error({
+        title: "Không bỏ lưu được quán",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
+    }
+  };
+
+  const removeStore = (item: SavedFavoriteStore) => {
+    userFeedback.confirmAction({
+      title: "Bỏ lưu quán?",
+      description: `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: "Bỏ lưu",
+      tone: "warning",
+      destructive: true,
+      onConfirm: () => applyRemoveStore(item),
+    });
+  };
+
+  const applyRemoveCast = async (item: SavedFavoriteCast) => {
+    writeFavoriteCast(item, false);
+    setCasts((current) => current.filter((cast) => cast.slug !== item.slug));
+
+    try {
+      await castFavoriteApi.unfavorite(item.slug);
+      userFeedback.success({
+        title: "Đã bỏ lưu cast",
+        description: `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+      });
+    } catch (error) {
+      writeFavoriteCast(item, true);
+      setCasts((current) =>
+        current.some((cast) => cast.slug === item.slug) ? current : [item, ...current],
+      );
+      userFeedback.error({
+        title: "Không bỏ lưu được cast",
+        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+      });
+    }
   };
 
   const removeCast = (item: SavedFavoriteCast) => {
-    writeFavoriteCast(item, false);
-    setCasts((current) => current.filter((cast) => cast.slug !== item.slug));
-    void castFavoriteApi.unfavorite(item.slug).catch(() => undefined);
+    userFeedback.confirmAction({
+      title: "Bỏ lưu cast?",
+      description: `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
+      confirmLabel: "Bỏ lưu",
+      tone: "warning",
+      destructive: true,
+      onConfirm: () => applyRemoveCast(item),
+    });
   };
 
   return (
