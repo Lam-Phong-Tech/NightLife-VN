@@ -43,8 +43,8 @@ import {
   type CmsContentItem,
   type PublicHomeRecommendation,
   type PublicHotVideo,
-  type PublicTourItem,
 } from "@/lib/api/content";
+import { tourApi, type PublicTour } from "@/lib/api/tours";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
@@ -567,20 +567,26 @@ function mapTrackedHotVideoToHomeItem(video: PublicHotVideo, index: number): Hom
 }
 
 function mapTourToHomeItem(
-  tour: PublicTourItem,
+  tour: PublicTour,
   language: LanguageCode,
-  rates: CurrencyRateMap,
 ): HomeContentItem {
   const stopText = tour.stops
     .slice(0, 2)
-    .map((stop) => stop.name)
+    .map((stop) => stop.store.name)
     .join(" · ");
 
-  const stopImage = tour.stops.find((stop) => isUsableContentImage(stop.thumbnailUrl))?.thumbnailUrl;
+  const stopImage = tour.stops
+    .flatMap((stop) => stop.store.media)
+    .find((media) => isUsableContentImage(media.url))?.url;
+  const cityLabel =
+    cityLabels[tour.city] ??
+    tour.stops[0]?.store.area?.city ??
+    tour.stops[0]?.store.city ??
+    tour.city;
   const meta = [
-    tour.area,
+    cityLabel,
     tour.durationHours ? `${tour.durationHours} giờ` : "",
-    tour.priceFromVnd ? `Từ ${formatVndByLanguage(tour.priceFromVnd, language, rates)}` : "",
+    tour.stops.length ? `${tour.stops.length} điểm` : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -588,12 +594,12 @@ function mapTourToHomeItem(
   return {
     id: tour.id,
     title: tour.title,
-    desc: stopText || tour.subtitle,
-    href: tour.href || "/tour",
+    desc: tour.subtitle || stopText,
+    href: `/tour/${tour.id}`,
     icon: MapPin,
     kicker: "Tour",
-    meta,
-    img: backgroundFromUrl(firstContentImage(tour.thumbnailUrl, stopImage)),
+    meta: translateText(meta, language),
+    img: backgroundFromUrl(firstContentImage(tour.coverUrl, stopImage)),
   };
 }
 
@@ -2636,21 +2642,18 @@ export default function Page() {
       });
 
     Promise.all([
-      contentApi.tours({
-        cityCode: "all",
+      tourApi.list({
         limit: 2,
-        categories: behaviorSignals.categories.join(","),
-        storeSlugs: behaviorSignals.storeSlugs.join(","),
       }),
       contentApi.list({ type: "BLOG", limit: 3 }),
       contentApi.list({ type: "POLICY", limit: 3 }),
     ])
       .then(([tourResponse, blogResponse, policyResponse]) => {
         if (cancelled) return;
-        const tourItems = tourResponse.map((tour) => mapTourToHomeItem(tour, activeLanguage, rates));
-        const tourImages = tourResponse.flatMap((tour) => [
-          tour.thumbnailUrl,
-          ...tour.stops.map((stop) => stop.thumbnailUrl),
+        const tourItems = tourResponse.data.map((tour) => mapTourToHomeItem(tour, activeLanguage));
+        const tourImages = tourResponse.data.flatMap((tour) => [
+          tour.coverUrl,
+          ...tour.stops.flatMap((stop) => stop.store.media.map((media) => media.url)),
         ]);
         setHomeTours(tourItems);
         const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
