@@ -63,7 +63,6 @@ import {
   getHomeAnonymousId,
   getHomeBehaviorSignals,
   hasLikedHotVideo,
-  rememberHotVideoLike,
   shouldTrackHotVideoView,
   trackHomeVenueSignal,
 } from "@/lib/analytics/home";
@@ -2073,11 +2072,9 @@ function LegacyVideoCard({ item, compact = false }: { item: HomeVideoItem; compa
 function VideoCard({
   item,
   compact = false,
-  onLike,
 }: {
   item: HomeVideoItem;
   compact?: boolean;
-  onLike?: (item: HomeVideoItem) => void;
 }) {
   const title = item.name.split(" · ")[0] || item.name;
 
@@ -2106,30 +2103,6 @@ function VideoCard({
             <Play size={17} fill={colors.ink} />
           </span>
         </Link>
-        <button
-          type="button"
-          aria-label={item.liked ? "Đã thích video" : "Thích video"}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onLike?.(item);
-          }}
-          style={{
-            position: "absolute",
-            right: 9,
-            top: 9,
-            width: 34,
-            height: 34,
-            borderRadius: "50%",
-            border: "1px solid rgba(240,221,168,.28)",
-            background: "rgba(12,12,15,.62)",
-            color: item.liked ? colors.rose : colors.goldSoft,
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <Heart size={17} fill={item.liked ? "currentColor" : "none"} />
-        </button>
       </PlaceholderMedia>
       <Link href={item.href} style={{ color: colors.text, textDecoration: "none" }}>
         <div style={{ marginTop: "9px", fontSize: "13px", fontWeight: 850, lineHeight: 1.25 }}>{title}</div>
@@ -2899,37 +2872,6 @@ export default function Page() {
     });
   }, [homeHotVideosEnabled, homeVideos]);
 
-  const handleHotVideoLike = (item: HomeVideoItem) => {
-    if (item.liked) return;
-
-    rememberHotVideoLike(item.id);
-    setHomeVideos((current) =>
-      current.map((video) =>
-        video.id === item.id
-          ? { ...video, liked: true, likeCount: (video.likeCount ?? 0) + 1 }
-          : video,
-      ),
-    );
-
-    contentApi
-      .trackHotVideoLike(item.id, {
-        source: "home_video",
-        surface: "homepage",
-        anonymousId: getHomeAnonymousId(),
-        storeSlug: item.storeSlug,
-      })
-      .then((metric) => {
-        setHomeVideos((current) =>
-          current.map((video) =>
-            video.id === item.id
-              ? { ...video, viewCount: metric.viewCount, likeCount: metric.likeCount, liked: true }
-              : video,
-          ),
-        );
-      })
-      .catch(() => undefined);
-  };
-
   const toggleHomeStoreFavorite = async (item: HomeStoreCard) => {
     if (!requireMemberFavoriteAccess()) {
       return;
@@ -3114,7 +3056,7 @@ export default function Page() {
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
                 ) : videoList.length ? (
-                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact onLike={handleHotVideoLike} />)
+                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact />)
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact />
                 )}
@@ -3270,7 +3212,7 @@ export default function Page() {
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." />
                 ) : videoList.length ? (
-                  videoList.map((item) => <VideoCard key={item.id} item={item} onLike={handleHotVideoLike} />)
+                  videoList.map((item) => <VideoCard key={item.id} item={item} />)
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} />
                 )}
