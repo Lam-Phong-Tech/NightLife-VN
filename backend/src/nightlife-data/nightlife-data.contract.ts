@@ -1583,16 +1583,22 @@ export function CancelGuestBookingContract() {
 export function GuestBookingLookupContract() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Booking action: guest looks up a booking by code and phone',
+      summary: 'Booking action: guest looks up a booking by code and contact',
       description:
-        'Auth guard: none. Resolves #BK-style booking codes or id prefixes for guest bookings only when the submitted phone matches the guest contact snapshot.',
+        'Auth guard: none. Resolves #BK-style booking codes or id prefixes for guest bookings only when the submitted phone or email matches the guest contact snapshot.',
     }),
     ApiParam({ name: 'bookingCode', example: 'BK-550E8400' }),
     ApiQuery({
       name: 'phone',
-      required: true,
+      required: false,
       example: '+84901234567',
       description: 'Phone number submitted with the guest booking.',
+    }),
+    ApiQuery({
+      name: 'email',
+      required: false,
+      example: 'guest@example.com',
+      description: 'Email submitted with the guest booking.',
     }),
     ApiOkResponse({
       description: 'Guest booking found.',
@@ -1603,7 +1609,8 @@ export function GuestBookingLookupContract() {
       schema: { example: badRequestExample },
     }),
     ApiNotFoundResponse({
-      description: 'Booking code does not exist or phone does not match.',
+      description:
+        'Booking code does not exist or contact identity does not match.',
       schema: {
         example: {
           statusCode: 404,

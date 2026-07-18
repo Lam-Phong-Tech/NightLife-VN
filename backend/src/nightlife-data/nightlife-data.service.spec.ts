@@ -3126,6 +3126,121 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('looks up a guest booking by booking code and email', async () => {
+    const booking = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      bookingCode: 'BK-550E8400',
+      tourBookingId: null,
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+      cancelledAt: null,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest',
+        phone: null,
+        email: 'guest@example.com',
+      },
+    };
+    prisma.booking.findMany.mockResolvedValue([booking]);
+
+    await expect(
+      service.getGuestBookingByCode('BK-550E8400', {
+        email: ' GUEST@example.com ',
+      }),
+    ).resolves.toEqual(booking);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: null,
+        deletedAt: null,
+        guest: { is: { email: 'guest@example.com' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: expect.objectContaining({
+        id: true,
+        bookingCode: true,
+        tourBookingId: true,
+        guest: {
+          select: expect.objectContaining({
+            id: true,
+            displayName: true,
+            phone: true,
+            email: true,
+          }),
+        },
+      }),
+    });
+  });
+
+  it('looks up a guest tour booking by its master booking code', async () => {
+    const childBooking = {
+      id: '550e8400-e29b-41d4-a716-446655440001',
+      bookingCode: 'BK-CHILD1',
+      tourBookingId: 'tour-booking-1',
+      tourStopOrder: 1,
+      storeId: 'store-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-07-10T14:00:00.000Z'),
+      partySize: 2,
+      note: null,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      cast: null,
+      coupon: null,
+      couponIssue: null,
+    };
+    const tourBooking = {
+      id: 'tour-booking-1',
+      bookingCode: 'TR-TOUR01',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-07-10T14:00:00.000Z'),
+      partySize: 2,
+      note: null,
+      titleSnapshot: 'Tokyo Night Tour',
+      itinerarySnapshot: [],
+      tour: { id: 'tour-1', title: 'Tokyo Night Tour' },
+      user: null,
+      guest: {
+        id: 'guest-tour-1',
+        displayName: 'Tour Guest',
+        phone: null,
+        email: 'tourguest@example.com',
+      },
+      qr: null,
+      checkIns: [],
+      bookings: [childBooking],
+    };
+    prisma.booking.findMany.mockResolvedValue([]);
+    prisma.tourBooking.findMany.mockResolvedValue([tourBooking] as never);
+
+    await expect(
+      service.getGuestBookingByCode('TR-TOUR01', {
+        email: 'tourguest@example.com',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        bookingCode: 'TR-TOUR01',
+        tourBookingId: 'tour-booking-1',
+        tour: expect.objectContaining({
+          id: 'tour-1',
+          title: 'Tokyo Night Tour',
+        }),
+      }),
+    );
+
+    expect(prisma.tourBooking.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: null,
+        guest: { is: { email: 'tourguest@example.com' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: expect.any(Object),
+    });
+  });
+
   it('lists member bookings by newest creation time before schedule time', async () => {
     prisma.booking.findMany.mockResolvedValue([] as never);
 

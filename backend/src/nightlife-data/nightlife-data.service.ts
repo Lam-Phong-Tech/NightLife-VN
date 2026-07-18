@@ -4038,18 +4038,34 @@ export class NightlifeDataService {
     });
   }
 
-  async getGuestBookingByCode(bookingCode: string, phone: string) {
-    const cleanedPhone = this.cleanText(phone);
-    if (!cleanedPhone) {
-      throw new BadRequestException('phone is required');
+  async getGuestBookingByCode(
+    bookingCode: string,
+    lookup: string | { email?: string | null; phone?: string | null },
+  ) {
+    const cleanedPhone =
+      typeof lookup === 'string'
+        ? this.cleanText(lookup)
+        : this.cleanText(lookup.phone);
+    const cleanedEmail =
+      typeof lookup === 'string' ? '' : this.cleanEmail(lookup.email);
+    if (!cleanedPhone && !cleanedEmail) {
+      throw new BadRequestException('phone or email is required');
     }
 
     const lookupCode = this.normalizeBookingLookupCode(bookingCode);
+    const guestIdentityFilters: Prisma.GuestWhereInput[] = [
+      ...(cleanedPhone ? [{ phone: cleanedPhone }] : []),
+      ...(cleanedEmail ? [{ email: cleanedEmail }] : []),
+    ];
+    const guestIdentityWhere: Prisma.GuestWhereInput =
+      guestIdentityFilters.length === 1
+        ? guestIdentityFilters[0]!
+        : { OR: guestIdentityFilters };
     const bookings = await this.prisma.booking.findMany({
       where: {
         userId: null,
         deletedAt: null,
-        guest: { is: { phone: cleanedPhone } },
+        guest: { is: guestIdentityWhere },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -4059,11 +4075,43 @@ export class NightlifeDataService {
       this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
     );
 
-    if (!booking) {
+    if (booking?.tourBookingId) {
+      const [tourBooking] = await this.prisma.tourBooking.findMany({
+        where: {
+          id: booking.tourBookingId,
+          userId: null,
+          guest: { is: guestIdentityWhere },
+        },
+        take: 1,
+        include: this.tourBookingCustomerInclude(),
+      });
+      if (tourBooking) {
+        return this.decorateCustomerTourBooking(tourBooking);
+      }
+    }
+
+    if (booking) {
+      return booking;
+    }
+
+    const tourBookings = await this.prisma.tourBooking.findMany({
+      where: {
+        userId: null,
+        guest: { is: guestIdentityWhere },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: this.tourBookingCustomerInclude(),
+    });
+    const tourBooking = tourBookings.find((item) =>
+      this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
+    );
+
+    if (!tourBooking) {
       throw new NotFoundException('Booking not found');
     }
 
-    return booking;
+    return this.decorateCustomerTourBooking(tourBooking);
   }
 
   async requestMemberBookingReschedule(
@@ -13481,6 +13529,7 @@ export class NightlifeDataService {
     return {
       id: true,
       bookingCode: true,
+      tourBookingId: true,
       storeId: true,
       castId: true,
       status: true,
