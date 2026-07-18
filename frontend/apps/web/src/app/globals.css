@@ -2791,6 +2791,10 @@ html.vy-light .nl-reset-auth-input::placeholder {
   border-radius: 9px;
   background: transparent;
   color: var(--vy-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 0 11px;
   font: inherit;
   font-size: 13px;
@@ -2799,12 +2803,31 @@ html.vy-light .nl-reset-auth-input::placeholder {
   cursor: pointer;
 }
 
+.nl-booking-time-menu button small {
+  flex: none;
+  color: var(--vy-muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
 .nl-booking-time-menu button:hover,
 .nl-booking-time-menu button:focus-visible,
 .nl-booking-time-menu button.is-selected {
   background: var(--vy-gold-soft-bg);
   color: var(--vy-gold-hi);
   outline: none;
+}
+
+.nl-booking-time-menu button:disabled,
+.nl-booking-time-menu button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.nl-booking-time-menu button:disabled:hover,
+.nl-booking-time-menu button.is-disabled:hover {
+  background: transparent;
+  color: var(--vy-text-2);
 }
 
 .nl-booking-time-empty {

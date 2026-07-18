@@ -56,6 +56,7 @@ type BookingDateTimeFieldsProps = {
   dateValue: string;
   timeValue: string;
   timeOptions: string[];
+  disabledTimeOptions?: string[];
   timeOptionGroups?: BookingTimeSlotGroup[];
   minDate: string;
   maxDate: string;
@@ -133,6 +134,7 @@ export function BookingDateTimeFields({
   dateValue,
   timeValue,
   timeOptions,
+  disabledTimeOptions = [],
   timeOptionGroups,
   minDate,
   maxDate,
@@ -167,6 +169,10 @@ export function BookingDateTimeFields({
     () => (timeOptionGroups?.length ? timeOptionGroups : groupBookingTimeSlots(timeOptions)),
     [timeOptionGroups, timeOptions],
   );
+  const disabledTimeOptionSet = useMemo(
+    () => new Set(disabledTimeOptions),
+    [disabledTimeOptions],
+  );
   const selectedTimePeriod = hasTimeOptionGroups
     ? groups.find((group) => group.slots.includes(timeValue))?.key
     : undefined;
@@ -184,9 +190,16 @@ export function BookingDateTimeFields({
     groups.find((group) => group.key === firstAvailablePeriod) ??
     groups[0];
   const activeTimeOptions = hasTimeOptionGroups ? activeGroup?.slots ?? [] : timeOptions;
-  const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
+  const options = activeTimeOptions.map((time) => ({
+    value: time,
+    label: time,
+    disabled: disabledTimeOptionSet.has(time),
+  }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
-  const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
+  const selectedTimeValue =
+    activeTimeOptions.includes(timeValue) && !disabledTimeOptionSet.has(timeValue)
+      ? timeValue
+      : undefined;
   const selectedTimeLabel = options.find((option) => option.value === selectedTimeValue)?.label;
   const periodTabs = groups;
   const showPeriodTabs = hasTimeOptionGroups && periodTabs.length > 1;
@@ -214,10 +227,11 @@ export function BookingDateTimeFields({
     const nextGroup = groups.find((group) => group.key === period);
     if (!nextGroup?.slots.length || disabled || loadingTimes) return;
 
+    const nextEnabledTime = nextGroup.slots.find((time) => !disabledTimeOptionSet.has(time));
+
     setPreferredPeriod(period);
-    if (!nextGroup.slots.includes(timeValue)) {
-      const nextTime = nextGroup.slots[0];
-      if (nextTime) onTimeChange(nextTime);
+    if (nextEnabledTime && !nextGroup.slots.includes(timeValue)) {
+      onTimeChange(nextEnabledTime);
     }
   };
 
@@ -332,21 +346,36 @@ export function BookingDateTimeFields({
           {isTimeMenuOpen ? (
             <div className="nl-booking-time-menu" role="listbox" aria-label={selectTimeText}>
               {options.length ? (
-                options.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={option.value === selectedTimeValue ? "is-selected" : ""}
-                    role="option"
-                    aria-selected={option.value === selectedTimeValue}
-                    onClick={() => {
-                      onTimeChange(option.value);
-                      setTimeMenuOpen(false);
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))
+                options.map((option) => {
+                  const isSelected = option.value === selectedTimeValue;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={[
+                        isSelected ? "is-selected" : "",
+                        option.disabled ? "is-disabled" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      role="option"
+                      aria-disabled={option.disabled}
+                      aria-selected={isSelected}
+                      disabled={option.disabled}
+                      onClick={() => {
+                        if (option.disabled) return;
+                        onTimeChange(option.value);
+                        setTimeMenuOpen(false);
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      {option.disabled ? (
+                        <small>{translateText("ÄÃ£ qua", activeLanguage)}</small>
+                      ) : null}
+                    </button>
+                  );
+                })
               ) : (
                 <span className="nl-booking-time-empty">{localizedEmptyMessage}</span>
               )}

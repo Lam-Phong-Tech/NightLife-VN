@@ -55,6 +55,7 @@ import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
   normalizeStoreOpeningHours,
+  pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -846,6 +847,7 @@ function BookingCard({
   maxDate,
   selectedTime,
   timeOptions,
+  disabledTimeOptions,
   guestCount,
   guestName,
   email,
@@ -872,6 +874,7 @@ function BookingCard({
   maxDate: string;
   selectedTime: string;
   timeOptions: string[];
+  disabledTimeOptions: string[];
   guestCount: number;
   guestName: string;
   email: string;
@@ -1047,6 +1050,7 @@ function BookingCard({
             dateValue={selectedDateIso}
             timeValue={selectedTime}
             timeOptions={timeOptions}
+            disabledTimeOptions={disabledTimeOptions}
             minDate={minDate}
             maxDate={maxDate}
             onDateChange={(value) => {
@@ -1543,13 +1547,31 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
   );
+  const disabledBookingTimeOptions = useMemo(
+    () =>
+      pastBookingTimeSlots(
+        bookingTimeOptions,
+        selectedDate.iso,
+        normalizedOpeningHours ?? store.openingHours,
+        statusNow,
+      ),
+    [bookingTimeOptions, normalizedOpeningHours, selectedDate.iso, statusNow, store.openingHours],
+  );
+  const availableBookingTimeOptions = useMemo(
+    () =>
+      bookingTimeOptions.filter((time) => !disabledBookingTimeOptions.includes(time)),
+    [bookingTimeOptions, disabledBookingTimeOptions],
+  );
 
   useEffect(() => {
     let nextSelectedTime = selectedTime;
-    if (!bookingTimeOptions.length) {
+    if (!availableBookingTimeOptions.length) {
       nextSelectedTime = "";
-    } else if (!bookingTimeOptions.includes(selectedTime)) {
-      const nextTime = bookingTimeOptions[0];
+    } else if (
+      !availableBookingTimeOptions.includes(selectedTime) ||
+      disabledBookingTimeOptions.includes(selectedTime)
+    ) {
+      const nextTime = availableBookingTimeOptions[0];
       if (nextTime) nextSelectedTime = nextTime;
     }
 
@@ -1561,7 +1583,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [bookingTimeOptions, selectedTime]);
+  }, [availableBookingTimeOptions, disabledBookingTimeOptions, selectedTime]);
 
   const bookingScheduledAt = buildScheduledAtFromBookingSlot(
     selectedDate.iso,
@@ -1571,7 +1593,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const bookingFieldErrors = useMemo(
     () =>
       buildBookingFieldErrors({
-        availableTimes: bookingTimeOptions,
+        availableTimes: availableBookingTimeOptions,
         bookingDate: selectedDate.iso,
         bookingTime: selectedTime,
         displayName: normalizeBookingDisplayName(guestName),
@@ -1584,7 +1606,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }),
     [
       bookingScheduledAt,
-      bookingTimeOptions,
+      availableBookingTimeOptions,
       email,
       guestCount,
       guestName,
@@ -1834,7 +1856,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setNote(trimmedNote);
 
     const validationErrors = buildBookingFieldErrors({
-      availableTimes: bookingTimeOptions,
+      availableTimes: availableBookingTimeOptions,
       bookingDate: selectedDate.iso,
       bookingTime: selectedTime,
       displayName,
@@ -2150,6 +2172,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
+              disabledTimeOptions={disabledBookingTimeOptions}
               guestCount={guestCount}
               guestName={guestName}
               email={email}

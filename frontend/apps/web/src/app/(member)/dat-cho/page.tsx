@@ -25,6 +25,7 @@ import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlotGroups,
   buildScheduledAtFromBookingSlot,
+  pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -274,7 +275,16 @@ export default function Page() {
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [bookingNow, setBookingNow] = useState(() => new Date());
   const isServiceOnlyBooking = isServiceOnlyBookingCategory(context.category);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setBookingNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const parsed = parseContext();
@@ -466,15 +476,27 @@ export default function Page() {
     () => bookingTimeOptionGroups.flatMap((group) => group.slots),
     [bookingTimeOptionGroups],
   );
+  const disabledBookingTimeOptions = useMemo(
+    () => pastBookingTimeSlots(bookingTimeOptions, bookingDate, storeOpeningHours, bookingNow),
+    [bookingDate, bookingNow, bookingTimeOptions, storeOpeningHours],
+  );
+  const availableBookingTimeOptions = useMemo(
+    () =>
+      bookingTimeOptions.filter((time) => !disabledBookingTimeOptions.includes(time)),
+    [bookingTimeOptions, disabledBookingTimeOptions],
+  );
 
   useEffect(() => {
     if (!storeHoursResolved) return;
 
     let nextBookingTime = bookingTime;
-    if (!bookingTimeOptions.length) {
+    if (!availableBookingTimeOptions.length) {
       nextBookingTime = "";
-    } else if (!bookingTimeOptions.includes(bookingTime)) {
-      const nextTime = bookingTimeOptions[0];
+    } else if (
+      !availableBookingTimeOptions.includes(bookingTime) ||
+      disabledBookingTimeOptions.includes(bookingTime)
+    ) {
+      const nextTime = availableBookingTimeOptions[0];
       if (nextTime) nextBookingTime = nextTime;
     }
 
@@ -486,7 +508,12 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [bookingTime, bookingTimeOptions, storeHoursResolved]);
+  }, [
+    availableBookingTimeOptions,
+    bookingTime,
+    disabledBookingTimeOptions,
+    storeHoursResolved,
+  ]);
 
   const scheduledPreviewAt = buildScheduledAtFromBookingSlot(
     bookingDate,
@@ -496,7 +523,7 @@ export default function Page() {
   const fieldErrors = useMemo(
     () =>
       buildBookingFieldErrors({
-        availableTimes: bookingTimeOptions,
+        availableTimes: availableBookingTimeOptions,
         bookingDate,
         bookingTime,
         displayName: normalizeBookingDisplayName(guestName),
@@ -511,7 +538,7 @@ export default function Page() {
     [
       bookingDate,
       bookingTime,
-      bookingTimeOptions,
+      availableBookingTimeOptions,
       email,
       guestName,
       guests,
@@ -704,7 +731,7 @@ export default function Page() {
       guestCount: partySize,
       bookingDate,
       bookingTime,
-      availableTimes: bookingTimeOptions,
+      availableTimes: availableBookingTimeOptions,
       loadingTimes: !storeHoursResolved,
       maxDate: getMaxBookingDate(),
       scheduledAt,
@@ -928,6 +955,7 @@ export default function Page() {
                 }
                 timeValue={bookingTime}
                 timeOptions={bookingTimeOptions}
+                disabledTimeOptions={disabledBookingTimeOptions}
                 minDate={getTodayDate()}
                 maxDate={getMaxBookingDate()}
                 onDateChange={(value) => {

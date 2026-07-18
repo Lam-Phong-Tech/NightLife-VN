@@ -384,3 +384,22 @@ export const buildScheduledAtFromBookingSlot = (
 
   return scheduledAt.toISOString();
 };
+
+export const isPastBookingTimeSlot = (
+  dateIso: string,
+  time: string,
+  openingHours?: OpeningHoursInput,
+  now = new Date(),
+) => {
+  const scheduledAt = buildScheduledAtFromBookingSlot(dateIso, time, openingHours);
+  const scheduledTime = new Date(scheduledAt).getTime();
+
+  return Number.isFinite(scheduledTime) && scheduledTime <= now.getTime();
+};
+
+export const pastBookingTimeSlots = (
+  timeSlots: string[],
+  dateIso: string,
+  openingHours?: OpeningHoursInput,
+  now = new Date(),
+) => timeSlots.filter((time) => isPastBookingTimeSlot(dateIso, time, openingHours, now));
