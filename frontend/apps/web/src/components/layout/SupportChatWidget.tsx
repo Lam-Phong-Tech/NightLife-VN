@@ -14,6 +14,11 @@ import {
 } from "@/lib/i18n/use-active-language";
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
 import { DataSkeleton } from "@/components/ui/DataLoading";
+import {
+  confirmOptimisticSupportMessage,
+  mergeSupportChatHistory,
+  type ChatMessage,
+} from "./support-chat-state";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -28,13 +33,6 @@ const chatColors = {
   goldPale: "var(--vy-gold-pale)",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
   userGrad: "linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57)",
-};
-
-type ChatMessage = {
-  id: string;
-  from: "support" | "user";
-  text: string;
-  time: string;
 };
 
 type SupportMessagePayload = {
@@ -664,10 +662,11 @@ export function SupportChatWidget({
         }
 
         if (Array.isArray(data?.messages)) {
-          setMessages(
-            data.messages.map((message) =>
-              mapSupportMessageToChatMessage(message, activeLanguage),
-            ),
+          const restoredMessages = data.messages.map((message) =>
+            mapSupportMessageToChatMessage(message, activeLanguage),
+          );
+          setMessages((currentMessages) =>
+            mergeSupportChatHistory(currentMessages, restoredMessages),
           );
         }
       })
@@ -688,7 +687,9 @@ export function SupportChatWidget({
               activeLanguage,
             ),
           );
-          setMessages(mapped);
+          setMessages((currentMessages) =>
+            mergeSupportChatHistory(currentMessages, mapped),
+          );
         }
       })
       .catch(console.error)
@@ -859,7 +860,13 @@ export function SupportChatWidget({
       // Update real ID from server
       const persistedMessageId = response?.id;
       if (persistedMessageId) {
-        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: persistedMessageId } : m));
+        setMessages((currentMessages) =>
+          confirmOptimisticSupportMessage(
+            currentMessages,
+            localTempId,
+            persistedMessageId,
+          ),
+        );
       }
 
       if (response?.ticketId && !ticketId) {
