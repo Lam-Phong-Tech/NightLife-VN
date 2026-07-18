@@ -11,6 +11,8 @@ async function bootstrap() {
     'https://demonightlight.test9io.vn',
     'https://www.demonightlight.test9io.vn',
     'https://nightlife.lptech.info.vn',
+    'https://vietoru.com',
+    'https://www.vietoru.com',
   ];
   const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
