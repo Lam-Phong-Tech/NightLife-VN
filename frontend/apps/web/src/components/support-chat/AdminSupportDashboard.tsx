@@ -6,6 +6,10 @@ import { Search, Send } from 'lucide-react';
 
 import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/session';
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
+import {
+  filterAdminSupportTickets,
+  type AdminSupportTicketFilter,
+} from "./admin-support-ticket-filter";
 
 type SupportMessagePayload = {
   id?: string;
@@ -42,9 +46,14 @@ type SessionMergedPayload = {
 };
 
 function formatSupportTicket(ticket: SupportTicketPayload): SupportTicketPayload {
+  const latestConversationMessage = ticket.messages?.find(
+    (message) => message.senderType !== 'SYSTEM',
+  );
+
   return {
     ...ticket,
-    latestMessage: ticket.latestMessage ?? ticket.messages?.[0]?.content ?? null,
+    messages: latestConversationMessage ? [latestConversationMessage] : [],
+    latestMessage: ticket.latestMessage ?? latestConversationMessage?.content ?? null,
   };
 }
 
@@ -57,6 +66,7 @@ export function AdminSupportDashboard() {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [ticketFilter, setTicketFilter] = useState<AdminSupportTicketFilter>('waiting');
   
   const activeTicketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -155,9 +165,13 @@ export function AdminSupportDashboard() {
 
     newSocket.on('receive_message', (msg: SupportMessagePayload) => {
       // Update preview in the sidebar
-      setPendingTickets(prev => prev.map(t => 
-        t.id === msg.ticketId ? { ...t, latestMessage: msg.content } : t
-      ));
+      if (msg.senderType !== 'SYSTEM') {
+        setPendingTickets(prev => prev.map(t =>
+          t.id === msg.ticketId
+            ? { ...t, latestMessage: msg.content, messages: [msg] }
+            : t
+        ));
+      }
 
       // Update active messages ONLY if it belongs to activeTicketId
       if (activeTicketIdRef.current === msg.ticketId) {
@@ -257,6 +271,15 @@ export function AdminSupportDashboard() {
     }, (response: SupportMessagePayload) => {
       if (response && response.id) {
         setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
+        setPendingTickets(prev => prev.map(ticket =>
+          ticket.id === activeTicketId
+            ? {
+                ...ticket,
+                latestMessage: response.content ?? text,
+                messages: [{ ...response, senderType: 'ADMIN' }],
+              }
+            : ticket
+        ));
       }
     });
   };
@@ -289,6 +312,8 @@ export function AdminSupportDashboard() {
       return '';
     }
   };
+
+  const visibleTickets = filterAdminSupportTickets(pendingTickets, ticketFilter);
 
   return (
     <div 
@@ -337,30 +362,45 @@ export function AdminSupportDashboard() {
               />
             </div>
             <div className="flex gap-1.5 mt-2.5">
-              <span 
-                className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+              <button
+                type="button"
+                onClick={() => setTicketFilter('waiting')}
+                aria-pressed={ticketFilter === 'waiting'}
+                className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
-                  color: '#241a0a',
-                  background: 'linear-gradient(135deg,#f0dda8,#d4b26a)'
+                  color: ticketFilter === 'waiting' ? '#241a0a' : '#9b958a',
+                  background: ticketFilter === 'waiting'
+                    ? 'linear-gradient(135deg,#f0dda8,#d4b26a)'
+                    : 'rgba(255,255,255,.04)',
+                  border: ticketFilter === 'waiting'
+                    ? '1px solid transparent'
+                    : '1px solid rgba(255,255,255,.08)',
                 }}
               >
                 Đang chờ
-              </span>
-              <span 
-                className="whitespace-nowrap text-[11px] px-3 py-1.5 rounded-lg cursor-pointer"
+              </button>
+              <button
+                type="button"
+                onClick={() => setTicketFilter('all')}
+                aria-pressed={ticketFilter === 'all'}
+                className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
-                  color: '#9b958a',
-                  background: 'rgba(255,255,255,.04)',
-                  border: '1px solid rgba(255,255,255,.08)'
+                  color: ticketFilter === 'all' ? '#241a0a' : '#9b958a',
+                  background: ticketFilter === 'all'
+                    ? 'linear-gradient(135deg,#f0dda8,#d4b26a)'
+                    : 'rgba(255,255,255,.04)',
+                  border: ticketFilter === 'all'
+                    ? '1px solid transparent'
+                    : '1px solid rgba(255,255,255,.08)',
                 }}
               >
                 Tất cả
-              </span>
+              </button>
             </div>
           </div>
           
           <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 custom-scrollbar">
-            {pendingTickets.map(ticket => {
+            {visibleTickets.map(ticket => {
               const isClaimed = ticket.claimedByOther;
               const isSelected = ticket.id === activeTicketId;
               const avatarLetter = (ticket.user?.displayName || 'K').charAt(0).toUpperCase();
@@ -449,12 +489,14 @@ export function AdminSupportDashboard() {
               );
             })}
             
-            {pendingTickets.length === 0 && (
+            {visibleTickets.length === 0 && (
               <div 
                 className="text-center mt-8 text-xs"
                 style={{ color: '#57534b' }}
               >
-                Không có tin nhắn chờ
+                {ticketFilter === 'waiting'
+                  ? 'Không có tin nhắn chờ'
+                  : 'Không có hội thoại'}
               </div>
             )}
           </div>

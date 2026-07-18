@@ -91,6 +91,7 @@ export class SupportChatService {
       include: {
         user: { select: { id: true, displayName: true, email: true } },
         messages: {
+          where: { senderType: { not: SupportSenderType.SYSTEM } },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
