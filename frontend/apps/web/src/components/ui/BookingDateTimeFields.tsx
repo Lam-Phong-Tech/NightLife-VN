@@ -369,10 +369,7 @@ export function BookingDateTimeFields({
                         setTimeMenuOpen(false);
                       }}
                     >
-                      <span>{option.label}</span>
-                      {option.disabled ? (
-                        <small>{translateText("ÄÃ£ qua", activeLanguage)}</small>
-                      ) : null}
+                      {option.label}
                     </button>
                   );
                 })
