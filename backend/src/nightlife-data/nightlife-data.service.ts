@@ -129,6 +129,7 @@ import {
   VIETNAM_CITY_ALIASES,
   vietnamAreaCityLookupNames,
 } from './vietnam-admin-units';
+import { tourDepartureSlotForInstant } from '../tour/tour-departure-schedule';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
@@ -11707,6 +11708,19 @@ export class NightlifeDataService {
     });
     if (!tour || tour.stops.length === 0) {
       throw new NotFoundException('Tour not found');
+    }
+    const departureSlot = tourDepartureSlotForInstant({
+      departureSchedule: tour.departureSchedule,
+      departureTimes: tour.departureTimes,
+      scheduledAt,
+    });
+    if (
+      departureSlot.configured &&
+      !departureSlot.allowedTimes.includes(departureSlot.time)
+    ) {
+      throw new BadRequestException(
+        'Tour is not available at the selected departure time.',
+      );
     }
 
     const stopStoreIds = new Set(tour.stops.map((stop) => stop.storeId));

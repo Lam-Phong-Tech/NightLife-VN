@@ -19,15 +19,30 @@ interface TourSeed {
   stops: TourStopSeed[];
 }
 
+const dailyDepartureSchedule = (times: string[]) =>
+  Object.fromEntries(
+    [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ].map((day) => [day, { isOff: times.length === 0, times }]),
+  );
+
 const TOURS: TourSeed[] = [
   {
     key: 'hanoi-old-quarter-crawl',
     title: 'Hanoi Old Quarter Pub & Lounge Crawl',
-    subtitle: 'Discover the hidden gems, craft beers, and speakeasy lounges in the historic heart of Hanoi.',
+    subtitle:
+      'Discover the hidden gems, craft beers, and speakeasy lounges in the historic heart of Hanoi.',
     city: 'Hà Nội',
     durationHours: 4,
     priceTier: 2,
-    coverUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&h=800&fit=crop&q=80',
+    coverUrl:
+      'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&h=800&fit=crop&q=80',
     status: ProfileStatus.ACTIVE,
     departureTimes: ['19:00', '20:30'],
     stops: [
@@ -39,11 +54,13 @@ const TOURS: TourSeed[] = [
   {
     key: 'saigon-nightlife-vip',
     title: 'Saigon Premium VIP Experience',
-    subtitle: 'Experience Saigon’s most exclusive bars, high-end lounges, and elite clubs in District 1.',
+    subtitle:
+      'Experience Saigon’s most exclusive bars, high-end lounges, and elite clubs in District 1.',
     city: 'Hồ Chí Minh',
     durationHours: 5,
     priceTier: 3,
-    coverUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1200&h=800&fit=crop&q=80',
+    coverUrl:
+      'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1200&h=800&fit=crop&q=80',
     status: ProfileStatus.ACTIVE,
     departureTimes: ['20:00', '21:30'],
     stops: [
@@ -75,6 +92,7 @@ export async function seedTours(
         priceTier: t.priceTier,
         coverUrl: t.coverUrl,
         departureTimes: t.departureTimes,
+        departureSchedule: dailyDepartureSchedule(t.departureTimes),
         status: t.status,
       },
       create: {
@@ -86,6 +104,7 @@ export async function seedTours(
         priceTier: t.priceTier,
         coverUrl: t.coverUrl,
         departureTimes: t.departureTimes,
+        departureSchedule: dailyDepartureSchedule(t.departureTimes),
         status: t.status,
       },
     });
@@ -120,6 +139,8 @@ export async function seedTours(
     }
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} tours & related stops successfully seeded`);
+  console.log(
+    `     ✓ ${Object.keys(result).length} tours & related stops successfully seeded`,
+  );
   return result;
 }

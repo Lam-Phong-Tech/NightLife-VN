@@ -1391,20 +1391,21 @@ model Campaign {
 }
 
 model Tour {
-  id             String        @id @default(uuid()) @db.Uuid
-  title          String
-  subtitle       String?
-  city           String        @default("Hanoi")
-  durationHours  Int           @default(4) @map("duration_hours")
-  priceTier      Int           @default(3) @map("price_tier")
-  coverUrl       String?       @map("cover_url")
-  status         ProfileStatus @default(ACTIVE)
-  stops          TourStop[]
-  bookings       TourBooking[]
-  departureTimes String[]      @default([]) @map("departure_times")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  deletedAt      DateTime?     @map("deleted_at")
+  id                String        @id @default(uuid()) @db.Uuid
+  title             String
+  subtitle          String?
+  city              String        @default("Hanoi")
+  durationHours     Int           @default(4) @map("duration_hours")
+  priceTier         Int           @default(3) @map("price_tier")
+  coverUrl          String?       @map("cover_url")
+  status            ProfileStatus @default(ACTIVE)
+  stops             TourStop[]
+  bookings          TourBooking[]
+  departureTimes    String[]      @default([]) @map("departure_times")
+  departureSchedule Json          @default("{}") @map("departure_schedule")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
 
   @@index([status])
   @@index([city])

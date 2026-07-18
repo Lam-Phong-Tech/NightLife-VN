@@ -1,4 +1,5 @@
 import { apiClient, resolveClientUrl } from "./client";
+import type { TourDepartureSchedule } from "@/lib/tour-departure-schedule";
 
 export type TourArea = {
   id: string;
@@ -78,6 +79,7 @@ export type PublicTour = {
   coverUrl?: string | null;
   status: "ACTIVE" | "HIDDEN" | "DELETED";
   departureTimes: string[];
+  departureSchedule?: TourDepartureSchedule | null;
   stops: PublicTourStop[];
   createdAt?: string;
   updatedAt?: string;

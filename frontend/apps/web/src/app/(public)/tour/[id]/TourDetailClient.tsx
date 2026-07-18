@@ -47,6 +47,10 @@ import {
 import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import {
+  hasTourDepartureSchedule,
+  tourDepartureTimesForDate,
+} from "@/lib/tour-departure-schedule";
 import styles from "./TourDetailClient.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -453,16 +457,25 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     [selectedCastKeys, tourCasts],
   );
   const bookingStore = firstStore;
+  const hasExplicitDepartureConfig =
+    hasTourDepartureSchedule(tour.departureSchedule) || tour.departureTimes.length > 0;
   const explicitDepartureTimes = useMemo(
-    () => Array.from(new Set(tour.departureTimes.map(normalizeTimeOption).filter(Boolean))).sort(),
-    [tour.departureTimes],
+    () =>
+      tourDepartureTimesForDate(
+        tour.departureSchedule,
+        bookingDate,
+        tour.departureTimes,
+      )
+        .map(normalizeTimeOption)
+        .filter(Boolean),
+    [bookingDate, tour.departureSchedule, tour.departureTimes],
   );
   const bookingTimeOptions = useMemo(
     () =>
-      explicitDepartureTimes.length
+      hasExplicitDepartureConfig
         ? explicitDepartureTimes
         : buildBookingTimeSlots(bookingStore?.openingHours, bookingDate, { fallback: "empty" }),
-    [bookingDate, bookingStore?.openingHours, explicitDepartureTimes],
+    [bookingDate, bookingStore?.openingHours, explicitDepartureTimes, hasExplicitDepartureConfig],
   );
 
   useEffect(() => {
@@ -530,7 +543,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const scheduledPreviewAt = buildScheduledAtFromBookingSlot(
     bookingDate,
     bookingTime,
-    explicitDepartureTimes.length ? undefined : bookingStore?.openingHours,
+    hasExplicitDepartureConfig ? undefined : bookingStore?.openingHours,
   );
   const fieldErrors = useMemo(
     () =>
@@ -573,7 +586,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     const scheduledAt = buildScheduledAtFromBookingSlot(
       bookingDate,
       bookingTime,
-      explicitDepartureTimes.length ? undefined : bookingStore?.openingHours,
+      hasExplicitDepartureConfig ? undefined : bookingStore?.openingHours,
     );
     const validationErrors = buildBookingFieldErrors({
       availableTimes: bookingTimeOptions,

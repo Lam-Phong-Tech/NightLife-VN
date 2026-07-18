@@ -3,6 +3,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
+import {
+  collectTourDepartureTimes,
+  normalizeTourDepartureSchedule,
+  type TourDepartureSchedule,
+} from './tour-departure-schedule';
 
 @Injectable()
 export class TourService {
@@ -266,6 +271,10 @@ export class TourService {
 
   async create(dto: CreateTourDto) {
     const { stops, ...tourData } = dto;
+    const departureSchedule = normalizeTourDepartureSchedule(
+      tourData.departureSchedule,
+      tourData.departureTimes,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const tour = await tx.tour.create({
@@ -277,7 +286,8 @@ export class TourService {
           priceTier: tourData.priceTier,
           coverUrl: tourData.coverUrl,
           status: tourData.status || 'ACTIVE',
-          departureTimes: tourData.departureTimes,
+          departureTimes: collectTourDepartureTimes(departureSchedule),
+          departureSchedule,
         },
       });
 
@@ -305,6 +315,18 @@ export class TourService {
 
   async update(id: string, dto: UpdateTourDto) {
     const { stops, ...tourData } = dto;
+    let departureSchedule: TourDepartureSchedule | undefined;
+    if (tourData.departureSchedule !== undefined) {
+      departureSchedule = normalizeTourDepartureSchedule(
+        tourData.departureSchedule,
+        tourData.departureTimes,
+      );
+    } else if (tourData.departureTimes !== undefined) {
+      departureSchedule = normalizeTourDepartureSchedule(
+        undefined,
+        tourData.departureTimes,
+      );
+    }
 
     const existing = await this.prisma.tour.findFirst({
       where: { id, status: { not: 'DELETED' } },
@@ -324,7 +346,12 @@ export class TourService {
           priceTier: tourData.priceTier,
           coverUrl: tourData.coverUrl,
           status: tourData.status,
-          departureTimes: tourData.departureTimes,
+          ...(departureSchedule
+            ? {
+                departureTimes: collectTourDepartureTimes(departureSchedule),
+                departureSchedule,
+              }
+            : {}),
         },
       });
 
