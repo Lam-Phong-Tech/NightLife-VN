@@ -1483,7 +1483,7 @@ export default function Page() {
                       <div className="nl-receipt-row">
                         <span className="nl-receipt-label">{t("Mã ưu đãi/QR")}</span>
                         <div className="nl-receipt-line"></div>
-                        <span className="nl-receipt-value">
+                        <span className="nl-receipt-value nl-receipt-value-wrap">
                           {selectedBooking.coupon?.name ??
                             selectedBooking.couponIssue?.code ??
                             t("QR đặt chỗ")}
@@ -2082,6 +2082,7 @@ export default function Page() {
           justify-content: space-between;
           align-items: center;
           font-size: 12px;
+          min-width: 0;
         }
 
         .nl-receipt-label {
@@ -2103,6 +2104,16 @@ export default function Page() {
           flex-shrink: 0;
         }
 
+        .nl-receipt-value-wrap {
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: 58%;
+          text-align: right;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.35;
+        }
+
         .nl-receipt-value.highlight {
           color: var(--vy-gold-pale);
         }
@@ -2116,22 +2127,25 @@ export default function Page() {
           width: 100%;
         }
 
-        .nl-upload-zone {
+        .nl-field .nl-upload-zone {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          gap: 0;
           border: 1px dashed var(--vy-border-gold-32);
           border-radius: 12px;
           background: rgba(255, 255, 255, 0.01);
           padding: 24px 16px;
           cursor: pointer;
           text-align: center;
+          text-transform: none;
+          letter-spacing: 0;
           transition: all 0.3s ease;
           width: 100%;
         }
 
-        .nl-upload-zone:hover {
+        .nl-field .nl-upload-zone:hover {
           border-color: var(--vy-gold);
           background: rgba(212, 178, 106, 0.02);
         }
@@ -2140,6 +2154,8 @@ export default function Page() {
           color: var(--vy-gold);
           margin-bottom: 8px;
           opacity: 0.8;
+          align-self: center;
+          flex: none;
         }
 
         .nl-upload-title {
@@ -2147,17 +2163,28 @@ export default function Page() {
           font-weight: 600;
           color: var(--vy-text);
           margin-bottom: 4px;
+          display: block;
+          width: 100%;
+          text-align: center;
         }
 
         .nl-upload-subtitle {
           font-size: 10.5px;
           color: var(--vy-muted);
           margin-bottom: 8px;
+          display: block;
+          width: 100%;
+          text-align: center;
+          line-height: 1.35;
         }
 
         .nl-upload-hint {
           font-size: 11px;
           color: var(--vy-faint);
+          display: block;
+          width: 100%;
+          text-align: center;
+          line-height: 1.35;
         }
 
         .nl-upload-input-hidden {

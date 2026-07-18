@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Check,
   ChevronLeft,
@@ -352,6 +353,11 @@ export default function Page() {
   const [isRescheduleHoursLoading, setRescheduleHoursLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
+  const [dialogPortalTarget, setDialogPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setDialogPortalTarget(document.body);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -1010,14 +1016,15 @@ export default function Page() {
           </div>
         </div>
       ) : null}
-      {pendingRescheduleBooking ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reschedule-booking-title"
-          className={styles.dialogOverlay}
-        >
-          <div className={styles.dialogPanel}>
+      {pendingRescheduleBooking && dialogPortalTarget
+        ? createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reschedule-booking-title"
+            className={styles.dialogOverlay}
+          >
+            <div className={styles.dialogPanel}>
             <h2 id="reschedule-booking-title">Đổi lịch booking</h2>
             <p>
               Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay
@@ -1090,9 +1097,11 @@ export default function Page() {
                 {reschedulingId ? "Đang cập nhật" : "Cập nhật lịch"}
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
+            </div>
+          </div>,
+          dialogPortalTarget,
+        )
+        : null}
     </main>
   );
 }
