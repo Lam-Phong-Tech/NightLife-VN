@@ -1523,17 +1523,27 @@ export function CastProfileStyles() {
         }
 
         .cast-lightbox-media {
-          width: min(1040px, 82vw);
-          height: 68vh;
-          max-height: calc(100vh - 190px);
+          width: auto;
+          max-width: min(1040px, 82vw);
+          height: auto;
+          max-height: 68vh;
           justify-self: center;
           align-self: center;
-          overflow: hidden;
+          overflow: visible;
         }
 
         .cast-lightbox-media img,
-        .cast-lightbox-media video,
+        .cast-lightbox-media video {
+          width: auto;
+          height: auto;
+          max-width: min(1040px, 82vw);
+          max-height: 68vh;
+          border-radius: 18px;
+        }
+
         .cast-lightbox-media iframe {
+          width: min(1040px, 82vw);
+          height: min(68vh, 585px);
           border-radius: 18px;
         }
 
