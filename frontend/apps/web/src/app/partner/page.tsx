@@ -1783,6 +1783,17 @@ export default function PartnerPage() {
     });
   };
 
+  const staffPermissionLabel = (permission: string) => {
+    if (permission === 'coupon.scan') return 'Quét coupon';
+    if (permission === 'checkin.confirm') return 'Xác nhận check-in';
+    return permission;
+  };
+
+  const staffPermissionsForDisplay = (staff: any): string[] => {
+    const permissions = Array.isArray(staff?.permissions) ? staff.permissions : [];
+    return permissions.length ? permissions : ['coupon.scan', 'checkin.confirm'];
+  };
+
   const partnerThemeVariables = partnerTheme === 'light'
     ? partnerLightThemeVariables
     : partnerDarkThemeVariables;
@@ -6963,7 +6974,7 @@ export default function PartnerPage() {
               </div>
 
               {/* Bảng danh sách nhân viên */}
-              <div style={{ overflowX: 'auto', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
+              <div className="partner-staff-table-wrap" style={{ overflowX: 'auto', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ background: colors.surface3, borderBottom: `1px solid ${colors.borderSoft}`, color: colors.text2, fontWeight: 700 }}>
@@ -7031,6 +7042,61 @@ export default function PartnerPage() {
                   </tbody>
                 </table>
               </div>
+
+              <div className="partner-staff-mobile-list">
+                {isLoadingStaff ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <article className="partner-staff-mobile-card" key={`staff-loading-${index}`}>
+                      <div className="partner-staff-mobile-skeleton" />
+                      <div className="partner-staff-mobile-skeleton short" />
+                      <div className="partner-staff-mobile-skeleton" />
+                    </article>
+                  ))
+                ) : staffList.length === 0 ? (
+                  <div className="partner-staff-mobile-empty">Chưa có nhân viên nào tại quán này.</div>
+                ) : (
+                  staffList.map((staff) => {
+                    const currentStore = stores.find((s) => s.id === settingsStoreId);
+                    const permissions = staffPermissionsForDisplay(staff);
+                    const active = staff.status === 'ACTIVE';
+                    return (
+                      <article className="partner-staff-mobile-card" key={staff.id}>
+                        <div className="partner-staff-mobile-head">
+                          <div>
+                            <strong>{staff.displayName}</strong>
+                            <span>{staff.email}</span>
+                          </div>
+                          <span className={active ? 'partner-staff-mobile-status active' : 'partner-staff-mobile-status'}>
+                            {active ? 'Hoạt động' : 'Ngưng hoạt động'}
+                          </span>
+                        </div>
+                        <dl className="partner-staff-mobile-details">
+                          <div>
+                            <dt>Quán</dt>
+                            <dd>{currentStore?.name || 'N/A'}</dd>
+                          </div>
+                          <div>
+                            <dt>Quyền</dt>
+                            <dd className="partner-staff-mobile-permissions">
+                              {permissions.map((permission) => (
+                                <span key={permission}>{staffPermissionLabel(permission)}</span>
+                              ))}
+                            </dd>
+                          </div>
+                        </dl>
+                        <button
+                          type="button"
+                          className="partner-staff-mobile-delete"
+                          onClick={() => handleDeleteStaff(staff.id, staff.displayName)}
+                        >
+                          <XCircle size={16} />
+                          Xóa nhân viên
+                        </button>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </PanelCard>
         )}
@@ -7061,7 +7127,7 @@ export default function PartnerPage() {
     <main
       style={{
         ...partnerThemeVariables,
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: colors.bg,
         color: colors.text,
         fontFamily: 'var(--nl-font-sans)',
@@ -7071,7 +7137,7 @@ export default function PartnerPage() {
         .partner-shell {
           display: block;
           padding-left: 252px;
-          min-height: 100vh;
+          min-height: 100dvh;
         }
         .partner-content {
           padding: 26px 30px 34px;
@@ -7644,6 +7710,9 @@ export default function PartnerPage() {
         .partner-settlement-mobile-list {
           display: none;
         }
+        .partner-staff-mobile-list {
+          display: none;
+        }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -7674,7 +7743,7 @@ export default function PartnerPage() {
         @media (max-width: 860px) {
           .partner-shell {
             padding-left: 0;
-            padding-bottom: 80px !important;
+            padding-bottom: 0 !important;
           }
           .partner-sidebar {
             display: none !important;
@@ -7807,7 +7876,7 @@ export default function PartnerPage() {
             flex-direction: column;
           }
           .partner-content {
-            padding: 14px 14px calc(92px + env(safe-area-inset-bottom)) !important;
+            padding: 14px 14px calc(72px + env(safe-area-inset-bottom)) !important;
           }
           .partner-panel-card {
             border-radius: 14px !important;
@@ -8211,6 +8280,141 @@ export default function PartnerPage() {
             border-radius: 14px;
             margin: 0 -2px;
           }
+          .partner-staff-table-wrap {
+            display: none !important;
+          }
+          .partner-staff-mobile-list {
+            display: grid;
+            gap: 10px;
+          }
+          .partner-staff-mobile-card {
+            border: 1px solid ${colors.borderHair};
+            border-radius: 14px;
+            background: ${colors.surface2};
+            color: ${colors.text};
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+            padding: 13px;
+          }
+          .partner-staff-mobile-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            min-width: 0;
+          }
+          .partner-staff-mobile-head > div {
+            min-width: 0;
+          }
+          .partner-staff-mobile-head strong {
+            color: ${colors.text};
+            display: block;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+          }
+          .partner-staff-mobile-head span {
+            color: ${colors.text2};
+            display: block;
+            font-size: 12px;
+            line-height: 1.35;
+            margin-top: 4px;
+            overflow-wrap: anywhere;
+          }
+          .partner-staff-mobile-status {
+            border: 1px solid rgba(255,180,168,.24);
+            border-radius: 999px;
+            background: rgba(255,180,168,.08);
+            color: ${colors.danger} !important;
+            flex: 0 0 auto;
+            font-size: 11px !important;
+            font-weight: 900;
+            min-height: 26px;
+            padding: 4px 9px;
+            white-space: nowrap;
+          }
+          .partner-staff-mobile-status.active {
+            border-color: rgba(141,230,176,.26);
+            background: rgba(141,230,176,.1);
+            color: ${colors.success} !important;
+          }
+          .partner-staff-mobile-details {
+            display: grid;
+            gap: 9px;
+            margin: 0;
+          }
+          .partner-staff-mobile-details > div {
+            display: grid;
+            grid-template-columns: 74px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+          }
+          .partner-staff-mobile-details dt {
+            color: ${colors.muted};
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.35;
+          }
+          .partner-staff-mobile-details dd {
+            color: ${colors.text2};
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+          .partner-staff-mobile-permissions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+          .partner-staff-mobile-permissions span {
+            border: 1px solid ${colors.borderGold22};
+            border-radius: 999px;
+            background: rgba(212,178,106,.1);
+            color: ${colors.goldPale};
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 9px;
+            font-size: 11px;
+            font-weight: 800;
+          }
+          .partner-staff-mobile-delete {
+            min-height: 38px;
+            border-radius: 11px;
+            border: 1px solid rgba(255,180,168,.3);
+            background: rgba(255,180,168,.08);
+            color: ${colors.danger};
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            width: 100%;
+          }
+          .partner-staff-mobile-empty {
+            border: 1px dashed ${colors.borderGold32};
+            border-radius: 14px;
+            color: ${colors.text2};
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 16px 12px;
+            text-align: center;
+          }
+          .partner-staff-mobile-skeleton {
+            min-height: 16px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+          }
+          .partner-staff-mobile-skeleton.short {
+            width: 58%;
+          }
           .partner-form-field input,
           .partner-form-field select,
           .partner-form-field textarea,
@@ -8257,8 +8461,8 @@ export default function PartnerPage() {
             left: 0,
             bottom: 0,
             width: '252px',
-            height: '100vh',
-            minHeight: '100vh',
+            height: '100dvh',
+            minHeight: '100dvh',
             overflowY: 'auto',
             zIndex: 10,
             borderRight: `1px solid ${colors.borderGold12}`,
