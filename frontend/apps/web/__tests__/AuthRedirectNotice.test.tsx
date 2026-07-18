@@ -39,4 +39,27 @@ describe("auth redirect notice", () => {
     expect(window.location.pathname).toBe("/admin");
     expect(window.location.search).toBe("");
   });
+
+  it("explains why an authenticated partner cannot submit another registration", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/partner?auth_notice=partner-registration-blocked&active_role=PARTNER",
+    );
+
+    render(<AuthRedirectNotice />);
+
+    await waitFor(() => {
+      expect(feedbackMocks.showToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tone: "warning",
+          title: "Tài khoản Partner đã được kích hoạt.",
+          description: "Tài khoản Partner hiện tại không thể đăng ký thêm đối tác mới.",
+        }),
+      );
+    });
+
+    expect(window.location.pathname).toBe("/partner");
+    expect(window.location.search).toBe("");
+  });
 });

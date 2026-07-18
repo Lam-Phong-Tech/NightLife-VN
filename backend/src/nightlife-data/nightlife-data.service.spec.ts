@@ -6607,6 +6607,30 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('rejects a new partner registration from an authenticated partner account', async () => {
+    await expect(
+      service.createPartnerRequest(
+        {
+          businessName: 'Another Venue',
+          contactName: 'Partner Owner',
+          contactPhone: '+84901234567',
+        },
+        {
+          id: 'partner-1',
+          email: 'partner@example.com',
+          role: 'PARTNER',
+        },
+      ),
+    ).rejects.toThrow(
+      new ForbiddenException(
+        'Tài khoản Partner không thể đăng ký thêm đối tác mới.',
+      ),
+    );
+
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('keeps the CMS partner request when Telegram delivery fails', async () => {
     prisma.store.create.mockResolvedValueOnce({
       id: 'store-draft-1',

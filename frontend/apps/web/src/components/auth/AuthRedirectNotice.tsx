@@ -24,7 +24,23 @@ export function AuthRedirectNotice() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get("auth_notice") !== "login-blocked") return;
+    const notice = url.searchParams.get("auth_notice");
+    if (notice === "partner-registration-blocked") {
+      feedback.showToast({
+        tone: "warning",
+        title: "Tài khoản Partner đã được kích hoạt.",
+        description: "Tài khoản Partner hiện tại không thể đăng ký thêm đối tác mới.",
+        durationMs: 6000,
+        placement: "top-right",
+      });
+
+      url.searchParams.delete("auth_notice");
+      url.searchParams.delete("active_role");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      return;
+    }
+
+    if (notice !== "login-blocked") return;
 
     const activeRole = url.searchParams.get("active_role") || "";
     const requestedPortal = url.searchParams.get("requested_portal") || "";

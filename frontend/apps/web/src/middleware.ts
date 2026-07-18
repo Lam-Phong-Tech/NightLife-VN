@@ -98,6 +98,13 @@ function redirectActiveSession(
   return NextResponse.redirect(redirectUrl);
 }
 
+function redirectPartnerRegistration(request: NextRequest) {
+  const redirectUrl = new URL('/partner', request.url);
+  redirectUrl.searchParams.set('auth_notice', 'partner-registration-blocked');
+  redirectUrl.searchParams.set('active_role', 'PARTNER');
+  return NextResponse.redirect(redirectUrl);
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const memberPaths = ['/tai-khoan', '/bao-mat-tai-khoan', '/da-luu', '/gui-hoa-don', '/vi-uu-dai'];
@@ -110,6 +117,13 @@ export function middleware(request: NextRequest) {
     const authenticatedSession = getAuthenticatedHomePath(request);
     if (authenticatedSession) {
       return redirectActiveSession(request, authenticatedSession, pathname);
+    }
+  }
+
+  if (pathname === '/dang-ky-doi-tac') {
+    const authenticatedSession = getAuthenticatedHomePath(request);
+    if (authenticatedSession?.role === 'PARTNER') {
+      return redirectPartnerRegistration(request);
     }
   }
 

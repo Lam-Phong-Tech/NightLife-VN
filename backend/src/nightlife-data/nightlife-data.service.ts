@@ -7215,7 +7215,16 @@ export class NightlifeDataService {
     return bill;
   }
 
-  async createPartnerRequest(dto: CreatePartnerRequestDto) {
+  async createPartnerRequest(
+    dto: CreatePartnerRequestDto,
+    user?: AuthenticatedUser,
+  ) {
+    if (user?.role === 'PARTNER') {
+      throw new ForbiddenException(
+        'Tài khoản Partner không thể đăng ký thêm đối tác mới.',
+      );
+    }
+
     const submittedAt = new Date();
     const requestId = `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`;
     const businessName = this.cleanRequiredText(

@@ -77,6 +77,27 @@ describe('auth middleware login-page redirects', () => {
     });
   });
 
+  it('blocks an authenticated partner from opening partner registration', () => {
+    const response = runMiddleware('/dang-ky-doi-tac', {
+      partner_auth_token: createToken('PARTNER'),
+    });
+
+    const location = response.headers.get('location');
+    expect(location).not.toBeNull();
+
+    const url = new URL(location || 'https://nightlife.test');
+    expect(url.pathname).toBe('/partner');
+    expect(url.searchParams.get('auth_notice')).toBe('partner-registration-blocked');
+    expect(url.searchParams.get('active_role')).toBe('PARTNER');
+  });
+
+  it('keeps partner registration public for visitors without a session', () => {
+    const response = runMiddleware('/dang-ky-doi-tac');
+
+    expect(response.headers.get('location')).toBeNull();
+    expect(response.headers.get('x-middleware-next')).toBe('1');
+  });
+
   it('redirects an authenticated member to the member account page', () => {
     const response = runMiddleware('/dang-nhap', {
       auth_token: createToken('USER'),

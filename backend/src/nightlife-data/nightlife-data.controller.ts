@@ -18,6 +18,7 @@ import { ActionPolicy } from '../access/action-policy.decorator';
 import { ActionPolicyGuard } from '../access/action-policy.guard';
 import { AuthenticatedUser } from '../access/access.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
@@ -156,6 +157,10 @@ import {
 
 type RequestWithUser = express.Request & {
   user: AuthenticatedUser;
+};
+
+type RequestWithOptionalUser = express.Request & {
+  user?: AuthenticatedUser;
 };
 
 @ApiTags('nightlife-data')
@@ -472,9 +477,13 @@ export class NightlifeDataController {
   }
 
   @CreatePartnerRequestContract()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('partner-requests')
-  createPartnerRequest(@Body() dto: CreatePartnerRequestDto) {
-    return this.nightlifeDataService.createPartnerRequest(dto);
+  createPartnerRequest(
+    @Req() request: RequestWithOptionalUser,
+    @Body() dto: CreatePartnerRequestDto,
+  ) {
+    return this.nightlifeDataService.createPartnerRequest(dto, request.user);
   }
 
   @ClaimGuestCouponContract()

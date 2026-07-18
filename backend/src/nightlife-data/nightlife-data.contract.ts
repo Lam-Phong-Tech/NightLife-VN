@@ -1627,7 +1627,7 @@ export function CreatePartnerRequestContract() {
     ApiOperation({
       summary: 'Partner action: submit a partner request',
       description:
-        'Auth guard: none. Accepts a public partner request and sends P0 Telegram admin notification using template telegram.admin.partner.requested.v1. CMS link: /admin?tab=partners.',
+        'Optional JWT auth. Accepts a public partner request from visitors, rejects authenticated PARTNER accounts, and sends P0 Telegram admin notification using template telegram.admin.partner.requested.v1. CMS link: /admin?tab=partners.',
     }),
     ApiBody({ type: CreatePartnerRequestDto }),
     ApiCreatedResponse({
@@ -1637,6 +1637,17 @@ export function CreatePartnerRequestContract() {
     ApiBadRequestResponse({
       description: 'Invalid partner request body.',
       schema: { example: badRequestExample },
+    }),
+    ApiForbiddenResponse({
+      description:
+        'An authenticated PARTNER account cannot submit another partner registration.',
+      schema: {
+        example: {
+          statusCode: 403,
+          message: 'Tài khoản Partner không thể đăng ký thêm đối tác mới.',
+          error: 'Forbidden',
+        },
+      },
     }),
   );
 }
