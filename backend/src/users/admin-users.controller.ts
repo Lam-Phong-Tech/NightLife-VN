@@ -42,10 +42,7 @@ export class AdminUsersController {
 
     if (forRole === 'partner' || forRole === 'PARTNER') {
       if (userId) {
-        where.OR = [
-          { ownerId: null },
-          { ownerId: userId },
-        ];
+        where.OR = [{ ownerId: null }, { ownerId: userId }];
       } else {
         where.ownerId = null; // Quán chưa có chủ
       }
@@ -102,7 +99,8 @@ export class AdminUsersController {
   @Patch(':id')
   updateUser(
     @Param('id') id: string,
-    @Body() dto: { displayName: string; email: string; storeId?: string | null },
+    @Body()
+    dto: { displayName: string; email: string; storeId?: string | null },
   ) {
     return this.usersService.updateProfile(id, dto);
   }

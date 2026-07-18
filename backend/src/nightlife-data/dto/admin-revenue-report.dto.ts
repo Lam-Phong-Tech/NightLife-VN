@@ -103,8 +103,7 @@ export class AdminRevenueReportQueryDto {
 
   @ApiPropertyOptional({
     enum: ADMIN_REVENUE_REPORT_FLAG_FILTERS,
-    description:
-      'Optional legacy commission snapshot flag filter.',
+    description: 'Optional legacy commission snapshot flag filter.',
   })
   @IsOptional()
   @IsIn(ADMIN_REVENUE_REPORT_FLAG_FILTERS)

@@ -36,11 +36,7 @@ export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
     'Thừa Thiên Huế',
     'Thua Thien Hue',
   ]),
-  vietnamProvinceArea('laocai', 'Lào Cai', [
-    'Lao Cai',
-    'Yên Bái',
-    'Yen Bai',
-  ]),
+  vietnamProvinceArea('laocai', 'Lào Cai', ['Lao Cai', 'Yên Bái', 'Yen Bai']),
   vietnamProvinceArea('thainguyen', 'Thái Nguyên', [
     'Thai Nguyen',
     'Bắc Kạn',
@@ -88,14 +84,8 @@ export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
     'Hội An',
     'Hoi An',
   ]),
-  vietnamProvinceArea('quangngai', 'Quảng Ngãi', [
-    'Quang Ngai',
-    'Kon Tum',
-  ]),
-  vietnamProvinceArea('gialai', 'Gia Lai', [
-    'Bình Định',
-    'Binh Dinh',
-  ]),
+  vietnamProvinceArea('quangngai', 'Quảng Ngãi', ['Quang Ngai', 'Kon Tum']),
+  vietnamProvinceArea('gialai', 'Gia Lai', ['Bình Định', 'Binh Dinh']),
   vietnamProvinceArea('khanhhoa', 'Khánh Hòa', [
     'Khanh Hoa',
     'Ninh Thuận',
@@ -138,10 +128,7 @@ export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
     'Bình Phước',
     'Binh Phuoc',
   ]),
-  vietnamProvinceArea('tayninh', 'Tây Ninh', [
-    'Tay Ninh',
-    'Long An',
-  ]),
+  vietnamProvinceArea('tayninh', 'Tây Ninh', ['Tay Ninh', 'Long An']),
   vietnamProvinceArea('cantho', 'Cần Thơ', [
     'Can Tho',
     'Sóc Trăng',
@@ -163,11 +150,7 @@ export const VIETNAM_PROVINCE_AREAS: VietnamProvinceArea[] = [
     'Mỹ Tho',
     'My Tho',
   ]),
-  vietnamProvinceArea('camau', 'Cà Mau', [
-    'Ca Mau',
-    'Bạc Liêu',
-    'Bac Lieu',
-  ]),
+  vietnamProvinceArea('camau', 'Cà Mau', ['Ca Mau', 'Bạc Liêu', 'Bac Lieu']),
   vietnamProvinceArea('angiang', 'An Giang', [
     'Kiên Giang',
     'Kien Giang',

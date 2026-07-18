@@ -44,7 +44,12 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    input: { displayName: string; email: string; phone?: string | null; storeId?: string | null },
+    input: {
+      displayName: string;
+      email: string;
+      phone?: string | null;
+      storeId?: string | null;
+    },
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
@@ -89,13 +94,19 @@ export class UsersService {
 
           // Unlink any stores currently linked to this partner account (except the new one)
           await tx.store.updateMany({
-            where: { partnerAccountId: partnerAccount.id, NOT: storeId ? { id: storeId } : undefined },
+            where: {
+              partnerAccountId: partnerAccount.id,
+              NOT: storeId ? { id: storeId } : undefined,
+            },
             data: { partnerAccountId: null, ownerId: null },
           });
 
           // Deactivate permissions for stores no longer linked
           const oldStores = await tx.store.findMany({
-            where: { partnerAccountId: partnerAccount.id, NOT: storeId ? { id: storeId } : undefined },
+            where: {
+              partnerAccountId: partnerAccount.id,
+              NOT: storeId ? { id: storeId } : undefined,
+            },
             select: { id: true },
           });
           for (const oldStore of oldStores) {

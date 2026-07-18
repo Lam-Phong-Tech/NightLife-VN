@@ -132,11 +132,7 @@ describe('NightlifeDataService', () => {
     bookingQr: {
       count: jest.fn(),
     },
-    tour: {
-      findFirst: jest.fn(),
-    },
     tourBooking: {
-      create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
@@ -144,7 +140,6 @@ describe('NightlifeDataService', () => {
       updateMany: jest.fn(),
     },
     tourBookingQr: {
-      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -1271,89 +1266,6 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('includes every Vietnam city code for featured public rankings when city is all', async () => {
-    prisma.rankingConfig.findMany.mockResolvedValue([
-      {
-        targetId: 'store-hn',
-        cityCode: 'hn',
-        category: 'RESTAURANT',
-        scope: 'featured_home',
-        manualScore: 40,
-        pinRank: 1,
-        sponsored: false,
-        updatedAt: new Date('2026-07-18T00:00:00.000Z'),
-      },
-      {
-        targetId: 'store-hcm',
-        cityCode: 'hcm',
-        category: 'RESTAURANT',
-        scope: 'featured_home',
-        manualScore: 30,
-        pinRank: 2,
-        sponsored: false,
-        updatedAt: new Date('2026-07-18T00:00:00.000Z'),
-      },
-    ] as never);
-    prisma.store.findMany.mockResolvedValue([
-      {
-        id: 'store-hn',
-        name: 'Tokyo Kitchen',
-        slug: 'tokyo-kitchen',
-        category: 'RESTAURANT',
-        city: 'Ha Noi',
-        district: 'Tay Ho',
-        phone: null,
-        area: {
-          id: 'area-hn',
-          code: 'hn-tayho',
-          name: 'Tay Ho',
-          city: 'Ha Noi',
-          district: 'Tay Ho',
-        },
-        media: [],
-      },
-      {
-        id: 'store-hcm',
-        name: 'Hanami Dining',
-        slug: 'hanami-dining',
-        category: 'RESTAURANT',
-        city: 'TP.HCM',
-        district: 'Quan 3',
-        phone: null,
-        area: {
-          id: 'area-hcm',
-          code: 'hcm-q3',
-          name: 'Quan 3',
-          city: 'TP.HCM',
-          district: 'Quan 3',
-        },
-        media: [],
-      },
-    ] as never);
-
-    const result = await service.listPublicRankings({
-      targetType: 'STORE',
-      city: 'all',
-      category: 'RESTAURANT',
-      scope: 'featured_home',
-      limit: '8',
-    });
-
-    expect(result.data.map((item) => item.targetId)).toEqual([
-      'store-hn',
-      'store-hcm',
-    ]);
-    const rankingWhere = (prisma.rankingConfig.findMany as jest.Mock).mock
-      .calls[0][0].where;
-    expect(rankingWhere.AND).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
-        }),
-      ]),
-    );
-  });
-
   it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';
@@ -2332,187 +2244,6 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('emails the master tour QR to guest tour bookers', async () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
-    const scheduledAt = new Date('2026-07-10T09:00:00.000Z');
-    const tourBookingId = 'tour-booking-1';
-    const guest = {
-      id: 'guest-tour-1',
-      displayName: 'Guest Tour',
-      phone: null,
-      email: 'tourguest@example.com',
-    };
-    const stopOneStore = {
-      id: 'store-1',
-      name: 'Tokyo Kitchen',
-      slug: 'tokyo-kitchen',
-      category: 'RESTAURANT',
-      openingHours: null,
-    };
-    const stopTwoStore = {
-      id: 'store-2',
-      name: 'Sakura Lounge',
-      slug: 'sakura-lounge',
-      category: 'KARAOKE',
-      openingHours: null,
-    };
-    const bookingStopOne = {
-      id: 'booking-stop-1',
-      bookingCode: 'BK-STOP-1',
-      storeId: stopOneStore.id,
-      castId: null,
-      status: 'REQUESTED',
-      scheduledAt,
-      partySize: 2,
-      subtotalVnd: null,
-      discountVnd: null,
-      totalVnd: null,
-      discountSnapshot: null,
-      note: 'Need a guide',
-      cancelledAt: null,
-      createdAt: new Date('2026-07-01T10:00:00.000Z'),
-      store: { ...stopOneStore, media: [] },
-      cast: null,
-      user: null,
-      guest,
-      coupon: null,
-      couponIssue: null,
-      qr: null,
-    };
-    const bookingStopTwo = {
-      ...bookingStopOne,
-      id: 'booking-stop-2',
-      bookingCode: 'BK-STOP-2',
-      storeId: stopTwoStore.id,
-      store: { ...stopTwoStore, media: [] },
-    };
-    prisma.tour.findFirst.mockResolvedValue({
-      id: 'tour-1',
-      title: 'Tokyo Night Tour',
-      durationHours: 4,
-      stops: [
-        {
-          id: 'stop-1',
-          storeId: stopOneStore.id,
-          order: 1,
-          store: stopOneStore,
-        },
-        {
-          id: 'stop-2',
-          storeId: stopTwoStore.id,
-          order: 2,
-          store: stopTwoStore,
-        },
-      ],
-    });
-    prisma.guest.create.mockResolvedValue({ id: guest.id });
-    prisma.tourBooking.create.mockResolvedValue({ id: tourBookingId });
-    prisma.booking.create
-      .mockResolvedValueOnce({ id: bookingStopOne.id })
-      .mockResolvedValueOnce({ id: bookingStopTwo.id });
-    adminNotificationService.notifyBookingCreated.mockResolvedValue(undefined);
-    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue({
-      id: tourBookingId,
-      bookingCode: 'TR-TOUR01',
-      status: 'REQUESTED',
-      scheduledAt,
-      partySize: 2,
-      titleSnapshot: 'Tokyo Night Tour',
-      itinerarySnapshot: [
-        {
-          tourStopId: 'stop-1',
-          order: 1,
-          storeId: stopOneStore.id,
-          storeSlug: stopOneStore.slug,
-          storeName: stopOneStore.name,
-          casts: [],
-        },
-        {
-          tourStopId: 'stop-2',
-          order: 2,
-          storeId: stopTwoStore.id,
-          storeSlug: stopTwoStore.slug,
-          storeName: stopTwoStore.name,
-          casts: [],
-        },
-      ],
-      note: 'Need a guide',
-      tour: { id: 'tour-1', title: 'Tokyo Night Tour' },
-      user: null,
-      guest,
-      qr: {
-        id: 'qr-tour-1',
-        code: 'TQR-TOUR1',
-        status: 'ACTIVE',
-        expiresAt: new Date('2026-07-10T15:00:00.000Z'),
-        completedAt: null,
-      },
-      checkIns: [],
-      bookings: [bookingStopOne, bookingStopTwo],
-    });
-
-    const result = await service.createGuestTourBooking('tour-1', {
-      displayName: 'Guest Tour',
-      email: 'TOURGuest@example.com',
-      scheduledAt: scheduledAt.toISOString(),
-      partySize: 2,
-      note: 'Need a guide',
-    });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        tourBookingId,
-        bookingCode: 'TR-TOUR01',
-        qr: expect.objectContaining({
-          payload: expect.stringContaining('tourScanToken='),
-        }),
-      }),
-    );
-    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        guestId: guest.id,
-        storeId: stopOneStore.id,
-        bookingId: bookingStopOne.id,
-        channel: 'EMAIL',
-        status: 'QUEUED',
-        recipient: 'tourguest@example.com',
-        templateKey: 'customer.booking.tour_qr_email.v1',
-        payload: expect.objectContaining({
-          bookingId: bookingStopOne.id,
-          tourBookingId,
-          bookingCode: 'TR-TOUR01',
-          tourTitle: 'Tokyo Night Tour',
-          tourStops: ['Tokyo Kitchen', 'Sakura Lounge'],
-          qrPayload: expect.stringContaining('tourScanToken='),
-          qrImageUrl: expect.stringContaining('api.qrserver.com'),
-        }),
-      }),
-    });
-    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'tourguest@example.com',
-        bookingId: tourBookingId,
-        bookingCode: 'TR-TOUR01',
-        storeName: 'Tokyo Night Tour',
-        note: expect.stringContaining(
-          'Tour stops: Tokyo Kitchen > Sakura Lounge',
-        ),
-        qrPayload: expect.stringContaining('tourScanToken='),
-        qrImageDataUrl: 'data:image/png;base64,test-booking-qr',
-      }),
-    );
-    expect(prisma.notificationLog.update).toHaveBeenCalledWith({
-      where: { id: 'notification-1' },
-      data: expect.objectContaining({
-        status: 'SENT',
-        error: null,
-        payload: expect.objectContaining({
-          providerMessageId: 'smtp-message-1',
-        }),
-      }),
-    });
-  });
-
   it('creates service-only bookings without cast or coupon links', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.cast.findFirst.mockResolvedValue({
@@ -3381,54 +3112,6 @@ describe('NightlifeDataService', () => {
       select: expect.objectContaining({
         id: true,
         status: true,
-        guest: {
-          select: expect.objectContaining({
-            id: true,
-            displayName: true,
-            phone: true,
-            email: true,
-          }),
-        },
-      }),
-    });
-  });
-
-  it('looks up a guest booking by booking code and email', async () => {
-    const booking = {
-      id: '550e8400-e29b-41d4-a716-446655440000',
-      bookingCode: 'BK-550E8400',
-      status: 'REQUESTED',
-      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
-      partySize: 2,
-      cancelledAt: null,
-      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-      guest: {
-        id: 'guest-1',
-        displayName: 'Guest',
-        phone: null,
-        email: 'guest@example.com',
-      },
-    };
-    prisma.booking.findMany.mockResolvedValue([booking]);
-
-    await expect(
-      service.getGuestBookingByCode('BK-550E8400', {
-        email: ' GUEST@example.com ',
-      }),
-    ).resolves.toEqual(booking);
-
-    expect(prisma.booking.findMany).toHaveBeenCalledWith({
-      where: {
-        userId: null,
-        deletedAt: null,
-        guest: { is: { email: 'guest@example.com' } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: expect.objectContaining({
-        id: true,
-        bookingCode: true,
-        tourBookingId: true,
         guest: {
           select: expect.objectContaining({
             id: true,
@@ -7130,7 +6813,7 @@ describe('NightlifeDataService', () => {
         id: 'LISTING-CORRUPT1',
         businessName: '???????? - Velvet Club',
         storeDescription: '???? One of Saigon largest clubs',
-      }) as never,
+      }),
     );
 
     await expect(
@@ -7176,7 +6859,7 @@ describe('NightlifeDataService', () => {
       draftContentIds: ['content-draft-1'],
       store: listingStore,
     });
-    prisma.partnerRequest.findFirst.mockResolvedValue(pendingListing as never);
+    prisma.partnerRequest.findFirst.mockResolvedValue(pendingListing);
     prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
       partnerRequestRecord({
         ...pendingListing,
@@ -7186,7 +6869,7 @@ describe('NightlifeDataService', () => {
         reviewedById: 'admin-1',
         publicState: 'PUBLIC',
         store: { ...listingStore, status: 'ACTIVE' },
-      }) as never,
+      }),
     );
     prisma.content.findFirst.mockResolvedValue({
       id: 'content-draft-1',
@@ -7212,8 +6895,8 @@ describe('NightlifeDataService', () => {
       createdAt: new Date('2026-06-30T10:00:00.000Z'),
       updatedAt: new Date('2026-06-30T10:00:00.000Z'),
       publishedAt: null,
-    } as never);
-    prisma.store.findUnique.mockResolvedValue(listingStore as never);
+    });
+    prisma.store.findUnique.mockResolvedValue(listingStore);
     prisma.area.findMany.mockResolvedValue([
       {
         id: 'area-sai-gon',
@@ -7247,8 +6930,7 @@ describe('NightlifeDataService', () => {
         where: { id: 'store-draft-1' },
         data: expect.objectContaining({
           name: 'New Club',
-          address:
-            '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
+          address: '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
           city: 'Ho Chi Minh City',
           district: 'Quan 1',
           areaId: 'area-sai-gon',
@@ -9520,7 +9202,7 @@ describe('NightlifeDataService', () => {
       );
     });
 
-    it('includes every Vietnam city code when query.cityCode is not specified or is all', async () => {
+    it('queries default cityCode as all when query.cityCode is not specified or is all', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([] as never);
       prisma.store.findMany.mockResolvedValue([] as never);
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
@@ -9533,16 +9215,8 @@ describe('NightlifeDataService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             scope: 'recommend-home',
+            cityCode: 'all',
           }),
-        }),
-      );
-      const defaultCityCalls = (prisma.rankingConfig.findMany as jest.Mock).mock
-        .calls;
-      expect(
-        defaultCityCalls[defaultCityCalls.length - 1][0].where,
-      ).toEqual(
-        expect.objectContaining({
-          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
         }),
       );
 
@@ -9556,16 +9230,8 @@ describe('NightlifeDataService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             scope: 'recommend-home',
+            cityCode: 'all',
           }),
-        }),
-      );
-      const allCityCalls = (prisma.rankingConfig.findMany as jest.Mock).mock
-        .calls;
-      expect(
-        allCityCalls[allCityCalls.length - 1][0].where,
-      ).toEqual(
-        expect.objectContaining({
-          cityCode: { in: expect.arrayContaining(['all', 'hn', 'hcm', 'hp']) },
         }),
       );
     });

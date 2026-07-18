@@ -20,9 +20,6 @@ import {
   ContentStatus,
   ContentType,
   CouponIssueStatus,
-  MediaAccess,
-  MediaStatus,
-  MediaType,
   Prisma,
   RankingConfigStatus,
   RankingTargetType,
@@ -130,7 +127,6 @@ import {
 import {
   resolveVietnamProvinceArea,
   VIETNAM_CITY_ALIASES,
-  VIETNAM_CITY_CODES,
   vietnamAreaCityLookupNames,
 } from './vietnam-admin-units';
 
@@ -900,14 +896,6 @@ type ContentRecord = {
     name: string;
     slug: string;
   } | null;
-  media: Array<{
-    id: string;
-    url: string;
-    purpose: string | null;
-    type: MediaType;
-    access: MediaAccess;
-    status: MediaStatus;
-  }>;
 };
 
 type BookingTarget = {
@@ -3551,7 +3539,7 @@ export class NightlifeDataService {
     dto: CreateTourBookingDto,
     context: CouponClaimContext = {},
   ) {
-    const contact = this.sanitizeBookingContact(dto as CreateBookingDto);
+    const contact = this.sanitizeBookingContact(dto);
     const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `tour-booking:create:guest:${contact.email ?? contact.phone}`,
@@ -3567,7 +3555,7 @@ export class NightlifeDataService {
       select: { id: true },
     });
 
-    const result = await this.createTourBookingRecord({
+    return this.createTourBookingRecord({
       tourId,
       dto,
       guestId: guest.id,
@@ -3576,10 +3564,6 @@ export class NightlifeDataService {
       phone: contact.phone,
       context,
     });
-
-    await this.notifyGuestTourBookingQrEmail(result);
-
-    return result;
   }
 
   async createMemberTourBooking(
@@ -3588,7 +3572,7 @@ export class NightlifeDataService {
     dto: CreateTourBookingDto,
     context: CouponClaimContext = {},
   ) {
-    const contact = this.sanitizeBookingContact(dto as CreateBookingDto);
+    const contact = this.sanitizeBookingContact(dto);
     const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `tour-booking:create:member:${user.id}`,
@@ -4054,32 +4038,18 @@ export class NightlifeDataService {
     });
   }
 
-  async getGuestBookingByCode(
-    bookingCode: string,
-    lookup: string | { email?: string | null; phone?: string | null },
-  ) {
-    const cleanedPhone =
-      typeof lookup === 'string' ? this.cleanText(lookup) : this.cleanText(lookup.phone);
-    const cleanedEmail =
-      typeof lookup === 'string' ? '' : this.cleanEmail(lookup.email);
-    if (!cleanedPhone && !cleanedEmail) {
-      throw new BadRequestException('phone or email is required');
+  async getGuestBookingByCode(bookingCode: string, phone: string) {
+    const cleanedPhone = this.cleanText(phone);
+    if (!cleanedPhone) {
+      throw new BadRequestException('phone is required');
     }
 
     const lookupCode = this.normalizeBookingLookupCode(bookingCode);
-    const guestIdentityFilters: Prisma.GuestWhereInput[] = [
-      ...(cleanedPhone ? [{ phone: cleanedPhone }] : []),
-      ...(cleanedEmail ? [{ email: cleanedEmail }] : []),
-    ];
-    const guestIdentityWhere: Prisma.GuestWhereInput =
-      guestIdentityFilters.length === 1
-        ? guestIdentityFilters[0]!
-        : { OR: guestIdentityFilters };
     const bookings = await this.prisma.booking.findMany({
       where: {
         userId: null,
         deletedAt: null,
-        guest: { is: guestIdentityWhere },
+        guest: { is: { phone: cleanedPhone } },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -4089,43 +4059,11 @@ export class NightlifeDataService {
       this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
     );
 
-    if (booking?.tourBookingId) {
-      const [tourBooking] = await this.prisma.tourBooking.findMany({
-        where: {
-          id: booking.tourBookingId,
-          userId: null,
-          guest: { is: guestIdentityWhere },
-        },
-        take: 1,
-        include: this.tourBookingCustomerInclude(),
-      });
-      if (tourBooking) {
-        return this.decorateCustomerTourBooking(tourBooking);
-      }
-    }
-
-    if (booking) {
-      return booking;
-    }
-
-    const tourBookings = await this.prisma.tourBooking.findMany({
-      where: {
-        userId: null,
-        guest: { is: guestIdentityWhere },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: this.tourBookingCustomerInclude(),
-    });
-    const tourBooking = tourBookings.find((item) =>
-      this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
-    );
-
-    if (!tourBooking) {
+    if (!booking) {
       throw new NotFoundException('Booking not found');
     }
 
-    return this.decorateCustomerTourBooking(tourBooking);
+    return booking;
   }
 
   async requestMemberBookingReschedule(
@@ -11792,7 +11730,7 @@ export class NightlifeDataService {
           partySize: input.dto.partySize,
           durationHoursSnapshot: tour.durationHours,
           titleSnapshot: tour.title,
-          itinerarySnapshot: itinerarySnapshot as Prisma.InputJsonValue,
+          itinerarySnapshot: itinerarySnapshot,
           note: input.note,
         },
       });
@@ -11932,7 +11870,7 @@ export class NightlifeDataService {
 
     for (const child of created.bookings) {
       await this.adminNotificationService
-        ?.notifyBookingCreated(child as any)
+        ?.notifyBookingCreated(child)
         .catch((error) =>
           this.logger.warn(
             `Failed to notify tour child booking ${child.id}: ${this.errorMessage(error)}`,
@@ -13543,7 +13481,6 @@ export class NightlifeDataService {
     return {
       id: true,
       bookingCode: true,
-      tourBookingId: true,
       storeId: true,
       castId: true,
       status: true,
@@ -14151,124 +14088,6 @@ export class NightlifeDataService {
         billId: null,
         createdAt: new Date().toISOString(),
       });
-    }
-  }
-
-  private async notifyGuestTourBookingQrEmail(tourBooking: any) {
-    const email = this.cleanEmail(tourBooking.guest?.email);
-    const qrPayload =
-      typeof tourBooking.qr?.payload === 'string' ? tourBooking.qr.payload : '';
-
-    if (!email || !qrPayload) {
-      return;
-    }
-
-    const bookingCode = this.bookingCodeFor(tourBooking);
-    const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
-    const tourTitle = tourBooking.tour?.title ?? 'NightLife tour';
-    const tourStops = Array.isArray(tourBooking.tour?.stops)
-      ? tourBooking.tour.stops
-          .map((stop: any) => stop.storeName)
-          .filter((name: unknown): name is string => typeof name === 'string')
-      : [];
-    const amountLabel = this.bookingAmountLabel(
-      tourBooking as BookingNotificationRecord,
-    );
-    const tourNote = [
-      tourBooking.note,
-      tourStops.length ? `Tour stops: ${tourStops.join(' > ')}` : null,
-    ]
-      .filter((line): line is string => typeof line === 'string' && !!line)
-      .join('\n');
-    const payload = {
-      bookingId: tourBooking.id,
-      tourBookingId: tourBooking.tourBookingId ?? null,
-      bookingCode,
-      status: tourBooking.status,
-      scheduledAt: this.toAuditIso(tourBooking.scheduledAt),
-      partySize: tourBooking.partySize ?? null,
-      tourTitle,
-      tourStops,
-      guestName: tourBooking.guest?.displayName ?? null,
-      amountLabel,
-      qrPayload,
-      qrImageUrl,
-    } satisfies Prisma.InputJsonObject;
-
-    let log: { id: string };
-    try {
-      log = await this.prisma.notificationLog.create({
-        data: {
-          guestId: tourBooking.guest?.id,
-          storeId: tourBooking.storeId ?? tourBooking.store?.id ?? undefined,
-          bookingId: tourBooking.id,
-          channel: 'EMAIL',
-          status: 'QUEUED',
-          recipient: email,
-          templateKey: 'customer.booking.tour_qr_email.v1',
-          payload,
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Failed to queue tour booking QR email notification: ${this.errorMessage(error)}`,
-      );
-      return;
-    }
-
-    try {
-      if (!this.emailNotificationService) {
-        throw new Error('EmailNotificationService is not available');
-      }
-
-      const result = await this.emailNotificationService.sendBookingQrEmail({
-        to: email,
-        guestName: tourBooking.guest?.displayName,
-        bookingId: tourBooking.tourBookingId ?? tourBooking.id,
-        bookingCode,
-        status: tourBooking.status,
-        storeName: tourTitle,
-        storeSlug: tourBooking.store?.slug,
-        castName: null,
-        scheduledAt: tourBooking.scheduledAt,
-        partySize: tourBooking.partySize,
-        amountLabel,
-        note: tourNote || tourBooking.note,
-        qrPayload,
-        qrImageUrl,
-        qrImageDataUrl,
-      });
-
-      await this.prisma.notificationLog.update({
-        where: { id: log.id },
-        data: {
-          status: 'SENT',
-          sentAt: new Date(),
-          error: null,
-          payload: {
-            ...payload,
-            providerMessageId: result.messageId ?? null,
-          },
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Tour booking QR email failed: ${this.errorMessage(error)}`,
-      );
-      await this.prisma.notificationLog
-        .update({
-          where: { id: log.id },
-          data: {
-            status: 'FAILED',
-            error: this.errorMessage(error),
-          },
-        })
-        .catch((logError) => {
-          this.logger.warn(
-            `Failed to update tour booking QR email notification log: ${this.errorMessage(logError)}`,
-          );
-        });
     }
   }
 
@@ -15750,11 +15569,7 @@ export class NightlifeDataService {
   private buildPublicRankingConfigCityWhere(
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
-    if (cityCode && cityCode !== 'all') {
-      return { cityCode };
-    }
-
-    return { cityCode: { in: ['all', ...VIETNAM_CITY_CODES] } };
+    return cityCode ? { cityCode } : {};
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
@@ -16654,7 +16469,7 @@ export class NightlifeDataService {
       streetAddress: resolvedStreetAddress,
       storeAddress: hasExplicitAddressParts
         ? composedStoreAddress || draftStoreAddress || store.address
-        : draftStoreAddress ?? (composedStoreAddress || store.address),
+        : (draftStoreAddress ?? (composedStoreAddress || store.address)),
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours: this.partnerListingOpeningHoursSummary(
         openingHourItems,
@@ -17263,8 +17078,7 @@ export class NightlifeDataService {
       const text = value?.trim() ?? '';
       const questionMarks = text.match(/\?/g)?.length ?? 0;
       return (
-        questionMarks >= 3 &&
-        questionMarks / Math.max(text.length, 1) >= 0.08
+        questionMarks >= 3 && questionMarks / Math.max(text.length, 1) >= 0.08
       );
     });
   }
@@ -18051,36 +17865,11 @@ export class NightlifeDataService {
           slug: true,
         },
       },
-      media: {
-        where: {
-          deletedAt: null,
-          status: MediaStatus.READY,
-          access: MediaAccess.PUBLIC,
-          type: MediaType.IMAGE,
-        },
-        orderBy: [{ createdAt: 'desc' }],
-        select: {
-          id: true,
-          url: true,
-          purpose: true,
-          type: true,
-          access: true,
-          status: true,
-        },
-      },
     };
   }
 
   private mapContent(content: ContentRecord) {
     const metadata = this.asRecord(content.metadata) ?? {};
-    const mediaCover =
-      content.media.find(
-        (item) => item.purpose?.trim().toUpperCase() === 'BLOG_COVER',
-      ) ?? content.media[0] ?? null;
-    const metadataImage =
-      typeof metadata.image === 'string' && metadata.image.trim()
-        ? metadata.image.trim()
-        : null;
 
     return {
       id: content.id,
@@ -18091,7 +17880,6 @@ export class NightlifeDataService {
       excerpt: content.excerpt,
       body: content.body,
       metadata,
-      imageUrl: metadataImage ?? mediaCover?.url ?? null,
       noindex: metadata.noindex === true,
       publishedAt: content.publishedAt?.toISOString() ?? null,
       createdAt: content.createdAt.toISOString(),
@@ -20673,8 +20461,7 @@ export class NightlifeDataService {
         name: store.name,
         address: store.address || '',
         ward:
-          store.area?.ward ??
-          this.extractWardFromStoreAddress(store.address),
+          store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
         type: typeLabel,
         area:
           store.city === 'Ho Chi Minh City' ||
@@ -21010,8 +20797,7 @@ export class NightlifeDataService {
     const addressToken = this.normalizeToken(address);
     const wardArea = areas.find(
       (area) =>
-        area.ward &&
-        addressToken.includes(this.normalizeToken(area.ward)),
+        area.ward && addressToken.includes(this.normalizeToken(area.ward)),
     );
     if (wardArea) return wardArea.id;
 
@@ -21430,9 +21216,7 @@ export class NightlifeDataService {
       ...store,
       initials: store.name.substring(0, 2).toUpperCase(),
       address: store.address || '',
-      ward:
-        store.area?.ward ??
-        this.extractWardFromStoreAddress(store.address),
+      ward: store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
       type: typeLabel,
       area:
         store.city === 'Ho Chi Minh City' ||

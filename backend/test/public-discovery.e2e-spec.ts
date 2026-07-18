@@ -410,8 +410,6 @@ describe('Public discovery listing API (e2e)', () => {
     expect(prisma.store.findMany).not.toHaveBeenCalled();
   });
 
-
-
   it('rejects unsupported public area city filters', async () => {
     await request(app.getHttpServer())
       .get('/areas')

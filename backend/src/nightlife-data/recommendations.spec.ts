@@ -28,10 +28,10 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
     service = new NightlifeDataService(
       prisma,
       accessService,
-      undefined as any,
-      undefined as any,
-      undefined as any,
-      undefined as any,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
     );
   });
 
@@ -51,7 +51,13 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [],
           coupons: [],
         },
@@ -64,7 +70,13 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
           city: 'Hanoi',
           district: 'Hoan Kiem',
           areaId: 'area-2',
-          area: { id: 'area-2', code: 'hn-hoankiem', name: 'Hoan Kiem', city: 'Hanoi', district: 'Hoan Kiem' },
+          area: {
+            id: 'area-2',
+            code: 'hn-hoankiem',
+            name: 'Hoan Kiem',
+            city: 'Hanoi',
+            district: 'Hoan Kiem',
+          },
           media: [],
           coupons: [],
         },
@@ -74,7 +86,10 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.auditLog.groupBy.mockResolvedValue([]);
       prisma.booking.groupBy.mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 8 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 8,
+      });
 
       // Should return both fallback stores
       expect(result).toHaveLength(2);
@@ -88,7 +103,7 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
             deletedAt: null,
             status: 'ACTIVE',
           }),
-        })
+        }),
       );
     });
 
@@ -101,7 +116,8 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       // 2. Pinned store is inactive/deleted in store table (returns empty)
       prisma.store.findMany
         .mockResolvedValueOnce([]) // First call for pinned stores returns empty
-        .mockResolvedValueOnce([   // Second call for fallback personalized recommendations
+        .mockResolvedValueOnce([
+          // Second call for fallback personalized recommendations
           {
             id: 'store-personalized-active',
             name: 'Personalized Active Store',
@@ -111,7 +127,13 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
             city: 'Hanoi',
             district: 'Tay Ho',
             areaId: 'area-1',
-            area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+            area: {
+              id: 'area-1',
+              code: 'hn-tayho',
+              name: 'Tay Ho',
+              city: 'Hanoi',
+              district: 'Tay Ho',
+            },
             media: [],
             coupons: [],
           },
@@ -120,7 +142,10 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.auditLog.groupBy.mockResolvedValue([]);
       prisma.booking.groupBy.mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 8 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 8,
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('store-personalized-active');
@@ -146,7 +171,13 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
           city: 'Hanoi',
           district: 'Tay Ho',
           areaId: 'area-1',
-          area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+          area: {
+            id: 'area-1',
+            code: 'hn-tayho',
+            name: 'Tay Ho',
+            city: 'Hanoi',
+            district: 'Tay Ho',
+          },
           media: [],
           coupons: [],
         },
@@ -155,7 +186,10 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.auditLog.groupBy.mockResolvedValue([]);
       prisma.booking.groupBy.mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 8 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 8,
+      });
 
       // Verifies that only active store is returned, even though config pinned two
       expect(result).toHaveLength(1);
@@ -170,7 +204,7 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
             deletedAt: null,
             status: 'ACTIVE',
           }),
-        })
+        }),
       );
     });
   });
@@ -189,12 +223,18 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         id: `store-${i + 1}`,
         name: `Store ${i + 1}`,
         slug: `store-${i + 1}-slug`,
-        category: 'BAR' as StoreCategory,
+        category: 'BAR',
         description: 'Bar',
         city: 'Hanoi',
         district: 'Tay Ho',
         areaId: 'area-1',
-        area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+        area: {
+          id: 'area-1',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+        },
         media: [],
         coupons: [],
       }));
@@ -203,12 +243,22 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.auditLog.groupBy.mockResolvedValue([]);
       prisma.booking.groupBy.mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 8 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 8,
+      });
 
       // Capped at requested limit of 8
       expect(result).toHaveLength(8);
-      expect(result.map(s => s.id)).toEqual([
-        'store-1', 'store-2', 'store-3', 'store-4', 'store-5', 'store-6', 'store-7', 'store-8'
+      expect(result.map((s) => s.id)).toEqual([
+        'store-1',
+        'store-2',
+        'store-3',
+        'store-4',
+        'store-5',
+        'store-6',
+        'store-7',
+        'store-8',
       ]);
     });
 
@@ -223,12 +273,18 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         id: `store-${i + 1}`,
         name: `Store ${i + 1}`,
         slug: `store-${i + 1}-slug`,
-        category: 'BAR' as StoreCategory,
+        category: 'BAR',
         description: 'Bar',
         city: 'Hanoi',
         district: 'Tay Ho',
         areaId: 'area-1',
-        area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+        area: {
+          id: 'area-1',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+        },
         media: [],
         coupons: [],
       }));
@@ -237,7 +293,10 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.auditLog.groupBy.mockResolvedValue([]);
       prisma.booking.groupBy.mockResolvedValue([]);
 
-      const result = await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: 24 });
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 24,
+      });
 
       // Capped at 16 in the service logic (resolvePublicHomeLimit)
       expect(result).toHaveLength(16);
@@ -250,11 +309,14 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
       prisma.booking.groupBy.mockResolvedValue([]);
 
       // Invalid limit should default to 8
-      await service.listPublicHomeRecommendations({ cityCode: 'hn', limit: undefined });
+      await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: undefined,
+      });
       expect(prisma.store.findMany).toHaveBeenLastCalledWith(
         expect.objectContaining({
           take: 32, // limit * 4 = 8 * 4 = 32
-        })
+        }),
       );
     });
   });
@@ -275,7 +337,13 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         areaId: 'area-1',
         city: 'Hanoi',
         district: 'Tay Ho',
-        area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+        area: {
+          id: 'area-1',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+        },
         media: [],
         coupons: [],
       };
@@ -287,9 +355,22 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         areaId: 'area-2',
         city: 'Hanoi',
         district: 'Hoan Kiem',
-        area: { id: 'area-2', code: 'hn-hoankiem', name: 'Hoan Kiem', city: 'Hanoi', district: 'Hoan Kiem' },
+        area: {
+          id: 'area-2',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Hanoi',
+          district: 'Hoan Kiem',
+        },
         media: [],
-        coupons: [{ id: 'coupon-1', name: 'Discount', discountType: 'PERCENT', discountValue: 10 }],
+        coupons: [
+          {
+            id: 'coupon-1',
+            name: 'Discount',
+            discountType: 'PERCENT',
+            discountValue: 10,
+          },
+        ],
       };
       const storeC = {
         id: 'store-c',
@@ -299,16 +380,33 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         areaId: 'area-1',
         city: 'Hanoi',
         district: 'Tay Ho',
-        area: { id: 'area-1', code: 'hn-tayho', name: 'Tay Ho', city: 'Hanoi', district: 'Tay Ho' },
+        area: {
+          id: 'area-1',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Hanoi',
+          district: 'Tay Ho',
+        },
         media: [],
-        coupons: [{ id: 'coupon-2', name: 'Discount 2', discountType: 'FIXED_AMOUNT', discountValue: 50000 }],
+        coupons: [
+          {
+            id: 'coupon-2',
+            name: 'Discount 2',
+            discountType: 'FIXED_AMOUNT',
+            discountValue: 50000,
+          },
+        ],
       };
 
       // Mock the two calls to store.findMany:
       // First call (viewedStores lookup for store-a):
       prisma.store.findMany.mockResolvedValueOnce([storeA] as any);
       // Second call (fallback stores list):
-      prisma.store.findMany.mockResolvedValueOnce([storeA, storeB, storeC] as any);
+      prisma.store.findMany.mockResolvedValueOnce([
+        storeA,
+        storeB,
+        storeC,
+      ] as any);
 
       // Audit logs: C has 10 views
       prisma.auditLog.groupBy.mockResolvedValue([

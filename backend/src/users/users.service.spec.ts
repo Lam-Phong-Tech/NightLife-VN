@@ -120,7 +120,10 @@ describe('UsersService', () => {
     };
     prisma.user.findUnique.mockResolvedValue(partnerUser);
     prisma.user.update.mockResolvedValue(partnerUser);
-    prisma.partnerAccount.findFirst.mockResolvedValue({ id: 'pa-1', userId: 'partner-user-1' });
+    prisma.partnerAccount.findFirst.mockResolvedValue({
+      id: 'pa-1',
+      userId: 'partner-user-1',
+    });
     prisma.store.findMany.mockResolvedValue([]);
     prisma.store.updateMany.mockResolvedValue({ count: 0 });
     prisma.store.update.mockResolvedValue({});
