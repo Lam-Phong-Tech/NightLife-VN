@@ -432,12 +432,6 @@ export function AdminSupportDashboard() {
                       >
                         {ticket.userId ? ticket.user?.displayName : 'Khách vãng lai'}
                       </span>
-                      <span 
-                        className="flex-none"
-                        style={{ fontSize: '9.5px', color: '#57534b' }}
-                      >
-                        Vừa xong
-                      </span>
                     </div>
                     <div 
                       className="truncate"
