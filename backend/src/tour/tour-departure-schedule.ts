@@ -12,15 +12,26 @@ export type TourWeekdayKey = (typeof TOUR_WEEKDAY_KEYS)[number];
 
 export type TourDepartureDay = {
   isOff: boolean;
-  times: string[];
+  hours: string;
 };
 
 export type TourDepartureSchedule = Record<TourWeekdayKey, TourDepartureDay>;
 
 const departureTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const departureRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
+const minutesPerDay = 24 * 60;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const formatMinutes = (minutes: number, preserveEndOfDay = false) => {
+  if (preserveEndOfDay && minutes === minutesPerDay) return '24:00';
+  const normalized =
+    ((minutes % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(
+    normalized % 60,
+  ).padStart(2, '0')}`;
+};
 
 export const normalizeTourDepartureTime = (value: unknown) => {
   if (typeof value !== 'string') return '';
@@ -39,6 +50,69 @@ export const normalizeTourDepartureTimes = (value: unknown) => {
   ).sort();
 };
 
+const parseTourDepartureRange = (value: string) => {
+  const match = value.trim().match(departureRangePattern);
+  if (!match) return null;
+
+  const startHour = Number(match[1]);
+  const startMinute = Number(match[2]);
+  const endHour = Number(match[3]);
+  const endMinute = Number(match[4]);
+  if (
+    startHour > 23 ||
+    startMinute > 59 ||
+    endHour > 24 ||
+    endMinute > 59 ||
+    (endHour === 24 && endMinute > 0)
+  ) {
+    return null;
+  }
+
+  const start = startHour * 60 + startMinute;
+  let end = endHour * 60 + endMinute;
+  if (start === 0 && end === 0) {
+    end = minutesPerDay;
+  } else if (end <= start) {
+    return null;
+  }
+
+  return {
+    start,
+    end,
+    normalized: `${String(startHour).padStart(2, '0')}:${match[2]} - ${String(
+      endHour,
+    ).padStart(2, '0')}:${match[4]}`,
+  };
+};
+
+const departureHoursFromLegacyTimes = (value: unknown) => {
+  const minuteValues = normalizeTourDepartureTimes(value)
+    .map((time) => {
+      const [hour = 0, minute = 0] = time.split(':').map(Number);
+      return hour * 60 + minute;
+    })
+    .sort((first, second) => first - second);
+  if (!minuteValues.length) return '';
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  minuteValues.forEach((minutes) => {
+    const current = ranges[ranges.length - 1];
+    const slotEnd = Math.min(minutes + 60, minutesPerDay);
+    if (current && current.end === minutes) {
+      current.end = slotEnd;
+    } else {
+      ranges.push({ start: minutes, end: slotEnd });
+    }
+  });
+
+  return ranges
+    .map(
+      ({ start, end }) =>
+        `${formatMinutes(start)} - ${formatMinutes(end, true)}`,
+    )
+    .join(', ');
+};
+
 export const hasTourDepartureSchedule = (
   value: unknown,
 ): value is Record<string, unknown> =>
@@ -49,7 +123,7 @@ export const normalizeTourDepartureSchedule = (
   value: unknown,
   fallbackTimes: unknown = [],
 ): TourDepartureSchedule => {
-  const normalizedFallbackTimes = normalizeTourDepartureTimes(fallbackTimes);
+  const fallbackHours = departureHoursFromLegacyTimes(fallbackTimes);
   const hasSchedule = hasTourDepartureSchedule(value);
   const scheduleRecord = hasSchedule ? value : {};
 
@@ -58,16 +132,30 @@ export const normalizeTourDepartureSchedule = (
       const rawDay = isRecord(scheduleRecord[weekday])
         ? scheduleRecord[weekday]
         : null;
-      const isOff = rawDay
-        ? rawDay.isOff === true
-        : normalizedFallbackTimes.length === 0;
-      const times = rawDay
-        ? normalizeTourDepartureTimes(rawDay.times)
-        : normalizedFallbackTimes;
+      const isOff = rawDay ? rawDay.isOff === true : !fallbackHours;
+      const rawHours =
+        rawDay && typeof rawDay.hours === 'string' ? rawDay.hours : '';
+      const hours =
+        rawHours || (rawDay ? departureHoursFromLegacyTimes(rawDay.times) : '');
 
-      return [weekday, { isOff, times: isOff ? [] : times }];
+      return [weekday, { isOff, hours: isOff ? '' : hours || fallbackHours }];
     }),
   ) as TourDepartureSchedule;
+};
+
+const departureTimesFromHours = (hours: string) => {
+  const times = new Set<string>();
+  hours
+    .split(',')
+    .map(parseTourDepartureRange)
+    .forEach((range) => {
+      if (!range) return;
+      for (let minutes = range.start; minutes < range.end; minutes += 60) {
+        times.add(formatMinutes(minutes));
+      }
+    });
+
+  return Array.from(times).sort();
 };
 
 export const collectTourDepartureTimes = (schedule: TourDepartureSchedule) =>
@@ -75,10 +163,40 @@ export const collectTourDepartureTimes = (schedule: TourDepartureSchedule) =>
     new Set(
       TOUR_WEEKDAY_KEYS.flatMap((weekday) => {
         const day = schedule[weekday];
-        return day.isOff ? [] : day.times;
+        return day.isOff ? [] : departureTimesFromHours(day.hours);
       }),
     ),
   ).sort();
+
+export const tourDepartureScheduleError = (schedule: TourDepartureSchedule) => {
+  const activeDays = TOUR_WEEKDAY_KEYS.filter(
+    (weekday) => !schedule[weekday].isOff,
+  );
+  if (!activeDays.length) return 'Tour must have at least one departure day.';
+
+  for (const weekday of activeDays) {
+    const slots = schedule[weekday].hours.split(',').map((slot) => slot.trim());
+    const intervals: Array<{ start: number; end: number }> = [];
+    for (const slot of slots) {
+      const range = parseTourDepartureRange(slot);
+      if (!range) {
+        return `${weekday} has an invalid departure time range.`;
+      }
+      if (
+        intervals.some(
+          (current) =>
+            Math.max(current.start, range.start) <
+            Math.min(current.end, range.end),
+        )
+      ) {
+        return `${weekday} has overlapping departure time ranges.`;
+      }
+      intervals.push(range);
+    }
+  }
+
+  return '';
+};
 
 const weekdayByEnglishLabel: Record<string, TourWeekdayKey> = {
   Monday: 'monday',
@@ -121,7 +239,7 @@ export const tourDepartureSlotForInstant = (input: {
       configured: true,
       weekday,
       time,
-      allowedTimes: day.isOff ? [] : day.times,
+      allowedTimes: day.isOff ? [] : departureTimesFromHours(day.hours),
     };
   }
 

@@ -1,5 +1,6 @@
 import { PrismaClient, Tour, Store, ProfileStatus } from '@prisma/client';
 import { seedUuid } from './shared';
+import { normalizeTourDepartureSchedule } from '../../src/tour/tour-departure-schedule';
 
 interface TourStopSeed {
   storeSlug: string;
@@ -20,17 +21,7 @@ interface TourSeed {
 }
 
 const dailyDepartureSchedule = (times: string[]) =>
-  Object.fromEntries(
-    [
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-      'sunday',
-    ].map((day) => [day, { isOff: times.length === 0, times }]),
-  );
+  normalizeTourDepartureSchedule(undefined, times);
 
 const TOURS: TourSeed[] = [
   {

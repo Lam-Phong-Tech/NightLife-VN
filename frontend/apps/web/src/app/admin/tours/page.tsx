@@ -10,7 +10,10 @@ import { DataSkeleton } from '@/components/ui/DataLoading';
 import {
   collectTourDepartureTimes,
   createDefaultTourDepartureSchedule,
+  defaultTourDepartureSlot,
+  getTourDepartureScheduleErrors,
   normalizeTourDepartureSchedule,
+  splitTourDepartureSlot,
   tourWeekdayKeys,
   tourWeekdayLabels,
   validateTourDepartureSchedule,
@@ -49,7 +52,66 @@ const ALL_TIME_SLOTS = Array.from(
   (_, index) =>
     `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 === 0 ? '00' : '30'}`,
 );
-const DEFAULT_TOUR_DEPARTURE_TIMES = ['19:00', '20:00', '21:00', '22:00'];
+const TOUR_TIME_OPTIONS = [...ALL_TIME_SLOTS, '24:00'];
+
+function TourTimeSelect({
+  value,
+  onChange,
+  placeholder,
+  hasError,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  hasError?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const color = hasError ? '#e88b99' : '#f0dda8';
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setIsOpen((current) => !current)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: value ? color : '#8c8679', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', minWidth: '82px', padding: '4px 6px' }}
+      >
+        <span>{value || placeholder}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '6px', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </div>
+      {isOpen && (
+        <div className="nl-custom-scrollbar" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '6px', width: '90px', maxHeight: '190px', overflowY: 'auto', background: '#1c1c24', border: '1px solid rgba(255,255,255,.08)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,.5)', zIndex: 110, display: 'flex', flexDirection: 'column', padding: '4px' }}>
+          {TOUR_TIME_OPTIONS.map((time) => (
+            <div
+              key={time}
+              onClick={() => {
+                onChange(time);
+                setIsOpen(false);
+              }}
+              style={{ padding: '7px 10px', fontSize: '12px', color: value === time ? '#f0dda8' : '#f3f0ea', background: value === time ? 'rgba(212,178,106,.15)' : 'transparent', borderRadius: '5px', cursor: 'pointer' }}
+              onMouseEnter={(event) => event.currentTarget.style.background = value === time ? 'rgba(212,178,106,.2)' : 'rgba(255,255,255,.05)'}
+              onMouseLeave={(event) => event.currentTarget.style.background = value === time ? 'rgba(212,178,106,.15)' : 'transparent'}
+            >
+              {time}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type AdminTourForm = {
   title: string;
@@ -118,10 +180,8 @@ function AdminToursContent() {
   const [venueSearch, setVenueSearch] = useState('');
   const [venueSearchResults, setVenueSearchResults] = useState<any[]>([]);
   const [isSearchingVenues, setIsSearchingVenues] = useState(false);
-  const [addingTimeForDay, setAddingTimeForDay] = useState<TourWeekdayKey | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const departureScheduleRef = useRef<HTMLDivElement>(null);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -162,16 +222,6 @@ function AdminToursContent() {
   }, [search, filterCity]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (departureScheduleRef.current && !departureScheduleRef.current.contains(event.target as Node)) {
-        setAddingTimeForDay(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     const query = venueSearch.trim();
     if (!query) {
       setVenueSearchResults([]);
@@ -205,7 +255,6 @@ function AdminToursContent() {
   const closeDrawer = () => {
     setTourSel(null);
     setVenueSearch('');
-    setAddingTimeForDay(null);
   };
 
   const openNewDrawer = () => {
@@ -217,7 +266,7 @@ function AdminToursContent() {
       priceTier: 3,
       coverUrl: '',
       status: 'ACTIVE',
-      departureSchedule: createDefaultTourDepartureSchedule(DEFAULT_TOUR_DEPARTURE_TIMES),
+      departureSchedule: createDefaultTourDepartureSchedule(),
       stops: []
     });
     setTourSel('new');
@@ -296,30 +345,11 @@ function AdminToursContent() {
     }));
   };
 
-  const addTimeSlot = (day: TourWeekdayKey, time: string) => {
-    updateDepartureDay(day, (current) => ({
-      ...current,
-      times: Array.from(new Set([...current.times, time])).sort(),
-    }));
-    setAddingTimeForDay(null);
-  };
-
-  const removeTimeSlot = (day: TourWeekdayKey, time: string) => {
-    updateDepartureDay(day, (current) => ({
-      ...current,
-      times: current.times.filter((item) => item !== time),
-    }));
-  };
-
   const toggleDepartureDay = (day: TourWeekdayKey) => {
     updateDepartureDay(day, (current) => ({
       isOff: !current.isOff,
-      times:
-        current.isOff && current.times.length === 0
-          ? [DEFAULT_TOUR_DEPARTURE_TIMES[0]!]
-          : current.times,
+      hours: current.isOff && !current.hours ? defaultTourDepartureSlot : current.hours,
     }));
-    setAddingTimeForDay(null);
   };
 
   const addStop = (store: any) => {
@@ -466,6 +496,7 @@ function AdminToursContent() {
     if (code === 'Ho Chi Minh City' || code === 'HCM') return 'TP.HCM';
     return code;
   };
+  const departureScheduleErrors = getTourDepartureScheduleErrors(formData.departureSchedule);
 
   const boxS = { background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', borderRadius: '10px', padding: '12px 13px', fontSize: '13px', color: '#f3f0ea' };
   const inputS = { ...boxS, width: '100%', outline: 'none' };
@@ -757,13 +788,15 @@ function AdminToursContent() {
               </div>
 
               {/* Departure schedule */}
-              <div ref={departureScheduleRef}>
+              <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', marginBottom: '12px', borderLeft: '3px solid #d4b26a', paddingLeft: '8px' }}>Giờ khởi hành theo ngày</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {tourWeekdayKeys.map((day) => {
                     const dayState = formData.departureSchedule[day];
                     const isOff = dayState.isOff;
-                    const availableTimes = ALL_TIME_SLOTS.filter((time) => !dayState.times.includes(time));
+                    const slots = dayState.hours
+                      ? dayState.hours.split(',').map((slot) => slot.trim())
+                      : [''];
                     const toggleStyle = isOff
                       ? {
                           color: '#e08a7e',
@@ -793,70 +826,86 @@ function AdminToursContent() {
                           {tourWeekdayLabels[day]}
                         </span>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                          {!isOff && dayState.times.map((time) => (
-                            <span
-                              key={time}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: '1px solid rgba(212,178,106,.25)', borderRadius: '8px', padding: '5px 6px 5px 10px', color: '#f0dda8', fontSize: '12px', fontWeight: 700 }}
-                            >
-                              {time}
-                              <span
-                                onClick={() => removeTimeSlot(day, time)}
-                                title="Xóa giờ khởi hành"
-                                style={{ width: '18px', height: '18px', borderRadius: '5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }}
-                                onMouseEnter={(event) => {
-                                  event.currentTarget.style.color = '#e08a7e';
-                                  event.currentTarget.style.background = 'rgba(224,122,110,.13)';
-                                }}
-                                onMouseLeave={(event) => {
-                                  event.currentTarget.style.color = '#6e6a60';
-                                  event.currentTarget.style.background = 'transparent';
-                                }}
-                              >
-                                ✕
+                          {!isOff && slots.map((slot, index) => {
+                            const parts = splitTourDepartureSlot(slot);
+                            const slotError = departureScheduleErrors[day]?.[index];
+                            const setSlotValue = (value: string) => {
+                              const nextSlots = [...slots];
+                              nextSlots[index] = value;
+                              updateDepartureDay(day, (current) => ({
+                                ...current,
+                                hours: nextSlots.join(', '),
+                              }));
+                            };
+                            const setSlotTime = (key: 'start' | 'end', value: string) => {
+                              const start = key === 'start' ? value : (parts.start || '19:00');
+                              const end = key === 'end' ? value : (parts.end || '24:00');
+                              setSlotValue(start && end ? `${start} - ${end}` : '');
+                            };
+
+                            return (
+                              <span key={`${day}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 8px' }}>
+                                <TourTimeSelect
+                                  value={parts.start}
+                                  onChange={(value) => setSlotTime('start', value)}
+                                  placeholder="Bắt đầu"
+                                  hasError={Boolean(slotError)}
+                                />
+                                <span style={{ color: '#6e6a60', fontSize: '12px', fontWeight: 700 }}>–</span>
+                                <TourTimeSelect
+                                  value={parts.end}
+                                  onChange={(value) => setSlotTime('end', value)}
+                                  placeholder="Kết thúc"
+                                  hasError={Boolean(slotError)}
+                                />
+                                <span
+                                  onClick={() => {
+                                    const nextSlots = slots.filter((_, slotIndex) => slotIndex !== index);
+                                    updateDepartureDay(day, (current) => ({
+                                      ...current,
+                                      hours: nextSlots.join(', '),
+                                    }));
+                                  }}
+                                  title="Xóa khung giờ"
+                                  style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }}
+                                  onMouseEnter={(event) => {
+                                    event.currentTarget.style.color = '#e08a7e';
+                                    event.currentTarget.style.background = 'rgba(224,122,110,.13)';
+                                  }}
+                                  onMouseLeave={(event) => {
+                                    event.currentTarget.style.color = '#6e6a60';
+                                    event.currentTarget.style.background = 'transparent';
+                                  }}
+                                >
+                                  ✕
+                                </span>
                               </span>
-                            </span>
-                          ))}
-                          {!isOff && dayState.times.length === 0 && (
+                            );
+                          })}
+                          {!isOff && departureScheduleErrors[day] && (
                             <span style={{ width: '100%', color: '#e88b99', fontSize: '10.5px', lineHeight: 1.35 }}>
-                              Ngày đang chạy cần có ít nhất một giờ khởi hành.
+                              {Object.values(departureScheduleErrors[day]!)[0]}
                             </span>
                           )}
                           {!isOff && (
-                            <div style={{ position: 'relative' }}>
-                              <span
-                                onClick={() => setAddingTimeForDay((current) => current === day ? null : day)}
-                                title="Thêm giờ khởi hành trong ngày"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1.5px dashed rgba(212,178,106,.32)', borderRadius: '8px', padding: '6px 10px', fontSize: '10.5px', fontWeight: 700, color: '#8c8679', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                onMouseEnter={(event) => {
-                                  event.currentTarget.style.color = '#caa765';
-                                  event.currentTarget.style.borderColor = 'rgba(212,178,106,.55)';
-                                }}
-                                onMouseLeave={(event) => {
-                                  event.currentTarget.style.color = '#8c8679';
-                                  event.currentTarget.style.borderColor = 'rgba(212,178,106,.32)';
-                                }}
-                              >
-                                + Giờ khởi hành
-                              </span>
-                              {addingTimeForDay === day && (
-                                <div className="nl-custom-scrollbar" style={{ position: 'absolute', top: '100%', left: 0, marginTop: '6px', width: '96px', maxHeight: '190px', overflowY: 'auto', background: '#141318', border: '1px solid rgba(255,255,255,.09)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', flexDirection: 'column', padding: '4px' }}>
-                                  {availableTimes.map((time) => (
-                                    <div
-                                      key={time}
-                                      onClick={() => addTimeSlot(day, time)}
-                                      style={{ padding: '7px 10px', fontSize: '12px', color: '#f3f0ea', borderRadius: '5px', cursor: 'pointer', transition: 'background 0.15s' }}
-                                      onMouseEnter={(event) => event.currentTarget.style.background = 'rgba(255,255,255,.05)'}
-                                      onMouseLeave={(event) => event.currentTarget.style.background = 'transparent'}
-                                    >
-                                      {time}
-                                    </div>
-                                  ))}
-                                  {availableTimes.length === 0 && (
-                                    <div style={{ padding: '8px', fontSize: '10.5px', color: '#57534b', textAlign: 'center' }}>Đã chọn hết</div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                            <span
+                              onClick={() => updateDepartureDay(day, (current) => ({
+                                ...current,
+                                hours: [...slots.filter(Boolean), defaultTourDepartureSlot].join(', '),
+                              }))}
+                              title="Thêm khung giờ trong ngày"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1.5px dashed rgba(212,178,106,.32)', borderRadius: '8px', padding: '6px 10px', fontSize: '10.5px', fontWeight: 700, color: '#8c8679', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              onMouseEnter={(event) => {
+                                event.currentTarget.style.color = '#caa765';
+                                event.currentTarget.style.borderColor = 'rgba(212,178,106,.55)';
+                              }}
+                              onMouseLeave={(event) => {
+                                event.currentTarget.style.color = '#8c8679';
+                                event.currentTarget.style.borderColor = 'rgba(212,178,106,.32)';
+                              }}
+                            >
+                              + Khung giờ
+                            </span>
                           )}
                           {isOff && (
                             <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#57534b', lineHeight: '30px' }}>Không có lịch khởi hành</span>
@@ -874,7 +923,7 @@ function AdminToursContent() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-                  <span>Mỗi ngày có thể có nhiều giờ khởi hành và không được trùng lặp. Bấm <b style={{ color: '#caa765' }}>+ Giờ khởi hành</b> để thêm, ✕ để xóa; nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Chạy</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>.</span>
+                  <span>Một ngày có thể có nhiều khung giờ bắt đầu – kết thúc và không được trùng lặp. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm, ✕ để xóa; nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Chạy</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>. Có thể chọn 00:00 – 00:00 để chạy cả ngày (24h).</span>
                 </div>
               </div>
 

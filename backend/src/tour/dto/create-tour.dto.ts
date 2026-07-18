@@ -1,5 +1,4 @@
 import {
-  ArrayUnique,
   IsBoolean,
   IsDefined,
   IsString,
@@ -7,22 +6,17 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
-  Matches,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProfileStatus } from '@prisma/client';
 
-const departureTimePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
-
 export class TourDepartureDayDto {
   @IsBoolean()
   isOff: boolean;
 
-  @IsArray()
-  @ArrayUnique()
-  @Matches(departureTimePattern, { each: true })
-  times: string[];
+  @IsString()
+  hours: string;
 }
 
 export class TourDepartureScheduleDto {

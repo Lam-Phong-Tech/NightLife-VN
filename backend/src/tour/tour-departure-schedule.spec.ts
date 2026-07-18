@@ -14,7 +14,7 @@ describe('tour departure schedule', () => {
 
     expect(schedule.monday).toEqual({
       isOff: false,
-      times: ['19:00', '20:30'],
+      hours: '19:00 - 20:00, 20:30 - 21:30',
     });
     expect(schedule.sunday).toEqual(schedule.monday);
     expect(collectTourDepartureTimes(schedule)).toEqual(['19:00', '20:30']);
@@ -22,13 +22,13 @@ describe('tour departure schedule', () => {
 
   it('resolves the configured weekday and time in Vietnam', () => {
     const schedule = normalizeTourDepartureSchedule({
-      monday: { isOff: false, times: ['19:00', '20:30'] },
-      tuesday: { isOff: true, times: [] },
-      wednesday: { isOff: true, times: [] },
-      thursday: { isOff: true, times: [] },
-      friday: { isOff: true, times: [] },
-      saturday: { isOff: true, times: [] },
-      sunday: { isOff: true, times: [] },
+      monday: { isOff: false, hours: '19:00 - 21:30' },
+      tuesday: { isOff: true, hours: '' },
+      wednesday: { isOff: true, hours: '' },
+      thursday: { isOff: true, hours: '' },
+      friday: { isOff: true, hours: '' },
+      saturday: { isOff: true, hours: '' },
+      sunday: { isOff: true, hours: '' },
     });
 
     expect(
@@ -41,19 +41,19 @@ describe('tour departure schedule', () => {
       configured: true,
       weekday: 'monday',
       time: '19:00',
-      allowedTimes: ['19:00', '20:30'],
+      allowedTimes: ['19:00', '20:00', '21:00'],
     });
   });
 
   it('returns no allowed times for an off day', () => {
     const schedule = normalizeTourDepartureSchedule({
-      monday: { isOff: true, times: ['19:00'] },
-      tuesday: { isOff: false, times: ['20:00'] },
-      wednesday: { isOff: true, times: [] },
-      thursday: { isOff: true, times: [] },
-      friday: { isOff: true, times: [] },
-      saturday: { isOff: true, times: [] },
-      sunday: { isOff: true, times: [] },
+      monday: { isOff: true, hours: '' },
+      tuesday: { isOff: false, hours: '20:00 - 22:00' },
+      wednesday: { isOff: true, hours: '' },
+      thursday: { isOff: true, hours: '' },
+      friday: { isOff: true, hours: '' },
+      saturday: { isOff: true, hours: '' },
+      sunday: { isOff: true, hours: '' },
     });
 
     const slot = tourDepartureSlotForInstant({

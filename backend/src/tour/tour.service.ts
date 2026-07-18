@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateTourDto } from './dto/create-tour.dto';
@@ -6,6 +10,7 @@ import { UpdateTourDto } from './dto/update-tour.dto';
 import {
   collectTourDepartureTimes,
   normalizeTourDepartureSchedule,
+  tourDepartureScheduleError,
   type TourDepartureSchedule,
 } from './tour-departure-schedule';
 
@@ -275,6 +280,11 @@ export class TourService {
       tourData.departureSchedule,
       tourData.departureTimes,
     );
+    const departureScheduleError =
+      tourDepartureScheduleError(departureSchedule);
+    if (departureScheduleError) {
+      throw new BadRequestException(departureScheduleError);
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const tour = await tx.tour.create({
@@ -326,6 +336,13 @@ export class TourService {
         undefined,
         tourData.departureTimes,
       );
+    }
+    if (departureSchedule) {
+      const departureScheduleError =
+        tourDepartureScheduleError(departureSchedule);
+      if (departureScheduleError) {
+        throw new BadRequestException(departureScheduleError);
+      }
     }
 
     const existing = await this.prisma.tour.findFirst({
