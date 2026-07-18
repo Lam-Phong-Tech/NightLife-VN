@@ -744,6 +744,7 @@ const isPanelKey = (value: string | null): value is PanelKey =>
   Boolean(value && (panelKeys as readonly string[]).includes(value));
 
 const moneyVnd = (value: number) => `${Math.abs(value).toLocaleString('vi-VN')}đ`;
+const moneyVndCode = (value: number) => `${Math.abs(value).toLocaleString('vi-VN')} VND`;
 
 const formatDateTime = (value: string | null | undefined) => {
   if (!value) {
@@ -2867,21 +2868,21 @@ export default function PartnerPage() {
         const type = snapshot.type ?? snapshot.discountType;
         const val = snapshot.value ?? snapshot.sourceValue ?? snapshot.discountPercent;
         if (type && val) {
-          const main = type === 'FIXED_AMOUNT' ? `-${moneyVnd(Number(val))}` : `-${val}%`;
+          const main = type === 'FIXED_AMOUNT' ? `-${moneyVndCode(Number(val))}` : `-${val}%`;
           const max = snapshot.maxDiscountVnd;
           const min = snapshot.minSpendVnd;
           const details = [
-            max && max > 0 ? `tối đa ${moneyVnd(max)}` : '',
-            min && min > 0 ? `từ ${moneyVnd(min)}` : '',
+            max && max > 0 ? `tối đa ${moneyVndCode(max)}` : '',
+            min && min > 0 ? `từ ${moneyVndCode(min)}` : '',
           ].filter(Boolean);
           const ruleLabel = details.length ? `${main} (${details.join(', ')})` : main;
           return selectedBill.discountVnd
-            ? `${ruleLabel} (Đã giảm thực tế: -${moneyVnd(selectedBill.discountVnd)})`
+            ? `${ruleLabel} (Đã giảm thực tế: -${moneyVndCode(selectedBill.discountVnd)})`
             : ruleLabel;
         }
       }
       if (selectedBill.discountVnd) {
-        return `-${moneyVnd(selectedBill.discountVnd)}`;
+        return `-${moneyVndCode(selectedBill.discountVnd)}`;
       }
       return null;
     }
@@ -2889,7 +2890,7 @@ export default function PartnerPage() {
       const { discountType, discountValue } = selectedBillBooking.coupon;
       if (discountType && discountValue) {
         if (discountType === 'FIXED_AMOUNT') {
-          return `-${moneyVnd(discountValue)}`;
+          return `-${moneyVndCode(discountValue)}`;
         }
         return `-${discountValue}%`;
       }
@@ -5034,7 +5035,7 @@ export default function PartnerPage() {
           </GhostButton>
         </div>
 
-        <div className="partner-table-scroll" style={{ overflowX: 'auto' }}>
+        <div className="partner-table-scroll partner-settlement-table-scroll" style={{ overflowX: 'auto' }}>
           <table className="partner-settlement-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px' }}>
             <thead>
               <tr>
@@ -5156,6 +5157,40 @@ export default function PartnerPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="partner-settlement-mobile-list">
+          {filteredSettlementRows.length ? (
+            filteredSettlementRows.map((row, index) => (
+              <article key={`${row.code}-${index}`} className="partner-settlement-mobile-card">
+                <div className="partner-settlement-mobile-head">
+                  <span className="partner-settlement-mobile-index">#{index + 1}</span>
+                  <StatusPill tone="gold">{row.status}</StatusPill>
+                </div>
+                <strong className="partner-settlement-mobile-code">{row.code}</strong>
+                <div className="partner-settlement-mobile-service">{row.service}</div>
+                <div className="partner-settlement-mobile-grid">
+                  <span>
+                    <small>Thời gian</small>
+                    <b>{row.time}</b>
+                  </span>
+                  <span>
+                    <small>Khách</small>
+                    <b>Đã ẩn</b>
+                  </span>
+                  <span>
+                    <small>Giảm giá</small>
+                    <b>-{moneyVndCode(row.amount)}</b>
+                  </span>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="partner-settlement-mobile-empty">
+              {settlementRows.length
+                ? 'Không có usage log phù hợp với bộ lọc đang chọn.'
+                : 'Chưa có usage log trong phạm vi quán của partner.'}
+            </div>
+          )}
         </div>
       </PanelCard>
     </>
@@ -6442,18 +6477,6 @@ export default function PartnerPage() {
                     VND
                   </span>
                 </div>
-                {billAmount > 0 ? (
-                  <div
-                    style={{
-                      marginTop: '7px',
-                      color: colors.goldBright,
-                      fontSize: '12px',
-                      fontWeight: 900,
-                    }}
-                  >
-                    {moneyVnd(billAmount)}
-                  </div>
-                ) : null}
               </FormField>
               <FormField label="Thời gian sử dụng *" htmlFor="bill-used-at-hidden">
                 <div
@@ -7618,6 +7641,9 @@ export default function PartnerPage() {
         .partner-bill-mobile-list {
           display: none;
         }
+        .partner-settlement-mobile-list {
+          display: none;
+        }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -7963,6 +7989,96 @@ export default function PartnerPage() {
           .partner-table-scroll {
             margin: 0 -16px -4px;
             padding: 0 16px 4px;
+          }
+          .partner-settlement-table-scroll {
+            display: none !important;
+          }
+          .partner-settlement-mobile-list {
+            display: grid;
+            gap: 12px;
+          }
+          .partner-settlement-mobile-card {
+            border: 1px solid ${colors.borderHair};
+            border-radius: 16px;
+            background: ${colors.surface2};
+            box-shadow: 0 18px 42px -34px rgba(0,0,0,.78);
+            color: ${colors.text};
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+            padding: 13px;
+          }
+          .partner-settlement-mobile-head {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            min-width: 0;
+          }
+          .partner-settlement-mobile-index {
+            align-items: center;
+            background: rgba(212,178,106,.16);
+            border: 1px solid ${colors.borderGold22};
+            border-radius: 999px;
+            color: ${colors.goldBright};
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 900;
+            height: 26px;
+            justify-content: center;
+            min-width: 38px;
+            padding: 0 9px;
+          }
+          .partner-settlement-mobile-code {
+            color: ${colors.goldBright};
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+          }
+          .partner-settlement-mobile-service {
+            color: ${colors.text};
+            font-size: 12.5px;
+            font-weight: 800;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+          }
+          .partner-settlement-mobile-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+          .partner-settlement-mobile-grid span {
+            background: rgba(255,255,255,.035);
+            border: 1px solid ${colors.borderSoft};
+            border-radius: 12px;
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+            padding: 9px 10px;
+          }
+          .partner-settlement-mobile-grid small {
+            color: ${colors.muted};
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.2;
+          }
+          .partner-settlement-mobile-grid b {
+            color: ${colors.goldPale};
+            font-size: 11.5px;
+            font-weight: 900;
+            line-height: 1.3;
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+          .partner-settlement-mobile-empty {
+            border: 1px solid ${colors.borderHair};
+            border-radius: 16px;
+            color: ${colors.text2};
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 16px 12px;
+            text-align: center;
           }
           .partner-bill-table-scroll {
             display: none !important;
