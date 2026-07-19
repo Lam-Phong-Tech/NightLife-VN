@@ -1559,7 +1559,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
-  const hideFooter = pathname === "/xac-nhan";
+  const hideFooter = pathname === "/xac-nhan" || isMobile;
   const customerRouteMotionEnabled =
     !pathname.startsWith("/admin") && !pathname.startsWith("/partner");
   const enableScrollReveal = pathname === "/";
