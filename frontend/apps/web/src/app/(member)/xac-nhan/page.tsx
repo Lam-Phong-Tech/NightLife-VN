@@ -6,7 +6,12 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
-import { writeBookingConfirmationFlashToast, type BookingConfirmationFlashTone } from "@/lib/booking-confirmation-flash";
+import {
+  buildBookingConfirmationPageFeedback,
+  writeBookingConfirmationFlashToast,
+  type BookingConfirmationFlashKind,
+  type BookingConfirmationPageFeedback,
+} from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
@@ -22,17 +27,8 @@ type BookingLookup = {
   phone: string;
 };
 
-type BookingResolutionKind = "partner" | "admin" | "cancelled";
-
-type BookingResolutionFeedback = {
-  tone: BookingConfirmationFlashTone;
-  toastTitle: string;
-  toastDescription: string;
-  homeTitle: string;
-  homeDescription: string;
-  redirectTitle: string;
-  redirectDescription: string;
-};
+type BookingResolutionKind = BookingConfirmationFlashKind;
+type BookingResolutionFeedback = BookingConfirmationPageFeedback;
 
 const formatDateTime = (value: string | undefined, language: LanguageCode) => {
   if (!value) return translateText("Chưa có thời gian", language);
@@ -179,65 +175,14 @@ const bookingResolutionFeedback = (
   booking: BookingRecord,
   language: LanguageCode,
 ): BookingResolutionFeedback => {
-  const title = bookingTitle(booking);
-  const isTourBooking = Boolean(booking.tour);
-
-  if (kind === "partner") {
-    return {
-      tone: "success",
-      toastTitle: translateText(isTourBooking ? "Quán đã xác nhận điểm dừng" : "Quán đã xác nhận QR", language),
-      toastDescription: translateText(
-        isTourBooking
-          ? `Điểm dừng trong tour ${title} đã được quán xác nhận. Đang chuyển bạn về trang chủ.`
-          : `${title} đã quét QR và xác nhận lượt sử dụng. Đang chuyển bạn về trang chủ.`,
-        language,
-      ),
-      homeTitle: translateText(isTourBooking ? "Check-in tour thành công" : "Xác nhận tại quán thành công", language),
-      homeDescription: translateText(
-        isTourBooking
-          ? `Điểm dừng trong tour ${title} đã được quán xác nhận thành công.`
-          : `${title} đã được quán xác nhận qua QR.`,
-        language,
-      ),
-      redirectTitle: translateText("Đang chuyển về trang chủ", language),
-      redirectDescription: translateText("Trạng thái QR đã cập nhật xong.", language),
-    };
-  }
-
-  if (kind === "admin") {
-    return {
-      tone: "success",
-      toastTitle: translateText(isTourBooking ? "Admin đã duyệt tour" : "Admin đã duyệt đơn", language),
-      toastDescription: translateText(
-        isTourBooking
-          ? `Tour ${title} đã được Admin xác nhận. Đang chuyển bạn về trang chủ.`
-          : `Đặt chỗ ${title} đã được Admin xác nhận. Đang chuyển bạn về trang chủ.`,
-        language,
-      ),
-      homeTitle: translateText(isTourBooking ? "Tour đã được duyệt" : "Đặt chỗ đã được duyệt", language),
-      homeDescription: translateText(
-        isTourBooking
-          ? `Tour ${title} đã được Admin xác nhận thành công.`
-          : `Đặt chỗ ${title} đã được Admin xác nhận thành công.`,
-        language,
-      ),
-      redirectTitle: translateText("Đang chuyển về trang chủ", language),
-      redirectDescription: translateText("Đơn đã được duyệt thành công.", language),
-    };
-  }
-
-  return {
-    tone: "error",
-    toastTitle: translateText("Xác nhận thất bại", language),
-    toastDescription: translateText(
-      `Lịch đặt ${title} đã bị hủy hoặc không còn hiệu lực. Đang chuyển bạn về trang chủ.`,
-      language,
-    ),
-    homeTitle: translateText("Xác nhận thất bại", language),
-    homeDescription: translateText(`Lịch đặt ${title} đã bị hủy hoặc không còn hiệu lực.`, language),
-    redirectTitle: translateText("Đang quay về trang chủ", language),
-    redirectDescription: translateText("Trạng thái lịch đặt không thể xác nhận.", language),
-  };
+  return buildBookingConfirmationPageFeedback(
+    {
+      kind,
+      bookingTitle: bookingTitle(booking),
+      isTourBooking: Boolean(booking.tour),
+    },
+    language,
+  );
 };
 
 const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
@@ -555,9 +500,9 @@ export default function Page() {
       const nextFeedback = bookingResolutionFeedback(kind, nextBooking, activeLanguage);
       setRedirectFeedback(nextFeedback);
       writeBookingConfirmationFlashToast({
-        tone: nextFeedback.tone,
-        title: nextFeedback.homeTitle,
-        description: nextFeedback.homeDescription,
+        kind,
+        bookingTitle: bookingTitle(nextBooking),
+        isTourBooking: Boolean(nextBooking.tour),
         durationMs: 5200,
       });
       feedback.showToast({

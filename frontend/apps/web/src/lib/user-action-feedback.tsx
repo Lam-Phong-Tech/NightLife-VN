@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback } from "react";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { ApiError } from "@/lib/api/client";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 type UserActionTone = "success" | "info" | "warning" | "error" | "gold";
 
@@ -18,6 +19,14 @@ type ConfirmUserActionOptions = {
 type UserToastOptions = {
   title: string;
   description?: string;
+};
+
+const confirmActionDefaults: Record<LanguageCode, { confirm: string; cancel: string }> = {
+  vi: { confirm: "Xác nhận", cancel: "Hủy" },
+  en: { confirm: "Confirm", cancel: "Cancel" },
+  ja: { confirm: "確認", cancel: "キャンセル" },
+  ko: { confirm: "확인", cancel: "취소" },
+  zh: { confirm: "确认", cancel: "取消" },
 };
 
 const nearStartThresholdMinutes = 60;
@@ -41,17 +50,20 @@ export const userActionErrorMessage = (error: unknown, fallback: string) => {
 
 export const useUserActionFeedback = () => {
   const feedback = useSystemFeedback();
+  const activeLanguage = useActiveLanguage();
 
   const confirmAction = useCallback(
-    ({
-      title,
-      description,
-      confirmLabel = "Xác nhận",
-      cancelLabel = "Hủy",
-      tone = "gold",
-      destructive = false,
-      onConfirm,
-    }: ConfirmUserActionOptions) => {
+    (options: ConfirmUserActionOptions) => {
+      const {
+        title,
+        description,
+        confirmLabel = confirmActionDefaults[activeLanguage].confirm,
+        cancelLabel = confirmActionDefaults[activeLanguage].cancel,
+        tone = "gold",
+        destructive = false,
+        onConfirm,
+      } = options;
+
       feedback.showModal({
         tone,
         title,
@@ -64,7 +76,7 @@ export const useUserActionFeedback = () => {
         },
       });
     },
-    [feedback],
+    [activeLanguage, feedback],
   );
 
   const showToast = useCallback(

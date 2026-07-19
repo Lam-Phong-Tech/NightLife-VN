@@ -74,7 +74,10 @@ import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-f
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
-import { readBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
+import {
+  buildBookingConfirmationFlashToast,
+  readBookingConfirmationFlashToast,
+} from "@/lib/booking-confirmation-flash";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 const colors = {
@@ -108,6 +111,99 @@ type HomeCategoryItem = {
   href: string;
   featured?: boolean;
 };
+
+type HomeFavoriteFeedbackKey =
+  | "addedTitle"
+  | "removedTitle"
+  | "updateErrorTitle"
+  | "updateErrorFallback"
+  | "saveConfirmTitle"
+  | "removeConfirmTitle"
+  | "saveConfirmLabel"
+  | "removeConfirmLabel";
+
+type HomeFavoriteFeedbackCopy = Record<HomeFavoriteFeedbackKey, string> & {
+  addedDescription: (storeName: string) => string;
+  removedDescription: (storeName: string) => string;
+  saveConfirmDescription: (storeName: string) => string;
+  removeConfirmDescription: (storeName: string) => string;
+};
+
+const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> = {
+  vi: {
+    addedTitle: "Đã thêm quán yêu thích",
+    removedTitle: "Đã bỏ lưu quán",
+    updateErrorTitle: "Không cập nhật được yêu thích",
+    updateErrorFallback: "Vui lòng thử lại sau.",
+    saveConfirmTitle: "Lưu quán yêu thích?",
+    removeConfirmTitle: "Bỏ lưu quán?",
+    saveConfirmLabel: "Lưu quán",
+    removeConfirmLabel: "Bỏ lưu",
+    addedDescription: (storeName) => `${storeName} đã được lưu vào danh sách yêu thích.`,
+    removedDescription: (storeName) => `${storeName} đã được gỡ khỏi danh sách yêu thích.`,
+    saveConfirmDescription: (storeName) => `Thêm ${storeName} vào danh sách yêu thích của bạn.`,
+    removeConfirmDescription: (storeName) => `Gỡ ${storeName} khỏi danh sách yêu thích của bạn.`,
+  },
+  en: {
+    addedTitle: "Venue saved",
+    removedTitle: "Venue removed",
+    updateErrorTitle: "Could not update favorites",
+    updateErrorFallback: "Please try again later.",
+    saveConfirmTitle: "Save this venue?",
+    removeConfirmTitle: "Remove saved venue?",
+    saveConfirmLabel: "Save venue",
+    removeConfirmLabel: "Remove",
+    addedDescription: (storeName) => `${storeName} has been added to your favorites.`,
+    removedDescription: (storeName) => `${storeName} has been removed from your favorites.`,
+    saveConfirmDescription: (storeName) => `Add ${storeName} to your favorites.`,
+    removeConfirmDescription: (storeName) => `Remove ${storeName} from your favorites.`,
+  },
+  ja: {
+    addedTitle: "お気に入りに追加しました",
+    removedTitle: "保存を解除しました",
+    updateErrorTitle: "お気に入りを更新できません",
+    updateErrorFallback: "しばらくしてからもう一度お試しください。",
+    saveConfirmTitle: "この店舗を保存しますか？",
+    removeConfirmTitle: "保存した店舗を解除しますか？",
+    saveConfirmLabel: "保存する",
+    removeConfirmLabel: "解除する",
+    addedDescription: (storeName) => `「${storeName}」をお気に入りに追加しました。`,
+    removedDescription: (storeName) => `「${storeName}」をお気に入りから削除しました。`,
+    saveConfirmDescription: (storeName) => `「${storeName}」をお気に入りに追加します。`,
+    removeConfirmDescription: (storeName) => `「${storeName}」をお気に入りから削除します。`,
+  },
+  ko: {
+    addedTitle: "즐겨찾기에 추가했습니다",
+    removedTitle: "저장을 해제했습니다",
+    updateErrorTitle: "즐겨찾기를 업데이트할 수 없습니다",
+    updateErrorFallback: "잠시 후 다시 시도해 주세요.",
+    saveConfirmTitle: "이 매장을 저장할까요?",
+    removeConfirmTitle: "저장한 매장을 해제할까요?",
+    saveConfirmLabel: "매장 저장",
+    removeConfirmLabel: "해제",
+    addedDescription: (storeName) => `${storeName}이(가) 즐겨찾기에 추가되었습니다.`,
+    removedDescription: (storeName) => `${storeName}이(가) 즐겨찾기에서 제거되었습니다.`,
+    saveConfirmDescription: (storeName) => `${storeName}을(를) 즐겨찾기에 추가합니다.`,
+    removeConfirmDescription: (storeName) => `${storeName}을(를) 즐겨찾기에서 제거합니다.`,
+  },
+  zh: {
+    addedTitle: "已加入收藏",
+    removedTitle: "已取消收藏",
+    updateErrorTitle: "无法更新收藏",
+    updateErrorFallback: "请稍后再试。",
+    saveConfirmTitle: "收藏这家店？",
+    removeConfirmTitle: "取消收藏这家店？",
+    saveConfirmLabel: "收藏店铺",
+    removeConfirmLabel: "取消收藏",
+    addedDescription: (storeName) => `${storeName} 已加入你的收藏。`,
+    removedDescription: (storeName) => `${storeName} 已从你的收藏中移除。`,
+    saveConfirmDescription: (storeName) => `将 ${storeName} 加入你的收藏。`,
+    removeConfirmDescription: (storeName) => `将 ${storeName} 从你的收藏中移除。`,
+  },
+};
+
+const homeFavoriteFeedbackText = (language: LanguageCode) =>
+  homeFavoriteFeedbackCopy[language] ?? homeFavoriteFeedbackCopy.vi;
 
 const appearanceIconMap: Record<string, LucideIcon> = {
   account: UserRound,
@@ -2728,9 +2824,12 @@ export default function Page() {
     const flashToast = readBookingConfirmationFlashToast();
     if (!flashToast) return;
 
+    const localizedToast = buildBookingConfirmationFlashToast(flashToast, activeLanguage);
+    if (!localizedToast) return;
+
     const toastTimer = window.setTimeout(() => {
       feedback.showToast({
-        ...flashToast,
+        ...localizedToast,
         placement: "top-right",
       });
     }, 180);
@@ -2738,7 +2837,7 @@ export default function Page() {
     return () => {
       window.clearTimeout(toastTimer);
     };
-  }, [feedback]);
+  }, [activeLanguage, feedback]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3089,11 +3188,12 @@ export default function Page() {
         ? await storeFavoriteApi.favorite(item.slug)
         : await storeFavoriteApi.unfavorite(item.slug);
       applyFavorite(state.favorited);
+      const favoriteCopy = homeFavoriteFeedbackText(activeLanguage);
       userFeedback.success({
-        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        title: state.favorited ? favoriteCopy.addedTitle : favoriteCopy.removedTitle,
         description: state.favorited
-          ? `${item.name} đã được lưu vào danh sách yêu thích.`
-          : `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+          ? favoriteCopy.addedDescription(item.name)
+          : favoriteCopy.removedDescription(item.name),
       });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
@@ -3103,9 +3203,10 @@ export default function Page() {
       }
 
       applyFavorite(!nextValue);
+      const favoriteCopy = homeFavoriteFeedbackText(activeLanguage);
       userFeedback.error({
-        title: "Không cập nhật được yêu thích",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: favoriteCopy.updateErrorTitle,
+        description: userActionErrorMessage(error, favoriteCopy.updateErrorFallback),
       });
     }
   };
@@ -3116,12 +3217,13 @@ export default function Page() {
     }
 
     const nextValue = !favoriteStoreSlugs.includes(item.slug);
+    const favoriteCopy = homeFavoriteFeedbackText(activeLanguage);
     userFeedback.confirmAction({
-      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      title: nextValue ? favoriteCopy.saveConfirmTitle : favoriteCopy.removeConfirmTitle,
       description: nextValue
-        ? `Thêm ${item.name} vào danh sách yêu thích của bạn.`
-        : `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+        ? favoriteCopy.saveConfirmDescription(item.name)
+        : favoriteCopy.removeConfirmDescription(item.name),
+      confirmLabel: nextValue ? favoriteCopy.saveConfirmLabel : favoriteCopy.removeConfirmLabel,
       tone: nextValue ? "gold" : "warning",
       destructive: !nextValue,
       onConfirm: () => applyHomeStoreFavorite(item, nextValue),

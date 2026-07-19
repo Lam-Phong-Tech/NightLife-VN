@@ -650,6 +650,108 @@ const localize = (value: string, language: LanguageCode) => {
   return billPageCopy[value]?.[language] ?? translateText(value, language);
 };
 
+type BillFeedbackKey =
+  | "cannotReadBill"
+  | "readBillSuccess"
+  | "readBillAutoFailed"
+  | "readBillFailed"
+  | "readBillConfirmTitle"
+  | "readBillConfirmDescription"
+  | "readBillConfirmLabel"
+  | "billSubmitted"
+  | "billSubmitSuccess"
+  | "billSubmitFailed"
+  | "billSubmitBlocked"
+  | "billSubmitConfirmTitle"
+  | "billSubmitConfirmDescription"
+  | "billSubmitConfirmLabel";
+
+const billFeedbackCopy: Record<LanguageCode, Record<BillFeedbackKey, string>> = {
+  vi: {
+    cannotReadBill: "Không đọc được hóa đơn",
+    readBillSuccess: "Đã đọc hóa đơn",
+    readBillAutoFailed: "Không đọc được hóa đơn tự động",
+    readBillFailed: "Đọc hóa đơn thất bại",
+    readBillConfirmTitle: "Đọc dữ liệu hóa đơn?",
+    readBillConfirmDescription: "Hệ thống sẽ đọc file đã chọn và gợi ý tổng tiền nếu có thể.",
+    readBillConfirmLabel: "Đọc hóa đơn",
+    billSubmitted: "Đã gửi hóa đơn",
+    billSubmitSuccess: "Gửi hóa đơn thành công",
+    billSubmitFailed: "Gửi hóa đơn thất bại",
+    billSubmitBlocked: "Chưa thể gửi hóa đơn",
+    billSubmitConfirmTitle: "Xác nhận gửi hóa đơn?",
+    billSubmitConfirmDescription: "Bạn có chắc muốn gửi hóa đơn này để quản trị viên duyệt không?",
+    billSubmitConfirmLabel: "Gửi hóa đơn",
+  },
+  en: {
+    cannotReadBill: "Could not read the bill",
+    readBillSuccess: "Bill read successfully",
+    readBillAutoFailed: "Could not read the bill automatically",
+    readBillFailed: "Bill reading failed",
+    readBillConfirmTitle: "Read bill data?",
+    readBillConfirmDescription: "The system will read the selected file and suggest the total when possible.",
+    readBillConfirmLabel: "Read bill",
+    billSubmitted: "Bill submitted",
+    billSubmitSuccess: "Bill submitted successfully",
+    billSubmitFailed: "Bill submission failed",
+    billSubmitBlocked: "Cannot submit bill yet",
+    billSubmitConfirmTitle: "Confirm bill submission?",
+    billSubmitConfirmDescription: "Are you sure you want to submit this bill for admin review?",
+    billSubmitConfirmLabel: "Submit bill",
+  },
+  ja: {
+    cannotReadBill: "請求書を読み取れません",
+    readBillSuccess: "請求書を読み取りました",
+    readBillAutoFailed: "請求書を自動で読み取れません",
+    readBillFailed: "請求書の読み取りに失敗しました",
+    readBillConfirmTitle: "請求書データを読み取りますか？",
+    readBillConfirmDescription: "選択したファイルを読み取り、可能な場合は合計金額を提案します。",
+    readBillConfirmLabel: "請求書を読む",
+    billSubmitted: "請求書を送信しました",
+    billSubmitSuccess: "請求書を送信しました",
+    billSubmitFailed: "請求書の送信に失敗しました",
+    billSubmitBlocked: "まだ請求書を送信できません",
+    billSubmitConfirmTitle: "請求書を送信しますか？",
+    billSubmitConfirmDescription: "この請求書を管理者レビューに送信してもよろしいですか？",
+    billSubmitConfirmLabel: "請求書を送信",
+  },
+  ko: {
+    cannotReadBill: "영수증을 읽을 수 없습니다",
+    readBillSuccess: "영수증을 읽었습니다",
+    readBillAutoFailed: "영수증을 자동으로 읽을 수 없습니다",
+    readBillFailed: "영수증 읽기에 실패했습니다",
+    readBillConfirmTitle: "영수증 데이터를 읽을까요?",
+    readBillConfirmDescription: "선택한 파일을 읽고 가능한 경우 총액을 제안합니다.",
+    readBillConfirmLabel: "영수증 읽기",
+    billSubmitted: "영수증이 제출되었습니다",
+    billSubmitSuccess: "영수증 제출 완료",
+    billSubmitFailed: "영수증 제출 실패",
+    billSubmitBlocked: "아직 영수증을 제출할 수 없습니다",
+    billSubmitConfirmTitle: "영수증 제출을 확인할까요?",
+    billSubmitConfirmDescription: "이 영수증을 관리자 검토용으로 제출하시겠습니까?",
+    billSubmitConfirmLabel: "영수증 제출",
+  },
+  zh: {
+    cannotReadBill: "无法读取账单",
+    readBillSuccess: "账单读取成功",
+    readBillAutoFailed: "无法自动读取账单",
+    readBillFailed: "账单读取失败",
+    readBillConfirmTitle: "读取账单数据？",
+    readBillConfirmDescription: "系统将读取所选文件，并在可用时建议总金额。",
+    readBillConfirmLabel: "读取账单",
+    billSubmitted: "账单已提交",
+    billSubmitSuccess: "账单提交成功",
+    billSubmitFailed: "账单提交失败",
+    billSubmitBlocked: "暂时无法提交账单",
+    billSubmitConfirmTitle: "确认提交账单？",
+    billSubmitConfirmDescription: "确定要提交此账单给管理员审核吗？",
+    billSubmitConfirmLabel: "提交账单",
+  },
+};
+
+const billFeedbackText = (key: BillFeedbackKey, language: LanguageCode) =>
+  billFeedbackCopy[language]?.[key] ?? billFeedbackCopy.vi[key];
+
 const partySizeLabel = (count: number, language: LanguageCode) =>
   ({
     vi: `${count} người`,
@@ -1019,7 +1121,7 @@ export default function Page() {
     if (fileError) {
       setNotice({ tone: "danger", message: fileError });
       userFeedback.error({
-        title: "Không đọc được hóa đơn",
+        title: billFeedbackText("cannotReadBill", activeLanguage),
         description: t(fileError),
       });
       return;
@@ -1056,12 +1158,12 @@ export default function Page() {
       });
       if (canPrefillAmount && !preview.requiresManualReview) {
         userFeedback.success({
-          title: "Đã đọc hóa đơn",
+          title: billFeedbackText("readBillSuccess", activeLanguage),
           description: t("Tổng tiền đã được điền theo dữ liệu hóa đơn."),
         });
       } else {
         userFeedback.warning({
-          title: "Không đọc được hóa đơn tự động",
+          title: billFeedbackText("readBillAutoFailed", activeLanguage),
           description: !hasExtractedText
             ? t("Không có dữ liệu OCR để tự điền. Vui lòng nhập tổng tiền thủ công.")
             : t("Vui lòng kiểm tra lại dữ liệu gợi ý trước khi gửi."),
@@ -1071,7 +1173,7 @@ export default function Page() {
       const message = t(cleanApiMessage(error));
       setNotice({ tone: "danger", message });
       userFeedback.error({
-        title: "Đọc hóa đơn thất bại",
+        title: billFeedbackText("readBillFailed", activeLanguage),
         description: message,
       });
     } finally {
@@ -1082,9 +1184,9 @@ export default function Page() {
   const handleReadEvidence = () => {
     if (!evidenceFile) return;
     userFeedback.confirmAction({
-      title: "Đọc dữ liệu hóa đơn?",
-      description: "Hệ thống sẽ đọc file đã chọn và gợi ý tổng tiền nếu có thể.",
-      confirmLabel: "Đọc hóa đơn",
+      title: billFeedbackText("readBillConfirmTitle", activeLanguage),
+      description: billFeedbackText("readBillConfirmDescription", activeLanguage),
+      confirmLabel: billFeedbackText("readBillConfirmLabel", activeLanguage),
       onConfirm: readEvidencePreview,
     });
   };
@@ -1368,7 +1470,9 @@ export default function Page() {
       setSubmittedBills((current) => [bill, ...current]);
       const showBillToast = uploadWarning ? userFeedback.warning : userFeedback.success;
       showBillToast({
-        title: uploadWarning ? "Đã gửi hóa đơn" : "Gửi hóa đơn thành công",
+        title: uploadWarning
+          ? billFeedbackText("billSubmitted", activeLanguage)
+          : billFeedbackText("billSubmitSuccess", activeLanguage),
         description: uploadWarning
           ? t("Hóa đơn đã được gửi nhưng chứng từ chưa tải lên được.")
           : t("Hóa đơn đã được gửi để quản trị viên duyệt."),
@@ -1391,7 +1495,7 @@ export default function Page() {
       const message = t(cleanApiMessage(error));
       setNotice({ tone: "danger", message });
       userFeedback.error({
-        title: "Gửi hóa đơn thất bại",
+        title: billFeedbackText("billSubmitFailed", activeLanguage),
         description: message,
       });
     } finally {
@@ -1409,16 +1513,16 @@ export default function Page() {
         message: billValidationMessage,
       });
       userFeedback.error({
-        title: "Chưa thể gửi hóa đơn",
+        title: billFeedbackText("billSubmitBlocked", activeLanguage),
         description: billValidationMessage,
       });
       return;
     }
 
     userFeedback.confirmAction({
-      title: "Xác nhận gửi hóa đơn?",
-      description: "Bạn có chắc muốn gửi hóa đơn này để quản trị viên duyệt không?",
-      confirmLabel: "Gửi hóa đơn",
+      title: billFeedbackText("billSubmitConfirmTitle", activeLanguage),
+      description: billFeedbackText("billSubmitConfirmDescription", activeLanguage),
+      confirmLabel: billFeedbackText("billSubmitConfirmLabel", activeLanguage),
       onConfirm: submitBill,
     });
   };
