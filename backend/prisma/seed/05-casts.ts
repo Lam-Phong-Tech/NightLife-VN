@@ -12,7 +12,6 @@ interface CastSeed {
   storeSlug: string;
   bio: string;
   publicAlias: string;
-  publicHeadline: string;
   publicBio: string;
   tags: string[];
   styleTags: string[];
@@ -34,7 +33,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'moonlight-bar',
     bio: 'Sakura — experienced bartender & entertainer',
     publicAlias: 'Sakura',
-    publicHeadline: '🌸 おもてなしの心を大切に',
     publicBio:
       '🇯🇵 カクテル作りが得意です。お客様に最高の夜をお届けします。趣味はダンスと映画鑑賞。\n' +
       '🇬🇧 Skilled at crafting cocktails. I deliver the best nights for our guests. Hobbies: dance & movies.\n' +
@@ -56,7 +54,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'moonlight-bar',
     bio: 'Miyuki — charming conversationalist',
     publicAlias: 'Miyuki',
-    publicHeadline: '✨ 会話を楽しみましょう',
     publicBio:
       '🇯🇵 おしゃべりが大好きです。日本語と英語が話せます。一緒に楽しい時間を過ごしましょう！\n' +
       "🇬🇧 I love chatting! I speak Japanese and English. Let's have a great time together!\n" +
@@ -79,7 +76,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'velvet-club',
     bio: 'Rina — energetic club performer',
     publicAlias: 'Rina',
-    publicHeadline: '🎵 一緒に踊りましょう！',
     publicBio:
       '🇯🇵 ダンスとDJが大好き！クラブの雰囲気を最高に盛り上げます。\n' +
       '🇬🇧 I love dancing and DJing! I make the club atmosphere electric.\n' +
@@ -101,7 +97,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'velvet-club',
     bio: 'Aya — glamorous hostess',
     publicAlias: 'Aya',
-    publicHeadline: '💎 最高のVIP体験を',
     publicBio:
       '🇯🇵 VIPテーブルのスペシャリスト。ワインとシャンパンに詳しいです。\n' +
       '🇬🇧 VIP table specialist. Knowledgeable about wine and champagne.\n' +
@@ -125,7 +120,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'sakura-lounge',
     bio: 'Yuki — refined lounge hostess',
     publicAlias: 'Yuki',
-    publicHeadline: '❄️ 静かな時間をどうぞ',
     publicBio:
       '🇯🇵 日本酒ソムリエの資格を持っています。穏やかな空間で最高のおもてなしを。\n' +
       '🇬🇧 Certified sake sommelier. The finest hospitality in a tranquil setting.\n' +
@@ -146,7 +140,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'sakura-lounge',
     bio: 'Hana — sweet and attentive hostess',
     publicAlias: 'Hana',
-    publicHeadline: '🌺 笑顔でお迎えします',
     publicBio:
       '🇯🇵 笑顔が一番のおもてなし。趣味は料理とガーデニング。\n' +
       '🇬🇧 A smile is the best hospitality. Hobbies: cooking & gardening.\n' +
@@ -169,7 +162,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'golden-voice-ktv',
     bio: 'Mai — talented singer & KTV host',
     publicAlias: 'Mai',
-    publicHeadline: '🎤 歌って楽しもう！',
     publicBio:
       '🇯🇵 J-POPからアニソンまで何でも歌います！カラオケ盛り上げのプロです。\n' +
       '🇬🇧 I sing everything from J-POP to anime songs! Professional at making karaoke fun.\n' +
@@ -190,7 +182,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'golden-voice-ktv',
     bio: 'Nana — fun KTV companion',
     publicAlias: 'Nana',
-    publicHeadline: '🎶 一緒に歌いましょう',
     publicBio:
       '🇯🇵 楽しい時間を一緒に過ごしましょう！ベトナム語と日本語のデュエットが得意。\n' +
       "🇬🇧 Let's have fun together! Great at Vietnamese-Japanese duets.\n" +
@@ -211,7 +202,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'golden-voice-ktv',
     bio: 'Mika - KTV host for private groups in Quan 7',
     publicAlias: 'Mika KTV',
-    publicHeadline: 'KTV host cho tiec nhom Quan 7',
     publicBio:
       'EN Cheerful KTV host for group parties, song picking, and duet support.\n' +
       'VI Biet khuay dong phong karaoke, chon bai va song ca cung khach.',
@@ -233,7 +223,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'hanami-dining',
     bio: 'Rumi — elegant dining hostess',
     publicAlias: 'Rumi',
-    publicHeadline: '🍶 お食事のお供に',
     publicBio:
       '🇯🇵 和食の知識が豊富です。お料理に合うお酒のペアリングをご提案します。\n' +
       '🇬🇧 Rich knowledge of Japanese cuisine. I suggest perfect drink pairings for your dishes.\n' +
@@ -254,7 +243,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'hanami-dining',
     bio: 'Kaori — graceful dining companion',
     publicAlias: 'Kaori',
-    publicHeadline: '🌿 心を込めておもてなし',
     publicBio:
       '🇯🇵 接待のサポートが得意です。日本のビジネスマナーを理解しています。\n' +
       '🇬🇧 Expert at business entertainment support. I understand Japanese business etiquette.\n' +
@@ -277,7 +265,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'crimson-bar',
     bio: 'Misaki — lively bar hostess in Hanoi',
     publicAlias: 'Misaki',
-    publicHeadline: '🍷 ハノイの夜を一緒に',
     publicBio:
       '🇯🇵 ハノイ在住3年。旧市街の穴場スポットに詳しいです！\n' +
       '🇬🇧 Living in Hanoi for 3 years. I know all the hidden gems in the Old Quarter!\n' +
@@ -298,7 +285,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'crimson-bar',
     bio: 'Rei — mysterious and charming',
     publicAlias: 'Rei',
-    publicHeadline: '🌙 ミステリアスな夜を',
     publicBio:
       '🇯🇵 ウイスキーとジャズが大好き。静かな会話を楽しみたい方にぴったりです。\n' +
       '🇬🇧 I love whisky and jazz. Perfect for those who enjoy quiet conversations.\n' +
@@ -319,7 +305,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'crimson-bar',
     bio: 'Linh - cocktail companion in Hoan Kiem',
     publicAlias: 'Linh Crimson',
-    publicHeadline: 'Cocktail companion khu Hoan Kiem',
     publicBio:
       'EN Friendly cocktail companion for private tables and quiet conversations in Hoan Kiem.\n' +
       'VI Phu hop khach thich cocktail, tro chuyen nhe nhang va khong gian bar tai Hoan Kiem.',
@@ -341,7 +326,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'neon-club',
     bio: 'Yuna — party queen at Neon Club',
     publicAlias: 'Yuna',
-    publicHeadline: '🎉 パーティーを盛り上げよう！',
     publicBio:
       '🇯🇵 パーティーの女王！テキーラショットからシャンパンタワーまでお任せください。\n' +
       '🇬🇧 The party queen! From tequila shots to champagne towers, leave it to me.\n' +
@@ -362,7 +346,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'neon-club',
     bio: 'Sora — cool DJ companion',
     publicAlias: 'Sora',
-    publicHeadline: '🎧 音楽で繋がろう',
     publicBio:
       '🇯🇵 音楽が全て。EDM、ハウス、テクノ。一緒にビートに乗りましょう！\n' +
       "🇬🇧 Music is everything. EDM, House, Techno. Let's ride the beat together!\n" +
@@ -385,7 +368,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'jade-lounge',
     bio: 'Akari — sophisticated lounge hostess',
     publicAlias: 'Akari',
-    publicHeadline: '💚 上質なひとときを',
     publicBio:
       '🇯🇵 ソムリエの経験があります。ワインとチーズのペアリングはお任せください。\n' +
       '🇬🇧 Experienced sommelier. Leave wine and cheese pairings to me.\n' +
@@ -406,7 +388,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'jade-lounge',
     bio: 'Hikaru — warm and welcoming',
     publicAlias: 'Hikaru',
-    publicHeadline: '✨ 温かいおもてなし',
     publicBio:
       '🇯🇵 ゆっくりとした時間をお過ごしいただけるよう、心を込めてお手伝いします。\n' +
       '🇬🇧 I wholeheartedly help you enjoy a relaxed and comfortable time.\n' +
@@ -429,7 +410,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'star-ktv',
     bio: 'Erika — talented vocalist',
     publicAlias: 'Erika',
-    publicHeadline: '⭐ 歌の力で元気を！',
     publicBio:
       '🇯🇵 音楽大学出身。クラシックからポップスまで幅広いレパートリー。\n' +
       '🇬🇧 Music academy graduate. Wide repertoire from classical to pop.\n' +
@@ -450,7 +430,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'star-ktv',
     bio: 'Tsubasa — cheerful KTV companion',
     publicAlias: 'Tsubasa',
-    publicHeadline: '🕊️ 楽しい時間をお約束',
     publicBio:
       '🇯🇵 明るい性格が取り柄です！一緒に歌って笑って最高の時間を過ごしましょう。\n' +
       "🇬🇧 My bright personality is my best trait! Let's sing, laugh, and have the best time.\n" +
@@ -473,7 +452,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'tokyo-kitchen',
     bio: 'Kotone — knowledgeable dining hostess',
     publicAlias: 'Kotone',
-    publicHeadline: '🍣 本格和食のご案内',
     publicBio:
       '🇯🇵 日本で5年間の飲食店経験。本格的な和食の楽しみ方をご案内します。\n' +
       '🇬🇧 5 years of restaurant experience in Japan. I guide you through authentic Japanese dining.\n' +
@@ -494,7 +472,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'tokyo-kitchen',
     bio: 'Aoi — gentle and caring hostess',
     publicAlias: 'Aoi',
-    publicHeadline: '💙 優しさでおもてなし',
     publicBio:
       '🇯🇵 お客様が笑顔になれるように、心を込めておもてなしします。お茶とスイーツが大好き。\n' +
       '🇬🇧 I serve with heart to make every guest smile. I love tea and sweets.\n' +
@@ -517,7 +494,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'dragon-rooftop-da-nang',
     bio: 'Lina — rooftop party host in Da Nang',
     publicAlias: 'Lina',
-    publicHeadline: 'Rooftop party guide by the Han River',
     publicBio:
       '🇬🇧 I host birthday groups and VIP tables with a bright, energetic style.\n' +
       '🇻🇳 Đồng hành bàn VIP, sinh nhật và nhóm bạn tại rooftop Đà Nẵng.',
@@ -537,7 +513,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'dragon-rooftop-da-nang',
     bio: 'Mai — dance and club companion',
     publicAlias: 'Mai',
-    publicHeadline: 'High-energy club companion',
     publicBio:
       '🇬🇧 EDM nights, dance floors, and lively group hosting are my favorite.\n' +
       '🇻🇳 Hợp nhóm thích EDM, nhảy và không khí club sôi động.',
@@ -559,7 +534,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'son-tra-lounge',
     bio: 'Nami — calm lounge hostess near My Khe',
     publicAlias: 'Nami',
-    publicHeadline: 'Quiet lounge time near the beach',
     publicBio:
       '🇬🇧 I enjoy slow conversations, cocktails, and relaxed terrace seating.\n' +
       '🇻🇳 Phù hợp khách thích trò chuyện nhẹ nhàng, cocktail và không gian biển.',
@@ -579,7 +553,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'son-tra-lounge',
     bio: 'Eri — attentive VIP lounge host',
     publicAlias: 'Eri',
-    publicHeadline: 'Private-room lounge support',
     publicBio:
       '🇬🇧 I support private rooms, bottle service, and business entertainment.\n' +
       '🇻🇳 Hỗ trợ phòng riêng, gọi đồ và tiếp khách trong lounge cao cấp.',
@@ -601,7 +574,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'harbor-ktv-hai-phong',
     bio: 'Mika — cheerful KTV host in Hai Phong',
     publicAlias: 'Mika',
-    publicHeadline: 'KTV duet and group mood maker',
     publicBio:
       '🇬🇧 I help groups choose songs and keep the KTV room lively.\n' +
       '🇻🇳 Biết khuấy động phòng karaoke, chọn bài và song ca cùng khách.',
@@ -621,7 +593,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'harbor-ktv-hai-phong',
     bio: 'Hana — warm KTV companion',
     publicAlias: 'Hana HP',
-    publicHeadline: 'Warm hosting for private karaoke rooms',
     publicBio:
       '🇬🇧 Friendly hosting for private karaoke rooms and business groups.\n' +
       '🇻🇳 Phù hợp phòng riêng, nhóm tiếp khách và khách thích không khí ấm áp.',
@@ -643,7 +614,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'opera-spa-hai-phong',
     bio: 'Sumi — wellness concierge',
     publicAlias: 'Sumi',
-    publicHeadline: 'Late-night spa and wellness support',
     publicBio:
       '🇬🇧 I help guests choose massage, sauna, and quiet-room packages.\n' +
       '🇻🇳 Hỗ trợ chọn gói massage, xông hơi và phòng thư giãn mở muộn.',
@@ -663,7 +633,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'opera-spa-hai-phong',
     bio: 'Yuri — attentive wellness host',
     publicAlias: 'Yuri',
-    publicHeadline: 'Quiet care near Hai Phong Opera House',
     publicBio:
       '🇬🇧 Gentle support for guests who prefer quiet wellness experiences.\n' +
       '🇻🇳 Phù hợp khách muốn trải nghiệm spa yên tĩnh gần Nhà hát Lớn.',
@@ -683,7 +652,6 @@ const CASTS: CastSeed[] = [
     storeSlug: 'lotus-massage-spa',
     bio: 'Sumi - massage spa coordinator in Quan 3',
     publicAlias: 'Sumi Spa',
-    publicHeadline: 'Massage spa coordinator Quan 3',
     publicBio:
       'EN Wellness companion for late-night massage, sauna, and quiet-room packages.\n' +
       'VI Ho tro chon goi massage, xong hoi va phong thu gian tai Quan 3.',
@@ -719,7 +687,6 @@ export async function seedCasts(
         stageName: c.stageName,
         bio: c.bio,
         publicAlias: c.publicAlias,
-        publicHeadline: c.publicHeadline,
         publicBio: c.publicBio,
         tags: c.tags,
         styleTags: c.styleTags ?? [],
@@ -740,7 +707,6 @@ export async function seedCasts(
         stageName: c.stageName,
         bio: c.bio,
         publicAlias: c.publicAlias,
-        publicHeadline: c.publicHeadline,
         publicBio: c.publicBio,
         tags: c.tags,
         styleTags: c.styleTags ?? [],

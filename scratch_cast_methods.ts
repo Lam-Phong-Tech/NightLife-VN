@@ -61,7 +61,6 @@
         stageName: dto.stageName,
         slug,
         storeId: dto.storeId,
-        publicHeadline: dto.publicHeadline,
         bio: dto.bio,
         birthMonth: dto.birthMonth,
         zodiacSign: dto.zodiacSign,
@@ -94,7 +93,6 @@
       data: {
         ...(dto.stageName && { stageName: dto.stageName }),
         ...(dto.storeId && { storeId: dto.storeId }),
-        ...(dto.publicHeadline !== undefined && { publicHeadline: dto.publicHeadline }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
         ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
         ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),

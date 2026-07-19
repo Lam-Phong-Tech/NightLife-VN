@@ -28,7 +28,6 @@ export type RelatedCast = {
   stageName: string;
   name: string;
   publicAlias?: string | null;
-  publicHeadline?: string | null;
   tags: string[];
   languages: string[];
   hourlyRateVnd?: number | null;
@@ -55,7 +54,6 @@ export type PublicCastDetail = {
   stageName: string;
   name: string;
   publicAlias?: string | null;
-  publicHeadline?: string | null;
   publicBio?: string | null;
   monthOfBirth?: number | null;
   zodiacSign?: string | null;
@@ -92,10 +90,7 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
     stageName: cast.stageName,
     name: cast.name,
     publicAlias: cast.publicAlias,
-    publicHeadline: cast.publicHeadline,
-    publicBio:
-      cast.publicHeadline ??
-      `${displayName} dang hoat dong tai ${cast.store.name}, phu hop dat lich theo cast tren NightLife VN.`,
+    publicBio: `${displayName} dang hoat dong tai ${cast.store.name}, phu hop dat lich theo cast tren NightLife VN.`,
     monthOfBirth: null,
     zodiacSign: null,
     heightCm: null,
@@ -120,8 +115,7 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
     },
     seo: {
       title: `${displayName} | NightLife VN`,
-      description:
-        cast.publicHeadline ?? `Xem profile, ngon ngu va gia tham khao cua ${displayName}.`,
+      description: `Xem profile, ngon ngu va gia tham khao cua ${displayName}.`,
       canonicalPath: `/casts/${cast.slug}`,
       ogImage: thumbnailUrl,
     },

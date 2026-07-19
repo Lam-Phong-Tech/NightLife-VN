@@ -776,6 +776,26 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('can restrict admin store search to store names', async () => {
+    prisma.store.findMany.mockResolvedValueOnce([]);
+    prisma.store.count.mockResolvedValueOnce(0);
+
+    await service.listAdminStores({
+      search: 'neon',
+      searchField: 'name',
+      limit: 20,
+    });
+
+    const expectedWhere = {
+      deletedAt: null,
+      name: { contains: 'neon', mode: 'insensitive' },
+    };
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expectedWhere }),
+    );
+    expect(prisma.store.count).toHaveBeenCalledWith({ where: expectedWhere });
+  });
+
   it('sorts public stores nearest first when coordinates are provided', async () => {
     prisma.store.findMany.mockResolvedValue([
       {
@@ -976,7 +996,6 @@ describe('NightlifeDataService', () => {
           slug: 'yuna-neon',
           stageName: 'Yuna',
           publicAlias: 'Yuna Neon',
-          publicHeadline: 'Party host',
           tags: ['club', 'vip'],
           languages: ['ja', 'vi'],
           hourlyRateVnd: 700000,
@@ -1479,7 +1498,6 @@ describe('NightlifeDataService', () => {
         slug: 'mika-dragon',
         stageName: 'Mika',
         publicAlias: 'Mika',
-        publicHeadline: 'Da Nang skyline host',
         tags: ['club'],
         languages: ['vi'],
         hourlyRateVnd: 500000,
@@ -1535,7 +1553,6 @@ describe('NightlifeDataService', () => {
         slug: 'yuki-meo-meo',
         stageName: 'Yuki',
         publicAlias: 'Yuki',
-        publicHeadline: 'Host at Meo Meo',
         tags: ['hostess'],
         languages: ['vi', 'ja'],
         hourlyRateVnd: 400000,
@@ -1586,7 +1603,6 @@ describe('NightlifeDataService', () => {
         slug: 'mika-harbor-ktv',
         stageName: 'Mika',
         publicAlias: 'Mika',
-        publicHeadline: 'KTV duet host',
         tags: ['ktv'],
         languages: ['vi', 'ja'],
         hourlyRateVnd: 430000,
@@ -1669,7 +1685,6 @@ describe('NightlifeDataService', () => {
       storeId: 'store-velvet',
       stageName: 'Aya',
       publicAlias: 'Aya',
-      publicHeadline: 'VIP host',
       bio: 'Admin introduction for Aya.',
       publicBio: null,
       birthMonth: 8,
@@ -1745,7 +1760,6 @@ describe('NightlifeDataService', () => {
         storeId: 'store-velvet',
         stageName: 'Rina',
         publicAlias: 'Rina',
-        publicHeadline: 'Party host',
         tags: ['party', 'vip'],
         languages: ['ja', 'vi'],
         hourlyRateVnd: 600000,
@@ -1868,7 +1882,6 @@ describe('NightlifeDataService', () => {
       storeId: 'store-velvet',
       stageName: 'Aya',
       publicAlias: 'Aya',
-      publicHeadline: 'VIP host',
       bio: 'Admin introduction for Aya.',
       publicBio: null,
       birthMonth: 8,
@@ -1928,7 +1941,6 @@ describe('NightlifeDataService', () => {
           storeId: 'store-neon',
           stageName: 'Mika',
           publicAlias: 'Mika KTV',
-          publicHeadline: 'Ranked host',
           tags: ['party'],
           languages: ['vi'],
           hourlyRateVnd: 650000,

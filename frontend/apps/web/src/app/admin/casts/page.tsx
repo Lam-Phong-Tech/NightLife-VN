@@ -27,6 +27,20 @@ const colors = {
 };
 
 const COMMON_LANGS = ['VN', 'EN', 'JP', 'KR', 'CN'];
+const ZODIAC_SIGNS = [
+  { value: 'Aries', label: 'Bạch Dương' },
+  { value: 'Taurus', label: 'Kim Ngưu' },
+  { value: 'Gemini', label: 'Song Tử' },
+  { value: 'Cancer', label: 'Cự Giải' },
+  { value: 'Leo', label: 'Sư Tử' },
+  { value: 'Virgo', label: 'Xử Nữ' },
+  { value: 'Libra', label: 'Thiên Bình' },
+  { value: 'Scorpio', label: 'Bọ Cạp' },
+  { value: 'Sagittarius', label: 'Nhân Mã' },
+  { value: 'Capricorn', label: 'Ma Kết' },
+  { value: 'Aquarius', label: 'Bảo Bình' },
+  { value: 'Pisces', label: 'Song Ngư' },
+];
 
 type AdminCastMediaItem = {
   id?: string;
@@ -46,6 +60,119 @@ const normalizeListResponse = (value: any): any[] => {
   }
   return [];
 };
+
+type CastChipInputProps = {
+  label: string;
+  values: string[];
+  inputValue: string;
+  placeholder: string;
+  onInputChange: (value: string) => void;
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
+};
+
+type CastListFormState = {
+  hobbies?: string[];
+  tags?: string[];
+  [key: string]: unknown;
+};
+
+function CastChipInput({
+  label,
+  values,
+  inputValue,
+  placeholder,
+  onInputChange,
+  onAdd,
+  onRemove,
+}: CastChipInputProps) {
+  return (
+    <div style={{ marginBottom: '24px' }}>
+      <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>
+        {label} (nhập nội dung rồi nhấn Enter)
+      </div>
+      <div
+        style={{
+          width: '100%',
+          minHeight: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
+          background: 'transparent',
+          border: `1px solid ${colors.borderSoft}`,
+          borderRadius: '12px',
+          padding: '8px 12px',
+        }}
+      >
+        {values.map((value, index) => (
+          <span
+            key={`${value}-${index}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              maxWidth: '100%',
+              padding: '5px 8px 5px 10px',
+              borderRadius: '16px',
+              border: `1px solid ${colors.borderGold22}`,
+              background: 'rgba(212,178,106,.12)',
+              color: colors.text,
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span>
+            <button
+              type="button"
+              onClick={() => onRemove(value)}
+              aria-label={`Xóa ${value}`}
+              style={{
+                width: '18px',
+                height: '18px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flex: 'none',
+                border: 0,
+                borderRadius: '50%',
+                background: 'transparent',
+                color: colors.muted,
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(event) => onInputChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            onAdd(inputValue);
+          }}
+          placeholder={placeholder}
+          aria-label={label}
+          style={{
+            minWidth: '180px',
+            minHeight: '30px',
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            color: colors.text,
+            fontSize: '14px',
+            outline: 'none',
+            padding: '2px 4px',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function AdminCastsPage() {
   return (
@@ -77,7 +204,7 @@ function AdminCastsContent() {
 
   // Form states
   const [formData, setFormData] = useState<any>({
-    stageName: '', storeId: '', publicHeadline: '', bio: '', birthMonth: '', zodiacSign: '',
+    stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
     heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: true, status: 'ACTIVE',
     youtubeLinks: []
   });
@@ -100,6 +227,9 @@ function AdminCastsContent() {
   const [storePickerSearch, setStorePickerSearch] = useState('');
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [zodiacPickerOpen, setZodiacPickerOpen] = useState(false);
+  const [hobbyInput, setHobbyInput] = useState('');
+  const [tagInput, setTagInput] = useState('');
 
   const fetchCasts = async () => {
     try {
@@ -216,11 +346,14 @@ function AdminCastsContent() {
     setStorePickerSearch('');
     setStatusPickerOpen(false);
     setMonthPickerOpen(false);
+    setZodiacPickerOpen(false);
+    setHobbyInput('');
+    setTagInput('');
   };
 
   const openNewDrawer = () => {
     setFormData({
-      stageName: '', storeId: '', publicHeadline: '', bio: '', birthMonth: '', zodiacSign: '',
+      stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
       heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: true, status: 'ACTIVE',
       youtubeLinks: []
     });
@@ -233,13 +366,15 @@ function AdminCastsContent() {
     setStorePickerSearch('');
     setStatusPickerOpen(false);
     setMonthPickerOpen(false);
+    setZodiacPickerOpen(false);
+    setHobbyInput('');
+    setTagInput('');
   };
 
   const openEditDrawer = (c: any) => {
     setFormData({
       stageName: c.stageName || '',
       storeId: c.storeId || '',
-      publicHeadline: c.publicHeadline || '',
       bio: c.bio || c.publicBio || '',
       birthMonth: c.birthMonth || '',
       zodiacSign: c.zodiacSign || '',
@@ -267,6 +402,9 @@ function AdminCastsContent() {
     setStorePickerSearch('');
     setStatusPickerOpen(false);
     setMonthPickerOpen(false);
+    setZodiacPickerOpen(false);
+    setHobbyInput('');
+    setTagInput('');
   };
 
   const createCastDraft = async () => {
@@ -470,9 +608,24 @@ function AdminCastsContent() {
     });
   };
 
-  const updateArrField = (field: string, val: string) => {
-    const arr = val.split(',').map((s: string) => s.trim()).filter(Boolean);
-    setFormData((prev: any) => ({ ...prev, [field]: arr }));
+  const addListItem = (field: 'hobbies' | 'tags', value: string) => {
+    const nextValue = value.trim();
+    if (!nextValue) return;
+
+    setFormData((prev: CastListFormState) => {
+      const currentValues: string[] = prev[field] || [];
+      const alreadyExists = currentValues.some(
+        (currentValue) => currentValue.toLocaleLowerCase('vi') === nextValue.toLocaleLowerCase('vi'),
+      );
+      return alreadyExists ? prev : { ...prev, [field]: [...currentValues, nextValue] };
+    });
+  };
+
+  const removeListItem = (field: 'hobbies' | 'tags', value: string) => {
+    setFormData((prev: CastListFormState) => ({
+      ...prev,
+      [field]: (prev[field] || []).filter((currentValue: string) => currentValue !== value),
+    }));
   };
 
   const handleMeasurementChange = (index: number, val: string) => {
@@ -492,6 +645,9 @@ function AdminCastsContent() {
   const currentLabel = isAddingCast ? 'Tạo mới' : (selectedCast ? getStatusLabel(selectedCast.status, selectedCast.isPublic) : '');
 
   const selectedStore = stores.find((store) => store.id === formData.storeId);
+  const selectedZodiac = ZODIAC_SIGNS.find(
+    (zodiac) => zodiac.value === formData.zodiacSign || zodiac.label === formData.zodiacSign,
+  );
   const filteredStores = stores.filter((store) => {
     const isExcluded = store.category === 'MASSAGE_SPA' || store.category === 'RESTAURANT';
     const matchesSearch = !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase());
@@ -570,7 +726,6 @@ function AdminCastsContent() {
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>CAST</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>QUÁN TRỰC THUỘC</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>NGÔN NGỮ</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>TAGS</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>TRẠNG THÁI</th>
               <th style={{ padding: '16px 24px', width: 40 }}></th>
             </tr>
@@ -620,9 +775,6 @@ function AdminCastsContent() {
                   </td>
                   <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{storeName}</td>
                   <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{(cast.languages || []).join(' · ') || '---'}</td>
-                  <td style={{ padding: '16px 24px', fontSize: '13px', color: colors.text2 }}>
-                    {(cast.tags || []).join(', ') || '---'}
-                  </td>
                   <td style={{ padding: '16px 24px' }}>
                     <span style={{ 
                       border: statusStyle.border, color: statusStyle.color, 
@@ -639,7 +791,7 @@ function AdminCastsContent() {
             })}
             {filteredCasts.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: colors.muted }}>Không tìm thấy Cast nào.</td>
+                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: colors.muted }}>Không tìm thấy Cast nào.</td>
               </tr>
             )}
           </tbody>
@@ -690,11 +842,15 @@ function AdminCastsContent() {
               {/* CAST HEADER INFO */}
               <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <input type="text" placeholder="Tên Cast (Stage Name)" value={formData.stageName} onChange={e => setFormData({...formData, stageName: e.target.value})} style={{ background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginBottom: '8px', width: '100%' }} />
                   <div style={{ position: 'relative', width: '100%', maxWidth: '330px', marginTop: '2px' }}>
                     <button
                       type="button"
-                      onClick={() => setStorePickerOpen((open) => !open)}
+                      onClick={() => {
+                        setStorePickerOpen((open) => !open);
+                        setMonthPickerOpen(false);
+                        setZodiacPickerOpen(false);
+                        setStatusPickerOpen(false);
+                      }}
                       style={{
                         width: '100%',
                         minHeight: '46px',
@@ -783,6 +939,13 @@ function AdminCastsContent() {
                       </div>
                     ) : null}
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Nhập nghệ danh của Cast"
+                    value={formData.stageName}
+                    onChange={e => setFormData({...formData, stageName: e.target.value})}
+                    style={{ background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginTop: '18px', width: '100%' }}
+                  />
                 </div>
               </div>
 
@@ -793,6 +956,7 @@ function AdminCastsContent() {
                     setMonthPickerOpen(!monthPickerOpen);
                     setStorePickerOpen(false);
                     setStatusPickerOpen(false);
+                    setZodiacPickerOpen(false);
                   }}
                   style={{ 
                     padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', position: 'relative',
@@ -864,9 +1028,83 @@ function AdminCastsContent() {
                     </div>
                   )}
                 </div>
-                <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
+                <div
+                  onClick={() => {
+                    setZodiacPickerOpen(!zodiacPickerOpen);
+                    setMonthPickerOpen(false);
+                    setStorePickerOpen(false);
+                    setStatusPickerOpen(false);
+                  }}
+                  style={{
+                    padding: '16px', background: 'transparent', border: `1px solid ${zodiacPickerOpen ? colors.gold : colors.borderSoft}`, borderRadius: '12px', position: 'relative',
+                    cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75px'
+                  }}
+                >
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Cung Hoàng Đạo</div>
-                  <input type="text" placeholder="Ma Kết" value={formData.zodiacSign} onChange={e => setFormData({...formData, zodiacSign: e.target.value})} style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none' }} />
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: formData.zodiacSign ? colors.text : colors.muted }}>
+                    {selectedZodiac?.label || formData.zodiacSign || 'Chọn cung...'}
+                  </div>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '16px', bottom: '20px', transform: zodiacPickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+
+                  {zodiacPickerOpen && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute', zIndex: 100, top: 'calc(100% + 8px)', left: 0, right: 0,
+                        borderRadius: '12px', border: `1px solid ${colors.borderGold22}`, background: '#15151b',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.6)', overflow: 'hidden', maxHeight: '240px', overflowY: 'auto',
+                        padding: '6px'
+                      }}
+                    >
+                      {ZODIAC_SIGNS.map((zodiac) => {
+                        const isSelected = formData.zodiacSign === zodiac.value || formData.zodiacSign === zodiac.label;
+                        return (
+                          <button
+                            key={zodiac.value}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, zodiacSign: zodiac.value });
+                              setZodiacPickerOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              border: 0,
+                              borderRadius: '8px',
+                              background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                              color: isSelected ? colors.gold : colors.text2,
+                              minHeight: '38px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              fontSize: '13px',
+                              fontWeight: isSelected ? 700 : 500,
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                e.currentTarget.style.color = colors.text;
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.color = colors.text2;
+                              }
+                            }}
+                          >
+                            {zodiac.label}
+                            {isSelected ? <Check size={15} color={colors.gold} /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Chiều cao (cm)</div>
@@ -947,28 +1185,34 @@ function AdminCastsContent() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Sở thích (ngăn cách dấu phẩy)</div>
-                <input type="text" placeholder="Hát, piano, thời trang..." value={(formData.hobbies || []).join(', ')} onChange={e => updateArrField('hobbies', e.target.value)} style={{ width: '100%', background: 'transparent', border: `1px solid ${colors.borderSoft}`, color: colors.text, fontSize: '14px', padding: '12px 16px', borderRadius: '12px', outline: 'none' }} />
-              </div>
+              <CastChipInput
+                label="Sở thích"
+                values={formData.hobbies || []}
+                inputValue={hobbyInput}
+                placeholder="Ví dụ: Hát"
+                onInputChange={setHobbyInput}
+                onAdd={(value) => {
+                  addListItem('hobbies', value);
+                  if (value.trim()) setHobbyInput('');
+                }}
+                onRemove={(value) => removeListItem('hobbies', value)}
+              />
 
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Tags / từ khóa (ngăn cách dấu phẩy)</div>
-                <input type="text" placeholder="Sang chảnh, vui vẻ..." value={(formData.tags || []).join(', ')} onChange={e => updateArrField('tags', e.target.value)} style={{ width: '100%', background: 'transparent', border: `1px solid ${colors.borderSoft}`, color: colors.text, fontSize: '14px', padding: '12px 16px', borderRadius: '12px', outline: 'none' }} />
-              </div>
+              <CastChipInput
+                label="Tags / từ khóa"
+                values={formData.tags || []}
+                inputValue={tagInput}
+                placeholder="Ví dụ: Sang chảnh"
+                onInputChange={setTagInput}
+                onAdd={(value) => {
+                  addListItem('tags', value);
+                  if (value.trim()) setTagInput('');
+                }}
+                onRemove={(value) => removeListItem('tags', value)}
+              />
 
               <div style={{ marginBottom: '32px' }}>
-                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Lời chào (greeting)</div>
-                <textarea 
-                  placeholder="Nhập lời chào..." 
-                  value={formData.publicHeadline}
-                  onChange={e => setFormData({...formData, publicHeadline: e.target.value})}
-                  style={{ width: '100%', height: '80px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', color: colors.text, fontSize: '14px', padding: '16px', outline: 'none', resize: 'none' }} 
-                />
-              </div>
-
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Mô tả public / Introduction</div>
+                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Mô tả</div>
                 <textarea
                   placeholder="Nhập mô tả hiển thị ở phần Introduction trên trang cast..."
                   value={formData.bio || ''}
@@ -985,7 +1229,12 @@ function AdminCastsContent() {
                 <div style={{ position: 'relative', flex: 1, minWidth: '230px' }}>
                   <button
                     type="button"
-                    onClick={() => setStatusPickerOpen((open) => !open)}
+                    onClick={() => {
+                      setStatusPickerOpen((open) => !open);
+                      setStorePickerOpen(false);
+                      setMonthPickerOpen(false);
+                      setZodiacPickerOpen(false);
+                    }}
                     style={{
                       width: '100%',
                       minHeight: '46px',

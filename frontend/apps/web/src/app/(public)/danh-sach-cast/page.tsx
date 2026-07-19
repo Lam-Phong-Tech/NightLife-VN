@@ -331,7 +331,7 @@ const normalizeAgeSearchText = (value: string) =>
 
 const extractPublicCastAge = (cast: PublicCast) => {
   const text = normalizeAgeSearchText(
-    [cast.publicHeadline, ...cast.tags].filter(Boolean).join(" "),
+    cast.tags.filter(Boolean).join(" "),
   );
   const exactAge =
     text.match(/(?:age|tuoi|do tuoi)\D*(\d{2})/)?.[1] ??
@@ -664,7 +664,6 @@ export default function Page() {
     const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
       primary: [cast.name, cast.publicAlias, cast.stageName],
       secondary: [
-        cast.publicHeadline,
         cast.store.name,
         cast.store.category,
         cast.store.area?.name,

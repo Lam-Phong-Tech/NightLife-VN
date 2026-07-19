@@ -133,7 +133,7 @@ export function mediaPreviewBg(
 
 export function buildCastBio(cast: PublicCastDetail) {
   const name = cast.publicAlias ?? cast.name ?? cast.stageName;
-  const adminBio = cast.publicBio?.trim() || cast.publicHeadline?.trim();
+  const adminBio = cast.publicBio?.trim();
 
   return adminBio || `${name} đang hoạt động tại ${cast.store.name}.`;
 }
@@ -191,7 +191,6 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     slug: cast.slug,
     stageName: cast.stageName,
     name,
-    publicHeadline: cast.publicHeadline ?? "Cast đã được duyệt public",
     bio: buildCastBio(cast),
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],

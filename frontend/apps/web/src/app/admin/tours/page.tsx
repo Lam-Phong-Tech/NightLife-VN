@@ -48,9 +48,8 @@ const getPillStyle = (kind: string) => {
 };
 
 const ALL_TIME_SLOTS = Array.from(
-  { length: 48 },
-  (_, index) =>
-    `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 === 0 ? '00' : '30'}`,
+  { length: 24 },
+  (_, hour) => `${String(hour).padStart(2, '0')}:00`,
 );
 const TOUR_TIME_OPTIONS = [...ALL_TIME_SLOTS, '24:00'];
 
@@ -233,7 +232,9 @@ function AdminToursContent() {
     const timer = window.setTimeout(async () => {
       try {
         setIsSearchingVenues(true);
-        const res = await apiClient<any>('/admin/stores', { params: { search: query, limit: 20 } });
+        const res = await apiClient<any>('/admin/stores', {
+          params: { search: query, searchField: 'name', limit: 20 },
+        });
         if (cancelled) return;
         const data = Array.isArray(res?.data) ? res.data : [];
         setVenueSearchResults(

@@ -255,15 +255,10 @@ const storeCastOptionLabel = (cast: Pick<StoreDetailCast, "publicAlias" | "stage
   readableName(cast.publicAlias || cast.stageName);
 
 const storeCastOptionMeta = (
-  cast: Pick<StoreDetailCast, "publicHeadline" | "languages">,
+  cast: Pick<StoreDetailCast, "languages">,
   language: LanguageCode,
 ) =>
-  [
-    cast.publicHeadline ? translateText(cast.publicHeadline, language) : "",
-    formatNationalities(cast.languages, language) || cast.languages.filter(Boolean).join(", "),
-  ]
-    .filter(Boolean)
-    .join(" - ");
+  formatNationalities(cast.languages, language) || cast.languages.filter(Boolean).join(", ");
 
 const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) =>
   parts

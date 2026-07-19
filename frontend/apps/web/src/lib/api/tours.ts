@@ -34,7 +34,6 @@ export type TourStoreCast = {
   stageName: string;
   slug: string;
   publicAlias?: string | null;
-  publicHeadline?: string | null;
   thumbnailUrl?: string | null;
   media?: TourStoreMedia[];
   zodiacSign?: string | null;

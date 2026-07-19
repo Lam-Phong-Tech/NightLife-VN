@@ -208,9 +208,6 @@ export class PublicCastDto {
   @ApiPropertyOptional({ example: 'Yuna', nullable: true })
   publicAlias?: string | null;
 
-  @ApiPropertyOptional({ example: 'Party host', nullable: true })
-  publicHeadline?: string | null;
-
   @ApiProperty({ type: [String], example: ['party', 'vip'] })
   tags!: string[];
 
@@ -279,9 +276,6 @@ export class PublicRelatedCastDto {
 
   @ApiPropertyOptional({ example: 'Miyuki Moonlight', nullable: true })
   publicAlias?: string | null;
-
-  @ApiPropertyOptional({ example: 'Cocktail host', nullable: true })
-  publicHeadline?: string | null;
 
   @ApiProperty({ type: [String], example: ['calm', 'cocktail'] })
   tags!: string[];
@@ -387,9 +381,6 @@ export class PublicStoreDetailCastDto {
 
   @ApiPropertyOptional({ example: 'Yuna Neon', nullable: true })
   publicAlias?: string | null;
-
-  @ApiPropertyOptional({ example: 'Party host', nullable: true })
-  publicHeadline?: string | null;
 
   @ApiPropertyOptional({ example: null, nullable: true })
   thumbnailUrl?: string | null;
@@ -664,9 +655,6 @@ export class PublicCastDetailResponseDto {
 
   @ApiPropertyOptional({ example: 'Yuna Neon', nullable: true })
   publicAlias?: string | null;
-
-  @ApiPropertyOptional({ example: 'Party host', nullable: true })
-  publicHeadline?: string | null;
 
   @ApiPropertyOptional({ example: 'Public cast introduction.', nullable: true })
   publicBio?: string | null;

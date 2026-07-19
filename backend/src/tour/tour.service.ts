@@ -87,7 +87,6 @@ export class TourService {
           stageName: true,
           slug: true,
           publicAlias: true,
-          publicHeadline: true,
           zodiacSign: true,
           heightCm: true,
           languages: true,

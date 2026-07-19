@@ -72,7 +72,6 @@ export type PublicCast = {
   stageName: string;
   name: string;
   publicAlias?: string | null;
-  publicHeadline?: string | null;
   tags: string[];
   languages: string[];
   hourlyRateVnd?: number | null;
@@ -306,7 +305,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Yuna",
     name: "Yuna",
     publicAlias: "Yuna Neon",
-    publicHeadline: "Club host nang dong tai Tay Ho",
     tags: ["club", "vip", "dance"],
     languages: ["vi", "en"],
     hourlyRateVnd: 950000,
@@ -318,7 +316,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Linh",
     name: "Linh",
     publicAlias: "Linh Crimson",
-    publicHeadline: "Cocktail companion khu Hoan Kiem",
     tags: ["bar", "cocktail", "chill"],
     languages: ["vi", "en"],
     hourlyRateVnd: 780000,
@@ -330,7 +327,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Kotone",
     name: "Kotone",
     publicAlias: "Kotone",
-    publicHeadline: "Izakaya guide cho nhom nho pho co",
     tags: ["restaurant", "japanese", "dinner"],
     languages: ["ja", "en"],
     hourlyRateVnd: 880000,
@@ -342,7 +338,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Sakura",
     name: "Sakura",
     publicAlias: "Sakura Moonlight",
-    publicHeadline: "Rooftop host Quan 1, hop khach business",
     tags: ["bar", "rooftop", "business"],
     languages: ["vi", "ja", "en"],
     hourlyRateVnd: 1100000,
@@ -354,7 +349,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Hana",
     name: "Hana",
     publicAlias: "Hana Lounge",
-    publicHeadline: "Lounge host nhe nhang tai Quan 3",
     tags: ["lounge", "talk", "vip"],
     languages: ["vi", "en"],
     hourlyRateVnd: 920000,
@@ -366,7 +360,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Mika",
     name: "Mika",
     publicAlias: "Mika KTV",
-    publicHeadline: "KTV host cho tiec nhom Quan 7",
     tags: ["ktv", "karaoke", "group"],
     languages: ["vi", "ja"],
     hourlyRateVnd: 820000,
@@ -378,7 +371,6 @@ const demoCasts: PublicCast[] = [
     stageName: "Sumi",
     name: "Sumi",
     publicAlias: "Sumi Spa",
-    publicHeadline: "Massage spa coordinator Quan 3",
     tags: ["massage-spa", "relax", "wellness"],
     languages: ["vi"],
     hourlyRateVnd: 680000,
@@ -592,7 +584,6 @@ const getFallbackCasts = (params: DiscoveryParams = {}) => {
         cast.name,
         cast.stageName,
         cast.publicAlias,
-        cast.publicHeadline,
         cast.tags.join(" "),
         cast.languages.join(" "),
         cast.store.name,

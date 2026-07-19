@@ -180,6 +180,11 @@ export default function AdminContentPage() {
   };
 
   const searchFeaturedStore = async (q: string) => {
+    if (!q.trim()) {
+      setSearchFeaturedItems([]);
+      return;
+    }
+
     try {
       setIsSearchingFeatured(true);
       const data = await adminRankingsApi.options({
@@ -344,7 +349,7 @@ export default function AdminContentPage() {
 
   const handleAddRecommend = async (store: AdminRankingTargetOption) => {
     if (recommendItems.find(item => item.targetId === store.id)) return;
-    
+
     if (recommendItems.length >= 8) {
       feedback.showModal({
         title: 'Giới hạn đề xuất',
@@ -379,9 +384,9 @@ export default function AdminContentPage() {
           }
         }
       }
-      feedback.showToast({ 
-        title: `Không thể thêm vào danh sách đề xuất: ${msg}`, 
-        tone: 'error' 
+      feedback.showToast({
+        title: `Không thể thêm vào danh sách đề xuất: ${msg}`,
+        tone: 'error'
       });
     }
   };
@@ -408,40 +413,34 @@ export default function AdminContentPage() {
   const handleMoveRecommend = async (index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
     if (direction === 'down' && index === recommendItems.length - 1) return;
-    
+
     const currentItem = recommendItems[index];
     const swapItem = direction === 'up' ? recommendItems[index - 1] : recommendItems[index + 1];
-    
+
     if (!currentItem || !swapItem) return;
 
     const currentRank = currentItem.pinRank || index + 1;
     const swapRank = swapItem.pinRank || (direction === 'up' ? index : index + 2);
 
     try {
-      // Step 1: Update swapItem to pinRank: null first
       await adminRankingsApi.update(swapItem.id, {
         targetType: 'STORE',
         targetId: swapItem.targetId,
         cityCode: swapItem.cityCode,
         pinRank: null
       });
-
-      // Step 2: Update currentItem to swapRank
       await adminRankingsApi.update(currentItem.id, {
         targetType: 'STORE',
         targetId: currentItem.targetId,
         cityCode: currentItem.cityCode,
         pinRank: swapRank
       });
-
-      // Step 3: Update swapItem to currentRank
       await adminRankingsApi.update(swapItem.id, {
         targetType: 'STORE',
         targetId: swapItem.targetId,
         cityCode: swapItem.cityCode,
         pinRank: currentRank
       });
-
       await fetchRecommendItems();
     } catch (err) {
       console.error(err);
@@ -466,7 +465,6 @@ export default function AdminContentPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchRecommendQuery, activeTab]);
-
 
   const fetchHotVideos = async (region: string) => {
     const code = region === 'Hà Nội' ? 'hn' : region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all';
@@ -1053,10 +1051,10 @@ export default function AdminContentPage() {
           >
             Dịch vụ nổi bật
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('recommend')}
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
+              padding: '8px 24px', borderRadius: '6px', border: 'none',
               background: activeTab === 'recommend' ? colors.goldGrad : 'transparent',
               color: activeTab === 'recommend' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'recommend' ? 700 : 500,
@@ -1275,6 +1273,9 @@ export default function AdminContentPage() {
       {activeTab === 'featured' && (() => {
         const activeTabStyle = { background: 'rgba(212,178,106,.15)', color: '#d4b26a', fontWeight: 700, padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', cursor: 'pointer' };
         const inactiveTabStyle = { background: 'transparent', color: '#c5c0b6', fontWeight: 500, padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', cursor: 'pointer' };
+        const availableFeaturedSearchItems = searchFeaturedItems.filter(
+          store => !featuredItems.some(item => item.targetId === store.id),
+        );
         
         return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1302,10 +1303,10 @@ export default function AdminContentPage() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
               <input id="featured-search-input" value={searchFeaturedQuery} onChange={e => setSearchFeaturedQuery(e.target.value)} placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+            <div data-testid="admin-featured-search-results" style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
               {isSearchingFeatured ? (
                 <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Đang tìm...</div>
-              ) : searchFeaturedItems.map(store => (
+              ) : availableFeaturedSearchItems.map(store => (
                 <div key={store.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
                   <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                     {store.image ? <img src={resolveClientUrl(store.image as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
@@ -1314,44 +1315,47 @@ export default function AdminContentPage() {
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
                     <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
                   </div>
-                  {featuredItems.find(f => f.targetId === store.id) ? (
-                    <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã thêm</span>
-                  ) : (
-                    <span onClick={() => handleAddFeatured(store)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
-                  )}
+                  <button type="button" onClick={() => handleAddFeatured(store)} style={{ flex: 'none', border: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</button>
                 </div>
               ))}
+              {searchFeaturedQuery.trim() !== '' && availableFeaturedSearchItems.length === 0 && !isSearchingFeatured && (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Không tìm thấy quán nào chưa được thêm</div>
+              )}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
-            {featuredItems.map((item, idx) => {
-              const labels: string[] = [];
-              return (
-                <div key={item.id} style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
-                  <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
-                    {item.targetImage ? (
-                      <img src={resolveClientUrl(item.targetImage as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : null}
-                    {labels.includes('Mới') && (
-                      <span style={{ position: 'absolute', top: '7px', left: '7px', fontSize: '8.5px', fontWeight: 700, color: '#f3f0ea', background: 'rgba(12,12,15,.62)', border: '1px solid rgba(255,255,255,.2)', padding: '2.5px 7px', borderRadius: '6px', zIndex: 1 }}>Mới</span>
-                    )}
-                  </div>
+          <div
+            data-testid="admin-featured-card-grid"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '18px' }}
+          >
+            {featuredItems.map((item, idx) => (
+              <div
+                data-testid="admin-featured-card"
+                key={item.id}
+                style={{ minWidth: 0, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}
+              >
+                <div style={{ width: '100%', aspectRatio: '16 / 9', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
+                  {item.targetImage ? (
+                    <img src={resolveClientUrl(item.targetImage as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : null}
+                  <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px', zIndex: 1 }}>#{idx + 1}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '7px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Không nhãn</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                    <span onClick={() => handleMoveFeatured(idx, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></span>
-                    <span onClick={() => handleMoveFeatured(idx, 'down')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === featuredItems.length - 1 ? 'default' : 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-                    <span onClick={() => handleRemoveFeatured(item.id)} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flex: 'none' }}>
+                    <button type="button" aria-label={`Đưa ${item.targetName} lên`} onClick={() => handleMoveFeatured(idx, 'up')} disabled={idx === 0} style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+                    <button type="button" aria-label={`Đưa ${item.targetName} xuống`} onClick={() => handleMoveFeatured(idx, 'down')} disabled={idx === featuredItems.length - 1} style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === featuredItems.length - 1 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button type="button" aria-label={`Gỡ ${item.targetName}`} onClick={() => handleRemoveFeatured(item.id)} style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
             {featuredItems.length === 0 && !isLoadingFeatured && (
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có quán nào trong danh sách này</div>
             )}
@@ -1367,15 +1371,15 @@ export default function AdminContentPage() {
       {/* RECOMMEND HOME CONTENT */}
       {activeTab === 'recommend' && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              <input 
-                id="recommend-search-input" 
-                value={searchRecommendQuery} 
-                onChange={e => setSearchRecommendQuery(e.target.value)} 
-                placeholder="Tìm quán hoạt động để ghim đề xuất tối nay…" 
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
+              <input
+                id="recommend-search-input"
+                value={searchRecommendQuery}
+                onChange={e => setSearchRecommendQuery(e.target.value)}
+                placeholder="Tìm quán hoạt động để ghim đề xuất tối nay…"
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
@@ -1396,12 +1400,13 @@ export default function AdminContentPage() {
                   {recommendItems.find(r => r.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã ghim</span>
                   ) : (
-                    <span 
-                      onClick={() => handleAddRecommend(store)} 
-                      style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}
+                    <button
+                      type="button"
+                      onClick={() => handleAddRecommend(store)}
+                      style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', border: 'none', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}
                     >
                       + Ghim đề xuất
-                    </span>
+                    </button>
                   )}
                 </div>
               ))}
@@ -1411,58 +1416,66 @@ export default function AdminContentPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
-            <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
-              Khối <b style={{ color: '#f0dda8' }}>&quot;Đề xuất tối nay&quot;</b> trên trang chủ — Ghim tối đa 8 quán đang hoạt động nổi bật lên đầu trang chủ để tăng lượng truy cập và tương tác ban đêm.
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
             <div style={{ flex: 1 }}></div>
             <span style={{ fontSize: '13px', color: colors.muted }}>
               Đã ghim: <b style={{ color: colors.text }}>{recommendItems.length}</b> / 8 quán
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
-            {recommendItems.map((item, idx) => {
-              return (
-                <div key={item.id} style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
-                  <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
-                    {item.targetImage ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={resolveClientUrl(item.targetImage as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : null}
-                    <span style={{ position: 'absolute', top: '7px', left: '7px', fontSize: '8.5px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '2.5px 7px', borderRadius: '6px', zIndex: 1 }}>#{idx + 1}</span>
-                  </div>
+          <div
+            data-testid="admin-recommend-card-grid"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '18px' }}
+          >
+            {recommendItems.map((item, idx) => (
+              <div
+                data-testid="admin-recommend-card"
+                key={item.id}
+                style={{ minWidth: 0, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}
+              >
+                <div style={{ width: '100%', aspectRatio: '16 / 9', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
+                  {item.targetImage ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={resolveClientUrl(item.targetImage as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : null}
+                  <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px', zIndex: 1 }}>#{idx + 1}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                    <span 
-                      onClick={() => handleMoveRecommend(idx, 'up')} 
-                      style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer' }}
+                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flex: 'none' }}>
+                    <button
+                      type="button"
+                      aria-label={`Đưa ${item.targetName} lên`}
+                      onClick={() => handleMoveRecommend(idx, 'up')}
+                      disabled={idx === 0}
+                      style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
-                    </span>
-                    <span 
-                      onClick={() => handleMoveRecommend(idx, 'down')} 
-                      style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === recommendItems.length - 1 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === recommendItems.length - 1 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === recommendItems.length - 1 ? 'default' : 'pointer' }}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Đưa ${item.targetName} xuống`}
+                      onClick={() => handleMoveRecommend(idx, 'down')}
+                      disabled={idx === recommendItems.length - 1}
+                      style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === recommendItems.length - 1 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === recommendItems.length - 1 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === recommendItems.length - 1 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                    </span>
-                    <span 
-                      onClick={() => handleRemoveRecommend(item.id)} 
-                      style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Gỡ ${item.targetName}`}
+                      onClick={() => handleRemoveRecommend(item.id)}
+                      style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: 'pointer', display: 'grid', placeItems: 'center' }}
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                    </span>
+                    </button>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
             {recommendItems.length === 0 && !isLoadingRecommend && (
               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có quán nào trong danh sách đề xuất</div>
             )}

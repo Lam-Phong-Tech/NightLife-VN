@@ -222,7 +222,6 @@ type PartnerListingMenuGroup = {
 type PartnerListingCast = {
   stageName: string;
   storeName?: string | null;
-  publicHeadline?: string | null;
   bio?: string | null;
   tags?: string[];
   languages?: string[];
@@ -1015,7 +1014,6 @@ const validateListingDraft = (
   draft.castProfiles.forEach((cast, index) => {
     const rowHasData = Boolean(
       cast.stageName.trim() ||
-        cast.publicHeadline?.trim() ||
         cast.bio?.trim() ||
         cast.zodiacSign?.trim() ||
         cast.measurements?.trim() ||
@@ -3180,7 +3178,6 @@ export default function PartnerPage() {
           ...cast,
           stageName: safeListingText(cast.stageName),
           storeName: safeListingText(cast.storeName),
-          publicHeadline: safeListingText(cast.publicHeadline),
           bio: safeListingText(cast.bio),
           zodiacSign: safeListingText(cast.zodiacSign),
           measurements: safeListingText(cast.measurements),
@@ -3566,7 +3563,6 @@ export default function PartnerPage() {
 
   const isEmptyCastProfile = (cast: PartnerListingCast) =>
     !hasText(cast.stageName) &&
-    !hasText(cast.publicHeadline) &&
     !hasText(cast.bio) &&
     !hasText(cast.zodiacSign) &&
     !hasText(cast.measurements) &&
@@ -3585,7 +3581,6 @@ export default function PartnerPage() {
       castProfiles: [
         {
           stageName: '',
-          publicHeadline: '',
           bio: '',
           tags: [],
           languages: [],
@@ -5312,15 +5307,6 @@ export default function PartnerPage() {
               />
               {listingErrorText(`castProfiles.${index}.stageName`)}
             </FormField>
-            <FormField label="Lời chào (greeting)">
-              <input
-                value={cast.publicHeadline ?? ''}
-                onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
-                placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
-                style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
-              />
-              {listingErrorText(`castProfiles.${index}.publicHeadline`)}
-            </FormField>
             <FormField label="Ngôn ngữ">
               <input
                 value={cast.languages?.join(', ') ?? ''}
@@ -5528,7 +5514,7 @@ export default function PartnerPage() {
                         </span>
                         <span style={{ minWidth: 0 }}>
                           <span className="partner-cast-name">{hasRequiredName || 'Draft cast'}</span>
-                          <span className="partner-cast-sub">{cast.zodiacSign || cast.publicHeadline || '---'}</span>
+                          <span className="partner-cast-sub">{cast.zodiacSign || '---'}</span>
                         </span>
                       </div>
                     </td>

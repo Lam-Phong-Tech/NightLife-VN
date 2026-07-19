@@ -758,7 +758,6 @@ const PUBLIC_RELATED_CAST_SELECT = {
   storeId: true,
   stageName: true,
   publicAlias: true,
-  publicHeadline: true,
   tags: true,
   languages: true,
   hourlyRateVnd: true,
@@ -2092,7 +2091,6 @@ export class NightlifeDataService {
             slug: true,
             stageName: true,
             publicAlias: true,
-            publicHeadline: true,
             tags: true,
             languages: true,
             hourlyRateVnd: true,
@@ -2246,7 +2244,6 @@ export class NightlifeDataService {
         slug: cast.slug,
         stageName: cast.stageName,
         publicAlias: cast.publicAlias,
-        publicHeadline: cast.publicHeadline,
         thumbnailUrl: this.resolveCastAvatarImage(cast.media),
         tags: cast.tags,
         languages: cast.languages,
@@ -2313,7 +2310,6 @@ export class NightlifeDataService {
             OR: [
               { stageName: this.containsInsensitive(searchTerm) },
               { publicAlias: this.containsInsensitive(searchTerm) },
-              { publicHeadline: this.containsInsensitive(searchTerm) },
               { bio: this.containsInsensitive(searchTerm) },
               { publicBio: this.containsInsensitive(searchTerm) },
               ...(searchToken
@@ -2345,7 +2341,6 @@ export class NightlifeDataService {
           slug: true,
           stageName: true,
           publicAlias: true,
-          publicHeadline: true,
           tags: true,
           languages: true,
           hourlyRateVnd: true,
@@ -2395,7 +2390,6 @@ export class NightlifeDataService {
       stageName: cast.stageName,
       name: cast.publicAlias ?? cast.stageName,
       publicAlias: cast.publicAlias,
-      publicHeadline: cast.publicHeadline,
       tags: cast.tags,
       languages: cast.languages,
       hourlyRateVnd: cast.hourlyRateVnd,
@@ -2469,7 +2463,6 @@ export class NightlifeDataService {
         storeId: true,
         stageName: true,
         publicAlias: true,
-        publicHeadline: true,
         bio: true,
         publicBio: true,
         birthMonth: true,
@@ -2581,7 +2574,6 @@ export class NightlifeDataService {
       stageName: cast.stageName,
       name,
       publicAlias: cast.publicAlias,
-      publicHeadline: cast.publicHeadline,
       publicBio,
       monthOfBirth: cast.birthMonth,
       zodiacSign: cast.zodiacSign,
@@ -3072,7 +3064,6 @@ export class NightlifeDataService {
               `cast-${index + 1}`,
             ),
             bio: castProfile.bio,
-            publicHeadline: castProfile.publicHeadline,
             publicBio: castProfile.bio,
             tags: castProfile.tags,
             languages: castProfile.languages,
@@ -6191,7 +6182,6 @@ export class NightlifeDataService {
             slug: true,
             stageName: true,
             publicAlias: true,
-            publicHeadline: true,
             tags: true,
             languages: true,
             hourlyRateVnd: true,
@@ -7348,7 +7338,6 @@ export class NightlifeDataService {
               `cast-${index + 1}`,
             ),
             bio: castProfile.bio,
-            publicHeadline: castProfile.publicHeadline,
             publicBio: castProfile.bio,
             tags: castProfile.tags,
             languages: castProfile.languages,
@@ -14672,7 +14661,6 @@ export class NightlifeDataService {
   private buildCastSeoDescription(cast: {
     publicAlias: string | null;
     stageName: string;
-    publicHeadline: string | null;
     publicBio: string | null;
     languages: string[];
     store: {
@@ -14682,9 +14670,7 @@ export class NightlifeDataService {
       area: { name: string } | null;
     };
   }) {
-    const publicSummary = (cast.publicBio ?? cast.publicHeadline)
-      ?.replace(/\s+/g, ' ')
-      .trim();
+    const publicSummary = cast.publicBio?.replace(/\s+/g, ' ').trim();
     const name = cast.publicAlias ?? cast.stageName;
     const location = [
       cast.store.area?.name,
@@ -14871,7 +14857,6 @@ export class NightlifeDataService {
       stageName: cast.stageName,
       name: cast.publicAlias ?? cast.stageName,
       publicAlias: cast.publicAlias,
-      publicHeadline: cast.publicHeadline,
       tags: cast.tags,
       languages: cast.languages,
       hourlyRateVnd: cast.hourlyRateVnd,
@@ -16096,7 +16081,6 @@ export class NightlifeDataService {
           select: {
             id: true,
             stageName: true,
-            publicHeadline: true,
             bio: true,
             tags: true,
             youtubeLinks: true,
@@ -16470,7 +16454,6 @@ export class NightlifeDataService {
           ) as PartnerListingCastDto[])
         : storeCasts.map((cast) => ({
             stageName: cast.stageName,
-            publicHeadline: cast.publicHeadline ?? '',
             bio: cast.bio ?? '',
             tags: cast.tags,
             languages: cast.languages,
@@ -16763,7 +16746,6 @@ export class NightlifeDataService {
           select: {
             id: true,
             stageName: true,
-            publicHeadline: true,
             bio: true,
             tags: true,
             youtubeLinks: true,
@@ -17519,7 +17501,6 @@ export class NightlifeDataService {
 
         return {
           stageName,
-          publicHeadline: this.cleanNullableText(profile.publicHeadline),
           bio: this.cleanNullableText(profile.bio),
           tags: this.cleanStringArray(profile.tags, 12),
           languages: this.cleanStringArray(profile.languages, 8),
@@ -20508,7 +20489,7 @@ export class NightlifeDataService {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Number(query.limit) || 10);
     const skip = (page - 1) * limit;
-    const { type, search } = query;
+    const { type, search, searchField } = query;
     const includeDeleted = ['1', 'true', 'yes', 'all'].includes(
       String(query.includeDeleted ?? '').toLowerCase(),
     );
@@ -20529,12 +20510,15 @@ export class NightlifeDataService {
     const where: import('@prisma/client').Prisma.StoreWhereInput = {
       ...(includeDeleted ? {} : { deletedAt: null }),
       ...(prismaCategory && { category: prismaCategory }),
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { address: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
+      ...(search &&
+        (searchField === 'name'
+          ? { name: { contains: search, mode: 'insensitive' } }
+          : {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { address: { contains: search, mode: 'insensitive' } },
+              ],
+            })),
     };
 
     const [items, total] = await Promise.all([
@@ -20780,7 +20764,6 @@ export class NightlifeDataService {
         stageName: dto.stageName,
         slug,
         storeId: dto.storeId,
-        publicHeadline: dto.publicHeadline,
         bio: dto.bio,
         publicBio: dto.bio,
         birthMonth: dto.birthMonth,
@@ -20834,9 +20817,6 @@ export class NightlifeDataService {
         ...(dto.stageName && { stageName: dto.stageName }),
         ...(slug && { slug }),
         ...(dto.storeId && { storeId: dto.storeId }),
-        ...(dto.publicHeadline !== undefined && {
-          publicHeadline: dto.publicHeadline,
-        }),
         ...(dto.bio !== undefined && { bio: dto.bio, publicBio: dto.bio }),
         ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
         ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),

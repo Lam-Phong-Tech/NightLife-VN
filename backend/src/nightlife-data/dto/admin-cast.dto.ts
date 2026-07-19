@@ -17,10 +17,6 @@ export class CreateAdminCastDto {
 
   @IsOptional()
   @IsString()
-  publicHeadline?: string;
-
-  @IsOptional()
-  @IsString()
   bio?: string;
 
   @IsOptional()
@@ -81,10 +77,6 @@ export class UpdateAdminCastDto {
   @IsOptional()
   @IsString()
   storeId?: string;
-
-  @IsOptional()
-  @IsString()
-  publicHeadline?: string;
 
   @IsOptional()
   @IsString()

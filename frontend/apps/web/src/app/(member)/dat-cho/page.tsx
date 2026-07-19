@@ -158,15 +158,14 @@ const fallbackCastNameFromSlug = (slug: string) => {
 const castOptionLabel = (cast: Pick<StoreDetailCast, "publicAlias" | "stageName">) =>
   cast.publicAlias || cast.stageName;
 
-const castOptionMeta = (cast: Pick<StoreDetailCast, "publicHeadline" | "languages">) =>
-  [cast.publicHeadline, cast.languages?.filter(Boolean).join(", ")].filter(Boolean).join(" · ");
+const castOptionMeta = (cast: Pick<StoreDetailCast, "languages">) =>
+  cast.languages?.filter(Boolean).join(", ") || "";
 
 const publicCastToStoreCast = (cast: PublicCast): StoreDetailCast => ({
   id: cast.id,
   slug: cast.slug,
   stageName: cast.stageName,
   publicAlias: cast.publicAlias,
-  publicHeadline: cast.publicHeadline,
   thumbnailUrl: cast.thumbnailUrl,
   tags: cast.tags,
   languages: cast.languages,
@@ -178,7 +177,6 @@ const castDetailToStoreCast = (cast: PublicCastDetail): StoreDetailCast => ({
   slug: cast.slug,
   stageName: cast.stageName,
   publicAlias: cast.publicAlias,
-  publicHeadline: cast.publicHeadline,
   thumbnailUrl: cast.thumbnailUrl,
   tags: cast.tags,
   languages: cast.languages,

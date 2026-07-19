@@ -15,7 +15,6 @@ export type CastProfile = {
   slug: string;
   stageName: string;
   name: string;
-  publicHeadline: string;
   bio: string;
   tags: string[];
   languages: string[];

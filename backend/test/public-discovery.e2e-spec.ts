@@ -63,7 +63,6 @@ describe('Public discovery listing API (e2e)', () => {
         slug: 'mika-golden-ktv',
         stageName: 'Mika',
         publicAlias: 'Mika',
-        publicHeadline: 'KTV host',
         tags: ['ktv'],
         languages: ['ja', 'vi'],
         hourlyRateVnd: 430000,

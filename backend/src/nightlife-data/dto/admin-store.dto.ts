@@ -4,6 +4,7 @@ import {
   IsInt,
   Min,
   IsEnum,
+  IsIn,
   IsArray,
   IsObject,
   IsNotEmpty,
@@ -107,6 +108,10 @@ export class AdminStoreQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsIn(['all', 'name'])
+  searchField?: 'all' | 'name';
 
   @IsOptional()
   @IsString()

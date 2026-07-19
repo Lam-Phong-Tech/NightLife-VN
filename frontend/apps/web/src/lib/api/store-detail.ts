@@ -45,7 +45,6 @@ export type StoreDetailCast = {
   slug: string;
   stageName: string;
   publicAlias?: string | null;
-  publicHeadline?: string | null;
   thumbnailUrl?: string | null;
   tags: string[];
   languages: string[];

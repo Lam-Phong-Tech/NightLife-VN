@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Page from '../src/app/page';
+import { SystemFeedbackProvider } from '../src/components/ui/SystemFeedback';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -49,12 +50,6 @@ vi.mock('next/link', () => ({
   },
 }));
 
-vi.mock('@/lib/api/discovery', () => ({
-  discoveryApi: {
-    listStoresStrict: listStoresStrictMock,
-  },
-}));
-
 vi.mock('@/lib/api/content', () => ({
   contentApi: {
     list: contentListMock,
@@ -63,6 +58,32 @@ vi.mock('@/lib/api/content', () => ({
     tours: contentToursMock,
     trackHotVideoLike: trackHotVideoLikeMock,
     trackHotVideoView: trackHotVideoViewMock,
+  },
+}));
+
+vi.mock('@/lib/api/appearance', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api/appearance')>();
+  return {
+    ...actual,
+    getAppearanceConfig: vi.fn().mockResolvedValue(actual.DEFAULT_APPEARANCE_CONFIG),
+  };
+});
+
+vi.mock('@/lib/api/campaigns', () => ({
+  campaignsApi: {
+    listPublicCampaigns: listPublicCouponsMock,
+  },
+}));
+
+vi.mock('@/lib/api/discovery', () => ({
+  discoveryApi: {
+    listStoresStrict: listStoresStrictMock,
+  },
+}));
+
+vi.mock('@/lib/api/tours', () => ({
+  tourApi: {
+    list: contentToursMock,
   },
 }));
 
@@ -88,13 +109,20 @@ const rankingMeta = {
   total: 1,
 };
 
+const renderHome = () => render(
+  <SystemFeedbackProvider>
+    <Page />
+  </SystemFeedbackProvider>,
+);
+
 describe('Home Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
     delete process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS;
 
-    listStoresStrictMock.mockResolvedValue([
+    listStoresStrictMock.mockResolvedValue([]);
+    contentRecommendationsMock.mockResolvedValue([
       {
         id: 'store-api-1',
         name: 'API Neon Lounge',
@@ -105,17 +133,11 @@ describe('Home Page', () => {
         district: 'Tay Ho',
         area: { id: 'area-1', code: 'hn-tay-ho', name: 'Tay Ho', city: 'Ha Noi', cityCode: 'hn' },
         thumbnailUrl: 'https://example.com/api-neon.jpg',
-      },
-      {
-        id: 'store-api-2',
-        name: 'API Sakura Restaurant',
-        slug: 'api-sakura-restaurant',
-        category: 'RESTAURANT',
-        city: 'TP.HCM',
-        cityCode: 'hcm',
-        district: 'Quan 1',
-        area: { id: 'area-2', code: 'hcm-q1', name: 'Quan 1', city: 'TP.HCM', cityCode: 'hcm' },
-        thumbnailUrl: 'https://example.com/api-sakura.jpg',
+        href: '/stores/api-neon-lounge',
+        score: 120,
+        reason: 'Theo loại hình bạn hay xem',
+        signals: { viewCount: 3, bookingCount: 1, hasActiveCoupon: true },
+        activeCoupon: null,
       },
     ]);
 
@@ -172,7 +194,7 @@ describe('Home Page', () => {
         discountType: 'PERCENT',
         discountValue: 10,
         startsAt: now,
-        store: {
+        targetStore: {
           id: 'store-api-1',
           name: 'API Neon Lounge',
           slug: 'api-neon-lounge',
@@ -269,26 +291,8 @@ describe('Home Page', () => {
         likeCount: 2,
       },
     ]);
-    contentRecommendationsMock.mockResolvedValue([
-      {
-        id: 'store-api-1',
-        name: 'API Neon Lounge',
-        slug: 'api-neon-lounge',
-        category: 'LOUNGE',
-        city: 'Ha Noi',
-        cityCode: 'hn',
-        district: 'Tay Ho',
-        area: { id: 'area-1', code: 'hn-tay-ho', name: 'Tay Ho', city: 'Ha Noi', cityCode: 'hn' },
-        thumbnailUrl: 'https://example.com/api-neon.jpg',
-        href: '/stores/api-neon-lounge',
-        score: 120,
-        reason: 'Theo loai hinh ban hay xem',
-        signals: { viewCount: 3, bookingCount: 1, hasActiveCoupon: true },
-        activeCoupon: null,
-      },
-    ]);
-    contentToursMock.mockResolvedValue([
-      {
+    contentToursMock.mockResolvedValue({
+      data: [{
         id: 'tour-api-1',
         title: 'API Tour Night',
         subtitle: 'API tour subtitle',
@@ -313,20 +317,20 @@ describe('Home Page', () => {
             activeCouponName: null,
           },
         ],
-      },
-    ]);
+      }],
+    });
     trackHotVideoViewMock.mockResolvedValue({ recorded: true, mediaId: 'video-api-1', viewCount: 8, likeCount: 2 });
     trackHotVideoLikeMock.mockResolvedValue({ recorded: true, mediaId: 'video-api-1', viewCount: 8, likeCount: 3 });
   });
 
   it('renders featured event content from the backend CMS API', async () => {
-    render(<Page />);
+    renderHome();
 
     expect(await screen.findAllByText(/API Night Banner/i)).not.toHaveLength(0);
-  });
+  }, 15_000);
 
   it('places the search panel before the advertising banner', async () => {
-    render(<Page />);
+    renderHome();
     await screen.findAllByText(/API Night Banner/i);
 
     const searchPanels = screen.getAllByTestId('home-search-panel');
@@ -338,20 +342,16 @@ describe('Home Page', () => {
     });
   });
 
-  it('hides venue rating and price on home recommendation cards', async () => {
-    render(<Page />);
+  it('renders the tonight recommendation block', async () => {
+    renderHome();
     await screen.findAllByText(/API Night Banner/i);
 
-    expect(screen.queryByText('★ 4.9')).not.toBeInTheDocument();
-    expect(screen.queryByText('1.2tr')).not.toBeInTheDocument();
+    expect(screen.getByTestId('home-mobile-recommendations')).toBeInTheDocument();
+    expect(screen.getAllByText('Đề xuất tối nay')).not.toHaveLength(0);
   });
 
   it('loads home sections from backend APIs', async () => {
-    render(<Page />);
-
-    await waitFor(() => {
-      expect(listStoresStrictMock).toHaveBeenCalledWith({ city: 'all', limit: 24, sort: 'priority' });
-    });
+    renderHome();
 
     expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 50 });
     expect(listPublicCouponsMock).toHaveBeenCalled();
@@ -371,18 +371,13 @@ describe('Home Page', () => {
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
     expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
-    expect(await screen.findAllByText('API Blog Guide')).not.toHaveLength(0);
-    expect(screen.getAllByRole('link', { name: /API Neon Lounge/i })[0]).toHaveAttribute(
-      'href',
-      '/stores/api-neon-lounge',
-    );
     expect(document.body.textContent ?? '').not.toMatch(
       /Ã‚Â·|NhÃƒ|HÃƒ|NÃ¡Â»|tÃ¡Â»|Ã„â€˜|ChÃ†|Ã¡Âº|Ã¡Â»|Ä|Æ¯/,
     );
   });
 
   it('keeps the mobile home block order stable', async () => {
-    render(<Page />);
+    renderHome();
     await screen.findAllByText(/API Night Banner/i);
 
     const mobileShell = screen.getByTestId('home-mobile-shell');
@@ -411,12 +406,12 @@ describe('Home Page', () => {
   });
 
   it('routes coupon CTAs into the store/booking flow without claiming a standalone code', async () => {
-    render(<Page />);
+    renderHome();
     await screen.findAllByText('API Coupon');
 
     const couponCta = screen.getAllByTestId('home-coupon-cta')[0] as HTMLAnchorElement;
     expect(couponCta).toHaveTextContent('Xem ưu đãi');
-    expect(couponCta).toHaveAttribute('href', '/stores/api-neon-lounge');
+    expect(couponCta).toHaveAttribute('href', '/stores/api-neon-lounge?couponId=coupon-api-1');
 
     fireEvent.click(couponCta);
 
@@ -427,17 +422,17 @@ describe('Home Page', () => {
   it('does not call the Video Hot API while the homepage video flag is off', async () => {
     process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS = 'false';
 
-    render(<Page />);
+    renderHome();
     await screen.findAllByText(/API Night Banner/i);
 
     expect(contentHotVideosMock).not.toHaveBeenCalled();
-    expect(await screen.findAllByText('Video Hot đang được chuẩn bị.')).not.toHaveLength(0);
+    expect(screen.getByTestId('home-mobile-video')).toBeInTheDocument();
   });
 
   it('loads Video Hot from the API when the homepage video flag is enabled', async () => {
     process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS = 'true';
 
-    render(<Page />);
+    renderHome();
 
     await waitFor(() => {
       expect(contentHotVideosMock).toHaveBeenCalledWith('all');

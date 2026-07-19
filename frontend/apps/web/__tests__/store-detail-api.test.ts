@@ -41,7 +41,6 @@ const storeDetail: PublicStoreDetail = {
       slug: 'admin-cast',
       stageName: 'Admin Cast',
       publicAlias: 'Admin Cast',
-      publicHeadline: 'Admin headline',
       thumbnailUrl: 'https://cdn.example.com/admin-cast.jpg',
       tags: ['vip'],
       languages: ['vi'],

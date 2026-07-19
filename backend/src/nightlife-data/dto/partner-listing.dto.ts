@@ -21,12 +21,6 @@ export class PartnerListingCastDto {
   @MaxLength(120)
   stageName: string;
 
-  @ApiPropertyOptional({ example: 'Gentle support for quiet guests.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(180)
-  publicHeadline?: string;
-
   @ApiPropertyOptional({ example: 'Japanese and English speaking host.' })
   @IsOptional()
   @IsString()

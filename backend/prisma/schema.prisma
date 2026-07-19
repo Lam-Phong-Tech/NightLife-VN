@@ -566,7 +566,6 @@ model Cast {
   slug                  String                 @unique
   bio                   String?
   publicAlias           String?                @map("public_alias")
-  publicHeadline        String?                @map("public_headline")
   publicBio             String?                @map("public_bio")
   tags                  String[]               @default([])
   youtubeLinks          String[]               @default([]) @map("youtube_links")
