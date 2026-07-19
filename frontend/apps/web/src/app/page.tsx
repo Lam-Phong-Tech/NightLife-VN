@@ -984,6 +984,47 @@ function getBannerSlideTransform(index: number, activeIndex: number) {
   return `translate3d(${index < activeIndex ? "-" : ""}34%,0,0) scale(1.05)`;
 }
 
+const bannerPresetDelimiters = [" · ", " Â· ", " — ", " â€” ", " - "];
+
+function normalizeBannerPresetCase(value: string) {
+  const lower = value.toLocaleLowerCase("vi-VN");
+  return lower.replace(/(^|[\s·Â—â€“-])(\p{L})/gu, (_match, prefix: string, letter: string) =>
+    `${prefix}${letter.toLocaleUpperCase("vi-VN")}`,
+  );
+}
+
+function sentenceCaseBannerPreset(value: string) {
+  const lower = value.toLocaleLowerCase("vi-VN");
+  return lower.replace(/(^|[\s·Â—â€“-])(\p{L})/u, (_match, prefix: string, letter: string) =>
+    `${prefix}${letter.toLocaleUpperCase("vi-VN")}`,
+  );
+}
+
+function translateBannerPresetText(value: string | null | undefined, language: LanguageCode): string {
+  const source = value?.trim();
+  if (!source) return "";
+
+  for (const delimiter of bannerPresetDelimiters) {
+    if (!source.includes(delimiter)) continue;
+
+    const translatedParts: string[] = source.split(delimiter).map((part) => translateBannerPresetText(part, language));
+    return translatedParts.join(delimiter);
+  }
+
+  const candidates = [
+    source,
+    sentenceCaseBannerPreset(source),
+    normalizeBannerPresetCase(source),
+  ];
+
+  for (const candidate of candidates) {
+    const translated = translateText(candidate, language);
+    if (translated !== candidate) return translated;
+  }
+
+  return source;
+}
+
 function BannerMediaSlides({
   activeBanner,
   banners,
@@ -1194,11 +1235,11 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
     );
   }
 
-  const eventTitle = translateText(event.title, activeLanguage);
-  const eventDesc = translateText(event.desc, activeLanguage);
-  const eventButtonText = translateText(event.btnText, activeLanguage);
-  const eventStatusLabel = translateText(event.statusLabel ?? "", activeLanguage);
-  const eventSubtitle = translateText(event.subtitle ?? "", activeLanguage);
+  const eventTitle = event.title;
+  const eventDesc = event.desc;
+  const eventButtonText = translateBannerPresetText(event.btnText, activeLanguage);
+  const eventStatusLabel = translateBannerPresetText(event.statusLabel, activeLanguage);
+  const eventSubtitle = translateBannerPresetText(event.subtitle, activeLanguage);
 
   return (
     <Link
@@ -1363,9 +1404,9 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
     );
   }
 
-  const eventTitle = translateText(event.title, activeLanguage);
-  const eventDesc = translateText(event.desc, activeLanguage);
-  const eventButtonText = translateText(event.btnText, activeLanguage);
+  const eventTitle = event.title;
+  const eventDesc = event.desc;
+  const eventButtonText = translateBannerPresetText(event.btnText, activeLanguage);
 
   return (
     <Link

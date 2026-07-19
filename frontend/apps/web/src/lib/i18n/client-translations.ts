@@ -921,6 +921,20 @@ const entries: TranslationEntry[] = [
     zh: "正在进行",
   },
   {
+    vi: "SẮP DIỄN RA",
+    en: "COMING SOON",
+    ja: "近日開催",
+    ko: "곧 진행",
+    zh: "即将开始",
+  },
+  {
+    vi: "Sắp diễn ra",
+    en: "Coming soon",
+    ja: "近日開催",
+    ko: "곧 진행",
+    zh: "即将开始",
+  },
+  {
     vi: "SỰ KIỆN ĐÊM NAY · TÂY HỒ",
     en: "TONIGHT'S EVENT · TAY HO",
     ja: "今夜のイベント · タイホー",
