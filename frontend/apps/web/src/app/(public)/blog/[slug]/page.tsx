@@ -106,10 +106,10 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "auto",
         background: "var(--vy-bg)",
         color: "var(--vy-text)",
-        padding: "clamp(20px, 5vw, 54px) clamp(16px, 5vw, 48px)",
+        padding: "clamp(20px, 5vw, 54px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
       <script

@@ -81,10 +81,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "auto",
         background: "var(--vy-bg)",
         color: "var(--vy-text)",
-        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
+        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
       <script

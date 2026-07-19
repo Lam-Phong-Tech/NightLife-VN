@@ -73,7 +73,7 @@ export default async function BlogCategoryPage({ params }: PageProps) {
   ]);
 
   return (
-    <main style={{ minHeight: "100vh", background: "#0c0c0f", color: "#f3f0ea", padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)" }}>
+    <main style={{ minHeight: "auto", background: "#0c0c0f", color: "#f3f0ea", padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <section style={{ maxWidth: "980px", margin: "0 auto" }}>
         <Link href="/blog" style={{ color: "#d4b26a", textDecoration: "none", fontSize: "13px", fontWeight: 800 }}>

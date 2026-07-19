@@ -2031,7 +2031,7 @@ function VenueSkeletons() {
 
 const venueSearchCss = `
   .venue-search-page {
-    min-height: 100vh;
+    min-height: auto;
     background: var(--vy-bg);
     color: var(--vy-text);
     font-family: var(--nl-font-sans);
@@ -2048,7 +2048,7 @@ const venueSearchCss = `
   .venue-search-shell {
     width: min(100%, 1180px);
     margin: 0 auto;
-    padding: 28px 26px 54px;
+    padding: 28px 26px 34px;
   }
 
   .venue-search-header {

@@ -427,13 +427,13 @@ export default function Page() {
 
       <style jsx>{`
         .wallet-page {
-          min-height: calc(100vh - 82px);
+          min-height: auto;
           background:
             radial-gradient(circle at 12% 0%, rgba(212, 178, 106, .13), transparent 28%),
             linear-gradient(180deg, #111114 0%, #08080a 100%);
           color: #f7f2e8;
           font-family: var(--nl-font-sans);
-          padding: 34px clamp(16px, 4vw, 48px) 58px;
+          padding: 34px clamp(16px, 4vw, 48px) 34px;
         }
 
         .wallet-shell {
@@ -789,7 +789,7 @@ export default function Page() {
 
         @media (max-width: 760px) {
           .wallet-page {
-            padding: 22px 14px calc(96px + env(safe-area-inset-bottom));
+            padding: 22px 14px 18px;
           }
 
           .wallet-header,

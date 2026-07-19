@@ -580,6 +580,7 @@ body > .nl-language-picker-overlay {
 .nl-page-content,
 .nl-customer-route-content {
   scroll-behavior: smooth;
+  min-height: auto;
   opacity: 1;
   transform: translate3d(0, 0, 0);
   filter: blur(0);
@@ -592,6 +593,14 @@ body > .nl-language-picker-overlay {
     background-color var(--vy-motion-duration) var(--vy-motion-ease),
     color var(--vy-motion-duration) var(--vy-motion-ease);
   will-change: opacity, transform, filter;
+}
+
+.nl-page-content > main:last-child {
+  min-height: auto !important;
+}
+
+.nl-page-content > main:last-child > :last-child {
+  margin-bottom: 0 !important;
 }
 
 .nl-brand-intro {
@@ -1307,8 +1316,8 @@ textarea::placeholder {
 /* Ranking page: keep Next Link rows as full-width cards even when prototype/global styles compete. */
 .nl-page-content .ranking-page {
   width: 100% !important;
-  min-height: 100vh !important;
-  padding: 40px 42px 56px !important;
+  min-height: auto !important;
+  padding: 40px 42px 32px !important;
   background: #101014 !important;
   color: #f8f3e7 !important;
   font-family: var(--nl-font-sans) !important;
@@ -1611,6 +1620,10 @@ textarea::placeholder {
     scroll-padding-bottom: calc(86px + env(safe-area-inset-bottom)) !important;
   }
 
+  .nl-page-content > main:last-child {
+    min-height: auto !important;
+  }
+
   .nl-page-content .btn {
     min-width: 40px !important;
     min-height: 40px !important;
@@ -1653,7 +1666,7 @@ textarea::placeholder {
   .cast-list-mobile {
     background: #0c0c0f !important;
     color: #f3f0ea !important;
-    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 0 !important;
   }
 
   .store-detail-mobile > div,

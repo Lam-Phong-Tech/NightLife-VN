@@ -11,7 +11,7 @@ export function CastProfileStyles() {
         --cast-hero-control-icon: #f7cf5c;
         --cast-hero-control-shadow: none;
         --cast-hero-control-icon-shadow: none;
-        min-height: 100vh;
+        min-height: auto;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
         background: var(--vy-bg);
@@ -27,8 +27,8 @@ export function CastProfileStyles() {
       }
 
       .cast-mobile {
-        min-height: 100vh;
-        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        min-height: auto;
+        padding-bottom: 0;
         background: var(--vy-bg);
       }
 
@@ -47,7 +47,7 @@ export function CastProfileStyles() {
         }
 
         .nl-page-content:has(.cast-page) + .nl-site-footer {
-          padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
+          padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
         }
       }
 
@@ -803,9 +803,9 @@ export function CastProfileStyles() {
       }
 
       .cast-desktop {
-        min-height: 100vh;
+        min-height: auto;
         background: var(--vy-bg);
-        padding: 38px 28px 48px;
+        padding: 38px 28px 34px;
       }
 
       .cast-desktop-shell {

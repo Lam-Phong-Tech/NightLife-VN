@@ -2405,11 +2405,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-hero-control-icon: #f7cf5c;
           --store-hero-control-shadow: none;
           --store-hero-control-icon-shadow: none;
-          min-height: 100vh;
+          min-height: auto;
           background: var(--vy-bg);
           color: var(--vy-text);
           font-family: var(--nl-font-sans);
-          padding-bottom: 86px;
+          padding-bottom: 0;
         }
 
         html.vy-light .store-detail-page {
@@ -4473,7 +4473,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: 18px;
+            padding-bottom: 0;
           }
 
           .nl-page-content:has(.store-detail-page) {
@@ -4482,7 +4482,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .nl-page-content:has(.store-detail-page) + .nl-site-footer {
-            padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
+            padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
           }
 
           .detail-shell {

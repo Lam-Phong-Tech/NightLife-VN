@@ -59,13 +59,13 @@ export default function LineEmailConsentPage() {
   };
 
   return (
-    <main className="nl-line-consent-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+    <main className="nl-line-consent-page" style={{ minHeight: "auto", background: colors.bg, color: colors.text }}>
       <section
         className="nl-line-consent-shell"
         style={{
           maxWidth: 1040,
           margin: "0 auto",
-          padding: "28px 18px 56px",
+          padding: "28px 18px 32px",
           display: "grid",
           gap: 22,
         }}

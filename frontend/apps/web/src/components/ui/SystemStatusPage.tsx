@@ -197,12 +197,12 @@ function StatusIcon({ icon: Icon }: { icon: LucideIcon }) {
 
 const statusStyles = `
   .nl-system-status-page {
-    min-height: calc(100vh - 82px);
+    min-height: auto;
     display: grid;
     place-items: center;
     background: linear-gradient(180deg,#0c0c0f 0%,#111114 55%,#08080b 100%);
     color: #f3f0ea;
-    padding: 64px 24px;
+    padding: 48px 24px 34px;
     font-family: var(--nl-font-sans);
   }
 
@@ -375,8 +375,8 @@ const statusStyles = `
 
   @media (max-width: 767px) {
     .nl-system-status-page {
-      min-height: calc(100vh - 56px);
-      padding: 48px 18px calc(120px + env(safe-area-inset-bottom));
+      min-height: auto;
+      padding: 36px 18px 24px;
     }
 
     .nl-system-status-code {

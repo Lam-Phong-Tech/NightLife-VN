@@ -574,7 +574,7 @@ export default function Page() {
 
       <style>{`
         .campaign-page {
-          min-height: 100vh;
+          min-height: auto;
           background:
             radial-gradient(circle at 18% 0%, rgba(212, 178, 106, .14), transparent 32%),
             radial-gradient(circle at 84% 12%, rgba(255, 122, 154, .08), transparent 30%),
@@ -582,7 +582,7 @@ export default function Page() {
           color: #f3f0ea;
           font-family: var(--nl-font-sans);
           overflow-x: hidden;
-          padding: 40px 28px 64px;
+          padding: 40px 28px 34px;
         }
 
         .campaign-shell {

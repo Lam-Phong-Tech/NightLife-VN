@@ -16,7 +16,7 @@
   --tour-accent-bg: var(--vy-gold-grad);
   --tour-accent-fg: var(--vy-on-gold);
   --tour-accent-shadow: 0 18px 34px -22px rgba(212, 178, 106, 0.75);
-  min-height: 100vh;
+  min-height: auto;
   overflow-x: hidden;
   background: var(--vy-bg);
   color: var(--tour-text);
@@ -36,7 +36,7 @@
 .shell {
   width: min(100%, 1220px);
   margin: 0 auto;
-  padding: 26px 18px 96px;
+  padding: 26px 18px 42px;
 }
 
 .breadcrumb {
@@ -615,7 +615,7 @@
 
 @media (max-width: 900px) {
   .shell {
-    padding: 12px 0 calc(86px + env(safe-area-inset-bottom));
+    padding: 12px 0 18px;
   }
 
   .breadcrumb {
@@ -755,7 +755,7 @@
 
 @media (max-width: 420px) {
   .shell {
-    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    padding-bottom: 16px;
   }
 
   .sectionTitle {

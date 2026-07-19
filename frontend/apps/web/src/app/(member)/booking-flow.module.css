@@ -1,5 +1,5 @@
 .bookingPage {
-  min-height: 100vh;
+  min-height: auto;
   background: var(--vy-bg);
   color: var(--vy-text);
   font-family: var(--nl-font-sans);
@@ -20,7 +20,7 @@
 .bookingViewport {
   width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 32px 24px calc(108px + env(safe-area-inset-bottom));
+  padding: 32px 24px calc(32px + env(safe-area-inset-bottom));
   display: block;
 }
 
@@ -2097,17 +2097,17 @@
 @media (max-width: 859px) {
   .bookingViewport {
     width: 100%;
-    padding: 0 0 calc(94px + env(safe-area-inset-bottom));
+    padding: 0;
     grid-template-columns: 1fr;
     gap: 0;
   }
 
   .confirmViewport {
-    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
   }
 
   .bookingFrame {
-    min-height: calc(100vh - 56px);
+    min-height: auto;
     border-right: 0;
     border-left: 0;
     border-radius: 0;

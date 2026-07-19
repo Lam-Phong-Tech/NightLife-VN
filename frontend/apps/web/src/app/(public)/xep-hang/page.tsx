@@ -803,11 +803,11 @@ export default function Page() {
       <style jsx global>{`
         .vyr-ranking-page {
           width: 100%;
-          min-height: calc(100vh - 82px);
+          min-height: auto;
           background: var(--vy-bg);
           color: var(--vy-text);
           font-family: var(--nl-font-sans);
-          padding: 26px 30px 48px;
+          padding: 26px 30px 32px;
         }
 
         .vyr-ranking-shell {
@@ -1399,8 +1399,8 @@ export default function Page() {
 
         @media (max-width: 767px) {
           .vyr-ranking-page {
-            min-height: calc(100vh - 56px);
-            padding: 6px 16px calc(100px + env(safe-area-inset-bottom));
+            min-height: auto;
+            padding: 6px 16px 18px;
           }
 
           .vyr-ranking-shell {

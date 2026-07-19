@@ -505,7 +505,7 @@ function TourSkeletons() {
 
 const tourDirectoryCss = `
   .tour-directory-page {
-    min-height: 100vh;
+    min-height: auto;
     background: var(--vy-bg);
     color: var(--vy-text);
     font-family: var(--nl-font-sans);
@@ -522,7 +522,7 @@ const tourDirectoryCss = `
   .tour-directory-shell {
     width: min(100%, 1180px);
     margin: 0 auto;
-    padding: 28px 26px 54px;
+    padding: 28px 26px 34px;
   }
 
   .tour-directory-header {
@@ -1068,7 +1068,7 @@ const tourDirectoryCss = `
 
     .tour-directory-shell {
       width: 100%;
-      padding: 12px 14px calc(96px + env(safe-area-inset-bottom));
+      padding: 12px 14px 18px;
     }
 
     .tour-directory-header {

@@ -919,7 +919,7 @@ function useCarouselSwipe(
 }
 
 const shellStyle: CSSProperties = {
-  minHeight: "100vh",
+  minHeight: "auto",
   background: colors.shell,
   color: colors.text,
   fontFamily: "var(--nl-font-sans)",
@@ -3071,7 +3071,7 @@ export default function Page() {
   return (
     <React.Fragment>
       <div className="block md:hidden nl-home-page nl-home-page-mobile" style={shellStyle}>
-        <div data-testid="home-mobile-shell" style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
+        <div data-testid="home-mobile-shell" style={{ maxWidth: "430px", minHeight: "auto", margin: "0 auto", ...appStyle }}>
           <div data-testid="home-mobile-header">
             <HeaderBar />
           </div>
@@ -3227,7 +3227,7 @@ export default function Page() {
       </div>
 
       <div className="hidden md:block nl-home-page nl-home-page-desktop" style={{ ...shellStyle, background: colors.ink }}>
-        <div style={{ width: "100%", minHeight: "100vh", ...appStyle, border: 0, boxShadow: "none" }}>
+        <div style={{ width: "100%", minHeight: "auto", ...appStyle, border: 0, boxShadow: "none" }}>
           <HeaderBar desktop />
           <main style={{ padding: "10px 50px 0" }}>
             <div>

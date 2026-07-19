@@ -1725,11 +1725,11 @@ function FilterChipGroup({
 
 const castSearchCss = `
 .cast-search-page {
-  min-height: 100vh;
+  min-height: auto;
   background: linear-gradient(180deg, #0e0d12 0%, #111015 48%, #09090b 100%);
   color: var(--vy-text);
   font-family: var(--nl-font-sans);
-  padding: 28px 28px 58px;
+  padding: 28px 28px 34px;
 }
 
 .nl-page-content:has(.cast-search-page) {

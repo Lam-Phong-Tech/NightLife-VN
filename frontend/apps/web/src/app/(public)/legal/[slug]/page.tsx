@@ -63,10 +63,10 @@ export default async function LegalDetailPage({ params }: PageProps) {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "auto",
         background: "#0c0c0f",
         color: "#f3f0ea",
-        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
+        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
       <article style={{ maxWidth: "860px", margin: "0 auto" }}>

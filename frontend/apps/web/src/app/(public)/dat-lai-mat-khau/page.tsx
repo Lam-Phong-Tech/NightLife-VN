@@ -177,15 +177,15 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="nl-auth-page nl-reset-auth-page" style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
+    <main className="nl-auth-page nl-reset-auth-page" style={{ minHeight: "auto", background: colors.bg, color: colors.text }}>
       <section
         className="nl-reset-auth-shell"
         style={{
-          minHeight: "100dvh",
+          minHeight: "auto",
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "center",
-          padding: "clamp(46px, 7dvh, 68px) 16px clamp(34px, 5dvh, 52px)",
+          padding: "clamp(34px, 6dvh, 58px) 16px clamp(24px, 4dvh, 34px)",
           background:
             "linear-gradient(180deg,rgba(12,12,15,.65),rgba(12,12,15,.96)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80') center/cover",
         }}

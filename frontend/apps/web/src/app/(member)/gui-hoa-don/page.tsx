@@ -1851,7 +1851,7 @@ export default function Page() {
       <style jsx>{`
         .nl-bill-page {
           width: 100%;
-          min-height: 100vh;
+          min-height: auto;
           overflow-x: hidden;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -1862,7 +1862,7 @@ export default function Page() {
           max-width: 100%;
           box-sizing: border-box;
           margin: 0 auto;
-          padding: 24px 18px 80px;
+          padding: 24px 18px 34px;
         }
 
         .nl-bill-page *,
@@ -2791,7 +2791,7 @@ export default function Page() {
 
         @media (max-width: 620px) {
           .nl-bill-shell {
-            padding: 16px 14px 80px;
+            padding: 16px 14px 18px;
           }
 
           .nl-bill-form,

@@ -185,8 +185,8 @@ export default function Page() {
   const role = authUser?.role || "USER";
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: 1040, margin: "0 auto", padding: "22px 18px 58px" }}>
+    <main style={{ minHeight: "auto", background: colors.bg, color: colors.text }}>
+      <section style={{ maxWidth: 1040, margin: "0 auto", padding: "22px 18px 32px" }}>
         <Link
           href="/tai-khoan"
           style={{

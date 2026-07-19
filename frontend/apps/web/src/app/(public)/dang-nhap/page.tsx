@@ -955,7 +955,7 @@ export default function Page() {
 
           .nl-login-page .nl-login-shell {
             display: block !important;
-            min-height: 100vh !important;
+            min-height: auto !important;
             width: 100% !important;
             max-width: 100vw !important;
             overflow-x: hidden !important;
