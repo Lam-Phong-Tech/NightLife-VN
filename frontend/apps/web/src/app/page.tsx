@@ -37,6 +37,7 @@ import {
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { DataSkeleton } from "@/components/ui/DataLoading";
+import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
 import {
   contentApi,
@@ -73,6 +74,7 @@ import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-f
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
+import { readBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 const colors = {
@@ -2598,6 +2600,7 @@ function BottomNav() {
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const feedback = useSystemFeedback();
   const userFeedback = useUserActionFeedback();
   const { rates } = useMoneyFormatter(activeLanguage);
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
@@ -2679,6 +2682,22 @@ export default function Page() {
       style.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const flashToast = readBookingConfirmationFlashToast();
+    if (!flashToast) return;
+
+    const toastTimer = window.setTimeout(() => {
+      feedback.showToast({
+        ...flashToast,
+        placement: "top-right",
+      });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(toastTimer);
+    };
+  }, [feedback]);
 
   useEffect(() => {
     let cancelled = false;

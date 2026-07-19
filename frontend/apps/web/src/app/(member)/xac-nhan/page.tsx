@@ -1,16 +1,38 @@
 "use client";
 
-import { AlertCircle, Check, Clock3, Download } from "lucide-react";
+import { AlertCircle, Check, Clock3, Download, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import { writeBookingConfirmationFlashToast, type BookingConfirmationFlashTone } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
 const cancelledStatuses = new Set(["CANCELLED", "NO_SHOW"]);
+const bookingRefreshMs = 3500;
+const bookingRedirectDelayMs = 1500;
+
+type BookingLookup = {
+  bookingId: string;
+  email: string;
+  phone: string;
+};
+
+type BookingResolutionKind = "partner" | "admin" | "cancelled";
+
+type BookingResolutionFeedback = {
+  tone: BookingConfirmationFlashTone;
+  toastTitle: string;
+  toastDescription: string;
+  homeTitle: string;
+  homeDescription: string;
+  redirectTitle: string;
+  redirectDescription: string;
+};
 
 const formatDateTime = (value: string | undefined, language: LanguageCode) => {
   if (!value) return translateText("Chưa có thời gian", language);
@@ -66,6 +88,156 @@ const bookingMatchesLookup = (booking: BookingRecord, lookup?: string | null) =>
   return [booking.id, booking.tourBookingId, booking.bookingCode].some((value) =>
     normalizeBookingLookupToken(value).startsWith(token),
   );
+};
+
+const resolveBookingByLookup = async ({ bookingId, email, phone }: BookingLookup) => {
+  let resolvedBooking: BookingRecord | null = null;
+
+  try {
+    const memberBookings = await bookingApi.listMemberBookings();
+    const memberBooking = memberBookings.find((item) => bookingMatchesLookup(item, bookingId));
+    if (memberBooking) {
+      resolvedBooking = memberBooking;
+    }
+  } catch {
+    // Guests and signed-out users continue to code/email lookup below.
+  }
+
+  if (!resolvedBooking && (email || phone)) {
+    try {
+      resolvedBooking = await bookingApi.getGuestBookingByCode(bookingId, { email, phone });
+    } catch {
+      // The caller keeps the current booking snapshot when lookup is unavailable.
+    }
+  }
+
+  return resolvedBooking;
+};
+
+const hasPartnerApprovalEvidence = (booking: BookingRecord | null) => {
+  if (!booking) return false;
+
+  const qrStatus = booking.qr?.status?.toUpperCase();
+  const issueStatus = booking.couponIssue?.status?.toUpperCase();
+  const hasTourStopCheckIn = booking.tour?.stops.some((stop) => {
+    const stopStatus = stop.status?.toUpperCase();
+    const stopIssueStatus = stop.couponIssue?.status?.toUpperCase();
+    return (
+      stopStatus === "CHECKED_IN" ||
+      Boolean(stop.checkedInAt) ||
+      stopIssueStatus === "USED" ||
+      Boolean(stop.couponIssue?.usedAt)
+    );
+  });
+
+  return (
+    booking.status === "CHECKED_IN" ||
+    qrStatus === "USED" ||
+    Boolean(booking.qr?.usedAt) ||
+    issueStatus === "USED" ||
+    Boolean(booking.couponIssue?.usedAt) ||
+    Boolean(hasTourStopCheckIn)
+  );
+};
+
+const bookingResolutionFingerprint = (kind: BookingResolutionKind, booking: BookingRecord) =>
+  [
+    kind,
+    booking.id,
+    booking.status,
+    booking.confirmedAt ?? "",
+    booking.qr?.usedAt ?? "",
+    booking.couponIssue?.usedAt ?? "",
+    ...(booking.tour?.stops.map((stop) =>
+      [stop.bookingId ?? stop.storeId, stop.status ?? "", stop.checkedInAt ?? "", stop.couponIssue?.usedAt ?? ""].join(":"),
+    ) ?? []),
+  ].join("|");
+
+const bookingResolutionKind = (
+  previousBooking: BookingRecord | null,
+  nextBooking: BookingRecord,
+): BookingResolutionKind | null => {
+  const previousStatus = previousBooking?.status;
+
+  if (!cancelledStatuses.has(previousStatus ?? "") && cancelledStatuses.has(nextBooking.status)) {
+    return "cancelled";
+  }
+
+  if (!hasPartnerApprovalEvidence(previousBooking) && hasPartnerApprovalEvidence(nextBooking)) {
+    return "partner";
+  }
+
+  if (!confirmedStatuses.has(previousStatus ?? "") && confirmedStatuses.has(nextBooking.status)) {
+    return "admin";
+  }
+
+  return null;
+};
+
+const bookingResolutionFeedback = (
+  kind: BookingResolutionKind,
+  booking: BookingRecord,
+  language: LanguageCode,
+): BookingResolutionFeedback => {
+  const title = bookingTitle(booking);
+  const isTourBooking = Boolean(booking.tour);
+
+  if (kind === "partner") {
+    return {
+      tone: "success",
+      toastTitle: translateText(isTourBooking ? "Quán đã xác nhận điểm dừng" : "Quán đã xác nhận QR", language),
+      toastDescription: translateText(
+        isTourBooking
+          ? `Điểm dừng trong tour ${title} đã được quán xác nhận. Đang chuyển bạn về trang chủ.`
+          : `${title} đã quét QR và xác nhận lượt sử dụng. Đang chuyển bạn về trang chủ.`,
+        language,
+      ),
+      homeTitle: translateText(isTourBooking ? "Check-in tour thành công" : "Xác nhận tại quán thành công", language),
+      homeDescription: translateText(
+        isTourBooking
+          ? `Điểm dừng trong tour ${title} đã được quán xác nhận thành công.`
+          : `${title} đã được quán xác nhận qua QR.`,
+        language,
+      ),
+      redirectTitle: translateText("Đang chuyển về trang chủ", language),
+      redirectDescription: translateText("Trạng thái QR đã cập nhật xong.", language),
+    };
+  }
+
+  if (kind === "admin") {
+    return {
+      tone: "success",
+      toastTitle: translateText(isTourBooking ? "Admin đã duyệt tour" : "Admin đã duyệt đơn", language),
+      toastDescription: translateText(
+        isTourBooking
+          ? `Tour ${title} đã được Admin xác nhận. Đang chuyển bạn về trang chủ.`
+          : `Đặt chỗ ${title} đã được Admin xác nhận. Đang chuyển bạn về trang chủ.`,
+        language,
+      ),
+      homeTitle: translateText(isTourBooking ? "Tour đã được duyệt" : "Đặt chỗ đã được duyệt", language),
+      homeDescription: translateText(
+        isTourBooking
+          ? `Tour ${title} đã được Admin xác nhận thành công.`
+          : `Đặt chỗ ${title} đã được Admin xác nhận thành công.`,
+        language,
+      ),
+      redirectTitle: translateText("Đang chuyển về trang chủ", language),
+      redirectDescription: translateText("Đơn đã được duyệt thành công.", language),
+    };
+  }
+
+  return {
+    tone: "error",
+    toastTitle: translateText("Xác nhận thất bại", language),
+    toastDescription: translateText(
+      `Lịch đặt ${title} đã bị hủy hoặc không còn hiệu lực. Đang chuyển bạn về trang chủ.`,
+      language,
+    ),
+    homeTitle: translateText("Xác nhận thất bại", language),
+    homeDescription: translateText(`Lịch đặt ${title} đã bị hủy hoặc không còn hiệu lực.`, language),
+    redirectTitle: translateText("Đang quay về trang chủ", language),
+    redirectDescription: translateText("Trạng thái lịch đặt không thể xác nhận.", language),
+  };
 };
 
 const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
@@ -348,19 +520,77 @@ const formatTourStopCount = (count: number, language: LanguageCode) => {
 
 export default function Page() {
   const activeLanguage = useActiveLanguage();
+  const feedback = useSystemFeedback();
   const tourCopy = getTourConfirmCopy(activeLanguage);
   const [booking, setBooking] = useState<BookingRecord | null>(null);
+  const [bookingLookup, setBookingLookup] = useState<BookingLookup | null>(null);
   const [isBookingLoading, setIsBookingLoading] = useState(true);
+  const [redirectFeedback, setRedirectFeedback] = useState<BookingResolutionFeedback | null>(null);
+  const latestBookingRef = useRef<BookingRecord | null>(null);
+  const handledResolutionRef = useRef<string | null>(null);
+  const redirectTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    latestBookingRef.current = booking;
+  }, [booking]);
+
+  useEffect(
+    () => () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleBookingResolution = useCallback(
+    (previousBooking: BookingRecord | null, nextBooking: BookingRecord) => {
+      const kind = bookingResolutionKind(previousBooking, nextBooking);
+      if (!kind) return;
+
+      const fingerprint = bookingResolutionFingerprint(kind, nextBooking);
+      if (handledResolutionRef.current === fingerprint) return;
+      handledResolutionRef.current = fingerprint;
+
+      const nextFeedback = bookingResolutionFeedback(kind, nextBooking, activeLanguage);
+      setRedirectFeedback(nextFeedback);
+      writeBookingConfirmationFlashToast({
+        tone: nextFeedback.tone,
+        title: nextFeedback.homeTitle,
+        description: nextFeedback.homeDescription,
+        durationMs: 5200,
+      });
+      feedback.showToast({
+        tone: nextFeedback.tone,
+        title: nextFeedback.toastTitle,
+        description: nextFeedback.toastDescription,
+        durationMs: 4200,
+      });
+
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+      redirectTimerRef.current = window.setTimeout(() => {
+        window.location.assign("/");
+      }, bookingRedirectDelayMs);
+    },
+    [activeLanguage, feedback],
+  );
 
   useEffect(() => {
     let alive = true;
 
     const resolveBooking = async () => {
       const searchParams = new URLSearchParams(window.location.search);
-      const bookingId = searchParams.get("bookingId");
+      const bookingId = searchParams.get("bookingId")?.trim() ?? "";
       const email = searchParams.get("email")?.trim() ?? "";
       const phone = searchParams.get("phone")?.trim() ?? "";
+      const lookup = bookingId ? { bookingId, email, phone } : null;
       const rememberedBooking = getLastBooking(bookingId);
+
+      if (alive) {
+        setBookingLookup(lookup);
+      }
 
       if (rememberedBooking) {
         if (alive) {
@@ -369,33 +599,15 @@ export default function Page() {
         }
       }
 
-      if (bookingId) {
-        let resolvedBooking: BookingRecord | null = null;
-
-        try {
-          const memberBookings = await bookingApi.listMemberBookings();
-          const memberBooking = memberBookings.find((item) => bookingMatchesLookup(item, bookingId));
-          if (memberBooking) {
-            resolvedBooking = memberBooking;
-          }
-        } catch {
-          // Guests and signed-out users continue to code/email lookup below.
-        }
-
-        if (!resolvedBooking && (email || phone)) {
-          try {
-            const guestBooking = await bookingApi.getGuestBookingByCode(bookingId, { email, phone });
-            resolvedBooking = guestBooking;
-          } catch {
-            // Keep the existing empty state when the booking cannot be recovered.
-          }
-        }
+      if (lookup) {
+        const resolvedBooking = await resolveBookingByLookup(lookup);
 
         if (resolvedBooking) {
           rememberLastBooking(resolvedBooking, { history: true });
           if (alive) {
             setBooking(resolvedBooking);
             setIsBookingLoading(false);
+            handleBookingResolution(rememberedBooking, resolvedBooking);
           }
           return;
         }
@@ -416,9 +628,42 @@ export default function Page() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [handleBookingResolution]);
 
-  const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
+  const isPartnerApproved = hasPartnerApprovalEvidence(booking);
+
+  useEffect(() => {
+    if (!bookingLookup || !booking || redirectFeedback || cancelledStatuses.has(booking.status) || isPartnerApproved) {
+      return;
+    }
+
+    let alive = true;
+
+    const refreshBooking = async () => {
+      const nextBooking = await resolveBookingByLookup(bookingLookup);
+      if (!alive || !nextBooking) return;
+
+      const previousBooking = latestBookingRef.current;
+      rememberLastBooking(nextBooking, { history: true });
+      setBooking(nextBooking);
+      handleBookingResolution(previousBooking, nextBooking);
+    };
+
+    const firstRefresh = window.setTimeout(() => {
+      void refreshBooking();
+    }, 1200);
+    const refreshTimer = window.setInterval(() => {
+      void refreshBooking();
+    }, bookingRefreshMs);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(firstRefresh);
+      window.clearInterval(refreshTimer);
+    };
+  }, [booking?.id, booking?.status, bookingLookup, handleBookingResolution, isPartnerApproved, redirectFeedback]);
+
+  const isConfirmed = booking ? confirmedStatuses.has(booking.status) || isPartnerApproved : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
@@ -469,7 +714,9 @@ export default function Page() {
   const statusText = isTourBooking
     ? isCancelled
       ? tourCopy.statusCancelled
-      : isConfirmed
+      : isPartnerApproved
+        ? translateText("Đã check-in điểm dừng · QR đã dùng", activeLanguage)
+        : isConfirmed
         ? tourCopy.statusConfirmed
         : tourCopy.statusPending
     : translateText(
@@ -477,7 +724,9 @@ export default function Page() {
           ? "Không có dữ liệu"
           : isCancelled
             ? "Đã hủy"
-            : isConfirmed
+            : isPartnerApproved
+              ? "Đã xác nhận tại quán · QR đã dùng"
+              : isConfirmed
               ? "Đã xác nhận · QR đã cấp"
               : "Mới · QR đã cấp",
         activeLanguage,
@@ -528,6 +777,17 @@ export default function Page() {
 
   return (
     <main className={`${styles.bookingPage} ${styles.confirmPage}`}>
+      {redirectFeedback ? (
+        <div className={styles.confirmRedirectOverlay} role="status" aria-live="assertive">
+          <div className={styles.confirmRedirectCard}>
+            <span className={styles.confirmRedirectIcon}>
+              <Loader2 size={30} />
+            </span>
+            <strong>{redirectFeedback.redirectTitle}</strong>
+            <p>{redirectFeedback.redirectDescription}</p>
+          </div>
+        </div>
+      ) : null}
       <section className={`${styles.bookingViewport} ${styles.confirmViewport}`}>
         <div className={`${styles.bookingFrame} ${styles.confirmFrame}`}>
           <div className={styles.confirmHero}>
