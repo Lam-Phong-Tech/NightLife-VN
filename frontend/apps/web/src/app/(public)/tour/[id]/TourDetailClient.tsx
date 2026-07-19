@@ -33,7 +33,6 @@ import {
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
-  sanitizeBookingGuestCountInput,
 } from "@/lib/booking-validation";
 import { getBookingDateAfterDays, getTodayBookingDate } from "@/lib/booking-date";
 import {
@@ -111,6 +110,8 @@ const priceTierLabel = (tier: number) => "$".repeat(Math.max(1, Math.min(4, Math
 const getTodayDate = getTodayBookingDate;
 
 const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
+
+const sanitizeGuestCountDraftInput = (value: string) => value.replace(/\D/g, "");
 
 const normalizeTimeOption = (value: string) => {
   const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?$/);
@@ -427,6 +428,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const [bookingDate, setBookingDate] = useState(getTodayDate);
   const [bookingTime, setBookingTime] = useState("");
   const [guests, setGuests] = useState(2);
+  const [guestInput, setGuestInput] = useState("2");
   const [note, setNote] = useState("");
   const [selectedCastKeys, setSelectedCastKeys] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -572,6 +574,36 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     setErrorMessage("");
   };
 
+  const applyGuestCount = (value: number) => {
+    const nextGuests = clampBookingGuestCount(value);
+    setGuests(nextGuests);
+    setGuestInput(String(nextGuests));
+    return nextGuests;
+  };
+
+  const commitGuestInput = () => {
+    const parsed = Number(guestInput);
+    const nextGuests =
+      guestInput.trim() && Number.isFinite(parsed)
+        ? clampBookingGuestCount(parsed)
+        : clampBookingGuestCount(guests);
+
+    setGuests(nextGuests);
+    setGuestInput(String(nextGuests));
+    return nextGuests;
+  };
+
+  const updateGuestInput = (value: string) => {
+    setGuestInput(sanitizeGuestCountDraftInput(value));
+  };
+
+  const guestControlValue = (() => {
+    const parsed = Number(guestInput);
+    return guestInput.trim() && Number.isFinite(parsed)
+      ? clampBookingGuestCount(parsed)
+      : guests;
+  })();
+
   const targetLabel = tour.title || firstStore?.name;
   const canSubmit = Boolean(firstStore && bookingStore && bookingTimeOptions.length);
 
@@ -636,6 +668,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
     const displayName = normalizeBookingDisplayName(guestName);
     const normalizedEmail = normalizeBookingEmail(email);
     const trimmedNote = normalizeBookingNote(note);
+    const partySize = commitGuestInput();
     const scheduledAt = buildScheduledAtFromBookingSlot(
       bookingDate,
       bookingTime,
@@ -647,7 +680,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       bookingTime,
       displayName,
       email: normalizedEmail,
-      guestCount: guests,
+      guestCount: partySize,
       maxDate: getMaxBookingDate(),
       note: trimmedNote,
       scheduledAt,
@@ -678,7 +711,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       displayName,
       email: normalizedEmail,
       scheduledAt,
-      partySize: guests,
+      partySize,
       ...(trimmedNote ? { note: trimmedNote } : {}),
       ...(castSelections.length ? { castSelections } : {}),
     };
@@ -922,9 +955,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     className={styles.guestButton}
                     onClick={() => {
                       markFieldTouched("guestCount");
-                      setGuests((value) => clampBookingGuestCount(value - 1));
+                      applyGuestCount(guestControlValue - 1);
                     }}
-                    disabled={guests <= 1}
+                    disabled={guestControlValue <= 1}
                     aria-label={tx("decreaseGuests")}
                   >
                     <Minus size={16} />
@@ -935,11 +968,21 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     type="text"
                     inputMode="numeric"
                     name={tourBookingFieldNames.guestCount}
-                    value={String(guests)}
-                    onBlur={() => markFieldTouched("guestCount")}
+                    value={guestInput}
+                    onBlur={() => {
+                      markFieldTouched("guestCount");
+                      commitGuestInput();
+                    }}
                     onChange={(event) => {
                       markFieldTouched("guestCount");
-                      setGuests(sanitizeBookingGuestCountInput(event.target.value));
+                      updateGuestInput(event.target.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      markFieldTouched("guestCount");
+                      commitGuestInput();
+                      event.currentTarget.blur();
                     }}
                     aria-label={tx("guestsLabel")}
                   />
@@ -948,9 +991,9 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
                     className={styles.guestButton}
                     onClick={() => {
                       markFieldTouched("guestCount");
-                      setGuests((value) => clampBookingGuestCount(value + 1));
+                      applyGuestCount(guestControlValue + 1);
                     }}
-                    disabled={guests >= maxGuests}
+                    disabled={guestControlValue >= maxGuests}
                     aria-label={tx("increaseGuests")}
                   >
                     <Plus size={16} />
