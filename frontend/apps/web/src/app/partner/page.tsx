@@ -637,6 +637,56 @@ const readQrFromVideoFrame = async (
   );
 };
 
+const readQrFromImageFile = (file: File) =>
+  new Promise<string | null>((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('File is not an image'));
+      return;
+    }
+
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(objectUrl);
+
+    image.onload = () => {
+      try {
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+        if (!width || !height) {
+          resolve(null);
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) {
+          resolve(null);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+        const imageData = context.getImageData(0, 0, width, height);
+        resolve(
+          jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })?.data.trim() ??
+            null,
+        );
+      } catch (error) {
+        reject(error);
+      } finally {
+        cleanup();
+      }
+    };
+
+    image.onerror = () => {
+      cleanup();
+      reject(new Error('Cannot read QR image'));
+    };
+
+    image.src = objectUrl;
+  });
+
 const pruneOfflineScanQueue = (items: OfflineScanQueueItem[], now = Date.now()) => {
   const seen = new Set<string>();
   const pruned: OfflineScanQueueItem[] = [];
@@ -1573,6 +1623,7 @@ export default function PartnerPage() {
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirmingScan, setIsConfirmingScan] = useState(false);
+  const [isReadingQrImage, setIsReadingQrImage] = useState(false);
   const [offlineScanQueue, setOfflineScanQueue] = useState<OfflineScanQueueItem[]>(() =>
     readOfflineScanQueue(),
   );
@@ -1796,6 +1847,7 @@ export default function PartnerPage() {
     ? partnerLightThemeVariables
     : partnerDarkThemeVariables;
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const qrImageInputRef = useRef<HTMLInputElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const cameraLoopRef = useRef<number | null>(null);
   const lastCameraPayloadRef = useRef('');
@@ -1928,7 +1980,10 @@ export default function PartnerPage() {
   }, []);
 
   const scanCouponPayload = useCallback(
-    async (payload: string, options: { fromQueue?: boolean; fromCamera?: boolean } = {}) => {
+    async (
+      payload: string,
+      options: { fromQueue?: boolean; fromCamera?: boolean; fromImage?: boolean } = {},
+    ) => {
       const trimmedPayload = payload.trim();
       const normalizedPayload = normalizePartnerScanPayload(trimmedPayload);
       if (!normalizedPayload) {
@@ -1991,6 +2046,8 @@ export default function PartnerPage() {
           }. ${
             options.fromCamera
               ? 'Camera đã tắt, kiểm tra thông tin bên phải rồi xác nhận.'
+              : options.fromImage
+                ? 'Ảnh QR đã được đọc, kiểm tra thông tin bên phải rồi xác nhận.'
               : 'Kiểm tra thông tin bên phải rồi xác nhận.'
           }`,
         );
@@ -2100,6 +2157,42 @@ export default function PartnerPage() {
       );
     }
   }, [scanCouponPayload, stopCameraScan]);
+
+  const handleQrImageFileChange = useCallback(
+    async (input: HTMLInputElement) => {
+      const file = input.files?.[0] ?? null;
+      input.value = '';
+      if (!file) {
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setScanMessage('Vui lòng chọn file ảnh QR định dạng JPG, PNG hoặc WebP.');
+        return;
+      }
+
+      stopCameraScan();
+      setIsReadingQrImage(true);
+      setScanMessage(`Đang đọc QR từ ảnh ${file.name}...`);
+
+      try {
+        const rawValue = await readQrFromImageFile(file);
+        if (!rawValue) {
+          setScanMessage('Không đọc được QR trong ảnh. Vui lòng chọn ảnh rõ hơn hoặc nhập mã thủ công.');
+          return;
+        }
+
+        setScanPayload(rawValue);
+        setScanMessage('Đã đọc QR từ ảnh, đang xác thực mã...');
+        await scanCouponPayload(rawValue, { fromImage: true });
+      } catch {
+        setScanMessage('Không đọc được ảnh QR. Vui lòng thử ảnh khác hoặc nhập mã thủ công.');
+      } finally {
+        setIsReadingQrImage(false);
+      }
+    },
+    [scanCouponPayload, stopCameraScan],
+  );
 
   const replayOfflineScans = useCallback(async () => {
     const queuedItems = readOfflineScanQueue();
@@ -4693,7 +4786,7 @@ export default function PartnerPage() {
 
         <div className="partner-action-row partner-camera-actions" style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <PrimaryButton
-            disabled={cameraStatus === 'starting'}
+            disabled={cameraStatus === 'starting' || isReadingQrImage}
             onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}
           >
             <Camera size={16} />
@@ -4703,18 +4796,31 @@ export default function PartnerPage() {
                 ? 'Đang mở'
                 : 'Mở camera'}
           </PrimaryButton>
+          <input
+            ref={qrImageInputRef}
+            accept="image/*"
+            type="file"
+            hidden
+            onChange={(event) => void handleQrImageFileChange(event.currentTarget)}
+          />
           <GhostButton
-            disabled={isScanning || !offlineScanQueue.length}
-            onClick={() => void replayOfflineScans()}
+            disabled={isScanning || isReadingQrImage}
+            onClick={() => qrImageInputRef.current?.click()}
           >
             <Upload size={16} />
-            Gửi offline
+            {isReadingQrImage ? 'Đang đọc ảnh' : 'Tải ảnh QR'}
           </GhostButton>
+          {offlineScanQueue.length > 0 ? (
+            <GhostButton disabled={isScanning || isReadingQrImage} onClick={() => void replayOfflineScans()}>
+              <RefreshCcw size={16} />
+              Gửi hàng đợi
+            </GhostButton>
+          ) : null}
         </div>
 
         <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
           Luồng quét gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
-          Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
+          Nếu camera không đọc được mã, có thể tải ảnh QR khách gửi để quét xác nhận. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
         </div>
 
         {cameraMessage ? (
