@@ -910,6 +910,7 @@ describe('NightlifeDataService', () => {
       city: 'Ha Noi',
       district: 'Tay Ho',
       phone: '+84243456007',
+      tags: ['Phòng VIP', 'Cocktail'],
       latitude: '21.063',
       longitude: '105.822',
       openingHours: { monday: { open: '19:00', close: '02:00' } },
@@ -1018,6 +1019,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'store-neon',
         slug: 'neon-club',
+        tags: ['Phòng VIP', 'Cocktail'],
         mapUrl: 'https://maps.google.com/?q=21.063,105.822',
         openingHours: { monday: { open: '19:00', close: '02:00' } },
         holidaySchedule: { specialClosures: [] },

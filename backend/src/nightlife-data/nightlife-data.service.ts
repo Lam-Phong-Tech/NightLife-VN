@@ -2038,6 +2038,7 @@ export class NightlifeDataService {
         pricingInfo: true,
         mapUrl: true,
         googlePlaceId: true,
+        tags: true,
         area: {
           select: {
             id: true,
@@ -2220,6 +2221,7 @@ export class NightlifeDataService {
         : this.normalizeCityCode(store.city),
       district: store.district,
       phone: store.phone,
+      tags: store.tags ?? [],
       latitude: this.toNumber(store.latitude),
       longitude: this.toNumber(store.longitude),
       mapUrl: store.mapUrl,

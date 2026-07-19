@@ -672,9 +672,18 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const { formatMoney } = useMoneyFormatter(activeLanguage);
   const items = store.priceReference.items;
-  const menuGroups = Array.from(
-    new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
+  const menuGroups = useMemo(
+    () =>
+      Array.from(
+        new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
+      ),
+    [items],
   );
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const activeGroup = menuGroups.includes(selectedGroup) ? selectedGroup : menuGroups[0] ?? "";
+  const visibleItems = activeGroup
+    ? items.filter((item) => item.group === activeGroup)
+    : items;
 
   return (
     <section className="menu-panel">
@@ -684,16 +693,21 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
           aria-label={translateText("Nhóm thực đơn", activeLanguage)}
         >
           {menuGroups.map((chip, index) => (
-            <span className={index === 0 ? "active" : undefined} key={chip}>
+            <button
+              className={chip === activeGroup || (!activeGroup && index === 0) ? "active" : undefined}
+              key={`${chip}-${index}`}
+              type="button"
+              onClick={() => setSelectedGroup(chip)}
+            >
               {translateText(chip, activeLanguage)}
-            </span>
+            </button>
           ))}
         </div>
       ) : null}
 
       <div className="menu-list">
-        {items.length ? (
-          items.map((item, index) => (
+        {visibleItems.length ? (
+          visibleItems.map((item, index) => (
             <div className="menu-row" key={`${item.label}-${item.amountVnd ?? index}`}>
               <PlaceholderMedia
                 className="menu-photo"
@@ -3948,7 +3962,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .feature-chips span,
-        .menu-chips span {
+        .menu-chips button {
           display: inline-flex;
           align-items: center;
           min-height: 31px;
@@ -4131,14 +4145,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding-bottom: 8px;
         }
 
-        .menu-chips span {
+        .menu-chips button {
           flex: none;
           color: var(--vy-muted);
           background: var(--vy-surface-2);
           border-color: rgba(255, 255, 255, .1);
+          font: inherit;
+          cursor: pointer;
         }
 
-        .menu-chips span.active {
+        .menu-chips button.active {
           color: var(--vy-on-gold);
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
           border-color: transparent;

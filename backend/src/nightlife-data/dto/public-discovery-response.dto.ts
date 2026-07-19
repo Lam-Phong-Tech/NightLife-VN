@@ -599,6 +599,9 @@ export class PublicStoreDetailResponseDto {
   @ApiPropertyOptional({ example: '+84243456007', nullable: true })
   phone?: string | null;
 
+  @ApiPropertyOptional({ type: [String], example: ['Phòng VIP', 'Cocktail'] })
+  tags?: string[];
+
   @ApiPropertyOptional({ example: 21.063, nullable: true })
   latitude?: number | null;
 
