@@ -2074,45 +2074,67 @@ function VideoCard({
   compact?: boolean;
 }) {
   const title = item.name.split(" · ")[0] || item.name;
+  const cardHeight = compact ? 218 : 244;
 
   return (
-    <div className="nl-home-video-card" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+    <Link
+      href={item.href}
+      className="nl-home-card nl-home-video-card"
+      aria-label={item.name}
+      style={{
+        minWidth: compact ? "min(224px, 100%)" : "0",
+        minHeight: cardHeight,
+        display: "block",
+        borderRadius: homeCardRadius,
+        border: "1px solid rgba(240,221,168,.28)",
+        color: "#fff",
+        textDecoration: "none",
+        overflow: "hidden",
+        boxShadow: "0 20px 44px rgba(0,0,0,.24)",
+      }}
+    >
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}
         label="Video"
-        style={{ height: compact ? "104px" : "148px", borderRadius: homeCardRadius, position: "relative", overflow: "hidden" }}
+        style={{ minHeight: cardHeight, height: "100%", borderRadius: homeCardRadius, position: "relative", overflow: "hidden" }}
       >
-        <Link href={item.href} aria-label={item.name} style={{ position: "absolute", inset: 0, color: "inherit" }}>
-          {item.videoUrl ? (
-            <video
-              src={item.videoUrl}
-              muted
-              loop
-              playsInline
-              autoPlay
-              preload="metadata"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          ) : null}
-          <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(12,12,15,.04),rgba(12,12,15,.44))" }} />
-          <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(243,240,234,.92)", color: colors.ink }}>
-            <Play size={17} fill={colors.ink} />
-          </span>
-        </Link>
+        {item.videoUrl ? (
+          <video
+            src={item.videoUrl}
+            muted
+            loop
+            playsInline
+            autoPlay
+            preload="metadata"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        ) : null}
+        <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(12,12,15,.08) 0%,rgba(12,12,15,.28) 44%,rgba(12,12,15,.82) 100%)" }} />
+        <span style={{ position: "absolute", left: "50%", top: "46%", transform: "translate(-50%,-50%)", width: compact ? 48 : 54, height: compact ? 48 : 54, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(243,240,234,.94)", color: colors.ink, boxShadow: "0 16px 34px rgba(0,0,0,.28)" }}>
+          <Play size={compact ? 18 : 21} fill={colors.ink} />
+        </span>
+        <div
+          style={{
+            position: "absolute",
+            left: compact ? 14 : 18,
+            right: compact ? 14 : 18,
+            bottom: compact ? 14 : 18,
+            color: "#fff",
+          }}
+        >
+          <div style={{ fontSize: compact ? "16px" : "18px", fontWeight: 950, lineHeight: 1.18 }}>{title}</div>
+          <div style={{ marginTop: "9px", display: "flex", alignItems: "center", gap: 12, color: "rgba(255,255,255,.78)", fontSize: "11px", fontWeight: 850 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Eye size={13} /> {item.viewCount ?? 0}
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Heart size={13} fill={item.liked ? colors.rose : "none"} /> {item.likeCount ?? 0}
+            </span>
+          </div>
+        </div>
       </PlaceholderMedia>
-      <Link href={item.href} style={{ color: colors.text, textDecoration: "none" }}>
-        <div style={{ marginTop: "9px", fontSize: "13px", fontWeight: 850, lineHeight: 1.25 }}>{title}</div>
-      </Link>
-      <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: 10, color: colors.muted, fontSize: "11px", fontWeight: 800 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <Eye size={13} /> {item.viewCount ?? 0}
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <Heart size={13} fill={item.liked ? colors.rose : "none"} /> {item.likeCount ?? 0}
-        </span>
-      </div>
-    </div>
+    </Link>
   );
 }
 
@@ -3186,7 +3208,14 @@ export default function Page() {
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
                 ) : videoList.length ? (
-                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact />)
+                  <HomeCardCarousel
+                    ariaLabel="Video Hot"
+                    gap={12}
+                    getKey={(item) => item.id}
+                    items={videoList}
+                    itemsPerSlide={1}
+                    renderItem={(item) => <VideoCard item={item} compact />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact />
                 )}
@@ -3332,13 +3361,20 @@ export default function Page() {
                   ariaLabel="Chọn khu vực video"
                 />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                 {!homeHotVideosEnabled ? (
                   <HomeDataMessage text={homeHotVideosPlaceholderText} />
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." />
                 ) : videoList.length ? (
-                  videoList.map((item) => <VideoCard key={item.id} item={item} />)
+                  <HomeCardCarousel
+                    ariaLabel="Video Hot"
+                    gap={16}
+                    getKey={(item) => item.id}
+                    items={videoList}
+                    itemsPerSlide={3}
+                    renderItem={(item) => <VideoCard item={item} />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} />
                 )}
