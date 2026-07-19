@@ -17,12 +17,16 @@ const runMiddleware = (
   pathname: string,
   cookies: Record<string, string> = {},
   hostname = "nightlife.test",
+  proxyHeaders: Record<string, string> = {},
 ) => {
   const cookieHeader = Object.entries(cookies)
     .map(([name, value]) => `${name}=${value}`)
     .join("; ");
   const request = new NextRequest(`https://${hostname}${pathname}`, {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    headers: {
+      ...proxyHeaders,
+      ...(cookieHeader ? { cookie: cookieHeader } : {}),
+    },
   });
 
   return middleware(request);
@@ -151,6 +155,28 @@ describe("auth middleware login-page redirects", () => {
     expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
     expect(location.searchParams.get("portal")).toBe("admin");
     expect(location.searchParams.get("redirect")).toBe("/admin");
+  });
+
+  it("uses the forwarded hostname when running behind the VPS reverse proxy", () => {
+    const response = runMiddleware("/", {}, "127.0.0.1", {
+      host: "127.0.0.1:3009",
+      "x-forwarded-host": "admin.demonightlight.test9.io.vn",
+    });
+    const location = new URL(response.headers.get("location") || "https://invalid.test");
+
+    expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
+    expect(location.searchParams.get("portal")).toBe("admin");
+    expect(location.searchParams.get("redirect")).toBe("/admin");
+  });
+
+  it("uses the Host header when X-Forwarded-Host is unavailable", () => {
+    const response = runMiddleware("/partner", {}, "127.0.0.1", {
+      host: "demonightlight.test9.io.vn",
+    });
+
+    expect(response.headers.get("location")).toBe(
+      "https://partner.demonightlight.test9.io.vn/partner",
+    );
   });
 
   it("rewrites authenticated partner hostname root to the partner application", () => {

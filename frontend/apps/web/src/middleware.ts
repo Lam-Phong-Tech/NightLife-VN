@@ -35,6 +35,13 @@ const portalSessions = [
   },
 ] as const;
 
+function getRequestHostname(request: NextRequest) {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || request.headers.get("host") || request.nextUrl.hostname;
+
+  return host.replace(/:\d+$/, "").toLowerCase();
+}
+
 /**
  * Dummy function to parse JWT payload without external dependencies in Edge Runtime.
  * In a real app, use `jose` to verify the signature as well.
@@ -95,7 +102,7 @@ function getRequestedPortal(pathname: string): AuthPortal {
 
 function externalPortalUrl(request: NextRequest, portal: AuthPortal, pathname: string) {
   const origin =
-    getNightlifeHostKind(request.nextUrl.hostname) === "local"
+    getNightlifeHostKind(getRequestHostname(request)) === "local"
       ? request.nextUrl.origin
       : portalOrigin(portal);
   const url = new URL(pathname, origin);
@@ -104,7 +111,7 @@ function externalPortalUrl(request: NextRequest, portal: AuthPortal, pathname: s
 }
 
 function centralLoginUrl(request: NextRequest, portal: AuthPortal, redirectPath: string) {
-  if (getNightlifeHostKind(request.nextUrl.hostname) === "local") {
+  if (getNightlifeHostKind(getRequestHostname(request)) === "local") {
     const localLoginPath =
       portal === "admin"
         ? "/admin/dang-nhap"
@@ -151,7 +158,7 @@ function redirectPartnerRegistration(request: NextRequest) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostKind = getNightlifeHostKind(request.nextUrl.hostname);
+  const hostKind = getNightlifeHostKind(getRequestHostname(request));
   const memberPaths = ["/tai-khoan", "/bao-mat-tai-khoan", "/da-luu", "/gui-hoa-don", "/vi-uu-dai"];
   const isMemberPath = memberPaths.some((p) => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith("/partner");
