@@ -9,6 +9,10 @@ import { AdminPagination, paginateAdminItems, adminPageSize } from '../component
 import { getAuthUser } from '@/lib/auth/session';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { DataSkeleton } from '@/components/ui/DataLoading';
+import {
+  getStoreImageValidationError,
+  STORE_IMAGE_ACCEPT,
+} from '@/lib/media/image-upload-validation';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -749,6 +753,15 @@ function AdminStoresContent() {
   const handleUploadMenuImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadingMenuImageId) return;
+
+    const validationError = getStoreImageValidationError(file);
+    if (validationError) {
+      showToast(validationError);
+      setUploadingMenuImageId(null);
+      e.target.value = '';
+      return;
+    }
+
     try {
       const form = new FormData();
       form.append('file', file);
@@ -776,9 +789,10 @@ function AdminStoresContent() {
     if (!files || files.length === 0) return;
     const file = files[0];
     if (!file) return;
-    
-    if (file.size > 15 * 1024 * 1024) {
-      showToast(`Ảnh "${file.name}" vượt quá dung lượng 15MB`);
+
+    const validationError = getStoreImageValidationError(file);
+    if (validationError) {
+      showToast(validationError);
       if (coverImageUploadRef.current) coverImageUploadRef.current.value = '';
       return;
     }
@@ -798,7 +812,8 @@ function AdminStoresContent() {
         showToast('Lỗi tải lên ảnh bìa');
       }
     } catch (err) {
-      showToast('Có lỗi khi tải lên');
+      const message = err instanceof Error ? err.message : 'Không tải ảnh lên được. Vui lòng thử lại.';
+      showToast(`Không thể tải ảnh bìa "${file.name}": ${message}`);
     } finally {
       setUploadingCover(false);
       if (coverImageUploadRef.current) coverImageUploadRef.current.value = '';
@@ -815,18 +830,20 @@ function AdminStoresContent() {
       return;
     }
 
+    const selectedFiles = Array.from(files);
+    const validationError = selectedFiles
+      .map(getStoreImageValidationError)
+      .find((message): message is string => Boolean(message));
+    if (validationError) {
+      showToast(validationError);
+      if (imageUploadRef.current) imageUploadRef.current.value = '';
+      return;
+    }
+
     try {
       setUploadingImage(true);
       const uploaded: any[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!file) continue;
-
-        if (file.size > 15 * 1024 * 1024) {
-          showToast(`Ảnh "${file.name}" vượt quá dung lượng 15MB`);
-          continue;
-        }
-
+      for (const file of selectedFiles) {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');
@@ -1476,7 +1493,7 @@ function AdminStoresContent() {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                   </span>
                 )}
-                <input type="file" accept="image/*" hidden ref={coverImageUploadRef} onChange={handleUploadCoverImage} />
+                <input type="file" accept={STORE_IMAGE_ACCEPT} hidden ref={coverImageUploadRef} onChange={handleUploadCoverImage} />
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Album ảnh</div>
@@ -1491,7 +1508,7 @@ function AdminStoresContent() {
                 <div onClick={() => imageUploadRef.current?.click()} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   <span style={{ fontSize: '9.5px' }}>{uploadingImage ? 'Đang tải...' : 'Tải lên'}</span>
-                  <input type="file" accept="image/*" multiple hidden ref={imageUploadRef} onChange={handleUploadImage} />
+                  <input type="file" accept={STORE_IMAGE_ACCEPT} multiple hidden ref={imageUploadRef} onChange={handleUploadImage} />
                 </div>
               </div>
 
@@ -1613,7 +1630,7 @@ function AdminStoresContent() {
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
                   </div>
                 )}
-                <input type="file" accept="image/*" hidden ref={menuImageUploadRef} onChange={handleUploadMenuImage} />
+                <input type="file" accept={STORE_IMAGE_ACCEPT} hidden ref={menuImageUploadRef} onChange={handleUploadMenuImage} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>

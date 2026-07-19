@@ -20,4 +20,15 @@ describe("API client messages", () => {
       "予約リクエストが多すぎます。少し待ってからもう一度お試しください。",
     );
   });
+
+  it("localizes the storage API unsupported-file response", () => {
+    expect(
+      translateApiMessage(
+        "Unsupported file type. Upload image, SVG, video, or PDF files only.",
+        400,
+      ),
+    ).toBe(
+      "File không đúng định dạng. Chỉ chấp nhận ảnh JPG, JPEG, PNG, WebP, GIF, SVG; video MP4, WebM hoặc file PDF.",
+    );
+  });
 });

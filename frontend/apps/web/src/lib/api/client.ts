@@ -161,6 +161,8 @@ const exactMessageTranslations: Record<string, string> = {
   "usedat must be a valid iso date": "Thời gian sử dụng không hợp lệ.",
   "unsupported file type. upload image, video, or pdf files only":
     "File không đúng định dạng. Vui lòng tải ảnh, video hoặc PDF.",
+  "unsupported file type. upload image, svg, video, or pdf files only":
+    "File không đúng định dạng. Chỉ chấp nhận ảnh JPG, JPEG, PNG, WebP, GIF, SVG; video MP4, WebM hoặc file PDF.",
   "you cannot access this media file": "Bạn không có quyền xem file này.",
   "user not found": "Không tìm thấy tài khoản.",
   "access must be public or protected": "Quyền truy cập file không hợp lệ.",
