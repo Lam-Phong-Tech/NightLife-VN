@@ -179,6 +179,32 @@ describe("auth middleware login-page redirects", () => {
     );
   });
 
+  it.each([
+    ["admin", "/admin", "/admin/dang-nhap"],
+    ["partner", "/partner", "/dang-nhap-doi-tac"],
+    ["member", "/tai-khoan", "/dang-nhap"],
+  ])(
+    "redirects the central auth root to the visible %s login path",
+    (portal, redirectPath, expectedLoginPath) => {
+      const response = runMiddleware(
+        `/?portal=${portal}&redirect=${encodeURIComponent(redirectPath)}`,
+        {},
+        "127.0.0.1",
+        {
+          host: "127.0.0.1:3009",
+          "x-forwarded-host": "auth.demonightlight.test9.io.vn",
+        },
+      );
+      const location = new URL(response.headers.get("location") || "https://invalid.test");
+
+      expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+      expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
+      expect(location.pathname).toBe(expectedLoginPath);
+      expect(location.searchParams.get("portal")).toBe(portal);
+      expect(location.searchParams.get("redirect")).toBe(redirectPath);
+    },
+  );
+
   it("rewrites authenticated partner hostname root to the partner application", () => {
     const response = runMiddleware(
       "/",

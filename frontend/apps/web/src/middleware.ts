@@ -195,7 +195,9 @@ export function middleware(request: NextRequest) {
           : portal === "partner"
             ? "/dang-nhap-doi-tac"
             : "/dang-nhap";
-      return NextResponse.rewrite(new URL(loginPath + request.nextUrl.search, request.url));
+      return NextResponse.redirect(
+        new URL(loginPath + request.nextUrl.search, nightlifeOrigins.auth),
+      );
     }
 
     if (!loginPaths.has(pathname)) {
