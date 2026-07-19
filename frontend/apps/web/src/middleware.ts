@@ -143,7 +143,7 @@ function redirectActiveSession(
   const portal = portalForRole(session.role);
   const requestedPortal = getRequestedPortalForNotice(request, requestedPathname);
   if (getNightlifeHostKind(getRequestHostname(request)) === "auth") {
-    const handoffUrl = new URL("/chuyen-tiep", request.url);
+    const handoffUrl = new URL("/chuyen-tiep", nightlifeOrigins.auth);
     handoffUrl.searchParams.set("portal", portal);
     handoffUrl.searchParams.set("redirect", portalHomePath(portal));
     handoffUrl.searchParams.set("auth_notice", "login-blocked");

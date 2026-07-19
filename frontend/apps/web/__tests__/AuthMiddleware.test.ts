@@ -205,4 +205,22 @@ describe("auth middleware login-page redirects", () => {
     expect(location.searchParams.get("active_role")).toBe("OPERATOR");
     expect(location.searchParams.get("requested_portal")).toBe("partner");
   });
+
+  it("keeps the central handoff on the public auth hostname behind the reverse proxy", () => {
+    const response = runMiddleware(
+      "/?portal=partner",
+      { admin_auth_token: createToken("ADMIN") },
+      "127.0.0.1",
+      {
+        host: "127.0.0.1:3009",
+        "x-forwarded-host": "auth.demonightlight.test9.io.vn",
+      },
+    );
+    const location = new URL(response.headers.get("location") || "https://invalid.test");
+
+    expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
+    expect(location.pathname).toBe("/chuyen-tiep");
+    expect(location.searchParams.get("portal")).toBe("admin");
+    expect(location.searchParams.get("requested_portal")).toBe("partner");
+  });
 });
