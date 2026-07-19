@@ -435,7 +435,13 @@ const savedPageCss = `
   }
 
   .saved-tabs button {
-    min-height: 42px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 0 12px;
     border: 0;
     border-radius: 7px;
     background: transparent;
@@ -451,8 +457,35 @@ const savedPageCss = `
   }
 
   .saved-tabs span {
-    margin-left: 5px;
-    opacity: 0.75;
+    flex: none;
+    min-width: 86px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(212, 178, 106, 0.34);
+    border-radius: 999px;
+    background: rgba(212, 178, 106, 0.12);
+    color: #f0dda8;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    line-height: 1;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .saved-tabs button:first-child span::after {
+    content: " quán đã lưu";
+  }
+
+  .saved-tabs button:nth-child(2) span::after {
+    content: " cast đã lưu";
+  }
+
+  .saved-tabs button.active span {
+    border-color: rgba(36, 26, 10, 0.24);
+    background: rgba(36, 26, 10, 0.16);
+    color: #241a0a;
+    box-shadow: none;
   }
 
   .saved-list,
@@ -607,6 +640,20 @@ const savedPageCss = `
   @media (max-width: 520px) {
     .saved-page {
       padding: 18px 16px 16px;
+    }
+
+    .saved-tabs button {
+      min-height: 62px;
+      flex-direction: column;
+      gap: 5px;
+      padding: 8px 6px;
+      font-size: 13px;
+    }
+
+    .saved-tabs span {
+      min-width: 94px;
+      padding: 6px 10px;
+      font-size: 11px;
     }
 
     .saved-link {
