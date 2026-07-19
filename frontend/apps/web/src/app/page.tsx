@@ -215,11 +215,6 @@ const vietnamServiceCityCodes = [
   "tuyenquang",
 ] as const;
 
-const rankTabs = [
-  { id: "cast", label: "Cast" },
-  { id: "quan", label: "Quán" },
-];
-
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
   CLUB: "Club",
@@ -2452,29 +2447,125 @@ function ServiceFilterControls({
 
 function RankingSectionHeader({
   title = homeSectionTitleFallbacks.ranking,
-  activeTab,
-  onTabChange,
   activeRegion,
   onRegionChange,
 }: {
   title?: string;
-  activeTab: string;
-  onTabChange: (value: string) => void;
   activeRegion: ServiceRegion;
   onRegionChange: (value: ServiceRegion) => void;
 }) {
   return (
-    <div style={{ display: "grid", gap: "12px", marginBottom: "13px" }}>
-      <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
-        <div style={{ minWidth: 0, flex: "none" }}>
-          <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
-        </div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "end",
+        justifyContent: "space-between",
+        gap: "12px",
+        flexWrap: "wrap",
+        marginBottom: "13px",
+      }}
+    >
+      <div style={{ minWidth: 0, flex: "none" }}>
+        <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <TabSwitch items={rankTabs} active={activeTab} onChange={onTabChange} />
-        <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
+      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
+    </div>
+  );
+}
+
+function RankingListColumn({
+  title,
+  items,
+  emptyText,
+}: {
+  title: string;
+  items: RankedItem[];
+  emptyText: string;
+}) {
+  const list = items.slice(0, 5);
+
+  return (
+    <div
+      className="nl-home-ranking-column"
+      style={{
+        minWidth: 0,
+        display: "grid",
+        alignContent: "start",
+        gap: "10px",
+        padding: "12px",
+        borderRadius: homeCardRadius,
+        border: `1px solid ${colors.line}`,
+        background: "linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015))",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "10px",
+          minHeight: 32,
+        }}
+      >
+        <span style={{ color: colors.text, fontSize: 16, fontWeight: 950, lineHeight: 1.15 }}>{title}</span>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            minHeight: 24,
+            borderRadius: 999,
+            padding: "0 10px",
+            color: colors.goldSoft,
+            background: "rgba(212,178,106,.12)",
+            border: "1px solid rgba(212,178,106,.22)",
+            fontSize: 11,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Top 5
+        </span>
       </div>
+
+      {list.length ? (
+        <div style={{ display: "grid", gap: "10px", minWidth: 0 }}>
+          {list.map((item) => (
+            <RankingRow key={`${title}-${item.rank}-${item.href ?? item.name}`} item={item} />
+          ))}
+        </div>
+      ) : (
+        <HomeDataMessage text={emptyText} compact minHeight={118} />
+      )}
+    </div>
+  );
+}
+
+function RankingSplitPanel({
+  castItems,
+  storeItems,
+  error,
+  stacked = false,
+}: {
+  castItems: RankedItem[];
+  storeItems: RankedItem[];
+  error?: string;
+  stacked?: boolean;
+}) {
+  const emptyText = error || "Chưa có dữ liệu xếp hạng.";
+
+  return (
+    <div
+      className="nl-home-ranking-split"
+      style={{
+        display: "grid",
+        gridTemplateColumns: stacked ? "1fr" : "repeat(2, minmax(0, 1fr))",
+        gap: stacked ? "12px" : "14px",
+        alignItems: "start",
+      }}
+    >
+      <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} />
+      <RankingListColumn title="Quán" items={storeItems} emptyText={emptyText} />
     </div>
   );
 }
@@ -2487,7 +2578,6 @@ export default function Page() {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const { rates } = useMoneyFormatter(activeLanguage);
-  const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
@@ -2554,7 +2644,6 @@ export default function Page() {
       const orderB = getHomeBannerMetadata(b).order;
       return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
     }), [homeBanners]);
-  const rankList = (activeRankTab === "quan" ? storeRankItems : castRankItems).slice(0, 5);
   const svc = featuredServices;
   const videoList = homeVideos;
 
@@ -3018,20 +3107,16 @@ export default function Page() {
             <section data-testid="home-mobile-ranking" style={{ marginTop: "22px" }}>
               <RankingSectionHeader
                 title={homeSectionTitles.ranking}
-                activeTab={activeRankTab}
-                onTabChange={setActiveRankTab}
                 activeRegion={activeRankRegion}
                 onRegionChange={setActiveRankRegion}
               />
-              <div style={{ display: "grid", gap: "10px" }}>
-                {isRankingsLoading ? (
-                  <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
-                ) : rankList.length ? (
-                  rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
-                ) : (
-                  <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
-                )}
-              </div>
+              {isRankingsLoading ? (
+                <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
+              ) : castRankItems.length || storeRankItems.length ? (
+                <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} stacked />
+              ) : (
+                <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
+              )}
             </section>
 
             <div style={{ marginTop: "20px" }}>
@@ -3171,20 +3256,16 @@ export default function Page() {
               <div style={{ marginTop: "34px" }}>
                 <RankingSectionHeader
                   title={homeSectionTitles.ranking}
-                  activeTab={activeRankTab}
-                  onTabChange={setActiveRankTab}
                   activeRegion={activeRankRegion}
                   onRegionChange={setActiveRankRegion}
                 />
-                <div style={{ display: "grid", gap: "12px" }}>
-                  {isRankingsLoading ? (
-                    <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
-                  ) : rankList.length ? (
-                    rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
-                  ) : (
-                    <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
-                  )}
-                </div>
+                {isRankingsLoading ? (
+                  <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
+                ) : castRankItems.length || storeRankItems.length ? (
+                  <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} />
+                ) : (
+                  <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
+                )}
               </div>
             </section>
 
