@@ -6597,11 +6597,18 @@ export class NightlifeDataService {
   }
 
   previewBillOcr(user: AuthenticatedUser, dto: BillOcrPreviewDto) {
-    const text = [dto.text, dto.fileName].filter(Boolean).join('\n');
+    const text = dto.text?.trim() ?? '';
+    const hasExtractedText = text.length > 0;
     const amount = this.extractBillOcrAmount(text);
     const usedAt = this.extractBillOcrUsedAt(text);
     const normalizedText = text.trim().replace(/\s+/g, ' ');
     const warnings: string[] = [];
+
+    if (!hasExtractedText) {
+      warnings.push(
+        'Chưa có text OCR từ file ảnh/PDF; hệ thống không tự đọc trực tiếp ảnh này, vui lòng nhập tổng tiền thủ công.',
+      );
+    }
 
     if (!amount) {
       warnings.push('Không đọc được tổng tiền, cần nhập tay totalVnd.');
@@ -6621,17 +6628,9 @@ export class NightlifeDataService {
       warnings.push('Thời gian OCR đã quá hạn nhận bill 10 ngày.');
     }
 
-    if (!dto.text?.trim()) {
-      warnings.push(
-        'Chưa có text OCR từ file ảnh/PDF; hệ thống đang dùng tên file làm fallback.',
-      );
-    }
-
-    const confidence =
-      0.15 +
-      (amount ? 0.45 : 0) +
-      (usedAt ? 0.3 : 0) +
-      (dto.text?.trim() ? 0.1 : 0);
+    const confidence = hasExtractedText
+      ? 0.15 + (amount ? 0.45 : 0) + (usedAt ? 0.3 : 0) + 0.1
+      : 0.05;
     const confidenceScore = Math.min(0.95, Math.round(confidence * 100) / 100);
 
     return {
@@ -6644,7 +6643,7 @@ export class NightlifeDataService {
         textHash: normalizedText
           ? createHash('sha256').update(normalizedText).digest('hex')
           : null,
-        hasExtractedText: Boolean(dto.text?.trim()),
+        hasExtractedText,
       },
       suggestions: {
         totalVnd: amount,
@@ -6654,12 +6653,12 @@ export class NightlifeDataService {
         totalVnd: {
           value: amount,
           confidence: amount ? 0.86 : 0,
-          source: amount ? 'text_or_filename_amount_pattern' : 'not_found',
+          source: amount ? 'text_amount_pattern' : 'not_found',
         },
         usedAt: {
           value: usedAt?.toISOString() ?? null,
           confidence: usedAt ? 0.76 : 0,
-          source: usedAt ? 'text_or_filename_date_pattern' : 'not_found',
+          source: usedAt ? 'text_date_pattern' : 'not_found',
         },
       },
       confidence: confidenceScore,

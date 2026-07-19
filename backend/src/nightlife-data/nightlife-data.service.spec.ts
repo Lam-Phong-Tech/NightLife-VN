@@ -5507,6 +5507,36 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('does not trust bill OCR data inferred only from the file name', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-04T00:00:00.000Z'));
+
+    expect(
+      service.previewBillOcr(
+        { id: 'member-1', role: 'USER' },
+        {
+          fileName: 'Screenshot 2026-06-26 172031.png',
+          text: '',
+        },
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        suggestions: {
+          totalVnd: null,
+          usedAt: null,
+        },
+        input: expect.objectContaining({
+          hasExtractedText: false,
+        }),
+        confidence: 0.05,
+        nextAction: 'MANUAL_REVIEW',
+        requiresManualReview: true,
+        warnings: expect.arrayContaining([
+          expect.stringContaining('Chưa có text OCR từ file ảnh/PDF'),
+        ]),
+      }),
+    );
+  });
+
   it('submits a member bill and sends the admin alert', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({

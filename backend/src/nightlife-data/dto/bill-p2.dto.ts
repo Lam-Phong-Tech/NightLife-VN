@@ -13,7 +13,8 @@ import {
 export class BillOcrPreviewDto {
   @ApiPropertyOptional({
     example: 'bill-total-1800000-used-2026-07-03-21-30.png',
-    description: 'Original uploaded file name used as OCR fallback context.',
+    description:
+      'Original uploaded file name for audit/display only. It is not used as an OCR extraction source.',
   })
   @IsOptional()
   @IsString()
@@ -23,7 +24,7 @@ export class BillOcrPreviewDto {
   @ApiPropertyOptional({
     example: 'Tong cong: 1.800.000 VND\nNgay: 03/07/2026 21:30',
     description:
-      'Optional text extracted client-side from a text/PDF bill before calling the preview endpoint.',
+      'Optional text extracted by a real OCR/text extraction step before calling the preview endpoint.',
   })
   @IsOptional()
   @IsString()

@@ -85,6 +85,18 @@ type FormNotice =
   | { tone: "warning" | "danger"; message: string };
 
 const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
+  "Ảnh/PDF hiện chưa có text OCR. Hệ thống không đọc trực tiếp ảnh này; vui lòng nhập tổng tiền thủ công và dùng file làm chứng từ.": {
+    en: "This image/PDF has no OCR text yet. The system cannot read this file directly; please enter the total manually and keep the file as evidence.",
+    ja: "この画像/PDFにはまだOCRテキストがありません。システムはこのファイルを直接読み取れないため、合計金額を手入力し、ファイルは証憑として使用してください。",
+    ko: "이 이미지/PDF에는 아직 OCR 텍스트가 없습니다. 시스템이 이 파일을 직접 읽을 수 없으므로 총액을 직접 입력하고 파일은 증빙으로 사용해 주세요.",
+    zh: "此图片/PDF 暂无 OCR 文本。系统无法直接读取该文件，请手动输入总金额，并将文件作为凭证。",
+  },
+  "Không có dữ liệu OCR để tự điền. Vui lòng nhập tổng tiền thủ công.": {
+    en: "There is no OCR data to autofill. Please enter the total manually.",
+    ja: "自動入力できるOCRデータがありません。合計金額を手入力してください。",
+    ko: "자동 입력할 OCR 데이터가 없습니다. 총액을 직접 입력해 주세요.",
+    zh: "没有可用于自动填写的 OCR 数据。请手动输入总金额。",
+  },
   "Đối soát hóa đơn": {
     en: "Bill reconciliation",
     ja: "請求書の照合",
@@ -989,8 +1001,7 @@ export default function Page() {
   const readEvidenceText = async (file: File) => {
     if (
       file.type.startsWith("text/") ||
-      file.type === "application/pdf" ||
-      /\.(txt|csv|pdf)$/i.test(file.name)
+      /\.(txt|csv)$/i.test(file.name)
     ) {
       try {
         return (await file.text()).slice(0, 8000);
@@ -1021,22 +1032,41 @@ export default function Page() {
         fileName: evidenceFile.name,
         text: await readEvidenceText(evidenceFile),
       });
+      const hasExtractedText = Boolean(preview.input?.hasExtractedText);
+      const amountConfidence = preview.extractedFields?.totalVnd?.confidence ?? 0;
+      const canPrefillAmount = Boolean(
+        hasExtractedText && preview.suggestions.totalVnd && amountConfidence >= 0.75,
+      );
       setOcrPreview(preview);
-      if (preview.suggestions.totalVnd) {
+      if (canPrefillAmount && preview.suggestions.totalVnd) {
         setAmountInput(preview.suggestions.totalVnd.toLocaleString("vi-VN"));
       }
+      const noticeMessage = !hasExtractedText
+        ? t(
+            "Ảnh/PDF hiện chưa có text OCR. Hệ thống không đọc trực tiếp ảnh này; vui lòng nhập tổng tiền thủ công và dùng file làm chứng từ.",
+          )
+        : canPrefillAmount
+          ? preview.requiresManualReview
+            ? t("Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.")
+            : t("Công cụ đọc hóa đơn đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc đã xác nhận.")
+          : t("Không có dữ liệu OCR để tự điền. Vui lòng nhập tổng tiền thủ công.");
       setNotice({
-        tone: preview.requiresManualReview ? "warning" : "success",
-        message: preview.requiresManualReview
-          ? t("Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.")
-          : t("Công cụ đọc hóa đơn đã điền tổng tiền. Thời gian sử dụng vẫn lấy từ mốc đã xác nhận."),
+        tone: canPrefillAmount && !preview.requiresManualReview ? "success" : "warning",
+        message: noticeMessage,
       });
-      userFeedback.success({
-        title: "Đã đọc hóa đơn",
-        description: preview.requiresManualReview
-          ? t("Vui lòng kiểm tra lại dữ liệu gợi ý trước khi gửi.")
-          : t("Tổng tiền đã được điền theo dữ liệu hóa đơn."),
-      });
+      if (canPrefillAmount && !preview.requiresManualReview) {
+        userFeedback.success({
+          title: "Đã đọc hóa đơn",
+          description: t("Tổng tiền đã được điền theo dữ liệu hóa đơn."),
+        });
+      } else {
+        userFeedback.warning({
+          title: "Không đọc được hóa đơn tự động",
+          description: !hasExtractedText
+            ? t("Không có dữ liệu OCR để tự điền. Vui lòng nhập tổng tiền thủ công.")
+            : t("Vui lòng kiểm tra lại dữ liệu gợi ý trước khi gửi."),
+        });
+      }
     } catch (error) {
       const message = t(cleanApiMessage(error));
       setNotice({ tone: "danger", message });
@@ -1703,7 +1733,12 @@ export default function Page() {
                     <div className="nl-ocr-header">
                       <Sparkles size={14} className="nl-ocr-sparkle" />
                       <strong>
-                        {t("Gợi ý từ công cụ đọc hóa đơn")} ({t("Độ tin cậy")} {Math.round(ocrPreview.confidence * 100)}%)
+                        {t(
+                          ocrPreview.suggestions.totalVnd || ocrPreview.suggestions.usedAt
+                            ? "Gợi ý từ công cụ đọc hóa đơn"
+                            : "Không đọc được, cần nhập tay",
+                        )}{" "}
+                        ({t("Độ tin cậy")} {Math.round(ocrPreview.confidence * 100)}%)
                       </strong>
                     </div>
                     <div className="nl-ocr-results-grid">
