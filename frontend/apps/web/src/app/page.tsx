@@ -3355,7 +3355,7 @@ export default function Page() {
               </div>
             </section>
 
-            <section data-testid="home-mobile-video" style={{ marginTop: "22px", paddingBottom: "22px" }}>
+            <section data-testid="home-mobile-video" style={{ marginTop: "22px", paddingBottom: "calc(104px + env(safe-area-inset-bottom))" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
                 <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
                 <RankingRegionDropdown
