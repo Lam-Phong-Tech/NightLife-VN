@@ -21613,6 +21613,7 @@ export class NightlifeDataService {
 
   async listPublicHomeRecommendations(query: PublicHomeContentQueryDto = {}) {
     const cityCode = this.normalizeHotVideoCityCode(query.cityCode ?? 'all');
+    const rankingCityCode = cityCode === 'all' ? undefined : cityCode;
     const limit = this.resolvePublicHomeLimit(query.limit, 8, 16);
     const preferredCategories = this.parsePublicHomeCategories(
       query.categories,
@@ -21629,7 +21630,7 @@ export class NightlifeDataService {
         scope: 'recommend-home',
         status: 'ACTIVE',
         deletedAt: null,
-        ...this.buildPublicRankingConfigCityWhere(cityCode),
+        ...this.buildPublicRankingConfigCityWhere(rankingCityCode),
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
       },

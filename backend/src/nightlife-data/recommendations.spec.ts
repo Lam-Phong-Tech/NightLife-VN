@@ -207,6 +207,91 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
         }),
       );
     });
+
+    it('should include pinned stores from every city when cityCode is all', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-all', cityCode: 'all', pinRank: 1 },
+        { targetId: 'store-hn', cityCode: 'hn', pinRank: 2 },
+        { targetId: 'store-hcm', cityCode: 'hcm', pinRank: 3 },
+      ] as any);
+
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-all',
+          name: 'All City Store',
+          slug: 'all-city-store',
+          category: 'CLUB',
+          description: 'Pinned for all',
+          city: 'Da Nang',
+          district: 'Hai Chau',
+          areaId: 'area-dn',
+          area: {
+            id: 'area-dn',
+            code: 'dn-haichau',
+            name: 'Hai Chau',
+            city: 'Da Nang',
+            district: 'Hai Chau',
+          },
+          media: [],
+          coupons: [],
+        },
+        {
+          id: 'store-hn',
+          name: 'Hanoi Store',
+          slug: 'hanoi-store',
+          category: 'BAR',
+          description: 'Pinned for Hanoi',
+          city: 'Hanoi',
+          district: 'Hoan Kiem',
+          areaId: 'area-hn',
+          area: {
+            id: 'area-hn',
+            code: 'hn-hoankiem',
+            name: 'Hoan Kiem',
+            city: 'Hanoi',
+            district: 'Hoan Kiem',
+          },
+          media: [],
+          coupons: [],
+        },
+        {
+          id: 'store-hcm',
+          name: 'HCM Store',
+          slug: 'hcm-store',
+          category: 'LOUNGE',
+          description: 'Pinned for HCM',
+          city: 'Ho Chi Minh City',
+          district: 'District 1',
+          areaId: 'area-hcm',
+          area: {
+            id: 'area-hcm',
+            code: 'hcm-district-1',
+            name: 'District 1',
+            city: 'Ho Chi Minh City',
+            district: 'District 1',
+          },
+          media: [],
+          coupons: [],
+        },
+      ] as any);
+
+      prisma.auditLog.groupBy.mockResolvedValue([]);
+      prisma.booking.groupBy.mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'all',
+        limit: 8,
+      });
+      const rankingFindArgs = (prisma.rankingConfig.findMany as jest.Mock).mock
+        .calls[0][0];
+
+      expect(rankingFindArgs.where).not.toHaveProperty('cityCode');
+      expect(result.map((store) => store.id)).toEqual([
+        'store-all',
+        'store-hn',
+        'store-hcm',
+      ]);
+    });
   });
 
   describe('Validation & Maximum Limits', () => {

@@ -9493,7 +9493,7 @@ describe('NightlifeDataService', () => {
       );
     });
 
-    it('queries default cityCode as all when query.cityCode is not specified or is all', async () => {
+    it('does not constrain pinned recommendations by city when query.cityCode is not specified or is all', async () => {
       prisma.rankingConfig.findMany.mockResolvedValue([] as never);
       prisma.store.findMany.mockResolvedValue([] as never);
       (prisma.auditLog.groupBy as jest.Mock).mockResolvedValue([]);
@@ -9502,14 +9502,15 @@ describe('NightlifeDataService', () => {
       // Call without cityCode
       await service.listPublicHomeRecommendations({ limit: 5 });
 
-      expect(prisma.rankingConfig.findMany).toHaveBeenLastCalledWith(
+      const rankingFindCalls = (prisma.rankingConfig.findMany as jest.Mock).mock
+        .calls;
+      let rankingFindArgs = rankingFindCalls[rankingFindCalls.length - 1][0];
+      expect(rankingFindArgs.where).toEqual(
         expect.objectContaining({
-          where: expect.objectContaining({
-            scope: 'recommend-home',
-            cityCode: 'all',
-          }),
+          scope: 'recommend-home',
         }),
       );
+      expect(rankingFindArgs.where).not.toHaveProperty('cityCode');
 
       // Call with 'all'
       await service.listPublicHomeRecommendations({
@@ -9517,14 +9518,13 @@ describe('NightlifeDataService', () => {
         limit: 5,
       });
 
-      expect(prisma.rankingConfig.findMany).toHaveBeenLastCalledWith(
+      rankingFindArgs = rankingFindCalls[rankingFindCalls.length - 1][0];
+      expect(rankingFindArgs.where).toEqual(
         expect.objectContaining({
-          where: expect.objectContaining({
-            scope: 'recommend-home',
-            cityCode: 'all',
-          }),
+          scope: 'recommend-home',
         }),
       );
+      expect(rankingFindArgs.where).not.toHaveProperty('cityCode');
     });
   });
 });
