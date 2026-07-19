@@ -435,7 +435,7 @@ const savedPageCss = `
   }
 
   .saved-tabs button {
-    min-height: 50px;
+    min-height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -458,7 +458,7 @@ const savedPageCss = `
 
   .saved-tabs span {
     flex: none;
-    min-width: 86px;
+    min-width: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -466,19 +466,11 @@ const savedPageCss = `
     border-radius: 999px;
     background: rgba(212, 178, 106, 0.12);
     color: #f0dda8;
-    padding: 6px 10px;
+    padding: 6px 9px;
     font-size: 12px;
     font-weight: 950;
     line-height: 1;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  }
-
-  .saved-tabs button:first-child span::after {
-    content: " quán đã lưu";
-  }
-
-  .saved-tabs button:nth-child(2) span::after {
-    content: " cast đã lưu";
   }
 
   .saved-tabs button.active span {
@@ -643,16 +635,16 @@ const savedPageCss = `
     }
 
     .saved-tabs button {
-      min-height: 62px;
-      flex-direction: column;
-      gap: 5px;
-      padding: 8px 6px;
+      min-height: 50px;
+      flex-direction: row;
+      gap: 8px;
+      padding: 0 8px;
       font-size: 13px;
     }
 
     .saved-tabs span {
-      min-width: 94px;
-      padding: 6px 10px;
+      min-width: 30px;
+      padding: 6px 8px;
       font-size: 11px;
     }
 
