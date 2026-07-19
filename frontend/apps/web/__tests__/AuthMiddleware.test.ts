@@ -203,5 +203,6 @@ describe("auth middleware login-page redirects", () => {
     expect(location.pathname).toBe("/chuyen-tiep");
     expect(location.searchParams.get("portal")).toBe("admin");
     expect(location.searchParams.get("active_role")).toBe("OPERATOR");
+    expect(location.searchParams.get("requested_portal")).toBe("partner");
   });
 });

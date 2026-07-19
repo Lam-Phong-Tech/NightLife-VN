@@ -100,6 +100,15 @@ function getRequestedPortal(pathname: string): AuthPortal {
   return "member";
 }
 
+function getRequestedPortalForNotice(request: NextRequest, pathname: string): AuthPortal {
+  const portal = request.nextUrl.searchParams.get("portal");
+  if (portal === "admin" || portal === "partner" || portal === "member") {
+    return portal;
+  }
+
+  return getRequestedPortal(pathname);
+}
+
 function externalPortalUrl(request: NextRequest, portal: AuthPortal, pathname: string) {
   const origin =
     getNightlifeHostKind(getRequestHostname(request)) === "local"
@@ -132,19 +141,20 @@ function redirectActiveSession(
   requestedPathname: string,
 ) {
   const portal = portalForRole(session.role);
-  if (getNightlifeHostKind(request.nextUrl.hostname) === "auth") {
+  const requestedPortal = getRequestedPortalForNotice(request, requestedPathname);
+  if (getNightlifeHostKind(getRequestHostname(request)) === "auth") {
     const handoffUrl = new URL("/chuyen-tiep", request.url);
     handoffUrl.searchParams.set("portal", portal);
     handoffUrl.searchParams.set("redirect", portalHomePath(portal));
     handoffUrl.searchParams.set("auth_notice", "login-blocked");
-    handoffUrl.searchParams.set("requested_portal", getRequestedPortal(requestedPathname));
+    handoffUrl.searchParams.set("requested_portal", requestedPortal);
     handoffUrl.searchParams.set("active_role", session.role);
     return NextResponse.redirect(handoffUrl);
   }
 
   const redirectUrl = externalPortalUrl(request, portal, session.homePath);
   redirectUrl.searchParams.set("auth_notice", "login-blocked");
-  redirectUrl.searchParams.set("requested_portal", getRequestedPortal(requestedPathname));
+  redirectUrl.searchParams.set("requested_portal", requestedPortal);
   redirectUrl.searchParams.set("active_role", session.role);
   return NextResponse.redirect(redirectUrl);
 }
