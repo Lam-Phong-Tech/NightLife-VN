@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
 import { useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth/session';
@@ -41,6 +41,195 @@ const ZODIAC_SIGNS = [
   { value: 'Aquarius', label: 'Bảo Bình' },
   { value: 'Pisces', label: 'Song Ngư' },
 ];
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  VN: 'Tiếng Việt',
+  VI: 'Tiếng Việt',
+  EN: 'Tiếng Anh',
+  JP: 'Tiếng Nhật',
+  JA: 'Tiếng Nhật',
+  KR: 'Tiếng Hàn',
+  KO: 'Tiếng Hàn',
+  CN: 'Tiếng Trung',
+  ZH: 'Tiếng Trung',
+};
+
+type FilterOption = {
+  value: string;
+  label: string;
+};
+
+type CastFilterStore = {
+  area?: string | { id?: string; name?: string } | null;
+  district?: string | null;
+  city?: string | null;
+};
+
+type AdvancedFilterDropdownProps = {
+  label: string;
+  value: string;
+  placeholder: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+};
+
+function AdvancedFilterDropdown({
+  label,
+  value,
+  placeholder,
+  options,
+  onChange,
+}: AdvancedFilterDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
+
+  return (
+    <div ref={pickerRef} style={{ position: 'relative', minWidth: 0 }}>
+      <div style={{ color: colors.muted, fontSize: '11px', fontWeight: 700, letterSpacing: '.7px', marginBottom: '8px', textTransform: 'uppercase' }}>
+        {label}
+      </div>
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+        style={{
+          width: '100%',
+          height: '42px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          padding: '0 13px',
+          borderRadius: '10px',
+          border: `1px solid ${isOpen ? colors.gold : colors.borderSoft}`,
+          background: isOpen ? 'rgba(212,178,106,.08)' : colors.bg,
+          color: selectedOption ? colors.text : colors.muted,
+          cursor: 'pointer',
+          fontSize: '13px',
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <ChevronDown
+          size={15}
+          color={isOpen ? colors.gold : colors.muted}
+          style={{ flex: 'none', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}
+        />
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          zIndex: 50,
+          top: 'calc(100% + 7px)',
+          left: 0,
+          right: 0,
+          maxHeight: '250px',
+          overflowY: 'auto',
+          padding: '5px',
+          borderRadius: '11px',
+          border: `1px solid ${colors.borderGold22}`,
+          background: '#15151b',
+          boxShadow: '0 22px 55px rgba(0,0,0,.55)',
+        }}>
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setIsOpen(false);
+            }}
+            style={{
+              width: '100%',
+              minHeight: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '7px 10px',
+              border: 0,
+              borderRadius: '7px',
+              background: !value ? 'rgba(212,178,106,.12)' : 'transparent',
+              color: !value ? colors.gold : colors.text2,
+              cursor: 'pointer',
+              fontSize: '13px',
+              textAlign: 'left',
+            }}
+          >
+            <span>{placeholder}</span>
+            {!value && <Check size={14} />}
+          </button>
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  minHeight: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  padding: '7px 10px',
+                  border: 0,
+                  borderRadius: '7px',
+                  background: isSelected ? 'rgba(212,178,106,.12)' : 'transparent',
+                  color: isSelected ? colors.gold : colors.text,
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  textAlign: 'left',
+                }}
+              >
+                <span>{option.label}</span>
+                {isSelected && <Check size={14} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const normalizeFilterValue = (value: unknown) =>
+  String(value || '').trim().toLocaleLowerCase('vi');
+
+const getCastArea = (cast: { store?: CastFilterStore | null }): FilterOption => {
+  const store = cast?.store || {};
+  const area = store.area;
+  const areaName = typeof area === 'string' ? area : area?.name;
+  const areaId = typeof area === 'object' ? area?.id : '';
+  const locationName = areaName || store.district || store.city || 'Chưa xác định';
+  const cityName =
+    store.city === 'Ho Chi Minh City' || store.city === 'Hồ Chí Minh'
+      ? 'TP.HCM'
+      : store.city === 'Hanoi' || store.city === 'Hà Nội' || store.city === 'Ha Noi'
+        ? 'Hà Nội'
+        : store.city;
+
+  return {
+    value: areaId || `${store.city || 'other'}::${locationName}`,
+    label: cityName && cityName !== locationName ? `${locationName} · ${cityName}` : locationName,
+  };
+};
 
 type AdminCastMediaItem = {
   id?: string;
@@ -187,6 +376,12 @@ function AdminCastsContent() {
   const [casts, setCasts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [languageFilter, setLanguageFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [minHeightFilter, setMinHeightFilter] = useState('');
+  const [maxHeightFilter, setMaxHeightFilter] = useState('');
+  const [zodiacFilter, setZodiacFilter] = useState('');
   
   const [userRole, setUserRole] = useState<string | null>(null);
   
@@ -267,7 +462,7 @@ function AdminCastsContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeTab]);
+  }, [search, activeTab, languageFilter, areaFilter, minHeightFilter, maxHeightFilter, zodiacFilter]);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -284,6 +479,50 @@ function AdminCastsContent() {
   const rawCity = searchParams.get('city') || '';
   const filterCity = rawCity === 'Hanoi' || rawCity === 'Ho Chi Minh City' || rawCity === 'all' ? rawCity : 'all';
   const filterCategory = searchParams.get('category') || '';
+
+  const languageOptions = useMemo(() => {
+    const languages = new Map<string, FilterOption>();
+    casts.forEach((cast) => {
+      (cast.languages || []).forEach((language: string) => {
+        const normalized = String(language || '').trim().toUpperCase();
+        if (!normalized) return;
+        languages.set(normalized, {
+          value: normalized,
+          label: LANGUAGE_LABELS[normalized] ? `${LANGUAGE_LABELS[normalized]} (${normalized})` : normalized,
+        });
+      });
+    });
+    return Array.from(languages.values()).sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [casts]);
+
+  const areaOptions = useMemo(() => {
+    const areas = new Map<string, FilterOption>();
+    casts.forEach((cast) => {
+      const area = getCastArea(cast);
+      if (area.label !== 'Chưa xác định') areas.set(area.value, area);
+    });
+    return Array.from(areas.values()).sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [casts]);
+
+  const zodiacOptions = ZODIAC_SIGNS.map((zodiac) => ({
+    value: zodiac.value,
+    label: `${zodiac.label} · ${zodiac.value}`,
+  }));
+
+  const activeAdvancedFilterCount = [
+    languageFilter,
+    areaFilter,
+    minHeightFilter || maxHeightFilter,
+    zodiacFilter,
+  ].filter(Boolean).length;
+
+  const resetAdvancedFilters = () => {
+    setLanguageFilter('');
+    setAreaFilter('');
+    setMinHeightFilter('');
+    setMaxHeightFilter('');
+    setZodiacFilter('');
+  };
 
   const filteredCasts = casts.filter(cast => {
     const st = getStatusLabel(cast.status, cast.isPublic);
@@ -311,6 +550,34 @@ function AdminCastsContent() {
 
     // Lọc theo Category của Quán trực thuộc
     if (filterCategory && cast.store?.category !== filterCategory) return false;
+
+    if (
+      languageFilter &&
+      !(cast.languages || []).some(
+        (language: string) => String(language || '').trim().toUpperCase() === languageFilter,
+      )
+    ) {
+      return false;
+    }
+
+    if (areaFilter && getCastArea(cast).value !== areaFilter) return false;
+
+    const heightCm = Number(cast.heightCm);
+    const minHeight = Number(minHeightFilter);
+    const maxHeight = Number(maxHeightFilter);
+    if (minHeightFilter && (!Number.isFinite(heightCm) || heightCm < minHeight)) return false;
+    if (maxHeightFilter && (!Number.isFinite(heightCm) || heightCm > maxHeight)) return false;
+
+    if (zodiacFilter) {
+      const selectedZodiac = ZODIAC_SIGNS.find((zodiac) => zodiac.value === zodiacFilter);
+      const castZodiac = normalizeFilterValue(cast.zodiacSign);
+      if (
+        castZodiac !== normalizeFilterValue(zodiacFilter) &&
+        castZodiac !== normalizeFilterValue(selectedZodiac?.label)
+      ) {
+        return false;
+      }
+    }
 
     return true;
   });
@@ -673,7 +940,7 @@ function AdminCastsContent() {
       )}
       
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap', marginBottom: showAdvancedFilters ? '14px' : '24px' }}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {/* TABS */}
           <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
@@ -692,7 +959,7 @@ function AdminCastsContent() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} color={colors.muted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
             <input 
@@ -706,6 +973,46 @@ function AdminCastsContent() {
               }}
             />
           </div>
+          <button
+            type="button"
+            aria-expanded={showAdvancedFilters}
+            onClick={() => setShowAdvancedFilters((visible) => !visible)}
+            style={{
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0 14px',
+              borderRadius: '8px',
+              border: `1px solid ${showAdvancedFilters || activeAdvancedFilterCount ? colors.borderGold22 : colors.borderSoft}`,
+              background: showAdvancedFilters || activeAdvancedFilterCount ? 'rgba(212,178,106,.09)' : colors.surface1,
+              color: showAdvancedFilters || activeAdvancedFilterCount ? colors.gold : colors.text2,
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <SlidersHorizontal size={16} />
+            Bộ lọc nâng cao
+            {activeAdvancedFilterCount > 0 && (
+              <span style={{
+                minWidth: '20px',
+                height: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+                borderRadius: '10px',
+                background: colors.gold,
+                color: colors.onGold,
+                fontSize: '11px',
+                fontWeight: 800,
+              }}>
+                {activeAdvancedFilterCount}
+              </span>
+            )}
+          </button>
           <button onClick={openNewDrawer} style={{
             height: '40px', display: 'flex', alignItems: 'center', gap: '8px',
             background: colors.goldGrad, color: colors.onGold, border: 'none', padding: '0 20px',
@@ -716,6 +1023,127 @@ function AdminCastsContent() {
           </button>
         </div>
       </div>
+
+      {showAdvancedFilters && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '18px',
+          borderRadius: '14px',
+          border: `1px solid ${colors.borderGold22}`,
+          background: 'linear-gradient(145deg, rgba(212,178,106,.065), rgba(24,24,31,.96) 42%)',
+          boxShadow: '0 18px 45px -35px rgba(212,178,106,.7)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+            <div>
+              <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>Lọc hồ sơ Cast</div>
+              <div style={{ color: colors.muted, fontSize: '12px', marginTop: '3px' }}>
+                Kết hợp nhiều tiêu chí để thu hẹp danh sách
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={!activeAdvancedFilterCount}
+              onClick={resetAdvancedFilters}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                border: `1px solid ${colors.borderSoft}`,
+                background: 'transparent',
+                color: activeAdvancedFilterCount ? colors.text2 : '#5f5b54',
+                cursor: activeAdvancedFilterCount ? 'pointer' : 'not-allowed',
+                fontSize: '12px',
+                fontWeight: 700,
+              }}
+            >
+              <RotateCcw size={13} />
+              Đặt lại
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
+            <AdvancedFilterDropdown
+              label="Ngôn ngữ"
+              value={languageFilter}
+              placeholder="Tất cả ngôn ngữ"
+              options={languageOptions}
+              onChange={setLanguageFilter}
+            />
+            <AdvancedFilterDropdown
+              label="Địa điểm / Khu vực"
+              value={areaFilter}
+              placeholder="Tất cả khu vực"
+              options={areaOptions}
+              onChange={setAreaFilter}
+            />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: colors.muted, fontSize: '11px', fontWeight: 700, letterSpacing: '.7px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                Chiều cao (cm)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="number"
+                  min="100"
+                  max="250"
+                  inputMode="numeric"
+                  value={minHeightFilter}
+                  onChange={(event) => setMinHeightFilter(event.target.value)}
+                  placeholder="Từ"
+                  aria-label="Chiều cao tối thiểu"
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    minWidth: 0,
+                    padding: '0 11px',
+                    borderRadius: '10px',
+                    border: `1px solid ${minHeightFilter ? colors.borderGold22 : colors.borderSoft}`,
+                    background: colors.bg,
+                    color: colors.text,
+                    outline: 'none',
+                    fontSize: '13px',
+                  }}
+                />
+                <span style={{ color: colors.muted, fontSize: '12px' }}>–</span>
+                <input
+                  type="number"
+                  min="100"
+                  max="250"
+                  inputMode="numeric"
+                  value={maxHeightFilter}
+                  onChange={(event) => setMaxHeightFilter(event.target.value)}
+                  placeholder="Đến"
+                  aria-label="Chiều cao tối đa"
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    minWidth: 0,
+                    padding: '0 11px',
+                    borderRadius: '10px',
+                    border: `1px solid ${maxHeightFilter ? colors.borderGold22 : colors.borderSoft}`,
+                    background: colors.bg,
+                    color: colors.text,
+                    outline: 'none',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+            </div>
+            <AdvancedFilterDropdown
+              label="Cung hoàng đạo"
+              value={zodiacFilter}
+              placeholder="Tất cả cung"
+              options={zodiacOptions}
+              onChange={setZodiacFilter}
+            />
+          </div>
+
+          <div style={{ marginTop: '14px', color: colors.muted, fontSize: '12px' }}>
+            Tìm thấy <span style={{ color: colors.gold, fontWeight: 800 }}>{filteredCasts.length}</span> hồ sơ phù hợp
+          </div>
+        </div>
+      )}
 
       {/* TABLE */}
       <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>

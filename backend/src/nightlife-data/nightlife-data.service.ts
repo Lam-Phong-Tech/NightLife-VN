@@ -20706,7 +20706,7 @@ export class NightlifeDataService {
     query: import('./dto/admin-store.dto').AdminStoreQueryDto,
   ) {
     const page = Math.max(1, query.page || 1);
-    const limit = Math.max(1, Math.min(100, query.limit || 50));
+    const limit = Math.max(1, Math.min(1000, query.limit || 50));
     const skip = (page - 1) * limit;
 
     const where: import('@prisma/client').Prisma.CastWhereInput = {
@@ -20731,7 +20731,16 @@ export class NightlifeDataService {
         orderBy: { createdAt: 'desc' },
         include: {
           store: {
-            select: { id: true, name: true, category: true, city: true },
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              city: true,
+              district: true,
+              area: {
+                select: { id: true, code: true, name: true, city: true },
+              },
+            },
           },
           media: {
             orderBy: { createdAt: 'desc' },
