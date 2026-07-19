@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { getAuthUser } from '@/lib/auth/session';
+import React, { useState, useSyncExternalStore } from 'react';
+import { authSessionChangeEvent, getAuthUser } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -76,21 +76,24 @@ const Toggle = ({ on, onClick }: { on: boolean, onClick: () => void }) => (
   </div>
 );
 
+const subscribeToAuthRole = (onStoreChange: () => void) => {
+  window.addEventListener(authSessionChangeEvent, onStoreChange);
+  return () => window.removeEventListener(authSessionChangeEvent, onStoreChange);
+};
+
+const getCurrentAuthRole = () => getAuthUser()?.role ?? null;
+const getServerAuthRole = () => null;
+
 export default function AdminPermissionsPage() {
-  const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const user = getAuthUser();
-      return user?.role === 'SUPER_ADMIN';
-    }
-    return false;
-  });
-  
-  useEffect(() => {
-    const user = getAuthUser();
-    if (user?.role === 'SUPER_ADMIN') {
-      setIsSuperAdmin(true);
-    }
-  }, []);
+  const currentRole = useSyncExternalStore(
+    subscribeToAuthRole,
+    getCurrentAuthRole,
+    getServerAuthRole,
+  );
+
+  const isSuperAdmin = currentRole === 'SUPER_ADMIN';
+  const canManageOperatorPermissions =
+    currentRole === 'ADMIN' || currentRole === 'SUPER_ADMIN';
 
   const [capsSystem, setCapsSystem] = useState<CapRow[]>(INIT_SYSTEM);
   const [capsBooking, setCapsBooking] = useState<CapRow[]>(INIT_BOOKING);
@@ -107,6 +110,13 @@ export default function AdminPermissionsPage() {
   };
 
   const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
+    if (
+      (colIdx === 2 && !isSuperAdmin) ||
+      (colIdx === 3 && !canManageOperatorPermissions)
+    ) {
+      return;
+    }
+
     const updater = (prev: CapRow[]) => {
       const next = [...prev];
       const row = next[rowIdx];
@@ -126,7 +136,9 @@ export default function AdminPermissionsPage() {
     showToast('Đã cập nhật cấu hình quyền');
   };
 
-  const matrixGridCols = isSuperAdmin ? '1fr repeat(5, 100px)' : '1fr repeat(4, 100px)';
+  const visibleRoleColumnCount =
+    3 + Number(canManageOperatorPermissions) + Number(isSuperAdmin);
+  const matrixGridCols = `1fr repeat(${visibleRoleColumnCount}, 100px)`;
 
   const renderCapRow = (c: CapRow, idx: number, section: string) => {
     return (
@@ -135,7 +147,7 @@ export default function AdminPermissionsPage() {
           <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{c[0]}</span>
         </span>
         {isSuperAdmin && <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />}
-        <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />
+        {canManageOperatorPermissions && <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />}
         <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
         <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
         <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} />
@@ -157,7 +169,7 @@ export default function AdminPermissionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.02)', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.8px', color: '#8c8679', textTransform: 'uppercase' }}>Chức năng</span>
           {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#e3c27e' }}>Quản trị viên</span>}
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên vận hành</span>
+          {canManageOperatorPermissions && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên vận hành</span>}
           <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Đối tác</span>
           <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên quán</span>
           <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Người dùng</span>
