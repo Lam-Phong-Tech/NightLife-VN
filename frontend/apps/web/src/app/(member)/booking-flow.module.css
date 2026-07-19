@@ -2221,7 +2221,7 @@
   }
 
   .bookingFormPage .bookingBody {
-    padding-bottom: 0;
+    padding-bottom: calc(154px + env(safe-area-inset-bottom));
   }
 
   .twoColumn {
@@ -2240,23 +2240,6 @@
 
   :global(html.vy-light) .bookingStickyCta {
     box-shadow: 0 -18px 36px -30px rgba(80, 55, 18, 0.48);
-  }
-
-  .bookingFormPage .bookingStickyCta {
-    position: static;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    z-index: auto;
-    margin-top: 8px;
-    box-shadow: none;
-  }
-
-  :global(html.vy-light) .bookingFormPage .bookingStickyCta {
-    background:
-      linear-gradient(180deg, rgba(250, 246, 238, 0.76), rgba(244, 236, 223, 0.98)),
-      #f4ecdf;
-    box-shadow: none;
   }
 
   .bottomActions {
