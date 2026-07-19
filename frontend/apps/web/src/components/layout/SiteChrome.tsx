@@ -1429,8 +1429,8 @@ function SiteFooter({
             ? "1fr"
             : "minmax(220px, 1.1fr) repeat(3, minmax(140px, .7fr))",
           gap: isMobile ? "22px" : "28px",
-          maxWidth: "1180px",
-          margin: "0 auto",
+          width: "100%",
+          margin: 0,
         }}
       >
         <div>
@@ -1520,8 +1520,8 @@ function SiteFooter({
 
       <div
         style={{
-          maxWidth: "1180px",
-          margin: "26px auto 0",
+          width: "100%",
+          margin: "26px 0 0",
           borderTop: `1px solid ${colors.borderGold12}`,
           paddingTop: "18px",
           display: "flex",
