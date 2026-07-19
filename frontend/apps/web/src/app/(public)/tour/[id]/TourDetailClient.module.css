@@ -615,7 +615,7 @@
 
 @media (max-width: 900px) {
   .shell {
-    padding: 12px 0 18px;
+    padding: 12px 0 calc(168px + env(safe-area-inset-bottom));
   }
 
   .breadcrumb {
@@ -755,7 +755,7 @@
 
 @media (max-width: 420px) {
   .shell {
-    padding-bottom: 16px;
+    padding-bottom: calc(168px + env(safe-area-inset-bottom));
   }
 
   .sectionTitle {
