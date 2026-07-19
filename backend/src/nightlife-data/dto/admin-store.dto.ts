@@ -12,8 +12,20 @@ import {
   type ValidationArguments,
   type ValidationOptions,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, type TransformFnParams, Type } from 'class-transformer';
 import { StoreCategory, StoreStatus } from '@prisma/client';
+import {
+  IsStoreName,
+  IsVietnamStorePhone,
+  normalizeStoreName,
+  normalizeStorePhone,
+} from '../../common/validation/store-fields.validation';
+
+const transformStoreName = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? normalizeStoreName(value) : (value as unknown);
+
+const transformStorePhone = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? normalizeStorePhone(value) : (value as unknown);
 
 const adminOpeningTimeRangePattern =
   /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
@@ -102,7 +114,9 @@ export class AdminStoreQueryDto {
 }
 
 export class CreateAdminStoreDto {
+  @Transform(transformStoreName)
   @IsString()
+  @IsStoreName()
   name: string;
 
   @IsEnum(StoreCategory)
@@ -138,6 +152,8 @@ export class CreateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  @Transform(transformStorePhone)
+  @IsVietnamStorePhone()
   phone?: string;
 
   @IsOptional()
@@ -161,7 +177,9 @@ export class CreateAdminStoreDto {
 
 export class UpdateAdminStoreDto {
   @IsOptional()
+  @Transform(transformStoreName)
   @IsString()
+  @IsStoreName()
   name?: string;
 
   @IsOptional()
@@ -199,6 +217,8 @@ export class UpdateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  @Transform(transformStorePhone)
+  @IsVietnamStorePhone()
   phone?: string;
 
   @IsOptional()

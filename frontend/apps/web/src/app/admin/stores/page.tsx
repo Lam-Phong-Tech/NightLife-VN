@@ -13,6 +13,12 @@ import {
   getStoreImageValidationError,
   STORE_IMAGE_ACCEPT,
 } from '@/lib/media/image-upload-validation';
+import {
+  normalizeStoreName,
+  normalizeStorePhone,
+  validateStoreName,
+  validateVietnamStorePhone,
+} from '@/lib/store-form-validation';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -336,6 +342,8 @@ function AdminStoresContent() {
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
+  const [nameTouched, setNameTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [partnerAccountId, setPartnerAccountId] = useState('');
   const [hoursForm, setHoursForm] = useState<any>(defaultHours);
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
@@ -511,6 +519,8 @@ function AdminStoresContent() {
 
   const openNewDrawer = async () => {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
+    setNameTouched(false);
+    setPhoneTouched(false);
     setHoursForm(defaultHours);
     setCoverImage(null);
     setAlbums([]);
@@ -559,6 +569,8 @@ function AdminStoresContent() {
       description: st.description || '',
       status: mapStatusToEnum(st.status || 'ACTIVE')
     });
+    setNameTouched(false);
+    setPhoneTouched(false);
     setHoursForm(st.openingHours || defaultHours);
     const cover = st.media?.find((m: any) => m.type === 'IMAGE' && m.purpose === 'store-hero');
     setCoverImage(cover || null);
@@ -610,8 +622,19 @@ function AdminStoresContent() {
 
   const saveStore = async () => {
     try {
-      if (!formData.name || formData.name.trim() === '') {
-        showToast('Vui lòng nhập tên quán!');
+      const normalizedName = normalizeStoreName(formData.name);
+      const nameError = validateStoreName(normalizedName);
+      if (nameError) {
+        setNameTouched(true);
+        showToast(nameError);
+        return;
+      }
+
+      const normalizedPhone = normalizeStorePhone(formData.phone);
+      const phoneError = validateVietnamStorePhone(normalizedPhone);
+      if (phoneError) {
+        setPhoneTouched(true);
+        showToast(phoneError);
         return;
       }
 
@@ -641,6 +664,8 @@ function AdminStoresContent() {
 
       const payload = {
         ...formData,
+        name: normalizedName,
+        phone: normalizedPhone,
         address: finalAddress,
         city: finalCity,
         ward: wName || undefined,
@@ -652,7 +677,7 @@ function AdminStoresContent() {
       };
       
       if (venueSel === 'new') {
-        const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const generatedSlug = normalizedName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         
         setSlugStatus('checking');
         const checkRes = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
@@ -681,6 +706,8 @@ function AdminStoresContent() {
 
   const boxS = { background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', borderRadius: '10px', padding: '12px 13px', fontSize: '13px', color: '#f3f0ea' };
   const inputS = { ...boxS, width: '100%', outline: 'none' };
+  const storeNameError = validateStoreName(formData.name);
+  const storePhoneError = validateVietnamStorePhone(formData.phone);
   const optS = { background: '#1a191f', color: '#f3f0ea' };
   const seg = (a: boolean) => ({ fontSize: '12px', padding: '9px 15px', borderRadius: '9px', cursor: 'pointer', fontWeight: 600, color: a ? '#241a0a' : '#9b958a', background: a ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)', border: a ? 'none' : '1px solid rgba(255,255,255,.08)' });
   const g1 = 'linear-gradient(135deg,#2a2620,#1a1814)';
@@ -1220,7 +1247,28 @@ function AdminStoresContent() {
                     {slugStatus.startsWith('error_catch') && <div style={{ fontSize: '10.5px', color: '#e88b99' }}>Lỗi Catch: {slugStatus.replace('error_catch_', '')}</div>}
                     {slugStatus === 'error' && <div style={{ fontSize: '10.5px', color: '#e88b99' }}>Tên trùng lặp</div>}
                   </div>
-                  <input style={{ ...inputS, borderColor: slugStatus.startsWith('error') ? 'rgba(232,139,153,.4)' : inputS.border }} placeholder="Nhập tên quán…" value={formData.name} onChange={e => updateForm('name', e.target.value)} />
+                  <input
+                    style={{
+                      ...inputS,
+                      borderColor:
+                        (nameTouched && storeNameError) || slugStatus.startsWith('error')
+                          ? 'rgba(232,139,153,.65)'
+                          : inputS.border,
+                    }}
+                    placeholder="Nhập tên quán…"
+                    value={formData.name}
+                    aria-invalid={Boolean(nameTouched && storeNameError)}
+                    onChange={e => updateForm('name', e.target.value)}
+                    onBlur={() => {
+                      setNameTouched(true);
+                      updateForm('name', normalizeStoreName(formData.name));
+                    }}
+                  />
+                  {nameTouched && storeNameError && (
+                    <div style={{ color: '#e88b99', fontSize: '10.5px', lineHeight: 1.4, marginTop: '6px' }}>
+                      {storeNameError}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
@@ -1326,7 +1374,31 @@ function AdminStoresContent() {
                 
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Số điện thoại (Tuỳ chọn)</div>
-                  <input style={inputS} placeholder="Nhập số điện thoại…" value={formData.phone} onChange={e => updateForm('phone', e.target.value)} />
+                  <input
+                    style={{
+                      ...inputS,
+                      borderColor:
+                        phoneTouched && storePhoneError
+                          ? 'rgba(232,139,153,.65)'
+                          : inputS.border,
+                    }}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="Ví dụ: 0901234567 hoặc +84901234567"
+                    value={formData.phone}
+                    aria-invalid={Boolean(phoneTouched && storePhoneError)}
+                    onChange={e => updateForm('phone', e.target.value)}
+                    onBlur={() => {
+                      setPhoneTouched(true);
+                      updateForm('phone', normalizeStorePhone(formData.phone));
+                    }}
+                  />
+                  {phoneTouched && storePhoneError && (
+                    <div style={{ color: '#e88b99', fontSize: '10.5px', lineHeight: 1.4, marginTop: '6px' }}>
+                      {storePhoneError}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
