@@ -28,6 +28,13 @@ const colors = {
 
 const COMMON_LANGS = ['VN', 'EN', 'JP', 'KR', 'CN'];
 
+type AdminCastMediaItem = {
+  id?: string;
+  url?: string;
+  type?: string | null;
+  purpose?: string | null;
+};
+
 const normalizeListResponse = (value: any): any[] => {
   if (Array.isArray(value)) return value;
   if (!value || typeof value !== 'object') return [];
@@ -194,6 +201,14 @@ function AdminCastsContent() {
     };
   };
 
+  const normalizeMediaPurpose = (purpose?: string | null) =>
+    String(purpose || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+
+  const isCastAvatarMedia = (media: AdminCastMediaItem) =>
+    ['cast-avatar', 'avatar', 'profile', 'profile-photo', 'cast-profile', 'thumbnail'].includes(
+      normalizeMediaPurpose(media?.purpose),
+    );
+
   const closeDrawer = () => {
     setSelectedCast(null);
     setIsAddingCast(false);
@@ -242,8 +257,9 @@ function AdminCastsContent() {
     const imageList = mediaList.filter((m: any) => m.type === 'IMAGE' || (!m.type && m.url && m.url.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i)));
     const videoList = mediaList.filter((m: any) => m.type === 'VIDEO' || (!m.type && m.url && m.url.split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i)));
     
-    setAvatarImage(imageList[0] || null);
-    setAlbums(imageList.slice(1) || []);
+    const selectedAvatar = imageList.find(isCastAvatarMedia) || imageList[0] || null;
+    setAvatarImage(selectedAvatar);
+    setAlbums(imageList.filter((media: AdminCastMediaItem) => media.id !== selectedAvatar?.id) || []);
     setVideos(videoList || []);
     setSelectedCast(c);
     setIsAddingCast(false);
@@ -344,7 +360,7 @@ function AdminCastsContent() {
       setUploadingImage(true);
       const form = new FormData();
       form.append('file', file);
-      form.append('purpose', 'CAST_PHOTO');
+      form.append('purpose', 'CAST_AVATAR');
       form.append('access', 'PUBLIC');
       const castId = await ensureCastUploadScope();
       if (!castId) return;
@@ -352,7 +368,7 @@ function AdminCastsContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
-        setAvatarImage({ id: res.id, url: res.url });
+        setAvatarImage({ id: res.id, url: res.url, type: 'IMAGE', purpose: 'CAST_AVATAR' });
         showToast('Tải ảnh đại diện thành công');
       }
     } catch (err: any) {

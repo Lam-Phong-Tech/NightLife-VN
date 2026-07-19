@@ -1686,11 +1686,20 @@ describe('NightlifeDataService', () => {
         {
           id: 'media-image',
           type: 'IMAGE',
-          url: 'https://example.com/aya.jpg',
+          url: 'https://example.com/aya-gallery.jpg',
           purpose: 'cast-gallery',
           mimeType: 'image/jpeg',
-          originalName: 'Aya profile',
+          originalName: 'Aya gallery',
           createdAt: new Date('2026-06-20T00:00:00.000Z'),
+        },
+        {
+          id: 'media-avatar',
+          type: 'IMAGE',
+          url: 'https://example.com/aya-avatar.jpg',
+          purpose: 'CAST_AVATAR',
+          mimeType: 'image/jpeg',
+          originalName: 'Aya avatar',
+          createdAt: new Date('2026-06-19T00:00:00.000Z'),
         },
         {
           id: 'media-video',
@@ -1798,13 +1807,19 @@ describe('NightlifeDataService', () => {
         measurements: '82-58-86',
         interests: ['wine', 'piano'],
         styleTags: ['vip'],
-        thumbnailUrl: 'https://example.com/aya.jpg',
+        thumbnailUrl: 'https://example.com/aya-avatar.jpg',
         gallery: expect.arrayContaining([
           expect.objectContaining({
             id: 'media-image',
             type: 'IMAGE',
-            url: 'https://example.com/aya.jpg',
+            url: 'https://example.com/aya-gallery.jpg',
             purpose: 'cast-gallery',
+          }),
+          expect.objectContaining({
+            id: 'media-avatar',
+            type: 'IMAGE',
+            url: 'https://example.com/aya-avatar.jpg',
+            purpose: 'CAST_AVATAR',
           }),
           expect.objectContaining({
             id: 'media-video',
@@ -1836,7 +1851,7 @@ describe('NightlifeDataService', () => {
         seo: expect.objectContaining({
           title: 'Aya tại Velvet Club | NightLife VN',
           canonicalPath: '/casts/aya-velvet',
-          ogImage: 'https://example.com/aya.jpg',
+          ogImage: 'https://example.com/aya-avatar.jpg',
         }),
       }),
     );

@@ -194,6 +194,7 @@ const STORE_RANKING_IMAGE_PURPOSES = [
 const CAST_RANKING_IMAGE_PURPOSES = [
   'avatar',
   'cast-avatar',
+  'cast-photo',
   'profile',
   'profile-photo',
   'cast-profile',
@@ -769,8 +770,8 @@ const PUBLIC_RELATED_CAST_SELECT = {
       type: 'IMAGE',
     },
     orderBy: { createdAt: 'desc' },
-    take: 1,
-    select: { url: true },
+    take: 8,
+    select: { url: true, purpose: true },
   },
   store: {
     select: {
@@ -858,13 +859,24 @@ type RankingImageMedia = {
   purpose?: string | null;
 };
 
+function normalizeMediaPurpose(value?: string | null) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-');
+}
+
 function selectPreferredRankingImage(
   media: RankingImageMedia[],
   preferredPurposes: readonly string[],
 ) {
-  for (const purpose of preferredPurposes) {
+  const normalizedPreferredPurposes = preferredPurposes.map((purpose) =>
+    normalizeMediaPurpose(purpose),
+  );
+
+  for (const purpose of normalizedPreferredPurposes) {
     const preferred = media.find(
-      (item) => item.purpose?.trim().toLowerCase() === purpose,
+      (item) => normalizeMediaPurpose(item.purpose) === purpose,
     );
 
     if (preferred) {
@@ -2235,7 +2247,7 @@ export class NightlifeDataService {
         stageName: cast.stageName,
         publicAlias: cast.publicAlias,
         publicHeadline: cast.publicHeadline,
-        thumbnailUrl: cast.media[0]?.url ?? null,
+        thumbnailUrl: this.resolveCastAvatarImage(cast.media),
         tags: cast.tags,
         languages: cast.languages,
         hourlyRateVnd: cast.hourlyRateVnd,
@@ -2366,9 +2378,10 @@ export class NightlifeDataService {
               type: 'IMAGE',
             },
             orderBy: { createdAt: 'desc' },
-            take: 1,
+            take: 8,
             select: {
               url: true,
+              purpose: true,
             },
           },
         },
@@ -2386,7 +2399,7 @@ export class NightlifeDataService {
       tags: cast.tags,
       languages: cast.languages,
       hourlyRateVnd: cast.hourlyRateVnd,
-      thumbnailUrl: cast.media[0]?.url ?? null,
+      thumbnailUrl: this.resolveCastAvatarImage(cast.media),
       distanceKm: this.calculateDistanceKm(
         coordinates,
         cast.store.latitude,
@@ -2553,8 +2566,7 @@ export class NightlifeDataService {
         alt: `${cast.publicAlias || cast.stageName} video ${index + 1}`,
       })),
     ];
-    const thumbnailUrl =
-      gallery.find((item) => item.type === 'IMAGE')?.url ?? null;
+    const thumbnailUrl = this.resolveCastAvatarImage(gallery);
     const name = cast.publicAlias ?? cast.stageName;
     const publicBio = cast.publicBio ?? cast.bio;
     const seoDescription = this.buildCastSeoDescription({
@@ -2700,9 +2712,10 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 1,
+              take: 8,
               select: {
                 url: true,
+                purpose: true,
               },
             },
           },
@@ -6190,8 +6203,8 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { url: true },
+              take: 8,
+              select: { url: true, purpose: true },
             },
             store: {
               select: {
@@ -14862,7 +14875,7 @@ export class NightlifeDataService {
       tags: cast.tags,
       languages: cast.languages,
       hourlyRateVnd: cast.hourlyRateVnd,
-      thumbnailUrl: cast.media[0]?.url ?? null,
+      thumbnailUrl: this.resolveCastAvatarImage(cast.media),
       relatedReason,
       store: {
         id: cast.store.id,
@@ -15911,6 +15924,14 @@ export class NightlifeDataService {
 
   private resolveRankingCastImage(media: RankingImageMedia[]) {
     return selectPreferredRankingImage(media, CAST_RANKING_IMAGE_PURPOSES);
+  }
+
+  private resolveCastAvatarImage(
+    media: Array<{ url: string; type?: string | null; purpose?: string | null }>,
+  ) {
+    return this.resolveRankingCastImage(
+      media.filter((item) => !item.type || item.type === 'IMAGE'),
+    );
   }
 
   private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {
@@ -20728,7 +20749,10 @@ export class NightlifeDataService {
           store: {
             select: { id: true, name: true, category: true, city: true },
           },
-          media: { select: { id: true, url: true, type: true } },
+          media: {
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, url: true, type: true, purpose: true },
+          },
         },
       }),
     ]);
@@ -20778,6 +20802,8 @@ export class NightlifeDataService {
           : {}),
       },
     });
+
+    await this.syncAdminCastMediaPurposes(newCast.id, dto.mediaIds);
 
     return newCast;
   }
@@ -20834,7 +20860,56 @@ export class NightlifeDataService {
       },
     });
 
+    await this.syncAdminCastMediaPurposes(updated.id, dto.mediaIds);
+
     return updated;
+  }
+
+  private async syncAdminCastMediaPurposes(
+    castId: string,
+    mediaIds?: string[],
+  ) {
+    const uniqueMediaIds = Array.from(
+      new Set((mediaIds ?? []).filter(Boolean)),
+    );
+    if (!uniqueMediaIds.length) {
+      return;
+    }
+
+    const media = await this.prisma.media.findMany({
+      where: { id: { in: uniqueMediaIds }, castId },
+      select: { id: true, type: true },
+    });
+    const mediaById = new Map(media.map((item) => [item.id, item]));
+    const avatarId =
+      uniqueMediaIds.find((id) => mediaById.get(id)?.type === 'IMAGE') ?? null;
+    const albumImageIds = uniqueMediaIds.filter(
+      (id) => id !== avatarId && mediaById.get(id)?.type === 'IMAGE',
+    );
+    const videoIds = uniqueMediaIds.filter(
+      (id) => mediaById.get(id)?.type === 'VIDEO',
+    );
+
+    if (avatarId) {
+      await this.prisma.media.update({
+        where: { id: avatarId },
+        data: { purpose: 'CAST_AVATAR' },
+      });
+    }
+
+    if (albumImageIds.length) {
+      await this.prisma.media.updateMany({
+        where: { id: { in: albumImageIds }, castId },
+        data: { purpose: 'CAST_PHOTO' },
+      });
+    }
+
+    if (videoIds.length) {
+      await this.prisma.media.updateMany({
+        where: { id: { in: videoIds }, castId },
+        data: { purpose: 'CAST_VIDEO' },
+      });
+    }
   }
 
   async deleteAdminCast(user: AuthenticatedUser, id: string, hard: boolean) {

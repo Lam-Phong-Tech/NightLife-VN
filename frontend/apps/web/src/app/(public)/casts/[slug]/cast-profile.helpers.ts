@@ -154,8 +154,15 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
     ];
   });
 
-  if (cast.thumbnailUrl && !items.some((item) => item.url === cast.thumbnailUrl)) {
-    items.unshift({
+  const orderedItems = cast.thumbnailUrl
+    ? [
+        ...items.filter((item) => item.url === cast.thumbnailUrl),
+        ...items.filter((item) => item.url !== cast.thumbnailUrl),
+      ]
+    : items;
+
+  if (cast.thumbnailUrl && !orderedItems.some((item) => item.url === cast.thumbnailUrl)) {
+    orderedItems.unshift({
       id: `${cast.id}-thumbnail`,
       type: "IMAGE",
       url: cast.thumbnailUrl,
@@ -167,7 +174,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
 
   const seen = new Set<string>();
 
-  const gallery = items.filter((item) => {
+  const gallery = orderedItems.filter((item) => {
     if (!item.url || seen.has(item.url)) return false;
     seen.add(item.url);
     return true;
