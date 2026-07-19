@@ -592,7 +592,7 @@ export default function Page() {
             padding: "34px",
           }}
         >
-          <div style={{ width: "100%", maxWidth: 430 }}>
+          <div style={{ width: "min(100%, 430px)", maxWidth: "100%", minWidth: 0 }}>
             <Link
               href="/"
               className="nl-login-back"
@@ -923,6 +923,30 @@ export default function Page() {
           max-width: 100%;
         }
 
+        .nl-login-page,
+        .nl-login-page * {
+          box-sizing: border-box;
+        }
+
+        .nl-login-page .nl-login-card form,
+        .nl-login-page .nl-login-card label {
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .nl-login-page .nl-login-title,
+        .nl-login-page .nl-login-subtitle,
+        .nl-login-page .nl-field-label,
+        .nl-login-page .nl-field-input,
+        .nl-login-page .nl-forgot-link {
+          overflow-wrap: anywhere;
+        }
+
+        .nl-login-page .nl-field-icon,
+        .nl-login-page .nl-field-action {
+          flex: 0 0 auto;
+        }
+
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
@@ -963,7 +987,7 @@ export default function Page() {
 
           .nl-login-page .nl-login-form-section > div {
             width: 100% !important;
-            max-width: 430px !important;
+            max-width: min(430px, calc(100vw - 40px)) !important;
             min-width: 0 !important;
             margin-inline: auto !important;
           }
@@ -1076,7 +1100,7 @@ function Field({
   action?: React.ReactNode;
 }) {
   return (
-    <label style={{ display: "grid", gap: 7 }}>
+    <label style={{ display: "grid", gap: 7, minWidth: 0, maxWidth: "100%" }}>
       <span
         className="nl-field-label"
         style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}
@@ -1095,7 +1119,10 @@ function Field({
           background: colors.panelStrong,
           padding: "0 13px",
           color: colors.text,
-          overflow: "visible",
+          overflow: "hidden",
+          boxSizing: "border-box",
+          width: "100%",
+          maxWidth: "100%",
         }}
       >
         {icon ? (
@@ -1126,6 +1153,8 @@ function Field({
           style={{
             flex: 1,
             minWidth: 0,
+            width: "100%",
+            maxWidth: "100%",
             border: 0,
             outline: "none",
             background: "transparent",
@@ -1179,6 +1208,8 @@ function SocialButton({
         justifyContent: "center",
         gap: 10,
         minWidth: 0,
+        width: "100%",
+        maxWidth: "100%",
         padding: "0 14px",
         border: `1px solid ${colors.borderStrong}`,
         borderRadius: 13,
