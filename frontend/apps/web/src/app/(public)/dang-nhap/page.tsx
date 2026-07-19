@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import {
   activateExclusiveAuthSession,
   getGoogleLoginConfig,
@@ -10,6 +10,7 @@ import {
   loginGoogleMember,
   loginMember,
   registerMember,
+  requestRegistrationOtp,
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
@@ -113,17 +114,20 @@ function validateAuthForm({
   email,
   password,
   confirmPassword,
+  emailOtp,
 }: {
   isReg: boolean;
   displayName: string;
   email: string;
   password: string;
   confirmPassword: string;
+  emailOtp: string;
 }) {
   const normalizedEmail = normalizeEmail(email);
   const trimmedName = normalizeDisplayName(displayName);
   const normalizedPassword = normalizePassword(password);
   const normalizedConfirmPassword = normalizePassword(confirmPassword);
+  const normalizedEmailOtp = emailOtp.trim();
 
   if (isReg && !trimmedName) {
     return "Vui lòng nhập họ tên.";
@@ -168,6 +172,14 @@ function validateAuthForm({
     if (normalizedPassword !== normalizedConfirmPassword) {
       return "Mật khẩu nhập lại chưa khớp.";
     }
+
+    if (!normalizedEmailOtp) {
+      return "Vui lòng nhập mã OTP.";
+    }
+
+    if (!/^\d{6}$/.test(normalizedEmailOtp)) {
+      return "Mã OTP phải gồm 6 chữ số.";
+    }
   } else if (normalizedPassword.length < 8) {
     return "Mật khẩu cần tối thiểu 8 ký tự.";
   }
@@ -182,10 +194,12 @@ export default function Page() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
@@ -224,6 +238,7 @@ export default function Page() {
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
     setConfirmPassword("");
+    setEmailOtp("");
     setMessage("");
   };
 
@@ -234,12 +249,14 @@ export default function Page() {
     const trimmedDisplayName = normalizeDisplayName(displayName);
     const normalizedPassword = normalizePassword(password);
     const normalizedConfirmPassword = normalizePassword(confirmPassword);
+    const normalizedEmailOtp = emailOtp.trim();
     const validationMessage = validateAuthForm({
       isReg,
       displayName: trimmedDisplayName,
       email: normalizedEmail,
       password: normalizedPassword,
       confirmPassword: normalizedConfirmPassword,
+      emailOtp: normalizedEmailOtp,
     });
 
     setEmail(normalizedEmail);
@@ -247,6 +264,7 @@ export default function Page() {
     if (isReg) {
       setDisplayName(trimmedDisplayName);
       setConfirmPassword(normalizedConfirmPassword);
+      setEmailOtp(normalizedEmailOtp);
     }
 
     if (validationMessage) {
@@ -264,6 +282,7 @@ export default function Page() {
           email: normalizedEmail,
           password: normalizedPassword,
           displayName: trimmedDisplayName,
+          emailOtp: normalizedEmailOtp,
         });
         await activateExclusiveAuthSession(session);
         window.location.href = redirectTo;
@@ -284,6 +303,35 @@ export default function Page() {
       setMessage(detail);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const sendRegistrationOtp = async () => {
+    const normalizedEmail = normalizeEmail(email);
+    const emailValidationMessage = validateEmail(normalizedEmail);
+
+    setEmail(normalizedEmail);
+
+    if (emailValidationMessage) {
+      setMessageTone("error");
+      setMessage(emailValidationMessage);
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setMessage("");
+
+    try {
+      const response = await requestRegistrationOtp({ email: normalizedEmail });
+      setMessageTone("success");
+      setMessage(response.message || "Mã OTP đã được gửi tới email của bạn.");
+    } catch (error) {
+      const detail =
+        error instanceof ApiError ? error.message : "Không gửi được mã OTP. Vui lòng thử lại.";
+      setMessageTone("error");
+      setMessage(detail);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -691,6 +739,44 @@ export default function Page() {
                   required
                   maxLength={254}
                 />
+                {isReg ? (
+                  <Field
+                    icon={<ShieldCheck size={16} />}
+                    label={translateText("Mã OTP", activeLanguage)}
+                    value={emailOtp}
+                    onChange={(value) => setEmailOtp(value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder={translateText("Nhập mã OTP", activeLanguage)}
+                    type="text"
+                    autoComplete="off"
+                    inputMode="numeric"
+                    name="nl-register-email-otp"
+                    required
+                    maxLength={6}
+                    action={
+                      <button
+                        type="button"
+                        onClick={sendRegistrationOtp}
+                        disabled={isSendingOtp}
+                        style={{
+                          minWidth: 84,
+                          height: 32,
+                          border: `1px solid ${colors.borderStrong}`,
+                          borderRadius: 9,
+                          background: isSendingOtp ? "rgba(212,178,106,.28)" : colors.goldGrad,
+                          color: colors.onGold,
+                          cursor: isSendingOtp ? "default" : "pointer",
+                          fontWeight: 900,
+                          fontSize: 12,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                          padding: "0 10px",
+                        }}
+                      >
+                        {translateText(isSendingOtp ? "Đang gửi" : "Gửi OTP", activeLanguage)}
+                      </button>
+                    }
+                  />
+                ) : null}
                 <Field
                   icon={<LockKeyhole size={16} />}
                   label={translateText("Mật khẩu", activeLanguage)}

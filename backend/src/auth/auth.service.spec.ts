@@ -71,6 +71,7 @@ describe('AuthService', () => {
 
   const emailNotificationService = {
     sendPasswordResetCodeEmail: jest.fn(),
+    sendRegistrationOtpEmail: jest.fn(),
   } as unknown as jest.Mocked<EmailNotificationService>;
 
   let service: AuthService;
@@ -148,13 +149,22 @@ describe('AuthService', () => {
   });
 
   it('registers a user and returns a JWT auth response', async () => {
+    usersService.findByEmail.mockResolvedValueOnce(null);
+    emailNotificationService.sendRegistrationOtpEmail.mockResolvedValue({
+      messageId: 'otp-mail-1',
+    });
     usersService.createUser.mockResolvedValue(user as never);
+
+    await service.requestRegistrationOtp({ email: user.email });
+    const emailOtp =
+      emailNotificationService.sendRegistrationOtpEmail.mock.calls[0][0].code;
 
     await expect(
       service.register({
         email: user.email,
         password: ' Str0ngPass! ',
         displayName: user.displayName,
+        emailOtp,
       }),
     ).resolves.toEqual({
       accessToken: 'jwt-token',
@@ -178,6 +188,19 @@ describe('AuthService', () => {
         expiresAt: expect.any(Date),
       }),
     });
+  });
+
+  it('does not register a user without a valid email OTP', async () => {
+    await expect(
+      service.register({
+        email: user.email,
+        password: 'Str0ngPass!',
+        displayName: user.displayName,
+        emailOtp: '000000',
+      }),
+    ).rejects.toThrow('Invalid or expired registration OTP');
+
+    expect(usersService.createUser).not.toHaveBeenCalled();
   });
 
   it('logs in with validated credentials', async () => {

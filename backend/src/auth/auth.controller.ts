@@ -35,7 +35,11 @@ import {
   ResetPasswordDto,
   VerifyPasswordResetCodeDto,
 } from './dto/password-reset.dto';
-import { RegisterDto } from './dto/register.dto';
+import {
+  RegisterDto,
+  RegistrationOtpRequestResponseDto,
+  RequestRegistrationOtpDto,
+} from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -49,6 +53,13 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto, @Req() request: Request) {
     return this.authService.register(dto, this.sessionContext(request));
+  }
+
+  @ApiOperation({ summary: 'Gửi mã OTP xác thực email đăng ký' })
+  @ApiOkResponse({ type: RegistrationOtpRequestResponseDto })
+  @Post('register/email-otp')
+  requestRegistrationOtp(@Body() dto: RequestRegistrationOtpDto) {
+    return this.authService.requestRegistrationOtp(dto);
   }
 
   @ApiOperation({ summary: 'Đăng nhập chung' })

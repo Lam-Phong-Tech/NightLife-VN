@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -27,7 +28,7 @@ import {
   ResetPasswordDto,
   VerifyPasswordResetCodeDto,
 } from './dto/password-reset.dto';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto, RequestRegistrationOtpDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -130,9 +131,25 @@ const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 const oauthCookieMaxAgeMs = 10 * 60 * 1000;
 const passwordResetTtlMs = 15 * 60 * 1000;
 const passwordResetTtlMinutes = 15;
+const registrationOtpTtlMs = 15 * 60 * 1000;
+const registrationOtpTtlMinutes = 15;
+const registrationOtpCooldownMs = 60 * 1000;
+const registrationOtpMaxAttempts = 5;
+
+type RegistrationOtpRecord = {
+  codeHash: string;
+  expiresAt: Date;
+  sentAt: Date;
+  attempts: number;
+};
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly registrationOtpTokens = new Map<
+    string,
+    RegistrationOtpRecord
+  >();
 
   constructor(
     private readonly configService: ConfigService,
@@ -142,7 +159,58 @@ export class AuthService {
     private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
+  async requestRegistrationOtp(dto: RequestRegistrationOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    const existingUser = await this.usersService.findByEmail(email);
+
+    if (existingUser) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    const now = new Date();
+    const existingToken = this.registrationOtpTokens.get(email);
+    if (
+      existingToken &&
+      existingToken.expiresAt > now &&
+      now.getTime() - existingToken.sentAt.getTime() < registrationOtpCooldownMs
+    ) {
+      throw new BadRequestException('Registration OTP was sent recently');
+    }
+
+    const code = this.generateEmailOtpCode();
+    const expiresAt = new Date(now.getTime() + registrationOtpTtlMs);
+    this.registrationOtpTokens.set(email, {
+      codeHash: this.hashEmailOtpValue(email, code),
+      expiresAt,
+      sentAt: now,
+      attempts: 0,
+    });
+
+    try {
+      await this.emailNotificationService.sendRegistrationOtpEmail({
+        to: email,
+        code,
+        expiresAt,
+      });
+    } catch (error) {
+      this.registrationOtpTokens.delete(email);
+      this.logger.error(
+        `Registration OTP email failed for ${this.maskEmailForLog(email)}: ${this.errorMessage(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Registration OTP email could not be sent',
+      );
+    }
+
+    return {
+      message: 'Mã OTP đã được gửi tới email và có hiệu lực trong 15 phút.',
+      expiresInMinutes: registrationOtpTtlMinutes,
+    };
+  }
+
   async register(dto: RegisterDto, sessionContext?: SessionContext) {
+    this.consumeRegistrationOtp(dto.email, dto.emailOtp);
+
     const user = await this.usersService.createUser({
       email: dto.email,
       password: dto.password.trim(),
@@ -853,12 +921,51 @@ export class AuthService {
     });
   }
 
+  private consumeRegistrationOtp(email: string, code: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = code.trim();
+    const token = this.registrationOtpTokens.get(normalizedEmail);
+    const now = new Date();
+
+    if (
+      !token ||
+      token.expiresAt <= now ||
+      !this.emailOtpHashMatches(token.codeHash, normalizedEmail, normalizedCode)
+    ) {
+      if (token) {
+        token.attempts += 1;
+        if (
+          token.expiresAt <= now ||
+          token.attempts >= registrationOtpMaxAttempts
+        ) {
+          this.registrationOtpTokens.delete(normalizedEmail);
+        }
+      }
+
+      throw new BadRequestException('Invalid or expired registration OTP');
+    }
+
+    this.registrationOtpTokens.delete(normalizedEmail);
+  }
+
   private generatePasswordResetCode() {
+    return String(randomInt(100000, 1000000));
+  }
+
+  private generateEmailOtpCode() {
     return String(randomInt(100000, 1000000));
   }
 
   private hashPasswordResetValue(email: string, value: string) {
     return createHmac('sha256', this.passwordResetSecret())
+      .update(email.trim().toLowerCase())
+      .update(':')
+      .update(value)
+      .digest('hex');
+  }
+
+  private hashEmailOtpValue(email: string, value: string) {
+    return createHmac('sha256', this.emailOtpSecret())
       .update(email.trim().toLowerCase())
       .update(':')
       .update(value)
@@ -875,11 +982,30 @@ export class AuthService {
     );
   }
 
+  private emailOtpHashMatches(hash: string, email: string, value: string) {
+    const expectedHash = this.hashEmailOtpValue(email, value);
+    const expected = Buffer.from(expectedHash, 'hex');
+    const received = Buffer.from(hash, 'hex');
+
+    return (
+      expected.length === received.length && timingSafeEqual(expected, received)
+    );
+  }
+
   private passwordResetSecret() {
     return (
       this.configService.get<string>('PASSWORD_RESET_SECRET') ||
       this.configService.get<string>('JWT_SECRET') ||
       'nightlife-password-reset-local-secret'
+    );
+  }
+
+  private emailOtpSecret() {
+    return (
+      this.configService.get<string>('EMAIL_VERIFICATION_SECRET') ||
+      this.configService.get<string>('PASSWORD_RESET_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'nightlife-email-verification-local-secret'
     );
   }
 

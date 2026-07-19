@@ -46,4 +46,32 @@ export class RegisterDto {
     message: 'displayName must contain letters and spaces only',
   })
   displayName: string;
+
+  @ApiProperty({ minLength: 6, maxLength: 6, example: '123456' })
+  @Transform(trimString)
+  @IsString()
+  @Matches(/^\d{6}$/, {
+    message: 'emailOtp must be a 6 digit number',
+  })
+  emailOtp: string;
+}
+
+export class RequestRegistrationOtpDto {
+  @ApiProperty({ example: 'member@nightlife.vn' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail()
+  @MaxLength(254)
+  email: string;
+}
+
+export class RegistrationOtpRequestResponseDto {
+  @ApiProperty({
+    example: 'Mã OTP đã được gửi tới email và có hiệu lực trong 15 phút.',
+  })
+  message: string;
+
+  @ApiProperty({ example: 15 })
+  expiresInMinutes: number;
 }

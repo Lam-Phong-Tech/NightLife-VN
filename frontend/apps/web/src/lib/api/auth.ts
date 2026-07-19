@@ -14,6 +14,7 @@ export type LoginPayload = {
 
 export type RegisterPayload = LoginPayload & {
   displayName?: string;
+  emailOtp: string;
 };
 
 export type GoogleLoginPayload = {
@@ -40,6 +41,10 @@ export type RequestPasswordResetPayload = {
   email: string;
 };
 
+export type RequestRegistrationOtpPayload = {
+  email: string;
+};
+
 export type VerifyPasswordResetCodePayload = {
   email: string;
   code: string;
@@ -56,6 +61,8 @@ export type PasswordResetRequestResponse = {
   message: string;
   expiresInMinutes: number;
 };
+
+export type RegistrationOtpRequestResponse = PasswordResetRequestResponse;
 
 export type PasswordResetVerifyResponse = {
   resetToken: string;
@@ -214,6 +221,13 @@ export const getLineLoginConfig = () => {
 
 export const registerMember = (payload: RegisterPayload) => {
   return apiClient<AuthResponse>("/auth/register", {
+    method: "POST",
+    data: payload,
+  });
+};
+
+export const requestRegistrationOtp = (payload: RequestRegistrationOtpPayload) => {
+  return apiClient<RegistrationOtpRequestResponse>("/auth/register/email-otp", {
     method: "POST",
     data: payload,
   });

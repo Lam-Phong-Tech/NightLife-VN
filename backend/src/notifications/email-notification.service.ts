@@ -31,6 +31,12 @@ export type PasswordResetEmailInput = {
   expiresAt: Date;
 };
 
+export type RegistrationOtpEmailInput = {
+  to: string;
+  code: string;
+  expiresAt: Date;
+};
+
 @Injectable()
 export class EmailNotificationService {
   constructor(private readonly configService: ConfigService) {}
@@ -94,6 +100,37 @@ export class EmailNotificationService {
       subject: 'Vietyoru - Mã đặt lại mật khẩu',
       text: this.passwordResetText(input),
       html: this.passwordResetHtml(input),
+    });
+
+    return { messageId: message.messageId ?? null };
+  }
+
+  async sendRegistrationOtpEmail(
+    input: RegistrationOtpEmailInput,
+  ): Promise<EmailDeliveryResult> {
+    const host = this.configValue('SMTP_HOST');
+    const from = this.mailFrom();
+
+    if (!host || !from) {
+      throw new Error('SMTP_HOST and MAIL_FROM are required to send email');
+    }
+
+    const secure = this.smtpSecure();
+    const port = this.smtpPort(secure);
+    const user = this.configValue('SMTP_USER');
+    const pass = this.configValue('SMTP_PASS');
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: user ? { user, pass } : undefined,
+    });
+    const message = await transporter.sendMail({
+      from,
+      to: input.to,
+      subject: 'Vietyoru - Mã OTP xác thực email đăng ký',
+      text: this.registrationOtpText(input),
+      html: this.registrationOtpHtml(input),
     });
 
     return { messageId: message.messageId ?? null };
@@ -196,6 +233,45 @@ export class EmailNotificationService {
         <h2 style="margin:0 0 12px;font-size:22px;color:#fff;">Mã đặt lại mật khẩu</h2>
         <p style="margin:0 0 18px;color:#cfc7b6;line-height:1.55;">
           Xin chào ${this.escapeHtml(input.displayName || 'bạn')}, dùng mã dưới đây để xác nhận yêu cầu đặt lại mật khẩu.
+        </p>
+        <div style="margin:22px 0;padding:18px;border-radius:14px;background:#f5d982;color:#1d1607;text-align:center;font-size:32px;font-weight:900;letter-spacing:8px;">
+          ${this.escapeHtml(input.code)}
+        </div>
+        <p style="margin:0;color:#b8b1a1;line-height:1.55;">
+          Mã có hiệu lực đến <strong style="color:#fff;">${this.escapeHtml(this.formatDateTime(input.expiresAt))}</strong>. Nếu mã hết hạn, hãy yêu cầu gửi mã mới.
+        </p>
+        <p style="margin:18px 0 0;color:#8d8577;font-size:12px;line-height:1.5;">
+          Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>`;
+  }
+
+  private registrationOtpText(input: RegistrationOtpEmailInput) {
+    return [
+      'Xin chào bạn,',
+      '',
+      'Bạn vừa yêu cầu tạo tài khoản hội viên Vietyoru.',
+      `Mã OTP xác thực email của bạn là: ${input.code}`,
+      `Mã có hiệu lực đến: ${this.formatDateTime(input.expiresAt)}`,
+      '',
+      'Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email.',
+    ].join('\n');
+  }
+
+  private registrationOtpHtml(input: RegistrationOtpEmailInput) {
+    return `<!doctype html>
+<html>
+  <body style="margin:0;background:#08080b;color:#f8f4e8;font-family:Arial,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;padding:28px 18px;">
+      <h1 style="margin:0 0 8px;color:#f5d982;font-size:26px;">Vietyoru</h1>
+      <p style="margin:0 0 22px;color:#b8b1a1;letter-spacing:3px;font-size:11px;">VIETNAM NIGHTLIFE GUIDE</p>
+      <div style="border:1px solid rgba(245,217,130,.28);border-radius:14px;background:#141417;padding:22px;">
+        <h2 style="margin:0 0 12px;font-size:22px;color:#fff;">Mã OTP xác thực email</h2>
+        <p style="margin:0 0 18px;color:#cfc7b6;line-height:1.55;">
+          Dùng mã dưới đây để xác thực email và hoàn tất tạo tài khoản hội viên.
         </p>
         <div style="margin:22px 0;padding:18px;border-radius:14px;background:#f5d982;color:#1d1607;text-align:center;font-size:32px;font-weight:900;letter-spacing:8px;">
           ${this.escapeHtml(input.code)}
