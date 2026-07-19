@@ -19,6 +19,14 @@ type PublicUser = {
 const authCookieNames = ["auth_token", "user_role", "user_email", "user_name"] as const;
 const authCookiePrefixes = ["", "partner_", "admin_"] as const;
 
+const requestHostname = (request: Request) => {
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || request.headers.get("host") || requestUrl.hostname;
+
+  return host.replace(/:\d+$/, "").toLowerCase();
+};
+
 const backendBaseUrl = () =>
   (
     process.env.BACKEND_API_URL ||
@@ -63,10 +71,15 @@ const clearPortalCookies = (response: NextResponse) => {
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
-  const hostKind = getNightlifeHostKind(requestUrl.hostname);
+  const hostKind = getNightlifeHostKind(requestHostname(request));
+  const isLocalRequest = hostKind === "local";
   const origin = request.headers.get("origin");
 
-  if (hostKind !== "local" && origin !== nightlifeOrigins.auth && origin !== requestUrl.origin) {
+  if (
+    !isLocalRequest &&
+    origin !== nightlifeOrigins.auth &&
+    origin !== portalOrigin(hostKind === "admin" || hostKind === "partner" ? hostKind : "member")
+  ) {
     return NextResponse.json({ message: "Nguồn đăng nhập không hợp lệ." }, { status: 403 });
   }
 
@@ -77,7 +90,7 @@ export async function POST(request: Request) {
     requestedPortal === "admin" || requestedPortal === "partner" ? requestedPortal : "member";
   const expectedHostKind = portal === "member" ? "public" : portal;
 
-  if (hostKind !== "local" && hostKind !== "unknown" && hostKind !== expectedHostKind) {
+  if (!isLocalRequest && hostKind !== expectedHostKind) {
     return NextResponse.json(
       { message: "Phiên đăng nhập không đúng cổng truy cập." },
       { status: 403 },
@@ -113,10 +126,7 @@ export async function POST(request: Request) {
   const redirectPath = isSafePortalRedirect(portal, requestedRedirect)
     ? requestedRedirect
     : portalHomePath(portal);
-  const redirectOrigin =
-    hostKind === "local" || hostKind === "unknown"
-      ? requestUrl.origin
-      : portalOrigin(portal);
+  const redirectOrigin = isLocalRequest ? requestUrl.origin : portalOrigin(portal);
   const response = NextResponse.redirect(new URL(redirectPath, redirectOrigin), 303);
   clearPortalCookies(response);
 
