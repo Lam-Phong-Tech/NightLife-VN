@@ -6,6 +6,7 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { activateExclusiveAuthSession, loginPartner } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
+import { nightlifeOrigins } from "@/lib/auth/hosts";
 
 type PartnerTheme = "dark" | "light";
 
@@ -65,7 +66,7 @@ const readStoredPartnerTheme = (): PartnerTheme => {
 function Logo({ compact = false, colors }: { compact?: boolean; colors: typeof darkColors }) {
   return (
     <Link
-      href="/"
+      href={nightlifeOrigins.public}
       style={{ display: "inline-flex", flexDirection: "column", textDecoration: "none" }}
     >
       <span

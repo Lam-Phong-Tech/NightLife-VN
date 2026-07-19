@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
+import { nightlifeOrigins } from "@/lib/auth/hosts";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
@@ -567,7 +568,7 @@ export default function Page() {
           }}
         >
           <Link
-            href="/"
+            href={nightlifeOrigins.public}
             style={{
               display: "inline-flex",
               flexDirection: "column",
@@ -639,7 +640,7 @@ export default function Page() {
         >
           <div style={{ width: "min(100%, 430px)", maxWidth: "100%", minWidth: 0 }}>
             <Link
-              href="/"
+              href={nightlifeOrigins.public}
               className="nl-login-back"
               style={{
                 display: "inline-flex",
