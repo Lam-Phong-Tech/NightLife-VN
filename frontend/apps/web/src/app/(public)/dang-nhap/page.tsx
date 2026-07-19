@@ -284,14 +284,12 @@ export default function Page() {
           displayName: trimmedDisplayName,
           emailOtp: normalizedEmailOtp,
         });
-        await activateExclusiveAuthSession(session);
-        window.location.href = redirectTo;
+        await activateExclusiveAuthSession(session, { redirectTo });
         return;
       }
 
       const session = await loginMember({ email: normalizedEmail, password: normalizedPassword });
-      await activateExclusiveAuthSession(session);
-      window.location.href = redirectTo;
+      await activateExclusiveAuthSession(session, { redirectTo });
     } catch (error) {
       const detail =
         error instanceof ApiError
@@ -350,8 +348,7 @@ export default function Page() {
         const session = await loginGoogleMember({
           accessToken: response.access_token,
         });
-        await activateExclusiveAuthSession(session);
-        window.location.href = redirectTo;
+        await activateExclusiveAuthSession(session, { redirectTo });
       } catch (error) {
         const detail =
           error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập Google.";

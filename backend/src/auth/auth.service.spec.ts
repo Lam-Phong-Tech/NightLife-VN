@@ -273,6 +273,32 @@ describe('AuthService', () => {
     );
   });
 
+  it('groups store staff with partner and operators with admin portals', async () => {
+    usersService.validateCredentials
+      .mockResolvedValueOnce({
+        ...user,
+        role: 'STAFF',
+      } as never)
+      .mockResolvedValueOnce({
+        ...user,
+        role: 'OPERATOR',
+      } as never);
+
+    await expect(
+      service.loginForPortal(['PARTNER', 'STAFF'], {
+        email: 'staff@nightlife.vn',
+        password: 'Str0ngPass!',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ accessToken: 'jwt-token' }));
+
+    await expect(
+      service.loginForPortal(['OPERATOR', 'ADMIN', 'SUPER_ADMIN'], {
+        email: 'operator@nightlife.vn',
+        password: 'Str0ngPass!',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ accessToken: 'jwt-token' }));
+  });
+
   it('logs in an existing member with a verified Google credential', async () => {
     const member = {
       ...user,

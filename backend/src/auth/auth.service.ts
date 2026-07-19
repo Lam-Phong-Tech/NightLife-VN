@@ -248,6 +248,25 @@ export class AuthService {
     return this.toAuthResponse(user, sessionContext);
   }
 
+  async loginForPortal(
+    allowedRoles: LoginRole[],
+    dto: LoginDto,
+    sessionContext?: SessionContext,
+  ) {
+    const user = await this.usersService.validateCredentials(
+      dto.email,
+      dto.password.trim(),
+    );
+
+    if (!allowedRoles.includes(user.role)) {
+      throw new ForbiddenException(
+        `This account cannot access the ${allowedRoles.join('/')} portal`,
+      );
+    }
+
+    return this.toAuthResponse(user, sessionContext);
+  }
+
   async loginGoogleMember(dto: GoogleAuthDto, sessionContext?: SessionContext) {
     const googleAccount = await this.verifyGoogleAccount(dto);
     const existingUser = await this.usersService.findByEmail(
@@ -1092,10 +1111,9 @@ export class AuthService {
   }
 
   private webRedirectUrl(path: string) {
-    const baseUrl = this.configService.get<string>(
-      'WEB_BASE_URL',
-      'http://localhost:3000',
-    );
+    const baseUrl =
+      this.configService.get<string>('AUTH_BASE_URL') ||
+      this.configService.get<string>('WEB_BASE_URL', 'http://localhost:3000');
     const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
 
     return `${normalizedBaseUrl}${this.normalizeRedirectPath(path)}`;
@@ -1103,11 +1121,13 @@ export class AuthService {
 
   private shouldUseSecureCookies() {
     const webBaseUrl = this.configService.get<string>('WEB_BASE_URL', '');
+    const authBaseUrl = this.configService.get<string>('AUTH_BASE_URL', '');
     const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL', '');
 
     return (
       this.configService.get<string>('NODE_ENV') === 'production' ||
       webBaseUrl.startsWith('https://') ||
+      authBaseUrl.startsWith('https://') ||
       callbackUrl.startsWith('https://')
     );
   }

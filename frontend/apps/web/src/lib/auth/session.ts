@@ -1,3 +1,5 @@
+import { getNightlifeHostKind } from "./hosts";
+
 export type AuthRole = "USER" | "PARTNER" | "OPERATOR" | "ADMIN" | "SUPER_ADMIN" | "STAFF";
 
 export type AuthUser = {
@@ -53,7 +55,8 @@ const notifyAuthSessionChanged = () => {
 };
 
 const setCookie = (name: string, value: string, maxAge = sessionCookieMaxAge) => {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 };
 
 const parseCookies = () => {
@@ -111,6 +114,9 @@ const isTokenExpired = (token: string) => {
 
 export const getSessionScopePrefix = () => {
   if (typeof window === "undefined") return "";
+  const hostKind = getNightlifeHostKind(window.location.hostname);
+  if (hostKind === "admin") return "admin_";
+  if (hostKind === "partner") return "partner_";
   const pathname = window.location.pathname;
   if (pathname.startsWith("/admin")) return "admin_";
   if (pathname.startsWith("/partner") || pathname.startsWith("/dang-nhap-doi-tac"))
@@ -119,10 +125,10 @@ export const getSessionScopePrefix = () => {
 };
 
 const getSessionScopePrefixForRole = (role: AuthRole) => {
-  if (role === "ADMIN" || role === "SUPER_ADMIN" || role === "STAFF") {
+  if (role === "ADMIN" || role === "SUPER_ADMIN" || role === "OPERATOR") {
     return "admin_";
   }
-  if (role === "PARTNER" || role === "OPERATOR") {
+  if (role === "PARTNER" || role === "STAFF") {
     return "partner_";
   }
   return "";
@@ -154,12 +160,12 @@ export const getActiveBrowserAuthSession = (): ActiveBrowserAuthSession | null =
   }> = [
     {
       prefix: "admin_",
-      roles: ["ADMIN", "SUPER_ADMIN", "STAFF"],
+      roles: ["OPERATOR", "ADMIN", "SUPER_ADMIN"],
       homePath: "/admin",
     },
     {
       prefix: "partner_",
-      roles: ["PARTNER", "OPERATOR"],
+      roles: ["PARTNER", "STAFF"],
       homePath: "/partner",
     },
     {

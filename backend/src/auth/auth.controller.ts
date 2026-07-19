@@ -157,8 +157,8 @@ export class AuthController {
   @ApiOkResponse({ type: AuthResponseDto })
   @Post('login/partner')
   loginPartner(@Body() dto: LoginDto, @Req() request: Request) {
-    return this.authService.loginAs(
-      'PARTNER',
+    return this.authService.loginForPortal(
+      ['PARTNER', 'STAFF'],
       dto,
       this.sessionContext(request),
     );
@@ -179,7 +179,11 @@ export class AuthController {
   @ApiOkResponse({ type: AuthResponseDto })
   @Post('login/admin')
   loginAdmin(@Body() dto: LoginDto, @Req() request: Request) {
-    return this.authService.loginAs('ADMIN', dto, this.sessionContext(request));
+    return this.authService.loginForPortal(
+      ['OPERATOR', 'ADMIN', 'SUPER_ADMIN'],
+      dto,
+      this.sessionContext(request),
+    );
   }
 
   @ApiOperation({ summary: 'Lấy thông tin tài khoản hiện tại' })

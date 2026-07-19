@@ -8,6 +8,9 @@ async function bootstrap() {
   const productionOrigins = [
     'https://demonightlight.test9.io.vn',
     'https://www.demonightlight.test9.io.vn',
+    'https://partner.demonightlight.test9.io.vn',
+    'https://admin.demonightlight.test9.io.vn',
+    'https://auth.demonightlight.test9.io.vn',
     'https://demonightlight.test9io.vn',
     'https://www.demonightlight.test9io.vn',
     'https://nightlife.lptech.info.vn',

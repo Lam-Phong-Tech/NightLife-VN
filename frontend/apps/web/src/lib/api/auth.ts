@@ -1,11 +1,22 @@
 import { ApiError, apiClient, buildApiUrl } from "./client";
 import {
   clearAuthSession,
+  getActiveBrowserAuthSession,
   getAllAuthSessionTokens,
+  getAuthSessionToken,
   setAuthSession,
   type AuthResponse,
   type AuthRole,
 } from "../auth/session";
+import {
+  getNightlifeHostKind,
+  isSafePortalRedirect,
+  nightlifeOrigins,
+  portalForRole,
+  portalHomePath,
+  runtimePortalOrigin,
+  type AuthPortal,
+} from "../auth/hosts";
 
 export type LoginPayload = {
   email: string;
@@ -262,17 +273,102 @@ const revokeAuthTokens = async (tokens: string[]) => {
   await Promise.allSettled(Array.from(new Set(tokens.filter(Boolean))).map(revokeAuthToken));
 };
 
-export const activateExclusiveAuthSession = async (session: AuthResponse) => {
+const submitPortalSession = (accessToken: string, portal: AuthPortal, redirectTo: string) => {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = `${runtimePortalOrigin(portal)}/api/auth/portal-session`;
+  form.style.display = "none";
+
+  const fields = {
+    access_token: accessToken,
+    portal,
+    redirect: isSafePortalRedirect(portal, redirectTo) ? redirectTo : portalHomePath(portal),
+  };
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+};
+
+export const activateExclusiveAuthSession = async (
+  session: AuthResponse,
+  options?: { redirectTo?: string },
+) => {
   const previousTokens = getAllAuthSessionTokens().filter((token) => token !== session.accessToken);
 
   await revokeAuthTokens(previousTokens);
   setAuthSession(session);
+
+  if (!options || typeof window === "undefined") {
+    return;
+  }
+
+  const portal = portalForRole(session.user.role);
+  const redirectTo =
+    options.redirectTo && isSafePortalRedirect(portal, options.redirectTo)
+      ? options.redirectTo
+      : portalHomePath(portal);
+  const hostKind = getNightlifeHostKind(window.location.hostname);
+
+  if (hostKind === "local" || hostKind === "unknown") {
+    window.location.assign(redirectTo);
+    return;
+  }
+
+  submitPortalSession(session.accessToken, portal, redirectTo);
+};
+
+export const handoffActiveAuthSession = () => {
+  if (typeof window === "undefined") return false;
+  const activeSession = getActiveBrowserAuthSession();
+  const accessToken = getAuthSessionToken();
+  if (!activeSession || !accessToken) return false;
+
+  const portal = portalForRole(activeSession.role);
+  const params = new URLSearchParams(window.location.search);
+  const requestedRedirect = params.get("redirect");
+  let redirectTo =
+    requestedRedirect && isSafePortalRedirect(portal, requestedRedirect)
+      ? requestedRedirect
+      : portalHomePath(portal);
+  if (params.get("auth_notice") === "login-blocked") {
+    const noticeUrl = new URL(redirectTo, window.location.origin);
+    noticeUrl.searchParams.set("auth_notice", "login-blocked");
+    noticeUrl.searchParams.set(
+      "requested_portal",
+      params.get("requested_portal") || "member",
+    );
+    noticeUrl.searchParams.set("active_role", params.get("active_role") || activeSession.role);
+    redirectTo = `${noticeUrl.pathname}${noticeUrl.search}`;
+  }
+  submitPortalSession(accessToken, portal, redirectTo);
+  return true;
 };
 
 export const logoutBrowserProfile = async () => {
   const tokens = getAllAuthSessionTokens();
   clearAuthSession();
   await revokeAuthTokens(tokens);
+
+  if (typeof window === "undefined") return;
+  const hostKind = getNightlifeHostKind(window.location.hostname);
+  if (!["public", "partner", "admin"].includes(hostKind)) return;
+
+  try {
+    await fetch(`${nightlifeOrigins.auth}/api/auth/clear-session`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // The local portal session has already been removed. Central auth cleanup
+    // can be retried the next time the auth host is opened.
+  }
 };
 
 export const requestPasswordReset = (payload: RequestPasswordResetPayload) => {
