@@ -2370,6 +2370,17 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           <SiteFooter isMobile={isMobile} brand={brand} language={activeLanguage} />
         )}
 
+        {isMobile && hideFooter ? (
+          <div
+            className="nl-mobile-footer-spacer"
+            aria-hidden="true"
+            style={{
+              height: "calc(86px + env(safe-area-inset-bottom))",
+              flex: "none",
+            }}
+          />
+        ) : null}
+
         <nav
           style={{
             position: "fixed",
