@@ -4893,11 +4893,6 @@ export default function PartnerPage() {
         <SectionHeading
           title="Thông tin đơn vừa quét"
           hideLine
-          action={
-            <StatusPill tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}>
-              {scanIssue.statusLabel ?? scanIssue.status}
-            </StatusPill>
-          }
         />
           <div style={{ display: 'grid', gap: '12px' }}>
             <div
@@ -4926,12 +4921,6 @@ export default function PartnerPage() {
                   {scanIssue.code}
                 </div>
               </div>
-              <StatusPill
-                className="partner-scan-result-status"
-                tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}
-              >
-                {scanIssue.statusLabel ?? scanIssue.status}
-              </StatusPill>
               <div
                 className="partner-scan-result-title"
                 style={{
