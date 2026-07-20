@@ -2787,7 +2787,7 @@ export default function Page() {
   );
   const recommendedCards = homeRecommendations.length ? homeRecommendations : homeStoreCards;
   const guideItems = useMemo(
-    () => [...homeTours, ...homeContentItems].slice(0, 6),
+    () => [...homeTours, ...homeContentItems].slice(0, 8),
     [homeTours, homeContentItems],
   );
   const heroBanners = useMemo(() => [...homeBanners]
@@ -2968,9 +2968,9 @@ export default function Page() {
 
     Promise.all([
       tourApi.list({
-        limit: 2,
+        limit: 3,
       }),
-      contentApi.list({ type: "BLOG", limit: 3 }),
+      contentApi.list({ type: "BLOG", limit: 5 }),
       contentApi.list({ type: "POLICY", limit: 3 }),
     ])
       .then(([tourResponse, blogResponse, policyResponse]) => {
@@ -2982,7 +2982,7 @@ export default function Page() {
         ]);
         setHomeTours(tourItems);
         const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
-          .slice(0, 3)
+          .slice(0, 5)
           .map(mapContentToHomeItem);
         setHomeContentItems(withApiImageFallbacks(items, tourImages));
       })

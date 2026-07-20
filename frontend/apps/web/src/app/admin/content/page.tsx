@@ -43,10 +43,31 @@ const colors = {
   green: '#4ade80',
 };
 
+type AdminHomeTour = {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  city?: string | null;
+  durationHours?: number | null;
+  priceTier?: number | null;
+  coverUrl?: string | null;
+  status?: string | null;
+  stops?: Array<{
+    id?: string;
+    store?: {
+      name?: string | null;
+      category?: string | null;
+      city?: string | null;
+      district?: string | null;
+    } | null;
+  }>;
+  createdAt?: string;
+};
+
 
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
-  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'recommend' | 'video' | 'blog'>('campaign');
+  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'recommend' | 'tour' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [editBannerId, setEditBannerId] = useState<string | null>(null);
@@ -61,6 +82,9 @@ export default function AdminContentPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [blogs, setBlogs] = useState<CmsContentItem[]>([]);
   const [banners, setBanners] = useState<CmsContentItem[]>([]);
+  const [tours, setTours] = useState<AdminHomeTour[]>([]);
+  const [isLoadingTours, setIsLoadingTours] = useState(false);
+  const [updatingTourId, setUpdatingTourId] = useState<string | null>(null);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
@@ -130,6 +154,7 @@ export default function AdminContentPage() {
     fetchCategories();
     fetchBlogs();
     fetchBanners();
+    fetchTours();
     fetchBannerTags();
     fetchCampaigns();
   }, []);
@@ -567,6 +592,45 @@ export default function AdminContentPage() {
     }
   };
 
+  const fetchTours = async () => {
+    try {
+      setIsLoadingTours(true);
+      const response = await apiClient<{ data?: AdminHomeTour[] } | AdminHomeTour[]>('/admin/tours', {
+        params: { limit: 1000 },
+      });
+      const list = Array.isArray(response) ? response : response.data ?? [];
+      setTours(list.filter((tour) => tour.status !== 'DELETED'));
+    } catch (error) {
+      console.error('Failed to fetch tours:', error);
+      feedback.showToast({ title: 'Không tải được danh sách tour', tone: 'error' });
+    } finally {
+      setIsLoadingTours(false);
+    }
+  };
+
+  const handleToggleTourHome = async (tour: AdminHomeTour) => {
+    const nextStatus = tour.status === 'ACTIVE' ? 'HIDDEN' : 'ACTIVE';
+    try {
+      setUpdatingTourId(tour.id);
+      await apiClient(`/admin/tours/${tour.id}`, {
+        method: 'PUT',
+        data: { status: nextStatus },
+      });
+      setTours((current) =>
+        current.map((item) => (item.id === tour.id ? { ...item, status: nextStatus } : item)),
+      );
+      feedback.showToast({
+        title: nextStatus === 'ACTIVE' ? 'Đã hiển thị tour trên trang chủ' : 'Đã ẩn tour khỏi trang chủ',
+        tone: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to update tour visibility:', error);
+      feedback.showToast({ title: 'Không cập nhật được trạng thái tour', tone: 'error' });
+    } finally {
+      setUpdatingTourId(null);
+    }
+  };
+
   const fetchCampaigns = async () => {
     try {
       const data = await campaignsApi.adminList();
@@ -769,6 +833,19 @@ export default function AdminContentPage() {
     if (status === 'Đã đăng') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
     if (status === 'Nháp') return { color: colors.gold, border: `1px solid ${colors.borderGold22}` };
     return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
+  };
+
+  const getTourStatusStyle = (status?: string | null) => {
+    if (status === 'ACTIVE') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
+    return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
+  };
+
+  const getTourStatusLabel = (status?: string | null) => (status === 'ACTIVE' ? 'Đang hiển thị' : 'Đang ẩn');
+
+  const getTourCityLabel = (city?: string | null) => {
+    if (city === 'Hanoi') return 'Hà Nội';
+    if (city === 'Ho Chi Minh City') return 'TP. Hồ Chí Minh';
+    return city || 'Tất cả';
   };
 
   const handleEditBanner = (banner: CmsContentItem) => {
@@ -1085,6 +1162,18 @@ export default function AdminContentPage() {
           >
             Đề xuất tối nay
           </button>
+          <button
+            onClick={() => setActiveTab('tour')}
+            style={{
+              padding: '8px 24px', borderRadius: '6px', border: 'none',
+              background: activeTab === 'tour' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'tour' ? colors.onGold : colors.muted,
+              fontWeight: activeTab === 'tour' ? 700 : 500,
+              fontSize: '13px', cursor: 'pointer'
+            }}
+          >
+            Tour
+          </button>
           <button 
             onClick={() => setActiveTab('video')}
             style={{
@@ -1124,6 +1213,8 @@ export default function AdminContentPage() {
             } else if (activeTab === 'recommend') {
               const searchInput = document.getElementById('recommend-search-input');
               if (searchInput) searchInput.focus();
+            } else if (activeTab === 'tour') {
+              fetchTours();
             } else {
               setIsAdding(activeTab);
             }
@@ -1135,7 +1226,7 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : activeTab === 'recommend' ? 'Thêm đề xuất' : 'Viết bài'}
+          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : activeTab === 'recommend' ? 'Thêm đề xuất' : activeTab === 'tour' ? 'Làm mới tour' : 'Viết bài'}
         </button>
       </div>
 
@@ -1288,6 +1379,91 @@ export default function AdminContentPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TOUR CONTENT */}
+      {activeTab === 'tour' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '13px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.22)' }}>
+            <span style={{ color: colors.text, fontSize: '13px', fontWeight: 700 }}>
+              {tours.filter((tour) => tour.status === 'ACTIVE').length} tour đang hiển thị trên trang chủ
+            </span>
+            <span style={{ color: colors.muted, fontSize: '12px', fontWeight: 600 }}>
+              Tổng: {tours.length} tour
+            </span>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '96px minmax(0,1.7fr) minmax(96px,.8fr) minmax(96px,.7fr) 150px 150px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+              <span>Ảnh</span><span>Tour</span><span>Khu vực</span><span>Điểm dừng</span><span>Trạng thái</span><span style={{ textAlign: 'right' }}>Hiển thị</span>
+            </div>
+
+            {isLoadingTours ? (
+              <DataSkeleton variant="list" count={4} style={{ padding: '18px' }} />
+            ) : tours.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px' }}>
+                Chưa có tour nào
+              </div>
+            ) : (
+              tours.map((tour) => {
+                const isVisible = tour.status === 'ACTIVE';
+                const statusStyle = getTourStatusStyle(tour.status);
+                const coverUrl = resolveClientUrl(tour.coverUrl);
+                const stopSummary = tour.stops?.length
+                  ? `${tour.stops.length} điểm · ${tour.stops[0]?.store?.name || 'Chưa có tên điểm'}`
+                  : 'Chưa có điểm dừng';
+                const isUpdating = updatingTourId === tour.id;
+
+                return (
+                  <div
+                    key={tour.id}
+                    style={{ display: 'grid', gridTemplateColumns: '96px minmax(0,1.7fr) minmax(96px,.8fr) minmax(96px,.7fr) 150px 150px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px' }}
+                  >
+                    <div style={{ width: '76px', height: '52px', borderRadius: '9px', overflow: 'hidden', background: 'rgba(255,255,255,.05)', flexShrink: 0 }}>
+                      {coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: colors.text, marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {tour.title}
+                      </div>
+                      <div style={{ fontSize: '12px', color: colors.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {tour.subtitle || stopSummary}
+                      </div>
+                    </div>
+                    <span style={{ color: '#caa765', fontWeight: 600 }}>{getTourCityLabel(tour.city)}</span>
+                    <span style={{ color: colors.text2, fontWeight: 600 }}>{tour.stops?.length || 0} điểm</span>
+                    <span style={{ ...statusStyle, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', justifyContent: 'center', width: 'fit-content' }}>
+                      {getTourStatusLabel(tour.status)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleToggleTourHome(tour)}
+                      style={{
+                        justifySelf: 'end',
+                        minWidth: '126px',
+                        border: isVisible ? '1px solid rgba(255,255,255,.12)' : '1px solid transparent',
+                        background: isVisible ? 'rgba(255,255,255,.04)' : colors.goldGrad,
+                        color: isVisible ? colors.text2 : colors.onGold,
+                        borderRadius: '9px',
+                        padding: '8px 12px',
+                        fontSize: '12.5px',
+                        fontWeight: 800,
+                        cursor: isUpdating ? 'not-allowed' : 'pointer',
+                        opacity: isUpdating ? 0.6 : 1,
+                      }}
+                    >
+                      {isUpdating ? 'Đang lưu...' : isVisible ? 'Ẩn' : 'Hiện'}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 
