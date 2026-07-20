@@ -2344,6 +2344,31 @@ html.vy-light .nl-home-hero {
   box-shadow: 0 28px 58px -34px rgba(80, 55, 18, 0.55) !important;
 }
 
+html.vy-light .nl-home-hero-overlay {
+  background:
+    linear-gradient(90deg, rgba(15, 12, 8, 0.42) 0%, rgba(15, 12, 8, 0.26) 45%, rgba(15, 12, 8, 0.14) 72%),
+    linear-gradient(180deg, rgba(15, 12, 8, 0.03) 0%, rgba(15, 12, 8, 0.52) 100%) !important;
+}
+
+html.vy-light .nl-home-hero-status {
+  background: rgba(255, 247, 222, 0.92) !important;
+  border-color: rgba(176, 128, 36, 0.38) !important;
+  color: #8a5d08 !important;
+  box-shadow: 0 10px 24px rgba(82, 54, 11, 0.16) !important;
+}
+
+html.vy-light .nl-home-hero-subtitle {
+  color: #ffe7a0 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.52) !important;
+}
+
+html.vy-light .nl-home-hero-cta {
+  background: linear-gradient(135deg, #fff1ba 0%, #e7bd5e 58%, #c58d25 100%) !important;
+  color: #2c1b04 !important;
+  box-shadow: 0 14px 26px rgba(97, 63, 10, 0.22) !important;
+}
+
 html.vy-light .nl-home-card,
 html.vy-light .nl-home-data-message {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(248, 243, 231, 0.54)) !important;

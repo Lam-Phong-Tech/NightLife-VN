@@ -1378,10 +1378,11 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      {event.hasImage && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />}
+      {event.hasImage && <div className="nl-home-hero-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />}
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         {event.statusLabel && (
           <span
+            className="nl-home-hero-status"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -1401,7 +1402,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
           </span>
         )}
         {event.subtitle && (
-          <div style={{ marginTop: "20px", color: colors.goldSoft, fontSize: desktop ? "13px" : "11px", letterSpacing: ".24em" }}>
+          <div className="nl-home-hero-subtitle" style={{ marginTop: "20px", color: colors.goldSoft, fontSize: desktop ? "13px" : "11px", letterSpacing: ".24em" }}>
             {eventSubtitle}
           </div>
         )}
@@ -1411,6 +1412,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
         <div style={{ marginTop: desktop ? "22px" : "16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
           <span style={{ maxWidth: desktop ? "none" : "168px", fontSize: desktop ? "15px" : "12px", lineHeight: 1.35 }}>{eventDesc}</span>
           <span
+            className="nl-home-hero-cta"
             style={{
               display: "inline-flex",
               alignItems: "center",
