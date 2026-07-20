@@ -77,6 +77,7 @@ export type PublicTour = {
   priceTier: number;
   coverUrl?: string | null;
   status: "ACTIVE" | "HIDDEN" | "DELETED";
+  homeRank?: number | null;
   departureTimes: string[];
   departureSchedule?: TourDepartureSchedule | null;
   stops: PublicTourStop[];

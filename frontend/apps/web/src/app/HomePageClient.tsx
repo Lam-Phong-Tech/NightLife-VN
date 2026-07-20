@@ -446,6 +446,8 @@ type HomeContentItem = {
   kicker: string;
   meta?: string;
   img?: string;
+  rank?: number;
+  createdAt?: string;
 };
 
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
@@ -754,6 +756,8 @@ function mapTourToHomeItem(
     kicker: "Tour",
     meta: translateText(meta, language),
     img: backgroundFromUrl(firstContentImage(tour.coverUrl, stopImage)),
+    rank: typeof tour.homeRank === "number" ? tour.homeRank : Number.MAX_SAFE_INTEGER,
+    createdAt: tour.createdAt,
   };
 }
 
@@ -776,6 +780,8 @@ function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
     kicker: category,
     meta: publishedDate,
     img: backgroundFromUrl(image),
+    rank: getHomeGuideRank(content),
+    createdAt: content.createdAt,
   };
 }
 
@@ -2802,7 +2808,14 @@ export default function HomePageClient() {
   );
   const recommendedCards = homeRecommendations.length ? homeRecommendations : homeStoreCards;
   const guideItems = useMemo(
-    () => [...homeTours, ...homeContentItems].slice(0, 8),
+    () =>
+      [...homeTours, ...homeContentItems]
+        .sort(
+          (a, b) =>
+            (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER) ||
+            (a.createdAt ?? "").localeCompare(b.createdAt ?? ""),
+        )
+        .slice(0, 8),
     [homeTours, homeContentItems],
   );
   const heroBanners = useMemo(() => [...homeBanners]
@@ -2998,7 +3011,7 @@ export default function HomePageClient() {
         const items = [...(blogResponse.data ?? [])]
           .filter(isHomeGuideBlog)
           .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
-          .slice(0, Math.max(0, 8 - tourItems.length))
+          .slice(0, 8)
           .map(mapContentToHomeItem);
         setHomeContentItems(withApiImageFallbacks(items, tourImages));
       })

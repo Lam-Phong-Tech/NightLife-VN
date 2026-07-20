@@ -144,7 +144,7 @@ export class TourService {
         skip,
         take,
         where,
-        orderBy: [{ homeRank: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ homeRank: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         include: this.publicTourInclude(now),
       }),
       this.prisma.tour.count({ where }),
@@ -192,7 +192,7 @@ export class TourService {
           ...where,
           status: where?.status || { not: 'DELETED' },
         },
-        orderBy: orderBy || [{ homeRank: 'asc' }, { createdAt: 'desc' }],
+        orderBy: orderBy || [{ homeRank: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         include: {
           stops: {
             orderBy: { order: 'asc' },
