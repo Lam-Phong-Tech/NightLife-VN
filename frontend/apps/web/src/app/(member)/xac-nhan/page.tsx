@@ -195,6 +195,23 @@ type BookingDiscountInfo = {
   value: number;
 };
 
+const bookingRecordValue = (value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
+const bookingCouponLabel = (booking: BookingRecord) => {
+  const snapshot = bookingRecordValue(booking.discountSnapshot);
+  const snapshotCode = snapshot?.code;
+  const snapshotName = snapshot?.name;
+  const code =
+    booking.couponIssue?.code ??
+    (booking.coupon?.code?.startsWith("CAMPAIGN-") ? booking.coupon.name : booking.coupon?.code) ??
+    (typeof snapshotCode === "string" ? snapshotCode : null) ??
+    booking.coupon?.name ??
+    (typeof snapshotName === "string" ? snapshotName : null);
+
+  return code?.trim() || null;
+};
+
 const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null => {
   const issue = booking.couponIssue;
   const issueMetadata = issue?.metadata;
@@ -210,11 +227,8 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
     return parsed > 0 && parsed <= 1 ? parsed * 100 : parsed;
   };
 
-  const recordValue = (value: unknown) =>
-    value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-
   const discountFromSnapshot = (snapshot: unknown): BookingDiscountInfo | null => {
-    const record = recordValue(snapshot);
+    const record = bookingRecordValue(snapshot);
     if (!record) return null;
 
     const rawType = record.discountType ?? record.type ?? "PERCENT";
@@ -230,7 +244,7 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
   };
 
   if (issue) {
-    const issueRecord = recordValue(issue);
+    const issueRecord = bookingRecordValue(issue);
     const p = percentValue(issueRecord?.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
@@ -239,7 +253,7 @@ const bookingDiscountText = (booking: BookingRecord): BookingDiscountInfo | null
   }
 
   if (issueMetadata) {
-    const issueMetadataRecord = recordValue(issueMetadata);
+    const issueMetadataRecord = bookingRecordValue(issueMetadata);
     const p = percentValue(issueMetadataRecord?.discountPercent);
     if (p !== null) return { type: "PERCENT", value: p };
 
@@ -617,6 +631,8 @@ export default function Page() {
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
+  const couponLabelText = booking ? bookingCouponLabel(booking) : null;
+  const shouldShowDiscountSummary = Boolean(couponLabelText || discountLabelText);
   const guestEmailLabel = booking?.guest?.email ?? (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
   const guestConfirmationMessage = isTourBooking
     ? `${tourCopy.emailSentPrefix} ${guestEmailLabel}. ${tourCopy.adminWillContact}`
@@ -782,11 +798,11 @@ export default function Page() {
                 label={isTourBooking ? tourCopy.bookerLabel : translateText("Người đặt", activeLanguage)}
                 value={guestLabel(booking, activeLanguage)}
               />
-              {booking.couponIssue ? (
+              {shouldShowDiscountSummary ? (
                 <>
                   <SummaryRow
                     label={translateText("Mã ưu đãi", activeLanguage)}
-                    value={<span className={styles.bookingCode}>{booking.couponIssue.code}</span>}
+                    value={<span className={styles.bookingCode}>{couponLabelText ?? translateText("Ưu đãi", activeLanguage)}</span>}
                   />
                   {discountLabelText !== null ? (
                     <SummaryRow

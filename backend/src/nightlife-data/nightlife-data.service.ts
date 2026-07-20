@@ -5982,6 +5982,7 @@ export class NightlifeDataService {
           subtotalVnd: true,
           discountVnd: true,
           totalVnd: true,
+          discountSnapshot: true,
           store: {
             select: {
               id: true,
@@ -6033,7 +6034,13 @@ export class NightlifeDataService {
             },
           },
           couponIssue: {
-            select: { id: true, code: true, status: true, usedAt: true },
+            select: {
+              id: true,
+              code: true,
+              status: true,
+              metadata: true,
+              usedAt: true,
+            },
           },
           qr: {
             select: {
@@ -10597,17 +10604,27 @@ export class NightlifeDataService {
             select: { id: true },
           });
 
-          if (!campaignCoupon) {
+          const campaignCouponData = {
+            name: campaign.name,
+            discountType: campaign.discountType,
+            discountValue: campaign.discountValue,
+            startsAt: campaign.startsAt ?? new Date(),
+            endsAt: campaign.endsAt,
+            status: 'ACTIVE' as const,
+          };
+
+          if (campaignCoupon) {
+            campaignCoupon = await prisma.coupon.update({
+              where: { id: campaignCoupon.id },
+              data: campaignCouponData,
+              select: { id: true },
+            });
+          } else {
             campaignCoupon = await prisma.coupon.create({
               data: {
                 storeId,
                 code: expectedCampaignCode,
-                name: campaign.name,
-                discountType: campaign.discountType,
-                discountValue: campaign.discountValue,
-                startsAt: campaign.startsAt ?? new Date(),
-                endsAt: campaign.endsAt,
-                status: 'ACTIVE',
+                ...campaignCouponData,
               },
               select: { id: true },
             });
