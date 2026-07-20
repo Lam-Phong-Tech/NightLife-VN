@@ -779,6 +779,21 @@ function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
   };
 }
 
+function getHomeGuideMetadata(content: CmsContentItem) {
+  return content.metadata && typeof content.metadata === "object" && !Array.isArray(content.metadata)
+    ? (content.metadata as Record<string, unknown>)
+    : {};
+}
+
+function isHomeGuideBlog(content: CmsContentItem) {
+  return content.type === "BLOG" && getHomeGuideMetadata(content).showOnHome === true;
+}
+
+function getHomeGuideRank(content: CmsContentItem) {
+  const rank = getHomeGuideMetadata(content).homeRank;
+  return typeof rank === "number" && Number.isFinite(rank) ? rank : Number.MAX_SAFE_INTEGER;
+}
+
 function withApiImageFallbacks(items: HomeContentItem[], fallbackImages: Array<string | null | undefined>) {
   const usableFallbacks = fallbackImages.filter(isUsableContentImage);
   if (!usableFallbacks.length) return items;
@@ -2968,12 +2983,11 @@ export default function Page() {
 
     Promise.all([
       tourApi.list({
-        limit: 3,
+        limit: 8,
       }),
-      contentApi.list({ type: "BLOG", limit: 5 }),
-      contentApi.list({ type: "POLICY", limit: 3 }),
+      contentApi.list({ type: "BLOG", limit: 50 }),
     ])
-      .then(([tourResponse, blogResponse, policyResponse]) => {
+      .then(([tourResponse, blogResponse]) => {
         if (cancelled) return;
         const tourItems = tourResponse.data.map((tour) => mapTourToHomeItem(tour, activeLanguage));
         const tourImages = tourResponse.data.flatMap((tour) => [
@@ -2981,8 +2995,10 @@ export default function Page() {
           ...tour.stops.flatMap((stop) => stop.store.media.map((media) => media.url)),
         ]);
         setHomeTours(tourItems);
-        const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
-          .slice(0, 5)
+        const items = [...(blogResponse.data ?? [])]
+          .filter(isHomeGuideBlog)
+          .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
+          .slice(0, Math.max(0, 8 - tourItems.length))
           .map(mapContentToHomeItem);
         setHomeContentItems(withApiImageFallbacks(items, tourImages));
       })

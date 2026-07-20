@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil, CheckCircle2 } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
-import { contentApi, CmsContentItem } from '@/lib/api/content';
+import { contentApi, getCmsContentImageUrl, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
@@ -42,6 +42,8 @@ const colors = {
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
   green: '#4ade80',
 };
+
+const HOME_GUIDE_LIMIT = 8;
 
 type AdminHomeTour = {
   id: string;
@@ -86,6 +88,36 @@ const includesSeoKeyword = (value: string, keyword: string) => {
 
 const countWords = (value: string) => stripHtml(value).split(/\s+/).filter(Boolean).length;
 
+const asMetadata = (metadata: CmsContentItem['metadata']) =>
+  metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+    ? (metadata as Record<string, unknown>)
+    : {};
+
+const isHomeBlogVisible = (blog: CmsContentItem) =>
+  blog.status === 'PUBLISHED' && asMetadata(blog.metadata).showOnHome === true;
+
+const getHomeBlogRank = (blog: CmsContentItem) => {
+  const rank = asMetadata(blog.metadata).homeRank;
+  return typeof rank === 'number' && Number.isFinite(rank) ? rank : Number.MAX_SAFE_INTEGER;
+};
+
+const normalizeSearchText = (value: string | null | undefined) =>
+  (value || '').toLocaleLowerCase('vi-VN').trim();
+
+const includesSearchText = (value: string | null | undefined, query: string) =>
+  normalizeSearchText(value).includes(normalizeSearchText(query));
+
+const sortHomeBlogs = (items: CmsContentItem[]) =>
+  [...items].sort((a, b) => getHomeBlogRank(a) - getHomeBlogRank(b) || a.createdAt.localeCompare(b.createdAt));
+
+const nextHomeBlogRank = (items: CmsContentItem[]) => {
+  const ranks = items
+    .filter(isHomeBlogVisible)
+    .map(getHomeBlogRank)
+    .filter((rank) => rank !== Number.MAX_SAFE_INTEGER);
+  return ranks.length ? Math.max(...ranks) + 1 : 1;
+};
+
 
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
@@ -108,6 +140,9 @@ export default function AdminContentPage() {
   const [tours, setTours] = useState<AdminHomeTour[]>([]);
   const [isLoadingTours, setIsLoadingTours] = useState(false);
   const [updatingTourId, setUpdatingTourId] = useState<string | null>(null);
+  const [searchTourQuery, setSearchTourQuery] = useState('');
+  const [searchBlogQuery, setSearchBlogQuery] = useState('');
+  const [updatingBlogHomeId, setUpdatingBlogHomeId] = useState<string | null>(null);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
@@ -719,6 +754,89 @@ export default function AdminContentPage() {
     }
   };
 
+  const handleSetTourHome = async (tour: AdminHomeTour, visible: boolean) => {
+    const nextStatus = visible ? 'ACTIVE' : 'HIDDEN';
+    if (tour.status === nextStatus) return;
+
+    if (
+      visible &&
+      tours.filter((item) => item.status === 'ACTIVE').length + blogs.filter(isHomeBlogVisible).length >= HOME_GUIDE_LIMIT
+    ) {
+      feedback.showModal({
+        title: 'Giới hạn Tour · Blog',
+        description: `Trang chủ chỉ hiển thị tối đa ${HOME_GUIDE_LIMIT} tour và blog. Vui lòng gỡ bớt nội dung khác trước khi thêm tour này.`,
+        tone: 'warning',
+        primaryLabel: 'Đã hiểu',
+      });
+      return;
+    }
+
+    try {
+      setUpdatingTourId(tour.id);
+      await apiClient(`/admin/tours/${tour.id}`, {
+        method: 'PUT',
+        data: { status: nextStatus },
+      });
+      setTours((current) =>
+        current.map((item) => (item.id === tour.id ? { ...item, status: nextStatus } : item)),
+      );
+      feedback.showToast({
+        title: nextStatus === 'ACTIVE' ? 'Đã thêm tour lên trang chủ' : 'Đã gỡ tour khỏi trang chủ',
+        tone: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to update tour visibility:', error);
+      feedback.showToast({ title: 'Không cập nhật được trạng thái tour', tone: 'error' });
+    } finally {
+      setUpdatingTourId(null);
+    }
+  };
+
+  const handleSetBlogHome = async (blog: CmsContentItem, visible: boolean) => {
+    if (visible && blog.status !== 'PUBLISHED') {
+      feedback.showToast({ title: 'Chỉ bài đã đăng mới được hiển thị trên trang chủ', tone: 'warning' });
+      return;
+    }
+
+    if (
+      visible &&
+      !isHomeBlogVisible(blog) &&
+      tours.filter((item) => item.status === 'ACTIVE').length + blogs.filter(isHomeBlogVisible).length >= HOME_GUIDE_LIMIT
+    ) {
+      feedback.showModal({
+        title: 'Giới hạn Tour · Blog',
+        description: `Trang chủ chỉ hiển thị tối đa ${HOME_GUIDE_LIMIT} tour và blog. Vui lòng gỡ bớt nội dung khác trước khi thêm bài này.`,
+        tone: 'warning',
+        primaryLabel: 'Đã hiểu',
+      });
+      return;
+    }
+
+    const metadata = { ...asMetadata(blog.metadata) };
+    if (visible) {
+      metadata.showOnHome = true;
+      metadata.homeRank = metadata.homeRank ?? nextHomeBlogRank(blogs);
+    } else {
+      metadata.showOnHome = false;
+      delete metadata.homeRank;
+    }
+
+    try {
+      setUpdatingBlogHomeId(blog.id);
+      const updated = await contentApi.adminUpdate(blog.id, { metadata });
+      setBlogs((current) => current.map((item) => (item.id === blog.id ? updated : item)));
+      feedback.showToast({
+        title: visible ? 'Đã thêm blog lên trang chủ' : 'Đã gỡ blog khỏi trang chủ',
+        tone: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to update blog homepage visibility:', error);
+      feedback.showToast({ title: 'Không cập nhật được blog trên trang chủ', tone: 'error' });
+    } finally {
+      setUpdatingBlogHomeId(null);
+    }
+  };
+
   const fetchCampaigns = async () => {
     try {
       const data = await campaignsApi.adminList();
@@ -1173,6 +1291,7 @@ export default function AdminContentPage() {
         excerpt: blogExcerpt,
         body: blogContent,
         metadata: {
+          ...(targetBlogId ? asMetadata(blogs.find((blog) => blog.id === targetBlogId)?.metadata ?? null) : {}),
           category: blogCategory,
           language: blogLanguage,
           focusKeyword: blogFocusKeyword.trim(),
@@ -1207,6 +1326,28 @@ export default function AdminContentPage() {
     setCoverImage((blog.metadata as any)?.image || null);
     setIsAdding('blog');
   };
+
+  const selectedHomeTours = tours.filter((tour) => tour.status === 'ACTIVE');
+  const selectedHomeBlogs = sortHomeBlogs(blogs.filter(isHomeBlogVisible));
+  const homeGuideSelectedCount = selectedHomeTours.length + selectedHomeBlogs.length;
+  const tourSearchResults = searchTourQuery.trim()
+    ? tours
+        .filter((tour) => tour.status !== 'ACTIVE')
+        .filter((tour) => {
+          const stopText = tour.stops?.map((stop) => stop.store?.name).filter(Boolean).join(' ') ?? '';
+          return [tour.title, tour.subtitle, tour.city, stopText].some((value) => includesSearchText(value, searchTourQuery));
+        })
+        .slice(0, 10)
+    : [];
+  const blogSearchResults = searchBlogQuery.trim()
+    ? blogs
+        .filter((blog) => blog.status === 'PUBLISHED' && !isHomeBlogVisible(blog))
+        .filter((blog) => {
+          const metadata = asMetadata(blog.metadata);
+          return [blog.title, blog.excerpt, String(metadata.category ?? '')].some((value) => includesSearchText(value, searchBlogQuery));
+        })
+        .slice(0, 10)
+    : [];
 
   return (
     <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
@@ -1430,6 +1571,91 @@ export default function AdminContentPage() {
       {/* BLOG CONTENT */}
       {activeTab === 'blog' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '12px' }}>
+              <span style={{ color: colors.text, fontSize: '13px', fontWeight: 800 }}>
+                Tour + Blog đang hiển thị: {homeGuideSelectedCount} / {HOME_GUIDE_LIMIT}
+              </span>
+              <span style={{ color: colors.muted, fontSize: '12px', fontWeight: 650 }}>
+                Blog: {selectedHomeBlogs.length}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <Search size={15} color="#8c8679" />
+              <input
+                id="blog-home-search-input"
+                value={searchBlogQuery}
+                onChange={(event) => setSearchBlogQuery(event.target.value)}
+                placeholder="Tìm bài blog đã đăng để thêm lên trang chủ..."
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+              {blogSearchResults.map((blog) => {
+                const image = resolveClientUrl(getCmsContentImageUrl(blog));
+                return (
+                  <div key={blog.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                    <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                      {image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{blog.title}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{String(asMetadata(blog.metadata).category ?? 'Blog')}</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={updatingBlogHomeId === blog.id}
+                      onClick={() => handleSetBlogHome(blog, true)}
+                      style={{ flex: 'none', border: 'none', fontSize: '11.5px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: updatingBlogHomeId === blog.id ? 'not-allowed' : 'pointer', opacity: updatingBlogHomeId === blog.id ? 0.65 : 1 }}
+                    >
+                      + Thêm lên trang chủ
+                    </button>
+                  </div>
+                );
+              })}
+              {searchBlogQuery.trim() !== '' && blogSearchResults.length === 0 && (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Không tìm thấy bài đã đăng chưa được thêm</div>
+              )}
+            </div>
+          </div>
+
+          {selectedHomeBlogs.length ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '14px' }}>
+              {selectedHomeBlogs.map((blog, index) => {
+                const image = resolveClientUrl(getCmsContentImageUrl(blog));
+                return (
+                  <div key={blog.id} style={{ minWidth: 0, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', aspectRatio: '16 / 9', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
+                      {image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                      <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px', zIndex: 1 }}>#{index + 1}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 750, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{blog.title}</div>
+                        <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px' }}>{String(asMetadata(blog.metadata).category ?? 'Blog')}</div>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Gỡ ${blog.title}`}
+                        onClick={() => handleSetBlogHome(blog, false)}
+                        disabled={updatingBlogHomeId === blog.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: updatingBlogHomeId === blog.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none' }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
           {blogs.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px', background: colors.surface1, borderRadius: '16px', border: `1px solid ${colors.borderSoft}` }}>
               Chưa có bài viết nào
@@ -1494,6 +1720,60 @@ export default function AdminContentPage() {
             </span>
           </div>
 
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '12px' }}>
+              <span style={{ color: colors.text, fontSize: '13px', fontWeight: 800 }}>
+                Tour + Blog đang hiển thị: {homeGuideSelectedCount} / {HOME_GUIDE_LIMIT}
+              </span>
+              <span style={{ color: colors.muted, fontSize: '12px', fontWeight: 650 }}>
+                Tour: {selectedHomeTours.length}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <Search size={15} color="#8c8679" />
+              <input
+                id="tour-home-search-input"
+                value={searchTourQuery}
+                onChange={(event) => setSearchTourQuery(event.target.value)}
+                placeholder="Tìm tour để thêm lên trang chủ..."
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+              {tourSearchResults.map((tour) => {
+                const coverUrl = resolveClientUrl(tour.coverUrl);
+                const stopSummary = tour.stops?.length
+                  ? `${tour.stops.length} điểm · ${tour.stops[0]?.store?.name || 'Chưa có tên điểm'}`
+                  : 'Chưa có điểm dừng';
+                return (
+                  <div key={tour.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                    <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                      {coverUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tour.title}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{getTourCityLabel(tour.city)} · {stopSummary}</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={updatingTourId === tour.id}
+                      onClick={() => handleSetTourHome(tour, true)}
+                      style={{ flex: 'none', border: 'none', fontSize: '11.5px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: updatingTourId === tour.id ? 'not-allowed' : 'pointer', opacity: updatingTourId === tour.id ? 0.65 : 1 }}
+                    >
+                      + Thêm lên trang chủ
+                    </button>
+                  </div>
+                );
+              })}
+              {searchTourQuery.trim() !== '' && tourSearchResults.length === 0 && !isLoadingTours && (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Không tìm thấy tour chưa được thêm</div>
+              )}
+            </div>
+          </div>
+
           <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '96px minmax(0,1.7fr) minmax(96px,.8fr) minmax(96px,.7fr) 150px 150px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
               <span>Ảnh</span><span>Tour</span><span>Khu vực</span><span>Điểm dừng</span><span>Trạng thái</span><span style={{ textAlign: 'right' }}>Hiển thị</span>
@@ -1501,12 +1781,12 @@ export default function AdminContentPage() {
 
             {isLoadingTours ? (
               <DataSkeleton variant="list" count={4} style={{ padding: '18px' }} />
-            ) : tours.length === 0 ? (
+            ) : selectedHomeTours.length === 0 ? (
               <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px' }}>
                 Chưa có tour nào
               </div>
             ) : (
-              tours.map((tour) => {
+              selectedHomeTours.map((tour) => {
                 const isVisible = tour.status === 'ACTIVE';
                 const statusStyle = getTourStatusStyle(tour.status);
                 const coverUrl = resolveClientUrl(tour.coverUrl);
@@ -1542,7 +1822,7 @@ export default function AdminContentPage() {
                     <button
                       type="button"
                       disabled={isUpdating}
-                      onClick={() => handleToggleTourHome(tour)}
+                      onClick={() => handleSetTourHome(tour, false)}
                       style={{
                         justifySelf: 'end',
                         minWidth: '126px',
