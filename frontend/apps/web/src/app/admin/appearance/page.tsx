@@ -647,12 +647,6 @@ export default function AppearancePage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 30, padding: '16px 26px', background: 'rgba(12,12,15,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: '#f3f0ea', letterSpacing: '-0.3px' }}>Giao diện & Logo</div>
-          <div style={{ fontSize: '10px', color: '#8c8679', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '3px' }}>Cấu hình hiển thị</div>
-        </div>
-      </div>
 
       <div style={{ padding: '22px 26px 110px', opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
         {/* LOGO */}
