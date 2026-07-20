@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getPublishedLegalSections, legalPlaceholderNotice } from "@/lib/content/legal";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,6 +40,13 @@ export default async function LegalPage() {
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Trang chủ", path: "/" },
+          { name: "Pháp lý", path: "/legal" },
+        ]}
+        idPath="/legal"
+      />
       <section style={{ maxWidth: "1060px", margin: "0 auto" }}>
         <p
           style={{

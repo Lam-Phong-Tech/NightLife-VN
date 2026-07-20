@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api/client";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import { absoluteSiteUrl } from "@/lib/site";
 import StoreDetailClient from "./StoreDetailClient";
+import { buildStoreStructuredData } from "./store-detail.schema";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -82,6 +83,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
   const store = await loadStore(slug);
+  const structuredData = buildStoreStructuredData(store);
 
-  return <StoreDetailClient store={store} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <StoreDetailClient store={store} />
+    </>
+  );
 }

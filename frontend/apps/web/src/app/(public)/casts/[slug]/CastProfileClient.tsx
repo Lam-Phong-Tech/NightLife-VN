@@ -20,7 +20,6 @@ import {
 } from "./cast-profile.helpers";
 import { getCastProfileCopy, localizeCastText } from "./cast-profile.copy";
 import { personalizeRelatedCasts } from "./cast-profile.recommendations";
-import { buildCastStructuredData } from "./cast-profile.schema";
 import { trackCastDetailClick } from "./cast-profile.tracking";
 import type { CastGalleryAction } from "./cast-profile.types";
 import {
@@ -47,7 +46,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const languageText = profile.languages
     .map((language) => localizeCastText(labelLanguage(language), activeLanguage))
     .join(" · ");
-  const structuredData = useMemo(() => buildCastStructuredData(cast), [cast]);
   const relatedCasts = useMemo(
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
     [profile],
@@ -214,11 +212,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
         data-testid="cast-detail-page"
         data-no-scroll-reveal="true"
       >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-
         <div
           className="block md:hidden cast-mobile nl-scroll-reveal-skip"
           data-no-scroll-reveal="true"

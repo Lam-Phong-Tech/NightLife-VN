@@ -10,6 +10,7 @@ import {
   type PublicCast,
   type PublicStore,
 } from "@/lib/api/discovery";
+import { getPublishedLegalSections } from "@/lib/content/legal";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const staticRoutes: Array<{
@@ -24,6 +25,7 @@ const staticRoutes: Array<{
   { path: "/danh-sach-cast", changeFrequency: "daily", priority: 0.84 },
   { path: "/xep-hang", changeFrequency: "daily", priority: 0.78 },
   { path: "/uu-dai", changeFrequency: "daily", priority: 0.76 },
+  { path: "/tour", changeFrequency: "weekly", priority: 0.74 },
   { path: "/blog", changeFrequency: "weekly", priority: 0.72 },
 ];
 
@@ -45,9 +47,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogPosts = await getSitemapBlogPosts();
   const blogCategories = getBlogCategories(blogPosts);
   const blogTags = getBlogTags(blogPosts);
+  const legalSections = await getPublishedLegalSections();
+  const shouldIndexLegal = legalSections.length > 0 && legalSections.every((section) => !section.noindex);
+  const indexableLegalSections = legalSections.filter((section) => !section.noindex);
+  const indexableStaticRoutes = shouldIndexLegal
+    ? [
+        ...staticRoutes,
+        { path: "/legal", changeFrequency: "monthly" as const, priority: 0.48 },
+      ]
+    : staticRoutes;
 
   return [
-    ...staticRoutes.map((route) => ({
+    ...indexableStaticRoutes.map((route) => ({
       url: absoluteSiteUrl(route.path),
       lastModified: now,
       changeFrequency: route.changeFrequency,
@@ -82,6 +93,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.54,
+    })),
+    ...indexableLegalSections.map((section) => ({
+      url: absoluteSiteUrl(`/legal/${section.slug}`),
+      lastModified: new Date(section.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.44,
     })),
   ];
 }

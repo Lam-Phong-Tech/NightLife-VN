@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
 import { absoluteSiteUrl } from "@/lib/site";
 import CastProfileClient from "./CastProfileClient";
+import { buildCastStructuredData } from "./cast-profile.schema";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -85,6 +86,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
   const cast = await loadCast(slug);
+  const structuredData = buildCastStructuredData(cast);
 
-  return <CastProfileClient cast={cast} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <CastProfileClient cast={cast} />
+    </>
+  );
 }

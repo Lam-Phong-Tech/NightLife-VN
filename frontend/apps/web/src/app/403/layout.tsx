@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { createNoindexMetadata } from "@/lib/seo/page-metadata";
 
 export const metadata: Metadata = createNoindexMetadata(
-  "Chi tiết blog legacy",
-  "Trang blog legacy không dùng để index SEO.",
+  "Không có quyền truy cập",
+  "Trang báo lỗi quyền truy cập của Vietyoru.",
 );
 
-export default function LegacyBlogDetailLayout({ children }: { children: ReactNode }) {
+export default function ForbiddenLayout({ children }: { children: ReactNode }) {
   return children;
 }

@@ -110,7 +110,6 @@ import {
   weekdayLabels,
 } from "./store-detail.helpers";
 import { personalizeRelatedStores, recommendationLabel } from "./store-detail.recommendations";
-import { buildStoreStructuredData } from "./store-detail.schema";
 import { trackStoreDetailClick } from "./store-detail.tracking";
 
 type StoreDetailClientProps = {
@@ -1501,7 +1500,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const selectedBookingCast = serviceBookingCastOptions.find(
     (option) => option.slug === activeSelectedCastSlug,
   );
-  const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const introText = useMemo(
     () => selectIntroText(introLines, activeLanguage),
@@ -1930,11 +1928,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       data-testid="store-detail-page"
       data-no-scroll-reveal="true"
     >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-
       <section className="detail-shell">
         <nav className="desktop-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">{translateText("Trang chủ", activeLanguage)}</Link>

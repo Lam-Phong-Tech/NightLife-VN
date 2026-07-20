@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import {
   getLegalSection,
   getPublishedLegalSections,
@@ -69,8 +70,19 @@ export default async function LegalDetailPage({ params }: PageProps) {
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Trang chủ", path: "/" },
+          { name: "Pháp lý", path: "/legal" },
+          { name: section.title, path: `/legal/${section.slug}` },
+        ]}
+        idPath={`/legal/${section.slug}`}
+      />
       <article style={{ maxWidth: "860px", margin: "0 auto" }}>
-        <nav style={{ marginBottom: "18px", color: "#8c8679", fontSize: "13px", fontWeight: 700 }}>
+        <nav
+          aria-label="Breadcrumb"
+          style={{ marginBottom: "18px", color: "#8c8679", fontSize: "13px", fontWeight: 700 }}
+        >
           <Link href="/" style={{ color: "#8c8679", textDecoration: "none" }}>
             Trang chủ
           </Link>

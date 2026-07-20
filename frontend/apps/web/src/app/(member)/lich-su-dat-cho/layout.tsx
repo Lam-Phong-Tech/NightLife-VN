@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { createNoindexMetadata } from "@/lib/seo/page-metadata";
 
 export const metadata: Metadata = createNoindexMetadata(
-  "Chi tiết blog legacy",
-  "Trang blog legacy không dùng để index SEO.",
+  "Lịch sử đặt chỗ",
+  "Lịch sử đặt chỗ cá nhân trên Vietyoru.",
 );
 
-export default function LegacyBlogDetailLayout({ children }: { children: ReactNode }) {
+export default function BookingHistoryLayout({ children }: { children: ReactNode }) {
   return children;
 }
