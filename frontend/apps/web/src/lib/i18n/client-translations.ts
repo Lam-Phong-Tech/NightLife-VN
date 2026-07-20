@@ -7283,6 +7283,11 @@ function getSharedLanguageCookieDomain(hostname: string) {
   return sharedHostname;
 }
 
+function isPortalLanguageHost(hostname: string) {
+  const normalizedHostname = hostname.toLowerCase().replace(/^www\./, "");
+  return /^(auth|admin|partner)\./.test(normalizedHostname);
+}
+
 function writeLanguageCookie(language: LanguageCode) {
   if (typeof document === "undefined") return;
 
@@ -7299,27 +7304,41 @@ function writeLanguageCookie(language: LanguageCode) {
   }
 }
 
+function readLocalStorageLanguage(): LanguageCode | null {
+  try {
+    const storedLanguage = window.localStorage.getItem(languageStorageKey);
+    return isLanguageCode(storedLanguage) ? storedLanguage : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalStorageLanguage(language: LanguageCode) {
+  try {
+    window.localStorage.setItem(languageStorageKey, language);
+  } catch {
+    // Language selection should still work when storage is unavailable.
+  }
+}
+
 export function readStoredLanguage(): LanguageCode {
   if (typeof window === "undefined") return defaultLanguageCode;
 
-  try {
-    const storedLanguage = window.localStorage.getItem(languageStorageKey);
-    if (isLanguageCode(storedLanguage)) {
-      writeLanguageCookie(storedLanguage);
-      return storedLanguage;
-    }
-  } catch {
-    // Fall back to the shared cookie when storage is unavailable.
+  const cookieLanguage = readLanguageCookie();
+  const localStorageLanguage = readLocalStorageLanguage();
+
+  if (isPortalLanguageHost(window.location.hostname) && cookieLanguage) {
+    writeLocalStorageLanguage(cookieLanguage);
+    return cookieLanguage;
   }
 
-  const cookieLanguage = readLanguageCookie();
-  if (cookieLanguage) {
-    try {
-      window.localStorage.setItem(languageStorageKey, cookieLanguage);
-    } catch {
-      // Auth pages can still render in the selected language without storage.
-    }
+  if (localStorageLanguage) {
+    writeLanguageCookie(localStorageLanguage);
+    return localStorageLanguage;
+  }
 
+  if (cookieLanguage) {
+    writeLocalStorageLanguage(cookieLanguage);
     return cookieLanguage;
   }
 
@@ -7327,12 +7346,7 @@ export function readStoredLanguage(): LanguageCode {
 }
 
 export function storeLanguagePreference(language: LanguageCode) {
-  try {
-    window.localStorage.setItem(languageStorageKey, language);
-  } catch {
-    // Language selection should still work when storage is unavailable.
-  }
-
+  writeLocalStorageLanguage(language);
   writeLanguageCookie(language);
   document.documentElement.lang = languageHtmlLang[language];
 }
