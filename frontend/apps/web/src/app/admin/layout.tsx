@@ -694,9 +694,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: 'CONTENT' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
 
+    if (pathname === '/admin/tours') return { title: 'Tour', subtitle: '' };
     if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: 'ACCOUNTS' };
     if (pathname === '/admin/permissions') return { title: 'Ma trận quyền', subtitle: '' };
-    return { title: 'Admin', subtitle: 'CMS' };
+    return { title: 'Admin', subtitle: '' };
   };
 
   const { title, subtitle } = getPageInfo();
