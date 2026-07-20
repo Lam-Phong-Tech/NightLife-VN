@@ -1079,13 +1079,22 @@ export class NightlifeDataService {
           : null;
 
     if (type === 'BANNER' && status === 'PUBLISHED') {
-      const activeBannersCount = await this.prisma.content.count({
-        where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
-      });
-      if (activeBannersCount >= 3) {
-        throw new BadRequestException(
-          'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
-        );
+      const targetPosition = (dto.metadata as any)?.position || 'Trang chủ #1';
+      if (targetPosition !== 'Nháp') {
+        const activeBanners = await this.prisma.content.findMany({
+          where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
+          select: { metadata: true },
+        });
+        const activeBannersCount = activeBanners.filter((b) => {
+          const pos = (b.metadata as any)?.position || 'Trang chủ #1';
+          return pos === targetPosition;
+        }).length;
+
+        if (activeBannersCount >= 3) {
+          throw new BadRequestException(
+            'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị ở vị trí này. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
+          );
+        }
       }
     }
 
@@ -1119,6 +1128,7 @@ export class NightlifeDataService {
         type: true,
         status: true,
         publishedAt: true,
+        metadata: true,
       },
     });
 
@@ -1147,18 +1157,33 @@ export class NightlifeDataService {
       dto.type !== undefined
         ? this.resolveContentType(dto.type, { strict: true })
         : existing.type;
-    if (
-      nextType === 'BANNER' &&
-      nextStatus === 'PUBLISHED' &&
-      existing.status !== 'PUBLISHED'
-    ) {
-      const activeBannersCount = await this.prisma.content.count({
-        where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
-      });
-      if (activeBannersCount >= 3) {
-        throw new BadRequestException(
-          'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
-        );
+    const targetStatus = nextStatus !== undefined ? nextStatus : existing.status;
+    if (nextType === 'BANNER' && targetStatus === 'PUBLISHED') {
+      const targetPosition =
+        dto.metadata !== undefined
+          ? (dto.metadata as any)?.position || 'Trang chủ #1'
+          : (existing.metadata as any)?.position || 'Trang chủ #1';
+
+      if (targetPosition !== 'Nháp') {
+        const activeBanners = await this.prisma.content.findMany({
+          where: {
+            type: 'BANNER',
+            status: 'PUBLISHED',
+            deletedAt: null,
+            id: { not: contentId },
+          },
+          select: { metadata: true },
+        });
+        const activeBannersCount = activeBanners.filter((b) => {
+          const pos = (b.metadata as any)?.position || 'Trang chủ #1';
+          return pos === targetPosition;
+        }).length;
+
+        if (activeBannersCount >= 3) {
+          throw new BadRequestException(
+            'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị ở vị trí này. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
+          );
+        }
       }
     }
 
@@ -22308,7 +22333,22 @@ export class NightlifeDataService {
     const [items, total] = await Promise.all([
       this.prisma.media.findMany({
         where,
-        include: { store: { select: { name: true } } },
+        include: {
+          store: {
+            select: {
+              name: true,
+              media: {
+                where: {
+                  type: 'IMAGE',
+                  deletedAt: null,
+                  status: 'READY',
+                },
+                select: { url: true, purpose: true },
+                orderBy: { createdAt: 'asc' },
+              },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -22322,6 +22362,9 @@ export class NightlifeDataService {
         url: item.url,
         title: item.originalName,
         storeName: item.store?.name,
+        storeThumbnailUrl: item.store
+          ? this.resolveStoreCoverImage(item.store.media)
+          : null,
         createdAt: item.createdAt,
       })),
       total,
@@ -22368,7 +22411,23 @@ export class NightlifeDataService {
             }
           : {}),
       },
-      include: { store: { select: { name: true, slug: true } } },
+      include: {
+        store: {
+          select: {
+            name: true,
+            slug: true,
+            media: {
+              where: {
+                type: 'IMAGE',
+                deletedAt: null,
+                status: 'READY',
+              },
+              select: { url: true, purpose: true },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        },
+      },
     });
 
     const sortedMedias = mediaIds
@@ -22384,6 +22443,9 @@ export class NightlifeDataService {
       title: item.originalName,
       storeName: item.store?.name,
       storeSlug: item.store?.slug,
+      storeThumbnailUrl: item.store
+        ? this.resolveStoreCoverImage(item.store.media)
+        : null,
       href: item.store?.slug ? `/stores/${item.store.slug}` : null,
       createdAt: item.createdAt,
       viewCount: metrics.get(item.id)?.viewCount ?? 0,
