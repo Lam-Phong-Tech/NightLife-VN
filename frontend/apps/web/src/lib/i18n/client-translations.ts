@@ -7247,24 +7247,83 @@ export function isLanguageCode(value: string | null): value is LanguageCode {
   return languageCodes.includes(value as LanguageCode);
 }
 
+function readLanguageCookie(): LanguageCode | null {
+  if (typeof document === "undefined") return null;
+
+  const rawValue = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(`${languageCookieName}=`))
+    ?.slice(languageCookieName.length + 1);
+
+  if (!rawValue) return null;
+
+  try {
+    const decodedValue = decodeURIComponent(rawValue);
+    return isLanguageCode(decodedValue) ? decodedValue : null;
+  } catch {
+    return isLanguageCode(rawValue) ? rawValue : null;
+  }
+}
+
+function getSharedLanguageCookieDomain(hostname: string) {
+  const normalizedHostname = hostname.toLowerCase().replace(/^www\./, "");
+  const sharedHostname = normalizedHostname.replace(/^(auth|admin|partner|api)\./, "");
+
+  if (
+    !sharedHostname ||
+    sharedHostname === "localhost" ||
+    sharedHostname.endsWith(".localhost") ||
+    sharedHostname.includes(":") ||
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(sharedHostname)
+  ) {
+    return null;
+  }
+
+  return sharedHostname;
+}
+
+function writeLanguageCookie(language: LanguageCode) {
+  if (typeof document === "undefined") return;
+
+  const cookieValue = `${languageCookieName}=${encodeURIComponent(
+    language,
+  )}; path=/; max-age=31536000; SameSite=Lax`;
+  document.cookie = cookieValue;
+
+  if (typeof window === "undefined") return;
+
+  const sharedDomain = getSharedLanguageCookieDomain(window.location.hostname);
+  if (sharedDomain) {
+    document.cookie = `${cookieValue}; domain=.${sharedDomain}`;
+  }
+}
+
 export function readStoredLanguage(): LanguageCode {
   if (typeof window === "undefined") return defaultLanguageCode;
 
   try {
     const storedLanguage = window.localStorage.getItem(languageStorageKey);
-    if (isLanguageCode(storedLanguage)) return storedLanguage;
+    if (isLanguageCode(storedLanguage)) {
+      writeLanguageCookie(storedLanguage);
+      return storedLanguage;
+    }
   } catch {
-    return defaultLanguageCode;
+    // Fall back to the shared cookie when storage is unavailable.
   }
 
-  const cookieValue = document.cookie
-    .split(";")
-    .map((item) => item.trim())
-    .find((item) => item.startsWith(`${languageCookieName}=`))
-    ?.split("=")
-    .at(1);
+  const cookieLanguage = readLanguageCookie();
+  if (cookieLanguage) {
+    try {
+      window.localStorage.setItem(languageStorageKey, cookieLanguage);
+    } catch {
+      // Auth pages can still render in the selected language without storage.
+    }
 
-  return isLanguageCode(cookieValue ?? null) ? (cookieValue as LanguageCode) : defaultLanguageCode;
+    return cookieLanguage;
+  }
+
+  return defaultLanguageCode;
 }
 
 export function storeLanguagePreference(language: LanguageCode) {
@@ -7274,7 +7333,7 @@ export function storeLanguagePreference(language: LanguageCode) {
     // Language selection should still work when storage is unavailable.
   }
 
-  document.cookie = `${languageCookieName}=${language}; path=/; max-age=31536000; SameSite=Lax`;
+  writeLanguageCookie(language);
   document.documentElement.lang = languageHtmlLang[language];
 }
 
