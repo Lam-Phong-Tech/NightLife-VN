@@ -1560,6 +1560,12 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const hideFooter = pathname === "/xac-nhan" || isMobile;
+  const hasManagedMobileBottomSpacing =
+    pathname.startsWith("/stores/") ||
+    pathname.startsWith("/casts/") ||
+    pathname.startsWith("/tour/") ||
+    pathname.startsWith("/dat-cho");
+  const showMobileFooterSpacer = isMobile && hideFooter && !hasManagedMobileBottomSpacing;
   const customerRouteMotionEnabled =
     !pathname.startsWith("/admin") && !pathname.startsWith("/partner");
   const enableScrollReveal = pathname === "/";
@@ -2370,7 +2376,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           <SiteFooter isMobile={isMobile} brand={brand} language={activeLanguage} />
         )}
 
-        {isMobile && hideFooter ? (
+        {showMobileFooterSpacer ? (
           <div
             className="nl-mobile-footer-spacer"
             aria-hidden="true"
