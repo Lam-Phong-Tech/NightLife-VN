@@ -11,7 +11,6 @@ import {
   ChevronDown,
   ChevronRight,
   Crown,
-  Eye,
   Gem,
   Gift,
   Heart,
@@ -2284,14 +2283,6 @@ function VideoCard({
           }}
         >
           <div style={{ fontSize: compact ? "16px" : "18px", fontWeight: 950, lineHeight: 1.18 }}>{title}</div>
-          <div style={{ marginTop: "9px", display: "flex", alignItems: "center", gap: 12, color: "rgba(255,255,255,.78)", fontSize: "11px", fontWeight: 850 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Eye size={13} /> {item.viewCount ?? 0}
-            </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Heart size={13} fill={item.liked ? colors.rose : "none"} /> {item.likeCount ?? 0}
-            </span>
-          </div>
         </div>
       </PlaceholderMedia>
     </Link>
