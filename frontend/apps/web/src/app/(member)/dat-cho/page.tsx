@@ -227,8 +227,8 @@ const parseContext = () => {
   const castSlug = isServiceOnlyBooking ? undefined : params.get("castSlug") || undefined;
   const rawStoreSlug = params.get("storeSlug") || undefined;
   const storeSlug = rawStoreSlug || (castSlug ? undefined : defaultContext.storeSlug);
-  const couponId = isServiceOnlyBooking ? undefined : params.get("couponId") || undefined;
-  const couponIssueId = isServiceOnlyBooking ? undefined : params.get("couponIssueId") || undefined;
+  const couponId = params.get("couponId") || undefined;
+  const couponIssueId = params.get("couponIssueId") || undefined;
 
   return {
     context: {
@@ -350,8 +350,8 @@ export default function Page() {
             storeSlug: cast.store.slug ?? current.storeSlug,
             storeName: cast.store.name || current.storeName,
             area: current.area ?? cast.store.area?.name ?? cast.store.district ?? undefined,
-            couponId: isCastStoreServiceOnly ? undefined : current.couponId,
-            couponIssueId: isCastStoreServiceOnly ? undefined : current.couponIssueId,
+            couponId: current.couponId,
+            couponIssueId: current.couponIssueId,
             fromHref: isCastStoreServiceOnly
               ? `/stores/${cast.store.slug ?? current.storeSlug ?? defaultContext.storeSlug}`
               : current.fromHref,
@@ -415,8 +415,8 @@ export default function Page() {
               : selectedCast
                 ? castOptionLabel(selectedCast)
                 : current.castName,
-            couponId: isStoreServiceOnly ? undefined : current.couponId,
-            couponIssueId: isStoreServiceOnly ? undefined : current.couponIssueId,
+            couponId: current.couponId,
+            couponIssueId: current.couponIssueId,
             fromHref: isStoreServiceOnly ? `/stores/${store.slug}` : current.fromHref,
           };
         });
@@ -614,10 +614,8 @@ export default function Page() {
       ...(context.category ? { category: context.category } : {}),
       ...(context.area ? { area: context.area } : {}),
       ...(!isServiceOnlyBooking && context.castSlug ? { castSlug: context.castSlug } : {}),
-      ...(!isServiceOnlyBooking && context.couponId ? { couponId: context.couponId } : {}),
-      ...(!isServiceOnlyBooking && context.couponIssueId
-        ? { couponIssueId: context.couponIssueId }
-        : {}),
+      ...(context.couponId ? { couponId: context.couponId } : {}),
+      ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       ...(!isServiceOnlyBooking && context.castName ? { castName: context.castName } : {}),
       date: bookingDate,
       time: bookingTime,
@@ -748,8 +746,8 @@ export default function Page() {
     }
 
     const bookingCastSlug = isServiceOnlyBooking ? undefined : context.castSlug;
-    const bookingCouponId = isServiceOnlyBooking ? undefined : context.couponId;
-    const bookingCouponIssueId = isServiceOnlyBooking ? undefined : context.couponIssueId;
+    const bookingCouponId = context.couponId;
+    const bookingCouponIssueId = context.couponIssueId;
 
     if (!context.storeSlug && !bookingCastSlug) {
       setErrorMessage(translateText("Thiếu thông tin quán hoặc cast để đặt chỗ.", activeLanguage));
@@ -818,7 +816,7 @@ export default function Page() {
                   {!isServiceOnlyBooking && context.castName ? context.storeName : "Lounge cao cấp"}{" "}
                   · {context.area ?? "NightLife"}
                 </div>
-                {!isServiceOnlyBooking && (context.couponIssueId || context.couponId) ? (
+                {context.couponIssueId || context.couponId ? (
                   <div className={styles.venueMeta}>
                     Coupon link: {(context.couponIssueId ?? context.couponId)?.slice(0, 8)}
                   </div>

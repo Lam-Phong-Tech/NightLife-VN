@@ -10391,7 +10391,13 @@ export class NightlifeDataService {
     const adminCouponIssueId = this.cleanText(input.dto.adminCouponIssueId);
     const adminCouponIssueCode = this.cleanText(input.dto.adminCouponIssueCode);
 
-    if (isServiceOnlyBookingCategory(input.target.store.category)) {
+    if (
+      isServiceOnlyBookingCategory(input.target.store.category) &&
+      !couponId &&
+      !couponIssueId &&
+      !adminCouponIssueId &&
+      !adminCouponIssueCode
+    ) {
       return {};
     }
 
@@ -11649,22 +11655,30 @@ export class NightlifeDataService {
         }
       }
 
+      const issuedCouponIssue =
+        !couponLink.couponIssueId && couponLink.couponId
+          ? await this.issueBookingCouponQr({
+              couponId: couponLink.couponId,
+              target: input.target,
+              user: input.user,
+              guestId: input.guestId,
+              phone: input.phone,
+              scheduledAt,
+              context: input.context,
+              prisma,
+            })
+          : null;
       const bookingCouponIssueId =
-        couponLink.couponIssueId ??
-        (couponLink.couponId
-          ? (
-              await this.issueBookingCouponQr({
-                couponId: couponLink.couponId,
-                target: input.target,
-                user: input.user,
-                guestId: input.guestId,
-                phone: input.phone,
-                scheduledAt,
-                context: input.context,
-                prisma,
-              })
-            ).id
-          : undefined);
+        couponLink.couponIssueId ?? issuedCouponIssue?.id;
+      const issuedCouponIssueMetadata = this.asRecord(
+        issuedCouponIssue?.metadata,
+      );
+      const issuedDiscountRuleSnapshot = this.asRecord(
+        issuedCouponIssueMetadata?.discountRuleSnapshot,
+      );
+      const issuedCampaignSnapshot = this.asRecord(
+        issuedCouponIssueMetadata?.campaignSnapshot,
+      );
 
       const bookingCode = this.generateBookingCode();
 
@@ -11698,6 +11712,13 @@ export class NightlifeDataService {
             : {
                 couponId: couponLink.couponId ?? null,
                 couponIssueId: bookingCouponIssueId ?? null,
+                ...(typeof issuedCampaignSnapshot?.code === 'string'
+                  ? { code: issuedCampaignSnapshot.code }
+                  : {}),
+                ...(typeof issuedCampaignSnapshot?.name === 'string'
+                  ? { name: issuedCampaignSnapshot.name }
+                  : {}),
+                ...(issuedDiscountRuleSnapshot ?? {}),
               },
         },
         select: this.bookingNotificationSelect(),

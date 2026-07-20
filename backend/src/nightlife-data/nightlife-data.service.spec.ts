@@ -44,7 +44,11 @@ describe('NightlifeDataService', () => {
     coupon: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      create: jest.fn(),
       update: jest.fn(),
+    },
+    campaign: {
+      findFirst: jest.fn(),
     },
     guest: {
       create: jest.fn(),
@@ -326,11 +330,15 @@ describe('NightlifeDataService', () => {
     });
     prisma.content.updateMany.mockResolvedValue({ count: 1 });
     prisma.content.findFirst.mockResolvedValue(null);
+    prisma.coupon.findFirst.mockResolvedValue(null);
+    prisma.coupon.create.mockResolvedValue(undefined as never);
+    prisma.coupon.update.mockResolvedValue(undefined as never);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
     prisma.rankingConfig.findFirst.mockResolvedValue(null);
     prisma.couponIssue.findFirst.mockResolvedValue(null);
     prisma.couponIssue.count.mockResolvedValue(0);
     prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 });
+    prisma.campaign.findFirst.mockResolvedValue(null);
     prisma.notificationLog.create.mockResolvedValue({
       id: 'notification-1',
     });
@@ -2366,7 +2374,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('creates service-only bookings without cast or coupon links', async () => {
+  it('creates service-only bookings without cast or default coupon links', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.cast.findFirst.mockResolvedValue({
       id: 'cast-restaurant-1',
@@ -2406,7 +2414,6 @@ describe('NightlifeDataService', () => {
     await service.createGuestBooking({
       storeSlug: 'tokyo-kitchen',
       castSlug: 'aoi-restaurant',
-      couponId: 'coupon-restaurant-1',
       displayName: 'Guest Name',
       phone: '+84901234567',
       scheduledAt: '2026-06-30T14:00:00.000Z',
@@ -2426,6 +2433,129 @@ describe('NightlifeDataService', () => {
             couponId: null,
             couponIssueId: null,
           },
+        }),
+      }),
+    );
+  });
+
+  it('links an explicit fixed amount campaign coupon for service-only store bookings', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-restaurant-1',
+      name: 'Tokyo Kitchen',
+      slug: 'tokyo-kitchen',
+      category: 'RESTAURANT',
+      openingHours: null,
+    });
+    prisma.campaign.findFirst.mockResolvedValue({
+      id: 'campaign-fixed-1',
+      name: 'Global Premium Lounge Discount',
+      discountType: 'FIXED_AMOUNT',
+      discountValue: 150000,
+      targetStoreId: 'store-restaurant-1',
+      startsAt: new Date('2026-06-10T00:00:00.000Z'),
+      endsAt: new Date('2026-08-15T00:00:00.000Z'),
+      status: 'ACTIVE',
+    });
+    prisma.coupon.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ code: 'CAMPAIGN-campaign-fixed-1' })
+      .mockResolvedValueOnce({ id: 'coupon-campaign-1' })
+      .mockResolvedValueOnce({
+        id: 'coupon-campaign-1',
+        code: 'CAMPAIGN-campaign-fixed-1',
+        name: 'Global Premium Lounge Discount',
+        storeId: 'store-restaurant-1',
+        discountType: 'FIXED_AMOUNT',
+        discountValue: 150000,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+        endsAt: new Date('2026-08-15T00:00:00.000Z'),
+        usageLimit: null,
+        usedCount: 0,
+        store: {
+          id: 'store-restaurant-1',
+          name: 'Tokyo Kitchen',
+          slug: 'tokyo-kitchen',
+        },
+      });
+    prisma.coupon.create.mockResolvedValue({ id: 'coupon-campaign-1' });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'issue-campaign-1',
+      code: 'GUEST-campaign',
+      couponId: 'coupon-campaign-1',
+      status: 'ISSUED',
+      metadata: {
+        discountRuleSnapshot: {
+          type: 'FIXED_AMOUNT',
+          value: 150000,
+          discountPercent: null,
+          sourceType: 'FIXED_AMOUNT',
+          sourceValue: 150000,
+        },
+        campaignSnapshot: {
+          code: 'CAMPAIGN-campaign-fixed-1',
+          name: 'Global Premium Lounge Discount',
+        },
+      },
+      coupon: { storeId: 'store-restaurant-1' },
+    });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-restaurant-1',
+      bookingCode: 'BK-FIXED',
+      status: 'REQUESTED',
+    });
+
+    await service.createGuestBooking({
+      storeSlug: 'tokyo-kitchen',
+      couponId: 'campaign-fixed-1',
+      displayName: 'Guest Name',
+      email: 'guest@example.com',
+      scheduledAt: '2026-06-30T14:00:00.000Z',
+      partySize: 4,
+    });
+
+    expect(prisma.coupon.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        storeId: 'store-restaurant-1',
+        code: 'CAMPAIGN-campaign-fixed-1',
+        discountType: 'FIXED_AMOUNT',
+        discountValue: 150000,
+      }),
+      select: { id: true },
+    });
+    expect(prisma.couponIssue.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          couponId: 'coupon-campaign-1',
+          metadata: expect.objectContaining({
+            discountRuleSnapshot: expect.objectContaining({
+              type: 'FIXED_AMOUNT',
+              value: 150000,
+            }),
+            campaignSnapshot: expect.objectContaining({
+              name: 'Global Premium Lounge Discount',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId: 'store-restaurant-1',
+          castId: undefined,
+          couponId: 'coupon-campaign-1',
+          couponIssueId: 'issue-campaign-1',
+          discountSnapshot: expect.objectContaining({
+            couponId: 'coupon-campaign-1',
+            couponIssueId: 'issue-campaign-1',
+            code: 'CAMPAIGN-campaign-fixed-1',
+            name: 'Global Premium Lounge Discount',
+            type: 'FIXED_AMOUNT',
+            value: 150000,
+          }),
         }),
       }),
     );

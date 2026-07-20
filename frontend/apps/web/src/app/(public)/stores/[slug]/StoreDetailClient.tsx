@@ -1464,7 +1464,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     activeLanguage,
   );
   const isServiceOnlyBooking = isServiceOnlyBookingCategory(store.category);
-  const activeCouponId = isServiceOnlyBooking ? undefined : couponId;
+  const activeCouponId = couponId;
   const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
   const favoriteCityLabel = store.cityCode ?? store.city;
   const heroFavoriteImage = galleryImageUrl(heroImage);
