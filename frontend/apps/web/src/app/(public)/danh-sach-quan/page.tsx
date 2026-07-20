@@ -2568,6 +2568,7 @@ const venueSearchCss = `
   .venue-city-menu {
     left: 0;
     right: 0;
+    background: #211d17;
   }
 
   .venue-sort-menu {
