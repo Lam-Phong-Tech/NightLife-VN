@@ -1118,6 +1118,14 @@ export default function AdminContentPage() {
       return;
     }
 
+    if (status === 'PUBLISHED' && blogSeoAnalysis.score < 80) {
+      feedback.showToast({
+        title: `Điểm SEO hiện tại ${blogSeoAnalysis.score}/100. Cần đạt tối thiểu 80/100 để đăng bài.`,
+        tone: 'warning',
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       let finalImageUrl = coverImage && !coverImage.startsWith('blob:') ? coverImage : null;
