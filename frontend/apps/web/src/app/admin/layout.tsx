@@ -7,6 +7,10 @@ import { logoutBrowserProfile } from '@/lib/api/auth';
 import { getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
 import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, Settings, CheckCheck, LucideIcon } from 'lucide-react';
+import {
+  adminTopbarFiltersVisibilityEvent,
+  type AdminTopbarFiltersVisibilityDetail,
+} from '@/lib/admin/topbar-filters';
 
 type AdminNavItem = {
   icon: React.ReactNode;
@@ -287,9 +291,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [storageUsage, setStorageUsage] = useState<{ limit: number, used: number, percentage: number, isExceeded: boolean } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [hideTopbarFilters, setHideTopbarFilters] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
   );
+
+  useEffect(() => {
+    const handleVisibilityChange = (event: Event) => {
+      const detail = (event as CustomEvent<AdminTopbarFiltersVisibilityDetail>).detail;
+      setHideTopbarFilters(Boolean(detail?.hidden));
+    };
+
+    window.addEventListener(adminTopbarFiltersVisibilityEvent, handleVisibilityChange);
+    return () => window.removeEventListener(adminTopbarFiltersVisibilityEvent, handleVisibilityChange);
+  }, []);
 
   const getNotificationItems = () => {
     const list: any[] = [];
@@ -852,7 +867,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           
           <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
-          <div className="nl-admin-topbar-controls">
+          {!hideTopbarFilters && <div className="nl-admin-topbar-controls">
             {pathname !== '/admin/permissions' && pathname !== '/admin/ranking' && pathname !== '/admin/support-chat' && pathname !== '/admin/coupons' && pathname !== '/admin/bills' && (
               <React.Suspense fallback={<div />}>
                 <TopCategoryFilter />
@@ -864,7 +879,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <TopRegionFilter />
               </React.Suspense>
             )}
-          </div>
+          </div>}
           
           <span onClick={toggleTheme} title={theme === 'light' ? 'Chuyển giao diện tối' : 'Chuyển giao diện sáng'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s' }}>
             {theme === 'dark' ? (

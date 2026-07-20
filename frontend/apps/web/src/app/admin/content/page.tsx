@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/vi';
 import { DataSkeleton } from '@/components/ui/DataLoading';
+import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('vi');
@@ -151,6 +152,12 @@ export default function AdminContentPage() {
       fetchFeaturedItems();
     }
   }, [activeTab, featuredCity, featuredCategory]);
+
+  useEffect(() => {
+    setAdminTopbarFiltersHidden(activeTab === 'featured');
+
+    return () => setAdminTopbarFiltersHidden(false);
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'featured') {

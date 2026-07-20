@@ -3,6 +3,10 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest';
 import AdminContentPage from '../src/app/admin/content/page';
 import { SystemFeedbackProvider } from '../src/components/ui/SystemFeedback';
+import {
+  adminTopbarFiltersVisibilityEvent,
+  type AdminTopbarFiltersVisibilityDetail,
+} from '../src/lib/admin/topbar-filters';
 
 const { rankingListMock, rankingOptionsMock } = vi.hoisted(() => ({
   rankingListMock: vi.fn().mockResolvedValue([]),
@@ -97,6 +101,14 @@ describe('Admin tonight recommendations', () => {
   });
 
   it('renders featured stores as video-sized cards and hides selected stores from search', async () => {
+    const topbarVisibilityChanges: boolean[] = [];
+    const handleTopbarVisibility = (event: Event) => {
+      topbarVisibilityChanges.push(
+        Boolean((event as CustomEvent<AdminTopbarFiltersVisibilityDetail>).detail?.hidden),
+      );
+    };
+    window.addEventListener(adminTopbarFiltersVisibilityEvent, handleTopbarVisibility);
+
     rankingListMock.mockImplementation((query: { scope?: string }) => (
       query.scope === 'featured_home'
         ? Promise.resolve([{
@@ -140,6 +152,7 @@ describe('Admin tonight recommendations', () => {
     fireEvent.click(screen.getByText('Dịch vụ nổi bật'));
 
     expect(await screen.findByText('Selected Restaurant')).toBeInTheDocument();
+    expect(topbarVisibilityChanges.at(-1)).toBe(true);
     expect(screen.queryByText('Không nhãn')).not.toBeInTheDocument();
     expect(screen.getByTestId('admin-featured-card-grid')).toHaveStyle({
       gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
@@ -156,5 +169,7 @@ describe('Admin tonight recommendations', () => {
     expect(await within(searchResults).findByText('Available Restaurant')).toBeInTheDocument();
     expect(within(searchResults).queryByText('Selected Restaurant')).not.toBeInTheDocument();
     expect(within(searchResults).queryByText('Đã thêm')).not.toBeInTheDocument();
+
+    window.removeEventListener(adminTopbarFiltersVisibilityEvent, handleTopbarVisibility);
   });
 });
