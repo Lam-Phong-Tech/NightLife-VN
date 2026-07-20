@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil, CheckCircle2 } from 'lucide-react';
+import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, getCmsContentImageUrl, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
@@ -54,6 +54,7 @@ type AdminHomeTour = {
   priceTier?: number | null;
   coverUrl?: string | null;
   status?: string | null;
+  homeRank?: number | null;
   stops?: Array<{
     id?: string;
     store?: {
@@ -114,6 +115,20 @@ const nextHomeBlogRank = (items: CmsContentItem[]) => {
   const ranks = items
     .filter(isHomeBlogVisible)
     .map(getHomeBlogRank)
+    .filter((rank) => rank !== Number.MAX_SAFE_INTEGER);
+  return ranks.length ? Math.max(...ranks) + 1 : 1;
+};
+
+const getHomeTourRank = (tour: AdminHomeTour) =>
+  typeof tour.homeRank === 'number' && Number.isFinite(tour.homeRank) ? tour.homeRank : Number.MAX_SAFE_INTEGER;
+
+const sortHomeTours = (items: AdminHomeTour[]) =>
+  [...items].sort((a, b) => getHomeTourRank(a) - getHomeTourRank(b) || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
+
+const nextHomeTourRank = (items: AdminHomeTour[]) => {
+  const ranks = items
+    .filter((tour) => tour.status === 'ACTIVE')
+    .map(getHomeTourRank)
     .filter((rank) => rank !== Number.MAX_SAFE_INTEGER);
   return ranks.length ? Math.max(...ranks) + 1 : 1;
 };
@@ -756,7 +771,8 @@ export default function AdminContentPage() {
 
   const handleSetTourHome = async (tour: AdminHomeTour, visible: boolean) => {
     const nextStatus = visible ? 'ACTIVE' : 'HIDDEN';
-    if (tour.status === nextStatus) return;
+    const nextHomeRank = visible ? tour.homeRank ?? nextHomeTourRank(tours) : null;
+    if (tour.status === nextStatus && tour.homeRank === nextHomeRank) return;
 
     if (
       visible &&
@@ -775,10 +791,10 @@ export default function AdminContentPage() {
       setUpdatingTourId(tour.id);
       await apiClient(`/admin/tours/${tour.id}`, {
         method: 'PUT',
-        data: { status: nextStatus },
+        data: { status: nextStatus, homeRank: nextHomeRank },
       });
       setTours((current) =>
-        current.map((item) => (item.id === tour.id ? { ...item, status: nextStatus } : item)),
+        current.map((item) => (item.id === tour.id ? { ...item, status: nextStatus, homeRank: nextHomeRank } : item)),
       );
       feedback.showToast({
         title: nextStatus === 'ACTIVE' ? 'Đã thêm tour lên trang chủ' : 'Đã gỡ tour khỏi trang chủ',
@@ -787,6 +803,38 @@ export default function AdminContentPage() {
     } catch (error) {
       console.error('Failed to update tour visibility:', error);
       feedback.showToast({ title: 'Không cập nhật được trạng thái tour', tone: 'error' });
+    } finally {
+      setUpdatingTourId(null);
+    }
+  };
+
+  const handleMoveHomeTour = async (index: number, direction: 'up' | 'down') => {
+    const orderedTours = sortHomeTours(tours.filter((tour) => tour.status === 'ACTIVE'));
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentTour = orderedTours[index];
+    const swapTour = orderedTours[swapIndex];
+    if (!currentTour || !swapTour) return;
+
+    const currentRank = getHomeTourRank(currentTour) === Number.MAX_SAFE_INTEGER ? index + 1 : getHomeTourRank(currentTour);
+    const swapRank = getHomeTourRank(swapTour) === Number.MAX_SAFE_INTEGER ? swapIndex + 1 : getHomeTourRank(swapTour);
+
+    try {
+      setUpdatingTourId(currentTour.id);
+      await Promise.all([
+        apiClient(`/admin/tours/${currentTour.id}`, { method: 'PUT', data: { homeRank: swapRank } }),
+        apiClient(`/admin/tours/${swapTour.id}`, { method: 'PUT', data: { homeRank: currentRank } }),
+      ]);
+      setTours((current) =>
+        current.map((item) => {
+          if (item.id === currentTour.id) return { ...item, homeRank: swapRank };
+          if (item.id === swapTour.id) return { ...item, homeRank: currentRank };
+          return item;
+        }),
+      );
+      feedback.showToast({ title: 'Đã cập nhật thứ tự tour', tone: 'success' });
+    } catch (error) {
+      console.error('Failed to reorder homepage tours:', error);
+      feedback.showToast({ title: 'Không sắp xếp được tour', tone: 'error' });
     } finally {
       setUpdatingTourId(null);
     }
@@ -832,6 +880,40 @@ export default function AdminContentPage() {
     } catch (error) {
       console.error('Failed to update blog homepage visibility:', error);
       feedback.showToast({ title: 'Không cập nhật được blog trên trang chủ', tone: 'error' });
+    } finally {
+      setUpdatingBlogHomeId(null);
+    }
+  };
+
+  const handleMoveHomeBlog = async (index: number, direction: 'up' | 'down') => {
+    const orderedBlogs = sortHomeBlogs(blogs.filter(isHomeBlogVisible));
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentBlog = orderedBlogs[index];
+    const swapBlog = orderedBlogs[swapIndex];
+    if (!currentBlog || !swapBlog) return;
+
+    const currentRank = getHomeBlogRank(currentBlog) === Number.MAX_SAFE_INTEGER ? index + 1 : getHomeBlogRank(currentBlog);
+    const swapRank = getHomeBlogRank(swapBlog) === Number.MAX_SAFE_INTEGER ? swapIndex + 1 : getHomeBlogRank(swapBlog);
+    const currentMetadata = { ...asMetadata(currentBlog.metadata), homeRank: swapRank };
+    const swapMetadata = { ...asMetadata(swapBlog.metadata), homeRank: currentRank };
+
+    try {
+      setUpdatingBlogHomeId(currentBlog.id);
+      const [updatedCurrent, updatedSwap] = await Promise.all([
+        contentApi.adminUpdate(currentBlog.id, { metadata: currentMetadata }),
+        contentApi.adminUpdate(swapBlog.id, { metadata: swapMetadata }),
+      ]);
+      setBlogs((current) =>
+        current.map((item) => {
+          if (item.id === updatedCurrent.id) return updatedCurrent;
+          if (item.id === updatedSwap.id) return updatedSwap;
+          return item;
+        }),
+      );
+      feedback.showToast({ title: 'Đã cập nhật thứ tự blog', tone: 'success' });
+    } catch (error) {
+      console.error('Failed to reorder homepage blogs:', error);
+      feedback.showToast({ title: 'Không sắp xếp được blog', tone: 'error' });
     } finally {
       setUpdatingBlogHomeId(null);
     }
@@ -1327,7 +1409,7 @@ export default function AdminContentPage() {
     setIsAdding('blog');
   };
 
-  const selectedHomeTours = tours.filter((tour) => tour.status === 'ACTIVE');
+  const selectedHomeTours = sortHomeTours(tours.filter((tour) => tour.status === 'ACTIVE'));
   const selectedHomeBlogs = sortHomeBlogs(blogs.filter(isHomeBlogVisible));
   const homeGuideSelectedCount = selectedHomeTours.length + selectedHomeBlogs.length;
   const tourSearchResults = searchTourQuery.trim()
@@ -1642,6 +1724,24 @@ export default function AdminContentPage() {
                       </div>
                       <button
                         type="button"
+                        aria-label={`Move ${blog.title} up`}
+                        onClick={() => handleMoveHomeBlog(index, 'up')}
+                        disabled={index === 0 || updatingBlogHomeId === blog.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: index === 0 || updatingBlogHomeId === blog.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none', opacity: index === 0 ? 0.45 : 1 }}
+                      >
+                        <ChevronUp size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${blog.title} down`}
+                        onClick={() => handleMoveHomeBlog(index, 'down')}
+                        disabled={index === selectedHomeBlogs.length - 1 || updatingBlogHomeId === blog.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: index === selectedHomeBlogs.length - 1 || updatingBlogHomeId === blog.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none', opacity: index === selectedHomeBlogs.length - 1 ? 0.45 : 1 }}
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+                      <button
+                        type="button"
                         aria-label={`Gỡ ${blog.title}`}
                         onClick={() => handleSetBlogHome(blog, false)}
                         disabled={updatingBlogHomeId === blog.id}
@@ -1711,7 +1811,7 @@ export default function AdminContentPage() {
       {/* TOUR CONTENT */}
       {activeTab === 'tour' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '13px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.22)' }}>
+          <div style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '13px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.22)' }}>
             <span style={{ color: colors.text, fontSize: '13px', fontWeight: 700 }}>
               {tours.filter((tour) => tour.status === 'ACTIVE').length} tour đang hiển thị trên trang chủ
             </span>
@@ -1774,7 +1874,68 @@ export default function AdminContentPage() {
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+          {isLoadingTours ? (
+            <DataSkeleton variant="cards" count={3} columns={3} style={{ minHeight: 240 }} />
+          ) : selectedHomeTours.length ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '14px' }}>
+              {selectedHomeTours.map((tour, index) => {
+                const coverUrl = resolveClientUrl(tour.coverUrl);
+                const stopSummary = tour.stops?.length
+                  ? `${tour.stops.length} điểm · ${tour.stops[0]?.store?.name || 'Chưa có tên điểm'}`
+                  : 'Chưa có điểm dừng';
+                return (
+                  <div key={tour.id} style={{ minWidth: 0, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', aspectRatio: '16 / 9', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
+                      {coverUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                      <span style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px', zIndex: 1 }}>#{index + 1}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 14px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 750, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tour.title}</div>
+                        <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTourCityLabel(tour.city)} · {stopSummary}</div>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Move ${tour.title} up`}
+                        onClick={() => handleMoveHomeTour(index, 'up')}
+                        disabled={index === 0 || updatingTourId === tour.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: index === 0 || updatingTourId === tour.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none', opacity: index === 0 ? 0.45 : 1 }}
+                      >
+                        <ChevronUp size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${tour.title} down`}
+                        onClick={() => handleMoveHomeTour(index, 'down')}
+                        disabled={index === selectedHomeTours.length - 1 || updatingTourId === tour.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: index === selectedHomeTours.length - 1 || updatingTourId === tour.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none', opacity: index === selectedHomeTours.length - 1 ? 0.45 : 1 }}
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${tour.title}`}
+                        onClick={() => handleSetTourHome(tour, false)}
+                        disabled={updatingTourId === tour.id}
+                        style={{ width: '28px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#8c8679', cursor: updatingTourId === tour.id ? 'not-allowed' : 'pointer', display: 'grid', placeItems: 'center', flex: 'none' }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px' }}>
+              Chưa có tour nào
+            </div>
+          )}
+
+          <div style={{ display: 'none', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '96px minmax(0,1.7fr) minmax(96px,.8fr) minmax(96px,.7fr) 150px 150px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
               <span>Ảnh</span><span>Tour</span><span>Khu vực</span><span>Điểm dừng</span><span>Trạng thái</span><span style={{ textAlign: 'right' }}>Hiển thị</span>
             </div>

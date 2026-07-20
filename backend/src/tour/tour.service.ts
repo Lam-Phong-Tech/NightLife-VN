@@ -144,7 +144,7 @@ export class TourService {
         skip,
         take,
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ homeRank: 'asc' }, { createdAt: 'desc' }],
         include: this.publicTourInclude(now),
       }),
       this.prisma.tour.count({ where }),
@@ -180,7 +180,7 @@ export class TourService {
     skip?: number;
     take?: number;
     where?: Prisma.TourWhereInput;
-    orderBy?: Prisma.TourOrderByWithRelationInput;
+    orderBy?: Prisma.TourOrderByWithRelationInput | Prisma.TourOrderByWithRelationInput[];
   }) {
     const { skip = 0, take = 50, where, orderBy } = params;
 
@@ -192,7 +192,7 @@ export class TourService {
           ...where,
           status: where?.status || { not: 'DELETED' },
         },
-        orderBy: orderBy || { createdAt: 'desc' },
+        orderBy: orderBy || [{ homeRank: 'asc' }, { createdAt: 'desc' }],
         include: {
           stops: {
             orderBy: { order: 'asc' },
@@ -295,6 +295,7 @@ export class TourService {
           priceTier: tourData.priceTier,
           coverUrl: tourData.coverUrl,
           status: tourData.status || 'ACTIVE',
+          homeRank: tourData.homeRank,
           departureTimes: collectTourDepartureTimes(departureSchedule),
           departureSchedule,
         },
@@ -362,6 +363,7 @@ export class TourService {
           priceTier: tourData.priceTier,
           coverUrl: tourData.coverUrl,
           status: tourData.status,
+          homeRank: tourData.homeRank,
           ...(departureSchedule
             ? {
                 departureTimes: collectTourDepartureTimes(departureSchedule),

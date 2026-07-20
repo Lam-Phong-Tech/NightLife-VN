@@ -1398,6 +1398,7 @@ model Tour {
   priceTier         Int           @default(3) @map("price_tier")
   coverUrl          String?       @map("cover_url")
   status            ProfileStatus @default(ACTIVE)
+  homeRank          Int?          @map("home_rank")
   stops             TourStop[]
   bookings          TourBooking[]
   departureTimes    String[]      @default([]) @map("departure_times")
@@ -1407,6 +1408,7 @@ model Tour {
   deletedAt         DateTime?     @map("deleted_at")
 
   @@index([status])
+  @@index([homeRank])
   @@index([city])
   @@map("tours")
 }

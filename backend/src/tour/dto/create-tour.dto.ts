@@ -81,6 +81,10 @@ export class CreateTourDto {
   @IsEnum(ProfileStatus)
   status?: ProfileStatus;
 
+  @IsOptional()
+  @IsNumber()
+  homeRank?: number | null;
+
   @IsArray()
   @IsString({ each: true })
   departureTimes: string[];
