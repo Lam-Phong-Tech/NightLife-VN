@@ -2045,10 +2045,10 @@ export default function PartnerPage() {
             issue.coupon?.store?.name ?? 'quán được phân quyền'
           }. ${
             options.fromCamera
-              ? 'Camera đã tắt, kiểm tra thông tin bên phải rồi xác nhận.'
+              ? 'Camera đã tắt, kiểm tra thông tin đơn vừa quét rồi xác nhận.'
               : options.fromImage
-                ? 'Ảnh QR đã được đọc, kiểm tra thông tin bên phải rồi xác nhận.'
-              : 'Kiểm tra thông tin bên phải rồi xác nhận.'
+                ? 'Ảnh QR đã được đọc, kiểm tra thông tin đơn vừa quét rồi xác nhận.'
+              : 'Kiểm tra thông tin đơn vừa quét rồi xác nhận.'
           }`,
         );
         return true;
@@ -3233,7 +3233,7 @@ export default function PartnerPage() {
     setScanIssue(null);
     setScannedTime(null);
     setScanPayload('');
-    setScanMessage('Đã hủy kết quả quét. Partner có thể kiểm tra mã khác.');
+    setScanMessage('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   };
 
   const applyListingDraftResponse = useCallback((response: PartnerListingDraftResponse) => {
@@ -4705,7 +4705,8 @@ export default function PartnerPage() {
   );
 
   const renderScanPanel = () => (
-    <div className="partner-scan-grid">
+    <div className={scanIssue ? 'partner-scan-result-view' : 'partner-scan-grid'}>
+      {!scanIssue ? (
       <PanelCard>
         <SectionHeading
           title="Quét / nhập mã QR"
@@ -4885,10 +4886,19 @@ export default function PartnerPage() {
           {scanMessage}
         </div>
       </PanelCard>
+      ) : null}
 
+      {scanIssue ? (
       <PanelCard>
-        <SectionHeading title="Kết quả xác thực" hideLine />
-        {scanIssue ? (
+        <SectionHeading
+          title="Thông tin đơn vừa quét"
+          hideLine
+          action={
+            <StatusPill tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}>
+              {scanIssue.statusLabel ?? scanIssue.status}
+            </StatusPill>
+          }
+        />
           <div style={{ display: 'grid', gap: '12px' }}>
             <div
               className="partner-scan-result-summary"
@@ -5016,43 +5026,49 @@ export default function PartnerPage() {
               </div>
             ))}
 
+            <div
+              style={{
+                ...softCardStyle,
+                padding: '13px 14px',
+                color: canConfirmScan ? colors.text2 : colors.success,
+                fontSize: '12px',
+                lineHeight: 1.6,
+              }}
+            >
+              {canConfirmScan
+                ? scanMessage
+                : 'Đã xác nhận xong. Bấm quay lại để quét mã QR tiếp theo.'}
+            </div>
+
             <div className="partner-action-row partner-scan-result-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
-              <PrimaryButton
-                disabled={!canConfirmScan || isConfirmingScan}
-                onClick={confirmScannedIssue}
-              >
-                <CheckCircle2 size={16} />
-                {scanIssue.status === 'USED'
-                  ? scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
-                    ? 'Đã check-in'
-                    : 'Đã sử dụng'
-                  : isConfirmingScan
-                    ? 'Đang xác nhận'
-                    : scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
-                      ? 'Xác nhận check-in'
-                      : 'Xác nhận'}
-              </PrimaryButton>
-              <GhostButton onClick={rejectScanResult}>
-                <XCircle size={16} />
-                Từ chối
-              </GhostButton>
+              {canConfirmScan ? (
+                <>
+                  <PrimaryButton
+                    disabled={isConfirmingScan}
+                    onClick={confirmScannedIssue}
+                  >
+                    <CheckCircle2 size={16} />
+                    {isConfirmingScan
+                      ? 'Đang xác nhận'
+                      : scanIssue.scanType === 'BOOKING_QR' || scanIssue.scanType === 'TOUR_BOOKING_QR'
+                        ? 'Xác nhận check-in'
+                        : 'Xác nhận'}
+                  </PrimaryButton>
+                  <GhostButton onClick={rejectScanResult}>
+                    <XCircle size={16} />
+                    Từ chối
+                  </GhostButton>
+                </>
+              ) : (
+                <PrimaryButton onClick={rejectScanResult} style={{ width: '100%' }}>
+                  <ArrowLeft size={16} />
+                  Quay lại quét QR
+                </PrimaryButton>
+              )}
             </div>
           </div>
-        ) : (
-          <div
-            style={{
-              ...softCardStyle,
-              padding: '18px',
-              color: colors.text2,
-              fontSize: '13px',
-              lineHeight: 1.7,
-            }}
-          >
-            Chưa có mã nào được kiểm tra trong phiên này. Khi partner quét QR, màn này chỉ hiển thị
-            dữ liệu cần để xác nhận: mã, quán áp dụng, hạn dùng, trạng thái và nhãn khách đã ẩn.
-          </div>
-        )}
       </PanelCard>
+      ) : null}
     </div>
   );
 
@@ -7292,6 +7308,13 @@ export default function PartnerPage() {
           gap: 14px;
           margin-top: 14px;
         }
+        .partner-scan-result-view {
+          display: grid;
+          gap: 14px;
+          max-width: 760px;
+          margin: 14px auto 0;
+          width: 100%;
+        }
         .partner-bill-panel-grid {
           grid-template-columns: minmax(340px, .85fr) minmax(0, 1.15fr);
         }
@@ -8081,6 +8104,7 @@ export default function PartnerPage() {
           }
           .partner-overview-grid,
           .partner-scan-grid,
+          .partner-scan-result-view,
           .partner-bill-panel-grid {
             gap: 12px;
             margin-top: 12px;
