@@ -16,7 +16,12 @@ import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { nightlifeOrigins } from "@/lib/auth/hosts";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
-import { translateText } from "@/lib/i18n/client-translations";
+import {
+  isLanguageCode,
+  languageChangedEvent,
+  storeLanguagePreference,
+  translateText,
+} from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 const colors = {
@@ -220,6 +225,16 @@ export default function Page() {
     }
 
     return redirect;
+  }, []);
+
+  useEffect(() => {
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    if (!isLanguageCode(requestedLanguage)) return;
+
+    storeLanguagePreference(requestedLanguage);
+    window.dispatchEvent(
+      new CustomEvent(languageChangedEvent, { detail: { language: requestedLanguage } }),
+    );
   }, []);
 
   const title = translateText(

@@ -6,6 +6,7 @@ export const defaultLanguageCode: LanguageCode = "ja";
 export const languageStorageKey = "vietyoru.language";
 export const languageCookieName = "vietyoru_language";
 export const languageChangedEvent = "vietyoru:language-change";
+const sharedLanguageCookieName = "vietyoru_shared_language";
 
 export const languageHtmlLang: Record<LanguageCode, string> = {
   vi: "vi",
@@ -7247,23 +7248,28 @@ export function isLanguageCode(value: string | null): value is LanguageCode {
   return languageCodes.includes(value as LanguageCode);
 }
 
-function readLanguageCookie(): LanguageCode | null {
+function readCookieLanguage(cookieName: string): LanguageCode | null {
   if (typeof document === "undefined") return null;
 
-  const rawValue = document.cookie
+  const cookieLanguages = document.cookie
     .split(";")
     .map((item) => item.trim())
-    .find((item) => item.startsWith(`${languageCookieName}=`))
-    ?.slice(languageCookieName.length + 1);
+    .filter((item) => item.startsWith(`${cookieName}=`))
+    .map((item) => item.slice(cookieName.length + 1))
+    .flatMap((rawValue) => {
+      try {
+        const decodedValue = decodeURIComponent(rawValue);
+        return isLanguageCode(decodedValue) ? [decodedValue] : [];
+      } catch {
+        return isLanguageCode(rawValue) ? [rawValue] : [];
+      }
+    });
 
-  if (!rawValue) return null;
+  return cookieLanguages[cookieLanguages.length - 1] ?? null;
+}
 
-  try {
-    const decodedValue = decodeURIComponent(rawValue);
-    return isLanguageCode(decodedValue) ? decodedValue : null;
-  } catch {
-    return isLanguageCode(rawValue) ? rawValue : null;
-  }
+function readLanguageCookie(): LanguageCode | null {
+  return readCookieLanguage(sharedLanguageCookieName) ?? readCookieLanguage(languageCookieName);
 }
 
 function getSharedLanguageCookieDomain(hostname: string) {
@@ -7288,10 +7294,10 @@ function isPortalLanguageHost(hostname: string) {
   return /^(auth|admin|partner)\./.test(normalizedHostname);
 }
 
-function writeLanguageCookie(language: LanguageCode) {
+function writeCookieLanguage(cookieName: string, language: LanguageCode) {
   if (typeof document === "undefined") return;
 
-  const cookieValue = `${languageCookieName}=${encodeURIComponent(
+  const cookieValue = `${cookieName}=${encodeURIComponent(
     language,
   )}; path=/; max-age=31536000; SameSite=Lax`;
   document.cookie = cookieValue;
@@ -7302,6 +7308,11 @@ function writeLanguageCookie(language: LanguageCode) {
   if (sharedDomain) {
     document.cookie = `${cookieValue}; domain=.${sharedDomain}`;
   }
+}
+
+function writeLanguageCookie(language: LanguageCode) {
+  writeCookieLanguage(languageCookieName, language);
+  writeCookieLanguage(sharedLanguageCookieName, language);
 }
 
 function readLocalStorageLanguage(): LanguageCode | null {
@@ -7329,6 +7340,7 @@ export function readStoredLanguage(): LanguageCode {
 
   if (isPortalLanguageHost(window.location.hostname) && cookieLanguage) {
     writeLocalStorageLanguage(cookieLanguage);
+    writeLanguageCookie(cookieLanguage);
     return cookieLanguage;
   }
 

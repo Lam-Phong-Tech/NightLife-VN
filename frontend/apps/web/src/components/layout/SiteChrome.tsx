@@ -1569,6 +1569,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const notificationNotices = memberNotifications.map((notification) =>
     toNotice(notification, activeLanguage),
   );
+  const memberLoginHref = `/dang-nhap?lang=${activeLanguage}`;
 
   useEffect(() => {
     const syncLanguage = (event?: Event) => {
@@ -2233,7 +2234,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
               {!authUser ? (
                 <Link
-                  href="/dang-nhap"
+                  href={memberLoginHref}
                   aria-label="Đăng nhập"
                   style={{
                     minHeight: "36px",
@@ -2298,7 +2299,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               {/* Login / User */}
               {!authUser ? (
                 <Link
-                  href="/dang-nhap"
+                  href={memberLoginHref}
                   style={{
                     minHeight: "40px",
                     padding: "0 18px",

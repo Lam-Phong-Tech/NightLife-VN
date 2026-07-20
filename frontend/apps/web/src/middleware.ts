@@ -17,6 +17,7 @@ type JwtPayload = {
 };
 
 const loginPaths = new Set(["/dang-nhap", "/dang-nhap-doi-tac", "/admin/dang-nhap"]);
+const languageCodes = new Set(["vi", "en", "ja", "ko", "zh"]);
 const portalSessions = [
   {
     prefix: "admin_",
@@ -120,6 +121,15 @@ function externalPortalUrl(request: NextRequest, portal: AuthPortal, pathname: s
 }
 
 function centralLoginUrl(request: NextRequest, portal: AuthPortal, redirectPath: string) {
+  const applyRequestedLanguage = (url: URL) => {
+    const requestedLanguage = request.nextUrl.searchParams.get("lang");
+    if (requestedLanguage && languageCodes.has(requestedLanguage)) {
+      url.searchParams.set("lang", requestedLanguage);
+    }
+
+    return url;
+  };
+
   if (getNightlifeHostKind(getRequestHostname(request)) === "local") {
     const localLoginPath =
       portal === "admin"
@@ -129,10 +139,10 @@ function centralLoginUrl(request: NextRequest, portal: AuthPortal, redirectPath:
           : "/dang-nhap";
     const url = new URL(localLoginPath, request.url);
     url.searchParams.set("redirect", redirectPath);
-    return url;
+    return applyRequestedLanguage(url);
   }
 
-  return authLoginUrl(portal, redirectPath);
+  return applyRequestedLanguage(authLoginUrl(portal, redirectPath));
 }
 
 function redirectActiveSession(
