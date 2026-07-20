@@ -693,6 +693,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/ranking') return { title: 'Ranking', subtitle: '' };
     if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: '' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
+    if (pathname === '/admin/appearance') return { title: 'Giao diện & Logo', subtitle: '' };
 
     if (pathname === '/admin/tours') return { title: 'Tour', subtitle: '' };
     if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: 'ACCOUNTS' };
@@ -869,13 +870,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
           {!hideTopbarFilters && <div className="nl-admin-topbar-controls">
-            {pathname !== '/admin/permissions' && pathname !== '/admin/ranking' && pathname !== '/admin/support-chat' && pathname !== '/admin/coupons' && pathname !== '/admin/bills' && (
+            {pathname !== '/admin/permissions' && pathname !== '/admin/ranking' && pathname !== '/admin/support-chat' && pathname !== '/admin/coupons' && pathname !== '/admin/bills' && pathname !== '/admin/appearance' && (
               <React.Suspense fallback={<div />}>
                 <TopCategoryFilter />
               </React.Suspense>
             )}
 
-            {pathname !== '/admin/permissions' && pathname !== '/admin/support-chat' && pathname !== '/admin/coupons' && pathname !== '/admin/bills' && (
+            {pathname !== '/admin/permissions' && pathname !== '/admin/support-chat' && pathname !== '/admin/coupons' && pathname !== '/admin/bills' && pathname !== '/admin/appearance' && (
               <React.Suspense fallback={<div />}>
                 <TopRegionFilter />
               </React.Suspense>
