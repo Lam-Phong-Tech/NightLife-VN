@@ -23,7 +23,7 @@ export function CastBookingCTA({
 }: CastBookingCTAProps) {
   const copy = getCastProfileCopy(language);
   const bookingLabel = isServiceOnlyBookingCategory(profile.store.category)
-    ? translateText("Đặt chỗ tại quán", language)
+    ? translateText("Đặt cast tại quán", language)
     : copy.bookThisCast;
 
   if (variant === "mobile") {
