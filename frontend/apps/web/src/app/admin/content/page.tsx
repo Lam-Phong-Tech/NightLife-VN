@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil } from 'lucide-react';
+import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil, CheckCircle2 } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
@@ -64,6 +64,28 @@ type AdminHomeTour = {
   createdAt?: string;
 };
 
+const stripHtml = (value: string) =>
+  value
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeSeoText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const includesSeoKeyword = (value: string, keyword: string) => {
+  const normalizedKeyword = normalizeSeoText(keyword);
+  if (!normalizedKeyword) return false;
+  return normalizeSeoText(value).includes(normalizedKeyword);
+};
+
+const countWords = (value: string) => stripHtml(value).split(/\s+/).filter(Boolean).length;
+
 
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
@@ -74,6 +96,7 @@ export default function AdminContentPage() {
   const [blogTitle, setBlogTitle] = useState('');
   const [blogCategory, setBlogCategory] = useState('Cẩm nang');
   const [blogLanguage, setBlogLanguage] = useState('Tiếng Việt');
+  const [blogFocusKeyword, setBlogFocusKeyword] = useState('');
   const [blogExcerpt, setBlogExcerpt] = useState('');
   const [blogContent, setBlogContent] = useState('');
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -98,6 +121,71 @@ export default function AdminContentPage() {
   const [isLoadingHotVideos, setIsLoadingHotVideos] = useState(false);
   const [isSearchingVideo, setIsSearchingVideo] = useState(false);
   const searchVideoRequestId = useRef(0);
+  const blogSeoAnalysis = useMemo(() => {
+    const titleLength = blogTitle.trim().length;
+    const excerptLength = blogExcerpt.trim().length;
+    const wordCount = countWords(blogContent);
+    const hasHeading = /<h[23](\s|>)/i.test(blogContent);
+    const hasList = /<(ul|ol|li)(\s|>)/i.test(blogContent);
+    const hasImage = Boolean(coverImage) || /<img(\s|>)/i.test(blogContent);
+
+    const checks = [
+      {
+        group: 'Từ khóa SEO',
+        label: 'Tiêu đề chứa từ khóa chính',
+        points: 15,
+        passed: includesSeoKeyword(blogTitle, blogFocusKeyword),
+      },
+      {
+        group: 'Từ khóa SEO',
+        label: 'Mô tả chứa từ khóa chính',
+        points: 15,
+        passed: includesSeoKeyword(blogExcerpt, blogFocusKeyword),
+      },
+      {
+        group: 'Tiêu đề & Meta',
+        label: `Tiêu đề dài 50-65 ký tự (hiện có ${titleLength})`,
+        points: 10,
+        passed: titleLength >= 50 && titleLength <= 65,
+      },
+      {
+        group: 'Tiêu đề & Meta',
+        label: `Mô tả dài >= 120 ký tự (hiện có ${excerptLength})`,
+        points: 10,
+        passed: excerptLength >= 120,
+      },
+      {
+        group: 'Nội dung bài viết',
+        label: `Bài viết >= 300 từ (hiện có ${wordCount})`,
+        points: 15,
+        passed: wordCount >= 300,
+      },
+      {
+        group: 'Nội dung bài viết',
+        label: 'Có thẻ Heading (H2/H3)',
+        points: 10,
+        passed: hasHeading,
+      },
+      {
+        group: 'Nội dung bài viết',
+        label: 'Có danh sách (Bullet/Numbered)',
+        points: 10,
+        passed: hasList,
+      },
+      {
+        group: 'Hình ảnh',
+        label: 'Có ảnh minh họa hoặc ảnh đại diện',
+        points: 15,
+        passed: hasImage,
+      },
+    ];
+
+    const score = checks.reduce((total, check) => total + (check.passed ? check.points : 0), 0);
+    const tone = score >= 80 ? 'good' : score >= 50 ? 'medium' : 'low';
+    const label = score >= 80 ? 'Tốt' : score >= 50 ? 'Khá' : 'Cần cải thiện';
+
+    return { checks, score, tone, label };
+  }, [blogTitle, blogExcerpt, blogContent, blogFocusKeyword, coverImage]);
 
   // Featured Services states
   const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
@@ -940,6 +1028,7 @@ export default function AdminContentPage() {
     setBlogTitle('');
     setBlogCategory('Cẩm nang');
     setBlogLanguage('Tiếng Việt');
+    setBlogFocusKeyword('');
     setBlogExcerpt('');
     setBlogContent('');
     setBannerTitle('');
@@ -1044,6 +1133,7 @@ export default function AdminContentPage() {
           metadata: {
             category: blogCategory,
             language: blogLanguage,
+            focusKeyword: blogFocusKeyword.trim(),
           },
         });
         targetBlogId = draft.id;
@@ -1077,6 +1167,7 @@ export default function AdminContentPage() {
         metadata: {
           category: blogCategory,
           language: blogLanguage,
+          focusKeyword: blogFocusKeyword.trim(),
           ...(finalImageUrl ? { image: finalImageUrl } : {}),
         }
       };
@@ -1102,6 +1193,7 @@ export default function AdminContentPage() {
     setBlogTitle(blog.title);
     setBlogCategory((blog.metadata as any)?.category || 'Cẩm nang');
     setBlogLanguage((blog.metadata as any)?.language || 'Tiếng Việt');
+    setBlogFocusKeyword((blog.metadata as any)?.focusKeyword || (blog.metadata as any)?.seoKeyword || '');
     setBlogExcerpt(blog.excerpt || '');
     setBlogContent(blog.body || '');
     setCoverImage((blog.metadata as any)?.image || null);
@@ -2062,6 +2154,59 @@ export default function AdminContentPage() {
               </span>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ border: '1px solid rgba(255,255,255,.08)', borderRadius: '13px', background: 'rgba(255,255,255,.025)', padding: '18px 20px', boxShadow: '0 18px 44px rgba(0,0,0,.16)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                  <CheckCircle2 size={20} color={blogSeoAnalysis.tone === 'good' ? colors.green : blogSeoAnalysis.tone === 'medium' ? colors.gold : '#e88b99'} strokeWidth={2.2} />
+                  <span style={{ color: colors.text, fontSize: '16px', fontWeight: 800 }}>Phân tích chuẩn SEO</span>
+                  <span style={{ flex: 1 }}></span>
+                  <span style={{
+                    color: blogSeoAnalysis.tone === 'good' ? colors.green : blogSeoAnalysis.tone === 'medium' ? colors.gold : '#e88b99',
+                    background: blogSeoAnalysis.tone === 'good' ? 'rgba(74,222,128,.12)' : blogSeoAnalysis.tone === 'medium' ? 'rgba(212,178,106,.12)' : 'rgba(224,105,122,.1)',
+                    border: blogSeoAnalysis.tone === 'good' ? '1px solid rgba(74,222,128,.2)' : blogSeoAnalysis.tone === 'medium' ? '1px solid rgba(212,178,106,.24)' : '1px solid rgba(224,105,122,.22)',
+                    padding: '7px 14px',
+                    borderRadius: '999px',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                  }}>
+                    {blogSeoAnalysis.label} ({blogSeoAnalysis.score}/100)
+                  </span>
+                </div>
+                {['Từ khóa SEO', 'Tiêu đề & Meta', 'Nội dung bài viết', 'Hình ảnh'].map((group) => {
+                  const groupChecks = blogSeoAnalysis.checks.filter((check) => check.group === group);
+
+                  return (
+                    <div key={group} style={{ marginTop: group === 'Từ khóa SEO' ? 0 : '16px' }}>
+                      <div style={{ color: colors.text2, fontSize: '12.5px', fontWeight: 800, marginBottom: '8px' }}>{group}</div>
+                      <div style={{ display: 'grid', gap: '7px' }}>
+                        {groupChecks.map((check) => (
+                          <div key={check.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: check.passed ? '#72d49d' : colors.muted, fontSize: '12.5px', fontWeight: 600 }}>
+                            <span style={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: 4,
+                              display: 'inline-grid',
+                              placeItems: 'center',
+                              flex: 'none',
+                              background: check.passed ? 'rgba(74,222,128,.88)' : 'rgba(255,255,255,.06)',
+                              border: check.passed ? '1px solid rgba(74,222,128,.95)' : '1px solid rgba(255,255,255,.12)',
+                              color: check.passed ? '#07150d' : colors.muted,
+                              fontSize: 11,
+                              fontWeight: 900,
+                            }}>
+                              {check.passed ? '✓' : ''}
+                            </span>
+                            <span>{check.label} <span style={{ color: check.passed ? 'rgba(114,212,157,.8)' : '#6f695f' }}>({check.points}đ)</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Từ khóa SEO (Focus Keyword)</div>
+                <input value={blogFocusKeyword} onChange={e => setBlogFocusKeyword(e.target.value)} placeholder="Nhập từ khóa chính của bài viết" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tiêu đề bài viết</div>
                 <input value={blogTitle} onChange={e => setBlogTitle(e.target.value)} placeholder="Nhập tiêu đề bài viết" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
