@@ -3378,9 +3378,11 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-pagination {
-    justify-content: flex-start;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    justify-content: center;
     gap: 8px;
-    margin: 14px 16px 0;
+    margin: 14px auto 0;
     overflow-x: auto;
     padding-bottom: 2px;
     scrollbar-width: none;

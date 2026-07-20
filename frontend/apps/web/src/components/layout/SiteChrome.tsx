@@ -1564,7 +1564,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/stores/") ||
     pathname.startsWith("/casts/") ||
     pathname.startsWith("/tour/") ||
-    pathname.startsWith("/dat-cho");
+    pathname.startsWith("/dat-cho") ||
+    pathname === "/xac-nhan";
   const showMobileFooterSpacer = isMobile && hideFooter && !hasManagedMobileBottomSpacing;
   const customerRouteMotionEnabled =
     !pathname.startsWith("/admin") && !pathname.startsWith("/partner");

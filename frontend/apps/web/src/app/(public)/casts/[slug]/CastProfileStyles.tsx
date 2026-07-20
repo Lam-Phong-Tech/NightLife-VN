@@ -41,6 +41,10 @@ export function CastProfileStyles() {
       }
 
       @media (max-width: 767px) {
+        .cast-mobile {
+          padding-bottom: var(--cast-mobile-fixed-space);
+        }
+
         .nl-page-content:has(.cast-page) {
           padding-bottom: 0 !important;
           scroll-padding-bottom: var(--cast-mobile-fixed-space) !important;
