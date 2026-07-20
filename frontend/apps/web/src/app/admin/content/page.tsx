@@ -1776,28 +1776,32 @@ export default function AdminContentPage() {
               <DataSkeleton variant="media" count={3} columns={3} style={{ gridColumn: '1 / -1' }} />
             ) : hotVideos.length === 0 ? (
               <span style={{ color: colors.muted, fontSize: '13px', padding: '20px' }}>Chưa có video nào. Hãy tìm và thêm từ bên dưới.</span>
-            ) : hotVideos.map((v, index) => (
-              <div key={v.id} style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
-                <div style={{ aspectRatio: '16/9', background: '#1a1824', position: 'relative' }}>
-                  {getVideoPreviewUrl(v) ? (
-                    <img src={getVideoPreviewUrl(v)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`Thumbnail ${v.storeName || v.title || 'video'}`} />
-                  ) : v.url ? (
-                    <video src={resolveClientUrl(v.url) || v.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : null}
-                  <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶</span>
-                  <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{index + 1}</span>
-                </div>
-                <div style={{ padding: '11px 13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.storeName || 'Không xác định'}</div>
-                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
+            ) : hotVideos.map((v, index) => {
+              const previewUrl = getVideoPreviewUrl(v);
+
+              return (
+                <div key={v.id} style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
+                  <div style={{ aspectRatio: '16/9', background: '#1a1824', position: 'relative' }}>
+                    {previewUrl ? (
+                      <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`Thumbnail ${v.storeName || v.title || 'video'}`} />
+                    ) : v.url ? (
+                      <video src={resolveClientUrl(v.url) || v.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : null}
+                    <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶</span>
+                    <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{index + 1}</span>
                   </div>
-                  <span onClick={() => handleMoveHotVideo(index, 'up')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === 0 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === 0 ? 'default' : 'pointer' }}>↑</span>
-                  <span onClick={() => handleMoveHotVideo(index, 'down')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === hotVideos.length - 1 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === hotVideos.length - 1 ? 'default' : 'pointer' }}>↓</span>
-                  <span onClick={() => handleRemoveHotVideo(v.id)} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>✕</span>
+                  <div style={{ padding: '11px 13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.storeName || 'Không xác định'}</div>
+                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
+                    </div>
+                    <span onClick={() => handleMoveHotVideo(index, 'up')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === 0 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === 0 ? 'default' : 'pointer' }}>↑</span>
+                    <span onClick={() => handleMoveHotVideo(index, 'down')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === hotVideos.length - 1 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === hotVideos.length - 1 ? 'default' : 'pointer' }}>↓</span>
+                    <span onClick={() => handleRemoveHotVideo(v.id)} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>✕</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
