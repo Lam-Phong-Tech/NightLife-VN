@@ -94,6 +94,16 @@ const getCampaignImage = (campaign: CampaignItem, index: number) =>
   categoryImages[campaign.targetStore!.category] ??
   fallbackImages[index % fallbackImages.length];
 
+const campaignStoreHref = (campaign: CampaignItem) => {
+  const slug = campaign.targetStore?.slug;
+  if (!slug) {
+    return "/danh-sach-quan";
+  }
+
+  const params = new URLSearchParams({ couponId: campaign.id });
+  return `/stores/${slug}?${params.toString()}`;
+};
+
 const campaignCopy = (language: LanguageCode) =>
   ({
     vi: {
@@ -282,7 +292,7 @@ function CampaignDealCard({
   return (
     <Link
       className={`coupon-ticket ${isUsed ? "used" : ""} ${isVip ? "vip" : ""}`}
-      href={`/stores/${campaign.targetStore!.slug}`}
+      href={campaignStoreHref(campaign)}
       aria-label={`${campaignName} at ${storeName}`}
     >
       <div 
