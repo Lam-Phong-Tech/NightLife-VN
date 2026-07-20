@@ -1,4 +1,4 @@
-import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
+import { breadcrumbJsonLd, jsonLdDocument } from "@/lib/seo/structured-data";
 
 type BreadcrumbItem = {
   name: string;
@@ -11,7 +11,7 @@ type BreadcrumbJsonLdProps = {
 };
 
 export function BreadcrumbJsonLd({ items, idPath }: BreadcrumbJsonLdProps) {
-  const structuredData = jsonLdGraph([breadcrumbJsonLd(items, idPath)]);
+  const structuredData = jsonLdDocument(breadcrumbJsonLd(items, idPath));
 
   return (
     <script

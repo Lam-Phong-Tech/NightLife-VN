@@ -5,16 +5,23 @@ import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTransl
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
-import { jsonLdGraph, organizationJsonLd } from "@/lib/seo/structured-data";
+import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
+import { jsonLdDocument, organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
+  applicationName: siteConfig.name,
   title: {
     default: `${siteConfig.name} | ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
     siteName: siteConfig.name,
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
@@ -58,13 +65,22 @@ export default function RootLayout({
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/support.js" strategy="beforeInteractive" />
         <script
+          id="organization-jsonld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLdGraph([organizationJsonLd()])),
+            __html: JSON.stringify(jsonLdDocument(organizationJsonLd())),
+          }}
+        />
+        <script
+          id="website-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLdDocument(websiteJsonLd())),
           }}
         />
       </head>
       <body suppressHydrationWarning>
+        <GoogleAnalytics />
         <ClientLanguageTranslator>
           <CurrencyProvider>
             <SocketProvider>

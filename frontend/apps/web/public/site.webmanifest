@@ -1,0 +1,17 @@
+{
+  "name": "Vietyoru",
+  "short_name": "Vietyoru",
+  "description": "Vietnam nightlife guide for venues, Cast, deals, tours, spa, and restaurants.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101014",
+  "theme_color": "#101014",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

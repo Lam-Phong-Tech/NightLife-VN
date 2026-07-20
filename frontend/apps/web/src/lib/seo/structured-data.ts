@@ -37,6 +37,42 @@ export const organizationJsonLd = (): JsonLdObject => ({
   description: siteConfig.description,
 });
 
+export const websiteJsonLd = (): JsonLdObject => ({
+  "@type": "WebSite",
+  "@id": absoluteSiteUrl("/#website"),
+  name: siteConfig.name,
+  alternateName: siteConfig.tagline,
+  url: siteConfig.url,
+  description: siteConfig.description,
+  inLanguage: "vi-VN",
+  publisher: {
+    "@id": absoluteSiteUrl("/#organization"),
+  },
+});
+
+export const webPageJsonLd = ({
+  path,
+  name,
+  description,
+}: {
+  path: string;
+  name: string;
+  description: string;
+}): JsonLdObject => ({
+  "@type": "WebPage",
+  "@id": `${absoluteSiteUrl(path)}#webpage`,
+  url: absoluteSiteUrl(path),
+  name,
+  description,
+  inLanguage: "vi-VN",
+  isPartOf: {
+    "@id": absoluteSiteUrl("/#website"),
+  },
+  about: {
+    "@id": absoluteSiteUrl("/#organization"),
+  },
+});
+
 export const breadcrumbJsonLd = (
   items: Array<{ name: string; path: string }>,
   idPath = items.at(-1)?.path ?? "/",
@@ -75,4 +111,10 @@ export const jsonLdGraph = (items: JsonLdObject[]): JsonLdObject =>
   omitUndefined({
     "@context": "https://schema.org",
     "@graph": items,
+  }) as JsonLdObject;
+
+export const jsonLdDocument = (item: JsonLdObject): JsonLdObject =>
+  omitUndefined({
+    "@context": "https://schema.org",
+    ...item,
   }) as JsonLdObject;

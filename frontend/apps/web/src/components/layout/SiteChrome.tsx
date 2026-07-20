@@ -30,6 +30,7 @@ import {
   type AppearanceItem,
   type AppearanceBrand,
 } from "@/lib/api/appearance";
+import { siteConfig } from "@/lib/site";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
   defaultLanguageCode,
@@ -1314,7 +1315,9 @@ function SiteFooter({
   if (isMobile) {
     return (
       <footer
-        className="nl-site-footer"
+        className="nl-site-footer h-card vcard"
+        itemScope
+        itemType="https://schema.org/Organization"
         style={{
           borderTop: `1px solid ${colors.borderGold12}`,
           background: colors.bg,
@@ -1324,8 +1327,13 @@ function SiteFooter({
         }}
       >
         <div style={{ display: "grid", gap: "12px" }}>
+          <meta itemProp="name" content={brandName} />
+          <meta itemProp="url" content={siteConfig.url} />
+          <meta itemProp="description" content={copy.description} />
           <Link
             href="/"
+            className="u-url url"
+            itemProp="url"
             style={{
               display: "inline-flex",
               flexDirection: "column",
@@ -1336,6 +1344,8 @@ function SiteFooter({
           >
             {brand.logoUrl ? (
               <img
+                className="u-logo logo"
+                itemProp="logo"
                 src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
                 alt={brandName}
                 style={{
@@ -1347,7 +1357,11 @@ function SiteFooter({
               />
             ) : (
               <>
-                <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>
+                <span
+                  className="p-name fn org"
+                  itemProp="name"
+                  style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}
+                >
                   {brandName}
                 </span>
                 <span
@@ -1365,7 +1379,11 @@ function SiteFooter({
             )}
           </Link>
 
-          <p style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}>
+          <p
+            className="p-note note"
+            itemProp="description"
+            style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}
+          >
             {copy.description}
           </p>
 
@@ -1411,7 +1429,9 @@ function SiteFooter({
 
   return (
     <footer
-      className="nl-site-footer"
+      className="nl-site-footer h-card vcard"
+      itemScope
+      itemType="https://schema.org/Organization"
       style={{
         borderTop: `1px solid ${colors.borderGold12}`,
         background: colors.bg,
@@ -1434,8 +1454,13 @@ function SiteFooter({
         }}
       >
         <div>
+          <meta itemProp="name" content={brandName} />
+          <meta itemProp="url" content={siteConfig.url} />
+          <meta itemProp="description" content={copy.description} />
           <Link
             href="/"
+            className="u-url url"
+            itemProp="url"
             style={{
               display: "inline-flex",
               flexDirection: "column",
@@ -1445,6 +1470,8 @@ function SiteFooter({
           >
             {brand.logoUrl ? (
               <img
+                className="u-logo logo"
+                itemProp="logo"
                 src={resolveClientUrl(brand.logoUrl) || brand.logoUrl}
                 alt={brandName}
                 style={{
@@ -1457,6 +1484,8 @@ function SiteFooter({
             ) : (
               <>
                 <span
+                  className="p-name fn org"
+                  itemProp="name"
                   style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}
                 >
                   {brandName}
@@ -1475,6 +1504,8 @@ function SiteFooter({
             )}
           </Link>
           <p
+            className="p-note note"
+            itemProp="description"
             style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}
           >
             {copy.description}
