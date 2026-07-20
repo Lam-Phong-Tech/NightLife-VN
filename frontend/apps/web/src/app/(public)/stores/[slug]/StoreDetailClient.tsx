@@ -4473,7 +4473,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: 0;
+            padding-bottom: var(--store-mobile-fixed-space);
           }
 
           .nl-page-content:has(.store-detail-page) {
