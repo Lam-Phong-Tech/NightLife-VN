@@ -141,6 +141,18 @@ const isSameCity = (c1: string, c2: string) => {
   return norm(c1) === norm(c2);
 };
 
+const isValidImageUrl = (url: string): boolean => {
+  if (!url) return true;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('/') || trimmed.startsWith('data:')) return true;
+  try {
+    const parsed = new URL(trimmed);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch (_) {
+    return false;
+  }
+};
+
 export default function AdminToursPage() {
   return (
     <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '20px' }} />}>
@@ -392,6 +404,10 @@ function AdminToursContent() {
     try {
       if (!formData.title.trim()) {
         showToast('Vui lòng nhập tên Tour!');
+        return;
+      }
+      if (formData.coverUrl && !isValidImageUrl(formData.coverUrl)) {
+        showToast('Liên kết hình ảnh không hợp lệ! URL phải bắt đầu bằng http://, https:// hoặc /');
         return;
       }
       if (formData.stops.length === 0) {
@@ -687,8 +703,21 @@ function AdminToursContent() {
                         value={formData.coverUrl}
                         onChange={(e) => setFormData(prev => ({ ...prev, coverUrl: e.target.value }))}
                         placeholder="https://images.unsplash.com/..."
-                        style={{ ...boxS, width: '100%', padding: '8px 10px', fontSize: '12px' }}
+                        style={{ 
+                          ...boxS, 
+                          width: '100%', 
+                          padding: '8px 10px', 
+                          fontSize: '12px',
+                          border: formData.coverUrl && !isValidImageUrl(formData.coverUrl) 
+                            ? '1px solid #e88b99' 
+                            : '1px solid rgba(255,255,255,.09)'
+                        }}
                       />
+                      {formData.coverUrl && !isValidImageUrl(formData.coverUrl) && (
+                        <div style={{ fontSize: '10.5px', color: '#e88b99', marginTop: '4px', fontWeight: 500 }}>
+                          * Đường dẫn hình ảnh không hợp lệ (URL phải bắt đầu bằng http://, https:// hoặc /)
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
