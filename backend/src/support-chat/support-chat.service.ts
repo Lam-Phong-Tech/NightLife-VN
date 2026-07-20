@@ -155,7 +155,9 @@ export class SupportChatService {
     }
 
     let ticketId = input.ticketId;
-    let ticket;
+    let ticket:
+      | Awaited<ReturnType<SupportChatService['createOrGetTicket']>>
+      | undefined;
 
     if (!ticketId) {
       ticket = await this.createOrGetTicket(input.guestSessionId, input.userId);
@@ -166,13 +168,13 @@ export class SupportChatService {
       ? SupportSenderType.USER
       : SupportSenderType.GUEST;
     const message = await this.sendMessage(
-      ticketId as string,
+      ticketId,
       senderType,
       input.content.trim(),
       input.userId || undefined,
     );
 
-    return { ticket, ticketId: ticketId as string, message };
+    return { ticket, ticketId, message };
   }
 
   async sendMessage(

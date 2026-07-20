@@ -88,6 +88,7 @@ const readTokenPayload = (token: string) => {
     return JSON.parse(decodeBase64Url(payload)) as {
       exp?: unknown;
       role?: unknown;
+      sub?: unknown;
     };
   } catch {
     return null;
@@ -338,8 +339,14 @@ export const getAuthUser = (): AuthUser | null => {
     return null;
   }
 
+  const tokenUserId = readTokenPayload(token)?.sub;
+  if (typeof tokenUserId !== "string" || !tokenUserId.trim()) {
+    clearAuthSession();
+    return null;
+  }
+
   return {
-    id: "",
+    id: tokenUserId,
     email: cookies[emailCookie],
     displayName: cookies[nameCookie] ?? cookies[emailCookie],
     role: (cookies[roleCookie] as AuthRole) || "USER",

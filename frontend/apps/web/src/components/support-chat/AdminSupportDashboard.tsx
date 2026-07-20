@@ -5,11 +5,8 @@ import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
 import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/session';
-import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
-import {
-  filterAdminSupportTickets,
-  type AdminSupportTicketFilter,
-} from "./admin-support-ticket-filter";
+import { getSupportSocketConfig, getApiBaseUrl } from '@/lib/socket-config';
+import { filterAdminSupportTickets, type AdminSupportTicketFilter } from './admin-support-ticket-filter';
 
 type SupportMessagePayload = {
   id?: string;
@@ -46,9 +43,7 @@ type SessionMergedPayload = {
 };
 
 function formatSupportTicket(ticket: SupportTicketPayload): SupportTicketPayload {
-  const latestConversationMessage = ticket.messages?.find(
-    (message) => message.senderType !== 'SYSTEM',
-  );
+  const latestConversationMessage = ticket.messages?.find((message) => message.senderType !== 'SYSTEM');
 
   return {
     ...ticket,
@@ -67,7 +62,7 @@ export function AdminSupportDashboard() {
   const [toast, setToast] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [ticketFilter, setTicketFilter] = useState<AdminSupportTicketFilter>('waiting');
-  
+
   const activeTicketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -82,23 +77,22 @@ export function AdminSupportDashboard() {
     else console.warn('[Admin Dashboard] No user found. Socket will not connect.');
   }, []);
 
-  const adminId = currentUser?.id;
-  const role = currentUser?.role || 'ADMIN';
-
   useEffect(() => {
     if (!currentUser) return; // Wait for user to be loaded
 
-    const adminId = currentUser.id;
-    const role = currentUser.role || 'ADMIN';
-
     const socketConfig = getSupportSocketConfig();
+    const token = getAuthSessionToken();
+    if (!token || !currentUser.id) {
+      console.warn('[Admin Dashboard] Invalid admin session. Socket will not connect.');
+      return;
+    }
 
     const newSocket = io(socketConfig.host + '/support', {
       path: socketConfig.path,
-      query: { adminId, role },
+      auth: { token },
       forceNew: true,
     });
-    console.log(`[Admin Dashboard] Connecting to socket at ${socketConfig.host}${socketConfig.path || ''} with role ${role}...`);
+    console.log(`[Admin Dashboard] Connecting to socket at ${socketConfig.host}${socketConfig.path || ''}...`);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -107,6 +101,7 @@ export function AdminSupportDashboard() {
 
     newSocket.on('connect_error', (err) => {
       console.error('[Admin Dashboard] Socket connection error:', err);
+      setToast(err.message === 'UNAUTHORIZED' ? 'Phiên đăng nhập quản trị không hợp lệ. Vui lòng đăng nhập lại.' : 'Không thể kết nối chat hỗ trợ. Vui lòng thử lại.');
     });
 
     newSocket.on('disconnect', (reason) => {
@@ -114,23 +109,22 @@ export function AdminSupportDashboard() {
     });
 
     // Initial load pending tickets via REST API
-    const token = getAuthSessionToken();
     fetch(`${getApiBaseUrl()}/api/support/pending`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         if (Array.isArray(data)) {
           // Format tickets with latest message from DB if available
           const formatted = data.map(formatSupportTicket);
           setPendingTickets(formatted);
           // Join socket rooms for all tickets so admin receives new messages
-          formatted.forEach(t => newSocket.emit('rejoin_ticket', { ticketId: t.id }));
+          formatted.forEach((t) => newSocket.emit('rejoin_ticket', { ticketId: t.id }));
         } else {
           console.error('Expected array for pending tickets, got:', data);
         }
@@ -138,10 +132,10 @@ export function AdminSupportDashboard() {
       .catch(console.error);
 
     newSocket.on('new_ticket', (ticket: SupportTicketPayload) => {
-      setPendingTickets(prev => {
+      setPendingTickets((prev) => {
         const formattedTicket = formatSupportTicket(ticket);
-        if (prev.some(t => t.id === ticket.id)) {
-          return prev.map(t => t.id === ticket.id ? { ...t, ...formattedTicket } : t);
+        if (prev.some((t) => t.id === ticket.id)) {
+          return prev.map((t) => (t.id === ticket.id ? { ...t, ...formattedTicket } : t));
         }
         return [formattedTicket, ...prev];
       });
@@ -151,39 +145,33 @@ export function AdminSupportDashboard() {
     newSocket.on('ticket_claimed', (data: { ticketId: string; adminId: string }) => {
       // If WE claimed it, don't remove it from the list! Just mark it as ours
       if (data.adminId === currentUser.id) {
-        setPendingTickets(prev => prev.map(t => t.id === data.ticketId ? { ...t, claimedByOther: false, status: 'ACTIVE' } : t));
+        setPendingTickets((prev) => prev.map((t) => (t.id === data.ticketId ? { ...t, claimedByOther: false, status: 'ACTIVE' } : t)));
         return;
       }
-      setPendingTickets(prev => 
-        prev.map(t => t.id === data.ticketId ? { ...t, claimedByOther: true } : t)
-      );
-      
+      setPendingTickets((prev) => prev.map((t) => (t.id === data.ticketId ? { ...t, claimedByOther: true } : t)));
+
       setTimeout(() => {
-        setPendingTickets(prev => prev.filter(t => t.id !== data.ticketId));
+        setPendingTickets((prev) => prev.filter((t) => t.id !== data.ticketId));
       }, 2000);
     });
 
     newSocket.on('receive_message', (msg: SupportMessagePayload) => {
       // Update preview in the sidebar
       if (msg.senderType !== 'SYSTEM') {
-        setPendingTickets(prev => prev.map(t =>
-          t.id === msg.ticketId
-            ? { ...t, latestMessage: msg.content, messages: [msg] }
-            : t
-        ));
+        setPendingTickets((prev) => prev.map((t) => (t.id === msg.ticketId ? { ...t, latestMessage: msg.content, messages: [msg] } : t)));
       }
 
       // Update active messages ONLY if it belongs to activeTicketId
       if (activeTicketIdRef.current === msg.ticketId) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === msg.id)) return prev;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
       }
     });
 
     newSocket.on('ticket_closed', (data: { ticketId: string }) => {
-      setActiveTicketId(prev => {
+      setActiveTicketId((prev) => {
         if (prev === data.ticketId) {
           setMessages([]);
           setToast('Đoạn chat đã được đóng.');
@@ -231,19 +219,21 @@ export function AdminSupportDashboard() {
   const claimTicket = async (ticketId: string) => {
     if (!socket) return;
 
-    socket.emit('claim_ticket', { ticketId, adminId }, (response: SupportActionResponse) => {
+    socket.emit('claim_ticket', { ticketId }, (response: SupportActionResponse) => {
       if (response.success) {
-        const ticketInfo = pendingTickets.find(t => t.id === ticketId);
+        const ticketInfo = pendingTickets.find((t) => t.id === ticketId);
         setActiveTicketInfo(ticketInfo ?? response.ticket ?? null);
         setActiveTicketId(ticketId);
         // Don't filter it out, keep it in the list as ACTIVE
-        setPendingTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'ACTIVE' } : t));
+        setPendingTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: 'ACTIVE' } : t)));
         fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
-          .then(res => res.json())
-          .then(data => setMessages(data));
+          .then((res) => res.json())
+          .then((data) => setMessages(data));
       } else {
-        setToast('Rất tiếc, đoạn chat này vừa được tiếp nhận');
-        setPendingTickets(prev => prev.filter(t => t.id !== ticketId));
+        setToast(response.error || 'Không thể tiếp nhận đoạn chat. Vui lòng thử lại.');
+        if (response.error?.includes('được tiếp nhận')) {
+          setPendingTickets((prev) => prev.filter((t) => t.id !== ticketId));
+        }
         setTimeout(() => setToast(null), 3000);
       }
     });
@@ -251,44 +241,51 @@ export function AdminSupportDashboard() {
 
   const sendMessage = () => {
     if (!input.trim() || !activeTicketId || !socket) return;
-    
+
     const text = input.trim();
     setInput('');
 
     const localTempId = 'temp-' + Date.now().toString();
-    setMessages(prev => [...prev, {
-      id: localTempId,
-      senderType: 'ADMIN',
-      content: text,
-      createdAt: new Date().toISOString()
-    }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: localTempId,
+        senderType: 'ADMIN',
+        content: text,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
 
-    socket.emit('send_message', {
-      ticketId: activeTicketId,
-      content: text,
-      userId: adminId,
-      isAdmin: true,
-    }, (response: SupportMessagePayload) => {
-      if (response && response.id) {
-        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
-        setPendingTickets(prev => prev.map(ticket =>
-          ticket.id === activeTicketId
-            ? {
-                ...ticket,
-                latestMessage: response.content ?? text,
-                messages: [{ ...response, senderType: 'ADMIN' }],
-              }
-            : ticket
-        ));
-      }
-    });
+    socket.emit(
+      'send_message',
+      {
+        ticketId: activeTicketId,
+        content: text,
+      },
+      (response: SupportMessagePayload) => {
+        if (response && response.id) {
+          setMessages((prev) => prev.map((m) => (m.id === localTempId ? { ...m, id: response.id } : m)));
+          setPendingTickets((prev) =>
+            prev.map((ticket) =>
+              ticket.id === activeTicketId
+                ? {
+                    ...ticket,
+                    latestMessage: response.content ?? text,
+                    messages: [{ ...response, senderType: 'ADMIN' }],
+                  }
+                : ticket,
+            ),
+          );
+        }
+      },
+    );
   };
 
   const closeTicket = () => {
     if (!socket || !activeTicketId) return;
     socket.emit('close_ticket', { ticketId: activeTicketId }, (response: SupportActionResponse) => {
       if (response.success) {
-        setPendingTickets(prev => prev.filter(t => t.id !== activeTicketId));
+        setPendingTickets((prev) => prev.filter((t) => t.id !== activeTicketId));
         setActiveTicketId(null);
         setActiveTicketInfo(null);
         setMessages([]);
@@ -299,7 +296,7 @@ export function AdminSupportDashboard() {
   const currentTicketDisplay = activeTicketInfo || {
     id: activeTicketId,
     userId: null,
-    user: { displayName: 'Đang tải...' }
+    user: { displayName: 'Đang tải...' },
   };
 
   // Helper to format time safely
@@ -316,48 +313,42 @@ export function AdminSupportDashboard() {
   const visibleTickets = filterAdminSupportTickets(pendingTickets, ticketFilter);
 
   return (
-    <div 
+    <div
       className="flex flex-col h-[calc(100vh-100px)] min-h-[600px] rounded-xl overflow-hidden font-sans antialiased"
       style={{
         background: '#0c0c0f',
         color: '#f3f0ea',
-        border: '1px solid rgba(255,255,255,.06)'
+        border: '1px solid rgba(255,255,255,.06)',
       }}
     >
-      
       {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl z-50 animate-in slide-in-from-top-2 font-medium text-sm">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="fixed top-6 right-6 bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl z-50 animate-in slide-in-from-top-2 font-medium text-sm">{toast}</div>}
 
       <div className="flex flex-1 min-h-0">
-        
         {/* Cột trái: Pending Tickets / Hội thoại */}
-        <div 
+        <div
           className="w-[320px] flex-none flex flex-col"
           style={{
             borderRight: '1px solid rgba(255,255,255,.06)',
-            background: 'rgba(255,255,255,.012)'
+            background: 'rgba(255,255,255,.012)',
           }}
         >
           <div className="p-4 pb-3">
-            <div 
+            <div
               className="flex items-center gap-2 rounded-xl px-3 py-2"
               style={{
                 background: 'rgba(255,255,255,.04)',
-                border: '1px solid rgba(255,255,255,.08)'
+                border: '1px solid rgba(255,255,255,.08)',
               }}
             >
               <Search size={14} style={{ color: '#8c8679' }} />
-              <input 
-                type="text" 
-                placeholder="Tìm hội thoại…" 
+              <input
+                type="text"
+                placeholder="Tìm hội thoại…"
                 className="bg-transparent border-none outline-none text-xs w-full"
                 style={{
                   color: '#f3f0ea',
-                  caretColor: '#d4b26a'
+                  caretColor: '#d4b26a',
                 }}
               />
             </div>
@@ -369,12 +360,8 @@ export function AdminSupportDashboard() {
                 className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
                   color: ticketFilter === 'waiting' ? '#241a0a' : '#9b958a',
-                  background: ticketFilter === 'waiting'
-                    ? 'linear-gradient(135deg,#f0dda8,#d4b26a)'
-                    : 'rgba(255,255,255,.04)',
-                  border: ticketFilter === 'waiting'
-                    ? '1px solid transparent'
-                    : '1px solid rgba(255,255,255,.08)',
+                  background: ticketFilter === 'waiting' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)',
+                  border: ticketFilter === 'waiting' ? '1px solid transparent' : '1px solid rgba(255,255,255,.08)',
                 }}
               >
                 Đang chờ
@@ -386,38 +373,30 @@ export function AdminSupportDashboard() {
                 className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
                   color: ticketFilter === 'all' ? '#241a0a' : '#9b958a',
-                  background: ticketFilter === 'all'
-                    ? 'linear-gradient(135deg,#f0dda8,#d4b26a)'
-                    : 'rgba(255,255,255,.04)',
-                  border: ticketFilter === 'all'
-                    ? '1px solid transparent'
-                    : '1px solid rgba(255,255,255,.08)',
+                  background: ticketFilter === 'all' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)',
+                  border: ticketFilter === 'all' ? '1px solid transparent' : '1px solid rgba(255,255,255,.08)',
                 }}
               >
                 Tất cả
               </button>
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 custom-scrollbar">
-            {visibleTickets.map(ticket => {
+            {visibleTickets.map((ticket) => {
               const isClaimed = ticket.claimedByOther;
               const isSelected = ticket.id === activeTicketId;
               const avatarLetter = (ticket.user?.displayName || 'K').charAt(0).toUpperCase();
-              
+
               return (
-                <div 
-                  key={ticket.id} 
+                <div
+                  key={ticket.id}
                   onClick={() => !isClaimed && claimTicket(ticket.id)}
                   className="flex gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-150"
                   style={{
-                    background: isSelected 
-                      ? 'linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.02))' 
-                      : 'transparent',
-                    border: isSelected 
-                      ? '1px solid rgba(212,178,106,.36)' 
-                      : '1px solid transparent',
-                    opacity: isClaimed ? 0.5 : 1
+                    background: isSelected ? 'linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.02))' : 'transparent',
+                    border: isSelected ? '1px solid rgba(212,178,106,.36)' : '1px solid transparent',
+                    opacity: isClaimed ? 0.5 : 1,
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected && !isClaimed) {
@@ -432,7 +411,7 @@ export function AdminSupportDashboard() {
                     }
                   }}
                 >
-                  <div 
+                  <div
                     style={{
                       position: 'relative',
                       width: '40px',
@@ -445,12 +424,12 @@ export function AdminSupportDashboard() {
                       justifyContent: 'center',
                       color: '#241a0a',
                       fontWeight: 700,
-                      fontSize: '14px'
+                      fontSize: '14px',
                     }}
                   >
                     {avatarLetter}
                     {!isClaimed && (
-                      <span 
+                      <span
                         style={{
                           position: 'absolute',
                           right: '-1px',
@@ -459,70 +438,53 @@ export function AdminSupportDashboard() {
                           height: '11px',
                           borderRadius: '50%',
                           background: '#5fbf86',
-                          border: '2px solid #0c0c0f'
+                          border: '2px solid #0c0c0f',
                         }}
                       />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center" style={{ gap: '7px' }}>
-                      <span 
-                        className="truncate flex-1"
-                        style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}
-                      >
+                      <span className="truncate flex-1" style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>
                         {ticket.userId ? ticket.user?.displayName : 'Khách vãng lai'}
                       </span>
                     </div>
-                    <div 
-                      className="truncate"
-                      style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px' }}
-                    >
-                      {isClaimed ? 'Đang có Admin nhận...' : (ticket.latestMessage || (ticket.status === 'ACTIVE' ? 'Đang hỗ trợ...' : 'Đang chờ hỗ trợ...'))}
+                    <div className="truncate" style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px' }}>
+                      {isClaimed ? 'Đang có Admin nhận...' : ticket.latestMessage || (ticket.status === 'ACTIVE' ? 'Đang hỗ trợ...' : 'Đang chờ hỗ trợ...')}
                     </div>
-                    <div 
-                      style={{ fontSize: '9.5px', color: '#57534b', marginTop: '3px' }}
-                    >
-                      Phiên hỗ trợ {ticket.id.substring(0, 8)}
-                    </div>
+                    <div style={{ fontSize: '9.5px', color: '#57534b', marginTop: '3px' }}>Phiên hỗ trợ {ticket.id.substring(0, 8)}</div>
                   </div>
                 </div>
               );
             })}
-            
+
             {visibleTickets.length === 0 && (
-              <div 
-                className="text-center mt-8 text-xs"
-                style={{ color: '#57534b' }}
-              >
-                {ticketFilter === 'waiting'
-                  ? 'Không có tin nhắn chờ'
-                  : 'Không có hội thoại'}
+              <div className="text-center mt-8 text-xs" style={{ color: '#57534b' }}>
+                {ticketFilter === 'waiting' ? 'Không có tin nhắn chờ' : 'Không có hội thoại'}
               </div>
             )}
           </div>
-
-
         </div>
 
         {/* Cột phải: Active Chat Thread */}
-        <div 
+        <div
           className="flex-1 min-w-0 flex flex-col"
           style={{
-            background: 'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(212,178,106,.03), transparent)'
+            background: 'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(212,178,106,.03), transparent)',
           }}
         >
           {activeTicketId ? (
             <>
               {/* Header của khung chat */}
-              <div 
+              <div
                 className="flex-none flex items-center gap-3 py-3.5 px-5 z-10"
                 style={{
                   borderBottom: '1px solid rgba(255,255,255,.06)',
                   background: 'rgba(12,12,15,.6)',
-                  backdropFilter: 'blur(8px)'
+                  backdropFilter: 'blur(8px)',
                 }}
               >
-                <div 
+                <div
                   style={{
                     width: '38px',
                     height: '38px',
@@ -534,20 +496,16 @@ export function AdminSupportDashboard() {
                     justifyContent: 'center',
                     color: '#241a0a',
                     fontWeight: 700,
-                    fontSize: '14px'
+                    fontSize: '14px',
                   }}
                 >
                   {(currentTicketDisplay.user?.displayName || 'C').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f3f0ea' }}>
-                    {currentTicketDisplay.userId ? currentTicketDisplay.user?.displayName : 'Khách vãng lai'}
-                  </div>
-                  <div style={{ fontSize: '10.5px', color: '#7fd3a2', marginTop: '1px' }}>
-                    ● Đang trực tuyến
-                  </div>
+                  <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f3f0ea' }}>{currentTicketDisplay.userId ? currentTicketDisplay.user?.displayName : 'Khách vãng lai'}</div>
+                  <div style={{ fontSize: '10.5px', color: '#7fd3a2', marginTop: '1px' }}>● Đang trực tuyến</div>
                 </div>
-                <button 
+                <button
                   onClick={closeTicket}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
                   style={{
@@ -555,7 +513,7 @@ export function AdminSupportDashboard() {
                     fontWeight: 600,
                     color: '#e3c27e',
                     background: 'rgba(212,178,106,.1)',
-                    border: '1px solid rgba(212,178,106,.32)'
+                    border: '1px solid rgba(212,178,106,.32)',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(212,178,106,.2)';
@@ -567,7 +525,7 @@ export function AdminSupportDashboard() {
                   Hoàn tất (Close)
                 </button>
               </div>
-              
+
               {/* Vùng hiển thị tin nhắn */}
               <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-1 custom-scrollbar">
                 {messages.map((m, idx) => {
@@ -577,13 +535,13 @@ export function AdminSupportDashboard() {
                   if (isSystem) {
                     return (
                       <div key={idx} className="flex justify-center my-2">
-                        <div 
+                        <div
                           className="px-3 py-1.5 rounded-full"
                           style={{
                             fontSize: '11px',
                             background: 'rgba(255,255,255,.04)',
                             border: '1px solid rgba(255,255,255,.07)',
-                            color: '#8c8679'
+                            color: '#8c8679',
                           }}
                         >
                           {m.content}
@@ -595,9 +553,9 @@ export function AdminSupportDashboard() {
                   return (
                     <div key={idx} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
                       <div className="max-w-[62%]">
-                        <div 
+                        <div
                           style={
-                            isAdmin 
+                            isAdmin
                               ? {
                                   fontSize: '13px',
                                   lineHeight: 1.55,
@@ -605,7 +563,7 @@ export function AdminSupportDashboard() {
                                   background: 'linear-gradient(135deg, #f0dda8, #d4b26a)',
                                   padding: '11px 15px',
                                   borderRadius: '15px 15px 4px 15px',
-                                  fontWeight: 500
+                                  fontWeight: 500,
                                 }
                               : {
                                   fontSize: '13px',
@@ -614,18 +572,18 @@ export function AdminSupportDashboard() {
                                   background: 'rgba(255,255,255,.055)',
                                   border: '1px solid rgba(255,255,255,.08)',
                                   padding: '11px 15px',
-                                  borderRadius: '15px 15px 15px 4px'
+                                  borderRadius: '15px 15px 15px 4px',
                                 }
                           }
                         >
                           {m.content}
                         </div>
-                        <div 
+                        <div
                           style={{
                             fontSize: '9.5px',
                             color: '#57534b',
                             marginTop: '4px',
-                            textAlign: isAdmin ? 'right' : 'left'
+                            textAlign: isAdmin ? 'right' : 'left',
                           }}
                         >
                           {formatTime(m.createdAt)} {isAdmin ? '· Admin' : ''}
@@ -638,23 +596,23 @@ export function AdminSupportDashboard() {
               </div>
 
               {/* Khu vực nhập tin nhắn */}
-              <div 
+              <div
                 className="flex-none py-3 px-5"
                 style={{
                   borderTop: '1px solid rgba(255,255,255,.06)',
                   background: 'rgba(12,12,15,.6)',
-                  backdropFilter: 'blur(8px)'
+                  backdropFilter: 'blur(8px)',
                 }}
               >
                 {/* Các câu hỏi gợi ý */}
                 <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  <button 
-                    onClick={() => setInput('Admin đã xác nhận với quán — bàn của anh/chị đã được giữ ạ ✓')} 
+                  <button
+                    onClick={() => setInput('Admin đã xác nhận với quán — bàn của anh/chị đã được giữ ạ ✓')}
                     className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150"
                     style={{
                       color: '#c5c0b6',
                       background: 'rgba(255,255,255,.04)',
-                      border: '1px solid rgba(255,255,255,.1)'
+                      border: '1px solid rgba(255,255,255,.1)',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = 'rgba(212,178,106,.4)';
@@ -667,13 +625,13 @@ export function AdminSupportDashboard() {
                   >
                     Đã xác nhận với quán ✓
                   </button>
-                  <button 
-                    onClick={() => setInput('Dạ muốn đổi giờ/số người, anh/chị vui lòng hủy & đặt lại. Em hỗ trợ tạo booking mới ngay ạ.')} 
+                  <button
+                    onClick={() => setInput('Dạ muốn đổi giờ/số người, anh/chị vui lòng hủy & đặt lại. Em hỗ trợ tạo booking mới ngay ạ.')}
                     className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150"
                     style={{
                       color: '#c5c0b6',
                       background: 'rgba(255,255,255,.04)',
-                      border: '1px solid rgba(255,255,255,.1)'
+                      border: '1px solid rgba(255,255,255,.1)',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = 'rgba(212,178,106,.4)';
@@ -687,13 +645,13 @@ export function AdminSupportDashboard() {
                     Muốn đổi giờ → hủy & đặt lại giúp anh/chị
                   </button>
                 </div>
-                
+
                 <div className="flex items-center gap-2.5">
-                  <div 
+                  <div
                     className="flex-1 flex items-center gap-2.5 rounded-xl px-4 py-3"
                     style={{
                       background: 'rgba(255,255,255,.045)',
-                      border: '1px solid rgba(255,255,255,.1)'
+                      border: '1px solid rgba(255,255,255,.1)',
                     }}
                   >
                     <input
@@ -707,7 +665,7 @@ export function AdminSupportDashboard() {
                       className="flex-1 bg-transparent border-none outline-none text-[13.5px]"
                       style={{
                         color: '#f3f0ea',
-                        caretColor: '#d4b26a'
+                        caretColor: '#d4b26a',
                       }}
                     />
                   </div>
@@ -720,7 +678,7 @@ export function AdminSupportDashboard() {
                       color: '#241a0a',
                       opacity: !input.trim() ? 0.5 : 1,
                       cursor: !input.trim() ? 'not-allowed' : 'pointer',
-                      boxShadow: '0 8px 20px -8px rgba(212,178,106,.5)'
+                      boxShadow: '0 8px 20px -8px rgba(212,178,106,.5)',
                     }}
                   >
                     <Send size={17} />
@@ -729,10 +687,10 @@ export function AdminSupportDashboard() {
               </div>
             </>
           ) : (
-            <div 
+            <div
               className="flex-1 flex flex-col items-center justify-center"
               style={{
-                color: '#57534b'
+                color: '#57534b',
               }}
             >
               <Search size={48} style={{ marginBottom: '16px', opacity: 0.15 }} />

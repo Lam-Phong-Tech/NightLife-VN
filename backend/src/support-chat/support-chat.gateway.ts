@@ -4,13 +4,38 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
 import { SupportSenderType } from '@prisma/client';
-// For simplicity in this plan, we will handle basic token verification manually or assume middleware.
+import { PrismaService } from '../prisma/prisma.service';
+
+type SupportJwtPayload = {
+  sub?: string;
+  role?: string;
+  jti?: string;
+  exp?: number;
+};
+
+type SupportSocketUser = {
+  id: string;
+  role: string;
+};
+
+type SupportSocketData = {
+  supportUser?: SupportSocketUser;
+};
+
+const supportAdminRoles = new Set([
+  'ADMIN',
+  'SUPER_ADMIN',
+  'STAFF',
+  'OPERATOR',
+]);
 
 const productionOrigins = [
   'https://demonightlight.test9.io.vn',
@@ -45,7 +70,7 @@ const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
   },
 })
 export class SupportChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   server: Server;
@@ -53,24 +78,47 @@ export class SupportChatGateway
   // Set to maintain online admins' socket IDs or user IDs
   private onlineAdmins: Set<string> = new Set();
 
-  constructor(private readonly supportChatService: SupportChatService) {}
+  constructor(
+    private readonly supportChatService: SupportChatService,
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  afterInit(server: Server) {
+    server.use((client, next) => {
+      const token =
+        typeof client.handshake.auth?.token === 'string'
+          ? client.handshake.auth.token.trim()
+          : '';
+
+      if (!token) {
+        next();
+        return;
+      }
+
+      void this.authenticateSocket(token)
+        .then((supportUser) => {
+          (client.data as SupportSocketData).supportUser = supportUser;
+          next();
+        })
+        .catch(() => {
+          next(new Error('UNAUTHORIZED'));
+        });
+    });
+  }
 
   handleConnection(client: Socket) {
-    // Determine if connection is from an Admin
-    const role = client.handshake.query.role as string;
-    const adminId = client.handshake.query.adminId as string;
+    const supportUser = this.getSocketUser(client);
+    const isAdmin = Boolean(
+      supportUser && supportAdminRoles.has(supportUser.role),
+    );
     console.log(
-      `[SupportChat] Client connected: ${client.id}, role: ${role}, adminId: ${adminId}`,
+      `[SupportChat] Client connected: ${client.id}, role: ${supportUser?.role ?? 'GUEST'}, adminId: ${isAdmin ? supportUser?.id : ''}`,
     );
 
-    if (
-      role === 'ADMIN' ||
-      role === 'SUPER_ADMIN' ||
-      role === 'STAFF' ||
-      role === 'OPERATOR'
-    ) {
+    if (isAdmin) {
       this.onlineAdmins.add(client.id);
-      client.join('support_admins');
+      void client.join('support_admins');
       console.log(
         `[SupportChat] Admin added to onlineAdmins. Total online admins: ${this.onlineAdmins.size}`,
       );
@@ -78,7 +126,7 @@ export class SupportChatGateway
 
     const ticketId = client.handshake.query.ticketId as string;
     if (ticketId) {
-      client.join(`ticket_${ticketId}`);
+      void client.join(`ticket_${ticketId}`);
     }
   }
 
@@ -90,7 +138,7 @@ export class SupportChatGateway
   }
 
   @SubscribeMessage('check_status')
-  handleCheckStatus(@ConnectedSocket() client: Socket) {
+  handleCheckStatus() {
     const isOnline = this.onlineAdmins.size > 0;
     return { isOnline };
   }
@@ -103,8 +151,6 @@ export class SupportChatGateway
       ticketId?: string;
       content: string;
       guestSessionId?: string;
-      userId?: string;
-      isAdmin?: boolean;
     },
   ) {
     try {
@@ -117,7 +163,8 @@ export class SupportChatGateway
       if (!data.content || data.content.trim() === '')
         return { error: 'Content is required' };
 
-      const isAdminSender = this.onlineAdmins.has(client.id);
+      const socketUser = this.getSocketUser(client);
+      const isAdminSender = this.isAdminSocket(client);
       if (isAdminSender && !data.ticketId) {
         return { error: 'Ticket ID is required' };
       }
@@ -130,13 +177,16 @@ export class SupportChatGateway
               data.ticketId as string,
               SupportSenderType.ADMIN,
               data.content.trim(),
-              data.userId || undefined,
+              socketUser?.id,
             ),
           }
-        : await this.supportChatService.createCustomerMessage(data);
+        : await this.supportChatService.createCustomerMessage({
+            ...data,
+            userId: socketUser?.id,
+          });
 
       // Always ensure the sender is in the room so they receive future broadcasts.
-      client.join(`ticket_${ticketId}`);
+      void client.join(`ticket_${ticketId}`);
 
       if (ticket?.status === 'PENDING') {
         this.server.to('support_admins').emit('new_ticket', {
@@ -177,31 +227,41 @@ export class SupportChatGateway
     @MessageBody() data: { ticketId: string },
   ) {
     if (data.ticketId) {
-      client.join(`ticket_${data.ticketId}`);
+      void client.join(`ticket_${data.ticketId}`);
     }
   }
 
   @SubscribeMessage('claim_ticket')
   async handleClaimTicket(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { ticketId: string; adminId: string },
+    @MessageBody() data: { ticketId: string },
   ) {
     try {
+      const admin = this.requireAdmin(client);
       const ticket = await this.supportChatService.claimTicket(
         data.ticketId,
-        data.adminId,
+        admin.id,
       );
 
       // Phương án 2: Broadcast to disable UI for other admins
       this.server.emit('ticket_claimed', {
         ticketId: data.ticketId,
-        adminId: data.adminId,
+        adminId: admin.id,
       });
 
-      client.join(`ticket_${data.ticketId}`);
+      void client.join(`ticket_${data.ticketId}`);
       return { success: true, ticket };
     } catch (error) {
-      return { success: false, error: error.message };
+      if (!this.isExpectedActionError(error)) {
+        console.error('[SupportChat] Error claiming ticket:', error);
+      }
+      return {
+        success: false,
+        error: this.getPublicActionError(
+          error,
+          'Không thể tiếp nhận đoạn chat. Vui lòng thử lại.',
+        ),
+      };
     }
   }
 
@@ -211,6 +271,7 @@ export class SupportChatGateway
     @MessageBody() data: { ticketId: string },
   ) {
     try {
+      this.requireAdmin(client);
       const ticket = await this.supportChatService.closeTicket(data.ticketId);
       this.server
         .to(`ticket_${data.ticketId}`)
@@ -220,5 +281,91 @@ export class SupportChatGateway
       console.error('[SupportChat] Error closing ticket:', error);
       return { success: false, error: 'Internal error' };
     }
+  }
+
+  private getSocketUser(client: Socket): SupportSocketUser | undefined {
+    return (client.data as SupportSocketData).supportUser;
+  }
+
+  private isAdminSocket(client: Socket) {
+    const user = this.getSocketUser(client);
+    return Boolean(user && supportAdminRoles.has(user.role));
+  }
+
+  private requireAdmin(client: Socket) {
+    const user = this.getSocketUser(client);
+    if (!user || !supportAdminRoles.has(user.role)) {
+      throw new Error('UNAUTHORIZED');
+    }
+    return user;
+  }
+
+  private async authenticateSocket(token: string): Promise<SupportSocketUser> {
+    const payload = await this.jwtService.verifyAsync<SupportJwtPayload>(token);
+    if (!payload.sub || !payload.jti) {
+      throw new Error('Invalid token payload');
+    }
+
+    const [user, revokedToken, session] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          role: true,
+          status: true,
+          deletedAt: true,
+        },
+      }),
+      this.prisma.tokenBlacklist.findUnique({
+        where: { jti: payload.jti },
+        select: { expiresAt: true },
+      }),
+      this.prisma.userSession.findUnique({
+        where: { jti: payload.jti },
+        select: {
+          userId: true,
+          status: true,
+          expiresAt: true,
+        },
+      }),
+    ]);
+
+    const now = new Date();
+    if (
+      !user ||
+      user.deletedAt ||
+      user.status !== 'ACTIVE' ||
+      (revokedToken && revokedToken.expiresAt > now) ||
+      !session ||
+      session.userId !== user.id ||
+      session.status !== 'ACTIVE' ||
+      session.expiresAt <= now
+    ) {
+      throw new Error('Inactive socket session');
+    }
+
+    return {
+      id: user.id,
+      role: String(user.role).toUpperCase(),
+    };
+  }
+
+  private getPublicActionError(error: unknown, fallback: string) {
+    if (!(error instanceof Error)) return fallback;
+    if (error.message === 'UNAUTHORIZED') {
+      return 'Phiên đăng nhập quản trị không hợp lệ. Vui lòng đăng nhập lại.';
+    }
+    if (error.message.includes('Ticket đã được tiếp nhận')) {
+      return error.message;
+    }
+    return fallback;
+  }
+
+  private isExpectedActionError(error: unknown) {
+    return (
+      error instanceof Error &&
+      (error.message === 'UNAUTHORIZED' ||
+        error.message.includes('Ticket đã được tiếp nhận'))
+    );
   }
 }
