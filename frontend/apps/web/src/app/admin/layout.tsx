@@ -687,7 +687,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/bookings') return { title: 'Booking', subtitle: '' };
     if (pathname === '/admin/support-chat') return { title: 'Chat hỗ trợ khách', subtitle: '' };
     if (pathname === '/admin/bills') return { title: 'Duyệt hóa đơn', subtitle: '' };
-    if (pathname === '/admin/coupons') return { title: 'Coupon & QR', subtitle: 'PROMOTIONS' };
+    if (pathname === '/admin/coupons') return { title: 'Coupon & QR', subtitle: '' };
     if (pathname === '/admin/stores') return { title: 'Quán', subtitle: 'VENUES' };
     if (pathname === '/admin/casts') return { title: 'Cast', subtitle: '' };
     if (pathname === '/admin/ranking') return { title: 'Ranking', subtitle: 'RANKING' };
