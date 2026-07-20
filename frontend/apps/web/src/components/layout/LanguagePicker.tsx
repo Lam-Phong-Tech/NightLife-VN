@@ -63,9 +63,7 @@ function getLanguage(code: LanguageCode) {
 
 function storeLanguage(language: LanguageOption) {
   storeLanguagePreference(language.code);
-  window.dispatchEvent(
-    new CustomEvent(languageChangedEvent, { detail: { language: language.code } }),
-  );
+  window.setTimeout(() => window.location.reload(), 0);
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
@@ -163,6 +161,11 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
   };
 
   const selectDesktopLanguage = (language: LanguageOption) => {
+    if (language.code === activeCode) {
+      setIsOpen(false);
+      return;
+    }
+
     setActiveCode(language.code);
     setDraftCode(language.code);
     storeLanguage(language);
