@@ -1279,11 +1279,6 @@ export default function AdminContentPage() {
         
         return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
-            <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>&quot;Dịch vụ nổi bật&quot;</b> trên trang chủ — chọn quán theo khu vực &amp; nhóm dịch vụ, gắn nhãn, sắp thứ tự. Trang chủ hiển thị đúng thứ tự này.</span>
-          </div>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
               <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tất cả</span>
