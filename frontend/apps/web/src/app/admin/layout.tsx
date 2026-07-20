@@ -691,7 +691,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/stores') return { title: 'Quán', subtitle: '' };
     if (pathname === '/admin/casts') return { title: 'Cast', subtitle: '' };
     if (pathname === '/admin/ranking') return { title: 'Ranking', subtitle: '' };
-    if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: 'CONTENT' };
+    if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: '' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
 
     if (pathname === '/admin/tours') return { title: 'Tour', subtitle: '' };
