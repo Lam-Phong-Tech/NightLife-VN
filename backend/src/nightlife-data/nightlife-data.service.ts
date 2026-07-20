@@ -21558,7 +21558,9 @@ export class NightlifeDataService {
               mode: 'insensitive',
             },
           },
-          { id: this.containsInsensitive(searchTerm.replace(/^BK-?/i, '')) },
+          ...(this.isUuid(searchTerm.replace(/^BK-?/i, ''))
+            ? [{ id: searchTerm.replace(/^BK-?/i, '') }]
+            : []),
           { user: { displayName: this.containsInsensitive(searchTerm) } },
           { guest: { displayName: this.containsInsensitive(searchTerm) } },
           { user: { phone: this.containsInsensitive(searchTerm) } },
