@@ -696,7 +696,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/appearance') return { title: 'Giao diện & Logo', subtitle: '' };
 
     if (pathname === '/admin/tours') return { title: 'Tour', subtitle: '' };
-    if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: 'ACCOUNTS' };
+    if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: '' };
     if (pathname === '/admin/permissions') return { title: 'Ma trận quyền', subtitle: '' };
     return { title: 'Admin', subtitle: '' };
   };
