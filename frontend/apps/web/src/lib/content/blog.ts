@@ -51,6 +51,27 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 const asStringArray = (value: unknown) =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+
+const stripHtmlToText = (value?: string | null) =>
+  decodeHtmlEntities(value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeRichTextHtml = (value: string) =>
+  /&lt;\/?[a-z][\s\S]*&gt;/i.test(value) ? decodeHtmlEntities(value) : value;
+
 const asSections = (value: unknown): BlogPost["sections"] =>
   Array.isArray(value)
     ? value
@@ -60,7 +81,7 @@ const asSections = (value: unknown): BlogPost["sections"] =>
             return null;
           }
 
-          return { heading: record.heading, body: record.body };
+          return { heading: record.heading, body: normalizeRichTextHtml(record.body) };
         })
         .filter((item): item is BlogPost["sections"][number] => Boolean(item))
     : [];
@@ -74,11 +95,15 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
   const publishedAt = content.publishedAt?.slice(0, 10) ?? content.createdAt.slice(0, 10);
   const sections = asSections(metadata.sections);
   const image = getCmsContentImageUrl(content);
+  const description =
+    stripHtmlToText(content.excerpt) ||
+    stripHtmlToText(content.body).slice(0, 160) ||
+    content.title;
 
   return {
     slug: content.slug,
     title: content.title,
-    description: content.excerpt ?? content.body?.slice(0, 160) ?? content.title,
+    description,
     category: typeof metadata.category === "string" ? metadata.category : "Cẩm nang nightlife",
     date: publishedAt,
     createdAt,
@@ -100,7 +125,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
     sections: sections.length
       ? sections
       : content.body
-        ? [{ heading: content.title, body: content.body }]
+        ? [{ heading: content.title, body: normalizeRichTextHtml(content.body) }]
         : [],
   };
 };

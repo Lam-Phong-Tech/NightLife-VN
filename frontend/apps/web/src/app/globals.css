@@ -2262,11 +2262,15 @@ textarea::placeholder {
   background-color: transparent !important;
   color: inherit !important;
   font-family: inherit !important;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .nl-blog-body {
+  max-width: 100%;
   word-break: break-word;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .nl-blog-body img {
@@ -2279,7 +2283,7 @@ textarea::placeholder {
 .nl-blog-body p, .nl-blog-body span, .nl-blog-body div {
   white-space: pre-wrap !important;
   word-break: break-word !important;
-  overflow-wrap: break-word !important;
+  overflow-wrap: anywhere !important;
   max-width: 100%;
 }
 

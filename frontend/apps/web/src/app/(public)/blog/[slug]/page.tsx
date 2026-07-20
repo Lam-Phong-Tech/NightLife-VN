@@ -117,7 +117,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      <article style={{ maxWidth: "980px", margin: "0 auto" }}>
+      <article style={{ width: "100%", maxWidth: "980px", minWidth: 0, margin: "0 auto" }}>
         <nav style={{ marginBottom: "18px", color: "var(--vy-muted)", fontSize: "13px", fontWeight: 700 }}>
           <Link href="/" style={{ color: "var(--vy-muted)", textDecoration: "none" }}>
             Trang chủ
@@ -169,11 +169,23 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
               lineHeight: 1.03,
               letterSpacing: 0,
               fontWeight: 950,
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
             }}
           >
             {post.title}
           </h1>
-          <p style={{ maxWidth: "760px", margin: "16px 0 0", color: "var(--vy-text-2)", fontSize: "17px", lineHeight: 1.72 }}>
+          <p
+            style={{
+              maxWidth: "760px",
+              margin: "16px 0 0",
+              color: "var(--vy-text-2)",
+              fontSize: "17px",
+              lineHeight: 1.72,
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            }}
+          >
             {post.description}
           </p>
           <div
@@ -229,14 +241,31 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
             alignItems: "start",
           }}
         >
-          <div>
+          <div style={{ minWidth: 0 }}>
             {post.sections.map((section) => (
               <section key={section.heading} style={{ marginTop: "0", marginBottom: "28px" }}>
-                <h2 style={{ margin: 0, fontSize: "24px", lineHeight: 1.24, fontWeight: 900 }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "24px",
+                    lineHeight: 1.24,
+                    fontWeight: 900,
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  }}
+                >
                   {section.heading}
                 </h2>
                 <div
-                  style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85 }}
+                  style={{
+                    margin: "10px 0 0",
+                    color: "var(--vy-text-2)",
+                    fontSize: "16px",
+                    lineHeight: 1.85,
+                    maxWidth: "100%",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  }}
                   dangerouslySetInnerHTML={{ __html: section.body }}
                   className="nl-blog-body"
                 />
