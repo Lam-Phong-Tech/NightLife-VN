@@ -140,6 +140,7 @@ describe('Admin tonight recommendations', () => {
     fireEvent.click(screen.getByText('Dịch vụ nổi bật'));
 
     expect(await screen.findByText('Selected Restaurant')).toBeInTheDocument();
+    expect(screen.queryByText('Không nhãn')).not.toBeInTheDocument();
     expect(screen.getByTestId('admin-featured-card-grid')).toHaveStyle({
       gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
     });

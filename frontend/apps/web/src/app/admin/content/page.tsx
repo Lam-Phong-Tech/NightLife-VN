@@ -1339,9 +1339,6 @@ export default function AdminContentPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
                     <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '7px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Không nhãn</span>
-                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flex: 'none' }}>
                     <button type="button" aria-label={`Đưa ${item.targetName} lên`} onClick={() => handleMoveFeatured(idx, 'up')} disabled={idx === 0} style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
