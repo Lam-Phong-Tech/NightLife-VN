@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/vi';
 import { DataSkeleton } from '@/components/ui/DataLoading';
+import { getVideoPreviewUrl } from '@/lib/media/video-preview';
 import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
 
 dayjs.extend(customParseFormat);
@@ -72,6 +73,7 @@ export default function AdminContentPage() {
   const [searchVideoTotalPages, setSearchVideoTotalPages] = useState(1);
   const [isLoadingHotVideos, setIsLoadingHotVideos] = useState(false);
   const [isSearchingVideo, setIsSearchingVideo] = useState(false);
+  const searchVideoRequestId = useRef(0);
 
   // Featured Services states
   const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
@@ -139,12 +141,21 @@ export default function AdminContentPage() {
   }, [activeTab, videoRegion]);
 
   useEffect(() => {
-    if (activeTab === 'video') {
-      const timer = setTimeout(() => {
-        fetchStoreVideos(searchVideoQuery, searchVideoPage, videoRegion);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (activeTab !== 'video') return;
+
+    const query = searchVideoQuery.trim();
+    if (!query) {
+      searchVideoRequestId.current += 1;
+      setSearchVideos([]);
+      setSearchVideoTotalPages(1);
+      setIsSearchingVideo(false);
+      return;
     }
+
+    const timer = setTimeout(() => {
+      fetchStoreVideos(query, searchVideoPage, videoRegion);
+    }, 500);
+    return () => clearTimeout(timer);
   }, [searchVideoQuery, searchVideoPage, activeTab, videoRegion]);
 
   useEffect(() => {
@@ -487,18 +498,22 @@ export default function AdminContentPage() {
   };
 
   const fetchStoreVideos = async (query: string, page: number, region?: string) => {
+    const requestId = ++searchVideoRequestId.current;
     try {
       setIsSearchingVideo(true);
       const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all');
       const data = await apiClient<any>('/admin/media/store-videos', {
         params: { search: query, page, limit: 10, cityCode }
       });
+      if (requestId !== searchVideoRequestId.current) return;
       setSearchVideos(data?.items || []);
       setSearchVideoTotalPages(data?.totalPages || 1);
     } catch (err) {
       console.error(err);
     } finally {
-      setIsSearchingVideo(false);
+      if (requestId === searchVideoRequestId.current) {
+        setIsSearchingVideo(false);
+      }
     }
   };
 
@@ -1498,35 +1513,40 @@ export default function AdminContentPage() {
                 placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
               />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '310px', overflowY: 'auto' }}>
-              {isSearchingVideo ? (
-                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Đang tìm kiếm...</div>
-              ) : searchVideos.length === 0 ? (
-                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Không tìm thấy video nào</div>
-              ) : searchVideos.map(vr => (
-                <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: '#1a221f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {vr.url && vr.url.includes('youtube.com') ? (
-                      <img src={`https://img.youtube.com/vi/${vr.url.match(/v=([^&]+)/)?.[1] || vr.url.split('/').pop()}/default.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
-                    ) : (
-                      <span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span>
-                    )}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.storeName || 'Không xác định'}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
-                  </div>
-                  <span 
-                    onClick={() => handleAddHotVideo(vr)}
-                    style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: hotVideos.find(h => h.id === vr.id) ? '#999' : 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: hotVideos.find(h => h.id === vr.id) ? 'default' : 'pointer' }}
-                  >
-                    {hotVideos.find(h => h.id === vr.id) ? 'Đã thêm' : '+ Hiện trên trang chủ'}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {searchVideoQuery.trim() !== '' && (
+              <div data-testid="admin-video-search-results" style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '310px', overflowY: 'auto' }}>
+                {isSearchingVideo ? (
+                  <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Đang tìm kiếm...</div>
+                ) : searchVideos.length === 0 ? (
+                  <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Không tìm thấy video nào</div>
+                ) : searchVideos.map(vr => {
+                  const previewUrl = getVideoPreviewUrl(vr, 'default');
+                  return (
+                    <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                      <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: '#1a221f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {previewUrl ? (
+                          <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`Thumbnail ${vr.storeName || vr.title || 'video'}`} />
+                        ) : (
+                          <span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span>
+                        )}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.storeName || 'Không xác định'}</div>
+                        <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
+                      </div>
+                      <span
+                        onClick={() => handleAddHotVideo(vr)}
+                        style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: hotVideos.find(h => h.id === vr.id) ? '#999' : 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: hotVideos.find(h => h.id === vr.id) ? 'default' : 'pointer' }}
+                      >
+                        {hotVideos.find(h => h.id === vr.id) ? 'Đã thêm' : '+ Hiện trên trang chủ'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {/* Pagination for Search */}
-            {searchVideoTotalPages > 1 && (
+            {searchVideoQuery.trim() !== '' && searchVideoTotalPages > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
                 <span 
                   onClick={() => setSearchVideoPage(p => Math.max(1, p - 1))}
@@ -1545,12 +1565,7 @@ export default function AdminContentPage() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', padding: '16px', background: 'rgba(212,178,106,.05)', border: `1px solid rgba(212,178,106,.2)`, borderRadius: '16px', alignItems: 'center' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.gold, flex: 'none' }}>
-              ℹ️
-            </div>
-            <span style={{ fontSize: '13px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>&quot;Video Hot&quot;</b> trên trang chủ — chọn từ <b style={{ color: '#f0dda8' }}>thư viện video của các quán</b> (mục Quán → Video quán), sắp thứ tự theo khu vực.</span>
-          </div>
+
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
@@ -1588,12 +1603,10 @@ export default function AdminContentPage() {
             ) : hotVideos.map((v, index) => (
               <div key={v.id} style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
                 <div style={{ aspectRatio: '16/9', background: '#1a1824', position: 'relative' }}>
-                  {v.url ? (
-                    v.url.includes('youtube.com') ? (
-                       <img src={`https://img.youtube.com/vi/${v.url.match(/v=([^&]+)/)?.[1] || v.url.split('/').pop()}/mqdefault.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
-                    ) : (
-                       <video src={v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    )
+                  {getVideoPreviewUrl(v) ? (
+                    <img src={getVideoPreviewUrl(v)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`Thumbnail ${v.storeName || v.title || 'video'}`} />
+                  ) : v.url ? (
+                    <video src={resolveClientUrl(v.url) || v.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : null}
                   <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶</span>
                   <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{index + 1}</span>
