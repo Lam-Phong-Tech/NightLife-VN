@@ -3221,7 +3221,9 @@ export default function PartnerPage() {
     setListingDraft(parseDraft(response.draft));
     setLiveData(response.live ? parseDraft(response.live) : null);
     setListingNotice(response.message);
-  }, []);
+    setSelectedProvinceCode('');
+    setSelectedWardCode('');
+  }, [setSelectedProvinceCode, setSelectedWardCode]);
 
   useEffect(() => {
     if (!listingStoreId) {
@@ -6283,7 +6285,11 @@ export default function PartnerPage() {
                 <button
                   className="partner-listing-version-button"
                   type="button"
-                  onClick={() => setIsViewingLive(true)}
+                  onClick={() => {
+                    setIsViewingLive(true);
+                    setSelectedProvinceCode('');
+                    setSelectedWardCode('');
+                  }}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -6299,7 +6305,11 @@ export default function PartnerPage() {
                 <button
                   className="partner-listing-version-button"
                   type="button"
-                  onClick={() => setIsViewingLive(false)}
+                  onClick={() => {
+                    setIsViewingLive(false);
+                    setSelectedProvinceCode('');
+                    setSelectedWardCode('');
+                  }}
                   style={{
                     background: 'none',
                     border: 'none',
