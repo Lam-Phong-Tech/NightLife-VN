@@ -5597,64 +5597,121 @@ export default function PartnerPage() {
           Chưa có cast trong bản nháp. Bấm Thêm cast để nhập dữ liệu thật của quán.
         </div>
       ) : (
-        <div className="partner-cast-table-wrap">
-          <table className="partner-cast-table">
-            <thead>
-              <tr>
-                {['STT', 'Cast', 'Quán trực thuộc', 'Ngôn ngữ', 'Tags', 'Trạng thái', ''].map((heading) => (
-                  <th key={heading}>{heading}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {listingDraft.castProfiles.map((cast, index) => {
-                const avatarUrl = cast.mediaUrls?.[0];
-                const hasRequiredName = cast.stageName.trim();
-                return (
-                  <tr key={`${cast.stageName || 'draft-cast'}-${index}`}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <div className="partner-cast-cell">
-                        <span
-                          className="partner-cast-avatar"
-                          style={{
-                            background: avatarUrl
-                              ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
-                              : colors.surface3,
-                          }}
+        <>
+          <div className="partner-cast-table-wrap">
+            <table className="partner-cast-table">
+              <thead>
+                <tr>
+                  {['STT', 'Cast', 'Quán trực thuộc', 'Ngôn ngữ', 'Tags', 'Trạng thái', ''].map((heading) => (
+                    <th key={heading}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {listingDraft.castProfiles.map((cast, index) => {
+                  const avatarUrl = cast.mediaUrls?.[0];
+                  const hasRequiredName = cast.stageName.trim();
+                  return (
+                    <tr key={`${cast.stageName || 'draft-cast'}-${index}`}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <div className="partner-cast-cell">
+                          <span
+                            className="partner-cast-avatar"
+                            style={{
+                              background: avatarUrl
+                                ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
+                                : colors.surface3,
+                            }}
+                          >
+                            {!avatarUrl ? <UsersRound size={18} /> : null}
+                          </span>
+                          <span style={{ minWidth: 0 }}>
+                            <span className="partner-cast-name">{hasRequiredName || 'Draft cast'}</span>
+                            <span className="partner-cast-sub">{cast.zodiacSign || '---'}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td>{listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý'}</td>
+                      <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
+                      <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
+                      <td>
+                        <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
+                          {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                        </StatusPill>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => openCastProfileForm(index)}
+                          aria-label={`Sửa cast ${cast.stageName || index + 1}`}
+                          className="partner-cast-edit"
                         >
-                          {!avatarUrl ? <UsersRound size={18} /> : null}
-                        </span>
-                        <span style={{ minWidth: 0 }}>
-                          <span className="partner-cast-name">{hasRequiredName || 'Draft cast'}</span>
-                          <span className="partner-cast-sub">{cast.zodiacSign || '---'}</span>
-                        </span>
-                      </div>
-                    </td>
-                    <td>{listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý'}</td>
-                    <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
-                    <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
-                    <td>
-                      <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
-                        {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
-                      </StatusPill>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => openCastProfileForm(index)}
-                        aria-label={`Sửa cast ${cast.stageName || index + 1}`}
-                        className="partner-cast-edit"
-                      >
-                        <ChevronRight size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          <ChevronRight size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="partner-cast-mobile-list">
+            {listingDraft.castProfiles.map((cast, index) => {
+              const avatarUrl = cast.mediaUrls?.[0];
+              const hasRequiredName = cast.stageName.trim();
+              const storeName = listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý';
+              const languages = cast.languages?.length ? cast.languages.join(' · ') : '---';
+              const tags = cast.tags?.length ? cast.tags.join(', ') : '---';
+
+              return (
+                <button
+                  type="button"
+                  key={`mobile-${cast.stageName || 'draft-cast'}-${index}`}
+                  onClick={() => openCastProfileForm(index)}
+                  aria-label={`Xem chi tiết cast ${cast.stageName || index + 1}`}
+                  className="partner-cast-mobile-card"
+                >
+                  <span className="partner-cast-mobile-head">
+                    <span
+                      className="partner-cast-avatar"
+                      style={{
+                        background: avatarUrl
+                          ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
+                          : colors.surface3,
+                      }}
+                    >
+                      {!avatarUrl ? <UsersRound size={18} /> : null}
+                    </span>
+                    <span className="partner-cast-mobile-title">
+                      <span className="partner-cast-mobile-index">#{index + 1}</span>
+                      <strong>{hasRequiredName || 'Draft cast'}</strong>
+                      <small>{cast.zodiacSign || '---'}</small>
+                    </span>
+                    <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
+                      {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                    </StatusPill>
+                    <ChevronRight size={18} className="partner-cast-mobile-arrow" />
+                  </span>
+                  <span className="partner-cast-mobile-details">
+                    <span>
+                      <small>Quán trực thuộc</small>
+                      <b>{storeName}</b>
+                    </span>
+                    <span>
+                      <small>Ngôn ngữ</small>
+                      <b>{languages}</b>
+                    </span>
+                    <span>
+                      <small>Tags</small>
+                      <b>{tags}</b>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -7877,6 +7934,9 @@ export default function PartnerPage() {
         .partner-bill-mobile-list {
           display: none;
         }
+        .partner-cast-mobile-list {
+          display: none;
+        }
         .partner-settlement-mobile-list {
           display: none;
         }
@@ -8463,12 +8523,105 @@ export default function PartnerPage() {
             padding-left: 4px;
             padding-right: 4px;
           }
-          .partner-cast-table {
-            min-width: 720px !important;
-          }
           .partner-cast-table-wrap {
+            display: none !important;
+          }
+          .partner-cast-mobile-list {
+            display: grid;
+            gap: 10px;
+          }
+          .partner-cast-mobile-card {
+            border: 1px solid ${colors.borderHair};
             border-radius: 14px;
-            margin: 0 -2px;
+            background: ${colors.surface2};
+            color: ${colors.text};
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+            padding: 13px;
+            text-align: left;
+            width: 100%;
+            font: inherit;
+            cursor: pointer;
+          }
+          .partner-cast-mobile-card:focus-visible {
+            outline: 2px solid ${colors.gold};
+            outline-offset: 2px;
+          }
+          .partner-cast-mobile-head {
+            display: grid;
+            grid-template-columns: 46px minmax(0, 1fr) auto 20px;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+          }
+          .partner-cast-mobile-title {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+          }
+          .partner-cast-mobile-index {
+            color: ${colors.goldPale};
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.2;
+          }
+          .partner-cast-mobile-title strong {
+            color: ${colors.text};
+            display: block;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.25;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .partner-cast-mobile-title small {
+            color: ${colors.text2};
+            display: block;
+            font-size: 12px;
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .partner-cast-mobile-head .partner-status-pill {
+            justify-self: end;
+            max-width: 88px;
+            overflow: hidden;
+            padding: 0 8px !important;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .partner-cast-mobile-arrow {
+            color: ${colors.gold};
+            justify-self: end;
+          }
+          .partner-cast-mobile-details {
+            display: grid;
+            gap: 8px;
+          }
+          .partner-cast-mobile-details span {
+            display: grid;
+            grid-template-columns: 96px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+            border-top: 1px solid ${colors.borderHair};
+            padding-top: 8px;
+          }
+          .partner-cast-mobile-details small {
+            color: ${colors.muted};
+            font-size: 10.5px;
+            font-weight: 900;
+            line-height: 1.35;
+          }
+          .partner-cast-mobile-details b {
+            color: ${colors.text2};
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.45;
+            min-width: 0;
+            overflow-wrap: anywhere;
           }
           .partner-staff-table-wrap {
             display: none !important;
