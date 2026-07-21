@@ -19,7 +19,7 @@ const getInitials = (name: string) =>
 
 const mediaBackground = (media?: StoreGalleryItem | null) =>
   media?.type === "IMAGE" && media.url
-    ? `linear-gradient(180deg, rgba(10,10,12,.18), rgba(10,10,12,.66)), url("${media.url}")`
+    ? `url("${media.url}")`
     : "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
 type StoreDetailHeaderProps = {

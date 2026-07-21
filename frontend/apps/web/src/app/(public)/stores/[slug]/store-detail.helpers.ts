@@ -181,7 +181,7 @@ export const mediaBackground = (media?: StoreGalleryItem | null) => {
   const visualUrl = mediaVisualUrl(media);
 
   return visualUrl
-    ? `linear-gradient(180deg, rgba(10,10,12,.18), rgba(10,10,12,.66)), url("${visualUrl}")`
+    ? `url("${visualUrl}")`
     : "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 };
 

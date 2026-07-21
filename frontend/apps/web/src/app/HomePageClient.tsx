@@ -1370,7 +1370,7 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
         href: meta.link || "#",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${imageUrl}')`,
+        img: `url('${imageUrl}')`,
         hasImage: true,
       }];
     });
@@ -1492,7 +1492,6 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      {event.hasImage && <div className="nl-home-hero-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />}
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         {event.statusLabel && (
           <span

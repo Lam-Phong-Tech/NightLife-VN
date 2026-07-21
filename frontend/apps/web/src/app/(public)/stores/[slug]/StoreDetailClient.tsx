@@ -554,8 +554,7 @@ const storeAddressText = (store: PublicStoreDetail, language: LanguageCode) => {
   return localizedStoreParts([store.area?.name, store.district, store.city], language);
 };
 
-const imageBackground = (url: string) =>
-  `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
+const imageBackground = (url: string) => `url("${url}")`;
 
 const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
   const mediaUrl = mediaVisualUrl(media);
@@ -2703,15 +2702,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background-size: cover;
           background-position: center;
           box-shadow: 0 24px 50px -28px rgba(0, 0, 0, .78);
-        }
-
-        .hero-panel::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(12, 12, 15, .08), rgba(12, 12, 15, .15) 36%, rgba(12, 12, 15, .9));
-          pointer-events: none;
-          z-index: 1;
         }
 
         .hero-video-preview {

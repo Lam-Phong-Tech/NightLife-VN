@@ -2369,12 +2369,6 @@ html.vy-light .nl-home-hero {
   box-shadow: 0 28px 58px -34px rgba(80, 55, 18, 0.55) !important;
 }
 
-html.vy-light .nl-home-hero-overlay {
-  background:
-    linear-gradient(90deg, rgba(15, 12, 8, 0.42) 0%, rgba(15, 12, 8, 0.26) 45%, rgba(15, 12, 8, 0.14) 72%),
-    linear-gradient(180deg, rgba(15, 12, 8, 0.03) 0%, rgba(15, 12, 8, 0.52) 100%) !important;
-}
-
 html.vy-light .nl-home-hero-status {
   background: rgba(255, 247, 222, 0.92) !important;
   border-color: rgba(176, 128, 36, 0.38) !important;
