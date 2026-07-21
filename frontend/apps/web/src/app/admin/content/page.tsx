@@ -263,6 +263,9 @@ export default function AdminContentPage() {
 
   // Featured Services states
   const [appearance, setAppearance] = useState<any>(null);
+  const [restaurantLabel, setRestaurantLabel] = useState('');
+  const [spaLabel, setSpaLabel] = useState('');
+  const [isSavingLabels, setIsSavingLabels] = useState(false);
   const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
   const [featuredCategory, setFeaturedCategory] = useState<'RESTAURANT' | 'MASSAGE_SPA'>('RESTAURANT');
   const [featuredItems, setFeaturedItems] = useState<AdminRankingConfig[]>([]);
@@ -326,6 +329,9 @@ export default function AdminContentPage() {
         const res = await apiClient<any>('/system-config/appearance');
         if (res?.data) {
           setAppearance(res.data);
+          const titlesList = res.data.titles || [];
+          setRestaurantLabel(titlesList.find((t: any) => t.id === 't4_restaurant')?.label || 'Nhà hàng');
+          setSpaLabel(titlesList.find((t: any) => t.id === 't4_spa')?.label || 'Spa');
         }
       } catch (err) {
         console.error('Failed to load appearance config for content page', err);
@@ -417,6 +423,49 @@ export default function AdminContentPage() {
       console.error(err);
     } finally {
       setIsSearchingFeatured(false);
+    }
+  };
+
+  const handleSaveTabLabels = async () => {
+    try {
+      setIsSavingLabels(true);
+      const res = await apiClient<any>('/system-config/appearance');
+      const latestAppearance = res?.data || {};
+      
+      const currentTitles = latestAppearance.titles || [];
+      const updatedTitles = [...currentTitles];
+      
+      const restIdx = updatedTitles.findIndex((t: any) => t.id === 't4_restaurant');
+      if (restIdx >= 0) {
+        updatedTitles[restIdx] = { ...updatedTitles[restIdx], label: restaurantLabel.trim() || 'Nhà hàng' };
+      } else {
+        updatedTitles.push({ id: 't4_restaurant', key: 'Tab Nhà Hàng (Khối dịch vụ)', label: restaurantLabel.trim() || 'Nhà hàng' });
+      }
+      
+      const spaIdx = updatedTitles.findIndex((t: any) => t.id === 't4_spa');
+      if (spaIdx >= 0) {
+        updatedTitles[spaIdx] = { ...updatedTitles[spaIdx], label: spaLabel.trim() || 'Spa' };
+      } else {
+        updatedTitles.push({ id: 't4_spa', key: 'Tab Spa (Khối dịch vụ)', label: spaLabel.trim() || 'Spa' });
+      }
+      
+      const updatedAppearance = {
+        ...latestAppearance,
+        titles: updatedTitles,
+      };
+      
+      await apiClient('/admin/system-config/appearance', {
+        method: 'PUT',
+        data: { value: updatedAppearance }
+      });
+      
+      setAppearance(updatedAppearance);
+      feedback.showToast({ title: 'Đã lưu tên tab thành công!', tone: 'success' });
+    } catch (err: any) {
+      console.error(err);
+      feedback.showToast({ title: `Không thể lưu tên tab: ${err?.message || ''}`, tone: 'error' });
+    } finally {
+      setIsSavingLabels(false);
     }
   };
 
@@ -2145,6 +2194,38 @@ export default function AdminContentPage() {
         
         return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* Cấu hình tên hiển thị của các tab */}
+          <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea' }}>Cấu hình nhãn hiển thị của tab</div>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: '#c5c0b6' }}>Nhãn Nhà hàng:</span>
+                <input 
+                  value={restaurantLabel} 
+                  onChange={e => setRestaurantLabel(e.target.value.slice(0, 24))} 
+                  placeholder="Nhà hàng" 
+                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '140px' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: '#c5c0b6' }}>Nhãn Spa:</span>
+                <input 
+                  value={spaLabel} 
+                  onChange={e => setSpaLabel(e.target.value.slice(0, 24))} 
+                  placeholder="Spa" 
+                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '140px' }} 
+                />
+              </div>
+              <button 
+                onClick={handleSaveTabLabels} 
+                disabled={isSavingLabels}
+                style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontWeight: 700, border: 'none', borderRadius: '8px', padding: '6px 16px', fontSize: '12px', cursor: isSavingLabels ? 'not-allowed' : 'pointer', opacity: isSavingLabels ? 0.7 : 1 }}
+              >
+                {isSavingLabels ? 'Đang lưu...' : 'Lưu tên tab'}
+              </button>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
               <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tất cả</span>

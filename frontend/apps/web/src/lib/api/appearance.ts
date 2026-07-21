@@ -72,11 +72,11 @@ const mergeAppearanceItems = (
 ) =>
   fallback.map((fallbackItem, index) => {
     const item = Array.isArray(value)
-      ? value.find((candidate) => candidate.id === fallbackItem.id) ?? value[index]
+      ? value.find((candidate) => candidate.id === fallbackItem.id)
       : undefined;
 
     return {
-      id: item?.id || fallbackItem.id,
+      id: fallbackItem.id,
       label: item?.label?.trim() || fallbackItem.label,
       icon: item?.icon?.trim() || fallbackItem.icon,
       color: normalizeAppearanceColor(item?.color) || normalizeAppearanceColor(fallbackItem.color),
@@ -89,12 +89,12 @@ const mergeAppearanceTitles = (
 ) =>
   fallback.map((fallbackItem, index) => {
     const item = Array.isArray(value)
-      ? value.find((candidate) => candidate.id === fallbackItem.id) ?? value[index]
+      ? value.find((candidate) => candidate.id === fallbackItem.id)
       : undefined;
 
     return {
-      id: item?.id || fallbackItem.id,
-      key: item?.key || fallbackItem.key,
+      id: fallbackItem.id,
+      key: fallbackItem.key,
       label: item?.label?.trim() || fallbackItem.label,
     };
   });

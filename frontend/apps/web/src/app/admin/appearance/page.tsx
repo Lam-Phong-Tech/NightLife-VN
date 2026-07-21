@@ -893,8 +893,8 @@ export default function AppearancePage() {
           <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 280px 78px', gap: '14px', padding: '12px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
             <span>Khối</span><span>Hiển thị trên trang chủ</span><span>Sửa tiêu đề</span><span></span>
           </div>
-          {titles.map((t, i) => {
-            const sv = saved.titles[i];
+          {titles.filter(t => t.id !== 't4_restaurant' && t.id !== 't4_spa').map((t) => {
+            const sv = saved.titles.find(x => x.id === t.id);
             const changed = !sv || sv.label !== t.label;
             return (
               <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 280px 78px', gap: '14px', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
