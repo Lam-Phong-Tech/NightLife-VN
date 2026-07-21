@@ -1424,7 +1424,7 @@ function CastDiscoveryCard({
         aria-label={favoriteLabel}
         title={favoriteLabel}
       >
-        <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
+        <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
       </button>
     </article>
   );
@@ -2165,28 +2165,52 @@ const castSearchCss = `
 
 .cast-card-favorite {
   position: absolute;
-  top: 11px;
-  right: 11px;
+  top: 12px;
+  right: 12px;
   z-index: 4;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(13, 13, 17, 0.62);
-  color: #f6ecda;
-  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.9);
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  aspect-ratio: 1 / 1;
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(255, 255, 255, .92);
+  border-radius: 50%;
+  background: rgba(12, 12, 15, .22);
+  color: #ffffff;
   backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
   cursor: pointer;
+  padding: 0;
   transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .cast-card-favorite.is-active {
-  border-color: rgba(212, 178, 106, 0.56);
-  background: rgba(212, 178, 106, 0.24);
-  color: #f4d27d;
+  border-color: rgba(255, 255, 255, .95);
+  background: rgba(12, 12, 15, .28);
+  color: #ff3d71;
+}
+
+html.vy-light .cast-card-favorite {
+  border-color: rgba(151, 112, 37, .42);
+  background: rgba(255, 248, 230, .76);
+  color: #7a5a24;
+  box-shadow: 0 10px 24px rgba(86, 62, 18, .18);
+}
+
+html.vy-light .cast-card-favorite.is-active {
+  border-color: rgba(229, 49, 103, .42);
+  background: rgba(255, 232, 241, .88);
+  color: #e53167;
+}
+
+.cast-card-favorite:focus-visible {
+  outline: 2px solid var(--vy-gold-pale);
+  outline-offset: 2px;
 }
 
 .cast-card-favorite svg {
@@ -3426,6 +3450,22 @@ html.vy-light .cast-sheet-actions {
     border-radius: 8px;
     padding: 4px 8px;
     font-size: 9px;
+  }
+
+  .cast-card-favorite {
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
+  }
+
+  .cast-card-favorite svg {
+    width: 15px;
+    height: 15px;
   }
 
   .cast-card-name {
