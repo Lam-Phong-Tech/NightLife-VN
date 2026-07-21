@@ -23,6 +23,11 @@ type CastGalleryProps = {
   onToggleFavorite?: () => void;
 };
 
+type GalleryTouchStart = {
+  x: number;
+  y: number;
+};
+
 export function CastGallery({
   gallery,
   activeIndex,
@@ -36,7 +41,7 @@ export function CastGallery({
   isFavorite = false,
   onToggleFavorite,
 }: CastGalleryProps) {
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState<GalleryTouchStart | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
   const activeMediaIsPlaceholder = isPlaceholderCastMedia(activeMedia);
@@ -103,8 +108,8 @@ export function CastGallery({
             onPrevious={showPrevious}
             onNext={showNext}
             onSelect={onSelect}
-            touchStartX={touchStartX}
-            setTouchStartX={setTouchStartX}
+            touchStart={touchStart}
+            setTouchStart={setTouchStart}
           />,
           portalTarget,
         )
@@ -232,8 +237,8 @@ function CastLightbox({
   onPrevious,
   onNext,
   onSelect,
-  touchStartX,
-  setTouchStartX,
+  touchStart,
+  setTouchStart,
 }: {
   gallery: CastMedia[];
   media: CastMedia;
@@ -244,8 +249,8 @@ function CastLightbox({
   onPrevious: () => void;
   onNext: () => void;
   onSelect: (index: number, action?: CastGalleryAction) => void;
-  touchStartX: number | null;
-  setTouchStartX: (value: number | null) => void;
+  touchStart: GalleryTouchStart | null;
+  setTouchStart: (value: GalleryTouchStart | null) => void;
 }) {
   const mediaUrl = resolveClientUrl(media.url) ?? media.url;
   const embed = media.type === "VIDEO" ? videoEmbedUrl(mediaUrl) : null;
@@ -254,14 +259,16 @@ function CastLightbox({
   const fallbackImageUrl =
     gallery.find((item) => item.type === "IMAGE" && !isPlaceholderCastMedia(item))?.url ?? null;
 
-  const onTouchEnd = (clientX: number) => {
-    if (touchStartX === null) return;
-    const delta = clientX - touchStartX;
-    if (Math.abs(delta) > 42) {
-      if (delta > 0) onPrevious();
+  const onTouchEnd = (clientX: number, clientY: number) => {
+    if (touchStart === null) return;
+
+    const deltaX = clientX - touchStart.x;
+    const deltaY = clientY - touchStart.y;
+    if (count > 1 && Math.abs(deltaX) > 42 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      if (deltaX > 0) onPrevious();
       else onNext();
     }
-    setTouchStartX(null);
+    setTouchStart(null);
   };
 
   return (
@@ -270,8 +277,16 @@ function CastLightbox({
       role="dialog"
       aria-modal="true"
       aria-label={copy.openGallery}
-      onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
-      onTouchEnd={(event) => onTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+      onTouchStart={(event) => {
+        const touch = event.touches[0];
+        setTouchStart(touch ? { x: touch.clientX, y: touch.clientY } : null);
+      }}
+      onTouchEnd={(event) => {
+        const touch = event.changedTouches[0];
+        if (touch) onTouchEnd(touch.clientX, touch.clientY);
+        else setTouchStart(null);
+      }}
+      onTouchCancel={() => setTouchStart(null)}
     >
       <div className="cast-lightbox-topbar">
         <span>

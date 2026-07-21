@@ -28,6 +28,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   ReactNode,
+  TouchEvent as ReactTouchEvent,
 } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1521,6 +1522,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const heroSwipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0 });
+  const lightboxSwipeRef = useRef({ active: false, startX: 0, startY: 0 });
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -1928,6 +1930,37 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     const deltaY = event.clientY - swipe.startY;
     resetHeroSwipe(event);
 
+    if (Math.abs(deltaX) < heroSwipeDistancePx || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      showPreviousMedia();
+    } else {
+      showNextMedia();
+    }
+  };
+  const resetLightboxSwipe = () => {
+    lightboxSwipeRef.current = { active: false, startX: 0, startY: 0 };
+  };
+  const handleLightboxTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch || gallery.length < 2) return;
+
+    lightboxSwipeRef.current = {
+      active: true,
+      startX: touch.clientX,
+      startY: touch.clientY,
+    };
+  };
+  const handleLightboxTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const swipe = lightboxSwipeRef.current;
+    const touch = event.changedTouches[0];
+    resetLightboxSwipe();
+    if (!swipe.active || !touch || gallery.length < 2) return;
+
+    const deltaX = touch.clientX - swipe.startX;
+    const deltaY = touch.clientY - swipe.startY;
     if (Math.abs(deltaX) < heroSwipeDistancePx || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
       return;
     }
@@ -2553,6 +2586,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               role="dialog"
               aria-modal="true"
               aria-label="Store gallery lightbox"
+              onTouchStart={handleLightboxTouchStart}
+              onTouchEnd={handleLightboxTouchEnd}
+              onTouchCancel={resetLightboxSwipe}
             >
               <button
                 className="lightbox-close"
@@ -4594,6 +4630,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: grid;
           place-items: center;
           padding: 28px;
+          touch-action: pan-y;
         }
 
         .lightbox-media {

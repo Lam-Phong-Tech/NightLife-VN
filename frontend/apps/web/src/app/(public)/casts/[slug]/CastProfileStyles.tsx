@@ -1335,6 +1335,7 @@ export function CastProfileStyles() {
         grid-template-rows: auto 1fr auto auto;
         gap: 16px;
         padding: 22px 20px 24px;
+        touch-action: pan-y;
       }
 
       .cast-lightbox-topbar {
