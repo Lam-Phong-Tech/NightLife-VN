@@ -116,9 +116,35 @@ export function normalizeAppearanceConfig(value?: Partial<AppearanceConfig> | nu
   };
 }
 
+const CACHE_KEY = "nightlife_appearance_config";
+
+export function getCachedAppearanceConfig(): AppearanceConfig | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached) as AppearanceConfig;
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return null;
+}
+
+export function cacheAppearanceConfig(config: AppearanceConfig) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(config));
+  } catch (e) {
+    // Ignore error
+  }
+}
+
 export async function getAppearanceConfig() {
   const response = await apiClient<AppearanceConfigResponse>("/system-config/appearance");
-  return normalizeAppearanceConfig(response.data);
+  const config = normalizeAppearanceConfig(response.data);
+  cacheAppearanceConfig(config);
+  return config;
 }
 
 export function findAppearanceTitle(

@@ -28,6 +28,7 @@ import { getNightlifeHostKind, nightlifeOrigins, type NightlifeHostKind } from "
 import {
   DEFAULT_APPEARANCE_CONFIG,
   getAppearanceConfig,
+  getCachedAppearanceConfig,
   type AppearanceItem,
   type AppearanceBrand,
 } from "@/lib/api/appearance";
@@ -1718,6 +1719,15 @@ export function SiteChrome({
   useEffect(() => {
     let cancelled = false;
 
+    // Load cached config immediately on mount to prevent layout shift and delay
+    const cached = getCachedAppearanceConfig();
+    if (cached) {
+      setAppearanceBottomNav(cached.nav.map(mapAppearanceNavItem));
+      if (cached.brand) {
+        setBrand(cached.brand);
+      }
+    }
+
     getAppearanceConfig()
       .then((config) => {
         if (!cancelled) {
@@ -1728,7 +1738,7 @@ export function SiteChrome({
         }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && !cached) {
           setAppearanceBottomNav(bottomNav);
         }
       });

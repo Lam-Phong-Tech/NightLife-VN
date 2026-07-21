@@ -55,6 +55,7 @@ import {
   DEFAULT_APPEARANCE_CONFIG,
   findAppearanceTitle,
   getAppearanceConfig,
+  getCachedAppearanceConfig,
   type AppearanceConfig,
   type AppearanceItem,
 } from "@/lib/api/appearance";
@@ -3098,12 +3099,18 @@ export default function HomePageClient() {
   useEffect(() => {
     let cancelled = false;
 
+    // Load cached config immediately on mount to prevent layout shift and delay
+    const cached = getCachedAppearanceConfig();
+    if (cached) {
+      setHomeAppearance(cached);
+    }
+
     getAppearanceConfig()
       .then((config) => {
         if (!cancelled) setHomeAppearance(config);
       })
       .catch(() => {
-        if (!cancelled) setHomeAppearance(DEFAULT_APPEARANCE_CONFIG);
+        if (!cancelled && !cached) setHomeAppearance(DEFAULT_APPEARANCE_CONFIG);
       });
 
     return () => {
