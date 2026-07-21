@@ -1306,7 +1306,7 @@ function AdminCastsContent() {
                 }}>
                   <div style={{ color: colors.gold, marginTop: '2px' }}>⚠️</div>
                   <div style={{ fontSize: '13px', color: colors.text2, lineHeight: 1.5 }}>
-                    Nội dung chờ <span style={{ color: colors.gold, fontWeight: 700 }}>kiểm duyệt</span> trước khi public. 
+                    Muốn nhân viên hiển thị trên trang chủ, hãy kiểm duyệt hồ sơ và chuyển trường <span style={{ color: colors.gold, fontWeight: 700 }}>Trạng thái</span> bên dưới sang <span style={{ color: colors.gold, fontWeight: 700 }}>Hoạt động</span>.
                   </div>
                 </div>
               )}
