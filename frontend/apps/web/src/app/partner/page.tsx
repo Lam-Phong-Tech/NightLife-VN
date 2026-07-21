@@ -493,6 +493,7 @@ const listingZodiacOptions = [
   'Pisces',
 ].map((zodiac) => ({ value: zodiac, label: zodiac }));
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
+type CastListField = 'tags' | 'hobbies' | 'languages' | 'youtubeLinks';
 const suggestedListingTags = [
   'Club',
   'Phòng VIP',
@@ -1604,6 +1605,7 @@ export default function PartnerPage() {
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
   const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
+  const [activeCastLanguageInputIndex, setActiveCastLanguageInputIndex] = useState<number | null>(null);
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
@@ -3736,22 +3738,20 @@ export default function PartnerPage() {
     updateCastProfile(index, 'measurements', nextValue);
   };
 
-  const castChipInputKey = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') =>
-    `${index}:${field}`;
+  const castChipInputKey = (index: number, field: CastListField) => `${index}:${field}`;
 
-  const castChipInputValue = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') =>
-    castChipInputs[castChipInputKey(index, field)] ?? '';
+  const castChipInputValue = (index: number, field: CastListField) => castChipInputs[castChipInputKey(index, field)] ?? '';
 
   const setCastChipInputValue = (
     index: number,
-    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    field: CastListField,
     value: string,
   ) => {
     const key = castChipInputKey(index, field);
     setCastChipInputs((current) => ({ ...current, [key]: value }));
   };
 
-  const clearCastChipInputValue = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') => {
+  const clearCastChipInputValue = (index: number, field: CastListField) => {
     const key = castChipInputKey(index, field);
     setCastChipInputs((current) => {
       const next = { ...current };
@@ -3762,7 +3762,7 @@ export default function PartnerPage() {
 
   const addCastListValues = (
     index: number,
-    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    field: CastListField,
     rawValue: string,
   ) => {
     const values = splitInlineList(rawValue);
@@ -3785,7 +3785,7 @@ export default function PartnerPage() {
 
   const removeCastListValue = (
     index: number,
-    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    field: CastListField,
     value: string,
   ) => {
     clearListingErrorsFor(`castProfiles.${index}.${field}`);
@@ -3802,11 +3802,33 @@ export default function PartnerPage() {
   const handleCastChipKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
     index: number,
-    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    field: CastListField,
   ) => {
     if (event.key !== 'Enter') return;
     event.preventDefault();
     addCastListValues(index, field, event.currentTarget.value);
+  };
+
+  const closeCastLanguageInput = (index: number) => {
+    clearCastChipInputValue(index, 'languages');
+    setActiveCastLanguageInputIndex((current) => (current === index ? null : current));
+  };
+
+  const commitCastLanguageInput = (index: number, rawValue: string) => {
+    addCastListValues(index, 'languages', rawValue);
+    clearCastChipInputValue(index, 'languages');
+    setActiveCastLanguageInputIndex((current) => (current === index ? null : current));
+  };
+
+  const handleCastLanguageKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeCastLanguageInput(index);
+      return;
+    }
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    commitCastLanguageInput(index, event.currentTarget.value);
   };
 
   const castMediaEntries = (cast: PartnerListingCast, kind: 'image' | 'video') =>
@@ -4635,6 +4657,69 @@ export default function PartnerPage() {
           />
         </div>
         {listingErrorText(`castProfiles.${index}.${field}`)}
+      </FormField>
+    );
+  };
+
+  const renderCastLanguageField = (cast: PartnerListingCast, index: number) => {
+    const customLanguages = (cast.languages ?? []).filter(
+      (language) => !listingCastLanguageOptions.includes(language),
+    );
+    const isAddingCustomLanguage = activeCastLanguageInputIndex === index;
+    const inputValue = castChipInputValue(index, 'languages');
+
+    return (
+      <FormField label="Ngôn ngữ">
+        <div className="partner-cast-token-row">
+          {listingCastLanguageOptions.map((language) => {
+            const isActive = Boolean(cast.languages?.includes(language));
+            return (
+              <button
+                key={language}
+                type="button"
+                className={isActive ? 'partner-cast-token is-active' : 'partner-cast-token'}
+                onClick={() => toggleCastProfileLanguage(index, language)}
+              >
+                {language}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className="partner-cast-token partner-cast-add-language"
+            aria-label="Thêm ngôn ngữ"
+            onClick={() => {
+              setActiveCastLanguageInputIndex(index);
+              setCastChipInputValue(index, 'languages', '');
+            }}
+          >
+            <Plus size={15} />
+          </button>
+          {isAddingCustomLanguage ? (
+            <input
+              autoFocus
+              className="partner-cast-language-input"
+              value={inputValue}
+              onBlur={(event) => commitCastLanguageInput(index, event.currentTarget.value)}
+              onChange={(event) => setCastChipInputValue(index, 'languages', event.target.value)}
+              onKeyDown={(event) => handleCastLanguageKeyDown(event, index)}
+              placeholder="Nhập ngôn ngữ..."
+            />
+          ) : null}
+          {customLanguages.map((language) => (
+            <span className="partner-cast-language-chip" key={`custom-language-${language}`}>
+              <span>{language}</span>
+              <button
+                type="button"
+                aria-label={`Xóa ${language}`}
+                onClick={() => removeCastListValue(index, 'languages', language)}
+              >
+                <XCircle size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {listingErrorText(`castProfiles.${index}.languages`)}
       </FormField>
     );
   };
@@ -5822,40 +5907,7 @@ export default function PartnerPage() {
               />
               {listingErrorText(`castProfiles.${index}.stageName`)}
             </FormField>
-            <FormField label="Ngôn ngữ">
-              <div className="partner-cast-token-row">
-                {listingCastLanguageOptions.map((language) => {
-                  const isActive = Boolean(cast.languages?.includes(language));
-                  return (
-                    <button
-                      key={language}
-                      type="button"
-                      className={isActive ? 'partner-cast-token is-active' : 'partner-cast-token'}
-                      onClick={() => toggleCastProfileLanguage(index, language)}
-                    >
-                      {language}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                value={(cast.languages ?? [])
-                  .filter((language) => !listingCastLanguageOptions.includes(language))
-                  .join(', ')}
-                onChange={(event) => {
-                  const commonLanguages = (cast.languages ?? []).filter((language) =>
-                    listingCastLanguageOptions.includes(language),
-                  );
-                  updateCastProfile(index, 'languages', [
-                    ...commonLanguages,
-                    ...splitInlineList(event.target.value),
-                  ]);
-                }}
-                placeholder="Khác, ngăn cách phẩy..."
-                style={listingInputStyle(`castProfiles.${index}.languages`)}
-              />
-              {listingErrorText(`castProfiles.${index}.languages`)}
-            </FormField>
+            {renderCastLanguageField(cast, index)}
             {renderCastChipField(cast, index, 'tags', 'Tags / từ khóa', 'VD: Sang chảnh')}
             {renderCastChipField(cast, index, 'hobbies', 'Sở thích', 'VD: Hát')}
         </div>
@@ -7769,8 +7821,8 @@ export default function PartnerPage() {
         .partner-cast-token-row {
           display: flex;
           flex-wrap: wrap;
+          align-items: center;
           gap: 7px;
-          margin-bottom: 8px;
         }
         .partner-cast-token {
           min-height: 34px;
@@ -7789,6 +7841,58 @@ export default function PartnerPage() {
           border-color: ${colors.borderGold40};
           background: ${colors.goldGrad};
           color: ${colors.onGold};
+        }
+        .partner-cast-add-language {
+          min-width: 34px;
+          width: 34px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .partner-cast-language-input {
+          min-height: 34px;
+          width: min(220px, 100%);
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 999px;
+          background: ${colors.surface2};
+          color: ${colors.text};
+          font: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          outline: 0;
+          padding: 0 12px;
+        }
+        .partner-cast-language-chip {
+          max-width: 100%;
+          min-height: 34px;
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 999px;
+          background: rgba(212,178,106,.13);
+          color: ${colors.text};
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 900;
+          padding: 0 6px 0 12px;
+        }
+        .partner-cast-language-chip span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .partner-cast-language-chip button {
+          width: 20px;
+          height: 20px;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: ${colors.muted};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
         }
         .partner-cast-chip-field {
           min-height: 44px;
