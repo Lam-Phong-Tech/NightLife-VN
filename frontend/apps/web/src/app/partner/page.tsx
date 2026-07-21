@@ -232,6 +232,8 @@ type PartnerListingCast = {
   hobbies?: string[];
   youtubeLinks?: string[];
   hourlyRateVnd?: number;
+  isPublic?: boolean;
+  status?: string;
   mediaUrls?: string[];
 };
 
@@ -490,6 +492,13 @@ const listingZodiacOptions = [
   'Aquarius',
   'Pisces',
 ].map((zodiac) => ({ value: zodiac, label: zodiac }));
+const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
+const listingCastStatusOptions = [
+  { value: 'ACTIVE', label: 'Hoạt động' },
+  { value: 'DRAFT', label: 'Bản nháp' },
+  { value: 'OFF_DUTY', label: 'Tạm nghỉ' },
+  { value: 'SUSPENDED', label: 'Tạm ẩn' },
+];
 const suggestedListingTags = [
   'Club',
   'Phòng VIP',
@@ -936,6 +945,39 @@ const isValidUrl = (value: string) => {
   } catch {
     return false;
   }
+};
+
+const isListingVideoUrl = (value: string) => {
+  const token = value.toLowerCase();
+  return (
+    /\.(mp4|webm|mov|m4v)(?:[?#].*)?$/.test(token) ||
+    token.includes('youtube.com') ||
+    token.includes('youtu.be') ||
+    token.includes('vimeo.com')
+  );
+};
+
+const castAvatarUrl = (cast: PartnerListingCast) => {
+  const urls = cast.mediaUrls ?? [];
+  return (
+    urls.find((url) => isValidUrl(url) && !isListingVideoUrl(url)) ??
+    urls.find((url) => isValidUrl(url)) ??
+    ''
+  );
+};
+
+const castStatusLabel = (status?: string | null) => {
+  const normalized = safeListingText(status).toUpperCase();
+  return (
+    listingCastStatusOptions.find((item) => item.value === normalized)?.label ??
+    (normalized || 'Bản nháp')
+  );
+};
+
+const castStatusTone = (cast: PartnerListingCast, hasRequiredName: string): 'gold' | 'success' | 'danger' | 'neutral' => {
+  if (!hasRequiredName) return 'gold';
+  if (cast.isPublic === false) return 'gold';
+  return (cast.status ?? 'ACTIVE') === 'ACTIVE' ? 'success' : 'gold';
 };
 
 const buildListingMenuSummary = (
@@ -3210,6 +3252,8 @@ export default function PartnerPage() {
           hobbies: normalizeListingTextList(cast.hobbies),
           mediaUrls: normalizeListingUrlList(cast.mediaUrls),
           youtubeLinks: normalizeListingUrlList(cast.youtubeLinks),
+          isPublic: typeof cast.isPublic === 'boolean' ? cast.isPublic : true,
+          status: safeListingText(cast.status) || 'ACTIVE',
         })),
         mediaUrls: normalizeListingUrlList(d.mediaUrls),
       };
@@ -3664,7 +3708,7 @@ export default function PartnerPage() {
   const updateCastProfile = (
     index: number,
     key: keyof PartnerListingCast,
-    value: string | string[] | number | undefined,
+    value: string | string[] | number | boolean | undefined,
   ) => {
     clearListingErrorsFor(`castProfiles.${index}.${String(key)}`);
     setListingDraft((current) => ({
@@ -3673,6 +3717,42 @@ export default function PartnerPage() {
         itemIndex === index ? { ...item, [key]: value } : item,
       ),
     }));
+  };
+
+  const toggleCastProfileLanguage = (index: number, language: string) => {
+    clearListingErrorsFor(`castProfiles.${index}.languages`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const languages = new Set(item.languages ?? []);
+        if (languages.has(language)) {
+          languages.delete(language);
+        } else {
+          languages.add(language);
+        }
+        return { ...item, languages: Array.from(languages) };
+      }),
+    }));
+  };
+
+  const castMeasurementParts = (value?: string | null) => {
+    const parts = safeListingText(value)
+      .split(/[^\d]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    return [parts[0] ?? '', parts[1] ?? '', parts[2] ?? ''];
+  };
+
+  const updateCastMeasurementPart = (index: number, partIndex: number, value: string) => {
+    const currentCast = listingDraft.castProfiles[index];
+    if (!currentCast) return;
+    const parts = castMeasurementParts(currentCast.measurements);
+    parts[partIndex] = value.replace(/\D/g, '').slice(0, 3);
+    const nextValue = parts.some(Boolean) ? parts.join('-') : '';
+    updateCastProfile(index, 'measurements', nextValue);
   };
 
   const isEmptyCastProfile = (cast: PartnerListingCast) =>
@@ -3700,6 +3780,8 @@ export default function PartnerPage() {
           languages: [],
           hobbies: [],
           youtubeLinks: [],
+          isPublic: true,
+          status: 'ACTIVE',
           mediaUrls: [],
         },
         ...current.castProfiles,
@@ -3784,6 +3866,8 @@ export default function PartnerPage() {
             languages: item.languages?.filter(Boolean) ?? [],
             hobbies: item.hobbies?.filter(Boolean) ?? [],
             youtubeLinks: item.youtubeLinks?.filter(Boolean) ?? [],
+            isPublic: item.isPublic !== false,
+            status: item.status || 'ACTIVE',
             mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
           };
         }),
@@ -5423,10 +5507,35 @@ export default function PartnerPage() {
               {listingErrorText(`castProfiles.${index}.stageName`)}
             </FormField>
             <FormField label="Ngôn ngữ">
+              <div className="partner-cast-token-row">
+                {listingCastLanguageOptions.map((language) => {
+                  const isActive = Boolean(cast.languages?.includes(language));
+                  return (
+                    <button
+                      key={language}
+                      type="button"
+                      className={isActive ? 'partner-cast-token is-active' : 'partner-cast-token'}
+                      onClick={() => toggleCastProfileLanguage(index, language)}
+                    >
+                      {language}
+                    </button>
+                  );
+                })}
+              </div>
               <input
-                value={cast.languages?.join(', ') ?? ''}
-                onChange={(event) => updateCastProfile(index, 'languages', splitInlineList(event.target.value))}
-                placeholder="vi, en, ja"
+                value={(cast.languages ?? [])
+                  .filter((language) => !listingCastLanguageOptions.includes(language))
+                  .join(', ')}
+                onChange={(event) => {
+                  const commonLanguages = (cast.languages ?? []).filter((language) =>
+                    listingCastLanguageOptions.includes(language),
+                  );
+                  updateCastProfile(index, 'languages', [
+                    ...commonLanguages,
+                    ...splitInlineList(event.target.value),
+                  ]);
+                }}
+                placeholder="Khác, ngăn cách phẩy..."
                 style={listingInputStyle(`castProfiles.${index}.languages`)}
               />
               {listingErrorText(`castProfiles.${index}.languages`)}
@@ -5476,12 +5585,18 @@ export default function PartnerPage() {
             {listingErrorText(`castProfiles.${index}.zodiacSign`)}
           </FormField>
           <FormField label="Số đo (V1 - V2 - V3)">
-            <input
-              value={cast.measurements ?? ''}
-              onChange={(event) => updateCastProfile(index, 'measurements', event.target.value)}
-              placeholder="VD: 82-58-84"
-              style={listingInputStyle(`castProfiles.${index}.measurements`)}
-            />
+            <div className="partner-cast-measurements">
+              {castMeasurementParts(cast.measurements).map((part, partIndex) => (
+                <input
+                  key={`measurement-${partIndex}`}
+                  inputMode="numeric"
+                  value={part}
+                  onChange={(event) => updateCastMeasurementPart(index, partIndex, event.target.value)}
+                  placeholder={`V${partIndex + 1}`}
+                  style={listingInputStyle(`castProfiles.${index}.measurements`)}
+                />
+              ))}
+            </div>
             {listingErrorText(`castProfiles.${index}.measurements`)}
           </FormField>
           <FormField label="Chiều cao">
@@ -5493,6 +5608,24 @@ export default function PartnerPage() {
               style={listingInputStyle(`castProfiles.${index}.heightCm`)}
             />
             {listingErrorText(`castProfiles.${index}.heightCm`)}
+          </FormField>
+          <FormField label="Hiển thị Web">
+            <button
+              type="button"
+              className={cast.isPublic === false ? 'partner-cast-public-toggle' : 'partner-cast-public-toggle is-active'}
+              onClick={() => updateCastProfile(index, 'isPublic', cast.isPublic === false)}
+            >
+              {cast.isPublic === false ? <EyeOff size={16} /> : <Eye size={16} />}
+              {cast.isPublic === false ? 'Đang ẩn' : 'Cho phép hiển thị'}
+            </button>
+          </FormField>
+          <FormField label="Trạng thái">
+            <ThemedListingSelect
+              value={cast.status || 'ACTIVE'}
+              onChange={(value) => updateCastProfile(index, 'status', value)}
+              placeholder="-- Chọn trạng thái --"
+              options={listingCastStatusOptions}
+            />
           </FormField>
           <FormField label="Mô tả cast" className="partner-field-wide">
             <textarea
@@ -5560,7 +5693,7 @@ export default function PartnerPage() {
               })}
             </div>
             <span style={{ color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-              Nhập URL bằng dấu phẩy hoặc tải file từ máy. Media đầu tiên sẽ dùng làm ảnh đại diện.
+              Nhập URL bằng dấu phẩy hoặc tải file từ máy. Ảnh đầu tiên sẽ dùng làm ảnh đại diện, video được giữ riêng như bên admin.
             </span>
           </FormField>
           <FormField label="Video YouTube" className="partner-field-wide">
@@ -5611,7 +5744,7 @@ export default function PartnerPage() {
               </thead>
               <tbody>
                 {listingDraft.castProfiles.map((cast, index) => {
-                  const avatarUrl = cast.mediaUrls?.[0];
+                  const avatarUrl = castAvatarUrl(cast);
                   const hasRequiredName = cast.stageName.trim();
                   return (
                     <tr key={`${cast.stageName || 'draft-cast'}-${index}`}>
@@ -5638,8 +5771,12 @@ export default function PartnerPage() {
                       <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
                       <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
                       <td>
-                        <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
-                          {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                        <StatusPill tone={castStatusTone(cast, hasRequiredName)}>
+                          {hasRequiredName
+                            ? cast.isPublic === false
+                              ? 'Đang ẩn'
+                              : castStatusLabel(cast.status)
+                            : 'Bản nháp'}
                         </StatusPill>
                       </td>
                       <td>
@@ -5660,7 +5797,7 @@ export default function PartnerPage() {
           </div>
           <div className="partner-cast-mobile-list">
             {listingDraft.castProfiles.map((cast, index) => {
-              const avatarUrl = cast.mediaUrls?.[0];
+              const avatarUrl = castAvatarUrl(cast);
               const hasRequiredName = cast.stageName.trim();
               const storeName = listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý';
               const languages = cast.languages?.length ? cast.languages.join(' · ') : '---';
@@ -5690,8 +5827,12 @@ export default function PartnerPage() {
                       <strong>{hasRequiredName || 'Draft cast'}</strong>
                       <small>{cast.zodiacSign || '---'}</small>
                     </span>
-                    <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
-                      {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                    <StatusPill tone={castStatusTone(cast, hasRequiredName)}>
+                      {hasRequiredName
+                        ? cast.isPublic === false
+                          ? 'Đang ẩn'
+                          : castStatusLabel(cast.status)
+                        : 'Bản nháp'}
                     </StatusPill>
                     <ChevronRight size={18} className="partner-cast-mobile-arrow" />
                   </span>
@@ -7414,6 +7555,62 @@ export default function PartnerPage() {
           font-weight: 900;
           letter-spacing: 1.2px;
           text-transform: uppercase;
+        }
+        .partner-cast-token-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-bottom: 8px;
+        }
+        .partner-cast-token {
+          min-height: 34px;
+          min-width: 46px;
+          border: 1px solid ${colors.borderSoft};
+          border-radius: 999px;
+          background: ${colors.surface2};
+          color: ${colors.text2};
+          cursor: pointer;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          padding: 0 12px;
+        }
+        .partner-cast-token.is-active {
+          border-color: ${colors.borderGold40};
+          background: ${colors.goldGrad};
+          color: ${colors.onGold};
+        }
+        .partner-cast-measurements {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .partner-cast-measurements input {
+          text-align: center;
+          padding-left: 8px !important;
+          padding-right: 8px !important;
+        }
+        .partner-cast-public-toggle {
+          min-height: 44px;
+          width: 100%;
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 11px;
+          background: ${colors.surface2};
+          color: ${colors.text2};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 900;
+          padding: 0 12px;
+        }
+        .partner-cast-public-toggle.is-active {
+          border-color: rgba(141,230,176,.48);
+          background: rgba(141,230,176,.12);
+          color: ${colors.success};
         }
         .partner-menu-editor,
         .partner-menu-group-card {

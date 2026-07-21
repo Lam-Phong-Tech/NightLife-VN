@@ -17,6 +17,7 @@ import {
   BookingChangeRequestStatus,
   BookingChatSenderType,
   BookingChatTopic,
+  CastStatus,
   ContentStatus,
   ContentType,
   CouponIssueStatus,
@@ -569,6 +570,13 @@ type PartnerListingDraftPayload = {
 const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
 const PARTNER_LISTING_DRAFT_KIND = 'PARTNER_LISTING_DRAFT';
+const PARTNER_LISTING_CAST_STATUSES = new Set<CastStatus>([
+  'DRAFT',
+  'PENDING_REVIEW',
+  'ACTIVE',
+  'OFF_DUTY',
+  'SUSPENDED',
+]);
 const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   GUEST: 5,
   MEMBER: 8,
@@ -3113,7 +3121,10 @@ export class NightlifeDataService {
               url,
               index: mediaIndex,
               castId: cast.id,
-              purpose: 'PARTNER_LISTING_CAST',
+              purpose: this.partnerListingCastMediaPurpose(
+                castProfile.mediaUrls,
+                mediaIndex,
+              ),
             },
             tx,
           );
@@ -7395,7 +7406,10 @@ export class NightlifeDataService {
               url,
               index: mediaIndex,
               castId: cast.id,
-              purpose: 'PARTNER_REQUEST_CAST',
+              purpose: this.partnerListingCastMediaPurpose(
+                castProfile.mediaUrls,
+                mediaIndex,
+              ),
             },
             tx,
           );
@@ -7583,10 +7597,24 @@ export class NightlifeDataService {
           select: { id: true },
         });
         if (request.draftCastIds.length) {
-          await tx.cast.updateMany({
-            where: { id: { in: request.draftCastIds } },
-            data: { status: 'ACTIVE', isPublic: true },
-          });
+          const castProfiles = this.partnerRequestCastProfiles(
+            request.castProfiles,
+          );
+
+          await Promise.all(
+            request.draftCastIds.map((castId, index) => {
+              const castProfile = castProfiles[index];
+
+              return tx.cast.update({
+                where: { id: castId },
+                data: {
+                  status: castProfile?.status ?? 'ACTIVE',
+                  isPublic: castProfile?.isPublic ?? true,
+                },
+                select: { id: true },
+              });
+            }),
+          );
         }
         if (request.draftMediaIds.length) {
           await tx.media.updateMany({
@@ -16163,6 +16191,7 @@ export class NightlifeDataService {
         ownerId: true,
         media: {
           where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
             url: true,
@@ -16173,10 +16202,13 @@ export class NightlifeDataService {
         },
         casts: {
           where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
             stageName: true,
+            publicAlias: true,
             bio: true,
+            publicBio: true,
             tags: true,
             youtubeLinks: true,
             languages: true,
@@ -16186,6 +16218,7 @@ export class NightlifeDataService {
             measurements: true,
             hobbies: true,
             hourlyRateVnd: true,
+            isPublic: true,
             status: true,
           },
         },
@@ -16496,6 +16529,172 @@ export class NightlifeDataService {
     return nextParts.join(', ');
   }
 
+  private partnerListingCastMediaUrls(
+    media: Array<{
+      url: string;
+      purpose: string;
+      type: string;
+      castId: string | null;
+    }>,
+    castId: string,
+  ) {
+    const purposeRank: Record<string, number> = {
+      CAST_AVATAR: 0,
+      PARTNER_CAST_IMAGE: 1,
+      CAST_PHOTO: 2,
+      PARTNER_LISTING_CAST: 3,
+      CAST_VIDEO: 4,
+      PARTNER_CAST_VIDEO: 5,
+    };
+
+    return media
+      .filter((item) => item.castId === castId)
+      .map((item, index) => ({ ...item, index }))
+      .sort((first, second) => {
+        const firstRank = purposeRank[first.purpose] ?? 9;
+        const secondRank = purposeRank[second.purpose] ?? 9;
+
+        if (firstRank !== secondRank) {
+          return firstRank - secondRank;
+        }
+
+        if (first.type !== second.type) {
+          return first.type === 'IMAGE' ? -1 : 1;
+        }
+
+        return first.index - second.index;
+      })
+      .map((item) => item.url);
+  }
+
+  private partnerListingCastMediaPurpose(
+    mediaUrls: string[],
+    index: number,
+  ) {
+    const url = mediaUrls[index];
+    if (this.partnerRequestMediaType(url) === 'VIDEO') {
+      return 'CAST_VIDEO';
+    }
+
+    const imagePosition = mediaUrls
+      .slice(0, index + 1)
+      .filter((item) => this.partnerRequestMediaType(item) === 'IMAGE').length;
+
+    return imagePosition <= 1 ? 'CAST_AVATAR' : 'CAST_PHOTO';
+  }
+
+  private partnerListingCastProfilesFromStore(
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+  ): PartnerListingCastDto[] {
+    const storeCasts = store.casts || [];
+    const storeMedia = store.media || [];
+
+    return storeCasts.map((cast, index) => ({
+      stageName:
+        this.cleanPartnerListingText(cast.stageName) ??
+        this.cleanPartnerListingText(cast.publicAlias) ??
+        `Cast ${index + 1}`,
+      storeName: this.cleanPartnerListingText(store.name) ?? undefined,
+      bio:
+        this.cleanPartnerListingText(cast.bio) ??
+        this.cleanPartnerListingText(cast.publicBio) ??
+        '',
+      tags: this.cleanPartnerListingStringArray(cast.tags, 12),
+      languages: this.cleanPartnerListingStringArray(cast.languages, 8),
+      birthMonth: cast.birthMonth ?? undefined,
+      zodiacSign: this.cleanPartnerListingText(cast.zodiacSign) ?? undefined,
+      heightCm: cast.heightCm ?? undefined,
+      measurements:
+        this.cleanPartnerListingText(cast.measurements) ?? undefined,
+      hobbies: this.cleanPartnerListingStringArray(cast.hobbies, 12),
+      youtubeLinks: this.cleanPartnerListingStringArray(cast.youtubeLinks, 8),
+      hourlyRateVnd: cast.hourlyRateVnd
+        ? Number(cast.hourlyRateVnd)
+        : undefined,
+      isPublic: cast.isPublic,
+      status: cast.status,
+      mediaUrls: this.partnerListingCastMediaUrls(storeMedia, cast.id),
+    }));
+  }
+
+  private mergePartnerListingCastProfiles(
+    draftProfiles: PartnerListingCastDto[],
+    storeProfiles: PartnerListingCastDto[],
+  ) {
+    if (!draftProfiles.length) {
+      return storeProfiles;
+    }
+
+    const storeProfileIndexes = new Map<string, number>();
+    storeProfiles.forEach((profile, index) => {
+      const key = this.normalizeToken(profile.stageName);
+      if (key && !storeProfileIndexes.has(key)) {
+        storeProfileIndexes.set(key, index);
+      }
+    });
+
+    const usedStoreIndexes = new Set<number>();
+    const merged = draftProfiles.map((profile, index) => {
+      const matchedIndex =
+        storeProfileIndexes.get(this.normalizeToken(profile.stageName)) ??
+        (index < storeProfiles.length ? index : undefined);
+      const storeProfile =
+        matchedIndex !== undefined ? storeProfiles[matchedIndex] : undefined;
+
+      if (matchedIndex !== undefined) {
+        usedStoreIndexes.add(matchedIndex);
+      }
+
+      return this.mergePartnerListingCastProfile(profile, storeProfile);
+    });
+
+    storeProfiles.forEach((profile, index) => {
+      if (!usedStoreIndexes.has(index)) {
+        merged.push(profile);
+      }
+    });
+
+    return merged;
+  }
+
+  private mergePartnerListingCastProfile(
+    profile: PartnerListingCastDto,
+    storeProfile?: PartnerListingCastDto,
+  ): PartnerListingCastDto {
+    const text = (value?: string | null) => this.cleanPartnerListingText(value);
+    const list = (values?: string[] | null, limit = 12) =>
+      this.cleanPartnerListingStringArray(values, limit);
+    const tags = list(profile.tags, 12);
+    const languages = list(profile.languages, 8);
+    const hobbies = list(profile.hobbies, 12);
+    const youtubeLinks = list(profile.youtubeLinks, 8);
+    const mediaUrls = this.cleanStringArray(profile.mediaUrls, 8);
+
+    return {
+      stageName:
+        text(profile.stageName) ??
+        text(storeProfile?.stageName) ??
+        'Cast',
+      storeName: text(profile.storeName) ?? text(storeProfile?.storeName),
+      bio: text(profile.bio) ?? text(storeProfile?.bio) ?? '',
+      tags: tags.length ? tags : (storeProfile?.tags ?? []),
+      languages: languages.length ? languages : (storeProfile?.languages ?? []),
+      birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
+      zodiacSign: text(profile.zodiacSign) ?? text(storeProfile?.zodiacSign),
+      heightCm: profile.heightCm ?? storeProfile?.heightCm,
+      measurements:
+        text(profile.measurements) ?? text(storeProfile?.measurements),
+      hobbies: hobbies.length ? hobbies : (storeProfile?.hobbies ?? []),
+      youtubeLinks: youtubeLinks.length
+        ? youtubeLinks
+        : (storeProfile?.youtubeLinks ?? []),
+      hourlyRateVnd: profile.hourlyRateVnd ?? storeProfile?.hourlyRateVnd,
+      isPublic: profile.isPublic ?? storeProfile?.isPublic ?? true,
+      status: profile.status ?? storeProfile?.status ?? 'ACTIVE',
+      mediaUrls: mediaUrls.length ? mediaUrls : (storeProfile?.mediaUrls ?? []),
+    };
+  }
+
   private normalizePartnerListingDraft(
     dto: Partial<PartnerListingDraftDto>,
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
@@ -16540,31 +16739,17 @@ export class NightlifeDataService {
       }))
       .filter((item) => item.label && item.value)
       .slice(0, 12);
-    const storeCasts = store.casts || [];
     const storeMedia = store.media || [];
+    const storeCastProfiles = this.partnerListingCastProfilesFromStore(store);
     const castProfiles =
       dto.castProfiles !== undefined
-        ? (this.normalizePartnerRequestCasts(
-            dto.castProfiles,
-          ) as PartnerListingCastDto[])
-        : storeCasts.map((cast) => ({
-            stageName: cast.stageName,
-            bio: cast.bio ?? '',
-            tags: cast.tags,
-            languages: cast.languages,
-            birthMonth: cast.birthMonth ?? undefined,
-            zodiacSign: cast.zodiacSign ?? undefined,
-            heightCm: cast.heightCm ?? undefined,
-            measurements: cast.measurements ?? '',
-            hobbies: cast.hobbies,
-            youtubeLinks: cast.youtubeLinks,
-            hourlyRateVnd: cast.hourlyRateVnd
-              ? Number(cast.hourlyRateVnd)
-              : undefined,
-            mediaUrls: storeMedia
-              .filter((m) => m.castId === cast.id)
-              .map((m) => m.url),
-          }));
+        ? this.mergePartnerListingCastProfiles(
+            this.normalizePartnerRequestCasts(
+              dto.castProfiles,
+            ) as PartnerListingCastDto[],
+            storeCastProfiles,
+          )
+        : storeCastProfiles;
     const priceRange =
       this.cleanNullableText(dto.priceRange) ??
       this.cleanNullableText(String(pricingRecord?.summary ?? ''));
@@ -16828,6 +17013,7 @@ export class NightlifeDataService {
         ownerId: true,
         media: {
           where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
             url: true,
@@ -16838,10 +17024,13 @@ export class NightlifeDataService {
         },
         casts: {
           where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
             stageName: true,
+            publicAlias: true,
             bio: true,
+            publicBio: true,
             tags: true,
             youtubeLinks: true,
             languages: true,
@@ -16851,6 +17040,7 @@ export class NightlifeDataService {
             measurements: true,
             hobbies: true,
             hourlyRateVnd: true,
+            isPublic: true,
             status: true,
           },
         },
@@ -17245,6 +17435,38 @@ export class NightlifeDataService {
     };
   }
 
+  private partnerRequestCastTextValues(value: Prisma.JsonValue | null) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        return [];
+      }
+
+      const record = item as Record<string, unknown>;
+      const textValues = [
+        record.stageName,
+        record.storeName,
+        record.bio,
+        record.zodiacSign,
+        record.measurements,
+      ].filter((text): text is string => typeof text === 'string');
+      const arrayValues = [
+        record.tags,
+        record.languages,
+        record.hobbies,
+        record.youtubeLinks,
+      ]
+        .filter(Array.isArray)
+        .flat()
+        .filter((text): text is string => typeof text === 'string');
+
+      return [...textValues, ...arrayValues];
+    });
+  }
+
   private hasPartnerRequestEncodingCorruption(
     request: PartnerRequestCmsRecord,
   ) {
@@ -17254,13 +17476,8 @@ export class NightlifeDataService {
       request.storeAddress,
       request.storeCity,
       request.storeDistrict,
-    ].some((value) => {
-      const text = value?.trim() ?? '';
-      const questionMarks = text.match(/\?/g)?.length ?? 0;
-      return (
-        questionMarks >= 3 && questionMarks / Math.max(text.length, 1) >= 0.08
-      );
-    });
+      ...this.partnerRequestCastTextValues(request.castProfiles),
+    ].some((value) => this.hasQuestionMarkEncodingCorruption(value));
   }
 
   private async ensurePartnerOnboarding(
@@ -17430,13 +17647,31 @@ export class NightlifeDataService {
 
         const record = item as Record<string, unknown>;
         const stageName =
-          typeof record.stageName === 'string' ? record.stageName.trim() : '';
+          typeof record.stageName === 'string'
+            ? (this.cleanPartnerListingText(record.stageName) ?? '')
+            : '';
 
         if (!stageName) {
           return null;
         }
 
         const profile: PartnerRequestCastDto = { stageName };
+        const storeName =
+          typeof record.storeName === 'string'
+            ? this.cleanPartnerListingText(record.storeName)
+            : null;
+        const bio =
+          typeof record.bio === 'string'
+            ? this.cleanPartnerListingText(record.bio)
+            : null;
+        const zodiacSign =
+          typeof record.zodiacSign === 'string'
+            ? this.cleanPartnerListingText(record.zodiacSign)
+            : null;
+        const measurements =
+          typeof record.measurements === 'string'
+            ? this.cleanPartnerListingText(record.measurements)
+            : null;
         const tags = this.cleanStringArray(
           Array.isArray(record.tags) ? (record.tags as string[]) : [],
           12,
@@ -17449,15 +17684,69 @@ export class NightlifeDataService {
           Array.isArray(record.mediaUrls) ? (record.mediaUrls as string[]) : [],
           8,
         );
+        const hobbies = this.cleanStringArray(
+          Array.isArray(record.hobbies) ? (record.hobbies as string[]) : [],
+          12,
+        );
+        const youtubeLinks = this.cleanStringArray(
+          Array.isArray(record.youtubeLinks)
+            ? (record.youtubeLinks as string[])
+            : [],
+          8,
+        );
+        const birthMonth =
+          typeof record.birthMonth === 'number' &&
+          Number.isFinite(record.birthMonth) &&
+          record.birthMonth >= 1 &&
+          record.birthMonth <= 12
+            ? Math.trunc(record.birthMonth)
+            : undefined;
+        const heightCm =
+          typeof record.heightCm === 'number' &&
+          Number.isFinite(record.heightCm) &&
+          record.heightCm >= 0
+            ? Math.trunc(record.heightCm)
+            : undefined;
+        const status =
+          typeof record.status === 'string'
+            ? this.normalizePartnerCastStatus(record.status)
+            : undefined;
 
-        if (typeof record.bio === 'string' && record.bio.trim()) {
-          profile.bio = record.bio;
+        if (storeName) {
+          profile.storeName = storeName;
+        }
+        if (bio) {
+          profile.bio = bio;
         }
         if (tags.length) {
-          profile.tags = tags;
+          profile.tags = tags.filter(
+            (tag) => !this.hasQuestionMarkEncodingCorruption(tag),
+          );
         }
         if (languages.length) {
-          profile.languages = languages;
+          profile.languages = languages.filter(
+            (language) => !this.hasQuestionMarkEncodingCorruption(language),
+          );
+        }
+        if (birthMonth) {
+          profile.birthMonth = birthMonth;
+        }
+        if (zodiacSign) {
+          profile.zodiacSign = zodiacSign;
+        }
+        if (heightCm) {
+          profile.heightCm = heightCm;
+        }
+        if (measurements) {
+          profile.measurements = measurements;
+        }
+        if (hobbies.length) {
+          profile.hobbies = hobbies.filter(
+            (hobby) => !this.hasQuestionMarkEncodingCorruption(hobby),
+          );
+        }
+        if (youtubeLinks.length) {
+          profile.youtubeLinks = youtubeLinks;
         }
         if (
           typeof record.hourlyRateVnd === 'number' &&
@@ -17467,6 +17756,12 @@ export class NightlifeDataService {
         }
         if (mediaUrls.length) {
           profile.mediaUrls = mediaUrls;
+        }
+        if (typeof record.isPublic === 'boolean') {
+          profile.isPublic = record.isPublic;
+        }
+        if (status) {
+          profile.status = status;
         }
 
         return profile;
@@ -17564,6 +17859,50 @@ export class NightlifeDataService {
       .slice(0, limit);
   }
 
+  private hasQuestionMarkEncodingCorruption(value?: string | null) {
+    const text = value?.trim() ?? '';
+    if (!text) {
+      return false;
+    }
+
+    const questionMarks = text.match(/\?/g)?.length ?? 0;
+
+    return (
+      (questionMarks >= 3 &&
+        questionMarks / Math.max(text.length, 1) >= 0.08) ||
+      (questionMarks >= 2 &&
+        questionMarks / Math.max(text.length, 1) >= 0.5)
+    );
+  }
+
+  private cleanPartnerListingText(value?: string | null) {
+    const text = this.cleanNullableText(value);
+    if (!text || this.hasQuestionMarkEncodingCorruption(text)) {
+      return null;
+    }
+
+    return text;
+  }
+
+  private cleanPartnerListingStringArray(
+    values?: string[] | null,
+    limit = 12,
+  ) {
+    return this.cleanStringArray(values, limit).filter(
+      (value) => !this.hasQuestionMarkEncodingCorruption(value),
+    );
+  }
+
+  private normalizePartnerCastStatus(value?: string | null) {
+    const status = this.cleanNullableText(value)?.toUpperCase() as
+      | CastStatus
+      | undefined;
+
+    return status && PARTNER_LISTING_CAST_STATUSES.has(status)
+      ? status
+      : undefined;
+  }
+
   private normalizePartnerRequestCasts(
     castProfiles?: PartnerRequestCastDto[] | null,
   ) {
@@ -17573,7 +17912,7 @@ export class NightlifeDataService {
 
     return castProfiles
       .map((profile) => {
-        const stageName = this.cleanText(profile.stageName);
+        const stageName = this.cleanPartnerListingText(profile.stageName) ?? '';
         const hourlyRateVnd =
           typeof profile.hourlyRateVnd === 'number' &&
           Number.isFinite(profile.hourlyRateVnd) &&
@@ -17596,17 +17935,26 @@ export class NightlifeDataService {
 
         return {
           stageName,
-          bio: this.cleanNullableText(profile.bio),
-          tags: this.cleanStringArray(profile.tags, 12),
-          languages: this.cleanStringArray(profile.languages, 8),
+          storeName: this.cleanPartnerListingText(profile.storeName),
+          bio: this.cleanPartnerListingText(profile.bio),
+          tags: this.cleanPartnerListingStringArray(profile.tags, 12),
+          languages: this.cleanPartnerListingStringArray(profile.languages, 8),
           birthMonth,
-          zodiacSign: this.cleanNullableText(profile.zodiacSign),
+          zodiacSign: this.cleanPartnerListingText(profile.zodiacSign),
           heightCm,
-          measurements: this.cleanNullableText(profile.measurements),
-          hobbies: this.cleanStringArray(profile.hobbies, 12),
-          youtubeLinks: this.cleanStringArray(profile.youtubeLinks, 8),
+          measurements: this.cleanPartnerListingText(profile.measurements),
+          hobbies: this.cleanPartnerListingStringArray(profile.hobbies, 12),
+          youtubeLinks: this.cleanPartnerListingStringArray(
+            profile.youtubeLinks,
+            8,
+          ),
           hourlyRateVnd,
           mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+          isPublic:
+            typeof profile.isPublic === 'boolean'
+              ? profile.isPublic
+              : undefined,
+          status: this.normalizePartnerCastStatus(profile.status),
         };
       })
       .filter((profile) => profile.stageName);

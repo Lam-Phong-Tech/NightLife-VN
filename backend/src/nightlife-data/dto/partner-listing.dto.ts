@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  IsEnum,
   IsBoolean,
   IsArray,
   IsInt,
@@ -13,6 +14,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { CastStatus } from '@prisma/client';
 
 export class PartnerListingCastDto {
   @ApiProperty({ example: 'Yuki' })
@@ -20,6 +22,12 @@ export class PartnerListingCastDto {
   @IsString()
   @MaxLength(120)
   stageName: string;
+
+  @ApiPropertyOptional({ example: 'Tokyo Kitchen' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  storeName?: string;
 
   @ApiPropertyOptional({ example: 'Japanese and English speaking host.' })
   @IsOptional()
@@ -87,6 +95,16 @@ export class PartnerListingCastDto {
   @IsInt()
   @Min(0)
   hourlyRateVnd?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional({ enum: CastStatus, example: CastStatus.ACTIVE })
+  @IsOptional()
+  @IsEnum(CastStatus)
+  status?: CastStatus;
 
   @ApiPropertyOptional({ example: ['https://cdn.example.com/casts/yuki.jpg'] })
   @IsOptional()

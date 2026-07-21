@@ -90,6 +90,7 @@ describe('NightlifeDataService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       count: jest.fn(),
+      update: jest.fn(),
       updateMany: jest.fn(),
     },
     media: {
@@ -311,6 +312,7 @@ describe('NightlifeDataService', () => {
     prisma.area.findMany.mockResolvedValue([] as never);
     prisma.cast.count.mockResolvedValue(1);
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' });
+    prisma.cast.update.mockResolvedValue({ id: 'cast-draft-1' });
     prisma.cast.updateMany.mockResolvedValue({ count: 1 });
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' });
     prisma.media.findMany.mockResolvedValue([] as never);
@@ -4027,6 +4029,99 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('maps live admin cast fields into the partner listing draft', async () => {
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Tokyo Kitchen',
+      slug: 'tokyo-kitchen',
+      status: 'ACTIVE',
+      category: 'RESTAURANT',
+      description: 'Late night sushi bar',
+      address: '88 Xuan Dieu, Tay Ho, Ha Noi',
+      city: 'Ha Noi',
+      district: 'Tay Ho',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['Japanese'],
+      partnerAccountId: null,
+      ownerId: null,
+      media: [
+        {
+          id: 'cast-video-1',
+          url: 'https://cdn.example.com/aoi.mp4',
+          purpose: 'CAST_VIDEO',
+          type: 'VIDEO',
+          castId: 'cast-aoi',
+        },
+        {
+          id: 'cast-avatar-1',
+          url: 'https://cdn.example.com/aoi.jpg',
+          purpose: 'CAST_AVATAR',
+          type: 'IMAGE',
+          castId: 'cast-aoi',
+        },
+      ],
+      casts: [
+        {
+          id: 'cast-aoi',
+          stageName: 'Aoi',
+          publicAlias: null,
+          bio: 'Friendly host',
+          publicBio: 'Public host bio',
+          tags: ['Top ranking'],
+          youtubeLinks: ['https://youtube.com/watch?v=aoi'],
+          languages: ['JP', 'VN'],
+          birthMonth: 8,
+          zodiacSign: 'Leo',
+          heightCm: 165,
+          measurements: '82-58-84',
+          hobbies: ['tea'],
+          hourlyRateVnd: 1200000,
+          isPublic: true,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+    prisma.content.findFirst.mockResolvedValueOnce(null);
+    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.getPartnerListingDraft(
+        { id: 'partner-a', role: 'PARTNER' },
+        '11111111-1111-4111-8111-111111111111',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          castProfiles: [
+            expect.objectContaining({
+              stageName: 'Aoi',
+              storeName: 'Tokyo Kitchen',
+              bio: 'Friendly host',
+              tags: ['Top ranking'],
+              languages: ['JP', 'VN'],
+              birthMonth: 8,
+              zodiacSign: 'Leo',
+              heightCm: 165,
+              measurements: '82-58-84',
+              hobbies: ['tea'],
+              youtubeLinks: ['https://youtube.com/watch?v=aoi'],
+              hourlyRateVnd: 1200000,
+              isPublic: true,
+              status: 'ACTIVE',
+              mediaUrls: [
+                'https://cdn.example.com/aoi.jpg',
+                'https://cdn.example.com/aoi.mp4',
+              ],
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
   it('normalizes the partner ward into the canonical store address', async () => {
     prisma.store.findFirst.mockResolvedValueOnce({
       id: '11111111-1111-4111-8111-111111111111',
@@ -7162,9 +7257,10 @@ describe('NightlifeDataService', () => {
         },
       }),
     );
-    expect(prisma.cast.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['cast-draft-1'] } },
+    expect(prisma.cast.update).toHaveBeenCalledWith({
+      where: { id: 'cast-draft-1' },
       data: { status: 'ACTIVE', isPublic: true },
+      select: { id: true },
     });
     expect(prisma.media.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ['media-draft-1'] } },
@@ -7239,6 +7335,34 @@ describe('NightlifeDataService', () => {
 
     await expect(
       service.reviewPartnerRequest('admin-1', 'LISTING-CORRUPT1', {
+        approve: true,
+        reason: 'Thong tin hop le',
+      }),
+    ).rejects.toThrow(
+      'Partner listing update contains corrupted text and must be submitted again',
+    );
+
+    expect(prisma.partnerRequest.updateMany).not.toHaveBeenCalled();
+    expect(prisma.store.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks approval when a listing cast profile contains corrupted text', async () => {
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord({
+        id: 'LISTING-CASTBAD1',
+        businessName: 'Velvet Club',
+        storeDescription: 'One of Saigon largest clubs',
+        castProfiles: [
+          {
+            stageName: '??',
+            bio: 'Friendly hostess',
+          },
+        ],
+      }),
+    );
+
+    await expect(
+      service.reviewPartnerRequest('admin-1', 'LISTING-CASTBAD1', {
         approve: true,
         reason: 'Thong tin hop le',
       }),

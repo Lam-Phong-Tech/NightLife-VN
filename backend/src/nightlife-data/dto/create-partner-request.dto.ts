@@ -5,6 +5,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsIn,
   IsEmail,
   IsInt,
@@ -18,6 +19,7 @@ import {
   Max,
   MinLength,
 } from 'class-validator';
+import { CastStatus } from '@prisma/client';
 
 export class PartnerRequestCastDto {
   @ApiProperty({ example: 'Yuna' })
@@ -25,6 +27,12 @@ export class PartnerRequestCastDto {
   @IsString()
   @MaxLength(120)
   stageName: string;
+
+  @ApiPropertyOptional({ example: 'Tokyo Kitchen' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  storeName?: string;
 
   @ApiPropertyOptional({
     example: 'Friendly hostess, Japanese and English speaking.',
@@ -94,6 +102,16 @@ export class PartnerRequestCastDto {
   @IsInt()
   @Min(0)
   hourlyRateVnd?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional({ enum: CastStatus, example: CastStatus.ACTIVE })
+  @IsOptional()
+  @IsEnum(CastStatus)
+  status?: CastStatus;
 
   @ApiPropertyOptional({
     example: ['https://cdn.example.com/casts/yuna.jpg'],
