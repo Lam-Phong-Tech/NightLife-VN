@@ -5002,6 +5002,52 @@ export default function PartnerPage() {
     return true;
   };
 
+  const validateStoreListingBeforeSubmit = () => {
+    if (!listingStoreId) {
+      setListingNotice('Cần chọn quán trước khi gửi duyệt thông tin quán.');
+      setListingErrors({});
+      return false;
+    }
+
+    const validation = validateListingDraft(listingDraft, 'submit');
+    const storeErrors = Object.fromEntries(
+      Object.entries(validation.errors).filter(([path]) => !path.startsWith('castProfiles.')),
+    );
+    setListingErrors(storeErrors);
+
+    const count = Object.keys(storeErrors).length;
+    if (count) {
+      setListingTab('store');
+      setListingNotice(`Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt thông tin quán.`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateCastListingBeforeSubmit = () => {
+    if (!listingStoreId) {
+      setListingNotice('Cần chọn quán trước khi gửi duyệt cast.');
+      setListingErrors({});
+      return false;
+    }
+
+    const validation = validateListingDraft(listingDraft, 'draft');
+    const castErrors = Object.fromEntries(
+      Object.entries(validation.errors).filter(([path]) => path.startsWith('castProfiles.')),
+    );
+    setListingErrors(castErrors);
+
+    const count = Object.keys(castErrors).length;
+    if (count) {
+      setListingTab('cast');
+      setListingNotice(`Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt cast.`);
+      return false;
+    }
+
+    return true;
+  };
+
   const saveListingDraft = async () => {
     if (!validateListingBeforeAction('draft')) {
       return;
@@ -5029,18 +5075,15 @@ export default function PartnerPage() {
   };
 
   const submitListingDraft = async () => {
-    if (!validateListingBeforeAction('submit')) {
+    if (!validateStoreListingBeforeSubmit()) {
       return;
     }
 
     setIsSubmittingListing(true);
     setListingNotice('Đang gửi bản nháp cho Admin duyệt...');
     try {
-      const payload = listingPayload();
-      const submitPayload =
-        listingTab === 'cast'
-          ? { castProfiles: payload.castProfiles }
-          : payload;
+      const submitPayload: Partial<PartnerListingDraft> = { ...listingPayload() };
+      delete submitPayload.castProfiles;
       const response = await apiClient<{
         id: string;
         status: string;
@@ -5099,6 +5142,71 @@ export default function PartnerPage() {
     } catch (error) {
       setListingNotice(
         error instanceof ApiError ? error.message : 'Không gửi duyệt được bản nháp.',
+      );
+    } finally {
+      setIsSubmittingListing(false);
+    }
+  };
+
+  const submitCastListingDraft = async () => {
+    if (!validateCastListingBeforeSubmit()) {
+      return;
+    }
+
+    setIsSubmittingListing(true);
+    setListingNotice('Đang gửi cast cho Admin duyệt...');
+    try {
+      const payload = listingPayload();
+      const response = await apiClient<{
+        id: string;
+        status: string;
+        submittedAt: string;
+        message: string;
+        draft?: {
+          castCount?: number;
+          mediaCount?: number;
+          contentCount?: number;
+        };
+      }>(`/partner/listing-draft/${encodeURIComponent(listingStoreId)}/casts/submit`, {
+        data: { castProfiles: payload.castProfiles },
+      });
+      setListingReview({
+        id: response.id,
+        status: response.status,
+        submittedAt: response.submittedAt,
+        publicState: 'HIDDEN',
+      });
+      const submittedCastCount = response.draft?.castCount ?? 0;
+      const submittedMediaCount = response.draft?.mediaCount ?? 0;
+      const submittedParts = [
+        submittedCastCount ? `${submittedCastCount} cast` : '',
+        submittedMediaCount ? `${submittedMediaCount} media` : '',
+      ].filter(Boolean);
+      pushPartnerNotificationEvent({
+        id: `listing-cast-submitted:${response.id}:${response.submittedAt}`,
+        category: 'Đăng tin',
+        title: 'Đã gửi cast chờ Admin duyệt',
+        message: `${submittedParts.length ? submittedParts.join(', ') : 'Cast'} đã gửi vào hàng chờ duyệt.`,
+        meta: `Gửi lúc ${formatDateTime(response.submittedAt)}`,
+        actionLabel: 'Xem cast',
+        panel: 'listing',
+        listingTab: 'cast',
+        tone: 'gold',
+        icon: FileText,
+      });
+      setListingNotice('Đã gửi cast cho Admin duyệt. Cast sẽ hiển thị sau khi được duyệt.');
+      feedback.showModal({
+        tone: 'success',
+        title: 'Gửi duyệt cast thành công',
+        description: 'Yêu cầu thay đổi cast đã được gửi thành công và đang chờ Admin phê duyệt.',
+        primaryLabel: 'Đóng',
+        onPrimary: () => {
+          feedback.closeModal();
+        },
+      });
+    } catch (error) {
+      setListingNotice(
+        error instanceof ApiError ? error.message : 'Không gửi duyệt được cast.',
       );
     } finally {
       setIsSubmittingListing(false);
@@ -5970,14 +6078,6 @@ export default function PartnerPage() {
             {cast.stageName.trim() || 'Thông tin cast mới'}
           </h3>
         </div>
-        {!isViewingLive && !isAddingCastProfile ? (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <GhostButton disabled={isDeletingCastProfile || !listingStoreId} onClick={() => deleteCastProfile(index)}>
-              <XCircle size={16} />
-              {isDeletingCastProfile ? 'Đang xóa...' : cast.id ? 'Xóa mềm' : 'Xóa cast'}
-            </GhostButton>
-          </div>
-        ) : null}
       </div>
 
       <div style={isViewingLive ? { pointerEvents: 'none', opacity: 0.8 } : undefined}>
@@ -6940,9 +7040,16 @@ export default function PartnerPage() {
             <Save size={16} />
             {isSavingListing ? 'Đang lưu...' : 'Lưu nháp'}
           </GhostButton>
-          <PrimaryButton disabled={!canWriteListing} onClick={submitListingDraft}>
+          <PrimaryButton
+            disabled={!canWriteListing}
+            onClick={listingTab === 'cast' ? submitCastListingDraft : submitListingDraft}
+          >
             <Send size={16} />
-            {isSubmittingListing ? 'Đang gửi...' : 'Gửi duyệt'}
+            {isSubmittingListing
+              ? 'Đang gửi...'
+              : listingTab === 'cast'
+                ? 'Gửi duyệt cast'
+                : 'Gửi duyệt thông tin quán'}
           </PrimaryButton>
         </div>
       )}

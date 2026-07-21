@@ -3068,18 +3068,16 @@ export class NightlifeDataService {
     dto: PartnerListingDraftDto,
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
-    const payload = this.normalizePartnerListingDraft(dto, store);
+    const storeOnlyDto: Partial<PartnerListingDraftDto> = { ...dto };
+    delete storeOnlyDto.castProfiles;
+    const payload = this.normalizePartnerListingDraft(storeOnlyDto, store);
     const livePayload = this.normalizePartnerListingDraft({}, store);
     const hasStoreChanges = this.hasPartnerListingStoreChanges(
       payload,
       livePayload,
     );
-    const castProfiles = this.changedPartnerListingCastProfiles(
-      payload.castProfiles,
-      livePayload.castProfiles,
-    );
 
-    if (!hasStoreChanges && !castProfiles.length) {
+    if (!hasStoreChanges) {
       throw new BadRequestException('Không có thay đổi mới cần gửi duyệt.');
     }
 
@@ -3087,58 +3085,14 @@ export class NightlifeDataService {
     const requestId = `LISTING-${randomUUID().slice(0, 8).toUpperCase()}`;
 
     const submitted = await this.prisma.$transaction(async (tx) => {
-      const draft = hasStoreChanges
-        ? await this.upsertPartnerListingDraftContent(user, store, payload, tx)
-        : null;
+      const draft = await this.upsertPartnerListingDraftContent(
+        user,
+        store,
+        payload,
+        tx,
+      );
       const draftCastIds: string[] = [];
       const draftMediaIds: string[] = [];
-
-      for (const [index, castProfile] of castProfiles.entries()) {
-        const cast = await this.upsertPartnerListingReviewCast(
-          tx,
-          store.id,
-          castProfile,
-          requestId,
-          index,
-          submittedAt,
-        );
-        draftCastIds.push(cast.id);
-
-        const castMediaUrls = castProfile.mediaUrls ?? [];
-        for (const [mediaIndex, url] of castMediaUrls.entries()) {
-          const media = await this.createPartnerRequestMedia(
-            {
-              requestId,
-              url,
-              index: mediaIndex,
-              castId: cast.id,
-              purpose: this.partnerListingCastMediaPurpose(
-                castMediaUrls,
-                mediaIndex,
-              ),
-            },
-            tx,
-          );
-          draftMediaIds.push(media.id);
-        }
-      }
-
-      if (!hasStoreChanges) {
-        if (draftMediaIds.length) {
-          await tx.media.updateMany({
-            where: { id: { in: draftMediaIds } },
-            data: { status: 'READY', access: 'PUBLIC' },
-          });
-        }
-
-        return {
-          draft,
-          request: null,
-          draftCastIds,
-          draftMediaIds,
-          submittedAt,
-        };
-      }
 
       const contact = await this.partnerListingContact(user, store, tx);
 
@@ -3180,9 +3134,7 @@ export class NightlifeDataService {
           openingHours: payload.openingHours,
           menuSummary,
           mediaUrls: payload.mediaUrls,
-          castProfiles: castProfiles.length
-            ? (castProfiles as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
+          castProfiles: Prisma.JsonNull,
           draftCastIds,
           draftMediaIds,
           draftContentIds: draft ? [draft.id] : [],
@@ -3229,9 +3181,7 @@ export class NightlifeDataService {
       submittedAt:
         submitted.request?.submittedAt.toISOString() ??
         submitted.submittedAt.toISOString(),
-      message: submitted.request
-        ? 'Partner listing submitted for admin review'
-        : 'Partner cast submitted for admin review',
+      message: 'Partner listing submitted for admin review',
       draft: {
         contentId: submitted.draft?.id ?? null,
         storeId: store.id,
@@ -3244,6 +3194,94 @@ export class NightlifeDataService {
           submitted.request?.draftMediaIds.length ??
           submitted.draftMediaIds.length,
         contentCount: submitted.request?.draftContentIds.length ?? 0,
+      },
+    };
+  }
+
+  async submitPartnerListingCasts(
+    user: AuthenticatedUser,
+    storeId: string,
+    dto: PartnerListingDraftDto,
+  ) {
+    const store = await this.getPartnerListingStore(user, storeId);
+    const payload = this.normalizePartnerListingDraft(
+      { castProfiles: dto.castProfiles },
+      store,
+    );
+    const livePayload = this.normalizePartnerListingDraft({}, store);
+    const castProfiles = this.changedPartnerListingCastProfiles(
+      payload.castProfiles,
+      livePayload.castProfiles,
+    );
+
+    if (!castProfiles.length) {
+      throw new BadRequestException('Không có thay đổi cast mới cần gửi duyệt.');
+    }
+
+    const submittedAt = new Date();
+    const requestId = `LISTING-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+    const submitted = await this.prisma.$transaction(async (tx) => {
+      const draftCastIds: string[] = [];
+      const draftMediaIds: string[] = [];
+
+      for (const [index, castProfile] of castProfiles.entries()) {
+        const cast = await this.upsertPartnerListingReviewCast(
+          tx,
+          store.id,
+          castProfile,
+          requestId,
+          index,
+          submittedAt,
+        );
+        draftCastIds.push(cast.id);
+
+        const castMediaUrls = castProfile.mediaUrls ?? [];
+        for (const [mediaIndex, url] of castMediaUrls.entries()) {
+          const media = await this.createPartnerRequestMedia(
+            {
+              requestId,
+              url,
+              index: mediaIndex,
+              castId: cast.id,
+              purpose: this.partnerListingCastMediaPurpose(
+                castMediaUrls,
+                mediaIndex,
+              ),
+            },
+            tx,
+          );
+          draftMediaIds.push(media.id);
+        }
+      }
+
+      if (draftMediaIds.length) {
+        await tx.media.updateMany({
+          where: { id: { in: draftMediaIds } },
+          data: { status: 'READY', access: 'PUBLIC' },
+        });
+      }
+
+      return {
+        draftCastIds,
+        draftMediaIds,
+        submittedAt,
+      };
+    });
+
+    return {
+      id: requestId,
+      status: 'PENDING_REVIEW',
+      submittedAt: submitted.submittedAt.toISOString(),
+      message: 'Partner cast submitted for admin review',
+      draft: {
+        contentId: null,
+        storeId: store.id,
+        storeName: payload.storeName,
+        storeSlug: store.slug,
+        castCount: submitted.draftCastIds.length,
+        mediaCount: submitted.draftMediaIds.length,
+        contentCount: 0,
       },
     };
   }

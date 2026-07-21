@@ -4172,7 +4172,7 @@ describe('NightlifeDataService', () => {
     prisma.cast.create.mockResolvedValueOnce({ id: draftCastId });
     prisma.media.create.mockResolvedValueOnce({ id: draftMediaId });
 
-    const result = await service.submitPartnerListingDraft(
+    const result = await service.submitPartnerListingCasts(
       { id: 'partner-a', role: 'PARTNER' },
       storeId,
       {
@@ -4293,7 +4293,7 @@ describe('NightlifeDataService', () => {
       });
     prisma.cast.update.mockResolvedValueOnce({ id: pendingDraftId });
 
-    const result = await service.submitPartnerListingDraft(
+    const result = await service.submitPartnerListingCasts(
       { id: 'partner-a', role: 'PARTNER' },
       storeId,
       {
@@ -4351,6 +4351,78 @@ describe('NightlifeDataService', () => {
       data: { deletedAt: expect.any(Date) },
     });
     expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
+    expect(prisma.content.upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not submit cast-only changes through the partner listing store review flow', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const existingCastId = '22222222-2222-4222-8222-222222222222';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [
+        {
+          id: existingCastId,
+          stageName: 'Nguyen',
+          publicAlias: null,
+          bio: 'Original host',
+          publicBio: 'Original host',
+          tags: ['Sang'],
+          youtubeLinks: [],
+          languages: ['VN'],
+          birthMonth: 10,
+          zodiacSign: 'Capricorn',
+          heightCm: 165,
+          measurements: '60-90-80',
+          hobbies: [],
+          hourlyRateVnd: null,
+          isPublic: true,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+
+    await expect(
+      service.submitPartnerListingDraft(
+        { id: 'partner-a', role: 'PARTNER' },
+        storeId,
+        {
+          castProfiles: [
+            {
+              id: existingCastId,
+              stageName: 'Nguyen',
+              bio: 'Updated host',
+              tags: ['Sang'],
+              languages: ['VN'],
+              birthMonth: 10,
+              zodiacSign: 'Capricorn',
+              heightCm: 165,
+              measurements: '60-90-80',
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('Không có thay đổi mới cần gửi duyệt.');
+
+    expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
+    expect(prisma.cast.create).not.toHaveBeenCalled();
+    expect(prisma.cast.update).not.toHaveBeenCalled();
     expect(prisma.content.upsert).not.toHaveBeenCalled();
   });
 

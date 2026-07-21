@@ -597,6 +597,21 @@ export class NightlifeDataController {
 
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/listing-draft/:storeId/casts/submit')
+  submitPartnerListingCasts(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Body() dto: PartnerListingDraftDto,
+  ) {
+    return this.nightlifeDataService.submitPartnerListingCasts(
+      request.user,
+      storeId,
+      dto,
+    );
+  }
+
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('partner/listing-draft/:storeId/casts/:castId')
   deletePartnerListingCast(
     @Req() request: RequestWithUser,
