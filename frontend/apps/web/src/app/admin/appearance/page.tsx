@@ -870,10 +870,25 @@ export default function AppearancePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
           {quick.map((r, i) => {
             const sv = saved.quick[i];
-            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color);
+            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color) || sv.featured !== r.featured;
+            const hasColor = Boolean(r.color);
+            const cardIconBg = r.featured
+              ? 'rgba(212, 178, 106, 0.05)'
+              : hasColor
+                ? hexToRgba(r.color!, .12)
+                : 'rgba(255, 255, 255, 0.04)';
+            const cardIconBorder = r.featured
+              ? '1px solid rgba(212, 178, 106, 0.32)'
+              : hasColor
+                ? `1px solid ${hexToRgba(r.color!, .46)}`
+                : '1px solid rgba(255, 255, 255, 0.08)';
+            const cardIconShadow = r.featured
+              ? '0 6px 12px -6px rgba(212, 178, 106, 0.15)'
+              : 'none';
+
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'quick', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
-                <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: cardIconBg, border: cardIconBorder, boxShadow: cardIconShadow, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span
                     style={{
                       width: '19px',
