@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { normalizeAppearanceConfig } from '@/lib/api/appearance';
 
 const ICONS: Record<string, string> = {
   pin: '<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
@@ -300,17 +301,23 @@ export default function AppearancePage() {
     async function loadConfig() {
       try {
         const res = await apiClient<AppearanceConfigResponse>('/system-config/appearance');
-        if (res?.data) {
+        if (res) {
+          const normalized = normalizeAppearanceConfig(res.data);
+          const fetchedTitles = normalized.titles.map((t) => ({
+            id: t.id,
+            key: t.key || "",
+            label: t.label,
+          }));
           const fetchedState = {
-            quick: res.data.quick || DEFAULT_STATE.quick,
-            nav: res.data.nav || DEFAULT_STATE.nav,
-            titles: res.data.titles || DEFAULT_STATE.titles,
-            brand: res.data.brand || DEFAULT_STATE.brand,
+            quick: normalized.quick,
+            nav: normalized.nav,
+            titles: fetchedTitles,
+            brand: normalized.brand,
           };
           setSavedState(JSON.stringify(fetchedState));
           setQuick(fetchedState.quick);
           setNav(fetchedState.nav);
-          setTitles(fetchedState.titles);
+          setTitles(fetchedTitles);
           setBrand(fetchedState.brand);
         }
       } catch (err) {
