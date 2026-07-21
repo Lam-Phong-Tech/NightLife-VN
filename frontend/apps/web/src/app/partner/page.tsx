@@ -4764,7 +4764,7 @@ export default function PartnerPage() {
       <section className="partner-listing-section">
         <div className="partner-listing-section-title">Ảnh đại diện, album và video</div>
         <div className="partner-cast-media-layout">
-          <div className="partner-cast-media-panel">
+          <div className="partner-cast-media-panel partner-cast-avatar-panel">
             <div className="partner-cast-media-panel-head">
               <strong>Ảnh đại diện</strong>
               {avatarEntry ? (
@@ -4807,7 +4807,7 @@ export default function PartnerPage() {
             </div>
           </div>
 
-          <div className="partner-cast-media-panel">
+          <div className="partner-cast-media-panel partner-cast-album-panel">
             <div className="partner-cast-media-panel-head">
               <strong>Album ảnh</strong>
             </div>
@@ -7974,6 +7974,23 @@ export default function PartnerPage() {
           min-width: 0;
           padding: 12px;
         }
+        .partner-cast-avatar-panel,
+        .partner-cast-album-panel {
+          align-self: start;
+        }
+        .partner-cast-album-panel .partner-cast-media-grid {
+          max-height: 176px;
+          overflow-y: auto;
+          padding-right: 4px;
+          scrollbar-width: thin;
+        }
+        .partner-cast-album-panel .partner-cast-media-grid::-webkit-scrollbar {
+          width: 6px;
+        }
+        .partner-cast-album-panel .partner-cast-media-grid::-webkit-scrollbar-thumb {
+          background: ${colors.gold};
+          border-radius: 999px;
+        }
         .partner-cast-media-panel-wide {
           grid-column: span 2;
         }
@@ -8762,6 +8779,11 @@ export default function PartnerPage() {
           .partner-cast-media-layout,
           .partner-cast-youtube-add {
             grid-template-columns: 1fr;
+          }
+          .partner-cast-album-panel .partner-cast-media-grid {
+            max-height: none;
+            overflow-y: visible;
+            padding-right: 0;
           }
           .partner-cast-media-panel-wide {
             grid-column: auto;

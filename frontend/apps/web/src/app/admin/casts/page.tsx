@@ -606,6 +606,45 @@ function AdminCastsContent() {
       normalizeMediaPurpose(media?.purpose),
     );
 
+  const isCastImageMedia = (media: AdminCastMediaItem) => {
+    const purpose = normalizeMediaPurpose(media?.purpose);
+    const url = String(media?.url || '').split('?')[0] || '';
+
+    return (
+      media?.type === 'IMAGE' ||
+      [
+        'cast-avatar',
+        'cast-photo',
+        'cast-gallery',
+        'partner-cast-image',
+        'partner-listing-cast',
+        'avatar',
+        'profile',
+        'profile-photo',
+        'cast-profile',
+        'thumbnail',
+        'gallery',
+      ].includes(purpose) ||
+      /\.(jpeg|jpg|gif|png|webp|svg|avif)$/i.test(url)
+    );
+  };
+
+  const isCastVideoMedia = (media: AdminCastMediaItem) => {
+    const purpose = normalizeMediaPurpose(media?.purpose);
+    const url = String(media?.url || '').split('?')[0] || '';
+
+    return (
+      media?.type === 'VIDEO' ||
+      ['cast-video', 'partner-cast-video', 'video'].includes(purpose) ||
+      /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)
+    );
+  };
+
+  const getCastAvatarMedia = (mediaList?: AdminCastMediaItem[] | null) => {
+    const imageList = (mediaList || []).filter(isCastImageMedia);
+    return imageList.find(isCastAvatarMedia) || imageList[0] || null;
+  };
+
   const closeDrawer = () => {
     setSelectedCast(null);
     setIsAddingCast(false);
@@ -656,12 +695,16 @@ function AdminCastsContent() {
     });
     
     const mediaList = c.media || [];
-    const imageList = mediaList.filter((m: any) => m.type === 'IMAGE' || (!m.type && m.url && m.url.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i)));
-    const videoList = mediaList.filter((m: any) => m.type === 'VIDEO' || (!m.type && m.url && m.url.split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i)));
+    const imageList = mediaList.filter(isCastImageMedia);
+    const videoList = mediaList.filter(isCastVideoMedia);
     
-    const selectedAvatar = imageList.find(isCastAvatarMedia) || imageList[0] || null;
+    const selectedAvatar = getCastAvatarMedia(mediaList);
     setAvatarImage(selectedAvatar);
-    setAlbums(imageList.filter((media: AdminCastMediaItem) => media.id !== selectedAvatar?.id) || []);
+    setAlbums(
+      imageList.filter((media: AdminCastMediaItem) =>
+        selectedAvatar?.id ? media.id !== selectedAvatar.id : media.url !== selectedAvatar?.url,
+      ) || [],
+    );
     setVideos(videoList || []);
     setSelectedCast(c);
     setIsAddingCast(false);
@@ -1163,6 +1206,7 @@ function AdminCastsContent() {
               const statusLabel = getStatusLabel(cast.status, cast.isPublic);
               const statusStyle = getStatusStyle(statusLabel);
               const avatarStyle = getAvatarStyle(cast.stageName);
+              const avatarMedia = getCastAvatarMedia(cast.media);
               const storeName = cast.store?.name || 'Không rõ';
               
               return (
@@ -1187,10 +1231,10 @@ function AdminCastsContent() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '14px', fontWeight: 800,
                         overflow: 'hidden',
-                        ...(!cast.media?.[0]?.url ? avatarStyle : { background: colors.surface2 })
+                        ...(!avatarMedia?.url ? avatarStyle : { background: colors.surface2 })
                       }}>
-                        {cast.media && cast.media[0]?.url ? (
-                          <img src={cast.media[0].url} alt={cast.stageName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {avatarMedia?.url ? (
+                          <img src={avatarMedia.url} alt={cast.stageName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           (cast.stageName || 'A').charAt(0).toUpperCase()
                         )}
