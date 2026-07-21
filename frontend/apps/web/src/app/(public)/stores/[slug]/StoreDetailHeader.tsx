@@ -142,7 +142,7 @@ export function StoreDetailHeader({
               aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
               onClick={onToggleFavorite}
             >
-              <Heart size={18} fill={isFavorite ? "var(--vy-favorite)" : "none"} color={isFavorite ? "var(--vy-favorite)" : "currentColor"} />
+              <Heart size={18} fill={isFavorite ? "#ff3d71" : "none"} color={isFavorite ? "#ff3d71" : "currentColor"} />
             </button>
             {store.phone ? (
               <a href={`tel:${store.phone}`} aria-label="Gọi quán" onClick={onTrackCall}>

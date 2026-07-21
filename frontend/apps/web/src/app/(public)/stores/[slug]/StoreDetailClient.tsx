@@ -24,8 +24,12 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   bookingApi,
   rememberLastBooking,
@@ -97,7 +101,6 @@ import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import {
   isNearStartTime,
   useUserActionFeedback,
-  userActionErrorMessage,
 } from "@/lib/user-action-feedback";
 import {
   categoryLabels,
@@ -114,6 +117,21 @@ import { trackStoreDetailClick } from "./store-detail.tracking";
 
 type StoreDetailClientProps = {
   store: PublicStoreDetail;
+};
+
+type StoreFavoriteFeedbackCopy = {
+  savedTitle: string;
+  unsavedTitle: string;
+  savedDescription: string;
+  unsavedDescription: string;
+  errorTitle: string;
+  errorFallback: string;
+  saveConfirmTitle: string;
+  unsaveConfirmTitle: string;
+  saveConfirmDescription: string;
+  unsaveConfirmDescription: string;
+  saveConfirmLabel: string;
+  unsaveConfirmLabel: string;
 };
 
 type LanguageStatCard = {
@@ -224,7 +242,88 @@ const storeBookingFieldScrollSelectors: BookingFieldScrollSelectors = {
   note: `[name="${storeBookingFieldNames.note}"]`,
 };
 
+const storeFavoriteFeedbackCopy = (
+  language: LanguageCode,
+  storeName: string,
+): StoreFavoriteFeedbackCopy => {
+  const copy: Record<LanguageCode, StoreFavoriteFeedbackCopy> = {
+    vi: {
+      savedTitle: "Đã thêm quán yêu thích",
+      unsavedTitle: "Đã bỏ lưu quán",
+      savedDescription: `${storeName} đã được lưu vào danh sách yêu thích.`,
+      unsavedDescription: `${storeName} đã được gỡ khỏi danh sách yêu thích.`,
+      errorTitle: "Không cập nhật được yêu thích",
+      errorFallback: "Vui lòng thử lại sau.",
+      saveConfirmTitle: "Lưu quán yêu thích?",
+      unsaveConfirmTitle: "Bỏ lưu quán?",
+      saveConfirmDescription: `Thêm ${storeName} vào danh sách yêu thích của bạn.`,
+      unsaveConfirmDescription: `Gỡ ${storeName} khỏi danh sách yêu thích của bạn.`,
+      saveConfirmLabel: "Lưu quán",
+      unsaveConfirmLabel: "Bỏ lưu",
+    },
+    en: {
+      savedTitle: "Added to favorites",
+      unsavedTitle: "Removed from favorites",
+      savedDescription: `${storeName} has been saved to your favorites.`,
+      unsavedDescription: `${storeName} has been removed from your favorites.`,
+      errorTitle: "Could not update favorites",
+      errorFallback: "Please try again later.",
+      saveConfirmTitle: "Save this venue?",
+      unsaveConfirmTitle: "Remove saved venue?",
+      saveConfirmDescription: `Add ${storeName} to your favorites.`,
+      unsaveConfirmDescription: `Remove ${storeName} from your favorites.`,
+      saveConfirmLabel: "Save venue",
+      unsaveConfirmLabel: "Remove",
+    },
+    ja: {
+      savedTitle: "お気に入りに追加しました",
+      unsavedTitle: "お気に入りから削除しました",
+      savedDescription: `${storeName}をお気に入りリストに保存しました。`,
+      unsavedDescription: `${storeName}をお気に入りリストから削除しました。`,
+      errorTitle: "お気に入りを更新できませんでした",
+      errorFallback: "しばらくしてからもう一度お試しください。",
+      saveConfirmTitle: "店舗をお気に入りに保存しますか?",
+      unsaveConfirmTitle: "お気に入りから削除しますか?",
+      saveConfirmDescription: `${storeName}をお気に入りリストに追加します。`,
+      unsaveConfirmDescription: `${storeName}をお気に入りリストから削除します。`,
+      saveConfirmLabel: "店舗を保存",
+      unsaveConfirmLabel: "削除",
+    },
+    ko: {
+      savedTitle: "즐겨찾기에 추가했습니다",
+      unsavedTitle: "즐겨찾기에서 삭제했습니다",
+      savedDescription: `${storeName}이(가) 즐겨찾기에 저장되었습니다.`,
+      unsavedDescription: `${storeName}이(가) 즐겨찾기에서 삭제되었습니다.`,
+      errorTitle: "즐겨찾기를 업데이트할 수 없습니다",
+      errorFallback: "잠시 후 다시 시도해 주세요.",
+      saveConfirmTitle: "이 매장을 저장할까요?",
+      unsaveConfirmTitle: "저장한 매장을 삭제할까요?",
+      saveConfirmDescription: `${storeName}을(를) 즐겨찾기에 추가합니다.`,
+      unsaveConfirmDescription: `${storeName}을(를) 즐겨찾기에서 삭제합니다.`,
+      saveConfirmLabel: "매장 저장",
+      unsaveConfirmLabel: "삭제",
+    },
+    zh: {
+      savedTitle: "已加入收藏",
+      unsavedTitle: "已取消收藏",
+      savedDescription: `已将 ${storeName} 保存到收藏列表。`,
+      unsavedDescription: `已将 ${storeName} 从收藏列表移除。`,
+      errorTitle: "无法更新收藏",
+      errorFallback: "请稍后再试。",
+      saveConfirmTitle: "收藏这家店铺？",
+      unsaveConfirmTitle: "取消收藏这家店铺？",
+      saveConfirmDescription: `将 ${storeName} 添加到收藏列表。`,
+      unsaveConfirmDescription: `将 ${storeName} 从收藏列表移除。`,
+      saveConfirmLabel: "收藏店铺",
+      unsaveConfirmLabel: "移除",
+    },
+  };
+
+  return copy[language];
+};
+
 const emptyMediaBackground = "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
+const heroSwipeDistancePx = 48;
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
@@ -1349,6 +1448,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const couponId = searchParams.get("couponId") || undefined;
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
+  const heroSwipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0 });
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -1476,6 +1576,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     cityLabel: favoriteCityLabel,
     image: heroFavoriteImage,
   };
+  const favoriteFeedbackCopy = storeFavoriteFeedbackCopy(activeLanguage, displayName);
   const featureChips = [
     categoryLabel,
     ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage)),
@@ -1726,6 +1827,45 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
   };
+  const handleHeroPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== "touch" || gallery.length < 2) return;
+
+    const target = event.target;
+    if (target instanceof Element && target.closest("a, button")) return;
+
+    heroSwipeRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const resetHeroSwipe = (event?: ReactPointerEvent<HTMLElement>) => {
+    const pointerId = heroSwipeRef.current.pointerId;
+    heroSwipeRef.current = { pointerId: null, startX: 0, startY: 0 };
+
+    if (event && pointerId !== null && event.currentTarget.hasPointerCapture(pointerId)) {
+      event.currentTarget.releasePointerCapture(pointerId);
+    }
+  };
+  const handleHeroPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const swipe = heroSwipeRef.current;
+    if (swipe.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - swipe.startX;
+    const deltaY = event.clientY - swipe.startY;
+    resetHeroSwipe(event);
+
+    if (Math.abs(deltaX) < heroSwipeDistancePx || Math.abs(deltaX) <= Math.abs(deltaY) + 12) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      showPreviousMedia();
+    } else {
+      showNextMedia();
+    }
+  };
   const applyFavoriteChange = async (nextValue: boolean) => {
     setIsFavorite(nextValue);
     writeFavoriteStore(favoriteSnapshot, nextValue);
@@ -1738,10 +1878,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       setIsFavorite(state.favorited);
       writeFavoriteStore(favoriteSnapshot, state.favorited);
       userFeedback.success({
-        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        title: state.favorited
+          ? favoriteFeedbackCopy.savedTitle
+          : favoriteFeedbackCopy.unsavedTitle,
         description: state.favorited
-          ? `${displayName} đã được lưu vào danh sách yêu thích.`
-          : `${displayName} đã được gỡ khỏi danh sách yêu thích.`,
+          ? favoriteFeedbackCopy.savedDescription
+          : favoriteFeedbackCopy.unsavedDescription,
       });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
@@ -1754,8 +1896,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       setIsFavorite(!nextValue);
       writeFavoriteStore(favoriteSnapshot, !nextValue);
       userFeedback.error({
-        title: "Không cập nhật được yêu thích",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: favoriteFeedbackCopy.errorTitle,
+        description: localizedApiErrorMessage(error, activeLanguage, favoriteFeedbackCopy.errorFallback),
       });
     }
   };
@@ -1766,11 +1908,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const nextValue = !isFavorite;
     userFeedback.confirmAction({
-      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      title: nextValue
+        ? favoriteFeedbackCopy.saveConfirmTitle
+        : favoriteFeedbackCopy.unsaveConfirmTitle,
       description: nextValue
-        ? `Thêm ${displayName} vào danh sách yêu thích của bạn.`
-        : `Gỡ ${displayName} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+        ? favoriteFeedbackCopy.saveConfirmDescription
+        : favoriteFeedbackCopy.unsaveConfirmDescription,
+      confirmLabel: nextValue
+        ? favoriteFeedbackCopy.saveConfirmLabel
+        : favoriteFeedbackCopy.unsaveConfirmLabel,
       tone: nextValue ? "gold" : "warning",
       destructive: !nextValue,
       onConfirm: () => applyFavoriteChange(nextValue),
@@ -1939,7 +2085,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         <div className="detail-layout">
           <div className="media-column">
-            <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
+            <section
+              className="hero-panel"
+              style={{ backgroundImage: heroBackground }}
+              onPointerDown={handleHeroPointerDown}
+              onPointerUp={handleHeroPointerUp}
+              onPointerCancel={resetHeroSwipe}
+            >
               {!hasHeroVisual ? (
                 <div className="hero-empty-placeholder" aria-hidden="true">
                   <ImageOff size={34} strokeWidth={1.7} />
@@ -2588,7 +2740,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .store-favorite-action.is-active {
           background: var(--store-hero-control-bg-strong);
           border-color: transparent;
-          color: var(--store-hero-control-icon);
+          color: #ff3d71;
         }
 
         .hero-media-nav {
@@ -4504,6 +4656,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .hero-panel {
             min-height: 326px;
             border-radius: 0;
+            touch-action: pan-y;
           }
 
           .hero-top {
