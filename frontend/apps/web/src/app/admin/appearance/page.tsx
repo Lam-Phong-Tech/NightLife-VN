@@ -479,6 +479,24 @@ export default function AppearancePage() {
     };
 
     const previewColor = getItemIconColor(it, '#e3c27e');
+    const hasCustomColor = Boolean(it.color);
+    const boxBg = (drawer.group === 'quick' && it.featured)
+      ? 'rgba(212, 178, 106, 0.05)'
+      : hasCustomColor 
+        ? hexToRgba(it.color!, .12)
+        : 'rgba(255, 255, 255, 0.035)';
+
+    const boxBorder = (drawer.group === 'quick' && it.featured)
+      ? '1px solid rgba(212, 178, 106, 0.32)'
+      : hasCustomColor
+        ? `1px solid ${hexToRgba(it.color!, .46)}`
+        : '1px solid rgba(255, 255, 255, 0.07)';
+
+    const boxShadow = (drawer.group === 'quick' && it.featured)
+      ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)'
+      : hasCustomColor
+        ? `0 14px 26px -22px ${it.color}`
+        : 'none';
 
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
@@ -496,16 +514,16 @@ export default function AppearancePage() {
             </span>
           </div>
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', padding: '13px 15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '14px', padding: '13px 15px' }}>
               <span 
                 style={{ 
                   width: '58px', 
                   height: '58px', 
                   flex: 'none', 
                   borderRadius: '16px', 
-                  background: (drawer.group === 'quick' && it.featured) ? 'rgba(212, 178, 106, 0.05)' : hexToRgba(previewColor, .12), 
-                  border: (drawer.group === 'quick' && it.featured) ? '1px solid rgba(212, 178, 106, 0.32)' : `1px solid ${hexToRgba(previewColor, .46)}`, 
-                  boxShadow: (drawer.group === 'quick' && it.featured) ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)' : `0 14px 26px -22px ${previewColor}`,
+                  background: boxBg, 
+                  border: boxBorder, 
+                  boxShadow: boxShadow,
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center' 
@@ -798,6 +816,23 @@ export default function AppearancePage() {
           <div style={{ display: 'flex', gap: '8px' }}>
             {quick.map(t => {
               const color = getItemIconColor(t);
+              const hasColor = Boolean(t.color);
+              const gridBg = t.featured
+                ? 'rgba(212, 178, 106, 0.05)'
+                : hasColor
+                  ? hexToRgba(t.color!, .12)
+                  : 'rgba(255, 255, 255, 0.035)';
+              const gridBorder = t.featured
+                ? '1px solid rgba(212, 178, 106, 0.32)'
+                : hasColor
+                  ? `1px solid ${hexToRgba(t.color!, .46)}`
+                  : '1px solid rgba(255, 255, 255, 0.07)';
+              const gridShadow = t.featured
+                ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)'
+                : hasColor
+                  ? `0 10px 20px -10px ${hexToRgba(t.color!, .3)}`
+                  : 'none';
+
               return (
                 <div key={t.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                   <span 
@@ -805,9 +840,9 @@ export default function AppearancePage() {
                       width: '52px', 
                       height: '52px', 
                       borderRadius: '15px', 
-                      background: t.featured ? 'rgba(212, 178, 106, 0.05)' : 'rgba(255, 255, 255, 0.035)', 
-                      border: t.featured ? '1px solid rgba(212, 178, 106, 0.32)' : '1px solid rgba(255, 255, 255, 0.07)', 
-                      boxShadow: t.featured ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)' : 'none',
+                      background: gridBg, 
+                      border: gridBorder, 
+                      boxShadow: gridShadow,
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center' 
