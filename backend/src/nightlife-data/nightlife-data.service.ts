@@ -3204,14 +3204,27 @@ export class NightlifeDataService {
     dto: PartnerListingDraftDto,
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
-    const payload = this.normalizePartnerListingDraft(
-      { castProfiles: dto.castProfiles },
-      store,
-    );
+    const requestCastProfiles = Array.isArray(dto.castProfiles)
+      ? dto.castProfiles
+      : undefined;
+    const draft =
+      requestCastProfiles && requestCastProfiles.length
+        ? null
+        : await this.findPartnerListingDraft(store.id);
+    const payload =
+      requestCastProfiles && requestCastProfiles.length
+        ? this.normalizePartnerListingDraft(
+            { castProfiles: requestCastProfiles },
+            store,
+          )
+        : this.partnerListingDraftPayloadFromContent(draft, store);
     const livePayload = this.normalizePartnerListingDraft({}, store);
+    const liveCastProfiles = livePayload.castProfiles.filter(
+      (profile) => profile.status !== 'DRAFT' && profile.status !== 'PENDING_REVIEW',
+    );
     const castProfiles = this.changedPartnerListingCastProfiles(
       payload.castProfiles,
-      livePayload.castProfiles,
+      liveCastProfiles,
     );
 
     if (!castProfiles.length) {

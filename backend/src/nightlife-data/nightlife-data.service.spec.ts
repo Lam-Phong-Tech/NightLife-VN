@@ -4233,6 +4233,87 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('submits saved partner listing cast drafts when the request body has no cast profiles', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const draftCastId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [],
+    });
+    prisma.content.findFirst.mockResolvedValueOnce({
+      id: 'content-draft-1',
+      title: 'Velvet Club listing draft',
+      slug: 'partner-listing-draft-velvet-club',
+      status: 'DRAFT',
+      excerpt: null,
+      body: null,
+      metadata: {
+        kind: 'PARTNER_LISTING_DRAFT',
+        listing: {
+          storeName: 'Velvet Club',
+          castProfiles: [
+            {
+              stageName: 'Nguyen',
+              bio: 'New cast from partner draft',
+              languages: ['VN', 'EN'],
+              tags: ['Sang'],
+            },
+          ],
+        },
+      },
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+      publishedAt: null,
+    });
+    prisma.cast.create.mockResolvedValueOnce({ id: draftCastId });
+
+    const result = await service.submitPartnerListingCasts(
+      { id: 'partner-a', role: 'PARTNER' },
+      storeId,
+      {},
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+        message: 'Partner cast submitted for admin review',
+        draft: expect.objectContaining({
+          contentId: null,
+          castCount: 1,
+          contentCount: 0,
+        }),
+      }),
+    );
+    expect(prisma.cast.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId,
+          stageName: 'Nguyen',
+          isPublic: false,
+          status: 'DRAFT',
+        }),
+      }),
+    );
+    expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
+  });
+
   it('updates an existing pending partner cast draft instead of creating another cast', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';
