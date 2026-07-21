@@ -3739,11 +3739,6 @@ export default function PartnerPage() {
     setIsAddingCastProfile(false);
   };
 
-  const saveCastProfileForm = () => {
-    setActiveCastProfileIndex(null);
-    setIsAddingCastProfile(false);
-  };
-
   const listingPayload = () => {
     const draftPayload = { ...listingDraft };
     delete (draftPayload as Partial<PartnerListingDraft>).wardName;
@@ -5402,20 +5397,14 @@ export default function PartnerPage() {
             {cast.stageName.trim() || 'Thông tin cast mới'}
           </h3>
         </div>
-        {!isViewingLive && (
+        {!isViewingLive && !isAddingCastProfile ? (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {!isAddingCastProfile ? (
-              <GhostButton onClick={() => removeCastProfile(index)}>
-                <XCircle size={16} />
-                Xóa cast
-              </GhostButton>
-            ) : null}
-            <PrimaryButton onClick={saveCastProfileForm}>
-              <Save size={16} />
-              Lưu cast
-            </PrimaryButton>
+            <GhostButton onClick={() => removeCastProfile(index)}>
+              <XCircle size={16} />
+              Xóa cast
+            </GhostButton>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div style={isViewingLive ? { pointerEvents: 'none', opacity: 0.8 } : undefined}>
