@@ -2339,6 +2339,31 @@ html.vy-light .nl-home-region-menu {
   backdrop-filter: blur(18px) saturate(1.08) !important;
 }
 
+html.vy-light .nl-home-tab-button {
+  box-sizing: border-box !important;
+  border: 1px solid rgba(150, 116, 52, 0.12) !important;
+  color: #655641 !important;
+  background: rgba(255, 252, 244, 0.72) !important;
+}
+
+html.vy-light .nl-home-tab-button.is-active {
+  background: linear-gradient(135deg, #ffe9a5 0%, #dcaa3a 62%, #bc8523 100%) !important;
+  color: #1f1302 !important;
+  border: 1px solid rgba(117, 72, 3, 0.22) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.48) inset,
+    0 10px 20px rgba(133, 83, 5, 0.18) !important;
+}
+
+html.vy-light .nl-home-mid-banner-action {
+  background: linear-gradient(135deg, #ffe795 0%, #d99d26 58%, #9b610c 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.58) !important;
+  color: #1d1101 !important;
+  box-shadow:
+    0 0 0 1px rgba(91, 52, 2, 0.16) inset,
+    0 12px 26px rgba(0, 0, 0, 0.26) !important;
+}
+
 html.vy-light .nl-home-hero {
   border: 1px solid rgba(150, 116, 52, 0.24) !important;
   box-shadow: 0 28px 58px -34px rgba(80, 55, 18, 0.55) !important;

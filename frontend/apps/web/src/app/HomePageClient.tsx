@@ -1774,6 +1774,7 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
         >
           <span style={{ minWidth: 0 }}>{eventDesc}</span>
           <span
+            className="nl-home-mid-banner-action"
             style={{
               flex: "none",
               borderRadius: "999px",
@@ -2648,6 +2649,7 @@ function TabSwitch({
         <button
           key={item.id}
           type="button"
+          className={active === item.id ? "nl-home-tab-button is-active" : "nl-home-tab-button"}
           onClick={() => onChange(item.id)}
           style={{
             minHeight: 32,
