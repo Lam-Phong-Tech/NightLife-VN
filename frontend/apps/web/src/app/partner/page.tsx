@@ -493,12 +493,6 @@ const listingZodiacOptions = [
   'Pisces',
 ].map((zodiac) => ({ value: zodiac, label: zodiac }));
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
-const listingCastStatusOptions = [
-  { value: 'ACTIVE', label: 'Hoạt động' },
-  { value: 'DRAFT', label: 'Bản nháp' },
-  { value: 'OFF_DUTY', label: 'Tạm nghỉ' },
-  { value: 'SUSPENDED', label: 'Tạm ẩn' },
-];
 const suggestedListingTags = [
   'Club',
   'Phòng VIP',
@@ -964,20 +958,6 @@ const castAvatarUrl = (cast: PartnerListingCast) => {
     urls.find((url) => isValidUrl(url)) ??
     ''
   );
-};
-
-const castStatusLabel = (status?: string | null) => {
-  const normalized = safeListingText(status).toUpperCase();
-  return (
-    listingCastStatusOptions.find((item) => item.value === normalized)?.label ??
-    (normalized || 'Bản nháp')
-  );
-};
-
-const castStatusTone = (cast: PartnerListingCast, hasRequiredName: string): 'gold' | 'success' | 'danger' | 'neutral' => {
-  if (!hasRequiredName) return 'gold';
-  if (cast.isPublic === false) return 'gold';
-  return (cast.status ?? 'ACTIVE') === 'ACTIVE' ? 'success' : 'gold';
 };
 
 const buildListingMenuSummary = (
@@ -1623,6 +1603,7 @@ export default function PartnerPage() {
   const [, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
+  const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
@@ -3755,6 +3736,126 @@ export default function PartnerPage() {
     updateCastProfile(index, 'measurements', nextValue);
   };
 
+  const castChipInputKey = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') =>
+    `${index}:${field}`;
+
+  const castChipInputValue = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') =>
+    castChipInputs[castChipInputKey(index, field)] ?? '';
+
+  const setCastChipInputValue = (
+    index: number,
+    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    value: string,
+  ) => {
+    const key = castChipInputKey(index, field);
+    setCastChipInputs((current) => ({ ...current, [key]: value }));
+  };
+
+  const clearCastChipInputValue = (index: number, field: 'tags' | 'hobbies' | 'youtubeLinks') => {
+    const key = castChipInputKey(index, field);
+    setCastChipInputs((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const addCastListValues = (
+    index: number,
+    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    rawValue: string,
+  ) => {
+    const values = splitInlineList(rawValue);
+    if (!values.length) return;
+
+    clearListingErrorsFor(`castProfiles.${index}.${field}`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const existing = item[field] ?? [];
+        const nextValues = values.filter(
+          (value) => !existing.some((currentValue) => currentValue.toLowerCase() === value.toLowerCase()),
+        );
+        return { ...item, [field]: [...existing, ...nextValues] };
+      }),
+    }));
+    clearCastChipInputValue(index, field);
+  };
+
+  const removeCastListValue = (
+    index: number,
+    field: 'tags' | 'hobbies' | 'youtubeLinks',
+    value: string,
+  ) => {
+    clearListingErrorsFor(`castProfiles.${index}.${field}`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, [field]: (item[field] ?? []).filter((currentValue) => currentValue !== value) }
+          : item,
+      ),
+    }));
+  };
+
+  const handleCastChipKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+    field: 'tags' | 'hobbies' | 'youtubeLinks',
+  ) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    addCastListValues(index, field, event.currentTarget.value);
+  };
+
+  const castMediaEntries = (cast: PartnerListingCast, kind: 'image' | 'video') =>
+    (cast.mediaUrls ?? [])
+      .map((url, mediaIndex) => ({ url, mediaIndex }))
+      .filter(({ url }) => {
+        const isVideo = isListingVideoUrl(url);
+        return kind === 'video' ? isVideo : !isVideo;
+      });
+
+  const removeCastMediaUrl = (index: number, mediaIndex: number) => {
+    clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, mediaUrls: (item.mediaUrls ?? []).filter((_, currentIndex) => currentIndex !== mediaIndex) }
+          : item,
+      ),
+    }));
+  };
+
+  const appendCastMediaUrls = (index: number, urls: string[]) => {
+    clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
+          : item,
+      ),
+    }));
+  };
+
+  const replaceCastAvatarUrl = (index: number, mediaIndex: number | null, url: string) => {
+    clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const currentUrls = item.mediaUrls ?? [];
+        const nextUrls = mediaIndex === null
+          ? currentUrls
+          : currentUrls.filter((_, currentIndex) => currentIndex !== mediaIndex);
+        return { ...item, mediaUrls: [url, ...nextUrls.filter(Boolean)] };
+      }),
+    }));
+  };
+
   const isEmptyCastProfile = (cast: PartnerListingCast) =>
     !hasText(cast.stageName) &&
     !hasText(cast.bio) &&
@@ -3780,8 +3881,6 @@ export default function PartnerPage() {
           languages: [],
           hobbies: [],
           youtubeLinks: [],
-          isPublic: true,
-          status: 'ACTIVE',
           mediaUrls: [],
         },
         ...current.castProfiles,
@@ -3860,14 +3959,14 @@ export default function PartnerPage() {
         .map((item) => {
           const castPayload = { ...item };
           delete castPayload.storeName;
+          delete castPayload.isPublic;
+          delete castPayload.status;
           return {
             ...castPayload,
             tags: item.tags?.filter(Boolean) ?? [],
             languages: item.languages?.filter(Boolean) ?? [],
             hobbies: item.hobbies?.filter(Boolean) ?? [],
             youtubeLinks: item.youtubeLinks?.filter(Boolean) ?? [],
-            isPublic: item.isPublic !== false,
-            status: item.status || 'ACTIVE',
             mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
           };
         }),
@@ -4502,6 +4601,223 @@ export default function PartnerPage() {
 
     </>
   );
+
+  const renderCastChipField = (
+    cast: PartnerListingCast,
+    index: number,
+    field: 'tags' | 'hobbies',
+    label: string,
+    placeholder: string,
+  ) => {
+    const values = cast[field] ?? [];
+    const inputValue = castChipInputValue(index, field);
+
+    return (
+      <FormField label={label}>
+        <div className="partner-cast-chip-field">
+          {values.map((value) => (
+            <span className="partner-cast-chip" key={`${field}-${value}`}>
+              <span>{value}</span>
+              <button
+                type="button"
+                aria-label={`Xóa ${value}`}
+                onClick={() => removeCastListValue(index, field, value)}
+              >
+                <XCircle size={13} />
+              </button>
+            </span>
+          ))}
+          <input
+            value={inputValue}
+            onChange={(event) => setCastChipInputValue(index, field, event.target.value)}
+            onKeyDown={(event) => handleCastChipKeyDown(event, index, field)}
+            placeholder={placeholder}
+          />
+        </div>
+        {listingErrorText(`castProfiles.${index}.${field}`)}
+      </FormField>
+    );
+  };
+
+  const renderCastVideoCard = (url: string, label: string, onRemove: () => void) => {
+    const youtubeThumb = getListingYoutubeThumb(url);
+
+    return (
+      <div className="partner-cast-media-card">
+        {youtubeThumb ? (
+          <span
+            role="img"
+            aria-label={label}
+            className="partner-cast-media-thumb"
+            style={{ background: `url("${youtubeThumb}") center/cover no-repeat` }}
+          />
+        ) : (
+          <video
+            src={listingMediaUrl(url)}
+            muted
+            playsInline
+            preload="metadata"
+            className="partner-cast-media-thumb"
+          />
+        )}
+        <span className="partner-cast-media-play">
+          <Play size={17} fill="currentColor" />
+        </span>
+        {renderListingMediaRemove(label, onRemove)}
+      </div>
+    );
+  };
+
+  const renderCastMediaSections = (cast: PartnerListingCast, index: number) => {
+    const imageEntries = castMediaEntries(cast, 'image');
+    const avatarEntry = imageEntries[0] ?? null;
+    const albumEntries = imageEntries.slice(1);
+    const videoEntries = castMediaEntries(cast, 'video');
+    const youtubeInput = castChipInputValue(index, 'youtubeLinks');
+
+    return (
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Ảnh đại diện, album và video</div>
+        <div className="partner-cast-media-layout">
+          <div className="partner-cast-media-panel">
+            <div className="partner-cast-media-panel-head">
+              <strong>Ảnh đại diện</strong>
+              {avatarEntry ? (
+                renderListingUploadButton({
+                  key: `cast-avatar-replace-${index}`,
+                  label: 'Đổi ảnh',
+                  loadingLabel: 'Đang tải...',
+                  kind: 'image',
+                  purpose: 'PARTNER_CAST_IMAGE',
+                  successLabel: 'ảnh đại diện',
+                  onUploaded: ([url]) => {
+                    if (!url) return;
+                    replaceCastAvatarUrl(index, avatarEntry.mediaIndex, url);
+                  },
+                })
+              ) : null}
+            </div>
+            {avatarEntry ? (
+              renderListingImagePreview(avatarEntry.url, {
+                label: 'Xóa ảnh đại diện cast',
+                aspectRatio: '3 / 4',
+                onRemove: () => removeCastMediaUrl(index, avatarEntry.mediaIndex),
+              })
+            ) : (
+              renderListingUploadTile({
+                key: `cast-avatar-${index}`,
+                label: 'Tải ảnh đại diện',
+                loadingLabel: 'Đang tải ảnh...',
+                kind: 'image',
+                purpose: 'PARTNER_CAST_IMAGE',
+                successLabel: 'ảnh đại diện',
+                aspectRatio: '3 / 4',
+                onUploaded: ([url]) => {
+                  if (!url) return;
+                  replaceCastAvatarUrl(index, null, url);
+                },
+              })
+            )}
+          </div>
+
+          <div className="partner-cast-media-panel">
+            <div className="partner-cast-media-panel-head">
+              <strong>Album ảnh</strong>
+            </div>
+            <div className="partner-cast-media-grid">
+              {albumEntries.map((entry) => (
+                <div key={`cast-album-${entry.mediaIndex}`}>
+                  {renderListingImagePreview(entry.url, {
+                    label: `Xóa ảnh album cast ${entry.mediaIndex + 1}`,
+                    aspectRatio: '3 / 4',
+                    onRemove: () => removeCastMediaUrl(index, entry.mediaIndex),
+                  })}
+                </div>
+              ))}
+              {renderListingUploadTile({
+                key: `cast-album-${index}`,
+                label: 'Thêm ảnh',
+                loadingLabel: 'Đang tải...',
+                kind: 'image',
+                multiple: true,
+                purpose: 'PARTNER_CAST_IMAGE',
+                successLabel: 'ảnh cast',
+                aspectRatio: '3 / 4',
+                onUploaded: (urls) => appendCastMediaUrls(index, urls),
+              })}
+            </div>
+          </div>
+
+          <div className="partner-cast-media-panel partner-cast-media-panel-wide">
+            <div className="partner-cast-media-panel-head">
+              <strong>Video từ máy</strong>
+              {renderListingUploadButton({
+                key: `cast-video-${index}`,
+                label: 'Thêm video',
+                loadingLabel: 'Đang tải...',
+                kind: 'video',
+                multiple: true,
+                purpose: 'PARTNER_CAST_VIDEO',
+                successLabel: 'video cast',
+                onUploaded: (urls) => appendCastMediaUrls(index, urls),
+              })}
+            </div>
+            <div className="partner-cast-video-grid">
+              {videoEntries.length ? (
+                videoEntries.map((entry) => (
+                  <div key={`cast-video-${entry.mediaIndex}`}>
+                    {renderCastVideoCard(
+                      entry.url,
+                      `Xóa video cast ${entry.mediaIndex + 1}`,
+                      () => removeCastMediaUrl(index, entry.mediaIndex),
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="partner-cast-media-empty">Chưa có video tải lên</div>
+              )}
+            </div>
+          </div>
+
+          <div className="partner-cast-media-panel partner-cast-media-panel-wide">
+            <div className="partner-cast-media-panel-head">
+              <strong>Video YouTube</strong>
+            </div>
+            <div className="partner-cast-youtube-add">
+              <input
+                value={youtubeInput}
+                onChange={(event) => setCastChipInputValue(index, 'youtubeLinks', event.target.value)}
+                onKeyDown={(event) => handleCastChipKeyDown(event, index, 'youtubeLinks')}
+                placeholder="Dán link YouTube..."
+                style={listingInputStyle(`castProfiles.${index}.youtubeLinks`)}
+              />
+              <button
+                type="button"
+                onClick={() => addCastListValues(index, 'youtubeLinks', youtubeInput)}
+              >
+                Thêm
+              </button>
+            </div>
+            {listingErrorText(`castProfiles.${index}.youtubeLinks`)}
+            <div className="partner-cast-video-grid">
+              {cast.youtubeLinks?.length ? (
+                cast.youtubeLinks.map((url) => (
+                  <div key={`cast-youtube-${url}`}>
+                    {renderCastVideoCard(url, `Xóa video YouTube ${url}`, () =>
+                      removeCastListValue(index, 'youtubeLinks', url),
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="partner-cast-media-empty">Chưa có video YouTube</div>
+              )}
+            </div>
+          </div>
+        </div>
+        {listingErrorText(`castProfiles.${index}.mediaUrls`)}
+      </section>
+    );
+  };
 
   const validateListingBeforeAction = (mode: ListingValidationMode) => {
     if (!listingStoreId) {
@@ -5496,7 +5812,7 @@ export default function PartnerPage() {
       <div style={isViewingLive ? { pointerEvents: 'none', opacity: 0.8 } : undefined}>
         <section className="partner-listing-section">
           <div className="partner-listing-section-title">Thông tin cơ bản</div>
-          <div className="partner-listing-grid">
+          <div className="partner-listing-grid partner-cast-basic-grid">
             <FormField label="Tên cast">
               <input
                 value={cast.stageName}
@@ -5540,24 +5856,8 @@ export default function PartnerPage() {
               />
               {listingErrorText(`castProfiles.${index}.languages`)}
             </FormField>
-            <FormField label="Tags / từ khóa">
-              <input
-                value={cast.tags?.join(', ') ?? ''}
-                onChange={(event) => updateCastProfile(index, 'tags', splitInlineList(event.target.value))}
-                placeholder="spa, gentle, quiet, 20s"
-                style={listingInputStyle(`castProfiles.${index}.tags`)}
-              />
-              {listingErrorText(`castProfiles.${index}.tags`)}
-            </FormField>
-          <FormField label="Sở thích">
-            <input
-              value={cast.hobbies?.join(', ') ?? ''}
-              onChange={(event) => updateCastProfile(index, 'hobbies', splitInlineList(event.target.value))}
-              placeholder="reading, tea, nature"
-              style={listingInputStyle(`castProfiles.${index}.hobbies`)}
-            />
-            {listingErrorText(`castProfiles.${index}.hobbies`)}
-          </FormField>
+            {renderCastChipField(cast, index, 'tags', 'Tags / từ khóa', 'VD: Sang chảnh')}
+            {renderCastChipField(cast, index, 'hobbies', 'Sở thích', 'VD: Hát')}
         </div>
       </section>
 
@@ -5609,24 +5909,6 @@ export default function PartnerPage() {
             />
             {listingErrorText(`castProfiles.${index}.heightCm`)}
           </FormField>
-          <FormField label="Hiển thị Web">
-            <button
-              type="button"
-              className={cast.isPublic === false ? 'partner-cast-public-toggle' : 'partner-cast-public-toggle is-active'}
-              onClick={() => updateCastProfile(index, 'isPublic', cast.isPublic === false)}
-            >
-              {cast.isPublic === false ? <EyeOff size={16} /> : <Eye size={16} />}
-              {cast.isPublic === false ? 'Đang ẩn' : 'Cho phép hiển thị'}
-            </button>
-          </FormField>
-          <FormField label="Trạng thái">
-            <ThemedListingSelect
-              value={cast.status || 'ACTIVE'}
-              onChange={(value) => updateCastProfile(index, 'status', value)}
-              placeholder="-- Chọn trạng thái --"
-              options={listingCastStatusOptions}
-            />
-          </FormField>
           <FormField label="Mô tả cast" className="partner-field-wide">
             <textarea
               value={cast.bio ?? ''}
@@ -5639,74 +5921,7 @@ export default function PartnerPage() {
         </div>
       </section>
 
-      <section className="partner-listing-section">
-        <div className="partner-listing-section-title">Ảnh đại diện, album và video</div>
-        <div className="partner-listing-grid">
-          <FormField label="Ảnh đại diện / album ảnh" className="partner-field-wide">
-            <input
-              value={cast.mediaUrls?.join(', ') ?? ''}
-              onChange={(event) => updateCastProfile(index, 'mediaUrls', splitInlineList(event.target.value))}
-              placeholder="https://.../cast.jpg, https://.../album.jpg"
-              style={listingInputStyle(`castProfiles.${index}.mediaUrls`)}
-            />
-            {listingErrorText(`castProfiles.${index}.mediaUrls`)}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {renderListingUploadButton({
-                key: `cast-media-image-${index}`,
-                label: 'Tải ảnh cast từ máy',
-                loadingLabel: 'Đang tải ảnh...',
-                kind: 'image',
-                multiple: true,
-                purpose: 'PARTNER_CAST_IMAGE',
-                successLabel: 'ảnh cast',
-                onUploaded: (urls) => {
-                  clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
-                  setListingDraft((current) => ({
-                    ...current,
-                    castProfiles: current.castProfiles.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
-                        : item,
-                    ),
-                  }));
-                },
-              })}
-              {renderListingUploadButton({
-                key: `cast-media-video-${index}`,
-                label: 'Tải video cast từ máy',
-                loadingLabel: 'Đang tải video...',
-                kind: 'video',
-                multiple: true,
-                purpose: 'PARTNER_CAST_VIDEO',
-                successLabel: 'video cast',
-                onUploaded: (urls) => {
-                  clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
-                  setListingDraft((current) => ({
-                    ...current,
-                    castProfiles: current.castProfiles.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
-                        : item,
-                    ),
-                  }));
-                },
-              })}
-            </div>
-            <span style={{ color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-              Nhập URL bằng dấu phẩy hoặc tải file từ máy. Ảnh đầu tiên sẽ dùng làm ảnh đại diện, video được giữ riêng như bên admin.
-            </span>
-          </FormField>
-          <FormField label="Video YouTube" className="partner-field-wide">
-            <input
-              value={cast.youtubeLinks?.join(', ') ?? ''}
-              onChange={(event) => updateCastProfile(index, 'youtubeLinks', splitInlineList(event.target.value))}
-              placeholder="https://youtube.com/..."
-              style={listingInputStyle(`castProfiles.${index}.youtubeLinks`)}
-            />
-            {listingErrorText(`castProfiles.${index}.youtubeLinks`)}
-          </FormField>
-        </div>
-      </section>
+      {renderCastMediaSections(cast, index)}
       </div>
     </div>
   );
@@ -5771,12 +5986,8 @@ export default function PartnerPage() {
                       <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
                       <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
                       <td>
-                        <StatusPill tone={castStatusTone(cast, hasRequiredName)}>
-                          {hasRequiredName
-                            ? cast.isPublic === false
-                              ? 'Đang ẩn'
-                              : castStatusLabel(cast.status)
-                            : 'Bản nháp'}
+                        <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
+                          {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
                         </StatusPill>
                       </td>
                       <td>
@@ -5827,12 +6038,8 @@ export default function PartnerPage() {
                       <strong>{hasRequiredName || 'Draft cast'}</strong>
                       <small>{cast.zodiacSign || '---'}</small>
                     </span>
-                    <StatusPill tone={castStatusTone(cast, hasRequiredName)}>
-                      {hasRequiredName
-                        ? cast.isPublic === false
-                          ? 'Đang ẩn'
-                          : castStatusLabel(cast.status)
-                        : 'Bản nháp'}
+                    <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
+                      {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
                     </StatusPill>
                     <ChevronRight size={18} className="partner-cast-mobile-arrow" />
                   </span>
@@ -7537,6 +7744,9 @@ export default function PartnerPage() {
         .partner-cast-profile-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
+        .partner-cast-basic-grid {
+          grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+        }
         .partner-listing-form {
           display: grid;
           gap: 16px;
@@ -7580,6 +7790,59 @@ export default function PartnerPage() {
           background: ${colors.goldGrad};
           color: ${colors.onGold};
         }
+        .partner-cast-chip-field {
+          min-height: 44px;
+          border-radius: 11px;
+          border: 1px solid ${colors.borderGold22};
+          background: ${colors.surface2};
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 9px;
+        }
+        .partner-cast-chip {
+          max-width: 100%;
+          min-height: 28px;
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 999px;
+          background: rgba(212,178,106,.13);
+          color: ${colors.text};
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          font-weight: 900;
+          padding: 0 5px 0 10px;
+        }
+        .partner-cast-chip span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .partner-cast-chip button {
+          width: 20px;
+          height: 20px;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: ${colors.muted};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .partner-cast-chip-field input {
+          min-width: 120px;
+          flex: 1 1 150px;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: ${colors.text};
+          font: inherit;
+          font-size: 13px;
+          font-weight: 800;
+        }
         .partner-cast-measurements {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7590,27 +7853,101 @@ export default function PartnerPage() {
           padding-left: 8px !important;
           padding-right: 8px !important;
         }
-        .partner-cast-public-toggle {
-          min-height: 44px;
-          width: 100%;
-          border: 1px solid ${colors.borderGold22};
-          border-radius: 11px;
+        .partner-cast-media-layout {
+          display: grid;
+          grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr);
+          gap: 14px;
+          align-items: start;
+        }
+        .partner-cast-media-panel {
+          border: 1px solid ${colors.borderHair};
+          border-radius: 14px;
           background: ${colors.surface2};
+          display: grid;
+          gap: 11px;
+          min-width: 0;
+          padding: 12px;
+        }
+        .partner-cast-media-panel-wide {
+          grid-column: span 2;
+        }
+        .partner-cast-media-panel-head {
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .partner-cast-media-panel-head strong {
           color: ${colors.text2};
+          font-size: 12px;
+          font-weight: 900;
+        }
+        .partner-cast-media-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+          gap: 10px;
+        }
+        .partner-cast-video-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(154px, 1fr));
+          gap: 10px;
+        }
+        .partner-cast-media-card {
+          position: relative;
+          aspect-ratio: 16 / 10;
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 14px;
+          background: ${colors.surface3};
+          overflow: hidden;
+        }
+        .partner-cast-media-thumb {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .partner-cast-media-play {
+          position: absolute;
+          inset: 0;
+          margin: auto;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: rgba(12,12,15,.62);
+          border: 1px solid rgba(255,255,255,.26);
+          color: ${colors.goldPale};
           display: inline-flex;
           align-items: center;
           justify-content: center;
+        }
+        .partner-cast-media-empty {
+          min-height: 82px;
+          border: 1px dashed ${colors.borderGold22};
+          border-radius: 14px;
+          color: ${colors.muted};
+          display: grid;
+          place-items: center;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 12px;
+          text-align: center;
+        }
+        .partner-cast-youtube-add {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 78px;
           gap: 8px;
+        }
+        .partner-cast-youtube-add button {
+          min-height: 44px;
+          border: 0;
+          border-radius: 11px;
+          background: ${colors.goldGrad};
+          color: ${colors.onGold};
           cursor: pointer;
           font: inherit;
           font-size: 13px;
           font-weight: 900;
-          padding: 0 12px;
-        }
-        .partner-cast-public-toggle.is-active {
-          border-color: rgba(141,230,176,.48);
-          background: rgba(141,230,176,.12);
-          color: ${colors.success};
         }
         .partner-menu-editor,
         .partner-menu-group-card {
@@ -8311,6 +8648,13 @@ export default function PartnerPage() {
           .partner-cast-form-header {
             align-items: stretch;
             flex-direction: column;
+          }
+          .partner-cast-media-layout,
+          .partner-cast-youtube-add {
+            grid-template-columns: 1fr;
+          }
+          .partner-cast-media-panel-wide {
+            grid-column: auto;
           }
           .partner-content {
             padding: 14px 14px calc(72px + env(safe-area-inset-bottom)) !important;
