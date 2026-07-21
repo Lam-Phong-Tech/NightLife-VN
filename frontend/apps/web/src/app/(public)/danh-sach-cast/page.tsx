@@ -523,7 +523,7 @@ export default function Page() {
   const [ageRange, setAgeRange] = useState<AgeRange>(defaultAgeRange);
   const [sort, setSort] = useState<DiscoverySort>("newest");
   const [topRankingOnly, setTopRankingOnly] = useState(false);
-  const [topRankingCastSlugs, setTopRankingCastSlugs] = useState<string[]>([]);
+  const [topRankingCasts, setTopRankingCasts] = useState<Array<{ slug: string; rank: number }>>([]);
   const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -599,17 +599,9 @@ export default function Page() {
   }, [area, category, city, coords, hasActiveCoupon, language, query, sort]);
 
   useEffect(() => {
-    if (!topRankingOnly) {
-      queueMicrotask(() => {
-        setTopRankingCastSlugs([]);
-        setTopRankingLoading(false);
-      });
-      return;
-    }
-
     const controller = new AbortController();
     queueMicrotask(() => {
-      if (!controller.signal.aborted) setTopRankingLoading(true);
+      if (!controller.signal.aborted) setTopRankingLoading(topRankingOnly);
     });
 
     rankingsApi
@@ -619,15 +611,18 @@ export default function Page() {
       )
       .then((response) => {
         if (controller.signal.aborted) return;
-        setTopRankingCastSlugs(
+        setTopRankingCasts(
           response.data
             .slice(0, 5)
-            .map((item) => item.slug)
-            .filter(Boolean),
+            .map((item, index) => ({
+              slug: item.slug,
+              rank: Number.isFinite(item.rank) ? item.rank : index + 1,
+            }))
+            .filter((item) => Boolean(item.slug)),
         );
       })
       .catch(() => {
-        if (!controller.signal.aborted) setTopRankingCastSlugs([]);
+        if (!controller.signal.aborted) setTopRankingCasts([]);
       })
       .finally(() => {
         if (!controller.signal.aborted) setTopRankingLoading(false);
@@ -752,8 +747,8 @@ export default function Page() {
   );
 
   const topRankingOrder = useMemo(
-    () => new Map(topRankingCastSlugs.map((slug, index) => [slug, index])),
-    [topRankingCastSlugs],
+    () => new Map(topRankingCasts.map((item) => [item.slug, item.rank])),
+    [topRankingCasts],
   );
   const visibleCasts = useMemo(() => {
     const filteredCasts = casts
@@ -1061,6 +1056,7 @@ export default function Page() {
                 casts={suggestions}
                 popularKeywords={popularKeywords}
                 query={query}
+                rankBySlug={topRankingOrder}
                 recentSearches={recentSearches}
                 onKeyword={setPopularKeyword}
                 onRecent={(value) => setQuery(value)}
@@ -1190,6 +1186,7 @@ export default function Page() {
                   key={cast.id}
                   cast={cast}
                   index={currentPageStart + index}
+                  rank={topRankingOrder.get(cast.slug) ?? null}
                   language={activeLanguage}
                   isFavorite={favoriteCastSlugs.includes(cast.slug)}
                   onToggleFavorite={() => void toggleCastFavorite(cast)}
@@ -1374,6 +1371,7 @@ function SearchSuggestions({
   casts,
   popularKeywords,
   query,
+  rankBySlug,
   recentSearches,
   onKeyword,
   onRecent,
@@ -1381,6 +1379,7 @@ function SearchSuggestions({
   casts: PublicCast[];
   popularKeywords: string[];
   query: string;
+  rankBySlug: ReadonlyMap<string, number>;
   recentSearches: string[];
   onKeyword: (value: string) => void;
   onRecent: (value: string) => void;
@@ -1398,26 +1397,29 @@ function SearchSuggestions({
       {casts.length ? (
         <>
           <div className="cast-suggestion-label">Gợi ý cast</div>
-          {casts.map((cast, index) => (
-            <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
-              <PlaceholderMedia
-                src={cast.thumbnailUrl}
-                alt={cast.name}
-                label=""
-                className="cast-suggestion-avatar"
-              />
-              <span>
-                <b>{highlightMatch(cast.name, query)}</b>
-                <small>
-                  {cast.store.name} ·{" "}
-                  {index < 3
-                    ? `#${index + 1} Ranking`
-                    : (cast.store.area?.name ?? cast.store.district)}
-                </small>
-              </span>
-              <ChevronRight size={15} />
-            </Link>
-          ))}
+          {casts.map((cast) => {
+            const rank = rankBySlug.get(cast.slug);
+            const meta = rank ? `#${rank} Ranking` : (cast.store.area?.name ?? cast.store.district);
+
+            return (
+              <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
+                <PlaceholderMedia
+                  src={cast.thumbnailUrl}
+                  alt={cast.name}
+                  label=""
+                  className="cast-suggestion-avatar"
+                />
+                <span>
+                  <b>{highlightMatch(cast.name, query)}</b>
+                  <small>
+                    {cast.store.name}
+                    {meta ? ` · ${meta}` : ""}
+                  </small>
+                </span>
+                <ChevronRight size={15} />
+              </Link>
+            );
+          })}
         </>
       ) : (
         <div className="cast-suggestion-empty">Không có gợi ý trùng khớp.</div>
@@ -1461,12 +1463,14 @@ function SearchSuggestions({
 function CastDiscoveryCard({
   cast,
   index,
+  rank,
   language,
   isFavorite,
   onToggleFavorite,
 }: {
   cast: PublicCast;
   index: number;
+  rank: number | null;
   language: LanguageCode;
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -1487,8 +1491,6 @@ function CastDiscoveryCard({
     cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" · ") ||
     "VI";
   const categoryLabel = getCastCategoryLabel(cast.store.category, language);
-  const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tối nay" : "Mới";
-  const isRanked = index < 3;
   const favoriteLabel = translateText(isFavorite ? "Bỏ lưu cast" : "Lưu cast", language);
 
   return (
@@ -1501,10 +1503,12 @@ function CastDiscoveryCard({
           className="cast-card-media"
         >
           <span className="cast-media-shade" />
-          <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
-            {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
-            {badgeLabel}
-          </span>
+          {rank ? (
+            <span className="cast-rank-badge is-ranked">
+              <Star size={11} fill="currentColor" />
+              #{rank}
+            </span>
+          ) : null}
           <span className="cast-card-name">
             <b>{cast.name}</b>
             <small>{categoryLabel}</small>

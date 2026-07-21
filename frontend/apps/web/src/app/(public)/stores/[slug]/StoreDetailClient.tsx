@@ -2804,6 +2804,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .round-action.hero-back {
           display: none;
+          width: 38px;
+          height: 38px;
+          border: 1px solid rgba(247, 207, 92, .62);
+          border-radius: 12px;
+          background: rgba(8, 8, 10, .28);
+          color: #f7cf5c;
+          box-shadow:
+            0 0 0 4px rgba(8, 8, 10, .22),
+            0 8px 20px -12px rgba(0, 0, 0, .72);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+
+        html.vy-light .round-action.hero-back {
+          border-color: rgba(151, 112, 37, .42);
+          background: rgba(255, 248, 230, .76);
+          color: #9c7125;
+          box-shadow:
+            0 0 0 4px rgba(255, 248, 230, .34),
+            0 8px 20px -12px rgba(96, 70, 22, .42);
         }
 
         .store-favorite-action {
