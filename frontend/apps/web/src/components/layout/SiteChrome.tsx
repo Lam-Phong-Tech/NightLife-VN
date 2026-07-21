@@ -24,6 +24,7 @@ import {
   getAuthUser,
   type AuthUser,
 } from "@/lib/auth/session";
+import { getNightlifeHostKind, nightlifeOrigins } from "@/lib/auth/hosts";
 import {
   DEFAULT_APPEARANCE_CONFIG,
   getAppearanceConfig,
@@ -87,6 +88,26 @@ const hiddenChromePaths = [
   "/partner",
   "/admin",
 ];
+
+const resolveHref = (href: string) => {
+  if (typeof window === "undefined") return href;
+  if (href.startsWith("http://") || href.startsWith("https://")) return href;
+
+  const hostKind = getNightlifeHostKind(window.location.hostname);
+  if (hostKind === "auth") {
+    if (href.startsWith("/")) {
+      const path = href.split("?")[0];
+      const isLoginPath =
+        path === "/dang-nhap" ||
+        path === "/dang-nhap-doi-tac" ||
+        path === "/admin/dang-nhap";
+      if (!isLoginPath) {
+        return `${nightlifeOrigins.public}${href}`;
+      }
+    }
+  }
+  return href;
+};
 
 const navLinks = [
   { href: "/", label: "Trang chủ" },
@@ -642,7 +663,7 @@ function NoticeRow({
 
   if (notice.href) {
     return (
-      <Link href={notice.href} onClick={() => onSelect(notice)} style={rowStyle}>
+      <Link href={resolveHref(notice.href)} onClick={() => onSelect(notice)} style={rowStyle}>
         {content}
       </Link>
     );
@@ -1092,7 +1113,7 @@ function DesktopNotificationDropdown({
           }}
         >
           <Link
-            href="/gui-hoa-don"
+            href={resolveHref("/gui-hoa-don")}
             style={{
               border: 0,
               padding: 0,
@@ -1331,7 +1352,7 @@ function SiteFooter({
           <meta itemProp="url" content={siteConfig.url} />
           <meta itemProp="description" content={copy.description} />
           <Link
-            href="/"
+            href={resolveHref("/")}
             className="u-url url"
             itemProp="url"
             style={{
@@ -1398,7 +1419,7 @@ function SiteFooter({
             {mobileFooterLinks.map((link) => (
               <Link
                 key={link.href}
-                href={link.href}
+                href={resolveHref(link.href)}
                 style={{
                   color: colors.goldPale,
                   fontSize: "12px",
@@ -1458,7 +1479,7 @@ function SiteFooter({
           <meta itemProp="url" content={siteConfig.url} />
           <meta itemProp="description" content={copy.description} />
           <Link
-            href="/"
+            href={resolveHref("/")}
             className="u-url url"
             itemProp="url"
             style={{
@@ -1533,7 +1554,7 @@ function SiteFooter({
               {group.links.map((link) => (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={resolveHref(link.href)}
                   style={{
                     color: colors.text2,
                     textDecoration: "none",
@@ -2152,7 +2173,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             }}
           >
             <Link
-              href="/"
+              href={resolveHref("/")}
               style={{
                 display: "inline-flex",
                 flexDirection: "column",
@@ -2220,7 +2241,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 {desktopNavLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
+                    href={resolveHref(link.href)}
                     style={{
                       color: isActive(pathname, link.href) ? colors.goldPale : colors.text2,
                       textDecoration: "none",
@@ -2360,7 +2381,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 </Link>
               ) : (
                 <Link
-                  href="/tai-khoan"
+                  href={resolveHref("/tai-khoan")}
                   title="Xem thông tin tài khoản"
                   style={{
                     minHeight: "40px",
@@ -2444,7 +2465,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={resolveHref(item.href)}
                 style={{
                   color: active ? activeColor : "#6f6b62",
                   display: "flex",
