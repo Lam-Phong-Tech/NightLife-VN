@@ -3094,31 +3094,14 @@ export class NightlifeDataService {
       const draftMediaIds: string[] = [];
 
       for (const [index, castProfile] of castProfiles.entries()) {
-        const cast = await tx.cast.create({
-          data: {
-            storeId: store.id,
-            stageName: castProfile.stageName,
-            slug: this.buildPartnerRequestSlug(
-              castProfile.stageName,
-              requestId,
-              `cast-${index + 1}`,
-            ),
-            bio: castProfile.bio,
-            publicBio: castProfile.bio,
-            tags: castProfile.tags,
-            languages: castProfile.languages,
-            birthMonth: castProfile.birthMonth,
-            zodiacSign: castProfile.zodiacSign,
-            heightCm: castProfile.heightCm,
-            measurements: castProfile.measurements,
-            hobbies: castProfile.hobbies,
-            youtubeLinks: castProfile.youtubeLinks,
-            hourlyRateVnd: castProfile.hourlyRateVnd,
-            isPublic: false,
-            status: 'DRAFT',
-          },
-          select: { id: true },
-        });
+        const cast = await this.upsertPartnerListingReviewCast(
+          tx,
+          store.id,
+          castProfile,
+          requestId,
+          index,
+          submittedAt,
+        );
         draftCastIds.push(cast.id);
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
@@ -17419,6 +17402,187 @@ export class NightlifeDataService {
     ].filter(Boolean);
 
     return lines.length ? lines.join('\n') : null;
+  }
+
+  private partnerListingCastEditDraftSlug(profile: PartnerListingCastDto) {
+    const profileId = this.cleanNullableText(profile.id);
+    if (!profileId || !this.isUuid(profileId)) {
+      return null;
+    }
+
+    return `partner-cast-edit-${profileId}`;
+  }
+
+  private partnerListingReviewCastData(
+    storeId: string,
+    castProfile: PartnerListingCastDto,
+  ) {
+    return {
+      storeId,
+      stageName: castProfile.stageName,
+      bio: castProfile.bio,
+      publicBio: castProfile.bio,
+      tags: castProfile.tags ?? [],
+      languages: castProfile.languages ?? [],
+      birthMonth: castProfile.birthMonth,
+      zodiacSign: castProfile.zodiacSign,
+      heightCm: castProfile.heightCm,
+      measurements: castProfile.measurements,
+      hobbies: castProfile.hobbies ?? [],
+      youtubeLinks: castProfile.youtubeLinks ?? [],
+      hourlyRateVnd: castProfile.hourlyRateVnd,
+      isPublic: false,
+      status: 'DRAFT' as CastStatus,
+    };
+  }
+
+  private async findPartnerListingReviewCastDraft(
+    client: NightlifePrismaClient,
+    storeId: string,
+    castProfile: PartnerListingCastDto,
+  ) {
+    const profileId = this.cleanNullableText(castProfile.id);
+    const stageName = this.cleanPartnerListingText(castProfile.stageName);
+
+    if (profileId && this.isUuid(profileId)) {
+      const sourceCast = await client.cast.findFirst({
+        where: { id: profileId, storeId, deletedAt: null },
+        select: { id: true, status: true, isPublic: true, slug: true },
+      });
+
+      if (sourceCast?.status === 'DRAFT') {
+        return sourceCast;
+      }
+
+      const stableSlug = this.partnerListingCastEditDraftSlug(castProfile);
+      if (stableSlug) {
+        const stableDraft = await client.cast.findFirst({
+          where: {
+            storeId,
+            slug: stableSlug,
+            status: 'DRAFT',
+            isPublic: false,
+            deletedAt: null,
+          },
+          select: { id: true, status: true, isPublic: true, slug: true },
+        });
+
+        if (stableDraft) {
+          return stableDraft;
+        }
+      }
+    }
+
+    if (!stageName) {
+      return null;
+    }
+
+    return client.cast.findFirst({
+      where: {
+        storeId,
+        stageName,
+        status: 'DRAFT',
+        isPublic: false,
+        deletedAt: null,
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, status: true, isPublic: true, slug: true },
+    });
+  }
+
+  private async upsertPartnerListingReviewCast(
+    client: NightlifePrismaClient,
+    storeId: string,
+    castProfile: PartnerListingCastDto,
+    requestId: string,
+    index: number,
+    submittedAt: Date,
+  ) {
+    const existingDraft = await this.findPartnerListingReviewCastDraft(
+      client,
+      storeId,
+      castProfile,
+    );
+    const data = this.partnerListingReviewCastData(storeId, castProfile);
+
+    if (existingDraft) {
+      const cast = await client.cast.update({
+        where: { id: existingDraft.id },
+        data,
+        select: { id: true },
+      });
+
+      await this.archiveDuplicatePartnerListingReviewCastDrafts(
+        client,
+        storeId,
+        castProfile,
+        cast.id,
+        submittedAt,
+      );
+
+      await client.media.updateMany({
+        where: {
+          castId: cast.id,
+          deletedAt: null,
+          status: 'HIDDEN',
+          access: 'PROTECTED',
+        },
+        data: { deletedAt: submittedAt },
+      });
+
+      return cast;
+    }
+
+    const stableSlug = this.partnerListingCastEditDraftSlug(castProfile);
+
+    const cast = await client.cast.create({
+      data: {
+        ...data,
+        slug:
+          stableSlug ??
+          this.buildPartnerRequestSlug(
+            castProfile.stageName,
+            requestId,
+            `cast-${index + 1}`,
+          ),
+      },
+      select: { id: true },
+    });
+
+    await this.archiveDuplicatePartnerListingReviewCastDrafts(
+      client,
+      storeId,
+      castProfile,
+      cast.id,
+      submittedAt,
+    );
+
+    return cast;
+  }
+
+  private async archiveDuplicatePartnerListingReviewCastDrafts(
+    client: NightlifePrismaClient,
+    storeId: string,
+    castProfile: PartnerListingCastDto,
+    keepCastId: string,
+    submittedAt: Date,
+  ) {
+    const stageName = this.cleanPartnerListingText(castProfile.stageName);
+    if (!stageName) {
+      return;
+    }
+
+    await client.cast.updateMany({
+      where: {
+        storeId,
+        stageName,
+        status: 'DRAFT',
+        isPublic: false,
+        deletedAt: null,
+        id: { not: keepCastId },
+      },
+      data: { deletedAt: submittedAt },
+    });
   }
 
   private async createPartnerRequestMedia(

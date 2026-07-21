@@ -312,6 +312,7 @@ describe('NightlifeDataService', () => {
     prisma.area.findMany.mockResolvedValue([] as never);
     prisma.cast.count.mockResolvedValue(1);
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' });
+    prisma.cast.findFirst.mockResolvedValue(null);
     prisma.cast.update.mockResolvedValue({ id: 'cast-draft-1' });
     prisma.cast.updateMany.mockResolvedValue({ count: 1 });
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' });
@@ -4230,6 +4231,127 @@ describe('NightlifeDataService', () => {
         data: { status: 'READY', access: 'PUBLIC' },
       }),
     );
+  });
+
+  it('updates an existing pending partner cast draft instead of creating another cast', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const existingCastId = '22222222-2222-4222-8222-222222222222';
+    const pendingDraftId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [
+        {
+          id: existingCastId,
+          stageName: 'Nguyen',
+          publicAlias: null,
+          bio: 'Original host',
+          publicBio: 'Original host',
+          tags: ['Sang'],
+          youtubeLinks: [],
+          languages: ['VN'],
+          birthMonth: 10,
+          zodiacSign: 'Capricorn',
+          heightCm: 165,
+          measurements: '60-90-80',
+          hobbies: [],
+          hourlyRateVnd: null,
+          isPublic: true,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+    prisma.cast.findFirst
+      .mockResolvedValueOnce({
+        id: existingCastId,
+        status: 'ACTIVE',
+        isPublic: true,
+        slug: 'nguyen',
+      })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: pendingDraftId,
+        status: 'DRAFT',
+        isPublic: false,
+        slug: 'nguyen-listing-old-cast-1',
+      });
+    prisma.cast.update.mockResolvedValueOnce({ id: pendingDraftId });
+
+    const result = await service.submitPartnerListingDraft(
+      { id: 'partner-a', role: 'PARTNER' },
+      storeId,
+      {
+        castProfiles: [
+          {
+            id: existingCastId,
+            stageName: 'Nguyen',
+            bio: 'Updated host',
+            tags: ['Sang'],
+            languages: ['VN'],
+            birthMonth: 10,
+            zodiacSign: 'Capricorn',
+            heightCm: 165,
+            measurements: '60-90-80',
+          },
+        ],
+      },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+        message: 'Partner cast submitted for admin review',
+        draft: expect.objectContaining({
+          contentId: null,
+          castCount: 1,
+          contentCount: 0,
+        }),
+      }),
+    );
+    expect(prisma.cast.create).not.toHaveBeenCalled();
+    expect(prisma.cast.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: pendingDraftId },
+        data: expect.objectContaining({
+          storeId,
+          stageName: 'Nguyen',
+          bio: 'Updated host',
+          publicBio: 'Updated host',
+          isPublic: false,
+          status: 'DRAFT',
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(prisma.cast.updateMany).toHaveBeenCalledWith({
+      where: {
+        storeId,
+        stageName: 'Nguyen',
+        status: 'DRAFT',
+        isPublic: false,
+        deletedAt: null,
+        id: { not: pendingDraftId },
+      },
+      data: { deletedAt: expect.any(Date) },
+    });
+    expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
+    expect(prisma.content.upsert).not.toHaveBeenCalled();
   });
 
   it('soft deletes a partner listing cast within the scoped store', async () => {

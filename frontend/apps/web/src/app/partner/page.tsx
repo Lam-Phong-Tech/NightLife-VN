@@ -5036,6 +5036,11 @@ export default function PartnerPage() {
     setIsSubmittingListing(true);
     setListingNotice('Đang gửi bản nháp cho Admin duyệt...');
     try {
+      const payload = listingPayload();
+      const submitPayload =
+        listingTab === 'cast'
+          ? { castProfiles: payload.castProfiles }
+          : payload;
       const response = await apiClient<{
         id: string;
         status: string;
@@ -5047,7 +5052,7 @@ export default function PartnerPage() {
           contentCount?: number;
         };
       }>(`/partner/listing-draft/${encodeURIComponent(listingStoreId)}/submit`, {
-        data: listingPayload(),
+        data: submitPayload,
       });
       setListingReview({
         id: response.id,
