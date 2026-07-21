@@ -7688,6 +7688,27 @@ export class NightlifeDataService {
         },
       });
 
+      if (request.partnerUserId) {
+        await tx.notificationLog.create({
+          data: {
+            userId: request.partnerUserId,
+            storeId: request.store.id,
+            channel: 'IN_APP',
+            status: 'QUEUED',
+            recipient: `user:${request.partnerUserId}`,
+            templateKey: 'partner.listing.reviewed.v1',
+            payload: this.toPrismaJson({
+              requestId: request.id,
+              status: nextStatus,
+              reason,
+              approve: dto.approve,
+              storeId: request.store.id,
+              storeName: request.store.name,
+            }),
+          },
+        });
+      }
+
       if (request.notificationLog) {
         await tx.notificationLog.update({
           where: { id: request.notificationLog.id },
@@ -7722,6 +7743,15 @@ export class NightlifeDataService {
         select: this.partnerRequestSelect(),
       });
     });
+
+    if (reviewed.partnerUserId) {
+      this.socketGateway?.notifyMemberNotificationCreated(reviewed.partnerUserId, {
+        id: reviewed.id,
+        templateKey: 'partner.listing.reviewed.v1',
+        category: 'system',
+        createdAt: now.toISOString(),
+      });
+    }
 
     return this.mapPartnerRequestRecord(reviewed);
   }

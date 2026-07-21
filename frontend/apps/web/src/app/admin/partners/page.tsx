@@ -302,12 +302,10 @@ export default function AdminPartnersPage() {
         (getRequestType(request) === "NEW_PARTNER"
           ? "Hồ sơ đối tác hợp lệ, duyệt và kích hoạt quán."
           : "Thông tin cập nhật hợp lệ, duyệt thay đổi cho quán.")
-      : reviewReason.trim();
-
-    if (!reason) {
-      setActionMessage("Vui lòng nhập lý do trước khi từ chối.");
-      return;
-    }
+      : reviewReason.trim() ||
+        (getRequestType(request) === "NEW_PARTNER"
+          ? "Hồ sơ đối tác chưa đầy đủ hoặc không phù hợp."
+          : "Thông tin cập nhật chưa phù hợp hoặc không chính xác.");
 
     setReviewingId(request.id);
     setActionMessage("");

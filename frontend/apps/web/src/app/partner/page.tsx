@@ -2532,12 +2532,24 @@ export default function PartnerPage() {
   }, []);
 
   const refreshPartnerNotificationData = useCallback(() => {
-    void Promise.allSettled([
+    const promises: Promise<any>[] = [
       apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
       apiClient<PartnerBill[]>('/partner/bills').then(setBills),
       apiClient<PartnerBooking[]>('/partner/bookings').then(setBookings),
-    ]);
-  }, []);
+    ];
+    if (listingStoreId) {
+      promises.push(
+        apiClient<PartnerListingDraftResponse>(
+          `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
+        )
+          .then((response) => {
+            applyListingDraftResponse(response);
+          })
+          .catch(() => null),
+      );
+    }
+    void Promise.allSettled(promises);
+  }, [listingStoreId, applyListingDraftResponse]);
 
   useEffect(() => {
     const handleMemberNotificationCreated = (event: Event) => {
@@ -2546,25 +2558,30 @@ export default function PartnerPage() {
       const category = detail.category ?? 'system';
       const isBill = category === 'bill' || Boolean(detail.billId);
       const isBooking = category === 'booking' || Boolean(detail.bookingId);
+      const isListingReview = detail.templateKey === 'partner.listing.reviewed.v1';
 
       pushPartnerNotificationEvent({
         id: `realtime:${detail.id ?? detail.billId ?? detail.bookingId ?? createdAt}`,
-        category: isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
-        title: isBill
-          ? 'Có cập nhật bill mới'
-          : isBooking
-            ? 'Có cập nhật booking mới'
-            : 'Có thông báo mới từ hệ thống',
-        message: isBill
-          ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
-          : isBooking
-            ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
-            : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
+        category: isListingReview ? 'Đăng tin' : isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
+        title: isListingReview
+          ? 'Yêu cầu đăng tin đã được xử lý'
+          : isBill
+            ? 'Có cập nhật bill mới'
+            : isBooking
+              ? 'Có cập nhật booking mới'
+              : 'Có thông báo mới từ hệ thống',
+        message: isListingReview
+          ? 'Admin vừa phê duyệt hoặc từ chối thông tin đăng của quán. Vui lòng kiểm tra lại.'
+          : isBill
+            ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
+            : isBooking
+              ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
+              : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
         meta: `Realtime · ${formatDateTime(createdAt)}`,
-        actionLabel: isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
-        panel: isBill ? 'bill' : isBooking ? 'scan' : 'overview',
-        tone: isBill ? 'gold' : isBooking ? 'info' : 'warning',
-        icon: isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
+        actionLabel: isListingReview ? 'Xem đăng tin' : isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
+        panel: isListingReview ? 'listing' : isBill ? 'bill' : isBooking ? 'scan' : 'overview',
+        tone: isListingReview ? 'warning' : isBill ? 'gold' : isBooking ? 'info' : 'warning',
+        icon: isListingReview ? FileText : isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
       });
       refreshPartnerNotificationData();
     };
