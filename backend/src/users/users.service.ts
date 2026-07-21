@@ -92,15 +92,6 @@ export class UsersService {
             });
           }
 
-          // Unlink any stores currently linked to this partner account (except the new one)
-          await tx.store.updateMany({
-            where: {
-              partnerAccountId: partnerAccount.id,
-              NOT: storeId ? { id: storeId } : undefined,
-            },
-            data: { partnerAccountId: null, ownerId: null },
-          });
-
           // Deactivate permissions for stores no longer linked
           const oldStores = await tx.store.findMany({
             where: {
@@ -115,6 +106,15 @@ export class UsersService {
               data: { status: 'INACTIVE' },
             });
           }
+
+          // Unlink any stores currently linked to this partner account (except the new one)
+          await tx.store.updateMany({
+            where: {
+              partnerAccountId: partnerAccount.id,
+              NOT: storeId ? { id: storeId } : undefined,
+            },
+            data: { partnerAccountId: null, ownerId: null },
+          });
 
           // If a new storeId is provided, link it to this partner account and user
           if (storeId) {
@@ -242,9 +242,31 @@ export class UsersService {
 
       if (input.storeId) {
         if (input.role === 'PARTNER') {
+          const partnerAccount = await tx.partnerAccount.create({
+            data: {
+              userId: user.id,
+              businessName: displayName || email.split('@')[0],
+              status: 'ACTIVE',
+            },
+          });
+
           await tx.store.update({
             where: { id: input.storeId },
-            data: { ownerId: user.id },
+            data: { ownerId: user.id, partnerAccountId: partnerAccount.id },
+          });
+
+          await tx.storePermission.create({
+            data: {
+              userId: user.id,
+              storeId: input.storeId,
+              permissions: [
+                'store.partner.view',
+                'booking.partner.view',
+                'bill.partner.view',
+                'coupon.scan',
+              ],
+              status: 'ACTIVE',
+            },
           });
         } else if (input.role === 'STAFF') {
           await tx.storePermission.create({
@@ -252,6 +274,7 @@ export class UsersService {
               userId: user.id,
               storeId: input.storeId,
               permissions: ['store.staff.all'],
+              status: 'ACTIVE',
             },
           });
         }
