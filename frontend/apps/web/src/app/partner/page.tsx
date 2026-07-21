@@ -4840,22 +4840,7 @@ export default function PartnerPage() {
           </div>
         ) : null}
 
-        <div style={{ marginTop: '16px' }}>
-          <FormField label="Quán đang thực hiện quét">
-            <ThemedListingSelect
-              value={scanStoreId}
-              onChange={(value) => {
-                setScanStoreId(value);
-                setScanIssue(null);
-              }}
-              placeholder="Chọn quán"
-              options={stores.map((store) => ({
-                value: store.id,
-                label: store.name,
-              }))}
-            />
-          </FormField>
-        </div>
+
 
         <form
           className="partner-scan-form"
