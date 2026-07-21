@@ -3069,22 +3069,29 @@ export class NightlifeDataService {
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
     const payload = this.normalizePartnerListingDraft(dto, store);
+    const livePayload = this.normalizePartnerListingDraft({}, store);
+    const hasStoreChanges = this.hasPartnerListingStoreChanges(
+      payload,
+      livePayload,
+    );
+    const castProfiles = this.changedPartnerListingCastProfiles(
+      payload.castProfiles,
+      livePayload.castProfiles,
+    );
+
+    if (!hasStoreChanges && !castProfiles.length) {
+      throw new BadRequestException('Không có thay đổi mới cần gửi duyệt.');
+    }
+
     const submittedAt = new Date();
     const requestId = `LISTING-${randomUUID().slice(0, 8).toUpperCase()}`;
 
     const submitted = await this.prisma.$transaction(async (tx) => {
-      const draft = await this.upsertPartnerListingDraftContent(
-        user,
-        store,
-        payload,
-        tx,
-      );
-      const contact = await this.partnerListingContact(user, store, tx);
+      const draft = hasStoreChanges
+        ? await this.upsertPartnerListingDraftContent(user, store, payload, tx)
+        : null;
       const draftCastIds: string[] = [];
       const draftMediaIds: string[] = [];
-      const castProfiles = this.normalizePartnerRequestCasts(
-        payload.castProfiles,
-      );
 
       for (const [index, castProfile] of castProfiles.entries()) {
         const cast = await tx.cast.create({
@@ -3132,6 +3139,25 @@ export class NightlifeDataService {
         }
       }
 
+      if (!hasStoreChanges) {
+        if (draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: draftMediaIds } },
+            data: { status: 'READY', access: 'PUBLIC' },
+          });
+        }
+
+        return {
+          draft,
+          request: null,
+          draftCastIds,
+          draftMediaIds,
+          submittedAt,
+        };
+      }
+
+      const contact = await this.partnerListingContact(user, store, tx);
+
       for (const [index, url] of payload.mediaUrls.entries()) {
         const media = await this.createPartnerRequestMedia(
           {
@@ -3175,50 +3201,65 @@ export class NightlifeDataService {
             : Prisma.JsonNull,
           draftCastIds,
           draftMediaIds,
-          draftContentIds: [draft.id],
+          draftContentIds: draft ? [draft.id] : [],
           publicState: 'HIDDEN',
           submittedAt,
         },
         select: this.partnerRequestSelect(),
       });
 
-      await tx.content.update({
-        where: { id: draft.id },
-        data: {
-          metadata: this.toPrismaJson({
-            kind: PARTNER_LISTING_DRAFT_KIND,
-            version: 1,
-            listing: payload,
-            savedAt: submittedAt.toISOString(),
-            savedById: user.id,
-            submittedAt: submittedAt.toISOString(),
-            submittedRequestId: request.id,
-          }),
-        },
-        select: { id: true },
-      });
+      if (draft) {
+        await tx.content.update({
+          where: { id: draft.id },
+          data: {
+            metadata: this.toPrismaJson({
+              kind: PARTNER_LISTING_DRAFT_KIND,
+              version: 1,
+              listing: payload,
+              savedAt: submittedAt.toISOString(),
+              savedById: user.id,
+              submittedAt: submittedAt.toISOString(),
+              submittedRequestId: request.id,
+            }),
+          },
+          select: { id: true },
+        });
+      }
 
       return {
         draft,
         request: request as unknown as PartnerRequestCmsRecord,
+        draftCastIds,
+        draftMediaIds,
+        submittedAt,
       };
     });
 
-    await this.notifyPartnerRequestDelivery(submitted.request);
+    if (submitted.request) {
+      await this.notifyPartnerRequestDelivery(submitted.request);
+    }
 
     return {
-      id: submitted.request.id,
-      status: submitted.request.status,
-      submittedAt: submitted.request.submittedAt.toISOString(),
-      message: 'Partner listing submitted for admin review',
+      id: submitted.request?.id ?? requestId,
+      status: submitted.request?.status ?? 'PENDING_REVIEW',
+      submittedAt:
+        submitted.request?.submittedAt.toISOString() ??
+        submitted.submittedAt.toISOString(),
+      message: submitted.request
+        ? 'Partner listing submitted for admin review'
+        : 'Partner cast submitted for admin review',
       draft: {
-        contentId: submitted.draft.id,
+        contentId: submitted.draft?.id ?? null,
         storeId: store.id,
         storeName: payload.storeName,
         storeSlug: store.slug,
-        castCount: submitted.request.draftCastIds.length,
-        mediaCount: submitted.request.draftMediaIds.length,
-        contentCount: submitted.request.draftContentIds.length,
+        castCount:
+          submitted.request?.draftCastIds.length ??
+          submitted.draftCastIds.length,
+        mediaCount:
+          submitted.request?.draftMediaIds.length ??
+          submitted.draftMediaIds.length,
+        contentCount: submitted.request?.draftContentIds.length ?? 0,
       },
     };
   }
@@ -7602,15 +7643,52 @@ export class NightlifeDataService {
           );
 
           await Promise.all(
-            request.draftCastIds.map((castId, index) => {
+            request.draftCastIds.map(async (castId, index) => {
               const castProfile = castProfiles[index];
+              const targetCastId =
+                castProfile?.id && castProfile.id !== castId
+                  ? castProfile.id
+                  : null;
 
-              return tx.cast.update({
+              if (targetCastId) {
+                const targetCast = await tx.cast.findFirst({
+                  where: {
+                    id: targetCastId,
+                    storeId: request.store.id,
+                    deletedAt: null,
+                  },
+                  select: { id: true },
+                });
+
+                if (targetCast) {
+                  await tx.cast.update({
+                    where: { id: targetCast.id },
+                    data: this.partnerRequestCastPublishData(castProfile),
+                    select: { id: true },
+                  });
+                  await tx.media.updateMany({
+                    where: {
+                      id: { in: request.draftMediaIds },
+                      castId,
+                    },
+                    data: { castId: targetCast.id, storeId: request.store.id },
+                  });
+                  await tx.cast.update({
+                    where: { id: castId },
+                    data: {
+                      status: 'DELETED',
+                      isPublic: false,
+                      deletedAt: now,
+                    },
+                    select: { id: true },
+                  });
+                  return;
+                }
+              }
+
+              await tx.cast.update({
                 where: { id: castId },
-                data: {
-                  status: castProfile?.status ?? 'ACTIVE',
-                  isPublic: castProfile?.isPublic ?? true,
-                },
+                data: this.partnerRequestCastPublishData(castProfile),
                 select: { id: true },
               });
             }),
@@ -16590,6 +16668,7 @@ export class NightlifeDataService {
     const storeMedia = store.media || [];
 
     return storeCasts.map((cast, index) => ({
+      id: cast.id,
       stageName:
         this.cleanPartnerListingText(cast.stageName) ??
         this.cleanPartnerListingText(cast.publicAlias) ??
@@ -16625,19 +16704,25 @@ export class NightlifeDataService {
       return storeProfiles;
     }
 
-    const storeProfileIndexes = new Map<string, number>();
+    const storeProfileIndexesById = new Map<string, number>();
+    const storeProfileIndexesByName = new Map<string, number>();
     storeProfiles.forEach((profile, index) => {
+      const id = this.cleanNullableText(profile.id);
+      if (id && !storeProfileIndexesById.has(id)) {
+        storeProfileIndexesById.set(id, index);
+      }
       const key = this.normalizeToken(profile.stageName);
-      if (key && !storeProfileIndexes.has(key)) {
-        storeProfileIndexes.set(key, index);
+      if (key && !storeProfileIndexesByName.has(key)) {
+        storeProfileIndexesByName.set(key, index);
       }
     });
 
     const usedStoreIndexes = new Set<number>();
-    const merged = draftProfiles.map((profile, index) => {
+    const merged = draftProfiles.map((profile) => {
+      const profileId = this.cleanNullableText(profile.id);
       const matchedIndex =
-        storeProfileIndexes.get(this.normalizeToken(profile.stageName)) ??
-        (index < storeProfiles.length ? index : undefined);
+        (profileId ? storeProfileIndexesById.get(profileId) : undefined) ??
+        storeProfileIndexesByName.get(this.normalizeToken(profile.stageName));
       const storeProfile =
         matchedIndex !== undefined ? storeProfiles[matchedIndex] : undefined;
 
@@ -16671,6 +16756,7 @@ export class NightlifeDataService {
     const mediaUrls = this.cleanStringArray(profile.mediaUrls, 8);
 
     return {
+      id: text(profile.id) ?? text(storeProfile?.id),
       stageName:
         text(profile.stageName) ??
         text(storeProfile?.stageName) ??
@@ -16692,6 +16778,159 @@ export class NightlifeDataService {
       isPublic: profile.isPublic ?? storeProfile?.isPublic ?? true,
       status: profile.status ?? storeProfile?.status ?? 'ACTIVE',
       mediaUrls: mediaUrls.length ? mediaUrls : (storeProfile?.mediaUrls ?? []),
+    };
+  }
+
+  private partnerListingStoreReviewPayload(
+    payload: PartnerListingDraftPayload,
+  ) {
+    return {
+      storeName: payload.storeName,
+      businessType: payload.businessType,
+      storeCategory: payload.storeCategory,
+      area: payload.area,
+      storeCity: payload.storeCity,
+      storeDistrict: payload.storeDistrict,
+      ward: payload.ward,
+      streetAddress: payload.streetAddress,
+      storeAddress: payload.storeAddress,
+      phone: payload.phone,
+      openingHours: payload.openingHours,
+      openingHourItems: payload.openingHourItems,
+      priceRange: payload.priceRange,
+      description: payload.description,
+      note: payload.note,
+      menuSummary: payload.menuSummary,
+      menuGroups: payload.menuGroups,
+      mapUrl: payload.mapUrl,
+      tags: payload.tags,
+      coverImageUrl: payload.coverImageUrl,
+      galleryUrls: payload.galleryUrls,
+      videoUrls: payload.videoUrls,
+      pricingItems: payload.pricingItems,
+      mediaUrls: payload.mediaUrls,
+    };
+  }
+
+  private hasPartnerListingStoreChanges(
+    payload: PartnerListingDraftPayload,
+    livePayload: PartnerListingDraftPayload,
+  ) {
+    return (
+      JSON.stringify(this.partnerListingStoreReviewPayload(payload)) !==
+      JSON.stringify(this.partnerListingStoreReviewPayload(livePayload))
+    );
+  }
+
+  private partnerListingCastReviewPayload(profile: PartnerListingCastDto) {
+    return {
+      stageName: this.cleanPartnerListingText(profile.stageName) ?? '',
+      bio: this.cleanPartnerListingText(profile.bio) ?? null,
+      tags: this.partnerListingCastStringArray(profile.tags, 12),
+      languages: this.partnerListingCastStringArray(profile.languages, 8),
+      birthMonth: profile.birthMonth ?? null,
+      zodiacSign: this.cleanPartnerListingText(profile.zodiacSign) ?? null,
+      heightCm: profile.heightCm ?? null,
+      measurements:
+        this.cleanPartnerListingText(profile.measurements) ?? null,
+      hobbies: this.partnerListingCastStringArray(profile.hobbies, 12),
+      youtubeLinks: this.partnerListingCastStringArray(
+        profile.youtubeLinks,
+        8,
+      ),
+      hourlyRateVnd: profile.hourlyRateVnd ?? null,
+      mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+    };
+  }
+
+  private partnerListingCastStringArray(
+    values?: string[] | null,
+    limit = 12,
+  ) {
+    return this.cleanPartnerListingStringArray(values, limit);
+  }
+
+  private partnerListingCastProfilesMatch(
+    first: PartnerListingCastDto,
+    second: PartnerListingCastDto,
+  ) {
+    return (
+      JSON.stringify(this.partnerListingCastReviewPayload(first)) ===
+      JSON.stringify(this.partnerListingCastReviewPayload(second))
+    );
+  }
+
+  private changedPartnerListingCastProfiles(
+    payloadProfiles: PartnerListingCastDto[],
+    liveProfiles: PartnerListingCastDto[],
+  ) {
+    const liveById = new Map<string, PartnerListingCastDto>();
+    const liveByName = new Map<string, PartnerListingCastDto>();
+
+    for (const profile of liveProfiles) {
+      const id = this.cleanNullableText(profile.id);
+      if (id && !liveById.has(id)) {
+        liveById.set(id, profile);
+      }
+
+      const nameKey = this.normalizeToken(profile.stageName);
+      if (nameKey && !liveByName.has(nameKey)) {
+        liveByName.set(nameKey, profile);
+      }
+    }
+
+    return payloadProfiles.reduce<PartnerListingCastDto[]>(
+      (changed, profile) => {
+        const profileId = this.cleanNullableText(profile.id);
+        const liveProfile =
+          (profileId ? liveById.get(profileId) : undefined) ??
+          liveByName.get(this.normalizeToken(profile.stageName));
+
+        if (
+          !liveProfile ||
+          !this.partnerListingCastProfilesMatch(profile, liveProfile)
+        ) {
+          changed.push({
+            ...profile,
+            id:
+              profileId ??
+              this.cleanNullableText(liveProfile?.id) ??
+              undefined,
+          });
+        }
+
+        return changed;
+      },
+      [],
+    );
+  }
+
+  private partnerRequestCastPublishData(
+    castProfile?: PartnerRequestCastDto | null,
+  ): Prisma.CastUncheckedUpdateInput {
+    const data: Prisma.CastUncheckedUpdateInput = {
+      status: castProfile?.status ?? 'ACTIVE',
+      isPublic: castProfile?.isPublic ?? true,
+    };
+
+    if (!castProfile) {
+      return data;
+    }
+
+    return {
+      ...data,
+      stageName: castProfile.stageName,
+      bio: castProfile.bio ?? null,
+      publicBio: castProfile.bio ?? null,
+      tags: castProfile.tags ?? [],
+      languages: castProfile.languages ?? [],
+      birthMonth: castProfile.birthMonth ?? null,
+      zodiacSign: castProfile.zodiacSign ?? null,
+      heightCm: castProfile.heightCm ?? null,
+      measurements: castProfile.measurements ?? null,
+      hobbies: castProfile.hobbies ?? [],
+      youtubeLinks: castProfile.youtubeLinks ?? [],
+      hourlyRateVnd: castProfile.hourlyRateVnd ?? null,
     };
   }
 
@@ -17912,6 +18151,7 @@ export class NightlifeDataService {
 
     return castProfiles
       .map((profile) => {
+        const id = this.cleanNullableText(profile.id);
         const stageName = this.cleanPartnerListingText(profile.stageName) ?? '';
         const hourlyRateVnd =
           typeof profile.hourlyRateVnd === 'number' &&
@@ -17934,6 +18174,7 @@ export class NightlifeDataService {
             : undefined;
 
         return {
+          id: id && this.isUuid(id) ? id : undefined,
           stageName,
           storeName: this.cleanPartnerListingText(profile.storeName),
           bio: this.cleanPartnerListingText(profile.bio),

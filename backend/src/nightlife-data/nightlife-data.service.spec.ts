@@ -4098,6 +4098,7 @@ describe('NightlifeDataService', () => {
           castProfiles: [
             expect.objectContaining({
               stageName: 'Aoi',
+              id: 'cast-aoi',
               storeName: 'Tokyo Kitchen',
               bio: 'Friendly host',
               tags: ['Top ranking'],
@@ -4118,6 +4119,115 @@ describe('NightlifeDataService', () => {
             }),
           ],
         }),
+      }),
+    );
+  });
+
+  it('submits only changed partner listing casts without creating a store review request', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const existingCastId = '22222222-2222-4222-8222-222222222222';
+    const draftCastId = '33333333-3333-4333-8333-333333333333';
+    const draftMediaId = '44444444-4444-4444-8444-444444444444';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [
+        {
+          id: existingCastId,
+          stageName: 'Aoi',
+          publicAlias: null,
+          bio: 'Friendly host',
+          publicBio: 'Friendly host',
+          tags: ['Top ranking'],
+          youtubeLinks: [],
+          languages: ['VN'],
+          birthMonth: 8,
+          zodiacSign: 'Leo',
+          heightCm: 165,
+          measurements: '82-58-84',
+          hobbies: ['tea'],
+          hourlyRateVnd: null,
+          isPublic: true,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+    prisma.cast.create.mockResolvedValueOnce({ id: draftCastId });
+    prisma.media.create.mockResolvedValueOnce({ id: draftMediaId });
+
+    const result = await service.submitPartnerListingDraft(
+      { id: 'partner-a', role: 'PARTNER' },
+      storeId,
+      {
+        castProfiles: [
+          {
+            id: existingCastId,
+            stageName: 'Aoi',
+            bio: 'Friendly host',
+            tags: ['Top ranking'],
+            languages: ['VN'],
+            birthMonth: 8,
+            zodiacSign: 'Leo',
+            heightCm: 165,
+            measurements: '82-58-84',
+            hobbies: ['tea'],
+          },
+          {
+            stageName: 'Nguyen',
+            bio: 'New cast from partner',
+            languages: ['VN', 'EN'],
+            mediaUrls: ['https://cdn.example.com/nguyen.jpg'],
+          },
+        ],
+      },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+        message: 'Partner cast submitted for admin review',
+        draft: expect.objectContaining({
+          contentId: null,
+          castCount: 1,
+          mediaCount: 1,
+          contentCount: 0,
+        }),
+      }),
+    );
+    expect(prisma.cast.create).toHaveBeenCalledTimes(1);
+    expect(prisma.cast.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId,
+          stageName: 'Nguyen',
+          isPublic: false,
+          status: 'DRAFT',
+        }),
+      }),
+    );
+    expect(prisma.content.upsert).not.toHaveBeenCalled();
+    expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
+    expect(adminNotificationService.notifyPartnerRequest).not.toHaveBeenCalled();
+    expect(prisma.media.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: [draftMediaId] } },
+        data: { status: 'READY', access: 'PUBLIC' },
       }),
     );
   });

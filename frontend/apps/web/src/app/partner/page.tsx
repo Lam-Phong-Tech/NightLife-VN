@@ -220,6 +220,7 @@ type PartnerListingMenuGroup = {
 };
 
 type PartnerListingCast = {
+  id?: string;
   stageName: string;
   storeName?: string | null;
   bio?: string | null;
@@ -3225,6 +3226,7 @@ export default function PartnerPage() {
         pricingItems: d.pricingItems ?? [],
         castProfiles: (d.castProfiles ?? []).map((cast: any) => ({
           ...cast,
+          id: safeListingText(cast.id),
           stageName: safeListingText(cast.stageName),
           storeName: safeListingText(cast.storeName),
           bio: safeListingText(cast.bio),
@@ -4971,6 +4973,11 @@ export default function PartnerPage() {
         status: string;
         submittedAt: string;
         message: string;
+        draft?: {
+          castCount?: number;
+          mediaCount?: number;
+          contentCount?: number;
+        };
       }>(`/partner/listing-draft/${encodeURIComponent(listingStoreId)}/submit`, {
         data: listingPayload(),
       });
@@ -4980,33 +4987,37 @@ export default function PartnerPage() {
         submittedAt: response.submittedAt,
         publicState: 'HIDDEN',
       });
-      const submittedCastCount = listingDraft.castProfiles.filter((cast) => !isEmptyCastProfile(cast)).length;
-      const submittedMediaCount = [
-        listingDraft.coverImageUrl,
-        ...listingDraft.galleryUrls,
-        ...listingDraft.videoUrls,
-      ].filter((item) => item.trim()).length;
-      const submittedMenuCount = listingDraft.menuGroups.reduce(
-        (sum, group) => sum + group.items.filter((item) => hasText(item.name)).length,
-        0,
-      );
+      const submittedStoreCount = response.draft?.contentCount ?? 0;
+      const submittedCastCount = response.draft?.castCount ?? 0;
+      const submittedMediaCount = response.draft?.mediaCount ?? 0;
+      const submittedParts = [
+        submittedStoreCount ? 'Thông tin quán' : '',
+        submittedCastCount ? `${submittedCastCount} cast` : '',
+        submittedMediaCount ? `${submittedMediaCount} media` : '',
+      ].filter(Boolean);
       pushPartnerNotificationEvent({
         id: `listing-submitted:${response.id}:${response.submittedAt}`,
         category: 'Đăng tin',
         title: 'Đã gửi bản chỉnh sửa chờ Admin duyệt',
-        message: `Thông tin quán${submittedCastCount ? `, ${submittedCastCount} cast` : ''}${submittedMenuCount ? `, ${submittedMenuCount} món/menu` : ''}${submittedMediaCount ? ` và ${submittedMediaCount} media` : ''} đã gửi vào hàng chờ duyệt.`,
+        message: `${submittedParts.length ? submittedParts.join(', ') : 'Thay đổi'} đã gửi vào hàng chờ duyệt.`,
         meta: `Gửi lúc ${formatDateTime(response.submittedAt)}`,
         actionLabel: 'Xem đăng tin',
         panel: 'listing',
-        listingTab: submittedCastCount ? 'cast' : 'store',
+        listingTab: submittedCastCount && !submittedStoreCount ? 'cast' : 'store',
         tone: 'gold',
         icon: FileText,
       });
-      setListingNotice('Đã gửi Admin duyệt. Nội dung sẽ public sau khi được duyệt.');
+      setListingNotice(
+        submittedCastCount && !submittedStoreCount
+          ? 'Đã gửi cast cho Admin duyệt. Cast sẽ hiển thị sau khi được duyệt.'
+          : 'Đã gửi Admin duyệt. Nội dung sẽ public sau khi được duyệt.',
+      );
       feedback.showModal({
         tone: 'success',
         title: 'Gửi duyệt thành công',
-        description: 'Yêu cầu thay đổi thông tin đã được gửi thành công và đang chờ Admin phê duyệt.',
+        description: submittedCastCount && !submittedStoreCount
+          ? 'Yêu cầu thay đổi cast đã được gửi thành công và đang chờ Admin phê duyệt.'
+          : 'Yêu cầu thay đổi thông tin đã được gửi thành công và đang chờ Admin phê duyệt.',
         primaryLabel: 'Đóng',
         onPrimary: () => {
           feedback.closeModal();

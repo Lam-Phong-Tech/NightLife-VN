@@ -17,6 +17,12 @@ import {
 import { CastStatus } from '@prisma/client';
 
 export class PartnerListingCastDto {
+  @ApiPropertyOptional({ example: '9c1b8a54-9f5a-4f43-8d44-74a68c116d99' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  id?: string;
+
   @ApiProperty({ example: 'Yuki' })
   @IsNotEmpty()
   @IsString()
