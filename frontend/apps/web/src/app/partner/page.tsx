@@ -4782,27 +4782,29 @@ export default function PartnerPage() {
                 })
               ) : null}
             </div>
-            {avatarEntry ? (
-              renderListingImagePreview(avatarEntry.url, {
-                label: 'Xóa ảnh đại diện cast',
-                aspectRatio: '3 / 4',
-                onRemove: () => removeCastMediaUrl(index, avatarEntry.mediaIndex),
-              })
-            ) : (
-              renderListingUploadTile({
-                key: `cast-avatar-${index}`,
-                label: 'Tải ảnh đại diện',
-                loadingLabel: 'Đang tải ảnh...',
-                kind: 'image',
-                purpose: 'PARTNER_CAST_IMAGE',
-                successLabel: 'ảnh đại diện',
-                aspectRatio: '3 / 4',
-                onUploaded: ([url]) => {
-                  if (!url) return;
-                  replaceCastAvatarUrl(index, null, url);
-                },
-              })
-            )}
+            <div className="partner-cast-media-grid partner-cast-avatar-grid">
+              {avatarEntry ? (
+                renderListingImagePreview(avatarEntry.url, {
+                  label: 'Xóa ảnh đại diện cast',
+                  aspectRatio: '3 / 4',
+                  onRemove: () => removeCastMediaUrl(index, avatarEntry.mediaIndex),
+                })
+              ) : (
+                renderListingUploadTile({
+                  key: `cast-avatar-${index}`,
+                  label: 'Tải ảnh đại diện',
+                  loadingLabel: 'Đang tải ảnh...',
+                  kind: 'image',
+                  purpose: 'PARTNER_CAST_IMAGE',
+                  successLabel: 'ảnh đại diện',
+                  aspectRatio: '3 / 4',
+                  onUploaded: ([url]) => {
+                    if (!url) return;
+                    replaceCastAvatarUrl(index, null, url);
+                  },
+                })
+              )}
+            </div>
           </div>
 
           <div className="partner-cast-media-panel">
@@ -7991,6 +7993,10 @@ export default function PartnerPage() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
           gap: 10px;
+        }
+        .partner-cast-avatar-grid {
+          grid-template-columns: minmax(118px, 132px);
+          justify-content: start;
         }
         .partner-cast-video-grid {
           display: grid;
