@@ -1072,6 +1072,8 @@ const homeSectionTitleFallbacks = {
   coupon: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t2", "Coupon Hot"),
   ranking: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t3", "Bảng xếp hạng"),
   featured: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t4", "Dịch vụ nổi bật"),
+  featured_restaurant: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t4_restaurant", "Nhà hàng"),
+  featured_spa: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t4_spa", "Spa"),
   video: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t5", "Video Hot"),
   guide: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t6", "Tour · Blog · Guide"),
 };
@@ -1082,6 +1084,8 @@ function getHomeSectionTitles(config: AppearanceConfig) {
     coupon: findAppearanceTitle(config.titles, "t2", homeSectionTitleFallbacks.coupon),
     ranking: findAppearanceTitle(config.titles, "t3", homeSectionTitleFallbacks.ranking),
     featured: findAppearanceTitle(config.titles, "t4", homeSectionTitleFallbacks.featured),
+    featured_restaurant: findAppearanceTitle(config.titles, "t4_restaurant", homeSectionTitleFallbacks.featured_restaurant),
+    featured_spa: findAppearanceTitle(config.titles, "t4_spa", homeSectionTitleFallbacks.featured_spa),
     video: findAppearanceTitle(config.titles, "t5", homeSectionTitleFallbacks.video),
     guide: findAppearanceTitle(config.titles, "t6", homeSectionTitleFallbacks.guide),
   };
@@ -2732,11 +2736,13 @@ function ServiceFilterControls({
   onTabChange,
   activeRegion,
   onRegionChange,
+  items,
 }: {
   activeTab: string;
   onTabChange: (value: string) => void;
   activeRegion: ServiceRegion;
   onRegionChange: (value: ServiceRegion) => void;
+  items: Array<{ id: string; label: string }>;
 }) {
   return (
     <div
@@ -2748,7 +2754,7 @@ function ServiceFilterControls({
         margin: "10px 0 13px",
       }}
     >
-      <TabSwitch items={serviceTabs} active={activeTab} onChange={onTabChange} />
+      <TabSwitch items={items} active={activeTab} onChange={onTabChange} />
       <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} ariaLabel="Chọn khu vực dịch vụ" />
     </div>
   );
@@ -2929,6 +2935,13 @@ export default function HomePageClient() {
   const homeSectionTitles = useMemo(
     () => getHomeSectionTitles(homeAppearance),
     [homeAppearance],
+  );
+  const dynamicServiceTabs = useMemo(
+    () => [
+      { id: "nhahang", label: homeSectionTitles.featured_restaurant },
+      { id: "spa", label: homeSectionTitles.featured_spa },
+    ],
+    [homeSectionTitles],
   );
   const homeStoreCards = useMemo(
     () => homeStores.map(mapStoreToHomeCard),
@@ -3476,6 +3489,7 @@ export default function HomePageClient() {
                 onTabChange={setActiveSvcTab}
                 activeRegion={activeServiceRegion}
                 onRegionChange={setActiveServiceRegion}
+                items={dynamicServiceTabs}
               />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                 {isFeaturedServicesLoading ? (
@@ -3635,6 +3649,7 @@ export default function HomePageClient() {
                 onTabChange={setActiveSvcTab}
                 activeRegion={activeServiceRegion}
                 onRegionChange={setActiveServiceRegion}
+                items={dynamicServiceTabs}
               />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {isFeaturedServicesLoading ? (

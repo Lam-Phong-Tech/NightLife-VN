@@ -69,6 +69,8 @@ const DEFAULT_STATE: AppearanceState = {
     { id: 't2', key: 'Khối coupon', label: 'Coupon Hot' },
     { id: 't3', key: 'Khối xếp hạng', label: 'Bảng xếp hạng' },
     { id: 't4', key: 'Khối dịch vụ', label: 'Dịch vụ nổi bật' },
+    { id: 't4_restaurant', key: 'Tab Nhà Hàng (Khối dịch vụ)', label: 'Nhà hàng' },
+    { id: 't4_spa', key: 'Tab Spa (Khối dịch vụ)', label: 'Spa' },
     { id: 't5', key: 'Khối video', label: 'Video Hot' },
     { id: 't6', key: 'Khối cẩm nang', label: 'Tour · Blog · Guide' }
   ],

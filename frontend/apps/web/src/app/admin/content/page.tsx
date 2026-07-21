@@ -262,6 +262,7 @@ export default function AdminContentPage() {
   }, [blogTitle, blogExcerpt, blogContent, blogFocusKeyword, coverImage]);
 
   // Featured Services states
+  const [appearance, setAppearance] = useState<any>(null);
   const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
   const [featuredCategory, setFeaturedCategory] = useState<'RESTAURANT' | 'MASSAGE_SPA'>('RESTAURANT');
   const [featuredItems, setFeaturedItems] = useState<AdminRankingConfig[]>([]);
@@ -319,6 +320,18 @@ export default function AdminContentPage() {
     fetchTours();
     fetchBannerTags();
     fetchCampaigns();
+
+    const loadAppearance = async () => {
+      try {
+        const res = await apiClient<any>('/system-config/appearance');
+        if (res?.data) {
+          setAppearance(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load appearance config for content page', err);
+      }
+    };
+    loadAppearance();
   }, []);
 
   useEffect(() => {
@@ -2139,8 +2152,12 @@ export default function AdminContentPage() {
               <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')}>TP. Hồ Chí Minh</span>
             </div>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')}>Nhà hàng</span>
-              <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')}>Spa</span>
+              <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')}>
+                {appearance?.titles?.find((t: any) => t.id === 't4_restaurant')?.label || 'Nhà hàng'}
+              </span>
+              <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')}>
+                {appearance?.titles?.find((t: any) => t.id === 't4_spa')?.label || 'Spa'}
+              </span>
             </div>
             <div style={{ flex: 1 }}></div>
             <span style={{ fontSize: '11px', color: '#8c8679' }}>{featuredItems.length} quán đang hiển thị trên trang chủ</span>
