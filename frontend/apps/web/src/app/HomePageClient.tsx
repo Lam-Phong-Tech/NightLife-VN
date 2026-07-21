@@ -1095,6 +1095,39 @@ function isHomeHotVideosEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS !== "false";
 }
 
+const homeSecondaryLoadDelayMs = process.env.NODE_ENV === "test" ? 0 : 800;
+
+function useHomeSecondaryLoadReady() {
+  const [ready, setReady] = useState(() => process.env.NODE_ENV === "test");
+
+  useEffect(() => {
+    if (ready) return;
+
+    const win = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const idleHandle = win.requestIdleCallback(() => setReady(true), {
+        timeout: homeSecondaryLoadDelayMs,
+      });
+
+      return () => {
+        win.cancelIdleCallback?.(idleHandle);
+      };
+    }
+
+    const timer = window.setTimeout(() => setReady(true), homeSecondaryLoadDelayMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [ready]);
+
+  return ready;
+}
+
 function getBannerBackgroundImage(value?: string | null) {
   return value?.replace(/\s+center\/cover\s*$/i, "") || "var(--vy-hero-grad)";
 }
@@ -1102,6 +1135,14 @@ function getBannerBackgroundImage(value?: string | null) {
 function getBannerSlideTransform(index: number, activeIndex: number) {
   if (index === activeIndex) return "translate3d(0,0,0) scale(1.03)";
   return `translate3d(${index < activeIndex ? "-" : ""}34%,0,0) scale(1.05)`;
+}
+
+function shouldLoadBannerSlideImage(index: number, activeIndex: number, bannerCount: number) {
+  if (bannerCount <= 3) return true;
+  const previousIndex = (activeIndex - 1 + bannerCount) % bannerCount;
+  const nextIndex = (activeIndex + 1) % bannerCount;
+
+  return index === activeIndex || index === previousIndex || index === nextIndex;
 }
 
 const bannerPresetDelimiters = [" · ", " Â· ", " — ", " â€” ", " - "];
@@ -1158,6 +1199,7 @@ function BannerMediaSlides({
     <React.Fragment>
       {banners.map((banner, index) => {
         if (renderOnlyActiveBanner && index !== activeBanner) return null;
+        const shouldLoadImage = shouldLoadBannerSlideImage(index, activeBanner, banners.length);
 
         return (
           <span
@@ -1168,7 +1210,7 @@ function BannerMediaSlides({
               inset: 0,
               borderRadius: "inherit",
               backgroundColor: "var(--vy-surface)",
-              backgroundImage: renderOnlyActiveBanner ? undefined : getBannerBackgroundImage(banner.img),
+              backgroundImage: renderOnlyActiveBanner || !shouldLoadImage ? undefined : getBannerBackgroundImage(banner.img),
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",
@@ -2925,6 +2967,7 @@ export default function HomePageClient() {
   const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
   const [homeContentError, setHomeContentError] = useState("");
+  const canLoadSecondaryHomeData = useHomeSecondaryLoadReady();
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
   );
@@ -3073,7 +3116,7 @@ export default function HomePageClient() {
     const behaviorSignals = getHomeBehaviorSignals();
 
     discoveryApi
-      .listStoresStrict({ city: "all", limit: 24, sort: "priority" })
+      .listStoresStrict({ city: "all", limit: 8, sort: "priority" })
       .then((stores) => {
         if (!cancelled) setHomeStores(stores);
       })
@@ -3117,64 +3160,71 @@ export default function HomePageClient() {
         if (!cancelled) setHomeBannersLoading(false);
       });
 
-    campaignsApi
-      .listPublicCampaigns()
-      .then((campaigns) => {
-        if (!cancelled) {
-          setHomeCoupons(
-            campaigns
-              .slice(0, 6)
-              .map((campaign, index) => mapCampaignToHomeItem(campaign, index, activeLanguage, rates)),
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHomeCoupons([]);
-          setHomeCouponsError("Chưa tải được ưu đãi từ API.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHomeCouponsLoading(false);
-      });
+    const secondaryLoadTimer = window.setTimeout(() => {
+      if (cancelled) return;
 
-    Promise.all([
-      tourApi.list({
-        limit: 8,
-      }),
-      contentApi.list({ type: "BLOG", limit: 50 }),
-    ])
-      .then(([tourResponse, blogResponse]) => {
-        if (cancelled) return;
-        const tourItems = tourResponse.data.map((tour) => mapTourToHomeItem(tour, activeLanguage));
-        const tourImages = tourResponse.data.flatMap((tour) => [
-          tour.coverUrl,
-          ...tour.stops.flatMap((stop) => stop.store.media.map((media) => media.url)),
-        ]);
-        setHomeTours(tourItems);
-        const items = [...(blogResponse.data ?? [])]
-          .filter(isHomeGuideBlog)
-          .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
-          .slice(0, 8)
-          .map(mapContentToHomeItem);
-        setHomeContentItems(withApiImageFallbacks(items, tourImages));
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHomeContentItems([]);
-          setHomeContentError("Chưa tải được nội dung CMS.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHomeContentLoading(false);
-      });
+      campaignsApi
+        .listPublicCampaigns({ limit: 6 })
+        .then((campaigns) => {
+          if (!cancelled) {
+            setHomeCoupons(
+              campaigns
+                .slice(0, 6)
+                .map((campaign, index) => mapCampaignToHomeItem(campaign, index, activeLanguage, rates)),
+            );
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setHomeCoupons([]);
+            setHomeCouponsError("Chưa tải được ưu đãi từ API.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setHomeCouponsLoading(false);
+        });
+
+      Promise.all([
+        tourApi.list({
+          limit: 8,
+        }),
+        contentApi.list({ type: "BLOG", limit: 50 }),
+      ])
+        .then(([tourResponse, blogResponse]) => {
+          if (cancelled) return;
+          const tourItems = tourResponse.data.map((tour) => mapTourToHomeItem(tour, activeLanguage));
+          const tourImages = tourResponse.data.flatMap((tour) => [
+            tour.coverUrl,
+            ...tour.stops.flatMap((stop) => stop.store.media.map((media) => media.url)),
+          ]);
+          setHomeTours(tourItems);
+          const items = [...(blogResponse.data ?? [])]
+            .filter(isHomeGuideBlog)
+            .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
+            .slice(0, 8)
+            .map(mapContentToHomeItem);
+          setHomeContentItems(withApiImageFallbacks(items, tourImages));
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setHomeContentItems([]);
+            setHomeContentError("Chưa tải được nội dung CMS.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setHomeContentLoading(false);
+        });
+    }, homeSecondaryLoadDelayMs);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(secondaryLoadTimer);
     };
   }, [activeLanguage, rates]);
 
   useEffect(() => {
+    if (!canLoadSecondaryHomeData) return;
+
     let cancelled = false;
     const city = regionToCityCode(activeRankRegion);
 
@@ -3208,9 +3258,11 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-  }, [activeRankRegion]);
+  }, [activeRankRegion, canLoadSecondaryHomeData]);
 
   useEffect(() => {
+    if (!canLoadSecondaryHomeData) return;
+
     let cancelled = false;
     const category = activeSvcTab === "nhahang" ? "RESTAURANT" : "MASSAGE_SPA";
 
@@ -3274,10 +3326,10 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-  }, [activeSvcTab, activeServiceRegion]);
+  }, [activeSvcTab, activeServiceRegion, canLoadSecondaryHomeData]);
 
   useEffect(() => {
-    if (!homeHotVideosEnabled) return;
+    if (!homeHotVideosEnabled || !canLoadSecondaryHomeData) return;
 
     let cancelled = false;
     const cityCode = regionToCityCode(activeVideoRegion);
@@ -3307,7 +3359,7 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-  }, [activeVideoRegion, homeHotVideosEnabled]);
+  }, [activeVideoRegion, homeHotVideosEnabled, canLoadSecondaryHomeData]);
 
   useEffect(() => {
     if (!homeHotVideosEnabled || !homeVideos.length) return;
