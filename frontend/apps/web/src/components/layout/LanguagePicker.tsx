@@ -47,10 +47,10 @@ const defaultLanguage: LanguageOption = {
 
 const languages: LanguageOption[] = [
   defaultLanguage,
-  { code: "en", badge: "EN", label: "Tiếng Anh", helper: "English", htmlLang: languageHtmlLang.en },
-  { code: "ja", badge: "JA", label: "Tiếng Nhật", helper: "Japanese", htmlLang: languageHtmlLang.ja },
-  { code: "ko", badge: "KO", label: "Tiếng Hàn", helper: "Korean", htmlLang: languageHtmlLang.ko },
-  { code: "zh", badge: "ZH", label: "Tiếng Trung", helper: "Chinese", htmlLang: languageHtmlLang.zh },
+  { code: "en", badge: "EN", label: "English", helper: "English", htmlLang: languageHtmlLang.en },
+  { code: "ja", badge: "JA", label: "日本語", helper: "Japanese", htmlLang: languageHtmlLang.ja },
+  { code: "ko", badge: "KO", label: "한국어", helper: "Korean", htmlLang: languageHtmlLang.ko },
+  { code: "zh", badge: "ZH", label: "中文", helper: "Chinese", htmlLang: languageHtmlLang.zh },
 ];
 
 function getLanguage(code: LanguageCode) {
