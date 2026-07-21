@@ -544,6 +544,20 @@ const formatDistance = (distanceKm: number | null | undefined, language: Languag
       ? "By area"
       : translateText("Theo khu vực", language);
 
+const unknownPriceLabel = (language: LanguageCode) =>
+  ({
+    vi: "Liên hệ",
+    en: "Contact",
+    ja: "お問い合わせ",
+    ko: "문의",
+    zh: "咨询",
+  })[language];
+
+const formatVenuePriceTier = (value: string | number | null | undefined, language: LanguageCode) => {
+  const price = formatPriceTier(value);
+  return price === "Liên hệ" ? unknownPriceLabel(language) : price;
+};
+
 const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): VenueView => {
   const categoryLabel = getLocalizedCategoryLabel(store.category, language);
   const areaLabel = getLocalizedAreaLabel(store.area?.name ?? store.district ?? store.city ?? "Trung tâm", language);
@@ -564,7 +578,7 @@ const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): Ven
     areaLabel,
     cityLabel,
     distanceLabel: formatDistance(store.distanceKm, language),
-    priceLabel: formatPriceTier(store.priceReference?.startingFromVnd),
+    priceLabel: formatVenuePriceTier(store.priceReference?.startingFromVnd, language),
     rating: null,
     tags: (
       localizedAdminTags.length

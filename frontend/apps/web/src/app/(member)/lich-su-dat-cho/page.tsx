@@ -80,6 +80,71 @@ const hasOpeningHours = (openingHours: OpeningHoursInput) =>
     Object.keys(openingHours).length,
   );
 
+type BookingHistoryCopy = {
+  adminSelectCastByStop: string;
+  footerPolicy: string;
+  historySubtitle: string;
+  myReservations: string;
+  rebookTour: string;
+  tourPastDue: string;
+  tourStops: (count: number) => string;
+};
+
+const bookingHistoryCopy: Record<LanguageCode, BookingHistoryCopy> = {
+  vi: {
+    adminSelectCastByStop: "Admin chọn cast theo từng điểm",
+    footerPolicy:
+      "Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát giờ, vui lòng liên hệ Admin qua Mail.",
+    historySubtitle: "Lịch sử đặt bàn & tour",
+    myReservations: "Đặt chỗ của tôi",
+    rebookTour: "Đặt lại tour",
+    tourPastDue: "Đã qua giờ tour, vui lòng liên hệ Admin nếu cần điều phối lại.",
+    tourStops: (count) => `${count} điểm dừng`,
+  },
+  en: {
+    adminSelectCastByStop: "Admin selects Cast for each stop",
+    footerPolicy:
+      "You can reschedule or cancel at least 1 hour before the appointment. For last-minute cases, please contact Admin by email.",
+    historySubtitle: "Table & tour history",
+    myReservations: "My reservations",
+    rebookTour: "Book tour again",
+    tourPastDue: "The tour time has passed. Please contact Admin if you need help arranging it again.",
+    tourStops: (count) => `${count} ${count === 1 ? "stop" : "stops"}`,
+  },
+  ja: {
+    adminSelectCastByStop: "各スポットのキャストは管理者が選択します",
+    footerPolicy:
+      "予約時間の1時間前まで、日時変更またはキャンセルが可能です。直前の場合はメールで管理者へご連絡ください。",
+    historySubtitle: "テーブル・ツアー予約履歴",
+    myReservations: "予約一覧",
+    rebookTour: "ツアーを再予約",
+    tourPastDue: "ツアー時間を過ぎています。再調整が必要な場合は管理者へご連絡ください。",
+    tourStops: (count) => `${count}か所`,
+  },
+  ko: {
+    adminSelectCastByStop: "각 지점의 캐스트는 관리자가 선택합니다",
+    footerPolicy:
+      "예약 시간 최소 1시간 전까지 일정 변경 또는 취소가 가능합니다. 임박한 경우 메일로 관리자에게 문의해 주세요.",
+    historySubtitle: "테이블 및 투어 예약 내역",
+    myReservations: "내 예약",
+    rebookTour: "투어 다시 예약",
+    tourPastDue: "투어 시간이 지났습니다. 다시 조율이 필요하면 관리자에게 문의해 주세요.",
+    tourStops: (count) => `${count}개 지점`,
+  },
+  zh: {
+    adminSelectCastByStop: "管理员会为每个站点选择 Cast",
+    footerPolicy:
+      "可在预约时间至少 1 小时前更改或取消预约。临近时间请通过邮件联系管理员。",
+    historySubtitle: "桌位与行程预约历史",
+    myReservations: "我的预约",
+    rebookTour: "重新预订行程",
+    tourPastDue: "行程时间已过。如需重新协调，请联系管理员。",
+    tourStops: (count) => `${count} 个站点`,
+  },
+};
+
+const getBookingHistoryCopy = (language: LanguageCode) => bookingHistoryCopy[language];
+
 const thumbnails = {
   Mới: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
   "Hoàn tất":
@@ -163,7 +228,7 @@ const bookingTitle = (booking: BookingRecord) => {
 const tourStopCountText = (booking: BookingRecord, language: LanguageCode) => {
   const count = booking.tour?.stops.length ?? 0;
   if (!count) return translateText("Tour", language);
-  return translateText(`${count} điểm dừng`, language);
+  return getBookingHistoryCopy(language).tourStops(count);
 };
 
 const tourStopsPreview = (booking: BookingRecord, language: LanguageCode) => {
@@ -295,7 +360,7 @@ const bookingConfirmHref = (booking: BookingRecord) =>
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
   if (booking.tour) {
     if (isBookingPastDue(booking)) {
-      return `${booking.bookingCode} · ${translateText("Đã qua giờ tour, vui lòng liên hệ Admin nếu cần điều phối lại.", language)}`;
+      return `${booking.bookingCode} · ${getBookingHistoryCopy(language).tourPastDue}`;
     }
 
     if (group === "Hoàn tất") {
@@ -335,6 +400,7 @@ export default function Page() {
   const router = useRouter();
   const { socket } = useSocket();
   const activeLanguage = useActiveLanguage();
+  const copy = getBookingHistoryCopy(activeLanguage);
   const userFeedback = useUserActionFeedback();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -891,8 +957,8 @@ export default function Page() {
               <ChevronLeft size={18} />
             </Link>
             <div className={styles.headerCopy}>
-              <h1 className={styles.headerTitle}>Đặt chỗ của tôi</h1>
-              <p className={styles.headerSubtitle}>Lịch sử đặt bàn & tour</p>
+              <h1 className={styles.headerTitle}>{copy.myReservations}</h1>
+              <p className={styles.headerSubtitle}>{copy.historySubtitle}</p>
             </div>
           </header>
 
@@ -1010,10 +1076,7 @@ export default function Page() {
           <div className={styles.historyFooter}>
             <div className={styles.infoNote}>
               <Clock size={15} />
-              <span>
-                Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát
-                giờ, vui lòng liên hệ Admin qua Mail.
-              </span>
+              <span>{copy.footerPolicy}</span>
             </div>
           </div>
         </div>
@@ -1175,6 +1238,7 @@ function BookingCard({
   onReschedule: (booking: BookingRecord) => void;
   onChat: (booking: BookingRecord) => void;
 }) {
+  const copy = getBookingHistoryCopy(activeLanguage);
   const group = bookingRecordStatusGroup(booking);
   const isOpenBooking = group === "Mới";
   const tourBooking = isTourBooking(booking);
@@ -1347,7 +1411,7 @@ function BookingCard({
               className={canSubmitBill ? styles.secondaryCta : styles.primaryCta}
             >
               <strong>
-                {translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}
+                {tourBooking ? copy.rebookTour : translateText("Đặt lại", activeLanguage)}
               </strong>
             </Link>
           </>
@@ -1356,7 +1420,7 @@ function BookingCard({
             <StatusBadge booking={booking} activeLanguage={activeLanguage} />
             <Link href={rebookHref(booking)} className={styles.secondaryCta}>
               <RotateCcw size={14} />
-              {translateText(tourBooking ? "Đặt lại tour" : "Đặt lại", activeLanguage)}
+              {tourBooking ? copy.rebookTour : translateText("Đặt lại", activeLanguage)}
             </Link>
           </>
         )}
@@ -1372,6 +1436,7 @@ function TourStopsPreview({
   booking: BookingRecord;
   activeLanguage: LanguageCode;
 }) {
+  const copy = getBookingHistoryCopy(activeLanguage);
   const stops = booking.tour?.stops ?? [];
   if (!stops.length) return null;
 
@@ -1388,7 +1453,7 @@ function TourStopsPreview({
             <small>
               {stop.casts.length
                 ? stop.casts.map((cast) => cast.name).join(" · ")
-                : translateText("Admin chọn cast theo từng điểm", activeLanguage)}
+                : copy.adminSelectCastByStop}
             </small>
           </span>
         </div>

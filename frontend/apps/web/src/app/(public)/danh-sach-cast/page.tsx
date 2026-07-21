@@ -1471,6 +1471,11 @@ function CastDiscoveryCard({
   isFavorite: boolean;
   onToggleFavorite: () => void;
 }) {
+  const handleFavoriteClick = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleFavorite();
+  };
   const image = cast.thumbnailUrl;
   const areaLabel = [
     cast.store.area?.name ?? cast.store.district,
@@ -1527,15 +1532,20 @@ function CastDiscoveryCard({
           </div>
         </div>
       </Link>
-      <button
-        type="button"
+      <span
         className={`cast-card-favorite${isFavorite ? " is-active" : ""}`}
-        onClick={onToggleFavorite}
+        role="button"
+        tabIndex={0}
+        aria-pressed={isFavorite}
+        onClick={handleFavoriteClick}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
+        }}
         aria-label={favoriteLabel}
         title={favoriteLabel}
       >
         <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-      </button>
+      </span>
     </article>
   );
 }

@@ -7,6 +7,8 @@ import { castFavoriteApi } from "@/lib/api/cast-detail";
 import { discoveryApi, type PublicCast, type PublicStore } from "@/lib/api/discovery";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { castImageForSlug, storeImageForSlug } from "@/lib/demo-media";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import {
   readFavoriteCastItems,
@@ -23,6 +25,100 @@ import {
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
 type SavedTab = "stores" | "casts";
+
+type SavedPageCopy = {
+  quickOpen: string;
+  favoriteTypeLabel: string;
+  savedFallback: string;
+  removeStoreTitle: string;
+  removeCastTitle: string;
+  removeConfirmLabel: string;
+  removeStoreSuccessTitle: string;
+  removeCastSuccessTitle: string;
+  removeStoreErrorTitle: string;
+  removeCastErrorTitle: string;
+  removeDescription: (name: string) => string;
+  errorFallback: string;
+  removeAria: (name: string) => string;
+};
+
+const savedPageCopy: Record<LanguageCode, SavedPageCopy> = {
+  vi: {
+    quickOpen: "Mở lại nhanh",
+    favoriteTypeLabel: "Loại yêu thích",
+    savedFallback: "Đã lưu",
+    removeStoreTitle: "Bỏ lưu quán?",
+    removeCastTitle: "Bỏ lưu cast?",
+    removeConfirmLabel: "Bỏ lưu",
+    removeStoreSuccessTitle: "Đã bỏ lưu quán",
+    removeCastSuccessTitle: "Đã bỏ lưu cast",
+    removeStoreErrorTitle: "Không bỏ lưu được quán",
+    removeCastErrorTitle: "Không bỏ lưu được cast",
+    removeDescription: (name) => `${name} đã được gỡ khỏi danh sách yêu thích.`,
+    errorFallback: "Vui lòng thử lại sau.",
+    removeAria: (name) => `Bỏ lưu ${name}`,
+  },
+  en: {
+    quickOpen: "Open again quickly",
+    favoriteTypeLabel: "Favorite type",
+    savedFallback: "Saved",
+    removeStoreTitle: "Unsave venue?",
+    removeCastTitle: "Unsave Cast?",
+    removeConfirmLabel: "Unsave",
+    removeStoreSuccessTitle: "Venue removed",
+    removeCastSuccessTitle: "Cast removed",
+    removeStoreErrorTitle: "Could not unsave venue",
+    removeCastErrorTitle: "Could not unsave Cast",
+    removeDescription: (name) => `${name} has been removed from your favorites.`,
+    errorFallback: "Please try again later.",
+    removeAria: (name) => `Unsave ${name}`,
+  },
+  ja: {
+    quickOpen: "すぐ開く",
+    favoriteTypeLabel: "お気に入りタイプ",
+    savedFallback: "保存済み",
+    removeStoreTitle: "店舗の保存を解除しますか?",
+    removeCastTitle: "キャストの保存を解除しますか?",
+    removeConfirmLabel: "保存を解除",
+    removeStoreSuccessTitle: "店舗の保存を解除しました",
+    removeCastSuccessTitle: "キャストの保存を解除しました",
+    removeStoreErrorTitle: "店舗の保存を解除できませんでした",
+    removeCastErrorTitle: "キャストの保存を解除できませんでした",
+    removeDescription: (name) => `${name}をお気に入りリストから削除しました。`,
+    errorFallback: "しばらくしてからもう一度お試しください。",
+    removeAria: (name) => `${name}の保存を解除`,
+  },
+  ko: {
+    quickOpen: "빠르게 다시 열기",
+    favoriteTypeLabel: "즐겨찾기 유형",
+    savedFallback: "저장됨",
+    removeStoreTitle: "매장 저장을 해제할까요?",
+    removeCastTitle: "Cast 저장을 해제할까요?",
+    removeConfirmLabel: "저장 해제",
+    removeStoreSuccessTitle: "매장 저장을 해제했습니다",
+    removeCastSuccessTitle: "Cast 저장을 해제했습니다",
+    removeStoreErrorTitle: "매장 저장을 해제할 수 없습니다",
+    removeCastErrorTitle: "Cast 저장을 해제할 수 없습니다",
+    removeDescription: (name) => `${name}이(가) 즐겨찾기에서 삭제되었습니다.`,
+    errorFallback: "잠시 후 다시 시도해 주세요.",
+    removeAria: (name) => `${name} 저장 해제`,
+  },
+  zh: {
+    quickOpen: "快速再次打开",
+    favoriteTypeLabel: "收藏类型",
+    savedFallback: "已保存",
+    removeStoreTitle: "取消收藏店铺？",
+    removeCastTitle: "取消收藏 Cast？",
+    removeConfirmLabel: "取消收藏",
+    removeStoreSuccessTitle: "已取消收藏店铺",
+    removeCastSuccessTitle: "已取消收藏 Cast",
+    removeStoreErrorTitle: "无法取消收藏店铺",
+    removeCastErrorTitle: "无法取消收藏 Cast",
+    removeDescription: (name) => `已将 ${name} 从收藏列表移除。`,
+    errorFallback: "请稍后再试。",
+    removeAria: (name) => `取消收藏 ${name}`,
+  },
+};
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
@@ -109,6 +205,8 @@ const mergeCastItem = (
 };
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
+  const copy = savedPageCopy[activeLanguage];
   const userFeedback = useUserActionFeedback();
   const [activeTab, setActiveTab] = useState<SavedTab>("stores");
   const [stores, setStores] = useState<SavedFavoriteStore[]>([]);
@@ -209,8 +307,8 @@ export default function Page() {
     try {
       await storeFavoriteApi.unfavorite(item.slug);
       userFeedback.success({
-        title: "Đã bỏ lưu quán",
-        description: `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+        title: copy.removeStoreSuccessTitle,
+        description: copy.removeDescription(item.name),
       });
     } catch (error) {
       writeFavoriteStore(item, true);
@@ -218,17 +316,17 @@ export default function Page() {
         current.some((store) => store.slug === item.slug) ? current : [item, ...current],
       );
       userFeedback.error({
-        title: "Không bỏ lưu được quán",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: copy.removeStoreErrorTitle,
+        description: userActionErrorMessage(error, copy.errorFallback),
       });
     }
   };
 
   const removeStore = (item: SavedFavoriteStore) => {
     userFeedback.confirmAction({
-      title: "Bỏ lưu quán?",
-      description: `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: "Bỏ lưu",
+      title: copy.removeStoreTitle,
+      description: copy.removeDescription(item.name),
+      confirmLabel: copy.removeConfirmLabel,
       tone: "warning",
       destructive: true,
       onConfirm: () => applyRemoveStore(item),
@@ -242,8 +340,8 @@ export default function Page() {
     try {
       await castFavoriteApi.unfavorite(item.slug);
       userFeedback.success({
-        title: "Đã bỏ lưu cast",
-        description: `${item.name} đã được gỡ khỏi danh sách yêu thích.`,
+        title: copy.removeCastSuccessTitle,
+        description: copy.removeDescription(item.name),
       });
     } catch (error) {
       writeFavoriteCast(item, true);
@@ -251,17 +349,17 @@ export default function Page() {
         current.some((cast) => cast.slug === item.slug) ? current : [item, ...current],
       );
       userFeedback.error({
-        title: "Không bỏ lưu được cast",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: copy.removeCastErrorTitle,
+        description: userActionErrorMessage(error, copy.errorFallback),
       });
     }
   };
 
   const removeCast = (item: SavedFavoriteCast) => {
     userFeedback.confirmAction({
-      title: "Bỏ lưu cast?",
-      description: `Gỡ ${item.name} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: "Bỏ lưu",
+      title: copy.removeCastTitle,
+      description: copy.removeDescription(item.name),
+      confirmLabel: copy.removeConfirmLabel,
       tone: "warning",
       destructive: true,
       onConfirm: () => applyRemoveCast(item),
@@ -275,12 +373,12 @@ export default function Page() {
       <section className="saved-shell">
         <header className="saved-head">
           <div>
-            <h1>Quán & Cast đã lưu</h1>
-            <p>Những mục bạn bấm tim sẽ nằm ở đây để mở lại nhanh.</p>
+            <h1>{translateText("Quán & Cast đã lưu", activeLanguage)}</h1>
+            <p>{translateText("Những mục bạn bấm tim sẽ nằm ở đây để mở lại nhanh.", activeLanguage)}</p>
           </div>
         </header>
 
-        <div className="saved-tabs" role="tablist" aria-label="Loại yêu thích">
+        <div className="saved-tabs" role="tablist" aria-label={copy.favoriteTypeLabel}>
           <button
             type="button"
             role="tab"
@@ -288,7 +386,7 @@ export default function Page() {
             className={activeTab === "stores" ? "active" : ""}
             onClick={() => setActiveTab("stores")}
           >
-            Quán <span>{stores.length}</span>
+            {translateText("Quán", activeLanguage)} <span>{stores.length}</span>
           </button>
           <button
             type="button"
@@ -297,7 +395,7 @@ export default function Page() {
             className={activeTab === "casts" ? "active" : ""}
             onClick={() => setActiveTab("casts")}
           >
-            Cast <span>{casts.length}</span>
+            {translateText("Cast", activeLanguage)} <span>{casts.length}</span>
           </button>
         </div>
 
@@ -319,6 +417,9 @@ export default function Page() {
                     key={item.slug}
                     meta={[item.areaLabel, item.categoryLabel].filter(Boolean).join(" · ")}
                     onRemove={() => removeStore(item)}
+                    quickLabel={copy.quickOpen}
+                    removeLabel={copy.removeAria(item.name)}
+                    savedFallback={copy.savedFallback}
                     title={item.name}
                   />
                 ))
@@ -329,6 +430,9 @@ export default function Page() {
                     key={item.slug}
                     meta={[item.storeName, item.areaLabel].filter(Boolean).join(" · ")}
                     onRemove={() => removeCast(item)}
+                    quickLabel={copy.quickOpen}
+                    removeLabel={copy.removeAria(item.name)}
+                    savedFallback={copy.savedFallback}
                     title={item.name}
                   />
                 ))}
@@ -340,10 +444,10 @@ export default function Page() {
             <span className="saved-empty-icon">
               <Heart size={30} />
             </span>
-            <h2>Chưa lưu mục nào</h2>
-            <p>Nhấn biểu tượng tim trên quán hoặc cast để lưu lại và xem nhanh tại đây.</p>
+            <h2>{translateText("Chưa lưu mục nào", activeLanguage)}</h2>
+            <p>{translateText("Nhấn biểu tượng tim trên quán hoặc cast để lưu lại và xem nhanh tại đây.", activeLanguage)}</p>
             <Link href={activeTab === "stores" ? "/danh-sach-quan" : "/danh-sach-cast"}>
-              {activeTab === "stores" ? "Khám phá quán" : "Khám phá cast"}
+              {translateText(activeTab === "stores" ? "Khám phá quán" : "Khám phá cast", activeLanguage)}
               <ChevronRight size={16} />
             </Link>
           </section>
@@ -358,12 +462,18 @@ function SavedCard({
   image,
   meta,
   onRemove,
+  quickLabel,
+  removeLabel,
+  savedFallback,
   title,
 }: {
   href: string;
   image?: string;
   meta: string;
   onRemove: () => void;
+  quickLabel: string;
+  removeLabel: string;
+  savedFallback: string;
   title: string;
 }) {
   return (
@@ -372,15 +482,15 @@ function SavedCard({
         <span className="saved-photo" style={{ backgroundImage: image ? `url("${image}")` : undefined }} />
         <span className="saved-copy">
           <strong>{title}</strong>
-          <small>{meta || "Đã lưu"}</small>
+          <small>{meta || savedFallback}</small>
           <em>
             <Star size={13} fill="currentColor" />
-            Mở lại nhanh
+            {quickLabel}
           </em>
         </span>
         <ChevronRight size={18} />
       </Link>
-      <button type="button" aria-label={`Bỏ lưu ${title}`} onClick={onRemove}>
+      <button type="button" aria-label={removeLabel} onClick={onRemove}>
         <Trash2 size={16} />
       </button>
     </article>
