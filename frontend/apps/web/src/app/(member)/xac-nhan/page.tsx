@@ -12,6 +12,7 @@ import {
   type BookingConfirmationFlashKind,
   type BookingConfirmationPageFeedback,
 } from "@/lib/booking-confirmation-flash";
+import { getStoreDetail } from "@/lib/api/store-detail";
 import { translateText } from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
@@ -485,6 +486,7 @@ export default function Page() {
   const [bookingLookup, setBookingLookup] = useState<BookingLookup | null>(null);
   const [isBookingLoading, setIsBookingLoading] = useState(true);
   const [redirectFeedback, setRedirectFeedback] = useState<BookingResolutionFeedback | null>(null);
+  const [adminStoreAddress, setAdminStoreAddress] = useState("");
   const latestBookingRef = useRef<BookingRecord | null>(null);
   const handledResolutionRef = useRef<string | null>(null);
   const redirectTimerRef = useRef<number | null>(null);
@@ -622,11 +624,37 @@ export default function Page() {
     };
   }, [booking?.id, booking?.status, bookingLookup, handleBookingResolution, isPartnerApproved, redirectFeedback]);
 
+  const bookingStoreSlug = booking?.tour ? "" : booking?.store?.slug?.trim() ?? "";
+  const bookingStoreAddress = booking?.tour ? "" : booking?.store?.address?.trim() ?? "";
+
+  useEffect(() => {
+    let alive = true;
+
+    setAdminStoreAddress(bookingStoreAddress);
+
+    if (!bookingStoreSlug) {
+      return () => {
+        alive = false;
+      };
+    }
+
+    getStoreDetail(bookingStoreSlug)
+      .then((store) => {
+        if (!alive) return;
+        setAdminStoreAddress(store.address?.trim() || bookingStoreAddress);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, [bookingStoreAddress, bookingStoreSlug]);
+
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) || isPartnerApproved : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
-  const bookedStoreAddress = !isTourBooking ? booking?.store?.address?.trim() ?? "" : "";
+  const bookedStoreAddress = !isTourBooking ? adminStoreAddress : "";
   const canShowQr = booking ? !isCancelled : false;
   const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
