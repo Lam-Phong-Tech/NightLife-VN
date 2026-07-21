@@ -47,10 +47,10 @@ const defaultLanguage: LanguageOption = {
 
 const languages: LanguageOption[] = [
   defaultLanguage,
-  { code: "en", badge: "EN", label: "English", helper: "International", htmlLang: languageHtmlLang.en },
-  { code: "ja", badge: "JA", label: "日本語", helper: "Japanese", htmlLang: languageHtmlLang.ja },
-  { code: "ko", badge: "KO", label: "한국어", helper: "Korean", htmlLang: languageHtmlLang.ko },
-  { code: "zh", badge: "ZH", label: "中文", helper: "Chinese", htmlLang: languageHtmlLang.zh },
+  { code: "en", badge: "EN", label: "Tiếng Anh", helper: "English", htmlLang: languageHtmlLang.en },
+  { code: "ja", badge: "JA", label: "Tiếng Nhật", helper: "Japanese", htmlLang: languageHtmlLang.ja },
+  { code: "ko", badge: "KO", label: "Tiếng Hàn", helper: "Korean", htmlLang: languageHtmlLang.ko },
+  { code: "zh", badge: "ZH", label: "Tiếng Trung", helper: "Chinese", htmlLang: languageHtmlLang.zh },
 ];
 
 function getLanguage(code: LanguageCode) {
@@ -303,6 +303,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span
+                    data-no-translate="true"
+                    translate="no"
                     style={{
                       display: "block",
                       color: colors.text,
@@ -314,6 +316,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                     {language.label}
                   </span>
                   <span
+                    data-no-translate="true"
+                    translate="no"
                     style={{
                       display: "block",
                       color: colors.muted,
@@ -515,6 +519,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                         }}
                       >
                         <span
+                          data-no-translate="true"
+                          translate="no"
                           style={{
                             color: colors.text,
                             fontSize: isMobile ? "15px" : "15.5px",
@@ -542,6 +548,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                         ) : null}
                       </span>
                       <span
+                        data-no-translate="true"
+                        translate="no"
                         style={{
                           display: "block",
                           color: colors.muted,
