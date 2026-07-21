@@ -5,6 +5,7 @@ export type AppearanceItem = {
   label: string;
   icon: string;
   color?: string;
+  featured?: boolean;
 };
 
 export type AppearanceTitle = {
@@ -80,6 +81,7 @@ const mergeAppearanceItems = (
       label: item?.label?.trim() || fallbackItem.label,
       icon: item?.icon?.trim() || fallbackItem.icon,
       color: normalizeAppearanceColor(item?.color) || normalizeAppearanceColor(fallbackItem.color),
+      featured: typeof item?.featured === "boolean" ? item.featured : (fallbackItem.featured || fallbackItem.id === "q8" || fallbackItem.icon === "star"),
     };
   });
 

@@ -2531,93 +2531,7 @@ export default function PartnerPage() {
     ].slice(0, 4));
   }, []);
 
-  const refreshPartnerNotificationData = useCallback(() => {
-    const promises: Promise<any>[] = [
-      apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
-      apiClient<PartnerBill[]>('/partner/bills').then(setBills),
-      apiClient<PartnerBooking[]>('/partner/bookings').then(setBookings),
-    ];
-    if (listingStoreId) {
-      promises.push(
-        apiClient<PartnerListingDraftResponse>(
-          `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
-        )
-          .then((response) => {
-            applyListingDraftResponse(response);
-          })
-          .catch(() => null),
-      );
-    }
-    void Promise.allSettled(promises);
-  }, [listingStoreId, applyListingDraftResponse]);
 
-  useEffect(() => {
-    const handleMemberNotificationCreated = (event: Event) => {
-      const detail = (event as CustomEvent<MemberNotificationSocketPayload>).detail ?? {};
-      const createdAt = detail.createdAt ?? new Date().toISOString();
-      const category = detail.category ?? 'system';
-      const isBill = category === 'bill' || Boolean(detail.billId);
-      const isBooking = category === 'booking' || Boolean(detail.bookingId);
-      const isListingReview = detail.templateKey === 'partner.listing.reviewed.v1';
-
-      pushPartnerNotificationEvent({
-        id: `realtime:${detail.id ?? detail.billId ?? detail.bookingId ?? createdAt}`,
-        category: isListingReview ? 'Đăng tin' : isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
-        title: isListingReview
-          ? 'Yêu cầu đăng tin đã được xử lý'
-          : isBill
-            ? 'Có cập nhật bill mới'
-            : isBooking
-              ? 'Có cập nhật booking mới'
-              : 'Có thông báo mới từ hệ thống',
-        message: isListingReview
-          ? 'Admin vừa phê duyệt hoặc từ chối thông tin đăng của quán. Vui lòng kiểm tra lại.'
-          : isBill
-            ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
-            : isBooking
-              ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
-              : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
-        meta: `Realtime · ${formatDateTime(createdAt)}`,
-        actionLabel: isListingReview ? 'Xem đăng tin' : isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
-        panel: isListingReview ? 'listing' : isBill ? 'bill' : isBooking ? 'scan' : 'overview',
-        tone: isListingReview ? 'warning' : isBill ? 'gold' : isBooking ? 'info' : 'warning',
-        icon: isListingReview ? FileText : isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
-      });
-      refreshPartnerNotificationData();
-    };
-
-    const handleRefresh = () => {
-      refreshPartnerNotificationData();
-    };
-
-    const handleBookingStatusUpdated = (event: Event) => {
-      const detail = (event as CustomEvent<{ id?: string; scheduledAt?: string; store?: { name?: string } }>).detail ?? {};
-      const createdAt = new Date().toISOString();
-
-      pushPartnerNotificationEvent({
-        id: `realtime:booking:${detail.id ?? createdAt}`,
-        category: 'Đặt chỗ',
-        title: 'Có cập nhật booking mới',
-        message: `${detail.store?.name ?? storeName} vừa có cập nhật booking. Mở màn quét QR để kiểm tra và xử lý kịp thời.`,
-        meta: detail.scheduledAt ? `Lịch: ${formatDateTime(detail.scheduledAt)}` : `Realtime · ${formatDateTime(createdAt)}`,
-        actionLabel: 'Xem booking',
-        panel: 'scan',
-        tone: 'info',
-        icon: CalendarDays,
-      });
-      refreshPartnerNotificationData();
-    };
-
-    window.addEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
-    window.addEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
-    window.addEventListener(memberNotificationsRefreshEvent, handleRefresh);
-
-    return () => {
-      window.removeEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
-      window.removeEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
-      window.removeEventListener(memberNotificationsRefreshEvent, handleRefresh);
-    };
-  }, [pushPartnerNotificationEvent, refreshPartnerNotificationData, storeName]);
 
   const partnerNotifications = useMemo<PartnerNotification[]>(() => {
     const readIds = new Set(readNotificationIds);
@@ -3346,6 +3260,94 @@ export default function PartnerPage() {
       window.clearTimeout(loadingTimer);
     };
   }, [applyListingDraftResponse, listingStoreId]);
+
+  const refreshPartnerNotificationData = useCallback(() => {
+    const promises: Promise<any>[] = [
+      apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
+      apiClient<PartnerBill[]>('/partner/bills').then(setBills),
+      apiClient<PartnerBooking[]>('/partner/bookings').then(setBookings),
+    ];
+    if (listingStoreId) {
+      promises.push(
+        apiClient<PartnerListingDraftResponse>(
+          `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
+        )
+          .then((response) => {
+            applyListingDraftResponse(response);
+          })
+          .catch(() => null),
+      );
+    }
+    void Promise.allSettled(promises);
+  }, [listingStoreId, applyListingDraftResponse]);
+
+  useEffect(() => {
+    const handleMemberNotificationCreated = (event: Event) => {
+      const detail = (event as CustomEvent<MemberNotificationSocketPayload>).detail ?? {};
+      const createdAt = detail.createdAt ?? new Date().toISOString();
+      const category = detail.category ?? 'system';
+      const isBill = category === 'bill' || Boolean(detail.billId);
+      const isBooking = category === 'booking' || Boolean(detail.bookingId);
+      const isListingReview = detail.templateKey === 'partner.listing.reviewed.v1';
+
+      pushPartnerNotificationEvent({
+        id: `realtime:${detail.id ?? detail.billId ?? detail.bookingId ?? createdAt}`,
+        category: isListingReview ? 'Đăng tin' : isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
+        title: isListingReview
+          ? 'Yêu cầu đăng tin đã được xử lý'
+          : isBill
+            ? 'Có cập nhật bill mới'
+            : isBooking
+              ? 'Có cập nhật booking mới'
+              : 'Có thông báo mới từ hệ thống',
+        message: isListingReview
+          ? 'Admin vừa phê duyệt hoặc từ chối thông tin đăng của quán. Vui lòng kiểm tra lại.'
+          : isBill
+            ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
+            : isBooking
+              ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
+              : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
+        meta: `Realtime · ${formatDateTime(createdAt)}`,
+        actionLabel: isListingReview ? 'Xem đăng tin' : isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
+        panel: isListingReview ? 'listing' : isBill ? 'bill' : isBooking ? 'scan' : 'overview',
+        tone: isListingReview ? 'warning' : isBill ? 'gold' : isBooking ? 'info' : 'warning',
+        icon: isListingReview ? FileText : isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
+      });
+      refreshPartnerNotificationData();
+    };
+
+    const handleRefresh = () => {
+      refreshPartnerNotificationData();
+    };
+
+    const handleBookingStatusUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string; scheduledAt?: string; store?: { name?: string } }>).detail ?? {};
+      const createdAt = new Date().toISOString();
+
+      pushPartnerNotificationEvent({
+        id: `realtime:booking:${detail.id ?? createdAt}`,
+        category: 'Đặt chỗ',
+        title: 'Có cập nhật booking mới',
+        message: `${detail.store?.name ?? storeName} vừa có cập nhật booking. Mở màn quét QR để kiểm tra và xử lý kịp thời.`,
+        meta: detail.scheduledAt ? `Lịch: ${formatDateTime(detail.scheduledAt)}` : `Realtime · ${formatDateTime(createdAt)}`,
+        actionLabel: 'Xem booking',
+        panel: 'scan',
+        tone: 'info',
+        icon: CalendarDays,
+      });
+      refreshPartnerNotificationData();
+    };
+
+    window.addEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
+    window.addEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
+    window.addEventListener(memberNotificationsRefreshEvent, handleRefresh);
+
+    return () => {
+      window.removeEventListener(memberNotificationCreatedEvent, handleMemberNotificationCreated);
+      window.removeEventListener('nightlife:booking-status-updated', handleBookingStatusUpdated);
+      window.removeEventListener(memberNotificationsRefreshEvent, handleRefresh);
+    };
+  }, [pushPartnerNotificationEvent, refreshPartnerNotificationData, storeName]);
 
   const clearListingErrorsFor = (path: string) => {
     setListingErrors((current) => {

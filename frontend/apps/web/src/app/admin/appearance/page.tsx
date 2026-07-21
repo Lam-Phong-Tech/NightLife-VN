@@ -36,6 +36,7 @@ type AppearanceIconItem = {
   label: string;
   icon: string;
   color?: string;
+  featured?: boolean;
 };
 
 type AppearanceState = {
@@ -347,7 +348,7 @@ export default function AppearancePage() {
   const dirty = currentStateStr !== savedState;
 
   let changedCount = 0;
-  quick.forEach((it, i) => { const sv = saved.quick[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color)) changedCount++; });
+  quick.forEach((it, i) => { const sv = saved.quick[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color) || sv.featured !== it.featured) changedCount++; });
   nav.forEach((it, i) => { const sv = saved.nav[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color)) changedCount++; });
   titles.forEach((t, i) => { const sv = saved.titles[i]; if (!sv || sv.label !== t.label) changedCount++; });
   if (brandChanged) changedCount++;
@@ -496,7 +497,20 @@ export default function AppearancePage() {
           </div>
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', padding: '13px 15px' }}>
-              <span style={{ width: '58px', height: '58px', flex: 'none', borderRadius: '16px', background: hexToRgba(previewColor, .12), border: `1px solid ${hexToRgba(previewColor, .46)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 14px 26px -22px ${previewColor}` }}>
+              <span 
+                style={{ 
+                  width: '58px', 
+                  height: '58px', 
+                  flex: 'none', 
+                  borderRadius: '16px', 
+                  background: (drawer.group === 'quick' && it.featured) ? 'rgba(212, 178, 106, 0.05)' : hexToRgba(previewColor, .12), 
+                  border: (drawer.group === 'quick' && it.featured) ? '1px solid rgba(212, 178, 106, 0.32)' : `1px solid ${hexToRgba(previewColor, .46)}`, 
+                  boxShadow: (drawer.group === 'quick' && it.featured) ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)' : `0 14px 26px -22px ${previewColor}`,
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}
+              >
                 <span
                   style={{
                     width: '26px',
@@ -511,6 +525,23 @@ export default function AppearancePage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '6px' }}>Tên hiển thị</div>
                 <input value={it.label} onChange={setLabel} maxLength={16} style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '10px 12px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter', sans-serif", outline: 'none' }} />
+                {drawer.group === 'quick' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="icon-featured-toggle"
+                      checked={Boolean(it.featured)} 
+                      onChange={e => {
+                        const val = e.target.checked;
+                        setQuick(prev => prev.map(x => x.id === it.id ? { ...x, featured: val } : x));
+                      }} 
+                      style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                    />
+                    <label htmlFor="icon-featured-toggle" style={{ fontSize: '12px', color: '#c5c0b6', cursor: 'pointer', fontWeight: 600, userSelect: 'none' }}>
+                      Nổi bật (có viền vàng bao quanh)
+                    </label>
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '8px', color: '#8c8679', fontSize: '10.5px', fontWeight: 600 }}>
                   <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: previewColor, boxShadow: `0 0 0 3px ${hexToRgba(previewColor, .14)}` }}></span>
                   Màu icon: <b style={{ color: '#f0dda8' }}>{previewColor}</b>
@@ -769,7 +800,19 @@ export default function AppearancePage() {
               const color = getItemIconColor(t);
               return (
                 <div key={t.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '52px', height: '52px', borderRadius: '15px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span 
+                    style={{ 
+                      width: '52px', 
+                      height: '52px', 
+                      borderRadius: '15px', 
+                      background: t.featured ? 'rgba(212, 178, 106, 0.05)' : 'rgba(255, 255, 255, 0.035)', 
+                      border: t.featured ? '1px solid rgba(212, 178, 106, 0.32)' : '1px solid rgba(255, 255, 255, 0.07)', 
+                      boxShadow: t.featured ? '0 10px 20px -10px rgba(212, 178, 106, 0.15)' : 'none',
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}
+                  >
                     <span
                       style={{
                         width: '22px',

@@ -260,7 +260,7 @@ function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCatego
     iconUrl: isTourSlot ? undefined : appearanceIconUrl(item.icon),
     color: item.color,
     href: categoryHrefById[item.id] ?? fallback.href,
-    featured: item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured)),
+    featured: typeof item.featured === "boolean" ? item.featured : (item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured))),
   };
 }
 
