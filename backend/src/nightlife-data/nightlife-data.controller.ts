@@ -595,6 +595,21 @@ export class NightlifeDataController {
     );
   }
 
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('partner/listing-draft/:storeId/casts/:castId')
+  deletePartnerListingCast(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Param('castId') castId: string,
+  ) {
+    return this.nightlifeDataService.deletePartnerListingCast(
+      request.user,
+      storeId,
+      castId,
+    );
+  }
+
   @PartnerLiteDashboardContract()
   @ActionPolicy('canViewPartnerStore')
   @Roles('PARTNER', 'ADMIN')

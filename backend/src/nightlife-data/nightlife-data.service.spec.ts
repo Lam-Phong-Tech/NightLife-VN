@@ -4232,6 +4232,94 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('soft deletes a partner listing cast within the scoped store', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const castId = '22222222-2222-4222-8222-222222222222';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [],
+    });
+    prisma.content.findFirst.mockResolvedValueOnce({
+      id: 'content-draft-1',
+      title: 'Velvet Club listing draft',
+      slug: 'partner-listing-draft-velvet-club',
+      status: 'DRAFT',
+      excerpt: null,
+      body: null,
+      metadata: {
+        kind: 'partner_listing_draft',
+        listing: {
+          storeName: 'Velvet Club',
+          castProfiles: [
+            { id: castId, stageName: 'Nguyen' },
+            { id: '33333333-3333-4333-8333-333333333333', stageName: 'Aya' },
+          ],
+        },
+      },
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+      publishedAt: null,
+    });
+
+    await expect(
+      service.deletePartnerListingCast(
+        { id: 'partner-a', role: 'PARTNER' },
+        storeId,
+        castId,
+      ),
+    ).resolves.toEqual({
+      message: 'Partner cast soft deleted',
+      castId,
+    });
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-a', role: 'PARTNER' },
+      storeId,
+      'store.partner.view',
+    );
+    expect(prisma.cast.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: castId,
+        storeId,
+        deletedAt: null,
+      },
+      data: { deletedAt: expect.any(Date) },
+    });
+    expect(prisma.content.updateMany).toHaveBeenCalledWith({
+      where: { id: 'content-draft-1', deletedAt: null },
+      data: {
+        metadata: expect.objectContaining({
+          listing: expect.objectContaining({
+            castProfiles: [
+              {
+                id: '33333333-3333-4333-8333-333333333333',
+                stageName: 'Aya',
+              },
+            ],
+          }),
+          savedById: 'partner-a',
+        }),
+      },
+    });
+  });
+
   it('normalizes the partner ward into the canonical store address', async () => {
     prisma.store.findFirst.mockResolvedValueOnce({
       id: '11111111-1111-4111-8111-111111111111',

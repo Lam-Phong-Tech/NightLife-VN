@@ -3265,6 +3265,68 @@ export class NightlifeDataService {
     };
   }
 
+  async deletePartnerListingCast(
+    user: AuthenticatedUser,
+    storeId: string,
+    castId: string,
+  ) {
+    const store = await this.getPartnerListingStore(user, storeId);
+    const id = this.cleanRequiredText(castId, 'castId');
+
+    if (!this.isUuid(id)) {
+      throw new BadRequestException('castId must be a valid UUID');
+    }
+
+    const result = await this.prisma.cast.updateMany({
+      where: {
+        id,
+        storeId: store.id,
+        deletedAt: null,
+      },
+      data: { deletedAt: new Date() },
+    });
+
+    if (result.count !== 1) {
+      throw new NotFoundException('Partner listing cast not found');
+    }
+
+    const draft = await this.findPartnerListingDraft(store.id);
+    const metadata = this.asRecord(draft?.metadata);
+    const listing = this.asRecord(metadata?.listing);
+    const draftCastProfiles = Array.isArray(listing?.castProfiles)
+      ? listing.castProfiles
+      : null;
+
+    if (draft && metadata && listing && draftCastProfiles) {
+      const nextCastProfiles = draftCastProfiles.filter((profile) => {
+        const record = this.asRecord(profile);
+        return this.cleanNullableText(String(record?.id ?? '')) !== id;
+      });
+
+      if (nextCastProfiles.length !== draftCastProfiles.length) {
+        await this.prisma.content.updateMany({
+          where: { id: draft.id, deletedAt: null },
+          data: {
+            metadata: this.toPrismaJson({
+              ...metadata,
+              listing: {
+                ...listing,
+                castProfiles: nextCastProfiles,
+              },
+              savedAt: new Date().toISOString(),
+              savedById: user.id,
+            }),
+          },
+        });
+      }
+    }
+
+    return {
+      message: 'Partner cast soft deleted',
+      castId: id,
+    };
+  }
+
   async getPartnerLiteDashboard(user: AuthenticatedUser, periodInput?: string) {
     const period = this.resolvePartnerDashboardPeriod(periodInput);
     const { from, to } = this.resolvePartnerDashboardWindow(period);

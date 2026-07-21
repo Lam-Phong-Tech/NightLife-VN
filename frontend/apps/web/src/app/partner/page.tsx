@@ -183,6 +183,8 @@ const ReactQuill = dynamic(() => import('react-quill-new'), {
   ),
 });
 
+const PARTNER_CAST_PAGE_SIZE = 10;
+
 type PartnerStore = {
   id: string;
   name: string;
@@ -1609,6 +1611,7 @@ export default function PartnerPage() {
   const [activeCastLanguageInputIndex, setActiveCastLanguageInputIndex] = useState<number | null>(null);
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
+  const [castListPage, setCastListPage] = useState(1);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
   const [activeMenuGroupIndex, setActiveMenuGroupIndex] = useState<number>(0);
   const [menuManage, setMenuManage] = useState<boolean>(false);
@@ -1619,6 +1622,7 @@ export default function PartnerPage() {
   const [isListingLoading, setIsListingLoading] = useState(false);
   const [isSavingListing, setIsSavingListing] = useState(false);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
+  const [isDeletingCastProfile, setIsDeletingCastProfile] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>('seven');
   const [settlementFilters, setSettlementFilters] = useState({
     code: '',
@@ -1669,6 +1673,12 @@ export default function PartnerPage() {
     showModal: () => {},
     closeModal: () => {},
   };
+
+  useEffect(() => {
+    const pageCount = Math.max(1, Math.ceil(listingDraft.castProfiles.length / PARTNER_CAST_PAGE_SIZE));
+    setCastListPage((current) => Math.min(Math.max(current, 1), pageCount));
+  }, [listingDraft.castProfiles.length]);
+
   let currentUser: any = null;
   try {
     const getAuthUserFn = authSession.getAuthUser;
@@ -3895,6 +3905,7 @@ export default function PartnerPage() {
 
   const addCastProfile = () => {
     clearListingErrorsFor('castProfiles');
+    setCastListPage(1);
     setListingDraft((current) => ({
       ...current,
       castProfiles: [
@@ -3926,6 +3937,63 @@ export default function PartnerPage() {
       return current > index ? current - 1 : current;
     });
     setIsAddingCastProfile(false);
+  };
+
+  const deleteCastProfile = (index: number) => {
+    if (isViewingLive || index < 0) {
+      return;
+    }
+
+    const cast = draftState.castProfiles[index];
+    if (!cast) {
+      return;
+    }
+
+    const castName = cast.stageName.trim() || `cast #${index + 1}`;
+    const isSavedCast = Boolean(cast.id);
+
+    feedback.showModal({
+      tone: 'warning',
+      title: isSavedCast ? 'Xác nhận xóa mềm cast' : 'Xác nhận xóa cast',
+      description: isSavedCast
+        ? `Cast "${castName}" sẽ được xóa mềm như bên admin và không hiển thị trong danh sách hoạt động.`
+        : `Cast "${castName}" chưa lưu vào hệ thống, thao tác này sẽ gỡ khỏi bản nháp hiện tại.`,
+      primaryLabel: isSavedCast ? 'Xóa mềm' : 'Xóa cast',
+      secondaryLabel: 'Hủy',
+      destructive: true,
+      onPrimary: async () => {
+        setIsDeletingCastProfile(true);
+        try {
+          if (isSavedCast && cast.id) {
+            await apiClient(
+              `/partner/listing-draft/${encodeURIComponent(listingStoreId)}/casts/${encodeURIComponent(cast.id)}`,
+              { method: 'DELETE' },
+            );
+          }
+          removeCastProfile(index);
+          setListingNotice(isSavedCast ? 'Đã xóa mềm cast.' : 'Đã xóa cast khỏi bản nháp.');
+          feedback.showToast({
+            tone: 'success',
+            title: isSavedCast ? 'Đã xóa mềm cast' : 'Đã xóa cast',
+            description: isSavedCast
+              ? 'Cast đã được chuyển sang trạng thái xóa mềm.'
+              : 'Cast đã được gỡ khỏi bản nháp hiện tại.',
+          });
+          feedback.closeModal();
+        } catch (error) {
+          feedback.showToast({
+            tone: 'error',
+            title: 'Không xóa được cast',
+            description: error instanceof ApiError ? error.message : 'Vui lòng thử lại sau.',
+          });
+        } finally {
+          setIsDeletingCastProfile(false);
+        }
+      },
+      onSecondary: () => {
+        feedback.closeModal();
+      },
+    });
   };
 
   const openCastProfileForm = (index: number) => {
@@ -5899,9 +5967,9 @@ export default function PartnerPage() {
         </div>
         {!isViewingLive && !isAddingCastProfile ? (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <GhostButton onClick={() => removeCastProfile(index)}>
+            <GhostButton disabled={isDeletingCastProfile || !listingStoreId} onClick={() => deleteCastProfile(index)}>
               <XCircle size={16} />
-              Xóa cast
+              {isDeletingCastProfile ? 'Đang xóa...' : cast.id ? 'Xóa mềm' : 'Xóa cast'}
             </GhostButton>
           </div>
         ) : null}
@@ -5991,7 +6059,52 @@ export default function PartnerPage() {
     </div>
   );
 
-  const renderCastTable = () => (
+  const renderCastTable = () => {
+    const castRows = listingDraft.castProfiles.map((cast, index) => ({ cast, index }));
+    const totalPages = Math.max(1, Math.ceil(castRows.length / PARTNER_CAST_PAGE_SIZE));
+    const safePage = Math.min(Math.max(castListPage, 1), totalPages);
+    const pageStart = (safePage - 1) * PARTNER_CAST_PAGE_SIZE;
+    const pageRows = castRows.slice(pageStart, pageStart + PARTNER_CAST_PAGE_SIZE);
+    const pageEnd = Math.min(pageStart + pageRows.length, castRows.length);
+    const renderPagination = () =>
+      castRows.length > PARTNER_CAST_PAGE_SIZE ? (
+        <div className="partner-cast-pagination">
+          <span>
+            Hiển thị {pageStart + 1}-{pageEnd} / {castRows.length} cast
+          </span>
+          <div>
+            <button
+              type="button"
+              disabled={safePage === 1}
+              onClick={() => setCastListPage((current) => Math.max(1, current - 1))}
+            >
+              Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, pageIndex) => {
+              const page = pageIndex + 1;
+              return (
+                <button
+                  type="button"
+                  key={`cast-page-${page}`}
+                  aria-current={page === safePage ? 'page' : undefined}
+                  onClick={() => setCastListPage(page)}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              disabled={safePage === totalPages}
+              onClick={() => setCastListPage((current) => Math.min(totalPages, current + 1))}
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      ) : null;
+
+    return (
     <div style={{ display: 'grid', gap: '14px' }}>
       <div className="partner-cast-toolbar">
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -6023,7 +6136,7 @@ export default function PartnerPage() {
                 </tr>
               </thead>
               <tbody>
-                {listingDraft.castProfiles.map((cast, index) => {
+                {pageRows.map(({ cast, index }) => {
                   const avatarUrl = castAvatarUrl(cast);
                   const hasRequiredName = cast.stageName.trim();
                   return (
@@ -6072,7 +6185,7 @@ export default function PartnerPage() {
             </table>
           </div>
           <div className="partner-cast-mobile-list">
-            {listingDraft.castProfiles.map((cast, index) => {
+            {pageRows.map(({ cast, index }) => {
               const avatarUrl = castAvatarUrl(cast);
               const hasRequiredName = cast.stageName.trim();
               const storeName = listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý';
@@ -6126,10 +6239,12 @@ export default function PartnerPage() {
               );
             })}
           </div>
+          {renderPagination()}
         </>
       )}
     </div>
-  );
+    );
+  };
 
   const renderMenuGroupsSection = () => {
     const activeIndex = Math.max(0, Math.min(activeMenuGroupIndex, listingDraft.menuGroups.length - 1));
@@ -6684,6 +6799,10 @@ export default function PartnerPage() {
             : 'Chưa có bản nháp';
   const isListingBusy = isListingLoading || isSavingListing || isSubmittingListing;
   const canWriteListing = Boolean(listingStoreId) && !isListingBusy;
+  const activeEditableCastIndex =
+    !isViewingLive && listingTab === 'cast' ? activeCastProfileIndex : null;
+  const activeEditableCast =
+    activeEditableCastIndex === null ? null : draftState.castProfiles[activeEditableCastIndex];
 
   const renderListingPanel = () => (
     <PanelCard className="partner-listing-panel">
@@ -6799,6 +6918,19 @@ export default function PartnerPage() {
             marginTop: '18px',
           }}
         >
+          {activeEditableCastIndex !== null ? (
+            <GhostButton
+              disabled={!canWriteListing || isDeletingCastProfile}
+              onClick={() => deleteCastProfile(activeEditableCastIndex)}
+            >
+              <XCircle size={16} />
+              {isDeletingCastProfile
+                ? 'Đang xóa...'
+                : activeEditableCast?.id
+                  ? 'Xóa mềm'
+                  : 'Xóa cast'}
+            </GhostButton>
+          ) : null}
           <GhostButton disabled={!canWriteListing} onClick={saveListingDraft}>
             <Save size={16} />
             {isSavingListing ? 'Đang lưu...' : 'Lưu nháp'}
@@ -8539,6 +8671,43 @@ export default function PartnerPage() {
           justify-content: center;
           cursor: pointer;
         }
+        .partner-cast-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          color: ${colors.text2};
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .partner-cast-pagination > div {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .partner-cast-pagination button {
+          min-width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          border: 1px solid ${colors.borderSoft};
+          background: ${colors.surface2};
+          color: ${colors.text2};
+          font: inherit;
+          font-weight: 900;
+          cursor: pointer;
+          padding: 0 10px;
+        }
+        .partner-cast-pagination button[aria-current='page'] {
+          border-color: ${colors.borderGold40};
+          background: ${colors.goldGrad};
+          color: ${colors.onGold};
+        }
+        .partner-cast-pagination button:disabled {
+          opacity: .45;
+          cursor: not-allowed;
+        }
         .partner-media-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
@@ -9223,6 +9392,15 @@ export default function PartnerPage() {
           .partner-cast-mobile-list {
             display: grid;
             gap: 10px;
+          }
+          .partner-cast-pagination {
+            align-items: stretch;
+          }
+          .partner-cast-pagination > div {
+            width: 100%;
+          }
+          .partner-cast-pagination button {
+            flex: 1 0 auto;
           }
           .partner-cast-mobile-card {
             border: 1px solid ${colors.borderHair};
