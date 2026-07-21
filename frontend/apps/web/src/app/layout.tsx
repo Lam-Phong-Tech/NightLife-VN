@@ -8,6 +8,8 @@ import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { jsonLdDocument, organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
+import { headers } from "next/headers";
+import { getNightlifeHostKind } from "@/lib/auth/hosts";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -36,11 +38,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const hostHeader = headersList.get("host") || "";
+  const hostKind = getNightlifeHostKind(hostHeader);
+
   return (
     <html lang="vi" className="notranslate" suppressHydrationWarning>
       <head>
@@ -50,7 +56,8 @@ export default function RootLayout({
             __html: `
               (function () {
                 try {
-                  var isAdmin = window.location.pathname.startsWith('/admin');
+                  var host = window.location.hostname.toLowerCase();
+                  var isAdmin = window.location.pathname.startsWith('/admin') || host.startsWith('admin.');
                   var key = isAdmin ? 'vy-admin-theme' : 'vy-user-theme';
                   var t = localStorage.getItem(key);
                   if (t === 'light') document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
@@ -84,7 +91,7 @@ export default function RootLayout({
         <ClientLanguageTranslator>
           <CurrencyProvider>
             <SocketProvider>
-              <SiteChrome>{children}</SiteChrome>
+              <SiteChrome hostKind={hostKind}>{children}</SiteChrome>
             </SocketProvider>
           </CurrencyProvider>
         </ClientLanguageTranslator>

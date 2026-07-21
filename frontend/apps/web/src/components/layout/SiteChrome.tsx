@@ -24,7 +24,7 @@ import {
   getAuthUser,
   type AuthUser,
 } from "@/lib/auth/session";
-import { getNightlifeHostKind, nightlifeOrigins } from "@/lib/auth/hosts";
+import { getNightlifeHostKind, nightlifeOrigins, type NightlifeHostKind } from "@/lib/auth/hosts";
 import {
   DEFAULT_APPEARANCE_CONFIG,
   getAppearanceConfig,
@@ -1590,7 +1590,13 @@ function SiteFooter({
   );
 }
 
-export function SiteChrome({ children }: { children: React.ReactNode }) {
+export function SiteChrome({
+  children,
+  hostKind: serverHostKind,
+}: {
+  children: React.ReactNode;
+  hostKind?: NightlifeHostKind;
+}) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
   const [appearanceBottomNav, setAppearanceBottomNav] = useState<BottomNavItem[]>(bottomNav);
@@ -1608,9 +1614,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(defaultLanguageCode);
   const notificationIdsRef = useRef(new Set<string>());
   const optimisticNotificationIdsRef = useRef(new Set<string>());
-  const hideChrome = hiddenChromePaths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
+  const hostKind = serverHostKind || "unknown";
+  const hideChrome =
+    hostKind === "admin" ||
+    hostKind === "partner" ||
+    hostKind === "auth" ||
+    hiddenChromePaths.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    );
   const hideFooter = pathname === "/xac-nhan" || isMobile;
   const hasManagedMobileBottomSpacing =
     pathname.startsWith("/stores/") ||
@@ -1620,7 +1631,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     pathname === "/xac-nhan";
   const showMobileFooterSpacer = isMobile && hideFooter && !hasManagedMobileBottomSpacing;
   const customerRouteMotionEnabled =
-    !pathname.startsWith("/admin") && !pathname.startsWith("/partner");
+    hostKind !== "admin" &&
+    hostKind !== "partner" &&
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/partner");
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showSupportChat = true; // Always show for both User and Guest
