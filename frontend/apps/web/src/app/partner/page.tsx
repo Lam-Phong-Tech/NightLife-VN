@@ -4500,6 +4500,15 @@ export default function PartnerPage() {
         icon: FileText,
       });
       setListingNotice('Đã gửi Admin duyệt. Nội dung sẽ public sau khi được duyệt.');
+      feedback.showModal({
+        tone: 'success',
+        title: 'Gửi duyệt thành công',
+        description: 'Yêu cầu thay đổi thông tin đã được gửi thành công và đang chờ Admin phê duyệt.',
+        primaryLabel: 'Đóng',
+        onPrimary: () => {
+          feedback.closeModal();
+        },
+      });
     } catch (error) {
       setListingNotice(
         error instanceof ApiError ? error.message : 'Không gửi duyệt được bản nháp.',
