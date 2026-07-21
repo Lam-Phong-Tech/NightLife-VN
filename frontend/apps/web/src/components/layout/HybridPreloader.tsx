@@ -135,13 +135,13 @@ export function HybridPreloader() {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const leaveTimer = window.setTimeout(
       () => setIntroPhase("leaving"),
-      reduceMotion ? 80 : 540,
+      reduceMotion ? 80 : 280,
     );
     const hideTimer = window.setTimeout(
       () => setIntroPhase("hidden"),
-      reduceMotion ? 180 : 820,
+      reduceMotion ? 180 : 560,
     );
-    const hardTimeout = window.setTimeout(() => setIntroPhase("hidden"), 1_200);
+    const hardTimeout = window.setTimeout(() => setIntroPhase("hidden"), 800);
 
     return () => {
       window.clearTimeout(leaveTimer);

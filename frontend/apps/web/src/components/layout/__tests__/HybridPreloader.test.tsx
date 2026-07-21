@@ -40,7 +40,7 @@ describe("HybridPreloader", () => {
     expect(screen.getByLabelText("Đang mở Vietyoru")).toBeInTheDocument();
     expect(window.sessionStorage.getItem("vy-brand-intro-seen")).toBe("1");
 
-    act(() => vi.advanceTimersByTime(540));
+    act(() => vi.advanceTimersByTime(280));
     expect(screen.getByLabelText("Đang mở Vietyoru")).toHaveAttribute(
       "data-phase",
       "leaving",
