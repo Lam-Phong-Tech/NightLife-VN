@@ -43,6 +43,7 @@ export type PartnerTelegramMessageInput = {
   submittedAt?: MaybeDate;
   note?: string | null;
   timeZone?: string;
+  isUpdate?: boolean;
 };
 
 const fallbackText = 'Chưa cập nhật';
@@ -103,7 +104,7 @@ export function formatPartnerRequestTelegramMessage(
   input: PartnerTelegramMessageInput,
 ) {
   return compactLines([
-    '🤝 Yêu cầu đối tác mới',
+    input.isUpdate ? '📝 Yêu cầu đối tác chỉnh sửa' : '🤝 Yêu cầu đối tác mới',
     '',
     `🏪 Quán / cơ sở: ${valueOrFallback(input.businessName)}`,
     input.businessType ? `🏷 Loại hình: ${input.businessType}` : null,

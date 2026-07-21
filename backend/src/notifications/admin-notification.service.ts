@@ -291,9 +291,10 @@ export class AdminNotificationService {
   }
 
   notifyPartnerRequest(request: PartnerRequestAdminNotification) {
+    const isUpdate = request.id.startsWith('LISTING-');
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-      title: 'Yêu cầu đối tác mới',
+      title: isUpdate ? 'Yêu cầu đối tác chỉnh sửa' : 'Yêu cầu đối tác mới',
       storeId: request.draftStoreId ?? undefined,
       cmsPath: `/admin?tab=partners&requestId=${encodeURIComponent(request.id)}`,
       webPath: '/dang-ky-doi-tac',
@@ -307,6 +308,7 @@ export class AdminNotificationService {
         submittedAt: request.submittedAt,
         note: request.note,
         timeZone: this.telegramNotificationTimeZone(),
+        isUpdate,
       }),
       lines: [
         ['Request', request.id],
