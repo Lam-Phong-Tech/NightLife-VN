@@ -1306,7 +1306,7 @@ function CategoryGrid({
   );
 }
 
-function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
+function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const banners: HomeBanner[] = useMemo(() => {
@@ -1341,6 +1341,73 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
+
+  if (isLoading) {
+    return (
+      <div
+        className="nl-home-hero is-loading"
+        style={{
+          minHeight: desktop ? "310px" : "208px",
+          borderRadius: homeCardRadius,
+          overflow: "hidden",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          padding: desktop ? "34px" : "18px 18px 42px",
+          background: "var(--vy-surface-2)",
+          border: `1px solid ${colors.line}`,
+          boxShadow: "var(--vy-shadow-card)",
+        }}
+      >
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+          <span
+            className="nl-data-skeleton-block"
+            style={{
+              width: "120px",
+              height: "20px",
+              borderRadius: "4px",
+            }}
+          />
+          <span
+            className="nl-data-skeleton-block"
+            style={{
+              width: desktop ? "480px" : "220px",
+              height: desktop ? "42px" : "28px",
+              borderRadius: "6px",
+              marginTop: "8px",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginTop: "12px",
+            }}
+          >
+            <span
+              className="nl-data-skeleton-block"
+              style={{
+                width: desktop ? "320px" : "140px",
+                height: "16px",
+                borderRadius: "4px",
+              }}
+            />
+            <span
+              className="nl-data-skeleton-block"
+              style={{
+                width: "90px",
+                height: "36px",
+                borderRadius: "999px",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -1478,7 +1545,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
   );
 }
 
-function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
+function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const banners: HomeBanner[] = useMemo(() => {
@@ -1512,6 +1579,73 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
+
+  if (isLoading) {
+    return (
+      <div
+        className="nl-home-mid-banner is-loading"
+        style={{
+          minHeight: desktop ? "310px" : "208px",
+          borderRadius: homeCardRadius,
+          overflow: "hidden",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          padding: desktop ? "34px" : "18px 18px 42px",
+          background: "var(--vy-surface-2)",
+          border: `1px solid ${colors.line}`,
+          boxShadow: "var(--vy-shadow-card)",
+        }}
+      >
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+          <span
+            className="nl-data-skeleton-block"
+            style={{
+              width: "100px",
+              height: "16px",
+              borderRadius: "4px",
+            }}
+          />
+          <span
+            className="nl-data-skeleton-block"
+            style={{
+              width: desktop ? "380px" : "180px",
+              height: desktop ? "32px" : "22px",
+              borderRadius: "6px",
+              marginTop: "8px",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginTop: "12px",
+            }}
+          >
+            <span
+              className="nl-data-skeleton-block"
+              style={{
+                width: desktop ? "280px" : "120px",
+                height: "16px",
+                borderRadius: "4px",
+              }}
+            />
+            <span
+              className="nl-data-skeleton-block"
+              style={{
+                width: "80px",
+                height: "32px",
+                borderRadius: "999px",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -2765,6 +2899,7 @@ export default function HomePageClient() {
   const [isHomeRecommendationsLoading, setHomeRecommendationsLoading] = useState(true);
   const [homeRecommendationsError, setHomeRecommendationsError] = useState("");
   const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>([]);
+  const [isHomeBannersLoading, setHomeBannersLoading] = useState(true);
   const [homeCoupons, setHomeCoupons] = useState<HomeCouponItem[]>([]);
   const [isHomeCouponsLoading, setHomeCouponsLoading] = useState(true);
   const [homeCouponsError, setHomeCouponsError] = useState("");
@@ -2964,7 +3099,10 @@ export default function HomePageClient() {
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })
-      .catch((e) => console.error("Failed to load banners", e));
+      .catch((e) => console.error("Failed to load banners", e))
+      .finally(() => {
+        if (!cancelled) setHomeBannersLoading(false);
+      });
 
     campaignsApi
       .listPublicCampaigns()
@@ -3264,7 +3402,7 @@ export default function HomePageClient() {
               <SearchPanel />
             </div>
             <div data-testid="home-mobile-hero" style={{ marginTop: "16px" }}>
-              <EventHero apiBanners={heroBanners} />
+              <EventHero apiBanners={heroBanners} isLoading={isHomeBannersLoading} />
             </div>
             <div data-testid="home-mobile-categories" style={{ marginTop: "22px" }}>
               <CategoryGrid items={homeCategoryItems} />
@@ -3326,7 +3464,7 @@ export default function HomePageClient() {
             </section>
 
             <div style={{ marginTop: "20px" }}>
-              <MidPageBanner apiBanners={midBanners} />
+              <MidPageBanner apiBanners={midBanners} isLoading={isHomeBannersLoading} />
             </div>
 
             <section data-testid="home-mobile-featured" style={{ marginTop: "22px" }}>
@@ -3419,7 +3557,7 @@ export default function HomePageClient() {
                 <SearchPanel />
               </div>
               <div style={{ gridColumn: "span 12", marginTop: "16px" }}>
-                <EventHero desktop apiBanners={heroBanners} />
+                <EventHero desktop apiBanners={heroBanners} isLoading={isHomeBannersLoading} />
               </div>
             </div>
 
@@ -3483,7 +3621,7 @@ export default function HomePageClient() {
             </section>
 
             <div style={{ marginTop: "34px" }}>
-              <MidPageBanner desktop apiBanners={midBanners} />
+              <MidPageBanner desktop apiBanners={midBanners} isLoading={isHomeBannersLoading} />
             </div>
 
             <section style={{ marginTop: "34px" }}>
