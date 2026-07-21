@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ApiError, apiClient } from "@/lib/api/client";
@@ -10,7 +11,8 @@ import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
 import { CastInfo, CastRelatedCasts } from "./CastInfo";
 import { CastProfileStyles } from "./CastProfileStyles";
-import { useActiveLanguage } from "@/lib/i18n/use-active-language";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
   buildBookingHref,
   buildCastArea,
@@ -34,6 +36,103 @@ type CastProfileClientProps = {
   cast: PublicCastDetail;
 };
 
+type CastFavoriteFeedbackCopy = {
+  savedTitle: string;
+  unsavedTitle: string;
+  savedDescription: string;
+  unsavedDescription: string;
+  errorTitle: string;
+  errorFallback: string;
+  saveConfirmTitle: string;
+  unsaveConfirmTitle: string;
+  saveConfirmDescription: string;
+  unsaveConfirmDescription: string;
+  saveConfirmLabel: string;
+  unsaveConfirmLabel: string;
+};
+
+const castFavoriteFeedbackCopy = (
+  language: LanguageCode,
+  castName: string,
+): CastFavoriteFeedbackCopy => {
+  const copy: Record<LanguageCode, CastFavoriteFeedbackCopy> = {
+    vi: {
+      savedTitle: "Đã thêm cast yêu thích",
+      unsavedTitle: "Đã bỏ lưu cast",
+      savedDescription: `${castName} đã được lưu vào danh sách yêu thích.`,
+      unsavedDescription: `${castName} đã được gỡ khỏi danh sách yêu thích.`,
+      errorTitle: "Không cập nhật được yêu thích",
+      errorFallback: "Vui lòng thử lại sau.",
+      saveConfirmTitle: "Lưu cast yêu thích?",
+      unsaveConfirmTitle: "Bỏ lưu cast?",
+      saveConfirmDescription: `Thêm ${castName} vào danh sách yêu thích của bạn.`,
+      unsaveConfirmDescription: `Gỡ ${castName} khỏi danh sách yêu thích của bạn.`,
+      saveConfirmLabel: "Lưu cast",
+      unsaveConfirmLabel: "Bỏ lưu",
+    },
+    en: {
+      savedTitle: "Added Cast to favorites",
+      unsavedTitle: "Removed saved Cast",
+      savedDescription: `${castName} has been saved to your favorites.`,
+      unsavedDescription: `${castName} has been removed from your favorites.`,
+      errorTitle: "Could not update favorites",
+      errorFallback: "Please try again later.",
+      saveConfirmTitle: "Save this Cast?",
+      unsaveConfirmTitle: "Remove saved Cast?",
+      saveConfirmDescription: `Add ${castName} to your favorites.`,
+      unsaveConfirmDescription: `Remove ${castName} from your favorites.`,
+      saveConfirmLabel: "Save Cast",
+      unsaveConfirmLabel: "Remove",
+    },
+    ja: {
+      savedTitle: "キャストをお気に入りに追加しました",
+      unsavedTitle: "キャストの保存を解除しました",
+      savedDescription: `${castName}をお気に入りリストに保存しました。`,
+      unsavedDescription: `${castName}をお気に入りリストから削除しました。`,
+      errorTitle: "お気に入りを更新できませんでした",
+      errorFallback: "しばらくしてからもう一度お試しください。",
+      saveConfirmTitle: "キャストをお気に入りに保存しますか?",
+      unsaveConfirmTitle: "保存を解除しますか?",
+      saveConfirmDescription: `${castName}をお気に入りリストに追加します。`,
+      unsaveConfirmDescription: `${castName}をお気に入りリストから削除します。`,
+      saveConfirmLabel: "キャストを保存",
+      unsaveConfirmLabel: "削除",
+    },
+    ko: {
+      savedTitle: "캐스트를 즐겨찾기에 추가했습니다",
+      unsavedTitle: "캐스트 저장을 해제했습니다",
+      savedDescription: `${castName}이(가) 즐겨찾기에 저장되었습니다.`,
+      unsavedDescription: `${castName}이(가) 즐겨찾기에서 삭제되었습니다.`,
+      errorTitle: "즐겨찾기를 업데이트할 수 없습니다",
+      errorFallback: "잠시 후 다시 시도해 주세요.",
+      saveConfirmTitle: "이 Cast를 저장할까요?",
+      unsaveConfirmTitle: "저장한 Cast를 삭제할까요?",
+      saveConfirmDescription: `${castName}을(를) 즐겨찾기에 추가합니다.`,
+      unsaveConfirmDescription: `${castName}을(를) 즐겨찾기에서 삭제합니다.`,
+      saveConfirmLabel: "Cast 저장",
+      unsaveConfirmLabel: "삭제",
+    },
+    zh: {
+      savedTitle: "已收藏 Cast",
+      unsavedTitle: "已取消收藏 Cast",
+      savedDescription: `已将 ${castName} 保存到收藏列表。`,
+      unsavedDescription: `已将 ${castName} 从收藏列表移除。`,
+      errorTitle: "无法更新收藏",
+      errorFallback: "请稍后再试。",
+      saveConfirmTitle: "收藏此 Cast？",
+      unsaveConfirmTitle: "取消收藏此 Cast？",
+      saveConfirmDescription: `将 ${castName} 添加到收藏列表。`,
+      unsaveConfirmDescription: `将 ${castName} 从收藏列表移除。`,
+      saveConfirmLabel: "收藏 Cast",
+      unsaveConfirmLabel: "移除",
+    },
+  };
+
+  return copy[language];
+};
+
+const heroSwipeDistancePx = 48;
+
 export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
@@ -54,7 +153,13 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const heroSwipeRef = useRef({
+    pointerId: null as number | null,
+    startX: 0,
+    startY: 0,
+  });
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
+  const favoriteFeedbackCopy = castFavoriteFeedbackCopy(activeLanguage, profile.name);
   const favoriteSnapshot = useMemo(
     () => ({
       slug: profile.slug,
@@ -136,10 +241,12 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       setIsFavorite(state.favorited);
       writeFavoriteCast(favoriteSnapshot, state.favorited);
       userFeedback.success({
-        title: state.favorited ? "Đã thêm cast yêu thích" : "Đã bỏ lưu cast",
+        title: state.favorited
+          ? favoriteFeedbackCopy.savedTitle
+          : favoriteFeedbackCopy.unsavedTitle,
         description: state.favorited
-          ? `${profile.name} đã được lưu vào danh sách yêu thích.`
-          : `${profile.name} đã được gỡ khỏi danh sách yêu thích.`,
+          ? favoriteFeedbackCopy.savedDescription
+          : favoriteFeedbackCopy.unsavedDescription,
       });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
@@ -152,8 +259,11 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       setIsFavorite(!nextValue);
       writeFavoriteCast(favoriteSnapshot, !nextValue);
       userFeedback.error({
-        title: "Không cập nhật được yêu thích",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: favoriteFeedbackCopy.errorTitle,
+        description: translateText(
+          userActionErrorMessage(error, favoriteFeedbackCopy.errorFallback),
+          activeLanguage,
+        ),
       });
     }
   };
@@ -165,11 +275,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
     const nextValue = !isFavorite;
     userFeedback.confirmAction({
-      title: nextValue ? "Lưu cast yêu thích?" : "Bỏ lưu cast?",
+      title: nextValue
+        ? favoriteFeedbackCopy.saveConfirmTitle
+        : favoriteFeedbackCopy.unsaveConfirmTitle,
       description: nextValue
-        ? `Thêm ${profile.name} vào danh sách yêu thích của bạn.`
-        : `Gỡ ${profile.name} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: nextValue ? "Lưu cast" : "Bỏ lưu",
+        ? favoriteFeedbackCopy.saveConfirmDescription
+        : favoriteFeedbackCopy.unsaveConfirmDescription,
+      confirmLabel: nextValue
+        ? favoriteFeedbackCopy.saveConfirmLabel
+        : favoriteFeedbackCopy.unsaveConfirmLabel,
       tone: nextValue ? "gold" : "warning",
       destructive: !nextValue,
       onConfirm: () => applyFavoriteChange(nextValue),
@@ -205,6 +319,41 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     selectMedia(activeMediaIndex >= gallery.length - 1 ? 0 : activeMediaIndex + 1, "next");
   };
 
+  const resetHeroSwipe = () => {
+    heroSwipeRef.current.pointerId = null;
+  };
+
+  const handleHeroPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== "touch" || gallery.length < 2) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest("a, button")) return;
+
+    heroSwipeRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+  };
+
+  const handleHeroPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const swipe = heroSwipeRef.current;
+    if (swipe.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - swipe.startX;
+    const deltaY = event.clientY - swipe.startY;
+    resetHeroSwipe();
+
+    if (Math.abs(deltaX) < heroSwipeDistancePx || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      showPreviousMedia();
+    } else {
+      showNextMedia();
+    }
+  };
+
   return (
     <>
       <main
@@ -228,6 +377,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
+            onHeroPointerDown={handleHeroPointerDown}
+            onHeroPointerUp={handleHeroPointerUp}
+            onHeroPointerCancel={resetHeroSwipe}
           />
           <CastGallery
             gallery={gallery}

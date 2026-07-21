@@ -367,6 +367,73 @@ const localizedStoreParts = (parts: Array<string | null | undefined>, language: 
 const formatStoreCastCount = (count: number, language: LanguageCode) =>
   translateText(`${count} cast`, language);
 
+const guestUnitLabel = (language: LanguageCode) =>
+  ({
+    vi: "người",
+    en: "guests",
+    ja: "名",
+    ko: "명",
+    zh: "人",
+  })[language];
+
+const unknownPriceLabel = (language: LanguageCode) =>
+  ({
+    vi: "Liên hệ",
+    en: "Contact",
+    ja: "お問い合わせ",
+    ko: "문의",
+    zh: "咨询",
+  })[language];
+
+const addressAdminLabelTranslations: Record<LanguageCode, Record<string, string>> = {
+  vi: {
+    Ward: "Phường",
+    District: "Quận",
+    City: "Thành phố",
+    Phường: "Phường",
+    Quận: "Quận",
+    "Thành phố": "Thành phố",
+  },
+  en: {
+    Ward: "Ward",
+    District: "District",
+    City: "City",
+    Phường: "Ward",
+    Quận: "District",
+    "Thành phố": "City",
+  },
+  ja: {
+    Ward: "区",
+    District: "区",
+    City: "市",
+    Phường: "区",
+    Quận: "区",
+    "Thành phố": "市",
+  },
+  ko: {
+    Ward: "동",
+    District: "군",
+    City: "시",
+    Phường: "동",
+    Quận: "군",
+    "Thành phố": "시",
+  },
+  zh: {
+    Ward: "坊",
+    District: "郡",
+    City: "市",
+    Phường: "坊",
+    Quận: "郡",
+    "Thành phố": "市",
+  },
+};
+
+const localizeAddressAdminLabels = (value: string, language: LanguageCode) =>
+  value.replace(
+    /\b(?:Ward|District|City)\b|Phường|Quận|Thành phố/g,
+    (label) => addressAdminLabelTranslations[language][label] ?? label,
+  );
+
 const markerToIntroKey = (marker: string) => {
   const normalized = marker.toUpperCase();
   if (marker === "🇯🇵" || normalized === "JP") return "ja";
@@ -479,8 +546,13 @@ const plainMapsUrl = (store: PublicStoreDetail) => {
   return "";
 };
 
-const storeAddressText = (store: PublicStoreDetail) =>
-  store.address || [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
+const storeAddressText = (store: PublicStoreDetail, language: LanguageCode) => {
+  if (store.address) {
+    return localizeAddressAdminLabels(store.address, language);
+  }
+
+  return localizedStoreParts([store.area?.name, store.district, store.city], language);
+};
 
 const imageBackground = (url: string) =>
   `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
@@ -505,12 +577,13 @@ const rawOpeningSummary = (store: PublicStoreDetail) => {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 };
 
-const priceRangeText = (store: PublicStoreDetail) => {
+const priceRangeText = (store: PublicStoreDetail, language: LanguageCode) => {
   const values = store.priceReference.items
     .map((item) => item.amountVnd)
     .filter((value): value is number => typeof value === "number" && value > 0);
 
-  return formatPriceTierRange(values, store.priceReference.startingFromVnd);
+  const value = formatPriceTierRange(values, store.priceReference.startingFromVnd);
+  return value === "Liên hệ" ? unknownPriceLabel(language) : value;
 };
 
 const storeTimeZone = "Asia/Bangkok";
@@ -1003,7 +1076,7 @@ function BookingCard({
   onFieldTouched: (field: BookingValidationField) => void;
   onSubmit: () => void;
 }) {
-  const bookingPriceText = priceRangeText(store);
+  const bookingPriceText = priceRangeText(store, activeLanguage);
   const [guestCountDraft, setGuestCountDraft] = useState(String(guestCount));
 
   useEffect(() => {
@@ -1135,7 +1208,7 @@ function BookingCard({
                     }}
                     aria-label={translateText("Số người", activeLanguage)}
                   />
-                  <span aria-hidden="true">{translateText("người", activeLanguage)}</span>
+                  <span aria-hidden="true">{guestUnitLabel(activeLanguage)}</span>
                 </label>
                 <button
                   type="button"
@@ -1547,7 +1620,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     [store.area?.name, store.district, store.city],
     activeLanguage,
   );
-  const addressText = storeAddressText(store);
+  const addressText = storeAddressText(store, activeLanguage);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
   const today = todayKey(statusNow);
@@ -1581,7 +1654,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     categoryLabel,
     ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage)),
   ];
-  const priceText = priceRangeText(store);
+  const priceText = priceRangeText(store, activeLanguage);
   const bookingCastOptions = useMemo<BookingCastOption[]>(
     () =>
       store.casts.map((cast) => ({

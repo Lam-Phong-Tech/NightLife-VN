@@ -65,6 +65,7 @@ export function CastProfileStyles() {
         background-size: cover !important;
         background-position: center 18% !important;
         overflow: hidden;
+        touch-action: pan-y;
       }
 
       .cast-hero-placeholder {
@@ -126,15 +127,29 @@ export function CastProfileStyles() {
         box-shadow: var(--cast-hero-control-shadow);
       }
 
+      .cast-back-link {
+        border: 1px solid rgba(247, 207, 92, .62);
+        border-radius: 12px;
+        background: rgba(8, 8, 10, .28);
+        color: #f7cf5c;
+        backdrop-filter: blur(8px);
+      }
+
+      html.vy-light .cast-back-link {
+        border-color: rgba(151, 112, 37, .42);
+        background: rgba(255, 248, 230, .76);
+        color: #9c7125;
+      }
+
       .cast-favorite-action {
         cursor: pointer;
         transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
       }
 
       .cast-favorite-action.is-active {
-        background: rgba(212,178,106,.22);
-        border-color: rgba(212,178,106,.55);
-        color: #f4d27d;
+        background: rgba(255,61,113,.16);
+        border-color: rgba(255,61,113,.54);
+        color: #ff3d71;
       }
 
       .cast-favorite-action svg {

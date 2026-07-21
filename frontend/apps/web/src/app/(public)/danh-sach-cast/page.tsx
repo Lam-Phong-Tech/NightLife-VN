@@ -85,6 +85,7 @@ type CastSearchCopy = {
   locating: string;
   openFilters: string;
   resetFilters: string;
+  resultCount: (count: number) => string;
   searchAria: string;
   searchPlaceholder: string;
   sortLabel: string;
@@ -181,6 +182,7 @@ const castCopyVi: CastSearchCopy = {
   locating: "Đang lấy vị trí",
   openFilters: "Mở bộ lọc",
   resetFilters: "Đặt lại bộ lọc",
+  resultCount: (count) => `${count} cast`,
   searchAria: "Tìm và lọc cast",
   searchPlaceholder: "Tìm cast theo tên, quán hoặc ngôn ngữ...",
   sortLabel: "Sắp xếp:",
@@ -212,6 +214,7 @@ const castCopyEn: CastSearchCopy = {
   locating: "Finding location",
   openFilters: "Open filters",
   resetFilters: "Reset filters",
+  resultCount: (count) => `${count} Cast`,
   searchAria: "Search and filter Cast",
   searchPlaceholder: "Search Cast by name, venue, or language...",
   sortLabel: "Sort:",
@@ -249,7 +252,7 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
   return {
     ...castCopyVi,
     all: translateText(castCopyVi.all, language),
-    applyLabel: (count) => `${translateText("Xem", language)} ${count} cast`,
+    applyLabel: (count) => translateText(`Xem ${count} cast`, language),
     area: translateText(castCopyVi.area, language),
     category: translateText(castCopyVi.category, language),
     city: translateText(castCopyVi.city, language),
@@ -270,6 +273,7 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
     locating: translateText(castCopyVi.locating, language),
     openFilters: translateText(castCopyVi.openFilters, language),
     resetFilters: translateText(castCopyVi.resetFilters, language),
+    resultCount: (count) => translateText(`${count} cast`, language),
     searchAria: translateText(castCopyVi.searchAria, language),
     searchPlaceholder: translateText(castCopyVi.searchPlaceholder, language),
     sortLabel: translateText(castCopyVi.sortLabel, language),
@@ -319,6 +323,101 @@ const formatCastActiveFilters = (count: number, language: LanguageCode) =>
   language === "en"
     ? `${count} ${count === 1 ? "filter" : "filters"} active`
     : `${count} ${translateText("bộ lọc đang bật", language)}`;
+
+type CastFavoriteFeedbackCopy = {
+  savedTitle: string;
+  unsavedTitle: string;
+  savedDescription: string;
+  unsavedDescription: string;
+  errorTitle: string;
+  errorFallback: string;
+  saveConfirmTitle: string;
+  unsaveConfirmTitle: string;
+  saveConfirmDescription: string;
+  unsaveConfirmDescription: string;
+  saveConfirmLabel: string;
+  unsaveConfirmLabel: string;
+};
+
+const castFavoriteFeedbackCopy = (
+  language: LanguageCode,
+  castName: string,
+): CastFavoriteFeedbackCopy => {
+  const copy: Record<LanguageCode, CastFavoriteFeedbackCopy> = {
+    vi: {
+      savedTitle: "Đã thêm cast yêu thích",
+      unsavedTitle: "Đã bỏ lưu cast",
+      savedDescription: `${castName} đã được lưu vào danh sách yêu thích.`,
+      unsavedDescription: `${castName} đã được gỡ khỏi danh sách yêu thích.`,
+      errorTitle: "Không cập nhật được yêu thích",
+      errorFallback: "Vui lòng thử lại sau.",
+      saveConfirmTitle: "Lưu cast yêu thích?",
+      unsaveConfirmTitle: "Bỏ lưu cast?",
+      saveConfirmDescription: `Thêm ${castName} vào danh sách yêu thích của bạn.`,
+      unsaveConfirmDescription: `Gỡ ${castName} khỏi danh sách yêu thích của bạn.`,
+      saveConfirmLabel: "Lưu cast",
+      unsaveConfirmLabel: "Bỏ lưu",
+    },
+    en: {
+      savedTitle: "Added Cast to favorites",
+      unsavedTitle: "Removed saved Cast",
+      savedDescription: `${castName} has been saved to your favorites.`,
+      unsavedDescription: `${castName} has been removed from your favorites.`,
+      errorTitle: "Could not update favorites",
+      errorFallback: "Please try again later.",
+      saveConfirmTitle: "Save this Cast?",
+      unsaveConfirmTitle: "Remove saved Cast?",
+      saveConfirmDescription: `Add ${castName} to your favorites.`,
+      unsaveConfirmDescription: `Remove ${castName} from your favorites.`,
+      saveConfirmLabel: "Save Cast",
+      unsaveConfirmLabel: "Remove",
+    },
+    ja: {
+      savedTitle: "キャストをお気に入りに追加しました",
+      unsavedTitle: "キャストの保存を解除しました",
+      savedDescription: `${castName}をお気に入りリストに保存しました。`,
+      unsavedDescription: `${castName}をお気に入りリストから削除しました。`,
+      errorTitle: "お気に入りを更新できませんでした",
+      errorFallback: "しばらくしてからもう一度お試しください。",
+      saveConfirmTitle: "キャストをお気に入りに保存しますか?",
+      unsaveConfirmTitle: "保存を解除しますか?",
+      saveConfirmDescription: `${castName}をお気に入りリストに追加します。`,
+      unsaveConfirmDescription: `${castName}をお気に入りリストから削除します。`,
+      saveConfirmLabel: "キャストを保存",
+      unsaveConfirmLabel: "削除",
+    },
+    ko: {
+      savedTitle: "캐스트를 즐겨찾기에 추가했습니다",
+      unsavedTitle: "캐스트 저장을 해제했습니다",
+      savedDescription: `${castName}이(가) 즐겨찾기에 저장되었습니다.`,
+      unsavedDescription: `${castName}이(가) 즐겨찾기에서 삭제되었습니다.`,
+      errorTitle: "즐겨찾기를 업데이트할 수 없습니다",
+      errorFallback: "잠시 후 다시 시도해 주세요.",
+      saveConfirmTitle: "이 Cast를 저장할까요?",
+      unsaveConfirmTitle: "저장한 Cast를 삭제할까요?",
+      saveConfirmDescription: `${castName}을(를) 즐겨찾기에 추가합니다.`,
+      unsaveConfirmDescription: `${castName}을(를) 즐겨찾기에서 삭제합니다.`,
+      saveConfirmLabel: "Cast 저장",
+      unsaveConfirmLabel: "삭제",
+    },
+    zh: {
+      savedTitle: "已收藏 Cast",
+      unsavedTitle: "已取消收藏 Cast",
+      savedDescription: `已将 ${castName} 保存到收藏列表。`,
+      unsavedDescription: `已将 ${castName} 从收藏列表移除。`,
+      errorTitle: "无法更新收藏",
+      errorFallback: "请稍后再试。",
+      saveConfirmTitle: "收藏此 Cast？",
+      unsaveConfirmTitle: "取消收藏此 Cast？",
+      saveConfirmDescription: `将 ${castName} 添加到收藏列表。`,
+      unsaveConfirmDescription: `将 ${castName} 从收藏列表移除。`,
+      saveConfirmLabel: "收藏 Cast",
+      unsaveConfirmLabel: "移除",
+    },
+  };
+
+  return copy[language];
+};
 
 const isDefaultAgeRange = (range: AgeRange) =>
   range.min === defaultAgeRange.min && range.max === defaultAgeRange.max;
@@ -783,11 +882,12 @@ export default function Page() {
         : await castFavoriteApi.unfavorite(cast.slug);
       applyCastFavorite(cast, state.favorited);
       const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+      const feedbackCopy = castFavoriteFeedbackCopy(activeLanguage, castName);
       userFeedback.success({
-        title: state.favorited ? "Đã thêm cast yêu thích" : "Đã bỏ lưu cast",
+        title: state.favorited ? feedbackCopy.savedTitle : feedbackCopy.unsavedTitle,
         description: state.favorited
-          ? `${castName} đã được lưu vào danh sách yêu thích.`
-          : `${castName} đã được gỡ khỏi danh sách yêu thích.`,
+          ? feedbackCopy.savedDescription
+          : feedbackCopy.unsavedDescription,
       });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
@@ -797,9 +897,14 @@ export default function Page() {
       }
 
       applyCastFavorite(cast, !nextValue);
+      const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+      const feedbackCopy = castFavoriteFeedbackCopy(activeLanguage, castName);
       userFeedback.error({
-        title: "Không cập nhật được yêu thích",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: feedbackCopy.errorTitle,
+        description: translateText(
+          userActionErrorMessage(error, feedbackCopy.errorFallback),
+          activeLanguage,
+        ),
       });
     }
   };
@@ -811,12 +916,17 @@ export default function Page() {
 
     const nextValue = !favoriteCastSlugs.includes(cast.slug);
     const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+    const feedbackCopy = castFavoriteFeedbackCopy(activeLanguage, castName);
     userFeedback.confirmAction({
-      title: nextValue ? "Lưu cast yêu thích?" : "Bỏ lưu cast?",
+      title: nextValue
+        ? feedbackCopy.saveConfirmTitle
+        : feedbackCopy.unsaveConfirmTitle,
       description: nextValue
-        ? `Thêm ${castName} vào danh sách yêu thích của bạn.`
-        : `Gỡ ${castName} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: nextValue ? "Lưu cast" : "Bỏ lưu",
+        ? feedbackCopy.saveConfirmDescription
+        : feedbackCopy.unsaveConfirmDescription,
+      confirmLabel: nextValue
+        ? feedbackCopy.saveConfirmLabel
+        : feedbackCopy.unsaveConfirmLabel,
       tone: nextValue ? "gold" : "warning",
       destructive: !nextValue,
       onConfirm: () => applyCastFavoriteChange(cast, nextValue),
@@ -1057,7 +1167,7 @@ export default function Page() {
         <section className="cast-results-section" aria-label={copy.listAria}>
           <div className="cast-results-head">
             <span>
-              <b>{isResultsLoading ? "..." : visibleCasts.length} cast</b>
+              <b>{isResultsLoading ? "..." : copy.resultCount(visibleCasts.length)}</b>
               <span> · {cityLabel}</span>
             </span>
 
@@ -2169,23 +2279,29 @@ const castSearchCss = `
   right: 12px;
   z-index: 4;
   width: 36px;
+  inline-size: 36px;
   min-width: 36px;
   max-width: 36px;
   height: 36px;
+  block-size: 36px;
   min-height: 36px;
   max-height: 36px;
+  flex: 0 0 36px;
   aspect-ratio: 1 / 1;
   display: inline-grid;
   place-items: center;
   box-sizing: border-box;
+  appearance: none;
   border: 1.5px solid rgba(255, 255, 255, .92);
-  border-radius: 50%;
+  border-radius: 999px;
   background: rgba(12, 12, 15, .22);
   color: #ffffff;
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
   cursor: pointer;
   padding: 0;
+  line-height: 1;
+  overflow: hidden;
   transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
@@ -3456,11 +3572,14 @@ html.vy-light .cast-sheet-actions {
     top: 8px;
     right: 8px;
     width: 30px;
+    inline-size: 30px;
     min-width: 30px;
     max-width: 30px;
     height: 30px;
+    block-size: 30px;
     min-height: 30px;
     max-height: 30px;
+    flex-basis: 30px;
   }
 
   .cast-card-favorite svg {

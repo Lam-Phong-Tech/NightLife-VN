@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Heart, ImageOff, MapPin, Play, Star } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
@@ -17,6 +18,9 @@ type CastHeroProps = {
   favoriteLabel: string;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onHeroPointerDown?: (event: ReactPointerEvent<HTMLElement>) => void;
+  onHeroPointerUp?: (event: ReactPointerEvent<HTMLElement>) => void;
+  onHeroPointerCancel?: () => void;
 };
 
 const profileSummary = (profile: CastProfile) =>
@@ -36,6 +40,9 @@ export function CastHero({
   favoriteLabel,
   isFavorite,
   onToggleFavorite,
+  onHeroPointerDown,
+  onHeroPointerUp,
+  onHeroPointerCancel,
 }: CastHeroProps) {
   const summary = profileSummary(profile);
   const storeHref = `/stores/${profile.store.slug}`;
@@ -46,6 +53,9 @@ export function CastHero({
     <section
       className="cast-mobile-hero"
       data-testid="cast-hero-mobile"
+      onPointerDown={onHeroPointerDown}
+      onPointerUp={onHeroPointerUp}
+      onPointerCancel={onHeroPointerCancel}
       style={{
         background: `linear-gradient(180deg, rgba(12,12,15,.18) 0%, rgba(12,12,15,0) 28%, rgba(12,12,15,.58) 64%, rgba(12,12,15,.97) 100%), ${mediaPreviewBg(activeMedia, profile.thumbnailUrl)}`,
       }}
@@ -57,7 +67,7 @@ export function CastHero({
         </div>
       ) : null}
       <div className="cast-mobile-topbar">
-        <Link href="/danh-sach-cast" className="cast-icon-link" aria-label={copy.backToCastList}>
+        <Link href="/danh-sach-cast" className="cast-icon-link cast-back-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
         <button

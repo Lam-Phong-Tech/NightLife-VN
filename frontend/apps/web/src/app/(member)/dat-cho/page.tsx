@@ -55,6 +55,15 @@ const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
 
 const sanitizeGuestCountDraftInput = (value: string) => value.replace(/\D/g, "");
 
+const guestUnitLabel = (language: LanguageCode) =>
+  ({
+    vi: "người",
+    en: "guests",
+    ja: "名",
+    ko: "명",
+    zh: "人",
+  })[language];
+
 const bookingAutofillBlockProps = {
   autoComplete: "one-time-code",
   "aria-autocomplete": "none",
@@ -792,12 +801,18 @@ export default function Page() {
       <section className={`${styles.bookingViewport} ${styles.bookingFormViewport}`}>
         <div className={`${styles.bookingFrame} ${styles.bookingFormFrame}`}>
           <header className={styles.bookingHeader}>
-            <Link href={context.fromHref} className={styles.backButton} aria-label="Quay lại">
+            <Link
+              href={context.fromHref}
+              className={styles.backButton}
+              aria-label={translateText("Quay lại", activeLanguage)}
+            >
               <ChevronLeft size={18} />
             </Link>
             <div className={styles.headerCopy}>
-              <h1 className={styles.headerTitle}>Đặt bàn</h1>
-              <p className={styles.headerSubtitle}>Gửi yêu cầu · Admin xác nhận</p>
+              <h1 className={styles.headerTitle}>{translateText("Đặt bàn", activeLanguage)}</h1>
+              <p className={styles.headerSubtitle}>
+                {translateText("Gửi yêu cầu · Admin xác nhận", activeLanguage)}
+              </p>
             </div>
           </header>
 
@@ -813,7 +828,7 @@ export default function Page() {
               <div className={styles.venueCopy}>
                 <div className={styles.venueName}>{targetLabel}</div>
                 <div className={styles.venueMeta}>
-                  {!isServiceOnlyBooking && context.castName ? context.storeName : "Lounge cao cấp"}{" "}
+                  {!isServiceOnlyBooking && context.castName ? context.storeName : translateText("Lounge cao cấp", activeLanguage)}{" "}
                   · {context.area ?? "NightLife"}
                 </div>
                 {context.couponIssueId || context.couponId ? (
@@ -842,11 +857,13 @@ export default function Page() {
                   <Star size={16} />
                 </span>
                 <div className={styles.nudgeCopy}>
-                  <div className={styles.nudgeTitle}>Đăng nhập nhận giảm 8-10%</div>
+                  <div className={styles.nudgeTitle}>
+                    {translateText("Đăng nhập nhận giảm 8-10%", activeLanguage)}
+                  </div>
                   <div className={styles.nudgeText}>Bạn đang là Khách · ưu đãi -5%</div>
                 </div>
                 <Link href={memberLoginPath} className={styles.nudgeButton}>
-                  Đăng nhập
+                  {translateText("Đăng nhập", activeLanguage)}
                 </Link>
               </section>
             ) : null}
@@ -890,7 +907,9 @@ export default function Page() {
                 dateValue={bookingDate}
                 dateFieldAddon={
                   <div className={styles.field}>
-                    <span className={styles.fieldLabel}>Số người</span>
+                    <span className={styles.fieldLabel}>
+                      {translateText("Số người", activeLanguage)}
+                    </span>
                     <div className={styles.stepper}>
                       <button
                         type="button"
@@ -899,7 +918,7 @@ export default function Page() {
                           markFieldTouched("guestCount");
                           applyGuestCount(stepperGuestCount - 1);
                         }}
-                        aria-label="Giảm số người"
+                        aria-label={translateText("Giảm số người", activeLanguage)}
                         disabled={stepperGuestCount <= 1}
                       >
                         <Minus size={15} />
@@ -926,9 +945,9 @@ export default function Page() {
                             markFieldTouched("guestCount");
                             updateGuestInput(event.target.value);
                           }}
-                          aria-label="Số người"
+                          aria-label={translateText("Số người", activeLanguage)}
                         />
-                        <span aria-hidden="true">người</span>
+                        <span aria-hidden="true">{guestUnitLabel(activeLanguage)}</span>
                       </label>
                       <button
                         type="button"
@@ -937,7 +956,7 @@ export default function Page() {
                           markFieldTouched("guestCount");
                           applyGuestCount(stepperGuestCount + 1);
                         }}
-                        aria-label="Tăng số người"
+                        aria-label={translateText("Tăng số người", activeLanguage)}
                         disabled={stepperGuestCount >= maxGuests}
                       >
                         <Plus size={15} />
@@ -974,7 +993,7 @@ export default function Page() {
 
               {!isServiceOnlyBooking ? (
                 <CastSelectField
-                  label="Cast đã chọn"
+                  label={translateText("Cast đã chọn", activeLanguage)}
                   value={context.castSlug ?? ""}
                   options={castOptions}
                   onChange={updateSelectedCast}
@@ -984,8 +1003,7 @@ export default function Page() {
 
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>
-                  Ghi chú{" "}
-                  <span style={{ textTransform: "none", letterSpacing: 0 }}>(tùy chọn)</span>
+                  {translateText("Ghi chú (tùy chọn)", activeLanguage)}
                 </span>
                 <textarea
                   {...bookingNoteAutofillBlockProps}
@@ -996,7 +1014,7 @@ export default function Page() {
                     markFieldTouched("note");
                     setNote(event.target.value);
                   }}
-                  placeholder="Vui lòng nhập ghi chú nếu có"
+                  placeholder={translateText("Vui lòng nhập ghi chú nếu có", activeLanguage)}
                   className={styles.noteArea}
                 />
                 <FieldError activeLanguage={activeLanguage} message={visibleFieldErrors.note} />
@@ -1005,8 +1023,10 @@ export default function Page() {
               <div className={styles.infoNote}>
                 <ShieldCheck size={15} />
                 <span>
-                  Không thanh toán online, không thu cọc. Yêu cầu được gửi tới đội điều phối - Admin
-                  liên hệ xác nhận chỗ.
+                  {translateText(
+                    "Không thanh toán online, không thu cọc. Yêu cầu được gửi tới đội điều phối - Admin liên hệ xác nhận chỗ.",
+                    activeLanguage,
+                  )}
                 </span>
               </div>
 
@@ -1029,8 +1049,15 @@ export default function Page() {
                 cursor: isSubmitting ? "wait" : "pointer",
               }}
             >
-              <strong>{isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}</strong>
-              <small>Miễn phí · mã QR gửi qua email sau khi đặt</small>
+              <strong>
+                {translateText(
+                  isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn",
+                  activeLanguage,
+                )}
+              </strong>
+              <small>
+                {translateText("Miễn phí · mã QR gửi qua email sau khi đặt", activeLanguage)}
+              </small>
             </button>
           </div>
         </div>
@@ -1044,11 +1071,17 @@ export default function Page() {
           className={styles.dialogOverlay}
         >
           <div className={styles.dialogPanel}>
-            <h2 id="member-login-title">Yêu cầu đăng nhập</h2>
+            <h2 id="member-login-title">{translateText("Yêu cầu đăng nhập", activeLanguage)}</h2>
             <p>
               {isServiceOnlyBooking
-                ? "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên."
-                : "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao hơn."}
+                ? translateText(
+                    "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên.",
+                    activeLanguage,
+                  )
+                : translateText(
+                    "Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao hơn.",
+                    activeLanguage,
+                  )}
             </p>
             <div className={styles.dialogActions}>
               <button
@@ -1056,10 +1089,10 @@ export default function Page() {
                 className={styles.ghostCta}
                 onClick={() => setShowLoginPrompt(false)}
               >
-                Hủy
+                {translateText("Hủy", activeLanguage)}
               </button>
               <Link href={memberLoginPath} className={styles.primaryCta}>
-                <strong>Đăng nhập</strong>
+                <strong>{translateText("Đăng nhập", activeLanguage)}</strong>
               </Link>
             </div>
           </div>
