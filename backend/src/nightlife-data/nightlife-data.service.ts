@@ -3121,7 +3121,8 @@ export class NightlifeDataService {
         });
         draftCastIds.push(cast.id);
 
-        for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+        const castMediaUrls = castProfile.mediaUrls ?? [];
+        for (const [mediaIndex, url] of castMediaUrls.entries()) {
           const media = await this.createPartnerRequestMedia(
             {
               requestId,
@@ -3129,7 +3130,7 @@ export class NightlifeDataService {
               index: mediaIndex,
               castId: cast.id,
               purpose: this.partnerListingCastMediaPurpose(
-                castProfile.mediaUrls,
+                castMediaUrls,
                 mediaIndex,
               ),
             },
@@ -16610,8 +16611,8 @@ export class NightlifeDataService {
   private partnerListingCastMediaUrls(
     media: Array<{
       url: string;
-      purpose: string;
-      type: string;
+      purpose: string | null;
+      type: string | null;
       castId: string | null;
     }>,
     castId: string,
@@ -16629,8 +16630,8 @@ export class NightlifeDataService {
       .filter((item) => item.castId === castId)
       .map((item, index) => ({ ...item, index }))
       .sort((first, second) => {
-        const firstRank = purposeRank[first.purpose] ?? 9;
-        const secondRank = purposeRank[second.purpose] ?? 9;
+        const firstRank = purposeRank[first.purpose ?? ''] ?? 9;
+        const secondRank = purposeRank[second.purpose ?? ''] ?? 9;
 
         if (firstRank !== secondRank) {
           return firstRank - secondRank;
@@ -16756,20 +16757,26 @@ export class NightlifeDataService {
     const mediaUrls = this.cleanStringArray(profile.mediaUrls, 8);
 
     return {
-      id: text(profile.id) ?? text(storeProfile?.id),
+      id: text(profile.id) ?? text(storeProfile?.id) ?? undefined,
       stageName:
         text(profile.stageName) ??
         text(storeProfile?.stageName) ??
         'Cast',
-      storeName: text(profile.storeName) ?? text(storeProfile?.storeName),
+      storeName:
+        text(profile.storeName) ?? text(storeProfile?.storeName) ?? undefined,
       bio: text(profile.bio) ?? text(storeProfile?.bio) ?? '',
       tags: tags.length ? tags : (storeProfile?.tags ?? []),
       languages: languages.length ? languages : (storeProfile?.languages ?? []),
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
-      zodiacSign: text(profile.zodiacSign) ?? text(storeProfile?.zodiacSign),
+      zodiacSign:
+        text(profile.zodiacSign) ??
+        text(storeProfile?.zodiacSign) ??
+        undefined,
       heightCm: profile.heightCm ?? storeProfile?.heightCm,
       measurements:
-        text(profile.measurements) ?? text(storeProfile?.measurements),
+        text(profile.measurements) ??
+        text(storeProfile?.measurements) ??
+        undefined,
       hobbies: hobbies.length ? hobbies : (storeProfile?.hobbies ?? []),
       youtubeLinks: youtubeLinks.length
         ? youtubeLinks
