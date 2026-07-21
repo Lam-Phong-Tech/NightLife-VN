@@ -53,6 +53,7 @@ import {
 } from "@/lib/api/content";
 import type { RankingCategory, RankingCity, RankingTargetType } from "@/lib/api/rankings";
 import { clearAuthSession } from "@/lib/auth/session";
+import { logoutBrowserProfile } from "@/lib/api/auth";
 import { useSocket } from "@/components/providers/SocketProvider";
 
 const colors = {
@@ -2876,8 +2877,8 @@ export default function AdminConsole({ section }: { section?: string }) {
     }
   };
 
-  const logout = () => {
-    clearAuthSession();
+  const logout = async () => {
+    await logoutBrowserProfile();
     window.location.href = "/admin/dang-nhap";
   };
 

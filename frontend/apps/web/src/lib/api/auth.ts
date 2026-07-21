@@ -4,6 +4,7 @@ import {
   getActiveBrowserAuthSession,
   getAllAuthSessionTokens,
   getAuthSessionToken,
+  getAuthSessionTokenForRole,
   setAuthSession,
   type AuthResponse,
   type AuthRole,
@@ -327,8 +328,10 @@ export const activateExclusiveAuthSession = async (
 export const handoffActiveAuthSession = () => {
   if (typeof window === "undefined") return false;
   const activeSession = getActiveBrowserAuthSession();
-  const accessToken = getAuthSessionToken();
-  if (!activeSession || !accessToken) return false;
+  if (!activeSession) return false;
+
+  const accessToken = getAuthSessionTokenForRole(activeSession.role);
+  if (!accessToken) return false;
 
   const portal = portalForRole(activeSession.role);
   const params = new URLSearchParams(window.location.search);

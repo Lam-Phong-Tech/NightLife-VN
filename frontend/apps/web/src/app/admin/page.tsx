@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import { clearAuthSession } from "@/lib/auth/session";
+import { logoutBrowserProfile } from "@/lib/api/auth";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 
@@ -108,8 +109,9 @@ function AdminDashboardContent() {
       console.error(err);
       setError("Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.");
       if (err && typeof err === "object" && "status" in err && err.status === 401) {
-        clearAuthSession();
-        window.location.href = "/admin/dang-nhap";
+        void logoutBrowserProfile().then(() => {
+          window.location.href = "/admin/dang-nhap";
+        });
       }
     } finally {
       setIsLoading(false);

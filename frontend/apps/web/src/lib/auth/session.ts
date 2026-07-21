@@ -249,6 +249,17 @@ export const getAuthSessionToken = () => {
   return getValidAuthToken();
 };
 
+export const getAuthSessionTokenForRole = (role: AuthRole) => {
+  ensureAuthSessionSyncListener();
+  const prefix = getSessionScopePrefixForRole(role);
+  const cookies = parseCookies();
+  const token = cookies[`${prefix}auth_token`] || "";
+  if (token && isTokenExpired(token)) {
+    return "";
+  }
+  return token;
+};
+
 export const setAuthSession = (session: AuthResponse) => {
   if (typeof window === "undefined") return;
 
