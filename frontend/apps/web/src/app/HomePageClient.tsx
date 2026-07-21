@@ -1609,7 +1609,7 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
         href: meta.link || "/uu-dai",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: `linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.34)), url('${imageUrl}') center/cover`,
+        img: `url('${imageUrl}') center/cover`,
         hasImage: true,
       }];
     });
@@ -1728,17 +1728,18 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))",
-        }}
-      />
       <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         <div
           style={{
-            color: colors.goldSoft,
+            display: "inline-flex",
+            alignItems: "center",
+            minHeight: desktop ? 26 : 22,
+            borderRadius: 999,
+            padding: desktop ? "0 12px" : "0 9px",
+            color: "#3b2604",
+            background: "rgba(255, 241, 186, 0.94)",
+            border: "1px solid rgba(255, 255, 255, 0.52)",
+            boxShadow: "0 10px 24px rgba(0,0,0,.20)",
             fontSize: desktop ? "11px" : "9px",
             fontWeight: 900,
             letterSpacing: ".18em",
@@ -1750,9 +1751,11 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
         <h3
           style={{
             marginTop: desktop ? "10px" : "6px",
+            color: "#fff",
             fontSize: desktop ? "30px" : "18px",
             lineHeight: 1.08,
             fontWeight: 900,
+            textShadow: "0 3px 18px rgba(0,0,0,.74), 0 1px 2px rgba(0,0,0,.65)",
           }}
         >
           {eventTitle}
@@ -1763,9 +1766,10 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            color: "rgba(255, 255, 255, 0.85)",
+            color: "#fff",
             fontSize: desktop ? "13px" : "11px",
             lineHeight: 1.35,
+            textShadow: "0 2px 12px rgba(0,0,0,.78), 0 1px 2px rgba(0,0,0,.68)",
           }}
         >
           <span style={{ minWidth: 0 }}>{eventDesc}</span>
@@ -1779,6 +1783,8 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
               fontSize: desktop ? "12px" : "10px",
               fontWeight: 900,
               whiteSpace: "nowrap",
+              boxShadow: "0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.44)",
+              textShadow: "none",
             }}
           >
             {eventButtonText}
@@ -2112,11 +2118,21 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
         style={{ height: compact ? "62px" : "82px", borderRadius: homeMediaRadius }}
       />
       <div style={{ minWidth: 0 }}>
-        <div style={{ color: colors.goldSoft, fontSize: compact ? "18px" : "22px", fontWeight: 900 }}>{item.value}</div>
+        <div
+          className="nl-home-coupon-value"
+          style={{ color: colors.goldSoft, fontSize: compact ? "18px" : "22px", fontWeight: 900 }}
+        >
+          {item.value}
+        </div>
         <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
-      <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".03em" }}>Xem ưu đãi</span>
+      <span
+        className="nl-home-coupon-action"
+        style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".03em" }}
+      >
+        Xem ưu đãi
+      </span>
     </Link>
   );
 }
@@ -2174,6 +2190,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
       />
       <div style={{ minWidth: 0, display: "grid", gap: compact ? 5 : 7 }}>
         <span
+          className="nl-home-coupon-value"
           style={{
             justifySelf: "start",
             maxWidth: "100%",
@@ -2217,6 +2234,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
           {item.place}
         </div>
         <span
+          className="nl-home-coupon-action"
           style={{
             justifySelf: "start",
             display: "inline-flex",
