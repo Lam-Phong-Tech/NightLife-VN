@@ -1643,6 +1643,13 @@ const entries: TranslationEntry[] = [
     zh: "预约码",
   },
   {
+    vi: "Địa chỉ",
+    en: "Address",
+    ja: "住所",
+    ko: "주소",
+    zh: "地址",
+  },
+  {
     vi: "Thời gian",
     en: "Time",
     ja: "時間",

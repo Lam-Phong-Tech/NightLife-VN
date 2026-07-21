@@ -5988,6 +5988,7 @@ export class NightlifeDataService {
               id: true,
               name: true,
               slug: true,
+              address: true,
               openingHours: true,
               bookingCancelCutoffMinutes: true,
               media: {
@@ -13636,6 +13637,7 @@ export class NightlifeDataService {
           id: true,
           name: true,
           slug: true,
+          address: true,
           openingHours: true,
           bookingCancelCutoffMinutes: true,
           media: {

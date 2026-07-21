@@ -36,6 +36,7 @@ export type BookingRecord = {
     id: string;
     name: string;
     slug: string;
+    address?: string | null;
     bookingCancelCutoffMinutes?: number | null;
     openingHours?: Record<string, unknown> | null;
     media?: Array<{ url: string }>;
@@ -153,6 +154,23 @@ const normalizeBookingRecord = (booking: BookingRecord): BookingRecord => {
   return tour ? { ...booking, tour } : booking;
 };
 
+const mergeBookingStore = (
+  current?: BookingRecord["store"],
+  next?: BookingRecord["store"],
+): BookingRecord["store"] => {
+  if (!current) return next ?? null;
+  if (!next) return current;
+
+  const currentAddress = current.address?.trim() ? current.address : null;
+  const nextAddress = next.address?.trim() ? next.address : null;
+
+  return {
+    ...next,
+    ...current,
+    address: currentAddress ?? nextAddress,
+  };
+};
+
 const mergeBookingRecord = (base: BookingRecord, incoming: BookingRecord): BookingRecord => {
   const current = normalizeBookingRecord(base);
   const next = normalizeBookingRecord(incoming);
@@ -160,7 +178,7 @@ const mergeBookingRecord = (base: BookingRecord, incoming: BookingRecord): Booki
   return {
     ...next,
     ...current,
-    store: current.store ?? next.store,
+    store: mergeBookingStore(current.store, next.store),
     cast: current.cast ?? next.cast,
     guest: current.guest ?? next.guest,
     user: current.user ?? next.user,

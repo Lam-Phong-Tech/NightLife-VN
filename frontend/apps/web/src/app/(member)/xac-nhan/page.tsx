@@ -626,6 +626,7 @@ export default function Page() {
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
+  const bookedStoreAddress = !isTourBooking ? booking?.store?.address?.trim() ?? "" : "";
   const canShowQr = booking ? !isCancelled : false;
   const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
@@ -784,7 +785,15 @@ export default function Page() {
                   <TourVenueSummary booking={booking} language={activeLanguage} />
                 </>
               ) : (
-                <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
+                <>
+                  <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
+                  {bookedStoreAddress ? (
+                    <SummaryRow
+                      label={translateText("Địa chỉ", activeLanguage)}
+                      value={bookedStoreAddress}
+                    />
+                  ) : null}
+                </>
               )}
               <SummaryRow
                 label={isTourBooking ? tourCopy.timeLabel : translateText("Thời gian", activeLanguage)}
