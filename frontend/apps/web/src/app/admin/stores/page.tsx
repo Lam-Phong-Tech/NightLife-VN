@@ -123,6 +123,93 @@ const cleanStreetAddressFromFullAddress = (
   return streetParts.join(', ') || parts.find((part) => !isBrokenAddressPart(part)) || fullAddress.trim();
 };
 
+const menuTierFromValue = (value: any) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(Math.max(Math.trunc(value), 1), 4);
+  }
+
+  const text = String(value ?? '').trim();
+  if (!text) return undefined;
+
+  const dollarCount = (text.match(/\$/g) ?? []).length;
+  if (dollarCount) return Math.min(Math.max(dollarCount, 1), 4);
+
+  const number = Number(text);
+  return Number.isFinite(number) ? Math.min(Math.max(Math.trunc(number), 1), 4) : undefined;
+};
+
+const menuTierLabel = (tier: number | undefined) =>
+  tier ? '$'.repeat(Math.min(Math.max(tier, 1), 4)) : '';
+
+const normalizeMenuItemForAdmin = (item: any, groupIndex: number, itemIndex: number) => {
+  const tier = menuTierFromValue(item?.tier ?? item?.priceTier ?? item?.tierLabel ?? item?.displayPrice ?? item?.value);
+  const desc = String(item?.desc ?? item?.description ?? item?.note ?? '').trim();
+  const thumb = String(item?.thumb ?? item?.imageUrl ?? item?.url ?? '').trim();
+  const hot = item?.hot === true || item?.isHot === true;
+
+  return {
+    ...item,
+    id: String(item?.id || `m${groupIndex + 1}-${itemIndex + 1}`),
+    name: String(item?.name ?? item?.label ?? item?.title ?? '').trim(),
+    desc,
+    description: desc,
+    tier,
+    priceTier: item?.priceTier ?? menuTierLabel(tier),
+    hot,
+    isHot: hot,
+    thumb,
+    imageUrl: thumb,
+  };
+};
+
+const normalizeMenuGroupsForAdmin = (pricingInfo: any) => {
+  const rawGroups = Array.isArray(pricingInfo?.groups) ? pricingInfo.groups : [];
+  const rawItems = Array.isArray(pricingInfo?.items) ? pricingInfo.items : [];
+  const sourceGroups = rawGroups.length
+    ? rawGroups
+    : rawItems.length
+      ? [{ id: 'g1', name: pricingInfo?.summary || 'Set menu', items: rawItems }]
+      : [];
+
+  return sourceGroups
+    .map((group: any, groupIndex: number) => ({
+      ...group,
+      id: String(group?.id || `g${groupIndex + 1}`),
+      name: String(group?.name ?? group?.label ?? `Nhóm ${groupIndex + 1}`).trim(),
+      items: (Array.isArray(group?.items) ? group.items : [])
+        .map((item: any, itemIndex: number) => normalizeMenuItemForAdmin(item, groupIndex, itemIndex))
+        .filter((item: any) => item.name || item.desc || item.thumb),
+    }))
+    .filter((group: any) => group.name || group.items.length);
+};
+
+const serializeMenuGroupsForPricing = (groups: any[]) =>
+  groups.map((group, groupIndex) => ({
+    ...group,
+    id: String(group?.id || `g${groupIndex + 1}`),
+    name: String(group?.name ?? '').trim(),
+    items: (Array.isArray(group?.items) ? group.items : []).map((item: any, itemIndex: number) => {
+      const tier = menuTierFromValue(item?.tier ?? item?.priceTier);
+      const desc = String(item?.desc ?? item?.description ?? '').trim();
+      const thumb = String(item?.thumb ?? item?.imageUrl ?? '').trim();
+      const hot = item?.hot === true || item?.isHot === true;
+
+      return {
+        ...item,
+        id: String(item?.id || `m${groupIndex + 1}-${itemIndex + 1}`),
+        name: String(item?.name ?? '').trim(),
+        desc,
+        description: desc,
+        tier,
+        priceTier: menuTierLabel(tier),
+        hot,
+        isHot: hot,
+        thumb,
+        imageUrl: thumb,
+      };
+    }),
+  }));
+
 const getChipStyle = (kind: string) => {
   const m: Record<string, string[]> = {
     success: ['rgba(95,191,134,.1)', 'rgba(95,191,134,.28)', '#7fd3a2'],
@@ -736,8 +823,8 @@ function AdminStoresContent() {
       setPendingAddress('');
     }
     
-    let groups = st.pricingInfo?.groups;
-    if (!groups || groups.length === 0) {
+    let groups = normalizeMenuGroupsForAdmin(st.pricingInfo);
+    if (!groups.length) {
       groups = [
         { id: 'g1', name: 'Set menu', items: st.pricingInfo?.items || [] },
         { id: 'g2', name: 'Cocktail', items: [] }
@@ -810,7 +897,7 @@ function AdminStoresContent() {
         tags,
         partnerAccountId: partnerAccountId || null,
         openingHours: openingHourValidation.normalizedHours,
-        pricingInfo: { groups: menuGroups },
+        pricingInfo: { groups: serializeMenuGroupsForPricing(menuGroups) },
         mediaIds: Array.from(new Set([coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)))
       };
       
