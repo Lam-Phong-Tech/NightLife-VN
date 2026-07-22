@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import {
   filterBlogPosts,
   getBlogCategories,
@@ -17,8 +18,51 @@ type BlogPageProps = {
     q?: string;
     category?: string;
     tag?: string;
+    page?: string;
   }>;
 };
+
+const blogPageSize = 8;
+
+const parseBlogPage = (value?: string) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+};
+
+const getPaginationItems = (currentPage: number, totalPages: number) => {
+  const pageNumbers = Array.from(
+    new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]),
+  )
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+
+  return pageNumbers.reduce<Array<number | "ellipsis">>((items, page) => {
+    const previous = items[items.length - 1];
+    if (typeof previous === "number" && page - previous > 1) {
+      items.push("ellipsis");
+    }
+    items.push(page);
+    return items;
+  }, []);
+};
+
+const paginationControlStyle = (active = false, disabled = false): CSSProperties => ({
+  minWidth: "38px",
+  minHeight: "38px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: "8px",
+  border: active ? "1px solid var(--vy-gold)" : "1px solid var(--vy-border)",
+  background: active ? "var(--vy-gold-grad)" : "var(--vy-surface-2)",
+  color: active ? "var(--vy-on-gold)" : "var(--vy-text-2)",
+  padding: "0 12px",
+  fontSize: "13px",
+  fontWeight: 900,
+  textDecoration: "none",
+  opacity: disabled ? 0.45 : 1,
+  cursor: disabled ? "default" : "pointer",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const featuredPost = await getFeaturedBlogPost();
@@ -56,6 +100,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const query = params.q?.trim() ?? "";
   const activeCategory = params.category?.trim() ?? "";
   const activeTag = params.tag?.trim() ?? "";
+  const requestedPage = parseBlogPage(params.page?.trim());
   const allPosts = await getPublishedBlogPosts();
   const featuredPost = await getFeaturedBlogPost();
   const categories = getBlogCategories(allPosts);
@@ -68,6 +113,22 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const posts = hasFilter
     ? filteredPosts
     : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost?.slug);
+  const totalPages = Math.max(1, Math.ceil(posts.length / blogPageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const paginatedPosts = posts.slice(
+    (currentPage - 1) * blogPageSize,
+    currentPage * blogPageSize,
+  );
+  const paginationItems = getPaginationItems(currentPage, totalPages);
+  const getPageHref = (page: number) => ({
+    pathname: "/blog",
+    query: {
+      ...(query ? { q: query } : {}),
+      ...(activeCategory ? { category: activeCategory } : {}),
+      ...(activeTag ? { tag: activeTag } : {}),
+      ...(page > 1 ? { page: String(page) } : {}),
+    },
+  });
   const structuredData = jsonLdGraph([
     breadcrumbJsonLd(
       [
@@ -324,8 +385,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 }}
               >
                 <span>{formatDate(featuredPost.publishedAt)}</span>
-                <span aria-hidden="true">·</span>
-                <span>{featuredPost.readTime}</span>
               </div>
             </article>
           </Link>
@@ -340,7 +399,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             marginTop: "18px",
           }}
         >
-          {posts.map((post) => (
+          {paginatedPosts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
@@ -387,12 +446,73 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                   {post.description}
                 </p>
                 <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12px", fontWeight: 700 }}>
-                  {formatDate(post.publishedAt)} · {post.readTime}
+                  {formatDate(post.publishedAt)}
                 </div>
               </article>
             </Link>
           ))}
         </section>
+
+        {totalPages > 1 ? (
+          <nav
+            aria-label="Phân trang blog"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              marginTop: "22px",
+            }}
+          >
+            {currentPage > 1 ? (
+              <Link href={getPageHref(currentPage - 1)} style={paginationControlStyle()}>
+                Trước
+              </Link>
+            ) : (
+              <span aria-disabled="true" style={paginationControlStyle(false, true)}>
+                Trước
+              </span>
+            )}
+            {paginationItems.map((item, index) =>
+              item === "ellipsis" ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  aria-hidden="true"
+                  style={{
+                    minWidth: "22px",
+                    color: "var(--vy-muted)",
+                    textAlign: "center",
+                    fontWeight: 900,
+                  }}
+                >
+                  ...
+                </span>
+              ) : item === currentPage ? (
+                <span
+                  key={item}
+                  aria-current="page"
+                  style={paginationControlStyle(true)}
+                >
+                  {item}
+                </span>
+              ) : (
+                <Link key={item} href={getPageHref(item)} style={paginationControlStyle()}>
+                  {item}
+                </Link>
+              ),
+            )}
+            {currentPage < totalPages ? (
+              <Link href={getPageHref(currentPage + 1)} style={paginationControlStyle()}>
+                Sau
+              </Link>
+            ) : (
+              <span aria-disabled="true" style={paginationControlStyle(false, true)}>
+                Sau
+              </span>
+            )}
+          </nav>
+        ) : null}
 
         {!posts.length ? (
           <div
