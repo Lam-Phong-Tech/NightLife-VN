@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,6 +12,8 @@ import { PasswordService } from '../common/password.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
+
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 const normalizeDisplayName = (value?: string | null) =>
   value?.trim().replace(/\s+/g, ' ') || undefined;
@@ -53,6 +56,9 @@ export class UsersService {
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(email)) {
+      throw new BadRequestException('Email không đúng định dạng');
+    }
     const displayName = normalizeDisplayName(input.displayName);
     const phone = input.phone?.trim() || null;
 
@@ -222,6 +228,9 @@ export class UsersService {
     storeId?: string;
   }) {
     const email = input.email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(email)) {
+      throw new BadRequestException('Email không đúng định dạng');
+    }
     const displayName = normalizeDisplayName(input.displayName);
     const existingUser = await this.findByEmail(email);
     if (existingUser) {

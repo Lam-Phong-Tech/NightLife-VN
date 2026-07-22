@@ -230,9 +230,13 @@ export default function AdminRolesPage() {
   const afPwBar2 = psc>=2?pCol:pOff;
   const afPwBar3 = psc>=3?pCol:pOff;
 
-  const ok = !!(afName && afName.trim() && afEmail && afEmail.indexOf('@')>0 && afPw.length>=8);
+  const isEmailValid = (email: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+  const ok = !!(afName && afName.trim() && afEmail && isEmailValid(afEmail) && afPw.length>=8);
   const handleSave = async () => {
-    if(!ok) { showToast(!afName||!afName.trim()?'Nhập tên hiển thị':(!afEmail||afEmail.indexOf('@')<=0)?'Nhập email hợp lệ':'Mật khẩu tối thiểu 8 ký tự'); return; }
+    if(!afName||!afName.trim()) { showToast('Nhập tên hiển thị'); return; }
+    if(!afEmail||!afEmail.trim()) { showToast('Nhập email đăng nhập'); return; }
+    if(!isEmailValid(afEmail)) { showToast('Email không đúng định dạng (ví dụ: name@domain.com)'); return; }
+    if(afPw.length < 8) { showToast('Mật khẩu tối thiểu 8 ký tự'); return; }
     try {
       setLoading(true);
       await createAdminUser({
@@ -398,7 +402,12 @@ export default function AdminRolesPage() {
               
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
-                <input value={afEmail} onChange={e => setAfEmail(e.target.value)} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                <input value={afEmail} onChange={e => setAfEmail(e.target.value)} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${afEmail && !isEmailValid(afEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                {afEmail && !isEmailValid(afEmail) && (
+                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '5px' }}>
+                    Email không đúng định dạng (ví dụ: name@domain.com)
+                  </div>
+                )}
               </div>
               
               <div>
@@ -486,7 +495,12 @@ export default function AdminRolesPage() {
               </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
-                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edEmail && !isEmailValid(edEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                {edEmail && !isEmailValid(edEmail) && (
+                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '5px' }}>
+                    Email không đúng định dạng (ví dụ: name@domain.com)
+                  </div>
+                )}
               </div>
 
               {(edKind === 'partner' || edKind === 'staff') && (
@@ -516,7 +530,18 @@ export default function AdminRolesPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
               <span style={{ flex: 1 }}></span>
               <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={async () => { try { await updateAdminUser(edOrig, { displayName: edName, email: edEmail, storeId: edStoreId || null }); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi cập nhật'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
+              <span onClick={async () => {
+                if (!edName.trim()) { showToast('Nhập tên hiển thị'); return; }
+                if (!isEmailValid(edEmail)) { showToast('Email chưa đúng định dạng'); return; }
+                try {
+                  await updateAdminUser(edOrig, { displayName: edName, email: edEmail.trim(), storeId: edStoreId || null });
+                  setEdOpen(false);
+                  showToast('Đã lưu thay đổi cho ' + edName);
+                  setRefetchTrigger(r => r + 1);
+                } catch (e: any) {
+                  showToast('Lỗi khi cập nhật: ' + (e?.response?.data?.message || e.message || 'Không thể cập nhật'));
+                }
+              }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && isEmailValid(edEmail) ? 1 : 0.45, pointerEvents: edName.trim() && isEmailValid(edEmail) ? 'auto' : 'none' }}>
                 Lưu thay đổi
               </span>
             </div>
