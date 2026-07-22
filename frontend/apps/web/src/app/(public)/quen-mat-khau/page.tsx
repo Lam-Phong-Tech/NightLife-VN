@@ -6,6 +6,8 @@ import {
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,6 +44,7 @@ function initialEmail() {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const activeLanguage = useActiveLanguage();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
@@ -160,7 +163,7 @@ export default function ForgotPasswordPage() {
             }}
           >
             <ArrowLeft size={17} />
-            Quay lại đăng nhập
+            {translateText("Quay lại đăng nhập", activeLanguage)}
           </Link>
 
           <div
@@ -194,12 +197,15 @@ export default function ForgotPasswordPage() {
             </div>
 
             <h1 style={{ margin: 0, fontSize: 25, lineHeight: 1.12, fontWeight: 950 }}>
-              {step === "email" ? "Quên mật khẩu" : "Nhập mã xác nhận"}
+              {translateText(step === "email" ? "Quên mật khẩu" : "Nhập mã xác nhận", activeLanguage)}
             </h1>
             <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13.2, lineHeight: 1.5 }}>
-              {step === "email"
-                ? "Nhập email tài khoản, Vietyoru sẽ gửi mã gồm 6 chữ số có hiệu lực trong 15 phút."
-                : `Mã đã được gửi tới ${normalizedEmail}. Nếu quá ${expiresInMinutes} phút chưa nhập, hãy yêu cầu mã mới.`}
+              {translateText(
+                step === "email"
+                  ? "Nhập email tài khoản, Vietyoru sẽ gửi mã gồm 6 chữ số có hiệu lực trong 15 phút."
+                  : `Mã đã được gửi tới ${normalizedEmail}. Nếu quá ${expiresInMinutes} phút chưa nhập, hãy yêu cầu mã mới.`,
+                activeLanguage,
+              )}
             </p>
 
             <form
@@ -216,7 +222,7 @@ export default function ForgotPasswordPage() {
                 label="Email"
                 value={email}
                 onChange={setEmail}
-                placeholder="Vui lòng nhập email"
+                placeholder={translateText("Vui lòng nhập email", activeLanguage)}
                 disabled={step === "code"}
                 type="email"
                 autoComplete="off"
@@ -224,10 +230,10 @@ export default function ForgotPasswordPage() {
 
               {step === "code" ? (
                 <Field
-                  label="Mã xác nhận"
+                  label={translateText("Mã xác nhận", activeLanguage)}
                   value={code}
                   onChange={(value) => setCode(value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="Nhập mã 6 số"
+                  placeholder={translateText("Nhập mã 6 số", activeLanguage)}
                   inputMode="numeric"
                   autoComplete="off"
                   maxLength={6}
@@ -249,7 +255,7 @@ export default function ForgotPasswordPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  {message}
+                  {translateText(message, activeLanguage)}
                 </div>
               ) : null}
 
@@ -268,7 +274,7 @@ export default function ForgotPasswordPage() {
                   opacity: isSubmitting ? 0.72 : 1,
                 }}
               >
-                {isSubmitting ? "Đang xử lý..." : step === "email" ? "Gửi mã xác nhận" : "Xác nhận mã"}
+                {translateText(isSubmitting ? "Đang xử lý..." : step === "email" ? "Gửi mã xác nhận" : "Xác nhận mã", activeLanguage)}
               </button>
 
               {step === "code" ? (
@@ -290,7 +296,7 @@ export default function ForgotPasswordPage() {
                     cursor: isSubmitting ? "default" : "pointer",
                   }}
                 >
-                  Nhập email khác hoặc gửi mã mới
+                  {translateText("Nhập email khác hoặc gửi mã mới", activeLanguage)}
                 </button>
               ) : null}
             </form>

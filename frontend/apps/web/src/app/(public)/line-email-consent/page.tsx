@@ -4,6 +4,8 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 import { logoutBrowserProfile } from "@/lib/api/auth";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 const colors = {
   bg: "#0c0c0f",
@@ -36,6 +38,7 @@ const emailConsentBenefits = [
 ];
 
 export default function LineEmailConsentPage() {
+  const activeLanguage = useActiveLanguage();
   const [accepted, setAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [redirectTo] = useState(() =>
@@ -85,7 +88,7 @@ export default function LineEmailConsentPage() {
           }}
         >
           <ArrowLeft size={17} />
-          Quay lại đăng nhập
+          {translateText("Quay lại đăng nhập", activeLanguage)}
         </Link>
 
         <div
@@ -128,7 +131,7 @@ export default function LineEmailConsentPage() {
                 }}
               >
                 <Mail size={15} />
-                LINE Login email permission
+                {translateText("LINE Login email permission", activeLanguage)}
               </span>
               <h1
                 className="nl-line-consent-hero-title"
@@ -140,10 +143,10 @@ export default function LineEmailConsentPage() {
                   fontWeight: 950,
                 }}
               >
-                Cần email để tạo tài khoản hội viên.
+                {translateText("Cần email để tạo tài khoản hội viên.", activeLanguage)}
               </h1>
               <p className="nl-line-consent-hero-copy" style={{ marginTop: 14, maxWidth: 560, color: colors.muted, fontSize: 15, lineHeight: 1.68 }}>
-                Email từ LINE giúp bạn đăng nhập, lưu lịch đặt chỗ và bảo vệ tài khoản.
+                {translateText("Email từ LINE giúp bạn đăng nhập, lưu lịch đặt chỗ và bảo vệ tài khoản.", activeLanguage)}
               </p>
             </div>
           </section>
@@ -183,11 +186,11 @@ export default function LineEmailConsentPage() {
                 <ShieldCheck size={26} />
               </div>
               <h2 className="nl-line-consent-title" style={{ margin: 0, fontSize: 23, lineHeight: 1.12, fontWeight: 950 }}>
-                Chia sẻ email qua LINE
+                {translateText("Chia sẻ email qua LINE", activeLanguage)}
               </h2>
             </div>
             <p className="nl-line-consent-copy" style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.58 }}>
-              Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.
+              {translateText("Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.", activeLanguage)}
             </p>
 
             <form
@@ -222,7 +225,7 @@ export default function LineEmailConsentPage() {
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: colors.line }}
               />
               <span className="nl-line-consent-check-copy" style={{ color: colors.text, fontSize: 13.5, lineHeight: 1.52, fontWeight: 780 }}>
-                Tôi đồng ý chia sẻ email từ LINE cho Vietyoru.
+                {translateText("Tôi đồng ý chia sẻ email từ LINE cho Vietyoru.", activeLanguage)}
               </span>
             </label>
 
@@ -243,7 +246,7 @@ export default function LineEmailConsentPage() {
                 cursor: "pointer",
               }}
             >
-              Tiếp tục với LINE
+              {translateText("Tiếp tục với LINE", activeLanguage)}
             </button>
             </form>
 
@@ -262,15 +265,15 @@ export default function LineEmailConsentPage() {
               {emailConsentBenefits.map((item) => (
                 <div className="nl-line-consent-benefit-row" key={item} style={{ display: "flex", gap: 9, color: colors.muted, fontSize: 12.8, lineHeight: 1.45 }}>
                   <CheckCircle2 size={16} color={colors.line} style={{ flex: "none", marginTop: 1 }} />
-                  <span>{item}</span>
+                  <span>{translateText(item, activeLanguage)}</span>
                 </div>
               ))}
             </div>
 
             <p className="nl-line-consent-policy" style={{ marginTop: 12, color: colors.dim, fontSize: 12, lineHeight: 1.55 }}>
-              Xem thêm tại{" "}
+              {translateText("Xem thêm tại", activeLanguage)}{" "}
               <Link className="nl-line-consent-policy-link" href="/legal" style={{ color: colors.goldPale, fontWeight: 900 }}>
-                Chính sách bảo mật
+                {translateText("Chính sách bảo mật", activeLanguage)}
               </Link>
               .
             </p>

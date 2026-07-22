@@ -2,6 +2,8 @@
 
 import { resetPassword } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { translateText } from "@/lib/i18n/client-translations";
+import { intlLocaleByLanguage, useActiveLanguage } from "@/lib/i18n/use-active-language";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -59,6 +61,7 @@ function getResetSession(): ResetSession | null {
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const activeLanguage = useActiveLanguage();
   const [resetSession, setResetSession] = useState<ResetSession | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -94,7 +97,7 @@ export default function ResetPasswordPage() {
     const date = new Date(resetSession.expiresAt);
     if (!Number.isFinite(date.getTime())) return "";
 
-    return new Intl.DateTimeFormat("vi-VN", {
+    return new Intl.DateTimeFormat(intlLocaleByLanguage[activeLanguage], {
       hour: "2-digit",
       minute: "2-digit",
       day: "2-digit",
@@ -102,7 +105,7 @@ export default function ResetPasswordPage() {
       year: "numeric",
       hour12: false,
     }).format(date);
-  }, [resetSession]);
+  }, [activeLanguage, resetSession]);
 
   const validate = () => {
     const normalizedPassword = normalizePassword(password);
@@ -205,7 +208,7 @@ export default function ResetPasswordPage() {
             }}
           >
             <ArrowLeft size={17} />
-            Quay lại nhập mã
+            {translateText("Quay lại nhập mã", activeLanguage)}
           </Link>
 
           <div
@@ -239,12 +242,15 @@ export default function ResetPasswordPage() {
             </div>
 
             <h1 style={{ margin: 0, fontSize: 25, lineHeight: 1.12, fontWeight: 950 }}>
-              Tạo mật khẩu mới
+              {translateText("Tạo mật khẩu mới", activeLanguage)}
             </h1>
             <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13.2, lineHeight: 1.5 }}>
-              {resetSession
-                ? `Đang đặt lại mật khẩu cho ${resetSession.email}${expiresAtLabel ? `, phiên hết hạn lúc ${expiresAtLabel}` : ""}.`
-                : "Vui lòng xác thực mã email trước khi đặt mật khẩu mới."}
+              {translateText(
+                resetSession
+                  ? `Đang đặt lại mật khẩu cho ${resetSession.email}${expiresAtLabel ? `, phiên hết hạn lúc ${expiresAtLabel}` : ""}.`
+                  : "Vui lòng xác thực mã email trước khi đặt mật khẩu mới.",
+                activeLanguage,
+              )}
             </p>
 
             <form
@@ -258,16 +264,16 @@ export default function ResetPasswordPage() {
             >
               <Field
                 icon={<LockKeyhole size={16} />}
-                label="Mật khẩu mới"
+                label={translateText("Mật khẩu mới", activeLanguage)}
                 value={password}
                 onChange={setPassword}
-                placeholder="Vui lòng nhập mật khẩu mới"
+                placeholder={translateText("Vui lòng nhập mật khẩu mới", activeLanguage)}
                 type={showPassword ? "text" : "password"}
                 autoComplete="off"
                 action={
                   <button
                     type="button"
-                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    aria-label={translateText(showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu", activeLanguage)}
                     onClick={() => setShowPassword((current) => !current)}
                     style={{
                       display: "inline-flex",
@@ -288,10 +294,10 @@ export default function ResetPasswordPage() {
               />
               <Field
                 icon={<LockKeyhole size={16} />}
-                label="Nhập lại mật khẩu mới"
+                label={translateText("Nhập lại mật khẩu mới", activeLanguage)}
                 value={confirmPassword}
                 onChange={setConfirmPassword}
-                placeholder="Vui lòng nhập lại mật khẩu mới"
+                placeholder={translateText("Vui lòng nhập lại mật khẩu mới", activeLanguage)}
                 type={showPassword ? "text" : "password"}
                 autoComplete="off"
               />
@@ -311,7 +317,7 @@ export default function ResetPasswordPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  {message}
+                  {translateText(message, activeLanguage)}
                 </div>
               ) : null}
 
@@ -330,7 +336,7 @@ export default function ResetPasswordPage() {
                   opacity: isSubmitting || !resetSession ? 0.72 : 1,
                 }}
               >
-                {isSubmitting ? "Đang cập nhật..." : "Đổi mật khẩu"}
+                {translateText(isSubmitting ? "Đang cập nhật..." : "Đổi mật khẩu", activeLanguage)}
               </button>
             </form>
           </div>
