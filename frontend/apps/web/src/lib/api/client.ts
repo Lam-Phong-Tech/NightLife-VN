@@ -58,6 +58,8 @@ const exactMessageTranslations: Record<string, string> = {
   "password reset account not found": "Email chưa được đăng ký hoặc tài khoản chưa hoạt động.",
   "password reset email could not be sent":
     "Chưa gửi được mã xác nhận qua email. Vui lòng thử lại sau hoặc liên hệ Admin.",
+  "password reset is only available for user accounts":
+    "Chỉ tài khoản người dùng mới được đặt lại mật khẩu tại trang này.",
   "registration otp email could not be sent":
     "Chưa gửi được mã OTP qua email. Vui lòng thử lại sau hoặc liên hệ Admin.",
   "registration otp was sent recently": "Mã OTP vừa được gửi. Vui lòng đợi một chút rồi gửi lại.",

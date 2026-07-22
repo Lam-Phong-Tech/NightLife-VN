@@ -467,6 +467,8 @@ export class AuthService {
       throw new NotFoundException('Password reset account not found');
     }
 
+    this.ensurePasswordResetUserAccount(user);
+
     const code = this.generatePasswordResetCode();
     const now = new Date();
     const token = await this.prisma.passwordResetToken.create({
@@ -521,6 +523,8 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired password reset code');
     }
 
+    this.ensurePasswordResetUserAccount(token.user);
+
     const resetToken = randomBytes(32).toString('hex');
     const updatedToken = await this.prisma.passwordResetToken.update({
       where: { id: token.id },
@@ -566,6 +570,8 @@ export class AuthService {
         'Invalid or expired password reset session',
       );
     }
+
+    this.ensurePasswordResetUserAccount(token.user);
 
     const now = new Date();
     await this.usersService.updatePassword(token.userId, password);
@@ -938,6 +944,14 @@ export class AuthService {
         createdAt: 'desc',
       },
     });
+  }
+
+  private ensurePasswordResetUserAccount(user: { role?: string | null }) {
+    if (user.role !== 'USER') {
+      throw new ForbiddenException(
+        'Password reset is only available for user accounts',
+      );
+    }
   }
 
   private consumeRegistrationOtp(email: string, code: string) {

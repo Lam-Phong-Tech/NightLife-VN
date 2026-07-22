@@ -624,6 +624,76 @@ describe('AuthService', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('rejects password reset requests for non-user accounts', async () => {
+    const partner = {
+      ...user,
+      id: 'partner-reset-1',
+      email: 'partner@nightlife.vn',
+      role: 'PARTNER',
+      status: 'ACTIVE',
+      deletedAt: null,
+    };
+
+    usersService.findByEmail.mockResolvedValue(partner as never);
+
+    await expect(
+      service.requestPasswordReset({ email: partner.email }),
+    ).rejects.toThrow(
+      'Password reset is only available for user accounts',
+    );
+
+    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
+    expect(
+      emailNotificationService.sendPasswordResetCodeEmail,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('does not complete password reset for admin accounts', async () => {
+    const admin = {
+      ...user,
+      id: 'admin-reset-1',
+      email: 'admin@nightlife.vn',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      deletedAt: null,
+    };
+    const resetToken = 'a'.repeat(64);
+    const hashPasswordResetValue = (
+      service as unknown as {
+        hashPasswordResetValue: (email: string, value: string) => string;
+      }
+    ).hashPasswordResetValue.bind(service);
+    const tokenRecord = {
+      id: 'reset-token-admin',
+      userId: admin.id,
+      email: admin.email,
+      codeHash: 'hash',
+      resetTokenHash: hashPasswordResetValue(admin.email, resetToken),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      verifiedAt: new Date(),
+      usedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: admin,
+    };
+
+    prisma.passwordResetToken.findFirst.mockResolvedValue(tokenRecord as never);
+
+    await expect(
+      service.resetPassword({
+        email: admin.email,
+        resetToken,
+        password: 'NewStr0ngPass!',
+        confirmPassword: 'NewStr0ngPass!',
+      }),
+    ).rejects.toThrow(
+      'Password reset is only available for user accounts',
+    );
+
+    expect(usersService.updatePassword).not.toHaveBeenCalled();
+    expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
+  });
+
   it('invalidates the reset token when password reset email delivery fails', async () => {
     const member = {
       ...user,
