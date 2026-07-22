@@ -150,6 +150,28 @@ const statusTone = (status: PartnerStatus) => {
   return { color: colors.gold, border: `1px solid ${colors.borderGold22}` };
 };
 
+type ActionTone = "info" | "success" | "error";
+
+const actionFeedbackStyle = (tone: ActionTone): React.CSSProperties => ({
+  padding: 14,
+  borderRadius: 12,
+  border:
+    tone === "error"
+      ? "1px solid rgba(248,113,113,.35)"
+      : tone === "success"
+        ? "1px solid rgba(74,222,128,.3)"
+        : `1px solid ${colors.borderGold22}`,
+  background:
+    tone === "error"
+      ? "rgba(248,113,113,.08)"
+      : tone === "success"
+        ? "rgba(74,222,128,.08)"
+        : "rgba(212,178,106,.06)",
+  color: tone === "error" ? colors.red : tone === "success" ? colors.green : colors.text2,
+  fontSize: 13,
+  lineHeight: 1.5,
+});
+
 const decodeHtmlEntities = (value?: string | null) =>
   (value ?? "")
     .replace(/&nbsp;/gi, " ")
@@ -364,6 +386,7 @@ export default function AdminPartnersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [actionTone, setActionTone] = useState<ActionTone>("info");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewReason, setReviewReason] = useState("");
 
@@ -420,6 +443,7 @@ export default function AdminPartnersPage() {
 
   const reviewRequest = async (request: ApiPartnerRequest, approve: boolean) => {
     if (approve && hasCorruptedContent(request)) {
+      setActionTone("error");
       setActionMessage(
         "Không thể duyệt yêu cầu này vì nội dung đã bị lỗi mã hóa. Hãy từ chối và yêu cầu đối tác gửi lại.",
       );
@@ -437,17 +461,24 @@ export default function AdminPartnersPage() {
           : "Thông tin cập nhật chưa phù hợp hoặc không chính xác.");
 
     setReviewingId(request.id);
-    setActionMessage("");
+    setActionTone("info");
+    setActionMessage(
+      approve
+        ? "Đang duyệt và cập nhật thông tin quán..."
+        : "Đang từ chối yêu cầu...",
+    );
     try {
       await apiClient(`/admin/partner-requests/${request.id}/review`, {
         method: "PATCH",
         data: { approve, reason },
       });
-      setActionMessage(approve ? "Đã duyệt yêu cầu và public nội dung nháp." : "Đã từ chối yêu cầu đối tác.");
+      setActionTone("success");
+      setActionMessage(approve ? "Đã duyệt và cập nhật thông tin quán thành công." : "Đã từ chối yêu cầu đối tác.");
       setReviewReason("");
       await loadRequests();
       setActiveTab(approve ? "APPROVED" : "REJECTED");
     } catch (error) {
+      setActionTone("error");
       setActionMessage(
         error instanceof ApiError
           ? translateApiMessage(error.message, error.status)
@@ -493,6 +524,7 @@ export default function AdminPartnersPage() {
                   onClick={() => {
                     setActiveTab(tab.key);
                     setSelectedId("");
+                    setActionTone("info");
                     setActionMessage("");
                   }}
                   style={{
@@ -686,12 +718,7 @@ export default function AdminPartnersPage() {
             {actionMessage ? (
               <div
                 style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.borderGold22}`,
-                  background: "rgba(212,178,106,.06)",
-                  color: colors.text2,
-                  fontSize: 13,
+                  ...actionFeedbackStyle(actionTone),
                   marginBottom: 24,
                 }}
               >
@@ -1048,6 +1075,12 @@ export default function AdminPartnersPage() {
 
 
 
+            {actionMessage ? (
+              <div style={{ ...actionFeedbackStyle(actionTone), marginBottom: 14 }}>
+                {actionMessage}
+              </div>
+            ) : null}
+
             {selectedRequest.status === "PENDING_REVIEW" ? (
               <div style={{ display: "grid", gap: 14 }}>
                 <textarea
@@ -1104,11 +1137,13 @@ export default function AdminPartnersPage() {
                     ) : (
                       <Check size={18} />
                     )}
-                    {selectedHasCorruptedContent
-                      ? "Không thể duyệt: dữ liệu lỗi"
-                      : selectedRequestType === "NEW_PARTNER"
-                        ? "Duyệt đối tác & kích hoạt quán"
-                        : "Duyệt & cập nhật thông tin quán"}
+                    {reviewingId === selectedRequest.id
+                      ? "Đang xử lý..."
+                      : selectedHasCorruptedContent
+                        ? "Không thể duyệt: dữ liệu lỗi"
+                        : selectedRequestType === "NEW_PARTNER"
+                          ? "Duyệt đối tác & kích hoạt quán"
+                          : "Duyệt & cập nhật thông tin quán"}
                   </button>
                   <button
                     type="button"

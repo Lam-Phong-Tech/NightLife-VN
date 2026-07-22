@@ -17232,21 +17232,22 @@ export class NightlifeDataService {
     const openingRecord = this.asRecord(store.openingHours);
     const pricingRecord = this.asRecord(store.pricingInfo);
     const storeArea = [store.district, store.city].filter(Boolean).join(', ');
-    const draftStoreAddress = this.cleanNullableText(dto.storeAddress);
-    const dtoWard = this.cleanNullableText(dto.ward);
+    const cleanStoreArea = this.cleanPartnerListingText(storeArea);
+    const draftStoreAddress = this.cleanPartnerListingText(dto.storeAddress);
+    const dtoWard = this.cleanPartnerListingText(dto.ward);
     const storeWard =
       dtoWard ??
       this.extractWardFromStoreAddress(draftStoreAddress) ??
       this.extractWardFromStoreAddress(store.address);
     const draftStreetAddress = this.extractStreetFromStoreAddress(
-      dto.streetAddress,
+      this.cleanPartnerListingText(dto.streetAddress),
       storeWard,
-      dto.storeCity ?? store.city,
+      this.cleanPartnerListingText(dto.storeCity) ?? store.city,
     );
     const draftAddressStreet = this.extractStreetFromStoreAddress(
       draftStoreAddress,
       storeWard,
-      dto.storeCity ?? store.city,
+      this.cleanPartnerListingText(dto.storeCity) ?? store.city,
     );
     const storeStreetAddress = this.extractStreetFromStoreAddress(
       store.address,
@@ -17319,15 +17320,16 @@ export class NightlifeDataService {
       ...this.cleanStringArray(dto.mediaUrls, 12),
     ]);
     const requestedStoreCity =
-      this.cleanNullableText(dto.storeCity) ?? store.city;
+      this.cleanPartnerListingText(dto.storeCity) ?? store.city;
     const hasExplicitAddressParts =
       dto.streetAddress !== undefined ||
       dto.ward !== undefined ||
       dto.storeCity !== undefined ||
       dto.storeDistrict !== undefined;
+    const cleanDtoDistrict = this.cleanPartnerListingText(dto.storeDistrict);
     const requestedStoreDistrict =
       dto.storeDistrict !== undefined
-        ? this.cleanNullableText(dto.storeDistrict)
+        ? cleanDtoDistrict
         : hasExplicitAddressParts
           ? null
           : store.district;
@@ -17360,7 +17362,7 @@ export class NightlifeDataService {
       businessType: this.cleanNullableText(dto.businessType) ?? store.category,
       storeCategory:
         this.cleanNullableText(dto.storeCategory) ?? store.category,
-      area: this.cleanNullableText(dto.area) ?? (storeArea || null),
+      area: this.cleanPartnerListingText(dto.area) ?? cleanStoreArea,
       storeCity: requestedStoreCity,
       storeDistrict: requestedStoreDistrict,
       ward: storeWard,
