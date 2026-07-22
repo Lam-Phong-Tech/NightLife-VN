@@ -1442,6 +1442,7 @@ export class NightlifeDataService {
           media: {
             where: {
               deletedAt: null,
+              castId: null,
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
@@ -1934,6 +1935,7 @@ export class NightlifeDataService {
           media: {
             where: {
               deletedAt: null,
+              castId: null,
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
@@ -2096,6 +2098,7 @@ export class NightlifeDataService {
         media: {
           where: {
             deletedAt: null,
+            castId: null,
             access: 'PUBLIC',
             status: 'READY',
             type: { in: ['IMAGE', 'VIDEO'] },
@@ -2200,6 +2203,7 @@ export class NightlifeDataService {
         media: {
           where: {
             deletedAt: null,
+            castId: null,
             access: 'PUBLIC',
             status: 'READY',
             type: 'IMAGE',
@@ -2401,6 +2405,7 @@ export class NightlifeDataService {
           media: {
             where: {
               deletedAt: null,
+              castId: null,
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
@@ -2526,6 +2531,7 @@ export class NightlifeDataService {
             media: {
               where: {
                 deletedAt: null,
+                castId: null,
                 access: 'PUBLIC',
                 status: 'READY',
                 type: 'IMAGE',
@@ -2732,6 +2738,7 @@ export class NightlifeDataService {
             media: {
               where: {
                 deletedAt: null,
+                castId: null,
                 access: 'PUBLIC',
                 status: 'READY',
                 type: 'IMAGE',
@@ -13876,6 +13883,7 @@ export class NightlifeDataService {
           media: {
             where: {
               deletedAt: null,
+              castId: null,
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
@@ -16014,6 +16022,7 @@ export class NightlifeDataService {
         media: {
           where: {
             deletedAt: null,
+            castId: null,
             access: 'PUBLIC',
             status: 'READY',
             type: 'IMAGE',
@@ -17100,11 +17109,12 @@ export class NightlifeDataService {
       this.cleanNullableText(dto.coverImageUrl) ??
       storeMedia.find(
         (m) =>
-          m.purpose === 'PARTNER_LISTING_STORE' ||
-          m.purpose === 'STORE_COVER' ||
-          m.purpose === 'COVER_IMAGE',
+          !m.castId &&
+          (m.purpose === 'PARTNER_LISTING_STORE' ||
+            m.purpose === 'STORE_COVER' ||
+            m.purpose === 'COVER_IMAGE'),
       )?.url ??
-      storeMedia.find((m) => m.type === 'IMAGE')?.url ??
+      storeMedia.find((m) => m.type === 'IMAGE' && !m.castId)?.url ??
       null;
     const galleryUrls =
       dto.galleryUrls !== undefined
@@ -17120,7 +17130,7 @@ export class NightlifeDataService {
       dto.videoUrls !== undefined
         ? this.cleanStringArray(dto.videoUrls, 8)
         : storeMedia
-            .filter((m) => m.type === 'VIDEO')
+            .filter((m) => m.type === 'VIDEO' && !m.castId)
             .map((m) => m.url)
             .slice(0, 8);
     const mediaUrls = [
@@ -21496,7 +21506,14 @@ export class NightlifeDataService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          _count: { select: { casts: true } },
+          casts: {
+            where: {
+              deletedAt: null,
+              status: 'ACTIVE',
+              isPublic: true,
+            },
+            select: { id: true },
+          },
           media: true,
           area: true,
           partnerAccount: {
@@ -21544,7 +21561,7 @@ export class NightlifeDataService {
               ? 'HN'
               : store.city || 'Tất cả',
         commission: '15%',
-        casts: store._count.casts,
+        casts: Array.isArray(store.casts) ? store.casts.length : 0,
         status: store.deletedAt ? 'DELETED' : store.status,
         isDeleted: Boolean(store.deletedAt),
         partnerAccountId: store.partnerAccountId,
@@ -22312,7 +22329,14 @@ export class NightlifeDataService {
     const store = await client.store.findUnique({
       where: { id },
       include: {
-        _count: { select: { casts: true } },
+        casts: {
+          where: {
+            deletedAt: null,
+            status: 'ACTIVE',
+            isPublic: true,
+          },
+          select: { id: true },
+        },
         media: true,
         area: true,
         partnerAccount: {
@@ -22358,7 +22382,7 @@ export class NightlifeDataService {
             ? 'HN'
             : store.city || 'Tất cả',
       commission: '15%',
-      casts: store._count.casts,
+      casts: Array.isArray(store.casts) ? store.casts.length : 0,
       status: store.deletedAt ? 'DELETED' : store.status,
       isDeleted: Boolean(store.deletedAt),
       partnerAccountId: store.partnerAccountId,
@@ -23286,6 +23310,7 @@ export class NightlifeDataService {
                 where: {
                   type: 'IMAGE',
                   deletedAt: null,
+                  castId: null,
                   status: 'READY',
                 },
                 select: { url: true, purpose: true },
@@ -23365,6 +23390,7 @@ export class NightlifeDataService {
               where: {
                 type: 'IMAGE',
                 deletedAt: null,
+                castId: null,
                 status: 'READY',
               },
               select: { url: true, purpose: true },
