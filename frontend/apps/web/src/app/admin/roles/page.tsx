@@ -495,9 +495,9 @@ export default function AdminRolesPage() {
               </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
-                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edEmail && !isEmailValid(edEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edEmail && !isEmailValid(edEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
                 {edEmail && !isEmailValid(edEmail) && (
-                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '5px' }}>
+                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '6px', fontWeight: 500 }}>
                     Email không đúng định dạng (ví dụ: name@domain.com)
                   </div>
                 )}
@@ -531,17 +531,34 @@ export default function AdminRolesPage() {
               <span style={{ flex: 1 }}></span>
               <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
               <span onClick={async () => {
-                if (!edName.trim()) { showToast('Nhập tên hiển thị'); return; }
-                if (!isEmailValid(edEmail)) { showToast('Email chưa đúng định dạng'); return; }
+                const trimmedName = edName.trim();
+                const trimmedEmail = edEmail.trim();
+
+                if (!trimmedName) {
+                  showToast('Nhập tên hiển thị');
+                  return;
+                }
+                if (!trimmedEmail) {
+                  showToast('Nhập email đăng nhập');
+                  return;
+                }
+                if (!isEmailValid(trimmedEmail)) {
+                  showToast('Email không đúng định dạng (ví dụ: name@domain.com)');
+                  return;
+                }
+
                 try {
-                  await updateAdminUser(edOrig, { displayName: edName, email: edEmail.trim(), storeId: edStoreId || null });
+                  setLoading(true);
+                  await updateAdminUser(edOrig, { displayName: trimmedName, email: trimmedEmail, storeId: edStoreId || null });
                   setEdOpen(false);
-                  showToast('Đã lưu thay đổi cho ' + edName);
+                  showToast('Đã lưu thay đổi cho ' + trimmedName);
                   setRefetchTrigger(r => r + 1);
                 } catch (e: any) {
                   showToast('Lỗi khi cập nhật: ' + (e?.response?.data?.message || e.message || 'Không thể cập nhật'));
+                } finally {
+                  setLoading(false);
                 }
-              }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && isEmailValid(edEmail) ? 1 : 0.45, pointerEvents: edName.trim() && isEmailValid(edEmail) ? 'auto' : 'none' }}>
+              }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && isEmailValid(edEmail) ? 1 : 0.5 }}>
                 Lưu thay đổi
               </span>
             </div>
