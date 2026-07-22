@@ -5,6 +5,8 @@ import {
   IsEnum,
   IsArray,
   IsBoolean,
+  Min,
+  Max,
 } from 'class-validator';
 import { CastStatus } from '@prisma/client';
 
@@ -29,6 +31,8 @@ export class CreateAdminCastDto {
 
   @IsOptional()
   @IsInt()
+  @Min(50)
+  @Max(250)
   heightCm?: number;
 
   @IsOptional()
@@ -92,6 +96,8 @@ export class UpdateAdminCastDto {
 
   @IsOptional()
   @IsInt()
+  @Min(50)
+  @Max(250)
   heightCm?: number;
 
   @IsOptional()

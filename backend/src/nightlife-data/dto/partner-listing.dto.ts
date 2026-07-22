@@ -12,6 +12,7 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  Max,
   ValidateNested,
 } from 'class-validator';
 import { CastStatus } from '@prisma/client';
@@ -72,7 +73,8 @@ export class PartnerListingCastDto {
   @ApiPropertyOptional({ example: 165 })
   @IsOptional()
   @IsInt()
-  @Min(0)
+  @Min(50)
+  @Max(250)
   heightCm?: number;
 
   @ApiPropertyOptional({ example: '82-58-84' })

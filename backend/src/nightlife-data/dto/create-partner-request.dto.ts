@@ -79,7 +79,8 @@ export class PartnerRequestCastDto {
   @ApiPropertyOptional({ example: 165 })
   @IsOptional()
   @IsInt()
-  @Min(0)
+  @Min(50)
+  @Max(250)
   heightCm?: number;
 
   @ApiPropertyOptional({ example: '82-58-84' })

@@ -764,6 +764,18 @@ function AdminCastsContent() {
         return;
       }
 
+      if (formData.heightCm !== '' && formData.heightCm !== null && formData.heightCm !== undefined) {
+        const parsedHeight = parseInt(formData.heightCm, 10);
+        if (isNaN(parsedHeight) || parsedHeight <= 0) {
+          showToast('Chiều cao phải là số dương lớn hơn 0!');
+          return;
+        }
+        if (parsedHeight < 50 || parsedHeight > 250) {
+          showToast('Chiều cao không hợp lệ (phải trong khoảng 50 - 250 cm)!');
+          return;
+        }
+      }
+
       const payload = {
         ...formData,
         birthMonth: formData.birthMonth ? parseInt(formData.birthMonth, 10) : undefined,
@@ -1580,7 +1592,16 @@ function AdminCastsContent() {
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Chiều cao (cm)</div>
-                  <input type="number" placeholder="166" value={formData.heightCm} onChange={e => setFormData({...formData, heightCm: e.target.value})} style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none' }} />
+                  <input 
+                    type="number" 
+                    min="50" 
+                    max="250" 
+                    inputMode="numeric" 
+                    placeholder="166" 
+                    value={formData.heightCm} 
+                    onChange={e => setFormData({ ...formData, heightCm: e.target.value.replace(/\D/g, '') })} 
+                    style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none' }} 
+                  />
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Số đo (V1-V2-V3)</div>
@@ -1594,25 +1615,31 @@ function AdminCastsContent() {
                         <>
                           <input 
                             type="number" 
+                            min="0"
+                            inputMode="numeric"
                             placeholder="V1" 
                             value={v1} 
-                            onChange={e => handleMeasurementChange(0, e.target.value)} 
+                            onChange={e => handleMeasurementChange(0, e.target.value.replace(/\D/g, ''))} 
                             style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
                           />
                           <span style={{ color: colors.muted }}>-</span>
                           <input 
                             type="number" 
+                            min="0"
+                            inputMode="numeric"
                             placeholder="V2" 
                             value={v2} 
-                            onChange={e => handleMeasurementChange(1, e.target.value)} 
+                            onChange={e => handleMeasurementChange(1, e.target.value.replace(/\D/g, ''))} 
                             style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
                           />
                           <span style={{ color: colors.muted }}>-</span>
                           <input 
                             type="number" 
+                            min="0"
+                            inputMode="numeric"
                             placeholder="V3" 
                             value={v3} 
-                            onChange={e => handleMeasurementChange(2, e.target.value)} 
+                            onChange={e => handleMeasurementChange(2, e.target.value.replace(/\D/g, ''))} 
                             style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
                           />
                         </>
