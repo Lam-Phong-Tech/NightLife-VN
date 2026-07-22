@@ -1694,7 +1694,8 @@ export default function AdminContentPage() {
               const searchInput = document.getElementById('recommend-search-input');
               if (searchInput) searchInput.focus();
             } else if (activeTab === 'tour') {
-              fetchTours();
+              const searchInput = document.getElementById('tour-home-search-input');
+              if (searchInput) searchInput.focus();
             } else {
               setIsAdding(activeTab);
             }
@@ -1706,7 +1707,7 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : activeTab === 'recommend' ? 'Thêm đề xuất' : activeTab === 'tour' ? 'Làm mới tour' : 'Viết bài'}
+          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : activeTab === 'recommend' ? 'Thêm đề xuất' : activeTab === 'tour' ? 'Thêm tour và blog' : 'Viết bài'}
         </button>
       </div>
 
