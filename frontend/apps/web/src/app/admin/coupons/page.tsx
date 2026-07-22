@@ -1,17 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
+const campaignPageSize = 9;
+
 export default function AdminCouponsPage() {
   const feedback = useSystemFeedback();
   const [activeTab, setActiveTab] = useState('all');
+  const [campaignStatusFilter, setCampaignStatusFilter] = useState<'all' | 'active' | 'paused'>('all');
   const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [issues, setIssues] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaignPage, setCampaignPage] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalIssues, setTotalIssues] = useState(0);
 
@@ -109,6 +113,41 @@ export default function AdminCouponsPage() {
     setCurrentPage(1);
   }, [activeTab]);
 
+  const campaignStatusCounts = useMemo(() => {
+    const active = campaigns.filter((campaign) => campaign.status === 'ACTIVE').length;
+    return {
+      all: campaigns.length,
+      active,
+      paused: campaigns.length - active,
+    };
+  }, [campaigns]);
+
+  const filteredCampaigns = useMemo(() => {
+    if (campaignStatusFilter === 'active') {
+      return campaigns.filter((campaign) => campaign.status === 'ACTIVE');
+    }
+
+    if (campaignStatusFilter === 'paused') {
+      return campaigns.filter((campaign) => campaign.status !== 'ACTIVE');
+    }
+
+    return campaigns;
+  }, [campaignStatusFilter, campaigns]);
+
+  const safeCampaignPage = Math.min(
+    campaignPage,
+    Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize)),
+  );
+  const paginatedCampaigns = filteredCampaigns.slice(
+    (safeCampaignPage - 1) * campaignPageSize,
+    safeCampaignPage * campaignPageSize,
+  );
+
+  const updateCampaignStatusFilter = (filter: 'all' | 'active' | 'paused') => {
+    setCampaignStatusFilter(filter);
+    setCampaignPage(1);
+  };
+
   const toggleCampaignStatus = async (e: React.MouseEvent, c: any) => {
     e.stopPropagation();
     try {
@@ -202,8 +241,45 @@ export default function AdminCouponsPage() {
         </span>
       </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', margin: '-2px 0 14px' }}>
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+          {[
+            { key: 'all' as const, label: 'Tất cả', count: campaignStatusCounts.all },
+            { key: 'active' as const, label: 'Đang chạy', count: campaignStatusCounts.active },
+            { key: 'paused' as const, label: 'Tạm dừng', count: campaignStatusCounts.paused },
+          ].map((filter) => {
+            const isActive = campaignStatusFilter === filter.key;
+            return (
+              <span
+                key={filter.key}
+                onClick={() => updateCampaignStatusFilter(filter.key)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  fontSize: '12px',
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: isActive ? '#241a0a' : '#9b958a',
+                  background: isActive ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                  fontWeight: isActive ? 700 : 500,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {filter.label}
+                <span style={{ fontSize: '10.5px', opacity: isActive ? 0.75 : 0.8 }}>{filter.count}</span>
+              </span>
+            );
+          })}
+        </div>
+        <span style={{ color: '#8c8679', fontSize: '11.5px', fontWeight: 600 }}>
+          Hiển thị tối đa {campaignPageSize} ưu đãi mỗi trang
+        </span>
+      </div>
+
       <div className="nl-admin-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px', marginBottom: '26px' }}>
-        {campaigns.map(cp => {
+        {paginatedCampaigns.map(cp => {
           const act = cp.status === 'ACTIVE';
           const scopeAll = !cp.targetStores || cp.targetStores.length === 0;
           return (
@@ -229,8 +305,20 @@ export default function AdminCouponsPage() {
             </div>
           );
         })}
-        {campaigns.length === 0 && <div style={{ color: '#8c8679', fontSize: '13px', padding: '10px 0' }}>Chưa có chiến dịch nào.</div>}
+        {filteredCampaigns.length === 0 && <div style={{ color: '#8c8679', fontSize: '13px', padding: '10px 0' }}>Không có ưu đãi phù hợp với bộ lọc.</div>}
       </div>
+
+      {filteredCampaigns.length > 0 && (
+        <div style={{ marginTop: '-14px', marginBottom: '26px', border: '1px solid rgba(255,255,255,.06)', borderRadius: '14px', overflow: 'hidden', background: 'rgba(255,255,255,.015)' }}>
+          <AdminPagination
+            page={safeCampaignPage}
+            totalItems={filteredCampaigns.length}
+            pageSize={campaignPageSize}
+            onPageChange={setCampaignPage}
+            itemLabel="ưu đãi"
+          />
+        </div>
+      )}
 
       {/* Issues Section */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '0 0 12px' }}>
