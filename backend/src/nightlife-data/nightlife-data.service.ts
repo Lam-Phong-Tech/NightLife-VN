@@ -3610,6 +3610,17 @@ export class NightlifeDataService {
             status: true,
             metadata: true,
             usedAt: true,
+            bill: {
+              select: {
+                id: true,
+                billNumber: true,
+                status: true,
+                submittedAt: true,
+                reviewedAt: true,
+                verifiedAt: true,
+                rejectedAt: true,
+              },
+            },
           },
         },
         qr: {
@@ -3619,6 +3630,17 @@ export class NightlifeDataService {
             status: true,
             usedAt: true,
             expiresAt: true,
+          },
+        },
+        bill: {
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            submittedAt: true,
+            reviewedAt: true,
+            verifiedAt: true,
+            rejectedAt: true,
           },
         },
         user: { select: { id: true, displayName: true, tier: true } },
@@ -6224,6 +6246,17 @@ export class NightlifeDataService {
               status: true,
               metadata: true,
               usedAt: true,
+              bill: {
+                select: {
+                  id: true,
+                  billNumber: true,
+                  status: true,
+                  submittedAt: true,
+                  reviewedAt: true,
+                  verifiedAt: true,
+                  rejectedAt: true,
+                },
+              },
             },
           },
           qr: {
@@ -6233,6 +6266,17 @@ export class NightlifeDataService {
               status: true,
               usedAt: true,
               expiresAt: true,
+            },
+          },
+          bill: {
+            select: {
+              id: true,
+              billNumber: true,
+              status: true,
+              submittedAt: true,
+              reviewedAt: true,
+              verifiedAt: true,
+              rejectedAt: true,
             },
           },
           user: { select: { id: true, displayName: true, tier: true } },

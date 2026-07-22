@@ -84,6 +84,9 @@ type FormNotice =
   | { tone: "success"; message: string; bill?: BillRecord }
   | { tone: "warning" | "danger"; message: string };
 
+type BookingLinkedBill = NonNullable<BookingRecord["bill"]>;
+type ExistingBill = BillRecord | BookingLinkedBill;
+
 const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
   "Ảnh/PDF hiện chưa có text OCR. Hệ thống không đọc trực tiếp ảnh này; vui lòng nhập tổng tiền thủ công và dùng file làm chứng từ.": {
     en: "This image/PDF has no OCR text yet. The system cannot read this file directly; please enter the total manually and keep the file as evidence.",
@@ -589,6 +592,12 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "영수증을 제출하지 못했습니다. 다시 시도해 주세요.",
     zh: "无法提交账单，请重试。",
   },
+  "Hóa đơn của đặt chỗ hoặc mã ưu đãi này đã được gửi cho Admin duyệt. Bạn không thể gửi lại hóa đơn này.": {
+    en: "The bill for this reservation or deal code has already been submitted for admin review. You cannot submit it again.",
+    ja: "この予約または特典コードの請求書はすでに管理者レビューに送信されています。再送信はできません。",
+    ko: "이 예약 또는 혜택 코드의 영수증은 이미 관리자 검토로 제출되었습니다. 다시 제출할 수 없습니다.",
+    zh: "此预订或优惠码的账单已提交给管理员审核，不能重复提交。",
+  },
   "Công cụ đọc hóa đơn đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi.": {
     en: "The bill reader suggested data. Please review it before submitting.",
     ja: "請求書読み取りツールがデータを提案しました。送信前に確認してください。",
@@ -873,6 +882,7 @@ const validateBillForm = ({
   hasBookedStores,
   hasStore,
   hasConfirmedUsageSource,
+  hasExistingBill,
   amountInput,
   amount,
   usedAt,
@@ -886,6 +896,7 @@ const validateBillForm = ({
   hasBookedStores: boolean;
   hasStore: boolean;
   hasConfirmedUsageSource: boolean;
+  hasExistingBill: boolean;
   amountInput: string;
   amount: number;
   usedAt: string;
@@ -909,6 +920,10 @@ const validateBillForm = ({
 
   if (!hasConfirmedUsageSource) {
     return "Vui lòng liên kết đặt chỗ hoặc mã ưu đãi đã được quản trị viên hoặc đối tác xác nhận.";
+  }
+
+  if (hasExistingBill) {
+    return "Hóa đơn của đặt chỗ hoặc mã ưu đãi này đã được gửi cho Admin duyệt. Bạn không thể gửi lại hóa đơn này.";
   }
 
   if (!amountInput.trim()) {
@@ -948,6 +963,30 @@ const validateBillForm = ({
 
 const canAttachCouponIssueToBill = (issue: CouponIssue) =>
   issue.status === "USED" && Boolean(issue.usedAt);
+
+const billCode = (bill: ExistingBill) =>
+  bill.billNumber?.trim() || bill.id.slice(0, 8).toUpperCase();
+
+const findBillForBooking = (
+  booking: BookingRecord | null | undefined,
+  bills: BillRecord[],
+): ExistingBill | null => {
+  if (!booking) return null;
+  const linkedBill = bills.find(
+    (bill) =>
+      bill.booking?.id === booking.id ||
+      Boolean(booking.couponIssue?.id && bill.couponIssue?.id === booking.couponIssue.id),
+  );
+  return linkedBill ?? booking.bill ?? booking.couponIssue?.bill ?? null;
+};
+
+const findBillForCouponIssue = (
+  couponIssueId: string | null | undefined,
+  bills: BillRecord[],
+): BillRecord | null => {
+  if (!couponIssueId) return null;
+  return bills.find((bill) => bill.couponIssue?.id === couponIssueId) ?? null;
+};
 
 const couponIssueOptionLabel = (issue: CouponIssue, language: LanguageCode) => {
   const storeName = issue.coupon.store?.name ?? localize("Mã ưu đãi", language);
@@ -1215,6 +1254,11 @@ export default function Page() {
         const preferredStoreSlug = requestedBooking?.store?.slug || requestedStoreSlug;
         const bookedStoreItems = bookedStoreOptionsFromBookings(mergedBookingItems);
         const bookedStoreSlugs = new Set(bookedStoreItems.map((storeItem) => storeItem.slug));
+        const billedCouponIssueIds = new Set(
+          billItems
+            .map((bill) => bill.couponIssue?.id)
+            .filter((id): id is string => Boolean(id)),
+        );
 
         setStores(bookedStoreItems);
         setBookings(mergedBookingItems);
@@ -1235,7 +1279,8 @@ export default function Page() {
             return Boolean(
               canAttachCouponIssueToBill(issue) &&
                 issueStoreSlug &&
-                bookedStoreSlugs.has(issueStoreSlug),
+                bookedStoreSlugs.has(issueStoreSlug) &&
+                !billedCouponIssueIds.has(issue.id),
             );
           }),
         );
@@ -1291,6 +1336,14 @@ export default function Page() {
     () => bookings.find((booking) => booking.id === bookingId) ?? null,
     [bookingId, bookings],
   );
+  const billableBookings = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        const existingBill = findBillForBooking(booking, submittedBills);
+        return !existingBill || booking.id === bookingId;
+      }),
+    [bookingId, bookings, submittedBills],
+  );
 
   useEffect(() => {
     if (!requestedBookingId || requestedBookingId === appliedBookingId) return;
@@ -1316,6 +1369,15 @@ export default function Page() {
     () => couponIssues.find((issue) => issue.id === couponIssueId) ?? null,
     [couponIssueId, couponIssues],
   );
+  const selectedExistingBill = useMemo(
+    () =>
+      findBillForBooking(selectedBooking, submittedBills) ??
+      findBillForCouponIssue(selectedCouponIssue?.id, submittedBills),
+    [selectedBooking, selectedCouponIssue?.id, submittedBills],
+  );
+  const selectedExistingBillMessage = selectedExistingBill
+    ? `${t("Hóa đơn của đặt chỗ hoặc mã ưu đãi này đã được gửi cho Admin duyệt. Bạn không thể gửi lại hóa đơn này.")} #${billCode(selectedExistingBill)}`
+    : "";
 
   const confirmedUsageAt = useMemo(() => {
     if (selectedBooking) return bookingConfirmedUsageAt(selectedBooking);
@@ -1385,6 +1447,7 @@ export default function Page() {
         hasBookedStores: stores.length > 0,
         hasStore: Boolean(bookingId || storeSlug),
         hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue),
+        hasExistingBill: Boolean(selectedExistingBill),
         amountInput,
         amount,
         usedAt,
@@ -1409,6 +1472,7 @@ export default function Page() {
       stores.length,
       selectedBooking,
       selectedCouponIssue,
+      selectedExistingBill,
       timeWindow.nowMs,
       t,
       usedAt,
@@ -1416,6 +1480,7 @@ export default function Page() {
   );
   const canSubmit =
     !isSubmitting &&
+    !selectedExistingBill &&
     !billValidationMessage;
 
   const handleBookingChange = (value: string) => {
@@ -1619,7 +1684,7 @@ export default function Page() {
                       onChange={handleBookingChange}
                       options={[
                         { label: t("Không liên kết đặt chỗ"), value: "" },
-                        ...bookings.map((booking) => ({
+                        ...billableBookings.map((booking) => ({
                           label: `${booking.store?.name ?? t("Đặt chỗ")} - ${formatDateTime(
                             booking.scheduledAt,
                             activeLanguage,
@@ -1891,16 +1956,25 @@ export default function Page() {
                 </div>
               ) : null}
 
-              <button type="submit" className="nl-submit-premium" disabled={!canSubmit}>
-                {isSubmitting ? (
-                  <>
-                    <span className="spin-loader"></span>
-                    <span>{t("Đang gửi hóa đơn...")}</span>
-                  </>
-                ) : (
-                  <span>{t("Gửi hóa đơn")}</span>
-                )}
-              </button>
+              {selectedExistingBillMessage ? (
+                <div className="nl-notice warning">
+                  <div className="nl-notice-icon">
+                    <AlertCircle size={16} />
+                  </div>
+                  <span>{selectedExistingBillMessage}</span>
+                </div>
+              ) : (
+                <button type="submit" className="nl-submit-premium" disabled={!canSubmit}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="spin-loader"></span>
+                      <span>{t("Đang gửi hóa đơn...")}</span>
+                    </>
+                  ) : (
+                    <span>{t("Gửi hóa đơn")}</span>
+                  )}
+                </button>
+              )}
             </form>
 
             <aside className="nl-bill-side">

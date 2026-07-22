@@ -396,6 +396,9 @@ const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => 
   return image ? `url(${JSON.stringify(image)})` : thumbnails[group];
 };
 
+const hasSubmittedBill = (booking: BookingRecord) =>
+  Boolean(booking.bill?.id || booking.couponIssue?.bill?.id);
+
 export default function Page() {
   const router = useRouter();
   const { socket } = useSocket();
@@ -1251,6 +1254,7 @@ function BookingCard({
   const canSubmitBill =
     isMemberActionBooking &&
     group === "Hoàn tất" &&
+    !hasSubmittedBill(booking) &&
     !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());
   const canReschedule = !tourBooking && cancelAllowed;
   const itemClass =

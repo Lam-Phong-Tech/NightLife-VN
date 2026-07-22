@@ -322,13 +322,34 @@ type PartnerBooking = {
   confirmedAt?: string | null;
   updatedAt?: string | null;
   qr?: { usedAt?: string | null } | null;
-  couponIssue?: { usedAt?: string | null } | null;
+  couponIssue?: {
+    usedAt?: string | null;
+    id?: string | null;
+    bill?: {
+      id: string;
+      billNumber?: string | null;
+      status: string;
+      submittedAt?: string | null;
+      reviewedAt?: string | null;
+      verifiedAt?: string | null;
+      rejectedAt?: string | null;
+    } | null;
+  } | null;
   coupon?: {
     id: string;
     code: string;
     name: string;
     discountType: string;
     discountValue: number;
+  } | null;
+  bill?: {
+    id: string;
+    billNumber?: string | null;
+    status: string;
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+    verifiedAt?: string | null;
+    rejectedAt?: string | null;
   } | null;
 };
 
@@ -2930,6 +2951,27 @@ export default function PartnerPage() {
     () => bills.find((b) => b.id === selectedBillId) ?? null,
     [bills, selectedBillId],
   );
+  const selectedBillBookingExistingBill = useMemo(() => {
+    if (!selectedBillBooking) return null;
+    return (
+      bills.find(
+        (bill) =>
+          bill.booking?.id === selectedBillBooking.id ||
+          Boolean(
+            selectedBillBooking.couponIssue?.id &&
+              bill.couponIssue?.id === selectedBillBooking.couponIssue.id,
+          ),
+      ) ??
+      selectedBillBooking.bill ??
+      selectedBillBooking.couponIssue?.bill ??
+      null
+    );
+  }, [bills, selectedBillBooking]);
+  const partnerBillAlreadySubmittedNotice = selectedBill
+    ? `Bill ${selectedBill.billNumber ?? selectedBill.id.slice(0, 8)} đã được gửi về Admin, không thể gửi lại bill này.`
+    : selectedBillBookingExistingBill
+      ? `Booking này đã có bill ${selectedBillBookingExistingBill.billNumber ?? selectedBillBookingExistingBill.id.slice(0, 8)} gửi về Admin, không thể gửi lại.`
+      : '';
   const billDiscountLabel = useMemo(() => {
     if (selectedBill) {
       const snapshot = selectedBill.discountRuleSnapshot;
@@ -2978,6 +3020,17 @@ export default function PartnerPage() {
   const billBookingOptions = useMemo(
     () =>
       bookings.filter((booking) => {
+        const bookingHasBill =
+          Boolean(booking.bill?.id || booking.couponIssue?.bill?.id) ||
+          bills.some(
+            (bill) =>
+              bill.booking?.id === booking.id ||
+              Boolean(booking.couponIssue?.id && bill.couponIssue?.id === booking.couponIssue.id),
+          );
+        if (bookingHasBill && booking.id !== billBookingId) {
+          return false;
+        }
+
         if (!selectedBillStore) {
           return true;
         }
@@ -2988,7 +3041,7 @@ export default function PartnerPage() {
           !booking.store.id
         );
       }),
-    [bookings, selectedBillStore],
+    [billBookingId, bills, bookings, selectedBillStore],
   );
   const scopedBillRows = useMemo(
     () =>
@@ -3020,6 +3073,8 @@ export default function PartnerPage() {
   );
   const canSubmitPartnerBill =
     !isSubmittingBill &&
+    !selectedBill &&
+    !selectedBillBookingExistingBill &&
     Boolean(billNowMs) &&
     Boolean(selectedBillStore) &&
     billAmount > 0 &&
@@ -7629,10 +7684,25 @@ export default function PartnerPage() {
               </div>
             ) : null}
 
-            <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
-              {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
-              {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
-            </PrimaryButton>
+            {partnerBillAlreadySubmittedNotice ? (
+              <div
+                style={{
+                  ...softCardStyle,
+                  padding: '12px',
+                  color: colors.goldPale,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                {partnerBillAlreadySubmittedNotice}
+              </div>
+            ) : (
+              <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
+                {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
+                {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
+              </PrimaryButton>
+            )}
           </form>
         </PanelCard>
       </div>

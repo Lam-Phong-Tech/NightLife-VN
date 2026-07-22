@@ -83,6 +83,15 @@ export type BookingRecord = {
       discountPercent?: number | null;
       discountRuleSnapshot?: BookingDiscountSnapshot | null;
     } | null;
+    bill?: {
+      id: string;
+      billNumber?: string | null;
+      status: string;
+      submittedAt?: string | null;
+      reviewedAt?: string | null;
+      verifiedAt?: string | null;
+      rejectedAt?: string | null;
+    } | null;
   } | null;
   qr?: {
     id: string;
@@ -91,6 +100,15 @@ export type BookingRecord = {
     usedAt?: string | null;
     expiresAt?: string | null;
     payload?: string | null;
+  } | null;
+  bill?: {
+    id: string;
+    billNumber?: string | null;
+    status: string;
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+    verifiedAt?: string | null;
+    rejectedAt?: string | null;
   } | null;
   tour?: {
     id: string;
@@ -185,6 +203,7 @@ const mergeBookingRecord = (base: BookingRecord, incoming: BookingRecord): Booki
     coupon: current.coupon ?? next.coupon,
     couponIssue: current.couponIssue ?? next.couponIssue,
     qr: current.qr ?? next.qr,
+    bill: current.bill ?? next.bill,
     discountSnapshot: current.discountSnapshot ?? next.discountSnapshot,
     tour: current.tour ?? next.tour,
   };

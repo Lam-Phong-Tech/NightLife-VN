@@ -79,6 +79,8 @@ const exactMessageTranslations: Record<string, string> = {
   "scheduledAt is outside store booking time slots":
     "Khung giờ đã chọn không nằm trong giờ mở cửa của quán.",
   "bill has already been verified": "Hóa đơn này đã được xác nhận.",
+  "booking already has a submitted bill":
+    "Booking này đã có hóa đơn gửi về Admin, không thể gửi lại.",
   "cancelled booking cannot be rescheduled": "Booking đã hủy không thể đổi lịch.",
   "cast not found": "Không tìm thấy cast.",
   "cast does not belong to selected store": "Cast không thuộc quán đã chọn.",
