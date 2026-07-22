@@ -709,7 +709,15 @@ function AdminStoresContent() {
     setTimeout(() => setToast(null), 2600);
   };
 
-  const closeDrawer = () => {
+  const closeDrawer = async () => {
+    if (isDraftStore && venueSel && venueSel !== 'new' && (!formData.name || formData.name.startsWith('Draft store '))) {
+      try {
+        await apiClient(`/admin/stores/${venueSel}?hard=true`, { method: 'DELETE' });
+        fetchStores();
+      } catch (e) {
+        console.error('Failed to cleanup empty draft store:', e);
+      }
+    }
     setVenueSel(null);
     setIsDraftStore(false);
     setPartnerLinkEditing(false);
@@ -729,7 +737,7 @@ function AdminStoresContent() {
     });
   };
 
-  const openNewDrawer = async () => {
+  const openNewDrawer = () => {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setNameTouched(false);
     setPhoneTouched(false);
@@ -742,7 +750,6 @@ function AdminStoresContent() {
       { id: 'g2', name: 'Cocktail', items: [] }
     ];
     setMenuGroups(initialGroups);
-    setMenuGroups(initialGroups);
     setActiveMenuGroupId('g1');
     setTags([]);
     setTagInput('');
@@ -752,14 +759,8 @@ function AdminStoresContent() {
     setPendingAddress('');
     setPartnerAccountId('');
     setPartnerLinkEditing(false);
-    try {
-      const draft = await createStoreDraft();
-      setVenueSel(draft.id);
-      setIsDraftStore(true);
-      fetchStores();
-    } catch (err: any) {
-      showToast('Không thể tạo bản nháp quán: ' + (err.message || 'Lỗi không xác định'));
-    }
+    setVenueSel('new');
+    setIsDraftStore(false);
   };
 
   const openEditDrawer = (st: any) => {
