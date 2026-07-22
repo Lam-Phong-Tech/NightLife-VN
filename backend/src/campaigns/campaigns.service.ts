@@ -6,6 +6,18 @@ import { Prisma, CampaignStatus } from '@prisma/client';
 export class CampaignsService {
   constructor(private prisma: PrismaService) {}
 
+  async pauseEndedCampaigns(now = new Date()) {
+    const result = await this.prisma.campaign.updateMany({
+      where: {
+        status: { in: [CampaignStatus.ACTIVE, CampaignStatus.EXPIRED] },
+        endsAt: { lte: now },
+      },
+      data: { status: CampaignStatus.PAUSED },
+    });
+
+    return result.count;
+  }
+
   async findAll(params: {
     skip?: number;
     take?: number;
@@ -13,6 +25,7 @@ export class CampaignsService {
     orderBy?: Prisma.CampaignOrderByWithRelationInput;
   }) {
     const { skip = 0, take = 50, where, orderBy } = params;
+    await this.pauseEndedCampaigns();
 
     const [data, total] = await Promise.all([
       this.prisma.campaign.findMany({
@@ -47,6 +60,8 @@ export class CampaignsService {
   }
 
   async findOne(id: string) {
+    await this.pauseEndedCampaigns();
+
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {

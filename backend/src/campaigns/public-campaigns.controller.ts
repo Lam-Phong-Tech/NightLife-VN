@@ -13,11 +13,15 @@ export class PublicCampaignsController {
   ) {
     const skip = page ? (Number(page) - 1) * (Number(limit) || 50) : 0;
     const take = limit ? Number(limit) : 50;
+    const now = new Date();
 
     const where: Prisma.CampaignWhereInput = {
       status: 'ACTIVE',
       targetStoreId: { not: null }, // Only campaigns with a target store
-      OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }],
+      AND: [
+        { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+        { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+      ],
     };
 
     const result = await this.campaignsService.findAll({ skip, take, where });

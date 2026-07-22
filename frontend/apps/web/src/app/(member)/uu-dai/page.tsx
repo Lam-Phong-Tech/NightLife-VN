@@ -36,6 +36,8 @@ const fallbackImages = [
 ];
 
 const campaignPageSize = 4;
+const expiringSoonWindowMs = 24 * 60 * 60 * 1000;
+const campaignClockTickMs = 60 * 1000;
 
 const formatDiscount = (
   campaign: Pick<CampaignItem, "discountType" | "discountValue">,
@@ -75,6 +77,82 @@ const formatShortDate = (value?: string | null, language: LanguageCode = "vi") =
     day: "2-digit",
     month: "2-digit",
   }).format(date);
+};
+
+const timestampFromDate = (value?: string | null) => {
+  if (!value) return null;
+
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const campaignRemainingMs = (campaign: CampaignItem, nowMs: number) => {
+  const endsAtMs = timestampFromDate(campaign.endsAt);
+  return endsAtMs === null ? null : endsAtMs - nowMs;
+};
+
+const isCampaignAvailableNow = (campaign: CampaignItem, nowMs: number) => {
+  if (campaign.status !== "ACTIVE" || !campaign.targetStore) return false;
+
+  const startsAtMs = timestampFromDate(campaign.startsAt);
+  if (startsAtMs !== null && startsAtMs > nowMs) return false;
+
+  const remainingMs = campaignRemainingMs(campaign, nowMs);
+  return remainingMs === null || remainingMs > 0;
+};
+
+const isCampaignExpiringSoon = (campaign: CampaignItem, nowMs: number) => {
+  const remainingMs = campaignRemainingMs(campaign, nowMs);
+  return remainingMs !== null && remainingMs > 0 && remainingMs <= expiringSoonWindowMs;
+};
+
+const formatRemainingTime = (remainingMs: number, language: LanguageCode) => {
+  const minuteCount = Math.ceil(remainingMs / 60000);
+
+  if (minuteCount <= 1) {
+    return {
+      vi: "dưới 1 phút",
+      en: "under 1 minute",
+      ja: "1分未満",
+      ko: "1분 미만",
+      zh: "不到 1 分钟",
+    }[language];
+  }
+
+  if (minuteCount < 60) {
+    return {
+      vi: `còn ${minuteCount} phút`,
+      en: `${minuteCount} minute${minuteCount === 1 ? "" : "s"} left`,
+      ja: `残り${minuteCount}分`,
+      ko: `${minuteCount}분 남음`,
+      zh: `剩余 ${minuteCount} 分钟`,
+    }[language];
+  }
+
+  const hourCount = Math.ceil(minuteCount / 60);
+  if (hourCount <= 24) {
+    return {
+      vi: `còn ${hourCount} giờ`,
+      en: `${hourCount} hour${hourCount === 1 ? "" : "s"} left`,
+      ja: `残り${hourCount}時間`,
+      ko: `${hourCount}시간 남음`,
+      zh: `剩余 ${hourCount} 小时`,
+    }[language];
+  }
+
+  const dayCount = Math.ceil(hourCount / 24);
+  return {
+    vi: `còn ${dayCount} ngày`,
+    en: `${dayCount} day${dayCount === 1 ? "" : "s"} left`,
+    ja: `残り${dayCount}日`,
+    ko: `${dayCount}일 남음`,
+    zh: `剩余 ${dayCount} 天`,
+  }[language];
+};
+
+const formatExpiringSoonLabel = (remainingMs: number, language: LanguageCode, label: string) => {
+  const remainingText = formatRemainingTime(remainingMs, language);
+  return `${label} - ${remainingText}`;
 };
 
 const readableName = (name: string) => {
@@ -162,7 +240,6 @@ const campaignUiCopy = (language: LanguageCode) =>
       subtitle: "Coupon & khuyến mãi từ các quán đối tác",
       title: "Ưu đãi đêm nay",
       allCities: "Toàn quốc",
-      urgentSoon: "Sắp hết hạn - còn 2 giờ",
       used: "Đã dùng",
       validUntil: "HSD",
     },
@@ -183,7 +260,6 @@ const campaignUiCopy = (language: LanguageCode) =>
       subtitle: "Coupons and promotions from partner venues",
       title: "Tonight's deals",
       allCities: "All areas",
-      urgentSoon: "Expiring soon - 2 hours left",
       used: "Used",
       validUntil: "Valid until",
     },
@@ -204,7 +280,6 @@ const campaignUiCopy = (language: LanguageCode) =>
       subtitle: "提携店舗のクーポン・キャンペーン",
       title: "今夜の特典",
       allCities: "全エリア",
-      urgentSoon: "まもなく終了 - 残り2時間",
       used: "使用済み",
       validUntil: "有効期限",
     },
@@ -225,7 +300,6 @@ const campaignUiCopy = (language: LanguageCode) =>
       subtitle: "제휴 매장의 쿠폰 및 프로모션",
       title: "오늘 밤 혜택",
       allCities: "전체 지역",
-      urgentSoon: "곧 만료 - 2시간 남음",
       used: "사용됨",
       validUntil: "유효 기간",
     },
@@ -246,7 +320,6 @@ const campaignUiCopy = (language: LanguageCode) =>
       subtitle: "合作场所的优惠券和促销",
       title: "今晚优惠",
       allCities: "全部地区",
-      urgentSoon: "即将结束 - 剩余2小时",
       used: "已使用",
       validUntil: "有效期至",
     },
@@ -271,21 +344,25 @@ function CampaignDealCard({
   language,
   copy,
   rates,
+  nowMs,
 }: {
   campaign: CampaignItem;
   index: number;
   language: LanguageCode;
   copy: ReturnType<typeof campaignUiCopy>;
   rates: CurrencyRateMap;
+  nowMs: number;
 }) {
   const storeName = readableName(campaign.targetStore!.name);
   const campaignName = readableName(campaign.name);
   const isVip = campaign.name.toUpperCase().includes("VIP");
 
-  // Determine if it is used (index 5 for mockup)
-  const isUsed = index === 5;
-  // Determine if it is urgent (index 2 for mockup)
-  const isUrgent = index === 2;
+  const isUsed = false;
+  const remainingMs = campaignRemainingMs(campaign, nowMs);
+  const urgentLabel =
+    remainingMs !== null && remainingMs > 0 && remainingMs <= expiringSoonWindowMs
+      ? formatExpiringSoonLabel(remainingMs, language, copy.expiring)
+      : "";
 
   const discountText = formatDiscount(campaign, language, rates);
 
@@ -314,10 +391,10 @@ function CampaignDealCard({
           {campaign.endsAt && ` · ${copy.validUntil} ${formatShortDate(campaign.endsAt, language)}`}
         </div>
 
-        {isUrgent && (
+        {urgentLabel && (
           <div className="coupon-status-urgent">
             <span className="dot" />
-            {copy.urgentSoon}
+            {urgentLabel}
           </div>
         )}
       </div>
@@ -337,12 +414,18 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
   
   // New filter types: 'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'>('ALL');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), campaignClockTickMs);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -377,23 +460,28 @@ export default function Page() {
     };
   }, []);
 
+  const availableCampaigns = useMemo(
+    () => campaigns.filter((campaign) => isCampaignAvailableNow(campaign, nowMs)),
+    [campaigns, nowMs],
+  );
+
   const uniqueStores = useMemo(() => {
     const storesMap = new Map<string, { id: string; name: string }>();
-    campaigns.forEach(c => {
+    availableCampaigns.forEach(c => {
       if (c.targetStore) {
         storesMap.set(c.targetStore.id, { id: c.targetStore.id, name: c.targetStore.name });
       }
     });
     return Array.from(storesMap.values());
-  }, [campaigns]);
+  }, [availableCampaigns]);
 
   const filteredCampaigns = useMemo(() => {
-    let result = [...campaigns];
+    let result = [...availableCampaigns];
 
     if (activeFilter === "VIP") {
       result = result.filter(c => c.name.toUpperCase().includes("VIP"));
     } else if (activeFilter === "EXPIRING") {
-      result = result.filter(c => c.endsAt);
+      result = result.filter(c => isCampaignExpiringSoon(c, nowMs));
     } else if (activeFilter === "BY_STORE" && selectedStoreId) {
       result = result.filter(c => c.targetStoreId === selectedStoreId);
     }
@@ -413,10 +501,19 @@ export default function Page() {
       });
     }
 
-    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    result.sort((a, b) => {
+      if (activeFilter === "EXPIRING") {
+        return (
+          (timestampFromDate(a.endsAt) ?? Number.MAX_SAFE_INTEGER) -
+          (timestampFromDate(b.endsAt) ?? Number.MAX_SAFE_INTEGER)
+        );
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     return result;
-  }, [campaigns, activeFilter, selectedStoreId, searchTerm]);
+  }, [availableCampaigns, activeFilter, selectedStoreId, searchTerm, nowMs]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
@@ -535,6 +632,7 @@ export default function Page() {
                     language={activeLanguage}
                     copy={copy}
                     rates={rates}
+                    nowMs={nowMs}
                   />
                 ))}
               </section>
