@@ -4017,6 +4017,13 @@ export default function PartnerPage() {
   const listingPayload = () => {
     const draftPayload = { ...listingDraft };
     delete (draftPayload as Partial<PartnerListingDraft>).wardName;
+    const storeAddress = [
+      listingDraft.streetAddress.trim(),
+      listingDraft.ward.trim(),
+      listingDraft.storeCity.trim(),
+    ]
+      .filter(Boolean)
+      .join(', ');
     const galleryUrls = listingDraft.galleryUrls.filter((url) => url.trim());
     const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
     const mediaUrls = [
@@ -4037,6 +4044,8 @@ export default function PartnerPage() {
 
     return {
       ...draftPayload,
+      storeAddress,
+      storeDistrict: '',
       priceRange: '',
       menuSummary,
       tags: listingDraft.tags.filter(Boolean),

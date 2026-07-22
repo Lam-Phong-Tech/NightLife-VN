@@ -57,6 +57,72 @@ const locationNamesMatch = (first?: string | null, second?: string | null) => {
   );
 };
 
+const normalizeMediaKey = (value?: string | null) => {
+  const url = value?.trim();
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    const youtubeId =
+      host === 'youtu.be'
+        ? parsed.pathname.split('/').filter(Boolean)[0]
+        : host.endsWith('youtube.com')
+          ? parsed.searchParams.get('v') ||
+            parsed.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1]
+          : '';
+    if (youtubeId) return `youtube:${youtubeId.toLowerCase()}`;
+    parsed.hash = '';
+    parsed.pathname = parsed.pathname.replace(/\/+$/g, '');
+    return parsed.toString().toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+};
+
+const mediaItemUrl = (item: any) => item?.url || item?.thumb || item?.title || '';
+
+const dedupeMediaItems = <T extends Record<string, any>>(items: T[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = normalizeMediaKey(mediaItemUrl(item)) || String(item.id || '');
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const isBrokenAddressPart = (part?: string | null) => {
+  const text = part?.trim() ?? '';
+  return /(?:Nguy|Qu|Ph|Th|B|H|Ngh)\?/i.test(text);
+};
+
+const isDistrictAddressPart = (part?: string | null) => {
+  const token = normalizeLocationName(part);
+  return /\b(quan|huyen|district|thi xa)\b/.test(token);
+};
+
+const cleanStreetAddressFromFullAddress = (
+  fullAddress: string,
+  options: {
+    provinceName?: string | null;
+    wardName?: string | null;
+    city?: string | null;
+    district?: string | null;
+  } = {},
+) => {
+  const parts = fullAddress.split(',').map((part) => part.trim()).filter(Boolean);
+  const streetParts = parts.filter(
+    (part) =>
+      !isBrokenAddressPart(part) &&
+      !isDistrictAddressPart(part) &&
+      !locationNamesMatch(part, options.provinceName) &&
+      !locationNamesMatch(part, options.wardName) &&
+      !locationNamesMatch(part, options.city) &&
+      !locationNamesMatch(part, options.district),
+  );
+  return streetParts.join(', ') || parts.find((part) => !isBrokenAddressPart(part)) || fullAddress.trim();
+};
+
 const getChipStyle = (kind: string) => {
   const m: Record<string, string[]> = {
     success: ['rgba(95,191,134,.1)', 'rgba(95,191,134,.28)', '#7fd3a2'],
@@ -168,8 +234,6 @@ function CustomTimeSelect({ value, onChange, placeholder, hasError }: { value: s
     </div>
   );
 }
-const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: DEFAULT_OPENING_SLOT } }), {});
-
 const timeRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
 
 type OpeningHourDay = {
@@ -180,6 +244,66 @@ type OpeningHourDay = {
 type OpeningHourValidation = {
   errors: Record<string, Record<number, string>>;
   normalizedHours: Record<string, OpeningHourDay>;
+};
+
+const cloneDefaultHours = () =>
+  DAYS.reduce<Record<string, OpeningHourDay>>(
+    (acc, day) => ({ ...acc, [day]: { isOff: false, hours: DEFAULT_OPENING_SLOT } }),
+    {},
+  );
+
+const normalizeDayKey = (value?: string | null) => {
+  const token = normalizeLocationName(value).replace(/\bthu\b/g, '').trim();
+  if (token === 'cn' || token === 'chu nhat') return 'CN';
+  const number = token.match(/\d/)?.[0];
+  return number ? DAYS.find((day) => day.includes(number)) || '' : '';
+};
+
+const normalizeOpeningHoursForForm = (value: unknown): Record<string, OpeningHourDay> => {
+  const normalized = cloneDefaultHours();
+  const applyItem = (item: any) => {
+    const day = normalizeDayKey(item?.day);
+    if (!day) return;
+    normalized[day] = {
+      isOff: Boolean(item?.isOff),
+      hours: item?.isOff ? '' : String(item?.hours || DEFAULT_OPENING_SLOT).trim(),
+    };
+  };
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return normalized;
+  }
+
+  const record = value as Record<string, any>;
+  const items = Array.isArray(record.days)
+    ? record.days
+    : Array.isArray(record.items)
+      ? record.items
+      : [];
+  items.forEach(applyItem);
+
+  DAYS.forEach((day) => {
+    const direct = record[day];
+    if (direct && typeof direct === 'object' && !Array.isArray(direct)) {
+      normalized[day] = {
+        isOff: Boolean(direct.isOff),
+        hours: direct.isOff ? '' : String(direct.hours || DEFAULT_OPENING_SLOT).trim(),
+      };
+    }
+  });
+
+  if (!items.length && typeof record.summary === 'string') {
+    record.summary.split(';').forEach((part: string) => {
+      const [rawDay, ...rawHours] = part.split(':');
+      const day = normalizeDayKey(rawDay);
+      const hours = rawHours.join(':').trim();
+      const isOff = /nghi|off|close/i.test(normalizeLocationName(hours));
+      if (!day || !hours) return;
+      normalized[day] = { isOff, hours: isOff ? '' : hours };
+    });
+  }
+
+  return normalized;
 };
 
 const padHour = (value: number) => value.toString().padStart(2, '0');
@@ -345,7 +469,7 @@ function AdminStoresContent() {
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [partnerAccountId, setPartnerAccountId] = useState('');
-  const [hoursForm, setHoursForm] = useState<any>(defaultHours);
+  const [hoursForm, setHoursForm] = useState<any>(cloneDefaultHours());
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
 
   // Address API States
@@ -468,18 +592,19 @@ function AdminStoresContent() {
       
       if (w) {
         setSelWard(w.code.toString());
-        street = street
-          .split(',')
-          .map((part) => part.trim())
-          .filter(Boolean)
-          .filter(
-            (part) =>
-              !locationNamesMatch(part, w.name) &&
-              !locationNamesMatch(part, selectedStore?.city),
-          )
-          .join(', ');
+        street = cleanStreetAddressFromFullAddress(street, {
+          provinceName: p?.name,
+          wardName: w.name,
+          city: selectedStore?.city,
+          district: selectedStore?.district,
+        });
       } else {
         setSelWard('');
+        street = cleanStreetAddressFromFullAddress(street, {
+          provinceName: p?.name,
+          city: selectedStore?.city,
+          district: selectedStore?.district,
+        });
       }
       
       setStreetAddress(street);
@@ -521,7 +646,7 @@ function AdminStoresContent() {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setNameTouched(false);
     setPhoneTouched(false);
-    setHoursForm(defaultHours);
+    setHoursForm(cloneDefaultHours());
     setCoverImage(null);
     setAlbums([]);
     setVideos([]);
@@ -571,11 +696,20 @@ function AdminStoresContent() {
     });
     setNameTouched(false);
     setPhoneTouched(false);
-    setHoursForm(st.openingHours || defaultHours);
-    const cover = st.media?.find((m: any) => m.type === 'IMAGE' && m.purpose === 'store-hero');
+    setHoursForm(normalizeOpeningHoursForForm(st.openingHours));
+    const storeMedia = (Array.isArray(st.media) ? st.media : []).filter((m: any) => !m.castId);
+    const imageMedia = dedupeMediaItems(storeMedia.filter((m: any) => m.type === 'IMAGE'));
+    const cover = imageMedia.find((m: any) =>
+      ['store-hero', 'STORE_COVER', 'COVER_IMAGE'].includes(m.purpose),
+    ) || imageMedia[0] || null;
+    const coverKey = normalizeMediaKey(mediaItemUrl(cover));
+    const galleryMedia = imageMedia.filter(
+      (m: any) => normalizeMediaKey(mediaItemUrl(m)) !== coverKey,
+    );
+    const videoMedia = dedupeMediaItems(storeMedia.filter((m: any) => m.type === 'VIDEO'));
     setCoverImage(cover || null);
-    setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE' && m.purpose !== 'store-hero') || []);
-    setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
+    setAlbums(galleryMedia);
+    setVideos(videoMedia);
     setTags(st.tags || []);
     setPartnerAccountId(st.partnerAccountId || st.partnerAccount?.id || '');
     setPartnerLinkEditing(false);
@@ -594,7 +728,11 @@ function AdminStoresContent() {
     } else {
       setSelProvince('');
       setSelWard('');
-      setStreetAddress(fullAddress);
+      setStreetAddress(cleanStreetAddressFromFullAddress(fullAddress, {
+        city: st.city,
+        district: st.district,
+        wardName: st.ward,
+      }));
       setPendingAddress('');
     }
     
@@ -673,7 +811,7 @@ function AdminStoresContent() {
         partnerAccountId: partnerAccountId || null,
         openingHours: openingHourValidation.normalizedHours,
         pricingInfo: { groups: menuGroups },
-        mediaIds: [coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
+        mediaIds: Array.from(new Set([coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)))
       };
       
       if (venueSel === 'new') {
@@ -727,7 +865,7 @@ function AdminStoresContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
-        setVideos(prev => [...prev, { id: res.id, title: file.name, meta: 'Mới tải lên', thumb: res.url }]);
+        setVideos(prev => dedupeMediaItems([...prev, { id: res.id, title: file.name, url: res.url, meta: 'Mới tải lên', thumb: res.url }]));
         showToast('Tải video lên thành công');
       }
     } catch (err: any) {
@@ -748,8 +886,8 @@ function AdminStoresContent() {
     
     const newVideoId = extractYoutubeId(url);
     const isDuplicate = videos.some(v => {
-      const existingTitle = v.title || '';
-      return existingTitle === url || extractYoutubeId(existingTitle) === newVideoId;
+      const existingUrl = mediaItemUrl(v);
+      return existingUrl === url || extractYoutubeId(existingUrl) === newVideoId;
     });
 
     if (isDuplicate) {
@@ -767,7 +905,7 @@ function AdminStoresContent() {
         }
       });
       if (res && res.id) {
-        setVideos(prev => [...prev, { id: res.id, title: url, meta: 'YouTube', thumb: url }]);
+        setVideos(prev => dedupeMediaItems([...prev, { id: res.id, title: url, url: res.url || url, meta: 'YouTube', thumb: url }]));
         showToast('Thêm video YouTube thành công');
       }
     } catch (err: any) {

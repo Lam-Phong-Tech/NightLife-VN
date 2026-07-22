@@ -30,12 +30,46 @@ type PartnerTab = "PENDING_NEW" | "PENDING_UPDATE" | "APPROVED" | "REJECTED";
 type OriginalStore = {
   id?: string | null;
   name?: string | null;
+  slug?: string | null;
+  status?: string | null;
   category?: string | null;
   description?: string | null;
   address?: string | null;
   city?: string | null;
   district?: string | null;
   phone?: string | null;
+  openingHours?: unknown;
+  pricingInfo?: unknown;
+  tags?: string[] | null;
+  media?: Array<{
+    id?: string | null;
+    url?: string | null;
+    purpose?: string | null;
+    type?: string | null;
+  }> | null;
+  mapUrl?: string | null;
+};
+
+type OpeningHourItem = {
+  day?: string | null;
+  isOff?: boolean | null;
+  hours?: string | null;
+};
+
+type MenuGroup = {
+  name?: string | null;
+  items?: Array<{
+    name?: string | null;
+    description?: string | null;
+    priceTier?: string | null;
+    imageUrl?: string | null;
+  }> | null;
+};
+
+type PricingItem = {
+  label?: string | null;
+  value?: string | null;
+  note?: string | null;
 };
 
 type ApiPartnerRequest = {
@@ -64,9 +98,22 @@ type ApiPartnerRequest = {
   storeAddress?: string | null;
   storeCity?: string | null;
   storeDistrict?: string | null;
+  ward?: string | null;
+  streetAddress?: string | null;
+  phone?: string | null;
+  mapUrl?: string | null;
   openingHours?: string | null;
+  openingHourItems?: OpeningHourItem[] | null;
+  priceRange?: string | null;
   menuSummary?: string | null;
+  menuGroups?: MenuGroup[] | null;
+  tags?: string[] | null;
+  coverImageUrl?: string | null;
+  galleryUrls?: string[] | null;
+  videoUrls?: string[] | null;
+  pricingItems?: PricingItem[] | null;
   mediaUrls?: string[] | null;
+  listingDraft?: Record<string, unknown> | null;
   notificationStatus?: string | null;
   notificationError?: string | null;
   notifiedAt?: string | null;
@@ -103,8 +150,34 @@ const statusTone = (status: PartnerStatus) => {
   return { color: colors.gold, border: `1px solid ${colors.borderGold22}` };
 };
 
+const decodeHtmlEntities = (value?: string | null) =>
+  (value ?? "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, code) => {
+      const value = Number(code);
+      return Number.isFinite(value) ? String.fromCharCode(value) : "";
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => {
+      const value = Number.parseInt(code, 16);
+      return Number.isFinite(value) ? String.fromCharCode(value) : "";
+    });
+
+const plainText = (value?: string | null) =>
+  decodeHtmlEntities(value)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .trim();
+
 const cleanText = (value?: string | null, fallback = "-") => {
-  const normalized = value?.trim();
+  const normalized = plainText(value);
   return normalized ? normalized : fallback;
 };
 
@@ -119,7 +192,10 @@ const requestBadgeLabel = (request: ApiPartnerRequest) => {
 const looksEncodingCorrupted = (value?: string | null) => {
   const text = value?.trim() ?? "";
   const questionMarks = text.match(/\?/g)?.length ?? 0;
-  return questionMarks >= 3 && questionMarks / Math.max(text.length, 1) >= 0.08;
+  return (
+    /(?:Nguy|Qu|Ph|Th|B|H|Ngh|Ð)\?/i.test(text) ||
+    (questionMarks >= 3 && questionMarks / Math.max(text.length, 1) >= 0.08)
+  );
 };
 
 const hasCorruptedContent = (request: ApiPartnerRequest) =>
@@ -128,6 +204,8 @@ const hasCorruptedContent = (request: ApiPartnerRequest) =>
     request.businessName,
     request.storeDescription,
     request.storeAddress,
+    request.streetAddress,
+    request.ward,
     request.storeCity,
     request.storeDistrict,
   ].some(looksEncodingCorrupted);
@@ -147,19 +225,18 @@ const requestTitle = (request: ApiPartnerRequest) =>
   );
 
 const displayAddress = (request: ApiPartnerRequest) => {
-  const proposedAddress = safeRequestValue(
-    request.storeAddress,
-    request.originalStore?.address,
-  );
-  const proposedDistrict = safeRequestValue(
-    request.storeDistrict,
-    request.originalStore?.district,
-  );
-  const proposedCity = safeRequestValue(
-    request.storeCity,
-    request.originalStore?.city,
-  );
-  const parts = [proposedAddress, proposedDistrict, proposedCity]
+  const explicitParts = [
+    safeRequestValue(request.streetAddress, request.originalStore?.address),
+    safeRequestValue(request.ward, null),
+    safeRequestValue(request.storeDistrict, request.originalStore?.district),
+    safeRequestValue(request.storeCity, request.originalStore?.city),
+  ];
+  const fallbackParts = [
+    safeRequestValue(request.storeAddress, request.originalStore?.address),
+    safeRequestValue(request.storeDistrict, request.originalStore?.district),
+    safeRequestValue(request.storeCity, request.originalStore?.city),
+  ];
+  const parts = (request.streetAddress || request.ward ? explicitParts : fallbackParts)
     .map((item) => item?.trim())
     .filter((item): item is string => Boolean(item));
 
@@ -170,6 +247,58 @@ const displayAddress = (request: ApiPartnerRequest) => {
           otherIndex < index && other.toLocaleLowerCase("vi").includes(part.toLocaleLowerCase("vi")),
       ),
   ).join(", ");
+};
+
+const normalizeMediaKey = (value?: string | null) => {
+  const url = value?.trim();
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+    const youtubeId =
+      host === "youtu.be"
+        ? parsed.pathname.split("/").filter(Boolean)[0]
+        : host.endsWith("youtube.com")
+          ? parsed.searchParams.get("v") ||
+            parsed.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1]
+          : "";
+    if (youtubeId) return `youtube:${youtubeId.toLowerCase()}`;
+    parsed.hash = "";
+    parsed.pathname = parsed.pathname.replace(/\/+$/g, "");
+    return parsed.toString().toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+};
+
+const uniqueMediaUrls = (values: Array<string | null | undefined>) => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  values.forEach((value) => {
+    const url = value?.trim();
+    const key = normalizeMediaKey(url);
+    if (!url || !key || seen.has(key)) return;
+    seen.add(key);
+    result.push(url);
+  });
+  return result;
+};
+
+const formatOpeningHours = (
+  summary?: string | null,
+  items?: OpeningHourItem[] | null,
+) => {
+  if (items?.length) {
+    return items
+      .map((item) =>
+        item.isOff
+          ? `${cleanText(item.day)}: Nghỉ`
+          : `${cleanText(item.day)}: ${cleanText(item.hours, "")}`,
+      )
+      .filter((line) => !line.endsWith(": "))
+      .join("\n");
+  }
+  return cleanText(summary, "");
 };
 
 const matchesTab = (request: ApiPartnerRequest, tab: PartnerTab) => {
@@ -644,9 +773,58 @@ export default function AdminPartnersPage() {
                     value={displayAddress(selectedRequest)}
                     corrupted={
                       looksEncodingCorrupted(selectedRequest.storeAddress) ||
+                      looksEncodingCorrupted(selectedRequest.streetAddress) ||
+                      looksEncodingCorrupted(selectedRequest.ward) ||
                       looksEncodingCorrupted(selectedRequest.storeDistrict) ||
                       looksEncodingCorrupted(selectedRequest.storeCity)
                     }
+                  />
+                  <ComparisonField
+                    label="Loại hình hiện tại"
+                    value={selectedRequest.originalStore?.category}
+                  />
+                  <ComparisonField
+                    label="Loại hình đề xuất"
+                    value={selectedRequest.businessType ?? selectedRequest.draftStoreCategory}
+                  />
+                  <ComparisonField
+                    label="Số điện thoại hiện tại"
+                    value={selectedRequest.originalStore?.phone}
+                  />
+                  <ComparisonField
+                    label="Số điện thoại đề xuất"
+                    value={selectedRequest.phone ?? selectedRequest.contactPhone}
+                  />
+                  <ComparisonField
+                    label="Google Maps hiện tại"
+                    value={selectedRequest.originalStore?.mapUrl}
+                  />
+                  <ComparisonField
+                    label="Google Maps đề xuất"
+                    value={selectedRequest.mapUrl}
+                  />
+                  <ComparisonField
+                    label="Giờ mở cửa hiện tại"
+                    value={
+                      typeof selectedRequest.originalStore?.openingHours === "object"
+                        ? formatOpeningHours(
+                            (selectedRequest.originalStore.openingHours as { summary?: string | null })?.summary,
+                            (selectedRequest.originalStore.openingHours as { days?: OpeningHourItem[] })?.days,
+                          )
+                        : String(selectedRequest.originalStore?.openingHours || "")
+                    }
+                  />
+                  <ComparisonField
+                    label="Giờ mở cửa đề xuất"
+                    value={formatOpeningHours(selectedRequest.openingHours, selectedRequest.openingHourItems)}
+                  />
+                  <ComparisonField
+                    label="Tags hiện tại"
+                    value={selectedRequest.originalStore?.tags?.join(", ")}
+                  />
+                  <ComparisonField
+                    label="Tags đề xuất"
+                    value={selectedRequest.tags?.join(", ")}
                   />
                 </div>
                 <div
@@ -686,6 +864,49 @@ export default function AdminPartnersPage() {
 
             </div>
 
+            {selectedRequest.priceRange ||
+            selectedRequest.menuSummary ||
+            selectedRequest.pricingItems?.length ||
+            selectedRequest.menuGroups?.length ? (
+              <Section title="Menu & mức giá đề xuất">
+                <div style={{ display: "grid", gap: 10 }}>
+                  {selectedRequest.priceRange ? (
+                    <InfoCard label="Khoảng giá" value={selectedRequest.priceRange} />
+                  ) : null}
+                  {selectedRequest.pricingItems?.length ? (
+                    <InfoCard
+                      label="Mức giá"
+                      value={selectedRequest.pricingItems
+                        .map((item) =>
+                          [item.label, item.value, item.note].filter(Boolean).join(" - "),
+                        )
+                        .join("\n")}
+                    />
+                  ) : null}
+                  {selectedRequest.menuGroups?.length ? (
+                    <InfoCard
+                      label="Nhóm menu"
+                      value={selectedRequest.menuGroups
+                        .map((group) => {
+                          const items =
+                            group.items
+                              ?.map((item) => cleanText(item.name, ""))
+                              .filter(Boolean) ?? [];
+                          return [cleanText(group.name, ""), items.join(", ")]
+                            .filter(Boolean)
+                            .join(": ");
+                        })
+                        .filter(Boolean)
+                        .join("\n")}
+                    />
+                  ) : null}
+                  {selectedRequest.menuSummary ? (
+                    <InfoCard label="Tóm tắt menu" value={selectedRequest.menuSummary} />
+                  ) : null}
+                </div>
+              </Section>
+            ) : null}
+
             {selectedRequest.note ? (
               <Section title="Ghi chú cho Admin">
                 <div
@@ -723,12 +944,17 @@ export default function AdminPartnersPage() {
             </Section>
 
             {(() => {
-              const media = selectedRequest.mediaUrls || [];
               const isVideo = (url: string) => /\.(mp4|webm|ogg)$/i.test(url) || url.includes('youtube.com') || url.includes('youtu.be');
-              const videos = media.filter(isVideo);
+              const media = uniqueMediaUrls(selectedRequest.mediaUrls || []);
+              const explicitCover = cleanText(selectedRequest.coverImageUrl, "");
+              const explicitGallery = uniqueMediaUrls(selectedRequest.galleryUrls || []);
+              const explicitVideos = uniqueMediaUrls(selectedRequest.videoUrls || []);
               const images = media.filter(url => !isVideo(url));
-              const cover = images[0];
-              const album = images.slice(1);
+              const cover = explicitCover || images[0];
+              const album = explicitGallery.length
+                ? explicitGallery.filter((url) => normalizeMediaKey(url) !== normalizeMediaKey(cover))
+                : images.filter((url) => normalizeMediaKey(url) !== normalizeMediaKey(cover));
+              const videos = explicitVideos.length ? explicitVideos : media.filter(isVideo);
               
               return (
                 <div style={{ marginBottom: 30 }}>
@@ -958,6 +1184,24 @@ function InfoField({
     <div>
       <div style={{ fontSize: 12, color: colors.muted, marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? colors.gold : colors.text }}>
+        {cleanText(value)}
+      </div>
+    </div>
+  );
+}
+
+function InfoCard({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div
+      style={{
+        padding: 14,
+        borderRadius: 10,
+        border: `1px solid ${colors.borderSoft}`,
+        background: colors.surface1,
+      }}
+    >
+      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 13, color: colors.text2, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
         {cleanText(value)}
       </div>
     </div>

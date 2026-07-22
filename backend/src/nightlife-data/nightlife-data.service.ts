@@ -21,10 +21,12 @@ import {
   ContentStatus,
   ContentType,
   CouponIssueStatus,
+  MediaType,
   Prisma,
   RankingConfigStatus,
   RankingTargetType,
   StoreCategory,
+  StoreStatus,
   UserTier,
 } from '@prisma/client';
 import {
@@ -516,8 +518,10 @@ type PartnerRequestCmsRecord = {
     id: string;
     name: string;
     slug: string;
-    status: string;
+    status: StoreStatus;
     category: StoreCategory;
+    partnerAccountId: string | null;
+    ownerId: string | null;
     mapUrl: string | null;
     description: string | null;
     address: string | null;
@@ -527,7 +531,31 @@ type PartnerRequestCmsRecord = {
     openingHours: Prisma.JsonValue | null;
     pricingInfo: Prisma.JsonValue | null;
     tags: string[];
-    media: { url: string }[];
+    media: {
+      id: string;
+      url: string;
+      purpose: string | null;
+      type: MediaType;
+      castId: string | null;
+    }[];
+    casts: {
+      id: string;
+      stageName: string;
+      publicAlias: string | null;
+      bio: string | null;
+      publicBio: string | null;
+      tags: string[];
+      youtubeLinks: string[];
+      languages: string[];
+      birthMonth: number | null;
+      zodiacSign: string | null;
+      heightCm: number | null;
+      measurements: string | null;
+      hobbies: string[];
+      hourlyRateVnd: number | null;
+      isPublic: boolean;
+      status: CastStatus;
+    }[];
   };
   notificationLog: {
     id: string;
@@ -3110,7 +3138,7 @@ export class NightlifeDataService {
             url,
             index,
             storeId: store.id,
-            purpose: 'PARTNER_LISTING_STORE',
+            purpose: this.partnerListingStoreMediaPurpose(payload, url),
           },
           tx,
         );
@@ -7660,10 +7688,16 @@ export class NightlifeDataService {
       take: limit,
       select: this.partnerRequestSelect(),
     });
+    const records = requests as unknown as PartnerRequestCmsRecord[];
+    const listingPayloads = await this.loadPartnerListingDraftPayloads(
+      this.prisma,
+      records,
+    );
 
-    return requests.map((request) =>
+    return records.map((request) =>
       this.mapPartnerRequestRecord(
-        request as unknown as PartnerRequestCmsRecord,
+        request,
+        listingPayloads.get(request.id),
       ),
     );
   }
@@ -7690,10 +7724,17 @@ export class NightlifeDataService {
         throw new NotFoundException('Partner request not found');
       }
 
+      const listingDraftPayload = request.id.startsWith('LISTING-')
+        ? await this.resolvePartnerListingDraftPayloadFromRequest(tx, request)
+        : null;
+
       if (
         dto.approve &&
         request.id.startsWith('LISTING-') &&
-        this.hasPartnerRequestEncodingCorruption(request)
+        this.hasPartnerListingDraftPayloadEncodingCorruption(
+          listingDraftPayload,
+          request,
+        )
       ) {
         throw new UnprocessableEntityException(
           'Partner listing update contains corrupted text and must be submitted again',
@@ -7723,7 +7764,11 @@ export class NightlifeDataService {
           ? await this.ensurePartnerOnboarding(tx, request)
           : null;
       const listingStoreUpdate = dto.approve
-        ? await this.partnerListingStoreUpdateFromRequest(tx, request)
+        ? await this.partnerListingStoreUpdateFromRequest(
+            tx,
+            request,
+            listingDraftPayload,
+          )
         : {};
 
       if (dto.approve) {
@@ -7799,6 +7844,32 @@ export class NightlifeDataService {
           );
         }
         if (request.draftMediaIds.length) {
+          if (request.id.startsWith('LISTING-')) {
+            await tx.media.updateMany({
+              where: {
+                storeId: request.store.id,
+                castId: null,
+                deletedAt: null,
+                id: { notIn: request.draftMediaIds },
+                purpose: {
+                  in: [
+                    'store-hero',
+                    'STORE_COVER',
+                    'COVER_IMAGE',
+                    'STORE_GALLERY',
+                    'STORE_VIDEO',
+                    'PARTNER_LISTING_STORE',
+                    'PARTNER_REQUEST_STORE',
+                  ],
+                },
+              },
+              data: {
+                status: 'HIDDEN',
+                access: 'PROTECTED',
+                deletedAt: now,
+              },
+            });
+          }
           await tx.media.updateMany({
             where: { id: { in: request.draftMediaIds } },
             data: { status: 'READY', access: 'PUBLIC' },
@@ -16578,6 +16649,114 @@ export class NightlifeDataService {
     return lines.filter(Boolean).join('; ') || null;
   }
 
+  private partnerListingOpeningHoursRecord(
+    items: PartnerListingOpeningHourDto[],
+    summary?: string | null,
+  ) {
+    const record: Record<string, unknown> = {
+      summary: summary ?? this.partnerListingOpeningHoursSummary(items) ?? null,
+      days: items,
+    };
+
+    for (const item of items) {
+      record[item.day] = {
+        isOff: Boolean(item.isOff),
+        hours: item.isOff ? '' : this.cleanNullableText(item.hours) ?? '',
+      };
+    }
+
+    return record;
+  }
+
+  private partnerMediaUrlKey(value?: string | null) {
+    const url = this.cleanNullableText(value);
+    if (!url) {
+      return '';
+    }
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+      let youtubeId = '';
+
+      if (host === 'youtu.be') {
+        youtubeId = parsed.pathname.split('/').filter(Boolean)[0] ?? '';
+      } else if (host.endsWith('youtube.com')) {
+        youtubeId =
+          parsed.searchParams.get('v') ??
+          parsed.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1] ??
+          '';
+      }
+
+      if (youtubeId) {
+        return `youtube:${youtubeId.toLowerCase()}`;
+      }
+
+      parsed.hash = '';
+      if (parsed.pathname.length > 1) {
+        parsed.pathname = parsed.pathname.replace(/\/+$/g, '');
+      }
+
+      return parsed.toString().toLowerCase();
+    } catch {
+      return url.trim().toLowerCase();
+    }
+  }
+
+  private uniqueMediaUrls(values: Array<string | null | undefined>, limit = 20) {
+    const seen = new Set<string>();
+    const urls: string[] = [];
+
+    for (const value of values) {
+      const url = this.cleanNullableText(value);
+      const key = this.partnerMediaUrlKey(url);
+      if (!url || !key || seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      urls.push(url);
+      if (urls.length >= limit) {
+        break;
+      }
+    }
+
+    return urls;
+  }
+
+  private partnerListingStoreMediaPurpose(
+    payload: Pick<
+      PartnerListingDraftPayload,
+      'coverImageUrl' | 'galleryUrls' | 'videoUrls'
+    >,
+    url: string,
+  ) {
+    const key = this.partnerMediaUrlKey(url);
+
+    if (
+      key &&
+      payload.coverImageUrl &&
+      this.partnerMediaUrlKey(payload.coverImageUrl) === key
+    ) {
+      return 'store-hero';
+    }
+
+    if (this.partnerRequestMediaType(url) === 'VIDEO') {
+      return 'STORE_VIDEO';
+    }
+
+    if (
+      key &&
+      payload.galleryUrls.some(
+        (galleryUrl) => this.partnerMediaUrlKey(galleryUrl) === key,
+      )
+    ) {
+      return 'STORE_GALLERY';
+    }
+
+    return 'PARTNER_LISTING_STORE';
+  }
+
   private normalizePartnerListingMenuGroups(
     groups?: PartnerListingMenuGroupDto[] | null,
   ): PartnerListingMenuGroupDto[] {
@@ -17133,24 +17312,25 @@ export class NightlifeDataService {
             .filter((m) => m.type === 'VIDEO' && !m.castId)
             .map((m) => m.url)
             .slice(0, 8);
-    const mediaUrls = [
+    const mediaUrls = this.uniqueMediaUrls([
       coverImageUrl,
       ...galleryUrls,
       ...videoUrls,
       ...this.cleanStringArray(dto.mediaUrls, 12),
-    ]
-      .filter((url): url is string => Boolean(url))
-      .filter((url, index, list) => list.indexOf(url) === index)
-      .slice(0, 20);
+    ]);
     const requestedStoreCity =
       this.cleanNullableText(dto.storeCity) ?? store.city;
-    const requestedStoreDistrict =
-      this.cleanNullableText(dto.storeDistrict) ?? store.district;
     const hasExplicitAddressParts =
       dto.streetAddress !== undefined ||
       dto.ward !== undefined ||
       dto.storeCity !== undefined ||
       dto.storeDistrict !== undefined;
+    const requestedStoreDistrict =
+      dto.storeDistrict !== undefined
+        ? this.cleanNullableText(dto.storeDistrict)
+        : hasExplicitAddressParts
+          ? null
+          : store.district;
     const resolvedStreetAddress =
       draftStreetAddress ??
       draftAddressStreet ??
@@ -17258,6 +17438,127 @@ export class NightlifeDataService {
     };
   }
 
+  private async loadPartnerListingDraftPayloads(
+    client: NightlifePrismaClient,
+    requests: PartnerRequestCmsRecord[],
+  ) {
+    const draftContentIds = Array.from(
+      new Set(
+        requests.flatMap((request) =>
+          request.id.startsWith('LISTING-') ? request.draftContentIds : [],
+        ),
+      ),
+    );
+
+    if (!draftContentIds.length) {
+      return new Map<string, PartnerListingDraftPayload>();
+    }
+
+    const contentDelegate = (client as NightlifePrismaClient & {
+      content?: {
+        findMany?: typeof client.content.findMany;
+        findFirst?: typeof client.content.findFirst;
+      };
+    }).content;
+
+    if (
+      typeof contentDelegate?.findMany !== 'function' &&
+      typeof contentDelegate?.findFirst !== 'function'
+    ) {
+      return new Map<string, PartnerListingDraftPayload>();
+    }
+
+    const draftSelect = {
+      id: true,
+      title: true,
+      slug: true,
+      status: true,
+      excerpt: true,
+      body: true,
+      metadata: true,
+      createdAt: true,
+      updatedAt: true,
+      publishedAt: true,
+    } satisfies Prisma.ContentSelect;
+    let drafts =
+      typeof contentDelegate.findMany === 'function'
+        ? await client.content.findMany({
+            where: {
+              id: { in: draftContentIds },
+              type: 'STORE_POST',
+              deletedAt: null,
+            },
+            orderBy: { updatedAt: 'desc' },
+            select: draftSelect,
+          })
+        : undefined;
+
+    if (
+      !Array.isArray(drafts) &&
+      typeof contentDelegate.findFirst === 'function'
+    ) {
+      drafts = (
+        await Promise.all(
+          draftContentIds.map((draftId) =>
+            client.content.findFirst({
+              where: {
+                id: draftId,
+                type: 'STORE_POST',
+                deletedAt: null,
+              },
+              orderBy: { updatedAt: 'desc' },
+              select: draftSelect,
+            }),
+          ),
+        )
+      ).filter((draft): draft is NonNullable<typeof draft> => Boolean(draft));
+    }
+    const draftRows = Array.isArray(drafts) ? drafts : [];
+    const draftById = new Map(draftRows.map((draft) => [draft.id, draft]));
+    const payloadByRequestId = new Map<string, PartnerListingDraftPayload>();
+
+    for (const request of requests) {
+      if (!request.id.startsWith('LISTING-')) {
+        continue;
+      }
+
+      let draft: (typeof draftRows)[number] | undefined;
+      for (const draftId of request.draftContentIds) {
+        const candidate = draftById.get(draftId);
+        if (candidate) {
+          draft = candidate;
+          break;
+        }
+      }
+
+      if (!draft) {
+        continue;
+      }
+
+      const metadata = this.asRecord(draft.metadata);
+      if (metadata?.kind !== PARTNER_LISTING_DRAFT_KIND) {
+        continue;
+      }
+
+      payloadByRequestId.set(
+        request.id,
+        this.partnerListingDraftPayloadFromContent(draft, request.store),
+      );
+    }
+
+    return payloadByRequestId;
+  }
+
+  private async resolvePartnerListingDraftPayloadFromRequest(
+    client: NightlifePrismaClient,
+    request: PartnerRequestCmsRecord,
+  ) {
+    const payloads = await this.loadPartnerListingDraftPayloads(client, [
+      request,
+    ]);
+    return payloads.get(request.id) ?? null;
+  }
+
   private async partnerListingContact(
     user: AuthenticatedUser,
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
@@ -17308,102 +17609,18 @@ export class NightlifeDataService {
   private async partnerListingStoreUpdateFromRequest(
     client: NightlifePrismaClient,
     request: PartnerRequestCmsRecord,
+    resolvedPayload?: PartnerListingDraftPayload | null,
   ): Promise<Prisma.StoreUncheckedUpdateInput> {
-    if (!request.draftContentIds.length) {
+    const payload =
+      resolvedPayload ??
+      (await this.resolvePartnerListingDraftPayloadFromRequest(
+        client,
+        request,
+      ));
+
+    if (!payload) {
       return {};
     }
-
-    const draft = await client.content.findFirst({
-      where: {
-        id: { in: request.draftContentIds },
-        storeId: request.store.id,
-        type: 'STORE_POST',
-        deletedAt: null,
-      },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        status: true,
-        excerpt: true,
-        body: true,
-        metadata: true,
-        createdAt: true,
-        updatedAt: true,
-        publishedAt: true,
-      },
-    });
-
-    if (!draft) {
-      return {};
-    }
-
-    const metadata = this.asRecord(draft.metadata);
-    if (metadata?.kind !== PARTNER_LISTING_DRAFT_KIND) {
-      return {};
-    }
-
-    const store = await client.store.findUnique({
-      where: { id: request.store.id },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        category: true,
-        description: true,
-        address: true,
-        city: true,
-        district: true,
-        phone: true,
-        openingHours: true,
-        pricingInfo: true,
-        mapUrl: true,
-        tags: true,
-        partnerAccountId: true,
-        ownerId: true,
-        media: {
-          where: { deletedAt: null },
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            url: true,
-            purpose: true,
-            type: true,
-            castId: true,
-          },
-        },
-        casts: {
-          where: { deletedAt: null },
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            stageName: true,
-            publicAlias: true,
-            bio: true,
-            publicBio: true,
-            tags: true,
-            youtubeLinks: true,
-            languages: true,
-            birthMonth: true,
-            zodiacSign: true,
-            heightCm: true,
-            measurements: true,
-            hobbies: true,
-            hourlyRateVnd: true,
-            isPublic: true,
-            status: true,
-          },
-        },
-      },
-    });
-
-    if (!store) {
-      return {};
-    }
-
-    const payload = this.partnerListingDraftPayloadFromContent(draft, store);
     const data: Prisma.StoreUncheckedUpdateInput = {};
 
     if (payload.storeName) data.name = payload.storeName;
@@ -17417,8 +17634,8 @@ export class NightlifeDataService {
     if (payload.storeCity !== null) data.city = payload.storeCity;
     if (payload.storeDistrict !== null) data.district = payload.storeDistrict;
     const inferredAreaId = await this.inferAreaFromAddress(
-      payload.storeAddress ?? store.address ?? '',
-      payload.storeCity ?? store.city,
+      payload.storeAddress ?? request.store.address ?? '',
+      payload.storeCity ?? request.store.city,
       client,
     );
     if (inferredAreaId) data.areaId = inferredAreaId;
@@ -17426,10 +17643,12 @@ export class NightlifeDataService {
     if (payload.mapUrl !== null) data.mapUrl = payload.mapUrl;
     data.tags = payload.tags;
     if (payload.openingHours !== null) {
-      data.openingHours = this.toPrismaJson({
-        summary: payload.openingHours,
-        days: payload.openingHourItems,
-      });
+      data.openingHours = this.toPrismaJson(
+        this.partnerListingOpeningHoursRecord(
+          payload.openingHourItems,
+          payload.openingHours,
+        ),
+      );
     }
     if (
       payload.priceRange !== null ||
@@ -17721,6 +17940,8 @@ export class NightlifeDataService {
           slug: true,
           status: true,
           category: true,
+          partnerAccountId: true,
+          ownerId: true,
           mapUrl: true,
           description: true,
           address: true,
@@ -17731,8 +17952,36 @@ export class NightlifeDataService {
           pricingInfo: true,
           tags: true,
           media: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'asc' },
             select: {
+              id: true,
               url: true,
+              purpose: true,
+              type: true,
+              castId: true,
+            },
+          },
+          casts: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              stageName: true,
+              publicAlias: true,
+              bio: true,
+              publicBio: true,
+              tags: true,
+              youtubeLinks: true,
+              languages: true,
+              birthMonth: true,
+              zodiacSign: true,
+              heightCm: true,
+              measurements: true,
+              hobbies: true,
+              hourlyRateVnd: true,
+              isPublic: true,
+              status: true,
             },
           },
         },
@@ -17900,7 +18149,27 @@ export class NightlifeDataService {
     ) as unknown as Prisma.InputJsonObject;
   }
 
-  private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
+  private mapPartnerRequestRecord(
+    request: PartnerRequestCmsRecord,
+    listingPayload?: PartnerListingDraftPayload,
+  ) {
+    const businessName = listingPayload?.storeName ?? request.businessName;
+    const businessType =
+      listingPayload?.businessType ?? request.businessType;
+    const area = listingPayload?.area ?? request.area;
+    const storeDescription =
+      listingPayload?.description ?? request.storeDescription;
+    const storeAddress = listingPayload?.storeAddress ?? request.storeAddress;
+    const storeCity = listingPayload?.storeCity ?? request.storeCity;
+    const storeDistrict =
+      listingPayload?.storeDistrict ?? request.storeDistrict;
+    const openingHours =
+      listingPayload?.openingHours ?? request.openingHours;
+    const menuSummary = listingPayload?.menuSummary ?? request.menuSummary;
+    const mediaUrls = listingPayload?.mediaUrls?.length
+      ? listingPayload.mediaUrls
+      : this.uniqueMediaUrls(request.mediaUrls);
+
     return {
       id: request.id,
       requestType: request.id.startsWith('LISTING-')
@@ -17921,31 +18190,43 @@ export class NightlifeDataService {
       draftStoreId: request.store.id,
       draftStoreName: request.store.name,
       draftStoreSlug: request.store.slug,
-      draftStoreCategory: request.businessType || request.store.category,
-      draftStoreAddress: request.storeAddress,
-      draftStoreMenuSummary: request.menuSummary,
-      draftStoreMediaUrls: request.mediaUrls,
+      draftStoreCategory: businessType || request.store.category,
+      draftStoreAddress: storeAddress,
+      draftStoreMenuSummary: menuSummary,
+      draftStoreMediaUrls: mediaUrls,
       draftCastIds: request.draftCastIds,
       draftMediaIds: request.draftMediaIds,
       draftContentIds: request.draftContentIds,
       draftCastCount: request.draftCastIds.length,
-      draftMediaCount: request.draftMediaIds.length,
+      draftMediaCount: mediaUrls.length || request.draftMediaIds.length,
       draftContentCount: request.draftContentIds.length,
-      businessName: request.businessName,
-      businessType: request.businessType,
-      area: request.area,
+      businessName,
+      businessType,
+      area,
       contactName: request.contactName,
       contactPhone: request.contactPhone,
       contactEmail: request.contactEmail,
-      note: request.note,
-      storeDescription: request.storeDescription,
-      storeAddress: request.storeAddress,
-      storeCity: request.storeCity,
-      storeDistrict: request.storeDistrict,
-      mapUrl: request.store.mapUrl,
-      openingHours: request.openingHours,
-      menuSummary: request.menuSummary,
-      mediaUrls: request.mediaUrls,
+      note: listingPayload?.note ?? request.note,
+      storeDescription,
+      storeAddress,
+      storeCity,
+      storeDistrict,
+      ward: listingPayload?.ward ?? null,
+      streetAddress: listingPayload?.streetAddress ?? null,
+      phone: listingPayload?.phone ?? request.store.phone,
+      mapUrl: listingPayload?.mapUrl ?? request.store.mapUrl,
+      openingHours,
+      openingHourItems: listingPayload?.openingHourItems ?? [],
+      priceRange: listingPayload?.priceRange ?? null,
+      menuSummary,
+      menuGroups: listingPayload?.menuGroups ?? [],
+      tags: listingPayload?.tags ?? [],
+      coverImageUrl: listingPayload?.coverImageUrl ?? null,
+      galleryUrls: listingPayload?.galleryUrls ?? [],
+      videoUrls: listingPayload?.videoUrls ?? [],
+      pricingItems: listingPayload?.pricingItems ?? [],
+      mediaUrls,
+      listingDraft: listingPayload ?? null,
       originalStore: request.store
         ? {
             id: request.store.id,
@@ -17960,8 +18241,8 @@ export class NightlifeDataService {
             phone: request.store.phone,
             openingHours: request.store.openingHours,
             pricingInfo: request.store.pricingInfo,
-            tags: request.store.tags,
-            media: request.store.media,
+            tags: request.store.tags ?? [],
+            media: (request.store.media ?? []).filter((item) => !item.castId),
             mapUrl: request.store.mapUrl,
           }
         : null,
@@ -18010,6 +18291,59 @@ export class NightlifeDataService {
       request.storeCity,
       request.storeDistrict,
       ...this.partnerRequestCastTextValues(request.castProfiles),
+    ].some((value) => this.hasQuestionMarkEncodingCorruption(value));
+  }
+
+  private hasPartnerListingDraftPayloadEncodingCorruption(
+    payload: PartnerListingDraftPayload | null,
+    fallbackRequest: PartnerRequestCmsRecord,
+  ) {
+    if (!payload) {
+      return this.hasPartnerRequestEncodingCorruption(fallbackRequest);
+    }
+
+    const menuTexts = payload.menuGroups.flatMap((group) => [
+      group.name,
+      ...(group.items ?? []).flatMap((item) => [
+        item.name,
+        item.description,
+        item.priceTier,
+        item.imageUrl,
+      ]),
+    ]);
+    const openingTexts = payload.openingHourItems.flatMap((item) => [
+      item.day,
+      item.hours,
+    ]);
+
+    return [
+      payload.storeName,
+      payload.businessType,
+      payload.area,
+      payload.storeCity,
+      payload.storeDistrict,
+      payload.ward,
+      payload.streetAddress,
+      payload.storeAddress,
+      payload.phone,
+      payload.openingHours,
+      payload.priceRange,
+      payload.description,
+      payload.note,
+      payload.menuSummary,
+      payload.mapUrl,
+      payload.coverImageUrl,
+      ...payload.tags,
+      ...payload.galleryUrls,
+      ...payload.videoUrls,
+      ...payload.mediaUrls,
+      ...payload.pricingItems.flatMap((item) => [
+        item.label,
+        item.value,
+        item.note,
+      ]),
+      ...menuTexts,
+      ...openingTexts,
     ].some((value) => this.hasQuestionMarkEncodingCorruption(value));
   }
 
@@ -21514,7 +21848,10 @@ export class NightlifeDataService {
             },
             select: { id: true },
           },
-          media: true,
+          media: {
+            where: { deletedAt: null, castId: null },
+            orderBy: { createdAt: 'asc' },
+          },
           area: true,
           partnerAccount: {
             include: {
@@ -22337,7 +22674,10 @@ export class NightlifeDataService {
           },
           select: { id: true },
         },
-        media: true,
+        media: {
+          where: { deletedAt: null, castId: null },
+          orderBy: { createdAt: 'asc' },
+        },
         area: true,
         partnerAccount: {
           include: {
