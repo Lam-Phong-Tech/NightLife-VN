@@ -1617,7 +1617,16 @@ describe('NightlifeDataService', () => {
         tags: ['ktv'],
         languages: ['vi', 'ja'],
         hourlyRateVnd: 430000,
-        media: [],
+        media: [
+          {
+            url: 'https://example.com/mika-gallery.jpg',
+            purpose: 'cast-gallery',
+          },
+          {
+            url: 'https://example.com/mika-avatar.jpg',
+            purpose: 'CAST_AVATAR',
+          },
+        ],
         store: {
           id: 'store-hcm',
           name: 'Golden Voice KTV Quan 7',
@@ -1653,6 +1662,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         slug: 'mika-harbor-ktv',
         name: 'Mika',
+        thumbnailUrl: 'https://example.com/mika-avatar.jpg',
         distanceKm: expect.any(Number),
         store: expect.objectContaining({
           slug: 'golden-voice-ktv-quan-7',
@@ -1687,6 +1697,15 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    const findManyArgs = prisma.cast.findMany.mock.calls[0]?.[0] as {
+      select?: { media?: { where?: Record<string, unknown> } };
+    };
+    expect(findManyArgs.select?.media?.where).toEqual({
+      deletedAt: null,
+      access: 'PUBLIC',
+      status: 'READY',
+      type: 'IMAGE',
+    });
   });
 
   it('gets public cast detail by slug without exposing private fields', async () => {

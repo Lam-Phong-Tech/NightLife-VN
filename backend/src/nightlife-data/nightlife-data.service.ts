@@ -2433,7 +2433,6 @@ export class NightlifeDataService {
           media: {
             where: {
               deletedAt: null,
-              castId: null,
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
