@@ -18,6 +18,11 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/vi';
 import { DataSkeleton } from '@/components/ui/DataLoading';
 import { getVideoPreviewUrl } from '@/lib/media/video-preview';
+import {
+  CONTENT_IMAGE_ACCEPT,
+  getContentImageValidationError,
+} from '@/lib/media/image-upload-validation';
+import { deleteUploadedMedia } from '@/lib/api/media';
 import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
 
 dayjs.extend(customParseFormat);
@@ -1302,12 +1307,20 @@ export default function AdminContentPage() {
   };
 
   const handleDeleteBanner = async (bannerId: string) => {
+    const bannerMediaId = String(
+      asMetadata(
+        banners.find((banner) => banner.id === bannerId)?.metadata ?? null,
+      ).imageMediaId ?? '',
+    ).trim();
     feedback.showModal({
       title: 'Xóa banner',
       description: 'Bạn có chắc chắn muốn xóa banner này?',
       onPrimary: async () => {
         try {
           await contentApi.adminDelete(bannerId);
+          if (bannerMediaId) {
+            await deleteUploadedMedia(bannerMediaId).catch(() => undefined);
+          }
           fetchBanners();
           feedback.closeModal();
         } catch (e) {
@@ -1402,6 +1415,13 @@ export default function AdminContentPage() {
       feedback.showToast({ title: 'Vui lòng nhập tiêu đề banner!', tone: 'warning' });
       return;
     }
+    const previousMetadata = asMetadata(
+      banners.find((banner) => banner.id === editBannerId)?.metadata ?? null,
+    );
+    const previousMediaId = String(
+      previousMetadata.imageMediaId ?? '',
+    ).trim();
+    let uploadedMediaId: string | null = null;
     try {
       setIsSubmitting(true);
       
@@ -1411,16 +1431,15 @@ export default function AdminContentPage() {
         form.append('file', bannerImageFile);
         form.append('purpose', 'BANNER_GLOBAL');
         form.append('access', 'PUBLIC');
-        try {
-          const res = await apiFormDataClient<any>('/storage/upload', form);
-          if (res && res.url) {
-            finalImageUrl = res.url;
-          }
-        } catch (uploadErr) {
-          console.error('Failed to upload banner image:', uploadErr);
-          feedback.showToast({ title: 'Lỗi tải ảnh. Banner sẽ được lưu nhưng không có ảnh mới.', tone: 'error' });
+        const res = await apiFormDataClient<any>('/storage/upload', form);
+        if (!res?.url || !res?.id) {
+          throw new Error('Không lấy được thông tin ảnh banner sau khi tải lên.');
         }
+        uploadedMediaId = res.id;
+        finalImageUrl = res.url;
       }
+      const finalImageMediaId =
+        uploadedMediaId ?? (finalImageUrl ? previousMediaId || null : null);
 
       const payload = {
         title: bannerTitle,
@@ -1432,6 +1451,7 @@ export default function AdminContentPage() {
           link: bannerLinkedStore ? `/stores/${bannerLinkedStore.slug}` : (bannerLink.startsWith('/quan/') ? bannerLink.replace(/^\/quan\//, '/stores/') : bannerLink),
           linkedStore: bannerLinkedStore ? { id: bannerLinkedStore.id, name: bannerLinkedStore.name, slug: bannerLinkedStore.slug, category: bannerLinkedStore.category, area: bannerLinkedStore.area } : null,
           imageUrl: finalImageUrl,
+          imageMediaId: finalImageMediaId,
           statusLabel: bannerStatusLabel,
           subtitle: bannerSubtitle,
           description: bannerDescription,
@@ -1448,10 +1468,16 @@ export default function AdminContentPage() {
           slug: bannerTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
         });
       }
+      if (previousMediaId && previousMediaId !== finalImageMediaId) {
+        await deleteUploadedMedia(previousMediaId).catch(() => undefined);
+      }
       
       fetchBanners();
       closeDrawer();
     } catch (error: any) {
+      if (uploadedMediaId) {
+        await deleteUploadedMedia(uploadedMediaId).catch(() => undefined);
+      }
       console.error('Failed to save banner:', error);
       feedback.showToast({ title: error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu banner', tone: 'error' });
     } finally {
@@ -1473,6 +1499,13 @@ export default function AdminContentPage() {
       return;
     }
 
+    const previousMetadata = asMetadata(
+      blogs.find((blog) => blog.id === editBlogId)?.metadata ?? null,
+    );
+    const previousMediaId = String(
+      previousMetadata.imageMediaId ?? '',
+    ).trim();
+    let uploadedMediaId: string | null = null;
     try {
       setIsSubmitting(true);
       let finalImageUrl = coverImage && !coverImage.startsWith('blob:') ? coverImage : null;
@@ -1502,16 +1535,15 @@ export default function AdminContentPage() {
         form.append('access', 'PUBLIC');
         form.append('contentId', targetBlogId);
         
-        try {
-          const res = await apiFormDataClient<any>('/storage/upload', form);
-          if (res && res.url) {
-            finalImageUrl = res.url;
-          }
-        } catch (uploadErr) {
-          console.error('Failed to upload image:', uploadErr);
-          feedback.showToast({ title: 'Lỗi tải ảnh bìa. Bài viết vẫn sẽ được lưu nhưng không có ảnh bìa mới.', tone: 'error' });
+        const res = await apiFormDataClient<any>('/storage/upload', form);
+        if (!res?.url || !res?.id) {
+          throw new Error('Không lấy được thông tin ảnh bìa sau khi tải lên.');
         }
+        uploadedMediaId = res.id;
+        finalImageUrl = res.url;
       }
+      const finalImageMediaId =
+        uploadedMediaId ?? (finalImageUrl ? previousMediaId || null : null);
 
       const payload = {
         type: 'BLOG' as const,
@@ -1524,7 +1556,8 @@ export default function AdminContentPage() {
           category: blogCategory,
           language: blogLanguage,
           focusKeyword: blogFocusKeyword.trim(),
-          ...(finalImageUrl ? { image: finalImageUrl } : {}),
+          image: finalImageUrl,
+          imageMediaId: finalImageMediaId,
         }
       };
 
@@ -1533,10 +1566,16 @@ export default function AdminContentPage() {
       } else {
         await contentApi.adminCreate(payload);
       }
+      if (previousMediaId && previousMediaId !== finalImageMediaId) {
+        await deleteUploadedMedia(previousMediaId).catch(() => undefined);
+      }
       feedback.showToast({ title: status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!', tone: 'success' });
       fetchBlogs();
       closeDrawer();
     } catch (error: any) {
+      if (uploadedMediaId) {
+        await deleteUploadedMedia(uploadedMediaId).catch(() => undefined);
+      }
       console.error('Failed to save blog:', error);
       feedback.showToast({ title: error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu bài viết. Vui lòng thử lại!', tone: 'error' });
     } finally {
@@ -2600,15 +2639,21 @@ export default function AdminContentPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>ẢNH BANNER</div>
                 <input 
                   type="file" 
-                  accept="image/png, image/jpeg" 
+                  accept={CONTENT_IMAGE_ACCEPT}
                   style={{ display: 'none' }} 
                   id="banner-image-upload" 
                   onChange={(e) => { 
                     const file = e.target.files?.[0]; 
-                    if (file) { 
+                    if (file) {
+                      const validationError = getContentImageValidationError(file);
+                      if (validationError) {
+                        feedback.showToast({ title: validationError, tone: 'warning' });
+                        e.target.value = '';
+                        return;
+                      }
                       setBannerImageFile(file);
-                      setBannerImage(URL.createObjectURL(file)); 
-                    } 
+                      setBannerImage(URL.createObjectURL(file));
+                    }
                   }} 
                 />
                 <label htmlFor="banner-image-upload" style={{ display: 'block', cursor: 'pointer' }}>
@@ -2927,15 +2972,21 @@ export default function AdminContentPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ảnh bìa</div>
                 <input 
                   type="file" 
-                  accept="image/png, image/jpeg" 
+                  accept={CONTENT_IMAGE_ACCEPT}
                   style={{ display: 'none' }} 
                   id="cover-image-upload" 
                   onChange={(e) => { 
                     const file = e.target.files?.[0]; 
-                    if (file) { 
-                      setCoverImage(URL.createObjectURL(file)); 
-                      setCoverImageFile(file); 
-                    } 
+                    if (file) {
+                      const validationError = getContentImageValidationError(file);
+                      if (validationError) {
+                        feedback.showToast({ title: validationError, tone: 'warning' });
+                        e.target.value = '';
+                        return;
+                      }
+                      setCoverImage(URL.createObjectURL(file));
+                      setCoverImageFile(file);
+                    }
                   }} 
                 />
                 <label htmlFor="cover-image-upload" style={{ display: 'block', cursor: 'pointer' }}>

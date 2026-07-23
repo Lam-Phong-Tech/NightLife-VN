@@ -3,6 +3,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
+import {
+  ADMIN_VIDEO_ACCEPT,
+  getAdminVideoValidationError,
+  getStoreImageValidationError,
+  STORE_IMAGE_ACCEPT,
+} from '@/lib/media/image-upload-validation';
+import {
+  deleteUploadedMedia,
+  deleteUploadedMediaBatch,
+} from '@/lib/api/media';
 import { useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
@@ -412,6 +422,10 @@ function AdminCastsContent() {
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const albumUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
+  const castUploadScopePromiseRef = useRef<Promise<string | null> | null>(null);
+  const createdDraftCastIdRef = useRef<string | null>(null);
+  const newMediaIdsRef = useRef<Set<string>>(new Set());
+  const removedMediaIdsRef = useRef<Set<string>>(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingAlbum, setUploadingAlbum] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -663,7 +677,7 @@ function AdminCastsContent() {
     return imageList.find(isCastAvatarMedia) || imageList[0] || null;
   };
 
-  const closeDrawer = () => {
+  const resetDrawerState = () => {
     setPreviewImage(null);
     setSelectedCast(null);
     setIsAddingCast(false);
@@ -674,6 +688,35 @@ function AdminCastsContent() {
     setZodiacPickerOpen(false);
     setHobbyInput('');
     setTagInput('');
+  };
+
+  const closeDrawer = async () => {
+    const failedDeletes = await deleteUploadedMediaBatch(
+      newMediaIdsRef.current,
+    );
+    if (failedDeletes.length) {
+      showToast('Không thể dọn hết media vừa tải lên. Vui lòng thử lại.');
+    }
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+
+    const draftId = createdDraftCastIdRef.current;
+    createdDraftCastIdRef.current = null;
+    castUploadScopePromiseRef.current = null;
+    if (draftId) {
+      await apiClient(`/admin/casts/${draftId}`, { method: 'DELETE' }).catch(
+        () => undefined,
+      );
+    }
+    resetDrawerState();
+  };
+
+  const finishDrawerAfterSave = () => {
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftCastIdRef.current = null;
+    castUploadScopePromiseRef.current = null;
+    resetDrawerState();
   };
 
   const openNewDrawer = () => {
@@ -694,9 +737,17 @@ function AdminCastsContent() {
     setZodiacPickerOpen(false);
     setHobbyInput('');
     setTagInput('');
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftCastIdRef.current = null;
+    castUploadScopePromiseRef.current = null;
   };
 
   const openEditDrawer = (c: any) => {
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftCastIdRef.current = null;
+    castUploadScopePromiseRef.current = null;
     setFormData({
       stageName: c.stageName || '',
       storeId: c.storeId || '',
@@ -758,12 +809,36 @@ function AdminCastsContent() {
       },
     });
     setSelectedCast(draft);
+    createdDraftCastIdRef.current = draft.id;
     return draft.id;
   };
 
   const ensureCastUploadScope = async () => {
     if (selectedCast?.id) return selectedCast.id;
-    return createCastDraft();
+    if (createdDraftCastIdRef.current) return createdDraftCastIdRef.current;
+    if (!castUploadScopePromiseRef.current) {
+      castUploadScopePromiseRef.current = createCastDraft().finally(() => {
+        castUploadScopePromiseRef.current = null;
+      });
+    }
+    return castUploadScopePromiseRef.current;
+  };
+
+  const registerUploadedMedia = (mediaId?: string | null) => {
+    if (mediaId) newMediaIdsRef.current.add(mediaId);
+  };
+
+  const removeCastMedia = (media?: { id?: string | null } | null) => {
+    const mediaId = media?.id;
+    if (!mediaId) return;
+    if (newMediaIdsRef.current.delete(mediaId)) {
+      void deleteUploadedMedia(mediaId).catch(() => {
+        newMediaIdsRef.current.add(mediaId);
+        showToast('Không thể xóa media vừa tải lên.');
+      });
+      return;
+    }
+    removedMediaIdsRef.current.add(mediaId);
   };
 
   const saveCast = async () => {
@@ -813,7 +888,13 @@ function AdminCastsContent() {
         await apiClient(`/admin/casts/${selectedCast.id}`, { method: 'PATCH', data: payload });
         showToast('Đã cập nhật Cast!');
       }
-      closeDrawer();
+      const failedDeletes = await deleteUploadedMediaBatch(
+        removedMediaIdsRef.current,
+      );
+      if (failedDeletes.length) {
+        showToast('Đã lưu Cast nhưng chưa dọn được một số media đã gỡ.');
+      }
+      finishDrawerAfterSave();
       fetchCasts();
     } catch (e: any) {
       showToast(e.message || 'Lỗi khi lưu Cast');
@@ -826,7 +907,7 @@ function AdminCastsContent() {
     try {
       await apiClient(`/admin/casts/${selectedCast.id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
       showToast(hard ? 'Đã xóa vĩnh viễn cast' : 'Đã xóa mềm cast');
-      closeDrawer();
+      finishDrawerAfterSave();
       fetchCasts();
     } catch (e: any) {
       showToast(e.message || 'Lỗi khi xóa Cast');
@@ -836,6 +917,12 @@ function AdminCastsContent() {
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = getStoreImageValidationError(file);
+    if (validationError) {
+      showToast(validationError);
+      e.target.value = '';
+      return;
+    }
     try {
       setUploadingImage(true);
       const form = new FormData();
@@ -848,6 +935,8 @@ function AdminCastsContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
+        removeCastMedia(avatarImage);
+        registerUploadedMedia(res.id);
         setAvatarImage({ id: res.id, url: res.url, type: 'IMAGE', purpose: 'CAST_AVATAR' });
         showToast('Tải ảnh đại diện thành công');
       }
@@ -855,6 +944,7 @@ function AdminCastsContent() {
       showToast('Lỗi tải ảnh: ' + err.message);
     } finally {
       setUploadingImage(false);
+      e.target.value = '';
     } 
   };
 
@@ -868,11 +958,12 @@ function AdminCastsContent() {
       return;
     }
 
-    const validFiles = Array.from(files).filter(f => f.size <= 15 * 1024 * 1024);
-    if (validFiles.length < files.length) {
-      showToast('Một số ảnh vượt quá 15MB đã bị loại bỏ!');
-    }
-    if (validFiles.length === 0) {
+    const selectedFiles = Array.from(files);
+    const validationError = selectedFiles
+      .map(getStoreImageValidationError)
+      .find((message): message is string => Boolean(message));
+    if (validationError) {
+      showToast(validationError);
       if (albumUploadRef.current) albumUploadRef.current.value = '';
       return;
     }
@@ -880,23 +971,32 @@ function AdminCastsContent() {
     try {
       setUploadingAlbum(true);
       
-      const uploadPromises = validFiles.map(async (file) => {
+      const castId = await ensureCastUploadScope();
+      if (!castId) return;
+      const uploadPromises = selectedFiles.map(async (file) => {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'CAST_PHOTO');
         form.append('access', 'PUBLIC');
-        const castId = await ensureCastUploadScope();
-        if (!castId) return null;
         form.append('castId', castId);
         return apiFormDataClient<any>('/storage/upload', form);
       });
 
-      const results = await Promise.all(uploadPromises);
-      const newAlbums = results.filter(Boolean).filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'IMAGE' }));
+      const results = await Promise.allSettled(uploadPromises);
+      const uploadedResults = results.flatMap((result) =>
+        result.status === 'fulfilled' && result.value ? [result.value] : [],
+      );
+      uploadedResults.forEach((result) => registerUploadedMedia(result.id));
+      const newAlbums = uploadedResults
+        .filter((res) => res.id)
+        .map((res) => ({ id: res.id, url: res.url, type: 'IMAGE' }));
       
       if (newAlbums.length > 0) {
         setAlbums(prev => [...prev, ...newAlbums]);
         showToast(`Tải lên ${newAlbums.length} ảnh thành công`);
+      }
+      if (results.some((result) => result.status === 'rejected')) {
+        showToast('Một số ảnh không tải lên được. Các ảnh thành công vẫn được giữ.');
       }
     } catch (err: any) {
       showToast('Lỗi tải ảnh: ' + err.message);
@@ -909,26 +1009,44 @@ function AdminCastsContent() {
   const handleUploadVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    const selectedFiles = Array.from(files);
+    const validationError = selectedFiles
+      .map(getAdminVideoValidationError)
+      .find((message): message is string => Boolean(message));
+    if (validationError) {
+      showToast(validationError);
+      e.target.value = '';
+      return;
+    }
     try {
       setUploadingVideo(true);
-      
-      const uploadPromises = Array.from(files).map(async (file) => {
+
+      const castId = await ensureCastUploadScope();
+      if (!castId) return;
+      const uploadPromises = selectedFiles.map(async (file) => {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'CAST_VIDEO');
         form.append('access', 'PUBLIC');
-        const castId = await ensureCastUploadScope();
-        if (!castId) return null;
         form.append('castId', castId);
         return apiFormDataClient<any>('/storage/upload', form);
       });
 
-      const results = await Promise.all(uploadPromises);
-      const newVideos = results.filter(Boolean).filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'VIDEO' }));
+      const results = await Promise.allSettled(uploadPromises);
+      const uploadedResults = results.flatMap((result) =>
+        result.status === 'fulfilled' && result.value ? [result.value] : [],
+      );
+      uploadedResults.forEach((result) => registerUploadedMedia(result.id));
+      const newVideos = uploadedResults
+        .filter((res) => res.id)
+        .map((res) => ({ id: res.id, url: res.url, type: 'VIDEO' }));
       
       if (newVideos.length > 0) {
         setVideos(prev => [...prev, ...newVideos]);
         showToast(`Tải lên ${newVideos.length} video thành công`);
+      }
+      if (results.some((result) => result.status === 'rejected')) {
+        showToast('Một số video không tải lên được. Các video thành công vẫn được giữ.');
       }
     } catch (err: any) {
       showToast('Lỗi tải video: ' + err.message);
@@ -1826,7 +1944,7 @@ function AdminCastsContent() {
                       </button>
                     )}
                   </div>
-                  <input type="file" ref={imageUploadRef} style={{ display: 'none' }} accept="image/*" onChange={handleUploadImage} />
+                  <input type="file" ref={imageUploadRef} style={{ display: 'none' }} accept={STORE_IMAGE_ACCEPT} onChange={handleUploadImage} />
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
@@ -1838,7 +1956,7 @@ function AdminCastsContent() {
                         onClick={() => setPreviewImage({ url: avatarImage.url, label: 'Ảnh đại diện' })}
                         style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${avatarImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
                       />
-                      <button type="button" aria-label="Xóa ảnh đại diện" onClick={() => setAvatarImage(null)} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button type="button" aria-label="Xóa ảnh đại diện" onClick={() => { removeCastMedia(avatarImage); setAvatarImage(null); }} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
                       </button>
                     </div>
@@ -1863,7 +1981,7 @@ function AdminCastsContent() {
                       <Upload size={14} /> Thêm ảnh
                     </button>
                   </div>
-                  <input type="file" ref={albumUploadRef} style={{ display: 'none' }} accept="image/*" multiple onChange={handleUploadAlbum} />
+                  <input type="file" ref={albumUploadRef} style={{ display: 'none' }} accept={STORE_IMAGE_ACCEPT} multiple onChange={handleUploadAlbum} />
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
@@ -1878,7 +1996,7 @@ function AdminCastsContent() {
                         onClick={() => setPreviewImage({ url: m.url, label: `Ảnh album ${i + 1}` })}
                         style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${m.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
                       />
-                      <button type="button" aria-label={`Xóa ảnh album ${i + 1}`} onClick={() => setAlbums(albums.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button type="button" aria-label={`Xóa ảnh album ${i + 1}`} onClick={() => { removeCastMedia(m); setAlbums(albums.filter((_, idx) => idx !== i)); }} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
                       </button>
                     </div>
@@ -1903,7 +2021,7 @@ function AdminCastsContent() {
                       <Upload size={14} /> Thêm video
                     </button>
                   </div>
-                  <input type="file" ref={videoUploadRef} style={{ display: 'none' }} accept="video/*" multiple onChange={handleUploadVideo} />
+                  <input type="file" ref={videoUploadRef} style={{ display: 'none' }} accept={ADMIN_VIDEO_ACCEPT} multiple onChange={handleUploadVideo} />
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
@@ -1913,7 +2031,7 @@ function AdminCastsContent() {
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                          <Play size={24} fill="rgba(255,255,255,0.7)" color="rgba(255,255,255,0.7)" />
                       </div>
-                      <button onClick={() => setVideos(videos.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button onClick={() => { removeCastMedia(v); setVideos(videos.filter((_, idx) => idx !== i)); }} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
                       </button>
                     </div>

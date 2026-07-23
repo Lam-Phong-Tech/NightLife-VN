@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -26,18 +27,10 @@ import type * as express from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaResponseDto } from './dto/storage-response.dto';
 import { StorageService } from './storage.service';
+import { MAX_VIDEO_UPLOAD_SIZE_BYTES, uploadMimeTypes } from './upload-policy';
 
-const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/svg+xml',
-  'image/webp',
-  'image/gif',
-  'video/mp4',
-  'video/webm',
-  'application/pdf',
-]);
+const MAX_UPLOAD_SIZE_BYTES = MAX_VIDEO_UPLOAD_SIZE_BYTES;
+const ALLOWED_MIME_TYPES = new Set<string>(uploadMimeTypes);
 
 type RequestWithUser = express.Request & {
   user: {
@@ -112,7 +105,12 @@ export class StorageController {
         fileSize: MAX_UPLOAD_SIZE_BYTES,
       },
       fileFilter: (_request, file, callback) => {
-        if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+        const declaredMimeType = file.mimetype.trim().toLowerCase();
+        if (
+          declaredMimeType &&
+          declaredMimeType !== 'application/octet-stream' &&
+          !ALLOWED_MIME_TYPES.has(declaredMimeType)
+        ) {
           callback(
             new BadRequestException(
               'Unsupported file type. Upload image, SVG, video, or PDF files only.',
@@ -167,7 +165,7 @@ export class StorageController {
     @Body('billId') billId?: string,
     @Body('contentId') contentId?: string,
   ) {
-    if (!url) {
+    if (!url?.trim()) {
       throw new BadRequestException('URL is required');
     }
     return this.storageService.saveExternalUrl(url, {
@@ -181,6 +179,18 @@ export class StorageController {
       billId,
       contentId,
     });
+  }
+
+  @ApiOperation({ summary: 'Xóa media đã tải lên và file vật lý tương ứng' })
+  @ApiOkResponse({ description: 'Media đã được xóa' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete('media/:mediaId')
+  deleteMedia(
+    @Param('mediaId') mediaId: string,
+    @Req() request: RequestWithUser,
+  ) {
+    return this.storageService.deleteMedia(mediaId, request.user);
   }
 
   @ApiOperation({ summary: 'Truy xuất file public' })

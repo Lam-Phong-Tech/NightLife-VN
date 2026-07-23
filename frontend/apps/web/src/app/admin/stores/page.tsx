@@ -10,9 +10,15 @@ import { getAuthUser } from '@/lib/auth/session';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { DataSkeleton } from '@/components/ui/DataLoading';
 import {
+  ADMIN_VIDEO_ACCEPT,
+  getAdminVideoValidationError,
   getStoreImageValidationError,
   STORE_IMAGE_ACCEPT,
 } from '@/lib/media/image-upload-validation';
+import {
+  deleteUploadedMedia,
+  deleteUploadedMediaBatch,
+} from '@/lib/api/media';
 import {
   normalizeStoreName,
   normalizeStorePhone,
@@ -577,6 +583,10 @@ function AdminStoresContent() {
   const coverImageUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
   const menuImageUploadRef = useRef<HTMLInputElement>(null);
+  const storeUploadScopePromiseRef = useRef<Promise<string> | null>(null);
+  const createdDraftStoreIdRef = useRef<string | null>(null);
+  const newMediaIdsRef = useRef<Set<string>>(new Set());
+  const removedMediaIdsRef = useRef<Set<string>>(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverImage, setCoverImage] = useState<any>(null);
@@ -710,14 +720,36 @@ function AdminStoresContent() {
   };
 
   const closeDrawer = async () => {
-    if (isDraftStore && venueSel && venueSel !== 'new' && (!formData.name || formData.name.startsWith('Draft store '))) {
-      try {
-        await apiClient(`/admin/stores/${venueSel}?hard=true`, { method: 'DELETE' });
-        fetchStores();
-      } catch (e) {
-        console.error('Failed to cleanup empty draft store:', e);
-      }
+    const failedDeletes = await deleteUploadedMediaBatch(
+      newMediaIdsRef.current,
+    );
+    if (failedDeletes.length) {
+      showToast('Không thể dọn hết media vừa tải lên. Vui lòng thử lại.');
     }
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+
+    const draftId = createdDraftStoreIdRef.current;
+    createdDraftStoreIdRef.current = null;
+    storeUploadScopePromiseRef.current = null;
+    if (draftId) {
+      await apiClient(`/admin/stores/${draftId}?hard=false`, {
+        method: 'DELETE',
+      }).catch((error) => {
+        console.error('Failed to cleanup draft store:', error);
+      });
+      void fetchStores();
+    }
+    setVenueSel(null);
+    setIsDraftStore(false);
+    setPartnerLinkEditing(false);
+  };
+
+  const finishDrawerAfterSave = () => {
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftStoreIdRef.current = null;
+    storeUploadScopePromiseRef.current = null;
     setVenueSel(null);
     setIsDraftStore(false);
     setPartnerLinkEditing(false);
@@ -738,6 +770,10 @@ function AdminStoresContent() {
   };
 
   const openNewDrawer = () => {
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftStoreIdRef.current = null;
+    storeUploadScopePromiseRef.current = null;
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setNameTouched(false);
     setPhoneTouched(false);
@@ -764,6 +800,10 @@ function AdminStoresContent() {
   };
 
   const openEditDrawer = (st: any) => {
+    newMediaIdsRef.current.clear();
+    removedMediaIdsRef.current.clear();
+    createdDraftStoreIdRef.current = null;
+    storeUploadScopePromiseRef.current = null;
     const mapStatusToEnum = (s: string) => {
       if (s === 'Đang hoạt động' || s === 'active' || s === 'ACTIVE') return 'ACTIVE';
       if (s === 'Đang ẩn' || s === 'hidden' || s === 'SUSPENDED') return 'SUSPENDED';
@@ -839,11 +879,38 @@ function AdminStoresContent() {
 
   const ensureStoreUploadScope = async () => {
     if (venueSel && venueSel !== 'new') return venueSel;
+    if (createdDraftStoreIdRef.current) return createdDraftStoreIdRef.current;
 
-    const draft = await createStoreDraft();
-    setVenueSel(draft.id);
-    setIsDraftStore(true);
-    return draft.id;
+    if (!storeUploadScopePromiseRef.current) {
+      storeUploadScopePromiseRef.current = createStoreDraft()
+        .then((draft) => {
+          createdDraftStoreIdRef.current = draft.id;
+          setVenueSel(draft.id);
+          setIsDraftStore(true);
+          return draft.id;
+        })
+        .finally(() => {
+          storeUploadScopePromiseRef.current = null;
+        });
+    }
+    return storeUploadScopePromiseRef.current;
+  };
+
+  const registerUploadedMedia = (mediaId?: string | null) => {
+    if (mediaId) newMediaIdsRef.current.add(mediaId);
+  };
+
+  const markStoreMediaRemoved = (media?: { id?: string | null } | null) => {
+    const mediaId = media?.id;
+    if (!mediaId) return;
+    if (newMediaIdsRef.current.delete(mediaId)) {
+      void deleteUploadedMedia(mediaId).catch(() => {
+        newMediaIdsRef.current.add(mediaId);
+        showToast('Không thể xóa media vừa tải lên.');
+      });
+      return;
+    }
+    removedMediaIdsRef.current.add(mediaId);
   };
 
   const saveStore = async () => {
@@ -888,6 +955,9 @@ function AdminStoresContent() {
          else finalCity = pName;
       }
 
+      const menuMediaIds = menuGroups.flatMap((group) =>
+        (group.items || []).map((item: any) => item.mediaId),
+      );
       const payload = {
         ...formData,
         name: normalizedName,
@@ -899,7 +969,16 @@ function AdminStoresContent() {
         partnerAccountId: partnerAccountId || null,
         openingHours: openingHourValidation.normalizedHours,
         pricingInfo: { groups: serializeMenuGroupsForPricing(menuGroups) },
-        mediaIds: Array.from(new Set([coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)))
+        mediaIds: Array.from(
+          new Set(
+            [
+              coverImage?.id,
+              ...albums.map((album) => album.id),
+              ...videos.map((video) => video.id),
+              ...menuMediaIds,
+            ].filter(Boolean),
+          ),
+        ),
       };
       
       if (venueSel === 'new') {
@@ -921,8 +1000,13 @@ function AdminStoresContent() {
         await apiClient(`/admin/stores/${venueSel}`, { method: 'PATCH', data: payload });
         showToast('Đã lưu thay đổi!');
       }
-      setIsDraftStore(false);
-      closeDrawer();
+      const failedDeletes = await deleteUploadedMediaBatch(
+        removedMediaIdsRef.current,
+      );
+      if (failedDeletes.length) {
+        showToast('Đã lưu quán nhưng chưa dọn được một số media đã gỡ.');
+      }
+      finishDrawerAfterSave();
       fetchStores();
     } catch (e: any) {
       showToast(e.message || 'Có lỗi xảy ra khi lưu');
@@ -943,6 +1027,12 @@ function AdminStoresContent() {
   const handleUploadVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = getAdminVideoValidationError(file);
+    if (validationError) {
+      showToast(validationError);
+      e.target.value = '';
+      return;
+    }
     try {
       setUploadingVideo(true);
       const form = new FormData();
@@ -953,6 +1043,7 @@ function AdminStoresContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
+        registerUploadedMedia(res.id);
         setVideos(prev => dedupeMediaItems([...prev, { id: res.id, title: file.name, url: res.url, meta: 'Mới tải lên', thumb: res.url }]));
         showToast('Tải video lên thành công');
       }
@@ -960,6 +1051,7 @@ function AdminStoresContent() {
       showToast('Lỗi tải video: ' + err.message);
     } finally {
       setUploadingVideo(false);
+      e.target.value = '';
     } 
   };
 
@@ -993,6 +1085,7 @@ function AdminStoresContent() {
         }
       });
       if (res && res.id) {
+        registerUploadedMedia(res.id);
         setVideos(prev => dedupeMediaItems([...prev, { id: res.id, title: url, url: res.url || url, meta: 'YouTube', thumb: url }]));
         showToast('Thêm video YouTube thành công');
       }
@@ -1024,7 +1117,13 @@ function AdminStoresContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.url) {
+        const previousMenuItem = menuGroups
+          .flatMap((group) => group.items || [])
+          .find((item: any) => item.id === uploadingMenuImageId);
+        markStoreMediaRemoved({ id: previousMenuItem?.mediaId });
+        registerUploadedMedia(res.id);
         updateMenuItem(uploadingMenuImageId, 'thumb', res.url);
+        updateMenuItem(uploadingMenuImageId, 'mediaId', res.id);
         showToast('Tải ảnh món ăn thành công');
       }
     } catch (err: any) {
@@ -1060,6 +1159,8 @@ function AdminStoresContent() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
+        markStoreMediaRemoved(coverImage);
+        registerUploadedMedia(res.id);
         setCoverImage(res);
       } else {
         showToast('Lỗi tải lên ảnh bìa');
@@ -1096,15 +1197,17 @@ function AdminStoresContent() {
     try {
       setUploadingImage(true);
       const uploaded: any[] = [];
+      const storeId = await ensureStoreUploadScope();
       for (const file of selectedFiles) {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');
         form.append('access', 'PUBLIC');
-        form.append('storeId', await ensureStoreUploadScope());
+        form.append('storeId', storeId);
         
         const res = await apiFormDataClient<any>('/storage/upload', form);
         if (res && res.id) {
+          registerUploadedMedia(res.id);
           uploaded.push({ id: res.id, url: res.url });
         }
       }
@@ -1146,8 +1249,16 @@ function AdminStoresContent() {
     }));
   };
 
-  const removeVideo = (id: string) => setVideos(prev => prev.filter(v => v.id !== id));
+  const removeVideo = (id: string) => {
+    const media = videos.find((video) => video.id === id);
+    markStoreMediaRemoved(media);
+    setVideos(prev => prev.filter(v => v.id !== id));
+  };
   const removeMenu = (id: string) => {
+    const menuItem = menuGroups
+      .flatMap((group) => group.items || [])
+      .find((item: any) => item.id === id);
+    markStoreMediaRemoved({ id: menuItem?.mediaId });
     setMenuGroups(prev => prev.map(g => {
       if (g.id === activeMenuGroupId) {
         return { ...g, items: g.items.filter((mi: any) => mi.id !== id) };
@@ -1155,7 +1266,11 @@ function AdminStoresContent() {
       return g;
     }));
   };
-  const removeAlbum = (id: string) => setAlbums(prev => prev.filter(a => a.id !== id));
+  const removeAlbum = (id: string) => {
+    const media = albums.find((album) => album.id === id);
+    markStoreMediaRemoved(media);
+    setAlbums(prev => prev.filter(a => a.id !== id));
+  };
 
   const updateForm = (key: string, val: string) => setFormData(p => ({ ...p, [key]: val }));
   const updateHour = (day: string, key: string, val: any) => setHoursForm((p: any) => ({ ...p, [day]: { ...p[day], [key]: val } }));
@@ -1787,7 +1902,7 @@ function AdminStoresContent() {
                   </>
                 )}
                 {coverImage?.url && (
-                  <span onClick={(e) => { e.stopPropagation(); setCoverImage(null); }} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', zIndex: 10 }} title="Xóa ảnh bìa">
+                  <span onClick={(e) => { e.stopPropagation(); markStoreMediaRemoved(coverImage); setCoverImage(null); }} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', zIndex: 10 }} title="Xóa ảnh bìa">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                   </span>
                 )}
@@ -1853,7 +1968,7 @@ function AdminStoresContent() {
                   </div>
                   <div onClick={() => videoUploadRef.current?.click()} style={{ width: '44px', flex: 'none', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer', opacity: uploadingVideo ? 0.5 : 1 }} title="Tải video từ máy">
                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                     <input type="file" accept="video/*" hidden ref={videoUploadRef} onChange={handleUploadVideo} />
+                     <input type="file" accept={ADMIN_VIDEO_ACCEPT} hidden ref={videoUploadRef} onChange={handleUploadVideo} />
                   </div>
                 </div>
               </div>
@@ -1872,6 +1987,9 @@ function AdminStoresContent() {
                           style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '80px' }}
                         />
                         <span onClick={() => {
+                          g.items?.forEach((item: any) =>
+                            markStoreMediaRemoved({ id: item.mediaId }),
+                          );
                           const newGroups = menuGroups.filter(pg => pg.id !== g.id);
                           setMenuGroups(newGroups);
                           if (activeMenuGroupId === g.id && newGroups.length > 0) setActiveMenuGroupId(newGroups[0].id);

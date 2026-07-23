@@ -53,6 +53,12 @@ import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
 import { InlineLoading, TableLoadingRows } from '@/components/ui/DataLoading';
 import { validateStoreName, validateVietnamStorePhone } from '@/lib/store-form-validation';
+import {
+  ADMIN_VIDEO_ACCEPT,
+  getAdminVideoValidationError,
+  getStoreImageValidationError,
+  STORE_IMAGE_ACCEPT,
+} from '@/lib/media/image-upload-validation';
 
 const colors = {
   bg: 'var(--partner-bg, #0c0c0f)',
@@ -1358,25 +1364,6 @@ const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'store', label: 'Thông tin quán' },
   { key: 'cast', label: 'Cast' },
 ];
-
-const listingUploadLimits = {
-  image: 15 * 1024 * 1024,
-  video: 25 * 1024 * 1024,
-};
-
-const listingImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp', 'image/gif']);
-const listingVideoMimeTypes = new Set(['video/mp4', 'video/webm']);
-const listingImageExtensions = ['.jpg', '.jpeg', '.png', '.svg', '.webp', '.gif'];
-const listingVideoExtensions = ['.mp4', '.webm'];
-
-const isAllowedListingFile = (file: File, kind: 'image' | 'video') => {
-  const name = file.name.toLowerCase();
-  if (kind === 'image') {
-    return listingImageMimeTypes.has(file.type) || listingImageExtensions.some((ext) => name.endsWith(ext));
-  }
-
-  return listingVideoMimeTypes.has(file.type) || listingVideoExtensions.some((ext) => name.endsWith(ext));
-};
 
 const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'scan', label: 'Quét mã QR', icon: QrCode },
@@ -4612,22 +4599,15 @@ export default function PartnerPage() {
       return;
     }
 
-    const invalidFile = files.find((file) => !isAllowedListingFile(file, options.kind));
-    if (invalidFile) {
-      setListingNotice(
+    const validationError = files
+      .map((file) =>
         options.kind === 'image'
-          ? `File ${invalidFile.name} không đúng định dạng. Chỉ nhận JPG, PNG, WebP, GIF hoặc SVG.`
-          : `File ${invalidFile.name} không đúng định dạng. Chỉ nhận MP4 hoặc WebM.`,
-      );
-      return;
-    }
-
-    const limit = listingUploadLimits[options.kind];
-    const oversizedFile = files.find((file) => file.size > limit);
-    if (oversizedFile) {
-      setListingNotice(
-        `${oversizedFile.name} vượt quá dung lượng ${options.kind === 'image' ? '15MB' : '25MB'}.`,
-      );
+          ? getStoreImageValidationError(file)
+          : getAdminVideoValidationError(file),
+      )
+      .find((message): message is string => Boolean(message));
+    if (validationError) {
+      setListingNotice(validationError);
       return;
     }
 
@@ -4699,8 +4679,8 @@ export default function PartnerPage() {
           type="file"
           accept={
             options.kind === 'image'
-              ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
-              : 'video/mp4,video/webm'
+              ? STORE_IMAGE_ACCEPT
+              : ADMIN_VIDEO_ACCEPT
           }
           multiple={options.multiple}
           disabled={isDisabled}
@@ -4774,8 +4754,8 @@ export default function PartnerPage() {
           type="file"
           accept={
             options.kind === 'image'
-              ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
-              : 'video/mp4,video/webm'
+              ? STORE_IMAGE_ACCEPT
+              : ADMIN_VIDEO_ACCEPT
           }
           multiple={options.multiple}
           disabled={isDisabled}
@@ -4896,7 +4876,7 @@ export default function PartnerPage() {
             <span>{isBusy ? 'Đang tải...' : imageUrl ? 'Đổi ảnh' : 'Tải ảnh món từ máy'}</span>
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+              accept={STORE_IMAGE_ACCEPT}
               disabled={isDisabled}
               onChange={(event) => {
                 const files = Array.from(event.currentTarget.files ?? []);
@@ -7027,7 +7007,7 @@ export default function PartnerPage() {
                   <input 
                     id={uploadKey}
                     type="file" 
-                    accept="image/*" 
+                    accept={STORE_IMAGE_ACCEPT}
                     disabled={isDisabled} 
                     style={{ display: 'none' }}
                     onChange={(event) => {

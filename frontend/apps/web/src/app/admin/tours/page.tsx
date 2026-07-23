@@ -12,6 +12,10 @@ import {
   TOUR_COVER_IMAGE_ACCEPT,
 } from '@/lib/media/image-upload-validation';
 import {
+  deleteUploadedMedia,
+  type UploadedMedia,
+} from '@/lib/api/media';
+import {
   collectTourDepartureTimes,
   createDefaultTourDepartureSchedule,
   defaultTourDepartureSlot,
@@ -216,6 +220,7 @@ function AdminToursContent() {
   const [isSearchingVenues, setIsSearchingVenues] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingCoverMediaIdRef = useRef<string | null>(null);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -288,12 +293,19 @@ function AdminToursContent() {
     };
   }, [venueSearch]);
 
-  const closeDrawer = () => {
+  const closeDrawer = async () => {
+    if (pendingCoverMediaIdRef.current) {
+      await deleteUploadedMedia(pendingCoverMediaIdRef.current).catch(
+        () => undefined,
+      );
+      pendingCoverMediaIdRef.current = null;
+    }
     setTourSel(null);
     setVenueSearch('');
   };
 
   const openNewDrawer = () => {
+    pendingCoverMediaIdRef.current = null;
     setFormData({
       title: '',
       subtitle: '',
@@ -309,6 +321,7 @@ function AdminToursContent() {
   };
 
   const openEditDrawer = async (tourId: string) => {
+    pendingCoverMediaIdRef.current = null;
     try {
       const tour = await apiClient<any>(`/admin/tours/${tourId}`);
       if (tour) {
@@ -358,9 +371,16 @@ function AdminToursContent() {
       form.append('file', file);
       form.append('purpose', 'TOUR_COVER');
       form.append('access', 'PUBLIC');
-      const res = await apiFormDataClient<{ url: string }>('/storage/upload', form);
-      if (res && res.url) {
-        setFormData(prev => ({ ...prev, coverUrl: res.url }));
+      const res = await apiFormDataClient<UploadedMedia>('/storage/upload', form);
+      if (res?.url && res.id) {
+        if (pendingCoverMediaIdRef.current) {
+          await deleteUploadedMedia(pendingCoverMediaIdRef.current).catch(
+            () => undefined,
+          );
+        }
+        const uploadedUrl = res.url;
+        pendingCoverMediaIdRef.current = res.id;
+        setFormData(prev => ({ ...prev, coverUrl: uploadedUrl }));
         showToast('Tải ảnh bìa thành công');
       }
     } catch (err: unknown) {
@@ -479,7 +499,9 @@ function AdminToursContent() {
         showToast('Đã lưu thông tin Tour thành công!');
       }
 
-      closeDrawer();
+      pendingCoverMediaIdRef.current = null;
+      setTourSel(null);
+      setVenueSearch('');
       fetchTours();
     } catch (e: any) {
       showToast(e.message || 'Lỗi khi lưu Tour');
@@ -731,7 +753,14 @@ function AdminToursContent() {
                       <div style={{ fontSize: '10.5px', color: '#8c8679', marginBottom: '4px' }}>Gán liên kết hình ảnh (URL)</div>
                       <input 
                         value={formData.coverUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, coverUrl: e.target.value }))}
+                        onChange={(e) => {
+                          if (pendingCoverMediaIdRef.current) {
+                            const pendingId = pendingCoverMediaIdRef.current;
+                            pendingCoverMediaIdRef.current = null;
+                            void deleteUploadedMedia(pendingId).catch(() => undefined);
+                          }
+                          setFormData(prev => ({ ...prev, coverUrl: e.target.value }));
+                        }}
                         placeholder="https://images.unsplash.com/..."
                         style={{ 
                           ...boxS, 
@@ -765,7 +794,14 @@ function AdminToursContent() {
                         />
                       </div>
                       {formData.coverUrl && (
-                        <span onClick={() => setFormData(prev => ({ ...prev, coverUrl: '' }))} style={{ fontSize: '11.5px', color: '#e88b99', cursor: 'pointer', fontWeight: 600 }}>Xoá ảnh bìa</span>
+                        <span onClick={() => {
+                          if (pendingCoverMediaIdRef.current) {
+                            const pendingId = pendingCoverMediaIdRef.current;
+                            pendingCoverMediaIdRef.current = null;
+                            void deleteUploadedMedia(pendingId).catch(() => undefined);
+                          }
+                          setFormData(prev => ({ ...prev, coverUrl: '' }));
+                        }} style={{ fontSize: '11.5px', color: '#e88b99', cursor: 'pointer', fontWeight: 600 }}>Xoá ảnh bìa</span>
                       )}
                     </div>
                   </div>

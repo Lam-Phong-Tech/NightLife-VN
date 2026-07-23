@@ -3,6 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { normalizeAppearanceConfig } from '@/lib/api/appearance';
+import {
+  APPEARANCE_IMAGE_ACCEPT,
+  getAppearanceImageValidationError,
+} from '@/lib/media/image-upload-validation';
+import {
+  deleteUploadedMediaBatch,
+  type UploadedMedia,
+} from '@/lib/api/media';
 
 const ICONS: Record<string, string> = {
   pin: '<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
@@ -297,6 +305,7 @@ export default function AppearancePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const iconUploadInputRef = useRef<HTMLInputElement>(null);
   const logoUploadInputRef = useRef<HTMLInputElement>(null);
+  const pendingAppearanceMediaRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     async function loadConfig() {
@@ -353,7 +362,9 @@ export default function AppearancePage() {
   titles.forEach((t, i) => { const sv = saved.titles[i]; if (!sv || sv.label !== t.label) changedCount++; });
   if (brandChanged) changedCount++;
 
-  const handleUndoAll = () => {
+  const handleUndoAll = async () => {
+    await deleteUploadedMediaBatch(pendingAppearanceMediaRef.current.keys());
+    pendingAppearanceMediaRef.current.clear();
     setQuick([...saved.quick]);
     setNav([...saved.nav]);
     setTitles([...saved.titles]);
@@ -369,6 +380,18 @@ export default function AppearancePage() {
         method: 'PUT',
         data: { value: dataToSave }
       });
+      const usedMediaUrls = new Set([
+        dataToSave.brand.logoUrl,
+        ...dataToSave.quick.map((item) => item.icon),
+        ...dataToSave.nav.map((item) => item.icon),
+      ]);
+      const unusedMediaIds = Array.from(
+        pendingAppearanceMediaRef.current.entries(),
+      )
+        .filter(([, url]) => !usedMediaUrls.has(url))
+        .map(([mediaId]) => mediaId);
+      await deleteUploadedMediaBatch(unusedMediaIds);
+      pendingAppearanceMediaRef.current.clear();
       setSavedState(currentStateStr);
       showToast('Đã lưu thành công và áp dụng giao diện');
     } catch (err) {
@@ -382,16 +405,9 @@ export default function AppearancePage() {
   const uploadLogoFile = async (file?: File) => {
     if (!file) return;
 
-    const fileName = file.name.toLowerCase();
-    const isSvg = file.type === 'image/svg+xml' || fileName.endsWith('.svg');
-    const isPng = file.type === 'image/png' || fileName.endsWith('.png');
-    if (!isSvg && !isPng) {
-      showToast('Chỉ nhận file SVG hoặc PNG.');
-      return;
-    }
-
-    if (file.size > 200 * 1024) {
-      showToast('Logo tối đa 200 KB.');
+    const validationError = getAppearanceImageValidationError(file, 'logo');
+    if (validationError) {
+      showToast(validationError);
       return;
     }
 
@@ -401,12 +417,14 @@ export default function AppearancePage() {
       form.append('file', file);
       form.append('purpose', 'APPEARANCE_LOGO');
       form.append('access', 'PUBLIC');
-      const res = await apiFormDataClient<{ url?: string }>('/storage/upload', form);
-      if (!res?.url) {
+      const res = await apiFormDataClient<UploadedMedia>('/storage/upload', form);
+      if (!res?.url || !res.id) {
         showToast('Không lấy được URL logo sau khi tải lên.');
         return;
       }
-      setBrand(s => ({ ...s, logoUrl: res.url }));
+      const uploadedUrl = res.url;
+      pendingAppearanceMediaRef.current.set(res.id, uploadedUrl);
+      setBrand(s => ({ ...s, logoUrl: uploadedUrl }));
       showToast('Tải logo thành công. Bấm Lưu thay đổi để áp dụng.');
     } catch (err) {
       console.error(err);
@@ -443,16 +461,9 @@ export default function AppearancePage() {
     const uploadIconFile = async (file?: File) => {
       if (!file) return;
 
-      const fileName = file.name.toLowerCase();
-      const isSvg = file.type === 'image/svg+xml' || fileName.endsWith('.svg');
-      const isPng = file.type === 'image/png' || fileName.endsWith('.png');
-      if (!isSvg && !isPng) {
-        showToast('Chỉ nhận file SVG hoặc PNG.');
-        return;
-      }
-
-      if (file.size > 30 * 1024) {
-        showToast('Icon tối đa 30 KB.');
+      const validationError = getAppearanceImageValidationError(file, 'icon');
+      if (validationError) {
+        showToast(validationError);
         return;
       }
 
@@ -462,13 +473,15 @@ export default function AppearancePage() {
         form.append('file', file);
         form.append('purpose', 'APPEARANCE_ICON');
         form.append('access', 'PUBLIC');
-        const res = await apiFormDataClient<{ url?: string }>('/storage/upload', form);
-        if (!res?.url) {
+        const res = await apiFormDataClient<UploadedMedia>('/storage/upload', form);
+        if (!res?.url || !res.id) {
           showToast('Không lấy được URL icon sau khi tải lên.');
           return;
         }
-        setIcon(res.url, '#e3c27e');
-        showToast('Đã tải icon lên thành công (áp dụng màu mặc định #e3c27e). Bấm Lưu thay đổi để áp dụng.');
+        const uploadedUrl = res.url;
+        pendingAppearanceMediaRef.current.set(res.id, uploadedUrl);
+        setIcon(uploadedUrl);
+        showToast('Đã tải icon lên thành công (hiển thị với màu mặc định #e3c27e). Bấm Lưu thay đổi để áp dụng.');
       } catch (err) {
         console.error(err);
         showToast(err instanceof Error ? err.message : 'Tải icon thất bại.');
@@ -594,7 +607,7 @@ export default function AppearancePage() {
               <input
                 ref={iconUploadInputRef}
                 type="file"
-                accept=".svg,.png,image/svg+xml,image/png"
+                accept={APPEARANCE_IMAGE_ACCEPT}
                 style={{ display: 'none' }}
                 onChange={(event) => uploadIconFile(event.target.files?.[0])}
               />
@@ -671,7 +684,7 @@ export default function AppearancePage() {
               <input
                 ref={logoUploadInputRef}
                 type="file"
-                accept=".svg,.png,image/svg+xml,image/png"
+                accept={APPEARANCE_IMAGE_ACCEPT}
                 style={{ display: 'none' }}
                 onChange={(event) => uploadLogoFile(event.target.files?.[0])}
               />

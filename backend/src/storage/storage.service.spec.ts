@@ -3,12 +3,18 @@ import { ConfigService } from '@nestjs/config';
 import { MediaAccess } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from './storage.service';
+import { validateUploadedFile } from './upload-file-validation';
+
+jest.mock('./upload-file-validation', () => ({
+  validateUploadedFile: jest.fn(),
+}));
 
 describe('StorageService', () => {
   const prisma = {
     media: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     bill: {
       findFirst: jest.fn(),
@@ -58,6 +64,10 @@ describe('StorageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(validateUploadedFile).mockResolvedValue({
+      mimeType: 'image/png',
+      originalName: 'image.png',
+    });
     service = new StorageService(
       configService,
       prisma,
@@ -333,6 +343,41 @@ describe('StorageService', () => {
     });
   });
 
+  it('normalizes a supported YouTube URL before storing it', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-video-1' });
+
+    await service.saveExternalUrl('https://youtu.be/dQw4w9WgXcQ?t=42', {
+      ownerId: 'admin-1',
+      userRole: 'ADMIN',
+      access: 'PUBLIC',
+      purpose: 'STORE_VIDEO',
+      storeId: 'store-1',
+    });
+
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        originalName: 'YouTube dQw4w9WgXcQ',
+        mimeType: 'video/youtube',
+        purpose: 'STORE_VIDEO',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      }),
+    });
+  });
+
+  it('rejects non-YouTube external media URLs', async () => {
+    await expect(
+      service.saveExternalUrl('https://example.com/video.mp4', {
+        ownerId: 'admin-1',
+        userRole: 'ADMIN',
+        access: 'PUBLIC',
+        purpose: 'STORE_VIDEO',
+        storeId: 'store-1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
   it('blocks protected media for another user', async () => {
     prisma.media.findUnique.mockResolvedValue({
       access: MediaAccess.PROTECTED,
@@ -372,5 +417,65 @@ describe('StorageService', () => {
       { id: 'partner-1', role: 'PARTNER' },
       'store-1',
     );
+  });
+
+  it('marks media deleted when an admin removes a local upload', async () => {
+    prisma.media.findUnique.mockResolvedValue({
+      id: 'media-1',
+      ownerId: 'owner-1',
+      storeId: 'store-1',
+      castId: null,
+      contentId: null,
+      bookingId: null,
+      billId: null,
+      storageKey: 'stored-image',
+      deletedAt: null,
+      cast: null,
+      content: null,
+      booking: null,
+      bill: null,
+    });
+    prisma.media.update.mockResolvedValue({ id: 'media-1' });
+
+    await expect(
+      service.deleteMedia('media-1', {
+        id: 'admin-1',
+        role: 'ADMIN',
+      }),
+    ).resolves.toEqual({ id: 'media-1', deleted: true });
+
+    expect(prisma.media.update).toHaveBeenCalledWith({
+      where: { id: 'media-1' },
+      data: {
+        status: 'DELETED',
+        deletedAt: expect.any(Date),
+      },
+    });
+  });
+
+  it('rejects media deletion by an unrelated user', async () => {
+    prisma.media.findUnique.mockResolvedValue({
+      id: 'media-1',
+      ownerId: 'owner-1',
+      storeId: null,
+      castId: null,
+      contentId: null,
+      bookingId: null,
+      billId: null,
+      storageKey: 'stored-image',
+      deletedAt: null,
+      cast: null,
+      content: null,
+      booking: null,
+      bill: null,
+    });
+
+    await expect(
+      service.deleteMedia('media-1', {
+        id: 'other-user',
+        role: 'USER',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.update).not.toHaveBeenCalled();
   });
 });
