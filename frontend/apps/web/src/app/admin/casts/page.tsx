@@ -488,7 +488,7 @@ function AdminCastsContent() {
   };
 
   const getStatusLabel = (status: string, isPublic: boolean) => {
-    if (status === 'DRAFT') return 'Chờ duyệt';
+    if (status === 'DRAFT' || status === 'PENDING_REVIEW') return 'Chờ duyệt';
     if (status === 'ACTIVE' && isPublic) return 'Đang hiển thị';
     return 'Ẩn';
   };
@@ -997,7 +997,8 @@ function AdminCastsContent() {
   });
   const statusOptions = [
     { value: 'ACTIVE', label: 'Hoạt động', description: 'Cast có thể hiển thị khi bật public', tone: colors.green },
-    { value: 'DRAFT', label: 'Bản nháp / Chờ duyệt', description: 'Giữ lại để hoàn thiện hoặc kiểm duyệt', tone: colors.gold },
+    { value: 'PENDING_REVIEW', label: 'Chờ duyệt', description: 'Cast đang chờ Admin kiểm duyệt', tone: colors.gold },
+    { value: 'DRAFT', label: 'Bản nháp', description: 'Giữ lại để hoàn thiện', tone: colors.gold },
   ];
   const selectedStatus = statusOptions.find((option) => option.value === formData.status) || statusOptions[0];
 

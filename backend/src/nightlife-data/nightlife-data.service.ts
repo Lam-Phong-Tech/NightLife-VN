@@ -17837,7 +17837,7 @@ export class NightlifeDataService {
       youtubeLinks: castProfile.youtubeLinks ?? [],
       hourlyRateVnd: castProfile.hourlyRateVnd,
       isPublic: false,
-      status: 'DRAFT' as CastStatus,
+      status: 'PENDING_REVIEW' as CastStatus,
     };
   }
 
@@ -17855,7 +17855,7 @@ export class NightlifeDataService {
         select: { id: true, status: true, isPublic: true, slug: true },
       });
 
-      if (sourceCast?.status === 'DRAFT') {
+      if (sourceCast?.status === 'DRAFT' || sourceCast?.status === 'PENDING_REVIEW') {
         return sourceCast;
       }
 
@@ -17865,7 +17865,7 @@ export class NightlifeDataService {
           where: {
             storeId,
             slug: stableSlug,
-            status: 'DRAFT',
+            status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
             isPublic: false,
             deletedAt: null,
           },
@@ -17886,7 +17886,7 @@ export class NightlifeDataService {
       where: {
         storeId,
         stageName,
-        status: 'DRAFT',
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
         isPublic: false,
         deletedAt: null,
       },
@@ -17981,7 +17981,7 @@ export class NightlifeDataService {
       where: {
         storeId,
         stageName,
-        status: 'DRAFT',
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
         isPublic: false,
         deletedAt: null,
         id: { not: keepCastId },

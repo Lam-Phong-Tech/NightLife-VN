@@ -4364,7 +4364,7 @@ describe('NightlifeDataService', () => {
           storeId,
           stageName: 'Nguyen',
           isPublic: false,
-          status: 'DRAFT',
+          status: 'PENDING_REVIEW',
         }),
       }),
     );
@@ -4453,7 +4453,7 @@ describe('NightlifeDataService', () => {
           storeId,
           stageName: 'Nguyen',
           isPublic: false,
-          status: 'DRAFT',
+          status: 'PENDING_REVIEW',
         }),
       }),
     );
@@ -4514,7 +4514,7 @@ describe('NightlifeDataService', () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id: pendingDraftId,
-        status: 'DRAFT',
+        status: 'PENDING_REVIEW',
         isPublic: false,
         slug: 'nguyen-listing-old-cast-1',
       });
@@ -4561,7 +4561,7 @@ describe('NightlifeDataService', () => {
           bio: 'Updated host',
           publicBio: 'Updated host',
           isPublic: false,
-          status: 'DRAFT',
+          status: 'PENDING_REVIEW',
         }),
         select: { id: true },
       }),
@@ -4570,7 +4570,7 @@ describe('NightlifeDataService', () => {
       where: {
         storeId,
         stageName: 'Nguyen',
-        status: 'DRAFT',
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] },
         isPublic: false,
         deletedAt: null,
         id: { not: pendingDraftId },

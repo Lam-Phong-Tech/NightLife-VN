@@ -1738,7 +1738,7 @@ export default function PartnerPage() {
   const listingDraft = isViewingLive && liveData ? liveData : draftState;
   const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
   const [listingContentId, setListingContentId] = useState<string | null>(null);
-  const [, setListingNotice] = useState('');
+  const [listingNotice, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
   const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
@@ -4428,7 +4428,11 @@ export default function PartnerPage() {
     setIsAddingCastProfile(false);
   };
 
-  const listingPayload = () => {
+  const listingPayload = (options?: {
+    castStatus?: string;
+    castIsPublic?: boolean;
+    castProfileIndex?: number;
+  }) => {
     const draftPayload = { ...listingDraft };
     delete (draftPayload as Partial<PartnerListingDraft>).wardName;
     const storeAddress = [
@@ -4470,12 +4474,24 @@ export default function PartnerPage() {
       pricingItems,
       menuGroups,
       castProfiles: listingDraft.castProfiles
-        .filter((item) => item.stageName.trim())
-        .map((item) => {
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => item.stageName.trim())
+        .map(({ item, index }) => {
           const castPayload = { ...item };
+          const shouldApplyCastState =
+            options?.castStatus &&
+            (options.castProfileIndex === undefined || options.castProfileIndex === index);
           delete castPayload.storeName;
-          delete castPayload.isPublic;
-          delete castPayload.status;
+          if (shouldApplyCastState && typeof options?.castIsPublic === 'boolean') {
+            castPayload.isPublic = options.castIsPublic;
+          } else {
+            delete castPayload.isPublic;
+          }
+          if (shouldApplyCastState) {
+            castPayload.status = options.castStatus;
+          } else {
+            delete castPayload.status;
+          }
           return {
             ...castPayload,
             tags: item.tags?.filter(Boolean) ?? [],
@@ -4528,6 +4544,55 @@ export default function PartnerPage() {
         {listingErrors[path]}
       </span>
     ) : null;
+
+  const listingActionToast = (
+    tone: 'success' | 'error' | 'warning' | 'gold',
+    title: string,
+    description: string,
+  ) => {
+    feedback.showToast({
+      tone,
+      title,
+      description,
+      durationMs: 5600,
+      placement: 'top-right',
+    });
+  };
+
+  const partnerCastStatusView = (cast: PartnerListingCast) => {
+    const status = safeListingText(cast.status).toUpperCase();
+    const hasName = Boolean(cast.stageName.trim());
+
+    if (status === 'PENDING_REVIEW') {
+      return { label: 'Chờ duyệt', tone: 'gold' as const };
+    }
+
+    if (status === 'DRAFT') {
+      return { label: 'Lưu nháp', tone: 'gold' as const };
+    }
+
+    if (status === 'ACTIVE' && cast.isPublic !== false) {
+      return { label: 'Đang hiển thị', tone: 'success' as const };
+    }
+
+    if (hasName) {
+      return { label: 'Đã nhập', tone: 'success' as const };
+    }
+
+    return { label: 'Bản nháp', tone: 'gold' as const };
+  };
+
+  const markEnteredCastProfiles = (status: string, isPublic: boolean, targetIndex?: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((cast, index) =>
+        cast.stageName.trim() &&
+        (targetIndex === undefined || targetIndex === index)
+          ? { ...cast, status, isPublic }
+          : cast,
+      ),
+    }));
+  };
 
   const uploadListingFiles = async (
     files: File[],
@@ -5401,8 +5466,10 @@ export default function PartnerPage() {
 
   const validateListingBeforeAction = (mode: ListingValidationMode) => {
     if (!listingStoreId) {
-      setListingNotice('Cần chọn quán trước khi lưu hoặc gửi duyệt.');
+      const message = 'Cần chọn quán trước khi lưu hoặc gửi duyệt.';
+      setListingNotice(message);
       setListingErrors({});
+      listingActionToast('warning', 'Chưa thể xử lý bản nháp', message);
       return false;
     }
 
@@ -5414,10 +5481,15 @@ export default function PartnerPage() {
       if (validation.firstTab) {
         setListingTab(validation.firstTab);
       }
-      setListingNotice(
+      const message =
         mode === 'submit'
           ? `Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt.`
-          : `Còn ${count} lỗi cần sửa trước khi lưu bản nháp.`,
+          : `Còn ${count} lỗi cần sửa trước khi lưu bản nháp.`;
+      setListingNotice(message);
+      listingActionToast(
+        'warning',
+        mode === 'submit' ? 'Chưa thể gửi duyệt' : 'Chưa thể lưu nháp',
+        message,
       );
       return false;
     }
@@ -5427,8 +5499,10 @@ export default function PartnerPage() {
 
   const validateStoreListingBeforeSubmit = () => {
     if (!listingStoreId) {
-      setListingNotice('Cần chọn quán trước khi gửi duyệt thông tin quán.');
+      const message = 'Cần chọn quán trước khi gửi duyệt thông tin quán.';
+      setListingNotice(message);
       setListingErrors({});
+      listingActionToast('warning', 'Chưa thể gửi duyệt thông tin quán', message);
       return false;
     }
 
@@ -5441,7 +5515,9 @@ export default function PartnerPage() {
     const count = Object.keys(storeErrors).length;
     if (count) {
       setListingTab('store');
-      setListingNotice(`Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt thông tin quán.`);
+      const message = `Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt thông tin quán.`;
+      setListingNotice(message);
+      listingActionToast('warning', 'Chưa thể gửi duyệt thông tin quán', message);
       return false;
     }
 
@@ -5450,8 +5526,10 @@ export default function PartnerPage() {
 
   const validateCastListingBeforeSubmit = () => {
     if (!listingStoreId) {
-      setListingNotice('Cần chọn quán trước khi gửi duyệt cast.');
+      const message = 'Cần chọn quán trước khi gửi duyệt cast.';
+      setListingNotice(message);
       setListingErrors({});
+      listingActionToast('warning', 'Chưa thể gửi duyệt cast', message);
       return false;
     }
 
@@ -5464,7 +5542,9 @@ export default function PartnerPage() {
     const count = Object.keys(castErrors).length;
     if (count) {
       setListingTab('cast');
-      setListingNotice(`Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt cast.`);
+      const message = `Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt cast.`;
+      setListingNotice(message);
+      listingActionToast('warning', 'Chưa thể gửi duyệt cast', message);
       return false;
     }
 
@@ -5479,19 +5559,36 @@ export default function PartnerPage() {
     setIsSavingListing(true);
     setListingNotice('Đang lưu bản nháp...');
     try {
+      const isSavingCastDraft = listingTab === 'cast';
+      const castProfileIndex = isSavingCastDraft ? activeCastProfileIndex ?? undefined : undefined;
       const response = await apiClient<PartnerListingDraftResponse>(
         `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
         {
           method: 'PUT',
-          data: listingPayload(),
+          data: listingPayload(
+            isSavingCastDraft
+              ? { castStatus: 'DRAFT', castIsPublic: false, castProfileIndex }
+              : undefined,
+          ),
         },
       );
       applyListingDraftResponse(response);
-      setListingNotice('Đã lưu bản nháp đăng thông tin.');
-    } catch (error) {
-      setListingNotice(
-        error instanceof ApiError ? error.message : 'Không lưu được bản nháp.',
+      if (isSavingCastDraft) {
+        markEnteredCastProfiles('DRAFT', false, castProfileIndex);
+      }
+      const message = isSavingCastDraft
+        ? 'Đã lưu nháp cast. Bảng cast đã cập nhật trạng thái Lưu nháp.'
+        : 'Đã lưu bản nháp đăng thông tin.';
+      setListingNotice(message);
+      listingActionToast(
+        'success',
+        isSavingCastDraft ? 'Đã lưu nháp cast' : 'Đã lưu bản nháp',
+        message,
       );
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Không lưu được bản nháp.';
+      setListingNotice(message);
+      listingActionToast('error', 'Không lưu được bản nháp', message);
     } finally {
       setIsSavingListing(false);
     }
@@ -5579,7 +5676,12 @@ export default function PartnerPage() {
     setIsSubmittingListing(true);
     setListingNotice('Đang gửi cast cho Admin duyệt...');
     try {
-      const payload = listingPayload();
+      const castProfileIndex = activeCastProfileIndex ?? undefined;
+      const payload = listingPayload({
+        castStatus: 'PENDING_REVIEW',
+        castIsPublic: false,
+        castProfileIndex,
+      });
       const response = await apiClient<{
         id: string;
         status: string;
@@ -5617,7 +5719,13 @@ export default function PartnerPage() {
         tone: 'gold',
         icon: FileText,
       });
+      markEnteredCastProfiles('PENDING_REVIEW', false, castProfileIndex);
       setListingNotice('Đã gửi cast cho Admin duyệt. Cast sẽ hiển thị sau khi được duyệt.');
+      listingActionToast(
+        'success',
+        'Gửi duyệt cast thành công',
+        'Cast đã được gửi về Admin và đang nằm trong danh sách Chờ duyệt.',
+      );
       feedback.showModal({
         tone: 'success',
         title: 'Gửi duyệt cast thành công',
@@ -5628,9 +5736,9 @@ export default function PartnerPage() {
         },
       });
     } catch (error) {
-      setListingNotice(
-        error instanceof ApiError ? error.message : 'Không gửi duyệt được cast.',
-      );
+      const message = error instanceof ApiError ? error.message : 'Không gửi duyệt được cast.';
+      setListingNotice(message);
+      listingActionToast('error', 'Không gửi duyệt được cast', message);
     } finally {
       setIsSubmittingListing(false);
     }
@@ -6692,6 +6800,7 @@ export default function PartnerPage() {
                 {pageRows.map(({ cast, index }) => {
                   const avatarUrl = castAvatarUrl(cast);
                   const hasRequiredName = cast.stageName.trim();
+                  const statusView = partnerCastStatusView(cast);
                   return (
                     <tr key={`${cast.stageName || 'draft-cast'}-${index}`}>
                       <td>{index + 1}</td>
@@ -6717,8 +6826,8 @@ export default function PartnerPage() {
                       <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
                       <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
                       <td>
-                        <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
-                          {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                        <StatusPill tone={statusView.tone}>
+                          {statusView.label}
                         </StatusPill>
                       </td>
                       <td>
@@ -6741,6 +6850,7 @@ export default function PartnerPage() {
             {pageRows.map(({ cast, index }) => {
               const avatarUrl = castAvatarUrl(cast);
               const hasRequiredName = cast.stageName.trim();
+              const statusView = partnerCastStatusView(cast);
               const storeName = listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý';
               const languages = cast.languages?.length ? cast.languages.join(' · ') : '---';
               const tags = cast.tags?.length ? cast.tags.join(', ') : '---';
@@ -6769,8 +6879,8 @@ export default function PartnerPage() {
                       <strong>{hasRequiredName || 'Draft cast'}</strong>
                       <small>{cast.zodiacSign || '---'}</small>
                     </span>
-                    <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
-                      {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                    <StatusPill tone={statusView.tone}>
+                      {statusView.label}
                     </StatusPill>
                     <ChevronRight size={18} className="partner-cast-mobile-arrow" />
                   </span>
@@ -7472,6 +7582,26 @@ export default function PartnerPage() {
           </button>
         ))}
       </div>
+
+      {listingNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            border: `1px solid ${colors.borderGold22}`,
+            background: 'rgba(212,178,106,.09)',
+            color: colors.goldBright,
+            borderRadius: '12px',
+            padding: '10px 12px',
+            fontSize: '12.5px',
+            fontWeight: 800,
+            lineHeight: 1.5,
+            margin: '0 0 14px',
+          }}
+        >
+          {listingNotice}
+        </div>
+      ) : null}
 
       {renderListingTab()}
 
