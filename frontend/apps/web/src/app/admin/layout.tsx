@@ -720,11 +720,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* brand */}
           <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div data-noinvert style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>Vietyoru</div>
+              <div className="nl-admin-brand-title" data-noinvert style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>Vietyoru</div>
               <div style={{ fontSize: '7.5px', letterSpacing: '3px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>Admin Console · CMS</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
+              <span className="nl-admin-brand-badge" data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
               <button
                 aria-label="Đóng menu admin"
                 className="nl-admin-sidebar-close"
@@ -833,7 +833,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* account */}
           <div style={{ margin: '8px 12px 14px', padding: '11px 12px', borderRadius: '13px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>
+            <span className="nl-admin-avatar-badge" data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>
               {currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'A'}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>

@@ -3184,3 +3184,22 @@ html.vy-admin-light [style*="url(" i] [data-noinvert],
 html.vy-admin-light [style*="url(" i] [style*="url(" i] {
   filter: none;
 }
+
+/* Custom styling for Admin Brand/Logo in Light Mode to eliminate glare and improve contrast */
+html.vy-admin-light .nl-admin-brand-title {
+  background: linear-gradient(135deg, #6e4e16, #9e7529 55%, #52390f) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html.vy-admin-light .nl-admin-brand-badge {
+  background: linear-gradient(135deg, #7c581a, #a37628 55%, #5b3f0f) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(124, 88, 26, 0.22);
+}
+
+html.vy-admin-light .nl-admin-avatar-badge {
+  background: linear-gradient(135deg, #7c581a, #a37628 55%, #5b3f0f) !important;
+  color: #ffffff !important;
+}
