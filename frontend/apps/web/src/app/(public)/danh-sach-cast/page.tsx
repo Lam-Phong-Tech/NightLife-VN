@@ -1000,12 +1000,6 @@ export default function Page() {
             <h1>
               {copy.findCast} {cityLabel}
             </h1>
-            <p>
-              {translateText(
-                "Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.",
-                activeLanguage,
-              )}
-            </p>
           </div>
 
           <div className="cast-search-controls">
