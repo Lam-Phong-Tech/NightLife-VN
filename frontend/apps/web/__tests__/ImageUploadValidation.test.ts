@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getTourCoverImageValidationError,
   getStoreImageValidationError,
+  MAX_TOUR_COVER_IMAGE_SIZE_BYTES,
   MAX_STORE_IMAGE_SIZE_BYTES,
 } from '../src/lib/media/image-upload-validation';
 
@@ -39,5 +41,35 @@ describe('store image upload validation', () => {
     expect(getStoreImageValidationError(file)).toBe(
       'Ảnh "large.png" vượt quá dung lượng 15MB.',
     );
+  });
+});
+
+describe('tour cover image upload validation', () => {
+  it('accepts supported raster image formats', () => {
+    expect(
+      getTourCoverImageValidationError(imageFile('cover.webp', 'image/webp')),
+    ).toBeNull();
+  });
+
+  it('rejects video MIME types and video extensions', () => {
+    expect(
+      getTourCoverImageValidationError(imageFile('cover.mp4', 'video/mp4')),
+    ).toContain('không chấp nhận video');
+    expect(
+      getTourCoverImageValidationError(imageFile('cover.mp4', 'image/jpeg')),
+    ).toContain('không chấp nhận video');
+  });
+
+  it('rejects empty and oversized files', () => {
+    expect(
+      getTourCoverImageValidationError(imageFile('cover.jpg', 'image/jpeg', 0)),
+    ).toContain('file rỗng');
+    expect(
+      getTourCoverImageValidationError({
+        name: 'cover.jpg',
+        type: 'image/jpeg',
+        size: MAX_TOUR_COVER_IMAGE_SIZE_BYTES + 1,
+      } as File),
+    ).toContain('15MB');
   });
 });

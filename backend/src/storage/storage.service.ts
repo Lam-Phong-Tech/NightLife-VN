@@ -8,10 +8,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
+import { open, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MediaAccess, MediaType } from '@prisma/client';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { getTourCoverFileValidationError } from './tour-cover-file-validation';
 
 type UploadedFile = {
   filename: string;
@@ -42,6 +44,7 @@ const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
   'APPEARANCE_LOGO',
   'APPEARANCE_ICON',
   'BANNER_GLOBAL',
+  'TOUR_COVER',
 ]);
 
 import { SystemConfigService } from '../system-config/system-config.service';
@@ -195,6 +198,10 @@ export class StorageService implements OnModuleInit {
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
+    }
+
+    if (options.purpose === 'TOUR_COVER') {
+      await this.validateTourCoverFile(file);
     }
 
     await this.validateUploadPermissions(options);
@@ -367,6 +374,32 @@ export class StorageService implements OnModuleInit {
     }
 
     return MediaType.OTHER;
+  }
+
+  private async validateTourCoverFile(file: UploadedFile) {
+    const header = Buffer.alloc(12);
+    let bytesRead = 0;
+
+    try {
+      const fileHandle = await open(file.path, 'r');
+      try {
+        ({ bytesRead } = await fileHandle.read(header, 0, header.length, 0));
+      } finally {
+        await fileHandle.close();
+      }
+    } catch {
+      await unlink(file.path).catch(() => undefined);
+      throw new BadRequestException('Không thể đọc file ảnh bìa đã tải lên.');
+    }
+
+    const validationError = getTourCoverFileValidationError(
+      file,
+      header.subarray(0, bytesRead),
+    );
+    if (validationError) {
+      await unlink(file.path).catch(() => undefined);
+      throw new BadRequestException(validationError);
+    }
   }
 
   private resolveAccess(access?: string) {

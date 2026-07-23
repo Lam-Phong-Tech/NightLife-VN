@@ -8,6 +8,10 @@ import { AdminPagination, paginateAdminItems, adminPageSize } from '../component
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { DataSkeleton } from '@/components/ui/DataLoading';
 import {
+  getTourCoverImageValidationError,
+  TOUR_COVER_IMAGE_ACCEPT,
+} from '@/lib/media/image-upload-validation';
+import {
   collectTourDepartureTimes,
   createDefaultTourDepartureSchedule,
   defaultTourDepartureSlot,
@@ -144,11 +148,30 @@ const isSameCity = (c1: string, c2: string) => {
 const isValidImageUrl = (url: string): boolean => {
   if (!url) return true;
   const trimmed = url.trim();
-  if (trimmed.startsWith('/') || trimmed.startsWith('data:')) return true;
+  if (/^data:/i.test(trimmed)) {
+    return /^data:image\/(?:jpeg|png|webp|gif);base64,/i.test(trimmed);
+  }
+
   try {
-    const parsed = new URL(trimmed);
-    return ['http:', 'https:'].includes(parsed.protocol);
-  } catch (_) {
+    const isRelativeUrl = trimmed.startsWith('/');
+    const parsed = new URL(trimmed, 'https://nightlife.local');
+    if (!isRelativeUrl && !['http:', 'https:'].includes(parsed.protocol)) {
+      return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'youtu.be' ||
+      hostname === 'youtube.com' ||
+      hostname.endsWith('.youtube.com') ||
+      hostname === 'vimeo.com' ||
+      hostname.endsWith('.vimeo.com')
+    ) {
+      return false;
+    }
+
+    return !/\.(?:mp4|webm|mov|avi|mkv|m4v|ogv)$/i.test(parsed.pathname);
+  } catch {
     return false;
   }
 };
@@ -321,27 +344,34 @@ function AdminToursContent() {
   const handleUploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = getTourCoverImageValidationError(file);
+    if (validationError) {
+      showToast(validationError);
+      e.target.value = '';
+      return;
+    }
+
     try {
       setUploadingCover(true);
       const form = new FormData();
       form.append('file', file);
-      form.append('purpose', 'BANNER_GLOBAL');
+      form.append('purpose', 'TOUR_COVER');
       form.append('access', 'PUBLIC');
       const res = await apiFormDataClient<{ url: string }>('/storage/upload', form);
       if (res && res.url) {
         setFormData(prev => ({ ...prev, coverUrl: res.url }));
         showToast('Tải ảnh bìa thành công');
       }
-    } catch (err: any) {
-      // Fallback local base64 reader if storage upload fails in dev environment
-      const r = new FileReader();
-      r.onload = () => {
-        setFormData(prev => ({ ...prev, coverUrl: String(r.result) }));
-        showToast('Đã tải ảnh lên thành công (Local)');
-      };
-      r.readAsDataURL(file);
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error
+          ? err.message
+          : 'Không thể tải ảnh bìa. Vui lòng thử lại.',
+      );
     } finally {
       setUploadingCover(false);
+      e.target.value = '';
     }
   };
 
@@ -407,7 +437,7 @@ function AdminToursContent() {
         return;
       }
       if (formData.coverUrl && !isValidImageUrl(formData.coverUrl)) {
-        showToast('Liên kết hình ảnh không hợp lệ! URL phải bắt đầu bằng http://, https:// hoặc /');
+        showToast('Liên kết ảnh bìa không hợp lệ hoặc đang trỏ tới video.');
         return;
       }
       if (formData.stops.length === 0) {
@@ -715,7 +745,7 @@ function AdminToursContent() {
                       />
                       {formData.coverUrl && !isValidImageUrl(formData.coverUrl) && (
                         <div style={{ fontSize: '10.5px', color: '#e88b99', marginTop: '4px', fontWeight: 500 }}>
-                          * Đường dẫn hình ảnh không hợp lệ (URL phải bắt đầu bằng http://, https:// hoặc /)
+                          * Đường dẫn phải là ảnh hợp lệ; không chấp nhận URL video, YouTube hoặc Vimeo
                         </div>
                       )}
                     </div>
@@ -728,8 +758,9 @@ function AdminToursContent() {
                         <input 
                           type="file" 
                           ref={fileInputRef}
-                          accept="image/*" 
+                          accept={TOUR_COVER_IMAGE_ACCEPT}
                           onChange={handleUploadCover}
+                          disabled={uploadingCover}
                           style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} 
                         />
                       </div>

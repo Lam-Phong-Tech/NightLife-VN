@@ -13,10 +13,44 @@ import {
   tourDepartureScheduleError,
   type TourDepartureSchedule,
 } from './tour-departure-schedule';
+import {
+  getTourCoverStorageKey,
+  getTourCoverUrlValidationError,
+  isSupportedStoredTourCover,
+} from './tour-cover-url-validation';
 
 @Injectable()
 export class TourService {
   constructor(private prisma: PrismaService) {}
+
+  private async validateTourCoverUrl(coverUrl: string | undefined) {
+    const validationError = getTourCoverUrlValidationError(coverUrl);
+    if (validationError) {
+      throw new BadRequestException(validationError);
+    }
+
+    if (!coverUrl) {
+      return;
+    }
+
+    const storageKey = getTourCoverStorageKey(coverUrl);
+    if (!storageKey) {
+      return;
+    }
+
+    const media = await this.prisma.media.findUnique({
+      where: { storageKey },
+      select: {
+        type: true,
+        mimeType: true,
+      },
+    });
+    if (!isSupportedStoredTourCover(media)) {
+      throw new BadRequestException(
+        'File lưu trữ được chọn không phải ảnh bìa JPG, PNG, WebP hoặc GIF hợp lệ.',
+      );
+    }
+  }
 
   private publicTourStoreSelect(now: Date) {
     return {
@@ -144,7 +178,10 @@ export class TourService {
         skip,
         take,
         where,
-        orderBy: [{ homeRank: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+        orderBy: [
+          { homeRank: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
         include: this.publicTourInclude(now),
       }),
       this.prisma.tour.count({ where }),
@@ -180,7 +217,9 @@ export class TourService {
     skip?: number;
     take?: number;
     where?: Prisma.TourWhereInput;
-    orderBy?: Prisma.TourOrderByWithRelationInput | Prisma.TourOrderByWithRelationInput[];
+    orderBy?:
+      | Prisma.TourOrderByWithRelationInput
+      | Prisma.TourOrderByWithRelationInput[];
   }) {
     const { skip = 0, take = 50, where, orderBy } = params;
 
@@ -192,7 +231,10 @@ export class TourService {
           ...where,
           status: where?.status || { not: 'DELETED' },
         },
-        orderBy: orderBy || [{ homeRank: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
+        orderBy: orderBy || [
+          { homeRank: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
         include: {
           stops: {
             orderBy: { order: 'asc' },
@@ -275,6 +317,8 @@ export class TourService {
 
   async create(dto: CreateTourDto) {
     const { stops, ...tourData } = dto;
+    await this.validateTourCoverUrl(tourData.coverUrl);
+
     const departureSchedule = normalizeTourDepartureSchedule(
       tourData.departureSchedule,
       tourData.departureTimes,
@@ -325,6 +369,8 @@ export class TourService {
 
   async update(id: string, dto: UpdateTourDto) {
     const { stops, ...tourData } = dto;
+    await this.validateTourCoverUrl(tourData.coverUrl);
+
     let departureSchedule: TourDepartureSchedule | undefined;
     if (tourData.departureSchedule !== undefined) {
       departureSchedule = normalizeTourDepartureSchedule(
