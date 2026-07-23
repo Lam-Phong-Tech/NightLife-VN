@@ -223,7 +223,7 @@ const venueCopyVi: VenueSearchCopy = {
   searchPlaceholder: "Tìm quán, khu vực hoặc loại hình...",
   sortAria: "Sắp xếp danh sách",
   sortLabel: "Sắp xếp:",
-  subtitleDesktop: "FIND YOUR VENUE TONIGHT",
+  subtitleDesktop: "",
   titlePrefix: "Tìm quán đêm",
   unsaveVenue: "Bỏ lưu quán",
   venuePhoto: "Ảnh",
@@ -270,7 +270,7 @@ const venueCopyEn: VenueSearchCopy = {
   searchPlaceholder: "Search venues, areas, or categories...",
   sortAria: "Sort venues",
   sortLabel: "Sort:",
-  subtitleDesktop: "FIND YOUR VENUE TONIGHT",
+  subtitleDesktop: "",
   titlePrefix: "Find night venues in",
   unsaveVenue: "Unsave venue",
   venuePhoto: "Photo of",
@@ -1164,10 +1164,12 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
               </span>
               <span className="venue-title-mobile">{pageMobileTitle}</span>
             </h1>
-            <p>
-              <span className="venue-subtitle-desktop">{pageSubtitle}</span>
-              <span className="venue-subtitle-mobile">{fixedCategory ? pageSubtitle : copy.mobileSubtitle}</span>
-            </p>
+            {(pageSubtitle || copy.mobileSubtitle) && (
+              <p>
+                {pageSubtitle ? <span className="venue-subtitle-desktop">{pageSubtitle}</span> : null}
+                <span className="venue-subtitle-mobile">{fixedCategory ? pageSubtitle : copy.mobileSubtitle}</span>
+              </p>
+            )}
           </div>
         </header>
 
