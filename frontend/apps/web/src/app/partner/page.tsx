@@ -7178,6 +7178,8 @@ export default function PartnerPage() {
     !isViewingLive && listingTab === 'cast' ? activeCastProfileIndex : null;
   const activeEditableCast =
     activeEditableCastIndex === null ? null : draftState.castProfiles[activeEditableCastIndex];
+  const showListingActionFooter =
+    !isViewingLive && (listingTab !== 'cast' || activeEditableCastIndex !== null);
 
   const renderListingPanel = () => (
     <PanelCard className="partner-listing-panel">
@@ -7282,7 +7284,7 @@ export default function PartnerPage() {
 
       {renderListingTab()}
 
-      {!isViewingLive && (
+      {showListingActionFooter && (
         <div
           className="partner-action-row partner-listing-actions"
           style={{
