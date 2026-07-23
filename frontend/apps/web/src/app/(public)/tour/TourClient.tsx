@@ -538,9 +538,9 @@ const tourDirectoryCss = `
   .tour-directory-title h1 {
     margin: 0;
     color: var(--vy-text);
-    font-size: 30px;
-    line-height: 1.05;
-    font-weight: 850;
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 800;
     letter-spacing: 0;
   }
 
@@ -1092,8 +1092,8 @@ const tourDirectoryCss = `
 
     .tour-directory-title h1 {
       font-size: 17px;
-      line-height: 1;
-      font-weight: 900;
+      line-height: 1.15;
+      font-weight: 800;
     }
 
     .tour-directory-title p {
