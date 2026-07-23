@@ -518,6 +518,10 @@ const listingZodiacOptions = [
   { value: 'Pisces', label: 'Song Ngư' },
 ];
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
+const staffPermissionOptions = [
+  { key: 'coupon.scan', label: 'Quét coupon' },
+  { key: 'checkin.confirm', label: 'Xác nhận check-in' },
+] as const;
 type CastListField = 'tags' | 'hobbies' | 'languages' | 'youtubeLinks';
 const suggestedListingTags = [
   'Club',
@@ -1104,7 +1108,7 @@ const validateListingOpeningHourSlots = (
       if (!a || !b) continue;
       if (Math.max(a.start, b.start) < Math.min(a.end, b.end)) {
         return {
-          error: 'Khung giờ bị trùng lặp.',
+          error: 'Khung giờ bị trùng hoặc chồng lấn.',
           normalizedSlots,
         };
       }
@@ -1796,6 +1800,7 @@ export default function PartnerPage() {
   const [staffPassword, setStaffPassword] = useState('');
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [staffPermissions, setStaffPermissions] = useState<string[]>(['coupon.scan', 'checkin.confirm']);
+  const [staffPermissionUpdatingKey, setStaffPermissionUpdatingKey] = useState('');
   const [settingsStoreId, setSettingsStoreId] = useState('');
 
   const fetchStaffList = useCallback(async (storeId: string) => {
@@ -1967,7 +1972,117 @@ export default function PartnerPage() {
 
   const staffPermissionsForDisplay = (staff: any): string[] => {
     const permissions = Array.isArray(staff?.permissions) ? staff.permissions : [];
-    return permissions.length ? permissions : ['coupon.scan', 'checkin.confirm'];
+    return permissions;
+  };
+
+  const handleToggleStaffPermission = async (
+    staff: any,
+    permission: string,
+    enabled: boolean,
+  ) => {
+    if (!settingsStoreId || !staff?.id) return;
+
+    const currentPermissions = staffPermissionsForDisplay(staff);
+    const nextPermissions = enabled
+      ? Array.from(new Set([...currentPermissions, permission]))
+      : currentPermissions.filter((item) => item !== permission);
+    const updateKey = `${staff.id}:${permission}`;
+
+    setStaffPermissionUpdatingKey(updateKey);
+    try {
+      const updatedStaff = await apiClient<any>(
+        `/partner/staff/${encodeURIComponent(staff.id)}/permissions?storeId=${encodeURIComponent(settingsStoreId)}`,
+        {
+          method: 'PATCH',
+          data: { permissions: nextPermissions },
+        },
+      );
+      setStaffList((current) =>
+        current.map((item) =>
+          item.id === staff.id
+            ? { ...item, ...updatedStaff, permissions: updatedStaff.permissions ?? nextPermissions }
+            : item,
+        ),
+      );
+      feedback.showToast({
+        tone: 'success',
+        title: 'Đã cập nhật quyền',
+        description: `Quyền ${staffPermissionLabel(permission)} của ${staff.displayName} đã được cập nhật.`,
+      });
+    } catch (err: any) {
+      feedback.showToast({
+        tone: 'error',
+        title: 'Lỗi cập nhật quyền',
+        description: err.message || 'Không thể cập nhật quyền nhân viên.',
+      });
+    } finally {
+      setStaffPermissionUpdatingKey('');
+    }
+  };
+
+  const renderStaffPermissionSwitches = (staff: any) => {
+    const permissions = staffPermissionsForDisplay(staff);
+
+    return (
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        {staffPermissionOptions.map((option) => {
+          const checked = permissions.includes(option.key);
+          const updateKey = `${staff.id}:${option.key}`;
+          const disabled = staffPermissionUpdatingKey === updateKey || staff.status !== 'ACTIVE';
+
+          return (
+            <button
+              key={option.key}
+              type="button"
+              role="switch"
+              aria-checked={checked}
+              disabled={disabled}
+              onClick={() => handleToggleStaffPermission(staff, option.key, !checked)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: `1px solid ${checked ? colors.borderGold40 : colors.borderSoft}`,
+                background: checked ? 'rgba(212,178,106,.16)' : colors.surface2,
+                color: checked ? colors.goldBright : colors.text2,
+                borderRadius: '999px',
+                padding: '5px 9px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.62 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: '26px',
+                  height: '15px',
+                  borderRadius: '999px',
+                  padding: '2px',
+                  background: checked ? colors.gold : 'rgba(255,255,255,.16)',
+                  display: 'inline-flex',
+                  justifyContent: checked ? 'flex-end' : 'flex-start',
+                  transition: 'background .16s ease',
+                }}
+              >
+                <span
+                  style={{
+                    width: '11px',
+                    height: '11px',
+                    borderRadius: '999px',
+                    background: checked ? colors.onGold : colors.text2,
+                    display: 'block',
+                  }}
+                />
+              </span>
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   const partnerThemeVariables = partnerTheme === 'light'
@@ -8019,16 +8134,17 @@ export default function PartnerPage() {
                       <th style={{ padding: '12px 16px' }}>Họ tên</th>
                       <th style={{ padding: '12px 16px' }}>Email</th>
                       <th style={{ padding: '12px 16px' }}>Quán quản lý</th>
+                      <th style={{ padding: '12px 16px' }}>Quyền hạn</th>
                       <th style={{ padding: '12px 16px' }}>Trạng thái</th>
                       <th style={{ padding: '12px 16px', textAlign: 'right' }}>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isLoadingStaff ? (
-                      <TableLoadingRows columns={5} rows={5} ariaLabel="Đang tải danh sách nhân viên" />
+                      <TableLoadingRows columns={6} rows={5} ariaLabel="Đang tải danh sách nhân viên" />
                     ) : staffList.length === 0 ? (
                       <tr>
-                        <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
+                        <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
                           Chưa có nhân viên nào tại quán này.
                         </td>
                       </tr>
@@ -8040,6 +8156,7 @@ export default function PartnerPage() {
                             <td style={{ padding: '12px 16px', fontWeight: 600 }}>{staff.displayName}</td>
                             <td style={{ padding: '12px 16px' }}>{staff.email}</td>
                             <td style={{ padding: '12px 16px' }}>{currentStore?.name || 'N/A'}</td>
+                            <td style={{ padding: '12px 16px' }}>{renderStaffPermissionSwitches(staff)}</td>
                             <td style={{ padding: '12px 16px' }}>
                               <span style={{
                                 padding: '4px 8px',
@@ -8095,7 +8212,6 @@ export default function PartnerPage() {
                 ) : (
                   staffList.map((staff) => {
                     const currentStore = stores.find((s) => s.id === settingsStoreId);
-                    const permissions = staffPermissionsForDisplay(staff);
                     const active = staff.status === 'ACTIVE';
                     return (
                       <article className="partner-staff-mobile-card" key={staff.id}>
@@ -8116,9 +8232,7 @@ export default function PartnerPage() {
                           <div>
                             <dt>Quyền</dt>
                             <dd className="partner-staff-mobile-permissions">
-                              {permissions.map((permission) => (
-                                <span key={permission}>{staffPermissionLabel(permission)}</span>
-                              ))}
+                              {renderStaffPermissionSwitches(staff)}
                             </dd>
                           </div>
                         </dl>
@@ -9867,7 +9981,7 @@ export default function PartnerPage() {
             flex-wrap: wrap;
             gap: 6px;
           }
-          .partner-staff-mobile-permissions span {
+          .partner-staff-mobile-permissions > span {
             border: 1px solid ${colors.borderGold22};
             border-radius: 999px;
             background: rgba(212,178,106,.1);

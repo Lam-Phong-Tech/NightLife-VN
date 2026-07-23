@@ -15,6 +15,7 @@ describe('PartnerStaffController', () => {
     const mockPartnerStaffService = {
       getStaffByStore: jest.fn(),
       assignStaffToStore: jest.fn(),
+      updateStaffPermissions: jest.fn(),
       removeStaffFromStore: jest.fn(),
     };
 
@@ -147,6 +148,51 @@ describe('PartnerStaffController', () => {
       partnerStaffService.assignStaffToStore.mockRejectedValue(new Error('Email already exists'));
 
       await expect(controller.createStaff(mockReq, dto)).rejects.toThrow('Email already exists');
+    });
+  });
+
+  describe('updateStaffPermissions', () => {
+    it('should verify store access and update staff permissions', async () => {
+      const staffId = 'staff-123';
+      const storeId = 'store-123';
+      const dto = { permissions: [] };
+      const updatedStaff = {
+        userId: staffId,
+        email: 'staff@example.com',
+        displayName: 'Staff Name',
+        status: 'ACTIVE',
+        permissions: [],
+      };
+      accessService.ensureStoreAccess.mockResolvedValue(undefined);
+      partnerStaffService.updateStaffPermissions.mockResolvedValue(
+        updatedStaff as any,
+      );
+
+      const result = await controller.updateStaffPermissions(
+        mockReq,
+        staffId,
+        storeId,
+        dto,
+      );
+
+      expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+        mockUser,
+        storeId,
+      );
+      expect(partnerStaffService.updateStaffPermissions).toHaveBeenCalledWith(
+        staffId,
+        storeId,
+        [],
+      );
+      expect(result).toEqual(updatedStaff);
+    });
+
+    it('should throw BadRequestException if storeId is missing when updating permissions', async () => {
+      await expect(
+        controller.updateStaffPermissions(mockReq, 'staff-123', '', {
+          permissions: [],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

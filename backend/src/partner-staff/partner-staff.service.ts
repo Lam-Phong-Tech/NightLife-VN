@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
   NotFoundException,
@@ -6,6 +7,9 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../common/password.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
+
+const DEFAULT_STAFF_PERMISSIONS = ['coupon.scan', 'checkin.confirm'];
+const ALLOWED_STAFF_PERMISSIONS = new Set(DEFAULT_STAFF_PERMISSIONS);
 
 @Injectable()
 export class PartnerStaffService {
@@ -41,8 +45,34 @@ export class PartnerStaffService {
     }));
   }
 
+  private normalizeStaffPermissions(
+    permissions: string[] | undefined,
+    fallbackToDefault: boolean,
+  ) {
+    if (!Array.isArray(permissions)) {
+      if (fallbackToDefault) return [...DEFAULT_STAFF_PERMISSIONS];
+      throw new BadRequestException('permissions must be an array');
+    }
+
+    const normalized = Array.from(
+      new Set(permissions.map((permission) => permission.trim()).filter(Boolean)),
+    );
+    const invalid = normalized.filter(
+      (permission) => !ALLOWED_STAFF_PERMISSIONS.has(permission),
+    );
+
+    if (invalid.length) {
+      throw new BadRequestException(
+        `Quyền nhân viên không hợp lệ: ${invalid.join(', ')}`,
+      );
+    }
+
+    return normalized;
+  }
+
   async assignStaffToStore(dto: CreateStaffDto) {
     const email = dto.email.trim().toLowerCase();
+    const permissions = this.normalizeStaffPermissions(dto.permissions, true);
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -80,20 +110,14 @@ export class PartnerStaffService {
         create: {
           userId: user.id,
           storeId: dto.storeId,
-          permissions:
-            dto.permissions && dto.permissions.length > 0
-              ? dto.permissions
-              : ['coupon.scan', 'checkin.confirm'],
+          permissions,
           status: 'ACTIVE',
           deletedAt: null,
         },
         update: {
           status: 'ACTIVE',
           deletedAt: null,
-          permissions:
-            dto.permissions && dto.permissions.length > 0
-              ? dto.permissions
-              : undefined,
+          permissions,
         },
       });
 
@@ -103,6 +127,7 @@ export class PartnerStaffService {
         displayName: user.displayName,
         phone: user.phone,
         status: user.status,
+        permissions,
       };
     } else {
       const passwordHash = await this.passwordService.hash(dto.password);
@@ -123,10 +148,7 @@ export class PartnerStaffService {
           data: {
             userId: createdUser.id,
             storeId: dto.storeId,
-            permissions:
-              dto.permissions && dto.permissions.length > 0
-                ? dto.permissions
-                : ['coupon.scan', 'checkin.confirm'],
+            permissions,
             status: 'ACTIVE',
           },
         });
@@ -140,8 +162,61 @@ export class PartnerStaffService {
         displayName: newUser.displayName,
         phone: newUser.phone,
         status: newUser.status,
+        permissions,
       };
     }
+  }
+
+  async updateStaffPermissions(
+    userId: string,
+    storeId: string,
+    permissions: string[] | undefined,
+  ) {
+    const normalizedPermissions = this.normalizeStaffPermissions(
+      permissions,
+      false,
+    );
+    const permission = await this.prisma.storePermission.findFirst({
+      where: {
+        userId,
+        storeId,
+        deletedAt: null,
+        status: 'ACTIVE',
+        user: { role: 'STAFF' },
+      },
+    });
+
+    if (!permission) {
+      throw new NotFoundException(
+        'Quyền truy cập cửa hàng không tồn tại cho nhân viên này',
+      );
+    }
+
+    const updated = await this.prisma.storePermission.update({
+      where: {
+        userId_storeId: {
+          userId,
+          storeId,
+        },
+      },
+      data: {
+        permissions: normalizedPermissions,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return {
+      id: updated.userId,
+      userId: updated.userId,
+      email: updated.user.email,
+      displayName: updated.user.displayName,
+      phone: updated.user.phone,
+      status: updated.user.status,
+      permissions: updated.permissions,
+      createdAt: updated.createdAt,
+    };
   }
 
   async removeStaffFromStore(userId: string, storeId: string) {

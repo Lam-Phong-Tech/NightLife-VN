@@ -5121,7 +5121,7 @@ export class NightlifeDataService {
     await this.accessService.ensureStoreAccess(
       user,
       booking.storeId,
-      'booking.partner.view',
+      'checkin.confirm',
     );
     this.assertBookingQrCanBeScanned(booking);
 

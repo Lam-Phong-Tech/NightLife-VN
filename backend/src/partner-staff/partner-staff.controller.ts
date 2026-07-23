@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Req,
@@ -19,6 +20,7 @@ import { Roles } from '../auth/roles.decorator';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
 import { PartnerStaffService } from './partner-staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { UpdateStaffPermissionsDto } from './dto/update-staff-permissions.dto';
 
 interface RequestWithUser extends express.Request {
   user: AuthenticatedUser;
@@ -50,6 +52,25 @@ export class PartnerStaffController {
   async createStaff(@Req() req: RequestWithUser, @Body() dto: CreateStaffDto) {
     await this.accessService.ensureStoreAccess(req.user, dto.storeId);
     return this.partnerStaffService.assignStaffToStore(dto);
+  }
+
+  @ApiOperation({ summary: 'Cập nhật quyền hạn nhân viên trong quán' })
+  @Patch(':userId/permissions')
+  async updateStaffPermissions(
+    @Req() req: RequestWithUser,
+    @Param('userId') userId: string,
+    @Query('storeId') storeId: string,
+    @Body() dto: UpdateStaffPermissionsDto,
+  ) {
+    if (!storeId) {
+      throw new BadRequestException('storeId query parameter is required');
+    }
+    await this.accessService.ensureStoreAccess(req.user, storeId);
+    return this.partnerStaffService.updateStaffPermissions(
+      userId,
+      storeId,
+      dto.permissions,
+    );
   }
 
   @ApiOperation({
