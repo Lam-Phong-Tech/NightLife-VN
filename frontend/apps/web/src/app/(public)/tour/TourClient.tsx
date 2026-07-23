@@ -75,7 +75,7 @@ const tourDirectoryCopy: Record<LanguageCode, {
   vi: {
     backHome: "Quay lại trang chủ",
     title: "Danh sách tour nightlife",
-    eyebrow: "TOUR DIRECTORY",
+    eyebrow: "",
     searchAria: "Tìm tour",
     searchPlaceholder: "Tìm tour, quán hoặc khu vực...",
     cityAria: "Chọn thành phố",
@@ -95,7 +95,7 @@ const tourDirectoryCopy: Record<LanguageCode, {
   en: {
     backHome: "Back to home",
     title: "Nightlife tour list",
-    eyebrow: "TOUR DIRECTORY",
+    eyebrow: "",
     searchAria: "Search tours",
     searchPlaceholder: "Search tours, venues, or areas...",
     cityAria: "Choose city",
@@ -115,7 +115,7 @@ const tourDirectoryCopy: Record<LanguageCode, {
   ja: {
     backHome: "ホームへ戻る",
     title: "ナイトライフツアー一覧",
-    eyebrow: "TOUR DIRECTORY",
+    eyebrow: "",
     searchAria: "ツアーを検索",
     searchPlaceholder: "ツアー、店舗、エリアを検索...",
     cityAria: "都市を選択",
@@ -135,7 +135,7 @@ const tourDirectoryCopy: Record<LanguageCode, {
   ko: {
     backHome: "홈으로 돌아가기",
     title: "나이트라이프 투어 목록",
-    eyebrow: "TOUR DIRECTORY",
+    eyebrow: "",
     searchAria: "투어 검색",
     searchPlaceholder: "투어, 매장 또는 지역 검색...",
     cityAria: "도시 선택",
@@ -155,7 +155,7 @@ const tourDirectoryCopy: Record<LanguageCode, {
   zh: {
     backHome: "返回首页",
     title: "夜生活行程列表",
-    eyebrow: "TOUR DIRECTORY",
+    eyebrow: "",
     searchAria: "搜索行程",
     searchPlaceholder: "搜索行程、店铺或区域...",
     cityAria: "选择城市",
@@ -308,7 +308,7 @@ export function TourClient() {
 
           <div className="tour-directory-title">
             <h1>{copy.title}</h1>
-            <p>{copy.eyebrow}</p>
+            {copy.eyebrow && <p>{copy.eyebrow}</p>}
           </div>
         </header>
 
