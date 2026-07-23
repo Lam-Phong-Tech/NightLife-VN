@@ -112,7 +112,7 @@ export function createSecurityHeaders(isProduction: boolean) {
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
       key: "Permissions-Policy",
-      value: "camera=(), geolocation=(), microphone=()",
+      value: "camera=(self), geolocation=(), microphone=()",
     },
   ];
 

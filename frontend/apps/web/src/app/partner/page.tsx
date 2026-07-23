@@ -2439,7 +2439,7 @@ export default function PartnerPage() {
       }
       const scanCanvas = document.createElement('canvas');
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { facingMode: { ideal: 'environment' } },
         audio: false,
       });
       cameraStreamRef.current = stream;

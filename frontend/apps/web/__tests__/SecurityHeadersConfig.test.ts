@@ -11,6 +11,9 @@ describe("security headers configuration", () => {
     );
     expect(headers.get("X-Frame-Options")).toBe("DENY");
     expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(headers.get("Permissions-Policy")).toBe(
+      "camera=(self), geolocation=(), microphone=()",
+    );
     expect(headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
   });
 
