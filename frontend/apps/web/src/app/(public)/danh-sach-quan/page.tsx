@@ -23,6 +23,8 @@ import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { translateText } from "@/lib/i18n/client-translations";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { Pagination } from "@/components/ui/Pagination";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } from "@/lib/member-favorites";
