@@ -56,22 +56,47 @@ const googleMapEmbedFromUrl = (value: string) => {
     if (!allowedGoogleMapHosts(parsed.hostname)) return "";
 
     const decodedHref = decodeURIComponent(parsed.href);
-    const coordinateMatch =
-      decodedHref.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ??
-      decodedHref.match(/[?&](?:q|query|ll)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
 
-    if (coordinateMatch) {
-      return mapQueryEmbedUrl(`${coordinateMatch[1]},${coordinateMatch[2]}`);
+    // 1. Check for exact pin coordinates in data parameter (!3d<lat>!4d<lng>)
+    const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
+    if (pinMatch) {
+      return mapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
     }
 
-    const query =
+    // 2. Check for explicit query parameters
+    const queryParam =
       parsed.searchParams.get("q") ||
       parsed.searchParams.get("query") ||
       parsed.searchParams.get("destination") ||
-      parsed.searchParams.get("daddr") ||
-      firstUsefulPathSegment(parsed);
+      parsed.searchParams.get("daddr");
+    if (queryParam && queryParam.trim() && !queryParam.startsWith("@")) {
+      return mapQueryEmbedUrl(queryParam.trim());
+    }
 
-    return mapQueryEmbedUrl(query);
+    // 3. Check for place name in URL path (/place/<place_name>/)
+    const placeMatch = parsed.pathname.match(/\/place\/([^\/]+)/);
+    if (placeMatch && placeMatch[1]) {
+      const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+      if (placeName && !placeName.startsWith("@")) {
+        return mapQueryEmbedUrl(placeName);
+      }
+    }
+
+    const usefulSegment = firstUsefulPathSegment(parsed);
+    if (usefulSegment) {
+      return mapQueryEmbedUrl(usefulSegment);
+    }
+
+    // 4. Fallback to @lat,lng camera/viewport center
+    const cameraMatch =
+      decodedHref.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ??
+      decodedHref.match(/[?&]ll=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+
+    if (cameraMatch) {
+      return mapQueryEmbedUrl(`${cameraMatch[1]},${cameraMatch[2]}`);
+    }
+
+    return "";
   } catch {
     return "";
   }

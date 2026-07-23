@@ -138,17 +138,36 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
     if (mapUrl.includes("/maps") || mapUrl.includes("maps.google.")) {
       try {
         const parsedMapUrl = new URL(mapUrl);
-        const coordinateMatch = decodeURIComponent(parsedMapUrl.href).match(
-          /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
-        );
+        const decodedHref = decodeURIComponent(parsedMapUrl.href);
 
+        const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
+        if (pinMatch) {
+          return googleMapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
+        }
+
+        const queryParam =
+          parsedMapUrl.searchParams.get("q") ||
+          parsedMapUrl.searchParams.get("query") ||
+          parsedMapUrl.searchParams.get("destination") ||
+          parsedMapUrl.searchParams.get("daddr");
+        if (queryParam && queryParam.trim() && !queryParam.startsWith("@")) {
+          return googleMapQueryEmbedUrl(queryParam.trim());
+        }
+
+        const placeMatch = parsedMapUrl.pathname.match(/\/place\/([^\/]+)/);
+        if (placeMatch && placeMatch[1]) {
+          const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+          if (placeName && !placeName.startsWith("@")) {
+            return googleMapQueryEmbedUrl(placeName);
+          }
+        }
+
+        const coordinateMatch = decodedHref.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
         if (coordinateMatch) {
           return googleMapQueryEmbedUrl(`${coordinateMatch[1]},${coordinateMatch[2]}`);
         }
 
         const query =
-          parsedMapUrl.searchParams.get("q") ||
-          parsedMapUrl.searchParams.get("query") ||
           parsedMapUrl.pathname
             .split("/")
             .map((part) => decodeURIComponent(part.replace(/\+/g, " ")))
