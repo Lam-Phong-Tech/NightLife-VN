@@ -3,12 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import {
+  filterBlogPostsByLanguage,
   filterBlogPosts,
   getBlogCategories,
   getFeaturedBlogPost,
   getPublishedBlogPosts,
   slugifyBlogTerm,
 } from "@/lib/content/blog";
+import { getServerSelectedLanguage } from "@/lib/i18n/server-language";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 import { BlogSearchSubmitGuard } from "./BlogSearchSubmitGuard";
@@ -19,6 +21,7 @@ type BlogPageProps = {
     category?: string;
     tag?: string;
     page?: string;
+    lang?: string;
   }>;
 };
 
@@ -100,19 +103,24 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const query = params.q?.trim() ?? "";
   const activeCategory = params.category?.trim() ?? "";
   const activeTag = params.tag?.trim() ?? "";
+  const activeLanguage = await getServerSelectedLanguage(params.lang);
   const requestedPage = parseBlogPage(params.page?.trim());
   const allPosts = await getPublishedBlogPosts();
-  const featuredPost = await getFeaturedBlogPost();
-  const categories = getBlogCategories(allPosts);
-  const filteredPosts = filterBlogPosts(allPosts, {
+  const languagePosts = filterBlogPostsByLanguage(allPosts, activeLanguage);
+  const featuredPost =
+    languagePosts.find((post) => post.featured && !post.noindex) ??
+    languagePosts.find((post) => !post.noindex);
+  const categories = getBlogCategories(languagePosts);
+  const filteredPosts = filterBlogPosts(languagePosts, {
     q: query,
     category: activeCategory,
     tag: activeTag,
+    language: activeLanguage,
   });
   const hasFilter = Boolean(query || activeCategory || activeTag);
   const posts = hasFilter
     ? filteredPosts
-    : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost?.slug);
+    : languagePosts.filter((post) => !post.noindex && post.slug !== featuredPost?.slug);
   const totalPages = Math.max(1, Math.ceil(posts.length / blogPageSize));
   const currentPage = Math.min(requestedPage, totalPages);
   const paginatedPosts = posts.slice(

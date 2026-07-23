@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  filterBlogPostsByLanguage,
   filterBlogPosts,
   findBlogCategoryBySlug,
   getBlogCategories,
   getPublishedBlogPosts,
   slugifyBlogTerm,
 } from "@/lib/content/blog";
+import { getServerSelectedLanguage } from "@/lib/i18n/server-language";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ lang?: string }>;
 };
 
 export const revalidate = 300;
@@ -53,14 +56,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BlogCategoryPage({ params }: PageProps) {
+export default async function BlogCategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const posts = await getPublishedBlogPosts();
+  const queryParams = (await searchParams) ?? {};
+  const activeLanguage = await getServerSelectedLanguage(queryParams.lang);
+  const posts = filterBlogPostsByLanguage(await getPublishedBlogPosts(), activeLanguage);
   const category = findBlogCategoryBySlug(posts, slug);
 
   if (!category) notFound();
 
-  const categoryPosts = filterBlogPosts(posts, { category: slug });
+  const categoryPosts = filterBlogPosts(posts, { category: slug, language: activeLanguage });
   const structuredData = jsonLdGraph([
     breadcrumbJsonLd(
       [

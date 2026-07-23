@@ -1,6 +1,7 @@
 import { contentApi, getCmsContentImageUrl, type CmsContentItem } from "@/lib/api/content";
 
 export type BlogStatus = "DRAFT" | "PUBLISHED";
+export type BlogLanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
 
 export type BlogPost = {
   slug: string;
@@ -18,6 +19,7 @@ export type BlogPost = {
   image: string;
   imageAlt: string;
   featured?: boolean;
+  languages: BlogLanguageCode[];
   tags: string[];
   sections: Array<{
     heading: string;
@@ -50,6 +52,63 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 
 const asStringArray = (value: unknown) =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+
+const normalizeBlogLanguage = (value: unknown): BlogLanguageCode | null => {
+  if (typeof value !== "string") return null;
+
+  const raw = value.trim().toLowerCase();
+  const normalized = normalizeText(raw);
+
+  if (["vi", "vn", "vie", "vietnamese"].includes(normalized) || normalized.includes("tieng viet")) {
+    return "vi";
+  }
+
+  if (["en", "eng", "english"].includes(normalized)) {
+    return "en";
+  }
+
+  if (["ja", "jp", "jpn", "japanese"].includes(normalized) || raw.includes("日本")) {
+    return "ja";
+  }
+
+  if (["ko", "kr", "kor", "korean"].includes(normalized) || raw.includes("한국")) {
+    return "ko";
+  }
+
+  if (["zh", "cn", "chn", "chinese"].includes(normalized) || raw.includes("中文") || raw.includes("中国")) {
+    return "zh";
+  }
+
+  return null;
+};
+
+const asBlogLanguages = (...values: unknown[]): BlogLanguageCode[] => {
+  const languages = new Set<BlogLanguageCode>();
+  const collect = (value: unknown) => {
+    const directLanguage = normalizeBlogLanguage(value);
+    if (directLanguage) {
+      languages.add(directLanguage);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+      return;
+    }
+
+    const record = asRecord(value);
+    if (record) {
+      Object.entries(record).forEach(([key, enabled]) => {
+        if (enabled === false || enabled === null || enabled === undefined) return;
+        collect(key);
+      });
+    }
+  };
+
+  values.forEach(collect);
+
+  return Array.from(languages);
+};
 
 const decodeHtmlEntities = (value: string) =>
   value
@@ -94,6 +153,12 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
   const createdAt = content.createdAt;
   const publishedAt = content.publishedAt?.slice(0, 10) ?? content.createdAt.slice(0, 10);
   const sections = asSections(metadata.sections);
+  const configuredLanguages = asBlogLanguages(
+    metadata.language,
+    metadata.languages,
+    metadata.displayLanguage,
+    metadata.displayLanguages,
+  );
   const image = getCmsContentImageUrl(content);
   const description =
     stripHtmlToText(content.excerpt) ||
@@ -121,6 +186,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
     imageAlt:
       typeof metadata.imageAlt === "string" ? metadata.imageAlt : `Ảnh minh họa cho ${content.title}`,
     featured: metadata.featured === true,
+    languages: configuredLanguages.length ? configuredLanguages : ["vi"],
     tags: asStringArray(metadata.tags),
     sections: sections.length
       ? sections
@@ -196,6 +262,9 @@ export const getBlogCategories = (posts: BlogPost[]) =>
 export const getBlogTags = (posts: BlogPost[]) =>
   Array.from(new Set(posts.filter((post) => !post.noindex).flatMap((post) => post.tags)));
 
+export const filterBlogPostsByLanguage = (posts: BlogPost[], language: BlogLanguageCode) =>
+  posts.filter((post) => post.languages.includes(language));
+
 export const findBlogCategoryBySlug = (posts: BlogPost[], slug: string) =>
   getBlogCategories(posts).find((category) => slugifyBlogTerm(category) === slug);
 
@@ -204,12 +273,13 @@ export const findBlogTagBySlug = (posts: BlogPost[], slug: string) =>
 
 export const filterBlogPosts = (
   posts: BlogPost[],
-  filters: { q?: string; category?: string; tag?: string } = {},
+  filters: { q?: string; category?: string; tag?: string; language?: BlogLanguageCode } = {},
 ) => {
   const query = normalizeText(filters.q ?? "");
 
   return posts
     .filter((post) => !post.noindex)
+    .filter((post) => !filters.language || post.languages.includes(filters.language))
     .filter((post) => !filters.category || slugifyBlogTerm(post.category) === filters.category)
     .filter((post) => !filters.tag || post.tags.some((tag) => slugifyBlogTerm(tag) === filters.tag))
     .filter((post) => {
