@@ -21,6 +21,16 @@ const USER_ROLE_TO_ROLE_KEY: Record<string, string> = {
   USER: 'member',
 };
 
+const STAFF_STORE_WILDCARD_PERMISSION = 'store.staff.all';
+const STORE_SCOPED_PERMISSION_KEYS = new Set([
+  'store.partner.view',
+  'coupon.partner.view',
+  'booking.partner.view',
+  'bill.partner.view',
+  'coupon.scan',
+  'checkin.confirm',
+]);
+
 @Injectable()
 export class AccessService {
   constructor(private readonly prisma: PrismaService) {}
@@ -290,7 +300,22 @@ export class AccessService {
       select: { id: true },
     });
 
-    return Boolean(permission);
+    if (permission) {
+      return true;
+    }
+
+    if (
+      user.role === 'STAFF' &&
+      STORE_SCOPED_PERMISSION_KEYS.has(permissionKey)
+    ) {
+      return this.hasDelegatedStorePermission(
+        user.id,
+        permissionKey,
+        permissionKey === 'store.partner.view',
+      );
+    }
+
+    return false;
   }
 
   async getPartnerStoreIds(userId: string, permissionKey?: string) {
@@ -328,13 +353,59 @@ export class AccessService {
     return primaryStoreId ? [primaryStoreId] : [];
   }
 
-  async getDelegatedStoreIds(userId: string, permissionKey?: string) {
+  private storePermissionFilter(
+    permissionKey?: string,
+    options: { allowStaffWildcard?: boolean; allowAny?: boolean } = {},
+  ): Prisma.StorePermissionWhereInput {
+    if (!permissionKey || options.allowAny) {
+      return {};
+    }
+
+    if (options.allowStaffWildcard) {
+      return {
+        OR: [
+          { permissions: { has: permissionKey } },
+          { permissions: { has: STAFF_STORE_WILDCARD_PERMISSION } },
+        ],
+      };
+    }
+
+    return { permissions: { has: permissionKey } };
+  }
+
+  private async hasDelegatedStorePermission(
+    userId: string,
+    permissionKey: string,
+    allowAny = false,
+  ) {
+    const permission = await this.prisma.storePermission.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        status: 'ACTIVE',
+        ...this.storePermissionFilter(permissionKey, {
+          allowStaffWildcard: true,
+          allowAny,
+        }),
+      },
+      take: 1,
+      select: { id: true },
+    });
+
+    return permission.length > 0;
+  }
+
+  async getDelegatedStoreIds(
+    userId: string,
+    permissionKey?: string,
+    options: { allowStaffWildcard?: boolean; allowAny?: boolean } = {},
+  ) {
     const delegatedStores = await this.prisma.storePermission.findMany({
       where: {
         userId,
         deletedAt: null,
         status: 'ACTIVE',
-        ...(permissionKey ? { permissions: { has: permissionKey } } : {}),
+        ...this.storePermissionFilter(permissionKey, options),
       },
       select: { storeId: true },
     });
@@ -352,7 +423,10 @@ export class AccessService {
     }
 
     if (user.role === 'STAFF') {
-      return this.getDelegatedStoreIds(user.id, permissionKey);
+      return this.getDelegatedStoreIds(user.id, permissionKey, {
+        allowStaffWildcard: true,
+        allowAny: permissionKey === 'store.partner.view',
+      });
     }
 
     return [];

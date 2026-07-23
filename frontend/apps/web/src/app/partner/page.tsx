@@ -2416,7 +2416,7 @@ export default function PartnerPage() {
       } catch (error) {
         if (!isMounted) return;
 
-        if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        if (error instanceof ApiError && error.status === 401) {
           try {
             const clearFn = authSession.clearAuthSession;
             if (typeof clearFn === 'function') {
@@ -2424,6 +2424,14 @@ export default function PartnerPage() {
             }
           } catch {}
           window.location.href = '/dang-nhap-doi-tac?redirect=/partner';
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 403) {
+          setStatusMessage(
+            error.message ||
+              'Tài khoản nhân viên chưa được gán quyền quán để truy cập cổng đối tác.',
+          );
           return;
         }
 

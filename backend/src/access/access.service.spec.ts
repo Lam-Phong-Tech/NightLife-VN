@@ -133,6 +133,91 @@ describe('AccessService', () => {
     ).resolves.toBe(true);
   });
 
+  it('allows store staff into partner scope through delegated store permissions', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue(null);
+    prisma.storePermission.findMany
+      .mockResolvedValueOnce([{ id: 'permission-1' }] as never)
+      .mockResolvedValueOnce([{ storeId: 'assigned-store' }] as never);
+
+    await expect(
+      service.canViewPartnerStore({
+        id: 'staff-1',
+        role: 'STAFF',
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      service.getAccessibleStoreIds(
+        { id: 'staff-1', role: 'STAFF' },
+        'store.partner.view',
+      ),
+    ).resolves.toEqual(['assigned-store']);
+
+    expect(prisma.storePermission.findMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        userId: 'staff-1',
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      take: 1,
+      select: { id: true },
+    });
+    expect(prisma.storePermission.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        userId: 'staff-1',
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: { storeId: true },
+    });
+  });
+
+  it('allows store staff action permission through exact or wildcard store permissions', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue(null);
+    prisma.storePermission.findMany
+      .mockResolvedValueOnce([{ id: 'permission-1' }] as never)
+      .mockResolvedValueOnce([{ storeId: 'assigned-store' }] as never);
+
+    await expect(
+      service.hasRolePermission(
+        { id: 'staff-1', role: 'STAFF' },
+        'coupon.scan',
+      ),
+    ).resolves.toBe(true);
+
+    await expect(
+      service.getAccessibleStoreIds(
+        { id: 'staff-1', role: 'STAFF' },
+        'coupon.scan',
+      ),
+    ).resolves.toEqual(['assigned-store']);
+
+    expect(prisma.storePermission.findMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        userId: 'staff-1',
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: [
+          { permissions: { has: 'coupon.scan' } },
+          { permissions: { has: 'store.staff.all' } },
+        ],
+      },
+      take: 1,
+      select: { id: true },
+    });
+    expect(prisma.storePermission.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        userId: 'staff-1',
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: [
+          { permissions: { has: 'coupon.scan' } },
+          { permissions: { has: 'store.staff.all' } },
+        ],
+      },
+      select: { storeId: true },
+    });
+  });
+
   it('checks separated bill approval permissions with platform-wide admin scope', async () => {
     prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
 

@@ -545,7 +545,7 @@ export class NightlifeDataController {
 
   @PartnerStoresContract()
   @ActionPolicy('canViewPartnerStore')
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/stores')
   listPartnerStores(@Req() request: RequestWithUser) {
@@ -627,7 +627,7 @@ export class NightlifeDataController {
 
   @PartnerLiteDashboardContract()
   @ActionPolicy('canViewPartnerStore')
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/dashboard-lite')
   getPartnerLiteDashboard(
@@ -642,7 +642,7 @@ export class NightlifeDataController {
 
   @PartnerCouponsContract()
   @ActionPolicy('canViewPartnerCoupon')
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/coupons')
   listPartnerCoupons(@Req() request: RequestWithUser) {
@@ -651,7 +651,7 @@ export class NightlifeDataController {
 
   @PartnerBookingsContract()
   @ActionPolicy('canViewPartnerBooking')
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/bookings')
   listPartnerBookings(@Req() request: RequestWithUser) {
@@ -659,7 +659,7 @@ export class NightlifeDataController {
   }
 
   @PartnerScanCouponPayloadContract()
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/coupon-issues/scan')
   scanCouponIssuePayload(
@@ -671,7 +671,7 @@ export class NightlifeDataController {
 
   @PartnerScanCouponContract()
   @ActionPolicy('canScanCoupon')
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('partner/coupon-issues/:code/scan')
   scanCouponIssue(
@@ -681,7 +681,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.scanCouponIssue(code, request.user);
   }
 
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/booking-qrs/scan')
   scanPartnerBookingQr(
@@ -691,7 +691,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.scanPartnerBookingQr(dto, request.user);
   }
 
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/booking-qrs/:bookingId/confirm-check-in')
   confirmPartnerBookingQrCheckIn(
@@ -704,7 +704,7 @@ export class NightlifeDataController {
     );
   }
 
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/tour-booking-qrs/scan')
   scanPartnerTourBookingQr(
@@ -717,7 +717,7 @@ export class NightlifeDataController {
     );
   }
 
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/tour-booking-qrs/confirm-check-in')
   confirmPartnerTourBookingQrCheckIn(
@@ -732,7 +732,7 @@ export class NightlifeDataController {
 
   @PartnerConfirmCheckInContract('id')
   @ActionPolicy('canConfirmCheckIn')
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('partner/coupon-issues/:id/confirm-check-in')
   confirmCouponIssueCheckInByIssueId(
@@ -747,7 +747,7 @@ export class NightlifeDataController {
 
   @PartnerConfirmCheckInContract()
   @ActionPolicy('canConfirmCheckIn')
-  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @Roles('PARTNER', 'STAFF', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('partner/check-ins/:couponIssueId/confirm')
   confirmCouponIssueCheckIn(
@@ -762,7 +762,7 @@ export class NightlifeDataController {
 
   @PartnerBillsContract()
   @ActionPolicy('canViewPartnerBill')
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/bills')
   listPartnerBills(@Req() request: RequestWithUser) {
@@ -770,7 +770,7 @@ export class NightlifeDataController {
   }
 
   @CreatePartnerBillContract()
-  @Roles('PARTNER', 'ADMIN')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('partner/bills')
   submitPartnerBill(
@@ -783,7 +783,7 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Bill P2: OCR/AI preview helper for uploaded bill evidence',
   })
-  @Roles('USER', 'PARTNER', 'ADMIN')
+  @Roles('USER', 'PARTNER', 'STAFF', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('bills/ocr-preview')
   previewBillOcr(
