@@ -1672,7 +1672,7 @@ function AdminCastsContent() {
                   })}
                   <input 
                     type="text" 
-                    placeholder="Khác (ngăn cách phẩy)..." 
+                    placeholder="Thêm ngôn ngữ, ngăn cách bởi dấu phẩy..."
                     value={formData.languages?.filter((l: string) => !COMMON_LANGS.includes(l)).join(', ') || ''}
                     onChange={(e) => {
                       const others = e.target.value.split(',').map(s=>s.trim()).filter(Boolean);
