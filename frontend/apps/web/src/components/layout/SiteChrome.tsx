@@ -492,6 +492,7 @@ function NotificationTabs({
     >
       {tabs.map((tab) => {
         const active = tab.key === activeFilter;
+        const showAllBadge = tab.key === "all" && unreadCount > 0;
         return (
           <button
             key={tab.key}
@@ -500,33 +501,45 @@ function NotificationTabs({
             onClick={() => onFilterChange(tab.key)}
             style={{
               flex: "none",
+              position: "relative",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: isMobile ? "6px" : "5px",
-              minWidth: isMobile && tab.key === "all" ? "76px" : undefined,
+              gap: showAllBadge ? 0 : isMobile ? "6px" : "5px",
+              minWidth: tab.key === "all" ? (isMobile ? "82px" : "72px") : undefined,
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "0" : `1px solid ${colors.border}`,
               borderRadius: "15px",
-              padding: isMobile ? "7px 15px" : "6px 12px",
+              padding: showAllBadge
+                ? isMobile
+                  ? "7px 34px 7px 15px"
+                  : "6px 31px 6px 12px"
+                : isMobile
+                  ? "7px 15px"
+                  : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
+              overflow: "hidden",
             }}
           >
             {tab.label}
-            {active && tab.key === "all" && unreadCount > 0 ? (
+            {showAllBadge ? (
               <b
                 style={{
-                  minWidth: "22px",
-                  height: "19px",
+                  position: "absolute",
+                  top: "50%",
+                  right: isMobile ? "8px" : "7px",
+                  transform: "translateY(-50%)",
+                  minWidth: unreadCount > 9 ? "24px" : "20px",
+                  height: "18px",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "rgba(255, 250, 241, 0.96)",
-                  color: "#7b5415",
+                  background: active ? "rgba(255, 250, 241, 0.96)" : "rgba(212,178,106,.16)",
+                  color: active ? "#7b5415" : colors.goldPale,
                   border: `1px solid ${colors.borderGold32}`,
                   borderRadius: "999px",
                   boxShadow: "0 5px 12px rgba(36, 26, 10, 0.16)",
@@ -534,6 +547,7 @@ function NotificationTabs({
                   fontWeight: 800,
                   lineHeight: 1,
                   padding: "0 6px",
+                  pointerEvents: "none",
                 }}
               >
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -2310,6 +2324,7 @@ export function SiteChrome({
                   onClick={(anchorRect) => {
                     setNotificationAnchorRect(anchorRect);
                     setIsChatOpen(false);
+                    setNotificationFilter("all");
                     setIsNotificationOpen((open) => !open);
                   }}
                 />
@@ -2374,6 +2389,7 @@ export function SiteChrome({
                   onClick={(anchorRect) => {
                     setNotificationAnchorRect(anchorRect);
                     setIsChatOpen(false);
+                    setNotificationFilter("all");
                     setIsNotificationOpen((open) => !open);
                   }}
                 />
