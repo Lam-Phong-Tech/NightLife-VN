@@ -24,6 +24,7 @@ describe('NightlifeDataService', () => {
       update: jest.fn(),
     },
     storePermission: {
+      findMany: jest.fn(),
       upsert: jest.fn(),
     },
     partnerRequest: {
@@ -4057,6 +4058,42 @@ describe('NightlifeDataService', () => {
         },
       }),
     );
+  });
+
+  it('returns delegated staff permissions with partner stores', async () => {
+    accessService.getAccessibleStoreIds.mockResolvedValue(['store-a']);
+    prisma.store.findMany.mockResolvedValue([
+      { id: 'store-a', name: 'Partner A Store' },
+    ] as never);
+    prisma.storePermission.findMany.mockResolvedValue([
+      { storeId: 'store-a', permissions: ['coupon.scan'] },
+    ] as never);
+
+    await expect(
+      service.listPartnerStores({
+        id: 'staff-a',
+        role: 'STAFF',
+      }),
+    ).resolves.toEqual([
+      {
+        id: 'store-a',
+        name: 'Partner A Store',
+        permissions: ['coupon.scan'],
+      },
+    ]);
+
+    expect(prisma.storePermission.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'staff-a',
+        storeId: { in: ['store-a'] },
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        storeId: true,
+        permissions: true,
+      },
+    });
   });
 
   it('loads partner listing ward from existing store address data', async () => {

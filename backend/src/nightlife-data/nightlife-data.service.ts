@@ -3045,7 +3045,7 @@ export class NightlifeDataService {
       'store.partner.view',
     );
 
-    return this.prisma.store.findMany({
+    const stores = await this.prisma.store.findMany({
       where: {
         deletedAt: null,
         ...(storeIds ? { id: { in: storeIds } } : {}),
@@ -3062,6 +3062,34 @@ export class NightlifeDataService {
         createdAt: true,
       },
     });
+
+    if (user.role !== 'STAFF' || stores.length === 0) {
+      return stores;
+    }
+
+    const storePermissions = await this.prisma.storePermission.findMany({
+      where: {
+        userId: user.id,
+        storeId: { in: stores.map((store) => store.id) },
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        storeId: true,
+        permissions: true,
+      },
+    });
+    const permissionsByStoreId = new Map(
+      storePermissions.map((permission) => [
+        permission.storeId,
+        permission.permissions,
+      ]),
+    );
+
+    return stores.map((store) => ({
+      ...store,
+      permissions: permissionsByStoreId.get(store.id) ?? [],
+    }));
   }
 
   async getPartnerListingDraft(user: AuthenticatedUser, storeId: string) {

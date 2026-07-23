@@ -195,6 +195,7 @@ type PartnerStore = {
   city?: string;
   district?: string | null;
   ward?: string | null;
+  permissions?: string[];
 };
 
 type PartnerListingPricing = {
@@ -522,6 +523,7 @@ const staffPermissionOptions = [
   { key: 'coupon.scan', label: 'Quét coupon' },
   { key: 'checkin.confirm', label: 'Xác nhận check-in' },
 ] as const;
+const staffStoreWildcardPermission = 'store.staff.all';
 type CastListField = 'tags' | 'hobbies' | 'languages' | 'youtubeLinks';
 const suggestedListingTags = [
   'Club',
@@ -631,6 +633,29 @@ const normalizePartnerScanPayload = (
   }
 
   return { kind: 'coupon', payload: raw, raw, label: 'mã coupon' };
+};
+
+const hasStaffStorePermission = (permissions: string[] | undefined, permission: string) =>
+  Boolean(
+    permissions?.includes(permission) ||
+      permissions?.includes(staffStoreWildcardPermission),
+  );
+
+const getScanPermissionMessage = (kind: NormalizedScanPayload['kind']) =>
+  kind === 'booking' || kind === 'tour'
+    ? 'Tài khoản nhân viên của bạn chưa được cấp quyền xác nhận check-in cho quán này.'
+    : 'Tài khoản nhân viên của bạn chưa được cấp quyền quét coupon cho quán này.';
+
+const getFriendlyScanErrorMessage = (error: unknown) => {
+  if (!(error instanceof ApiError)) {
+    return 'Không kiểm tra được mã. Thử lại hoặc dán link QR/mã đặt chỗ thủ công.';
+  }
+
+  if (/cannot access data for this store/i.test(error.message)) {
+    return 'Bạn không có quyền xử lý mã này hoặc mã không thuộc quán được phân quyền. Kiểm tra lại quán, quyền nhân viên, hạn QR và trạng thái đã dùng/check-in.';
+  }
+
+  return `${error.message}. Kiểm tra QR có đúng quán, còn hạn và chưa check-in/USED.`;
 };
 
 const readQrFromVideoFrame = async (
@@ -1782,6 +1807,31 @@ export default function PartnerPage() {
     }
   } catch {}
 
+  const isStaffAccount = currentUser?.role === 'STAFF';
+  const scanPermissionStore = stores.find((store) => store.id === scanStoreId) ?? stores[0] ?? null;
+  const scanStorePermissions = scanPermissionStore?.permissions ?? [];
+  const staffCanScanCoupons =
+    !isStaffAccount || hasStaffStorePermission(scanStorePermissions, 'coupon.scan');
+  const staffCanConfirmCheckIn =
+    !isStaffAccount || hasStaffStorePermission(scanStorePermissions, 'checkin.confirm');
+  const staffCanUseQrTools = staffCanScanCoupons || staffCanConfirmCheckIn;
+  const scanPermissionNotice =
+    'Tài khoản nhân viên của bạn chưa được cấp quyền quét QR hoặc xác nhận check-in cho quán này. Vui lòng liên hệ tài khoản đối tác quản lý để bật quyền phù hợp.';
+
+  const showScanToast = useCallback(
+    (title: string, description: string, tone: 'warning' | 'error' = 'warning') => {
+      setScanMessage(description);
+      feedback.showToast({
+        tone,
+        title,
+        description,
+        durationMs: 6500,
+        placement: 'top-right',
+      });
+    },
+    [feedback],
+  );
+
   // Change Password States
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -2218,8 +2268,12 @@ export default function PartnerPage() {
       writeOfflineScanQueue(next);
       return pruneOfflineScanQueue(next);
     });
-    setScanMessage('Đang offline, đã lưu mã vào hàng đợi để gửi lại.');
-  }, []);
+    showScanToast(
+      'Đang offline',
+      'Đã lưu mã vào hàng đợi. Khi có mạng, bấm gửi hàng đợi để kiểm tra lại.',
+      'warning',
+    );
+  }, [showScanToast]);
 
   const scanCouponPayload = useCallback(
     async (
@@ -2229,20 +2283,47 @@ export default function PartnerPage() {
       const trimmedPayload = payload.trim();
       const normalizedPayload = normalizePartnerScanPayload(trimmedPayload);
       if (!normalizedPayload) {
-        setScanMessage('Cần QR đặt chỗ, scanToken, link QR hoặc mã coupon để kiểm tra.');
+        showScanToast(
+          'Thiếu mã QR',
+          'Cần QR đặt chỗ, scanToken, link QR hoặc mã coupon để kiểm tra.',
+          'warning',
+        );
+        return false;
+      }
+
+      const needsCheckInPermission =
+        normalizedPayload.kind === 'booking' || normalizedPayload.kind === 'tour';
+      const hasRequiredPermission = needsCheckInPermission
+        ? staffCanConfirmCheckIn
+        : staffCanScanCoupons;
+
+      if (!hasRequiredPermission) {
+        showScanToast(
+          'Bạn chưa có quyền thao tác',
+          getScanPermissionMessage(normalizedPayload.kind),
+          'error',
+        );
         return false;
       }
 
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         if (options.fromQueue) {
-          setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
+          showScanToast(
+            'Vẫn đang offline',
+            'Mã vẫn được giữ trong hàng đợi để thử lại khi có mạng.',
+            'warning',
+          );
         } else {
           queueOfflineScan(normalizedPayload.payload);
         }
         return false;
       }
       if (normalizedPayload.kind === 'tour' && !scanStoreId) {
-        setScanMessage('Cần chọn quán đang thực hiện quét QR tour.');
+        showScanToast(
+          'Chưa chọn quán',
+          'Cần chọn quán đang thực hiện quét QR tour.',
+          'warning',
+        );
         return false;
       }
 
@@ -2297,36 +2378,50 @@ export default function PartnerPage() {
       } catch (error) {
         if (!(error instanceof ApiError) && typeof navigator !== 'undefined' && !navigator.onLine) {
           if (options.fromQueue) {
-            setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
+            showScanToast(
+              'Vẫn đang offline',
+              'Mã vẫn được giữ trong hàng đợi để thử lại khi có mạng.',
+              'warning',
+            );
           } else {
             queueOfflineScan(normalizedPayload.payload);
           }
           return false;
         }
 
-        setScanMessage(
-          error instanceof ApiError
-            ? `${error.message}. Kiểm tra QR có đúng quán, còn hạn và chưa check-in/USED.`
-            : 'Không kiểm tra được mã. Thử lại hoặc dán link QR/mã đặt chỗ thủ công.',
+        showScanToast(
+          'Không quét được mã QR',
+          getFriendlyScanErrorMessage(error),
+          'error',
         );
         return false;
       } finally {
         setIsScanning(false);
       }
     },
-    [queueOfflineScan, scanStoreId],
+    [queueOfflineScan, scanStoreId, showScanToast, staffCanConfirmCheckIn, staffCanScanCoupons],
   );
 
   const startCameraScan = useCallback(async () => {
+    if (!staffCanUseQrTools) {
+      showScanToast(
+        'Bạn chưa có quyền quét QR',
+        scanPermissionNotice,
+        'error',
+      );
+      return;
+    }
+
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
+      const message =
+        'Trình duyệt hiện tại chưa cho phép mở camera. Vẫn có thể dán link hoặc nhập mã.';
       setCameraStatus('unsupported');
-      setCameraMessage(
-        'Trình duyệt hiện tại chưa cho phép mở camera. Vẫn có thể dán link hoặc nhập mã.',
-      );
+      setCameraMessage(message);
+      showScanToast('Không mở được camera', message, 'warning');
       return;
     }
 
@@ -2379,7 +2474,9 @@ export default function PartnerPage() {
           }
         } catch {
           setCameraStatus('error');
-          setCameraMessage('Không đọc được QR từ camera. Có thể dán link hoặc nhập mã bên dưới.');
+          const message = 'Không đọc được QR từ camera. Có thể dán link hoặc nhập mã bên dưới.';
+          setCameraMessage(message);
+          showScanToast('Không đọc được QR từ camera', message, 'warning');
           return;
         }
 
@@ -2394,14 +2491,25 @@ export default function PartnerPage() {
         videoRef.current.srcObject = null;
       }
       setCameraStatus('error');
-      setCameraMessage(
-        'Không mở được camera. Kiểm tra quyền camera rồi thử lại, hoặc nhập mã thủ công.',
-      );
+      const message =
+        'Không mở được camera. Kiểm tra quyền camera rồi thử lại, hoặc nhập mã thủ công.';
+      setCameraMessage(message);
+      showScanToast('Không mở được camera', message, 'error');
     }
-  }, [scanCouponPayload, stopCameraScan]);
+  }, [scanCouponPayload, scanPermissionNotice, showScanToast, staffCanUseQrTools, stopCameraScan]);
 
   const handleQrImageFileChange = useCallback(
     async (input: HTMLInputElement) => {
+      if (!staffCanUseQrTools) {
+        input.value = '';
+        showScanToast(
+          'Bạn chưa có quyền tải QR',
+          scanPermissionNotice,
+          'error',
+        );
+        return;
+      }
+
       const file = input.files?.[0] ?? null;
       input.value = '';
       if (!file) {
@@ -2409,7 +2517,11 @@ export default function PartnerPage() {
       }
 
       if (!file.type.startsWith('image/')) {
-        setScanMessage('Vui lòng chọn file ảnh QR định dạng JPG, PNG hoặc WebP.');
+        showScanToast(
+          'File không hợp lệ',
+          'Vui lòng chọn file ảnh QR định dạng JPG, PNG hoặc WebP.',
+          'warning',
+        );
         return;
       }
 
@@ -2420,7 +2532,11 @@ export default function PartnerPage() {
       try {
         const rawValue = await readQrFromImageFile(file);
         if (!rawValue) {
-          setScanMessage('Không đọc được QR trong ảnh. Vui lòng chọn ảnh rõ hơn hoặc nhập mã thủ công.');
+          showScanToast(
+            'Không đọc được QR',
+            'Không đọc được QR trong ảnh. Vui lòng chọn ảnh rõ hơn hoặc nhập mã thủ công.',
+            'warning',
+          );
           return;
         }
 
@@ -2428,19 +2544,36 @@ export default function PartnerPage() {
         setScanMessage('Đã đọc QR từ ảnh, đang xác thực mã...');
         await scanCouponPayload(rawValue, { fromImage: true });
       } catch {
-        setScanMessage('Không đọc được ảnh QR. Vui lòng thử ảnh khác hoặc nhập mã thủ công.');
+        showScanToast(
+          'Không đọc được ảnh QR',
+          'Vui lòng thử ảnh khác hoặc nhập mã thủ công.',
+          'error',
+        );
       } finally {
         setIsReadingQrImage(false);
       }
     },
-    [scanCouponPayload, stopCameraScan],
+    [scanCouponPayload, scanPermissionNotice, showScanToast, staffCanUseQrTools, stopCameraScan],
   );
 
   const replayOfflineScans = useCallback(async () => {
+    if (!staffCanUseQrTools) {
+      showScanToast(
+        'Bạn chưa có quyền gửi hàng đợi',
+        scanPermissionNotice,
+        'error',
+      );
+      return;
+    }
+
     const queuedItems = readOfflineScanQueue();
     if (!queuedItems.length) {
       setOfflineScanQueue([]);
-      setScanMessage('Không có mã offline nào đang chờ.');
+      showScanToast(
+        'Không có mã đang chờ',
+        'Không có mã offline nào đang chờ.',
+        'warning',
+      );
       return;
     }
 
@@ -2462,10 +2595,19 @@ export default function PartnerPage() {
     if (!nextQueue.length) {
       setScanMessage('Đã gửi hết mã offline đang chờ.');
     }
-  }, [scanCouponPayload]);
+  }, [scanCouponPayload, scanPermissionNotice, showScanToast, staffCanUseQrTools]);
 
   const confirmScannedIssue = async () => {
     if (!scanIssue) {
+      return;
+    }
+
+    if (!staffCanConfirmCheckIn) {
+      showScanToast(
+        'Bạn chưa có quyền xác nhận',
+        'Tài khoản nhân viên của bạn chưa được cấp quyền xác nhận check-in hoặc sử dụng mã cho quán này.',
+        'error',
+      );
       return;
     }
 
@@ -2478,7 +2620,11 @@ export default function PartnerPage() {
     try {
       if (scanIssue.scanType === 'TOUR_BOOKING_QR') {
         if (!scanIssue.scanSessionToken) {
-          setScanMessage('Phiên quét QR tour đã hết hạn. Vui lòng quét lại mã trước khi xác nhận.');
+          showScanToast(
+            'Phiên quét đã hết hạn',
+            'Phiên quét QR tour đã hết hạn. Vui lòng quét lại mã trước khi xác nhận.',
+            'warning',
+          );
           return;
         }
         const nextIssue = await apiClient<PartnerScanIssue>(
@@ -2546,7 +2692,11 @@ export default function PartnerPage() {
       }
       setScanMessage(`${nextIssue.statusLabel ?? nextIssue.status} - mã này không thể dùng lại.`);
     } catch (error) {
-      setScanMessage(error instanceof ApiError ? error.message : 'Không xác nhận được mã.');
+      showScanToast(
+        'Không xác nhận được mã',
+        error instanceof ApiError ? error.message : 'Không xác nhận được mã.',
+        'error',
+      );
     } finally {
       setIsConfirmingScan(false);
     }
@@ -2749,7 +2899,9 @@ export default function PartnerPage() {
     if (!scanIssue?.usedAt) return null;
     return new Date(scanIssue.usedAt).toLocaleString('vi-VN');
   }, [scanIssue, scannedTime]);
-  const canConfirmScan = scanIssue?.status === 'ISSUED';
+  const scanIssueNeedsConfirmation = scanIssue?.status === 'ISSUED';
+  const canConfirmScan = Boolean(scanIssueNeedsConfirmation && staffCanConfirmCheckIn);
+  const scanConfirmBlocked = Boolean(scanIssueNeedsConfirmation && !staffCanConfirmCheckIn);
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
   const listingErrorCount = Object.keys(listingErrors).length;
 
@@ -5746,87 +5898,110 @@ export default function PartnerPage() {
           )}
         </div>
 
-        <div className="partner-action-row partner-camera-actions" style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <PrimaryButton
-            disabled={cameraStatus === 'starting' || isReadingQrImage}
-            onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}
-          >
-            <Camera size={16} />
-            {cameraStatus === 'active'
-              ? 'Tắt camera'
-              : cameraStatus === 'starting'
-                ? 'Đang mở'
-                : 'Mở camera'}
-          </PrimaryButton>
-          <input
-            ref={qrImageInputRef}
-            accept="image/*"
-            type="file"
-            hidden
-            onChange={(event) => void handleQrImageFileChange(event.currentTarget)}
-          />
-          <GhostButton
-            disabled={isScanning || isReadingQrImage}
-            onClick={() => qrImageInputRef.current?.click()}
-          >
-            <Upload size={16} />
-            {isReadingQrImage ? 'Đang đọc ảnh' : 'Tải ảnh QR'}
-          </GhostButton>
-          {offlineScanQueue.length > 0 ? (
-            <GhostButton disabled={isScanning || isReadingQrImage} onClick={() => void replayOfflineScans()}>
-              <RefreshCcw size={16} />
-              Gửi hàng đợi
-            </GhostButton>
-          ) : null}
-        </div>
+        {staffCanUseQrTools ? (
+          <>
+            <div className="partner-action-row partner-camera-actions" style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <PrimaryButton
+                disabled={cameraStatus === 'starting' || isReadingQrImage}
+                onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}
+              >
+                <Camera size={16} />
+                {cameraStatus === 'active'
+                  ? 'Tắt camera'
+                  : cameraStatus === 'starting'
+                    ? 'Đang mở'
+                    : 'Mở camera'}
+              </PrimaryButton>
+              <input
+                ref={qrImageInputRef}
+                accept="image/*"
+                type="file"
+                hidden
+                onChange={(event) => void handleQrImageFileChange(event.currentTarget)}
+              />
+              <GhostButton
+                disabled={isScanning || isReadingQrImage}
+                onClick={() => qrImageInputRef.current?.click()}
+              >
+                <Upload size={16} />
+                {isReadingQrImage ? 'Đang đọc ảnh' : 'Tải ảnh QR'}
+              </GhostButton>
+              {offlineScanQueue.length > 0 ? (
+                <GhostButton disabled={isScanning || isReadingQrImage} onClick={() => void replayOfflineScans()}>
+                  <RefreshCcw size={16} />
+                  Gửi hàng đợi
+                </GhostButton>
+              ) : null}
+            </div>
 
-        <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-          Luồng quét gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
-          Nếu camera không đọc được mã, có thể tải ảnh QR khách gửi để quét xác nhận. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
-        </div>
+            <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
+              Luồng quét gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
+              Nếu camera không đọc được mã, có thể tải ảnh QR khách gửi để quét xác nhận. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
+            </div>
 
-        {cameraMessage ? (
+            {cameraMessage ? (
+              <div
+                style={{
+                  marginTop: '12px',
+                  color:
+                    cameraStatus === 'error' || cameraStatus === 'unsupported'
+                      ? colors.danger
+                      : colors.goldBright,
+                  fontSize: '12px',
+                  lineHeight: 1.55,
+                }}
+              >
+                {cameraMessage}
+              </div>
+            ) : null}
+
+            <form
+              className="partner-scan-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void scanCouponPayload(scanPayload);
+              }}
+              style={{
+                marginTop: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0,1fr) auto',
+                gap: '10px',
+              }}
+            >
+              <input
+                value={scanPayload}
+                onChange={(event) => setScanPayload(event.target.value)}
+                placeholder="Dán QR đặt chỗ, scanToken, link QR hoặc mã coupon"
+                style={inputStyle}
+              />
+              <PrimaryButton disabled={isScanning} type="submit">
+                <QrCode size={16} />
+                {isScanning ? 'Đang kiểm tra' : 'Kiểm tra mã'}
+              </PrimaryButton>
+            </form>
+          </>
+        ) : (
           <div
+            role="alert"
             style={{
-              marginTop: '12px',
-              color:
-                cameraStatus === 'error' || cameraStatus === 'unsupported'
-                  ? colors.danger
-                  : colors.goldBright,
-              fontSize: '12px',
+              marginTop: '14px',
+              borderRadius: '14px',
+              border: `1px solid ${colors.borderGold22}`,
+              background: 'rgba(224,105,122,.12)',
+              color: colors.danger,
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'flex-start',
+              padding: '13px 14px',
+              fontSize: '12.5px',
               lineHeight: 1.55,
+              fontWeight: 700,
             }}
           >
-            {cameraMessage}
+            <AlertTriangle size={17} style={{ flex: '0 0 auto', marginTop: '1px' }} />
+            <span>{scanPermissionNotice}</span>
           </div>
-        ) : null}
-
-
-
-        <form
-          className="partner-scan-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void scanCouponPayload(scanPayload);
-          }}
-          style={{
-            marginTop: '16px',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) auto',
-            gap: '10px',
-          }}
-        >
-          <input
-            value={scanPayload}
-            onChange={(event) => setScanPayload(event.target.value)}
-            placeholder="Dán QR đặt chỗ, scanToken, link QR hoặc mã coupon"
-            style={inputStyle}
-          />
-          <PrimaryButton disabled={isScanning} type="submit">
-            <QrCode size={16} />
-            {isScanning ? 'Đang kiểm tra' : 'Kiểm tra mã'}
-          </PrimaryButton>
-        </form>
+        )}
 
         <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>
           {scanMessage}
@@ -5965,12 +6140,14 @@ export default function PartnerPage() {
               style={{
                 ...softCardStyle,
                 padding: '13px 14px',
-                color: canConfirmScan ? colors.text2 : colors.success,
+                color: scanConfirmBlocked ? colors.danger : canConfirmScan ? colors.text2 : colors.success,
                 fontSize: '12px',
                 lineHeight: 1.6,
               }}
             >
-              {canConfirmScan
+              {scanConfirmBlocked
+                ? 'Tài khoản nhân viên của bạn chưa được cấp quyền xác nhận check-in hoặc sử dụng mã cho quán này.'
+                : canConfirmScan
                 ? scanMessage
                 : 'Đã xác nhận xong. Bấm quay lại để quét mã QR tiếp theo.'}
             </div>
