@@ -2587,7 +2587,7 @@ function HomeDataMessage({
         count={compact ? 2 : 3}
         columns={compact ? 2 : 3}
         compact={compact}
-        ariaLabel="Đang tải nội dung"
+        ariaLabel={translateText("Đang tải nội dung", activeLanguage)}
         className="nl-home-data-skeleton"
         style={{
           minHeight: minHeight ?? (compact ? 92 : 118),
