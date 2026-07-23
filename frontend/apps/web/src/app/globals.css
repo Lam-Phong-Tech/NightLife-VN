@@ -3159,9 +3159,28 @@ html.vy-admin-light {
   background: #0c0c0f; /* Keep dark background, it will invert to light */
 }
 
-/* Revert elements that should not invert */
+/* Revert elements that should not invert (images, background images, videos, canvas, etc.) */
 html.vy-admin-light img,
 html.vy-admin-light video,
-html.vy-admin-light [data-noinvert] {
+html.vy-admin-light canvas,
+html.vy-admin-light iframe,
+html.vy-admin-light picture,
+html.vy-admin-light [data-noinvert],
+html.vy-admin-light [style*="url(" i],
+html.vy-admin-light [style*="URL("] {
   filter: invert(1) hue-rotate(180deg);
+}
+
+/* Avoid double inversion on nested reverted elements */
+html.vy-admin-light img img,
+html.vy-admin-light video video,
+html.vy-admin-light [data-noinvert] img,
+html.vy-admin-light [data-noinvert] video,
+html.vy-admin-light [data-noinvert] [data-noinvert],
+html.vy-admin-light [data-noinvert] [style*="url(" i],
+html.vy-admin-light [style*="url(" i] img,
+html.vy-admin-light [style*="url(" i] video,
+html.vy-admin-light [style*="url(" i] [data-noinvert],
+html.vy-admin-light [style*="url(" i] [style*="url(" i] {
+  filter: none;
 }
