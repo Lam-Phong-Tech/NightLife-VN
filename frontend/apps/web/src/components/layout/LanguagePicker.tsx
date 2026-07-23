@@ -67,8 +67,8 @@ function storeLanguage(language: LanguageOption) {
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
-  const [activeCode, setActiveCode] = useState<LanguageCode>(defaultLanguageCode);
-  const [draftCode, setDraftCode] = useState<LanguageCode>(defaultLanguageCode);
+  const [activeCode, setActiveCode] = useState<LanguageCode>(() => readStoredLanguage());
+  const [draftCode, setDraftCode] = useState<LanguageCode>(() => readStoredLanguage());
   const [isOpen, setIsOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
@@ -84,16 +84,14 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
   const closeLanguagePickerLabel = translateText("Đóng chọn ngôn ngữ", activeCode);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const storedLanguage = readStoredLanguage();
-      setActiveCode(storedLanguage);
-      setDraftCode(storedLanguage);
-      window.dispatchEvent(
-        new CustomEvent(languageChangedEvent, { detail: { language: storedLanguage } }),
-      );
-    }, 0);
+    const storedLanguage = readStoredLanguage();
+    setActiveCode(storedLanguage);
+    setDraftCode(storedLanguage);
+    window.dispatchEvent(
+      new CustomEvent(languageChangedEvent, { detail: { language: storedLanguage } }),
+    );
 
-    return () => window.clearTimeout(timer);
+    return undefined;
   }, []);
 
   useEffect(() => {

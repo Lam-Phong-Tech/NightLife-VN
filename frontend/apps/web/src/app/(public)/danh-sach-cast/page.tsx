@@ -28,6 +28,8 @@ import {
   type PublicCast,
 } from "@/lib/api/discovery";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { Pagination } from "@/components/ui/Pagination";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { sortBySearchRelevance } from "@/lib/search-relevance";

@@ -1405,6 +1405,69 @@ const entries: TranslationEntry[] = [
     zh: "更改预约时间",
   },
   {
+    vi: "Chưa thể đổi lịch",
+    en: "Cannot reschedule yet",
+    ja: "まだ予約変更できません",
+    ko: "아직 일정 변경이 불가합니다",
+    zh: "暂时无法改期",
+  },
+  {
+    vi: "Ngày giờ mới phải khác lịch đặt hiện tại.",
+    en: "The new date and time must be different from the current booking.",
+    ja: "新しい日時は現在の予約と異なる必要があります。",
+    ko: "새 날짜와 시간은 현재 예약과 달라야 합니다.",
+    zh: "新的日期和时间必须与当前预约不同。",
+  },
+  {
+    vi: "Xác nhận đặt bàn",
+    en: "Confirm table booking",
+    ja: "席予約を確認",
+    ko: "테이블 예약 확인",
+    zh: "确认订桌",
+  },
+  {
+    vi: "Xác nhận đặt",
+    en: "Confirm booking",
+    ja: "予約を確定",
+    ko: "예약 확인",
+    zh: "确认预约",
+  },
+  {
+    vi: "Vẫn đặt giờ này",
+    en: "Keep this time",
+    ja: "この時間で予約",
+    ko: "이 시간으로 예약",
+    zh: "仍按此时间预约",
+  },
+  {
+    vi: "Đóng thông báo",
+    en: "Close notification",
+    ja: "通知を閉じる",
+    ko: "알림 닫기",
+    zh: "关闭通知",
+  },
+  {
+    vi: "Đã hiểu",
+    en: "Got it",
+    ja: "了解",
+    ko: "확인했습니다",
+    zh: "知道了",
+  },
+  {
+    vi: "Để sau",
+    en: "Later",
+    ja: "後で",
+    ko: "나중에",
+    zh: "稍后",
+  },
+  {
+    vi: "Trang",
+    en: "Page",
+    ja: "ページ",
+    ko: "페이지",
+    zh: "页",
+  },
+  {
     vi: "Quảng cáo",
     en: "Ad",
     ja: "広告",
@@ -6949,6 +7012,82 @@ function translatePattern(
     }[language];
   }
 
+  const confirmNearBookingTitleMatch = normalized.match(/^Xác nhận\s+(đặt bàn|đặt cast)\s+sát giờ$/i);
+  if (confirmNearBookingTitleMatch) {
+    const action = confirmNearBookingTitleMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
+    return {
+      en: action === "cast" ? "Confirm last-minute Cast booking" : "Confirm last-minute table booking",
+      ja: action === "cast" ? "直前のCast予約を確認" : "直前の席予約を確認",
+      ko: action === "cast" ? "임박한 캐스트 예약 확인" : "임박한 테이블 예약 확인",
+      zh: action === "cast" ? "确认临近时间预约 Cast" : "确认临近时间订桌",
+    }[language];
+  }
+
+  const confirmBookingTitleMatch = normalized.match(/^Xác nhận\s+(đặt bàn|đặt cast)$/i);
+  if (confirmBookingTitleMatch) {
+    const action = confirmBookingTitleMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
+    return {
+      en: action === "cast" ? "Confirm Cast booking" : "Confirm table booking",
+      ja: action === "cast" ? "Cast予約を確認" : "席予約を確認",
+      ko: action === "cast" ? "캐스트 예약 확인" : "테이블 예약 확인",
+      zh: action === "cast" ? "确认预约 Cast" : "确认订桌",
+    }[language];
+  }
+
+  const nearBookingConfirmMatch = normalized.match(
+    /^Lịch\s+(.+?)\s+ngày\s+(.+?)\s+đang rất gần giờ bắt đầu\.\s+Bạn có chắc muốn\s+(đặt bàn|đặt cast)\s+giờ này không\?$/i,
+  );
+  if (nearBookingConfirmMatch) {
+    const time = nearBookingConfirmMatch[1] ?? "";
+    const date = nearBookingConfirmMatch[2] ?? "";
+    const action = nearBookingConfirmMatch[3]?.toLowerCase() === "đặt cast" ? "cast" : "table";
+    return {
+      en:
+        action === "cast"
+          ? `The Cast booking at ${time} on ${date} is very close to the start time. Do you still want to book this time?`
+          : `The table booking at ${time} on ${date} is very close to the start time. Do you still want to book this time?`,
+      ja:
+        action === "cast"
+          ? `${date} ${time}のCast予約は開始時間が近づいています。この時間で予約しますか？`
+          : `${date} ${time}の席予約は開始時間が近づいています。この時間で予約しますか？`,
+      ko:
+        action === "cast"
+          ? `${date} ${time} 캐스트 예약 시간이 곧 시작됩니다. 이 시간으로 예약하시겠습니까?`
+          : `${date} ${time} 테이블 예약 시간이 곧 시작됩니다. 이 시간으로 예약하시겠습니까?`,
+      zh:
+        action === "cast"
+          ? `${date} ${time} 的 Cast 预约距离开始时间很近。仍要预约这个时间吗？`
+          : `${date} ${time} 的订桌距离开始时间很近。仍要预约这个时间吗？`,
+    }[language];
+  }
+
+  const bookingConfirmMatch = normalized.match(
+    /^Bạn có chắc muốn gửi yêu cầu\s+(đặt bàn|đặt cast)\s+lúc\s+(.+?)\s+ngày\s+(.+?)\?$/i,
+  );
+  if (bookingConfirmMatch) {
+    const action = bookingConfirmMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
+    const time = bookingConfirmMatch[2] ?? "";
+    const date = bookingConfirmMatch[3] ?? "";
+    return {
+      en:
+        action === "cast"
+          ? `Do you want to send a Cast booking request for ${time} on ${date}?`
+          : `Do you want to send a table booking request for ${time} on ${date}?`,
+      ja:
+        action === "cast"
+          ? `${date} ${time}のCast予約リクエストを送信しますか？`
+          : `${date} ${time}の席予約リクエストを送信しますか？`,
+      ko:
+        action === "cast"
+          ? `${date} ${time} 캐스트 예약 요청을 보내시겠습니까?`
+          : `${date} ${time} 테이블 예약 요청을 보내시겠습니까?`,
+      zh:
+        action === "cast"
+          ? `要发送 ${date} ${time} 的 Cast 预约请求吗？`
+          : `要发送 ${date} ${time} 的订桌请求吗？`,
+    }[language];
+  }
+
   const tourBookingRequestMatch = normalized.match(
     /^Yêu cầu đặt tour(?:\s+(.+?))?(?:\s+lúc\s+(.+?))?\s+đã được ghi nhận\.\s+Admin sẽ kiểm tra quán và cast theo từng điểm trong hành trình\.$/i,
   );
@@ -7745,11 +7884,29 @@ function writeLocalStorageLanguage(language: LanguageCode) {
   }
 }
 
+function readUrlLanguage(): LanguageCode | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const urlLanguage = new URLSearchParams(window.location.search).get("lang");
+    return isLanguageCode(urlLanguage) ? urlLanguage : null;
+  } catch {
+    return null;
+  }
+}
+
 export function readStoredLanguage(): LanguageCode {
   if (typeof window === "undefined") return defaultLanguageCode;
 
+  const urlLanguage = readUrlLanguage();
   const cookieLanguage = readLanguageCookie();
   const localStorageLanguage = readLocalStorageLanguage();
+
+  if (urlLanguage && !isPortalLanguageHost(window.location.hostname)) {
+    writeLocalStorageLanguage(urlLanguage);
+    writeLanguageCookie(urlLanguage);
+    return urlLanguage;
+  }
 
   if (isPortalLanguageHost(window.location.hostname) && cookieLanguage) {
     writeLocalStorageLanguage(cookieLanguage);
