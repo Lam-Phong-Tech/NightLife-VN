@@ -104,6 +104,15 @@ const googleMapQueryEmbedUrl = (query: string) =>
     ? `https://maps.google.com/maps?q=${encodeURIComponent(query.trim())}&z=15&output=embed`
     : "";
 
+const mapResolverEmbedUrl = (mapUrl: string, fallbackEmbedUrl: string) => {
+  const params = new URLSearchParams({ url: mapUrl });
+  if (fallbackEmbedUrl) {
+    params.set("fallback", fallbackEmbedUrl);
+  }
+
+  return `/api/maps/embed?${params.toString()}`;
+};
+
 const isShortGoogleMapUrl = (value: string) => {
   try {
     const host = new URL(value).hostname.replace(/^www\./, "");
@@ -123,7 +132,7 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
     }
 
     if (isShortGoogleMapUrl(mapUrl)) {
-      return fallbackEmbedUrl;
+      return mapResolverEmbedUrl(mapUrl, fallbackEmbedUrl);
     }
 
     if (mapUrl.includes("/maps") || mapUrl.includes("maps.google.")) {
@@ -147,9 +156,9 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
             .at(0) ||
           "";
 
-        return googleMapQueryEmbedUrl(query) || fallbackEmbedUrl;
+        return googleMapQueryEmbedUrl(query) || mapResolverEmbedUrl(mapUrl, fallbackEmbedUrl);
       } catch {
-        return fallbackEmbedUrl;
+        return mapResolverEmbedUrl(mapUrl, fallbackEmbedUrl);
       }
     }
   }
