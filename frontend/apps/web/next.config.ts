@@ -1,13 +1,31 @@
 import type { NextConfig } from "next";
 
-const configuredApiOrigin = (() => {
+const readOrigin = (value: string | undefined) => {
   try {
-    const value = process.env.NEXT_PUBLIC_API_URL;
     return value ? new URL(value).origin : null;
   } catch {
     return null;
   }
+};
+
+const configuredApiOrigin = (() => {
+  return readOrigin(process.env.NEXT_PUBLIC_API_URL);
 })();
+
+const trustedPortalOrigins = Array.from(
+  new Set(
+    [
+      "https://demonightlight.test9.io.vn",
+      "https://partner.demonightlight.test9.io.vn",
+      "https://admin.demonightlight.test9.io.vn",
+      "https://auth.demonightlight.test9.io.vn",
+      readOrigin(process.env.NEXT_PUBLIC_APP_URL),
+      readOrigin(process.env.NEXT_PUBLIC_PARTNER_APP_URL),
+      readOrigin(process.env.NEXT_PUBLIC_ADMIN_APP_URL),
+      readOrigin(process.env.NEXT_PUBLIC_AUTH_APP_URL),
+    ].filter((origin): origin is string => Boolean(origin)),
+  ),
+);
 
 export function createContentSecurityPolicy(isProduction: boolean) {
   const scriptSources = [
@@ -54,7 +72,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "base-uri 'self'",
     `connect-src ${connectSources.join(" ")}`,
     "font-src 'self' data: https://fonts.gstatic.com",
-    "form-action 'self'",
+    `form-action 'self' ${trustedPortalOrigins.join(" ")}`,
     "frame-ancestors 'none'",
     [
       "frame-src 'self'",
@@ -65,6 +83,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
       "https://www.tiktok.com",
     ].join(" "),
     "img-src 'self' data: blob: https:",
+    `manifest-src 'self' ${trustedPortalOrigins.join(" ")}`,
     "media-src 'self' blob: https:",
     "object-src 'none'",
     `script-src ${scriptSources.join(" ")}`,

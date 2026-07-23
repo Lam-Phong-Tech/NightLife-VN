@@ -2311,6 +2311,7 @@ export function SiteChrome({
                 <SupportChatWidget
                   isMobile={isMobile}
                   isOpen={isChatOpen}
+                  currentUser={authUser}
                   onOpen={() => setIsNotificationOpen(false)}
                   onOpenChange={setIsChatOpen}
                 />
@@ -2376,6 +2377,7 @@ export function SiteChrome({
                 <SupportChatWidget
                   isMobile={isMobile}
                   isOpen={isChatOpen}
+                  currentUser={authUser}
                   onOpen={() => setIsNotificationOpen(false)}
                   onOpenChange={setIsChatOpen}
                 />

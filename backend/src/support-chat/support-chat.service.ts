@@ -10,7 +10,7 @@ import { SupportSenderType, SupportTicketStatus } from '@prisma/client';
 export class SupportChatService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private readonly openTicketStatuses = [
+  private readonly openTicketStatuses: SupportTicketStatus[] = [
     SupportTicketStatus.PENDING,
     SupportTicketStatus.ACTIVE,
   ];
@@ -246,7 +246,19 @@ export class SupportChatService {
   }
 
   async mergeSession(guestSessionId: string, userId: string) {
-    // 1. Update all tickets of this session to this userId
+    const guestTickets = await this.prisma.supportTicket.findMany({
+      where: { guestSessionId },
+      select: { id: true, status: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (guestTickets.length === 0) return null;
+
+    const latestOpenTicket = guestTickets.find((ticket) =>
+      this.openTicketStatuses.includes(ticket.status),
+    );
+
+    // Keep historical conversations attached to the account as well.
     await this.prisma.supportTicket.updateMany({
       where: { guestSessionId },
       data: {
@@ -255,25 +267,26 @@ export class SupportChatService {
       },
     });
 
-    // 2. Find the active ticket to send a system message
-    const activeTicket = await this.prisma.supportTicket.findFirst({
-      where: { userId, status: SupportTicketStatus.ACTIVE },
+    if (!latestOpenTicket) return null;
+
+    const mergedTicket = await this.prisma.supportTicket.findUnique({
+      where: { id: latestOpenTicket.id },
       include: {
         user: { select: { id: true, displayName: true, email: true } },
       },
     });
 
-    if (activeTicket) {
-      const message = await this.prisma.supportMessage.create({
-        data: {
-          ticketId: activeTicket.id,
-          senderType: SupportSenderType.SYSTEM,
-          content: 'Khách hàng đã đăng nhập tài khoản.',
-        },
-      });
-      return { ticket: activeTicket, message };
-    }
-    return null;
+    if (!mergedTicket) return null;
+
+    const message = await this.prisma.supportMessage.create({
+      data: {
+        ticketId: mergedTicket.id,
+        senderType: SupportSenderType.SYSTEM,
+        content: 'Khách hàng đã đăng nhập tài khoản.',
+      },
+    });
+
+    return { ticket: mergedTicket, message };
   }
 
   async closeTicket(ticketId: string) {

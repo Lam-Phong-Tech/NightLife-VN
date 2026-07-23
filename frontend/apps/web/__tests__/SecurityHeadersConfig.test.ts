@@ -23,4 +23,32 @@ describe("security headers configuration", () => {
     expect(policy).toContain("upgrade-insecure-requests");
     expect(policy).not.toContain("'unsafe-eval'");
   });
+
+  it("allows auth handoff forms only to trusted NightLife portals", () => {
+    const policy = createContentSecurityPolicy(true);
+    const formAction = policy
+      .split("; ")
+      .find((directive) => directive.startsWith("form-action "));
+    const allowedFormActions = formAction?.split(" ").slice(1);
+
+    expect(allowedFormActions).toEqual(
+      expect.arrayContaining([
+        "'self'",
+        "https://demonightlight.test9.io.vn",
+        "https://partner.demonightlight.test9.io.vn",
+        "https://admin.demonightlight.test9.io.vn",
+        "https://auth.demonightlight.test9.io.vn",
+      ]),
+    );
+    expect(allowedFormActions).not.toContain("https:");
+    expect(allowedFormActions).not.toContain("*");
+  });
+
+  it("allows the shared web manifest on every NightLife portal", () => {
+    const policy = createContentSecurityPolicy(true);
+
+    expect(policy).toContain(
+      "manifest-src 'self' https://demonightlight.test9.io.vn",
+    );
+  });
 });

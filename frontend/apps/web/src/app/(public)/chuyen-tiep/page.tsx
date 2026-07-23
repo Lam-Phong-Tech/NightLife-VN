@@ -9,12 +9,19 @@ export default function AuthHandoffPage() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const handoffTimer = window.setTimeout(() => {
       if (!handoffActiveAuthSession()) {
         setFailed(true);
       }
     }, 0);
-    return () => window.clearTimeout(timer);
+    const timeoutTimer = window.setTimeout(() => {
+      setFailed(true);
+    }, 10_000);
+
+    return () => {
+      window.clearTimeout(handoffTimer);
+      window.clearTimeout(timeoutTimer);
+    };
   }, []);
 
   return (
@@ -31,20 +38,34 @@ export default function AuthHandoffPage() {
     >
       <section style={{ maxWidth: 460, textAlign: "center" }}>
         <h1 style={{ fontSize: 24, marginBottom: 12 }}>
-          {failed ? "Phiên đăng nhập không hợp lệ" : "Đang mở cổng làm việc phù hợp…"}
+          {failed ? "Không thể mở cổng làm việc" : "Đang mở cổng làm việc phù hợp…"}
         </h1>
         <p style={{ color: "#aaa39a", lineHeight: 1.6 }}>
           {failed
-            ? "Vui lòng quay lại trang đăng nhập và thử lại."
+            ? "Không thể chuyển sang cổng làm việc. Vui lòng tải lại trang hoặc đăng nhập lại."
             : "Hệ thống đang chuyển phiên đăng nhập an toàn sang đúng cổng quyền hạn của bạn."}
         </p>
         {failed ? (
-          <a
-            href={nightlifeOrigins.auth}
-            style={{ display: "inline-block", marginTop: 18, color: "#e8c86a" }}
-          >
-            Quay lại đăng nhập
-          </a>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 18 }}>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                border: 0,
+                padding: 0,
+                background: "transparent",
+                color: "#e8c86a",
+                cursor: "pointer",
+                font: "inherit",
+                textDecoration: "underline",
+              }}
+            >
+              Thử lại
+            </button>
+            <a href={nightlifeOrigins.auth} style={{ color: "#e8c86a" }}>
+              Quay lại đăng nhập
+            </a>
+          </div>
         ) : null}
       </section>
     </main>

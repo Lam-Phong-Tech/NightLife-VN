@@ -8,10 +8,18 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { SupportChatService } from './support-chat.service';
 import { SupportChatGateway } from './support-chat.gateway';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+
+type SupportRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
 
 @Controller('api/support')
 export class SupportChatController {
@@ -51,24 +59,30 @@ export class SupportChatController {
 
   @Get('pending')
   @UseGuards(JwtAuthGuard) // Only admins should see this
-  async getPendingTickets(@Req() req: any) {
+  async getPendingTickets(@Req() req: SupportRequest) {
     const adminId = req.user?.id;
     if (!adminId) return [];
     return this.supportChatService.getAdminTickets(adminId);
   }
 
   @Post('messages')
+  @UseGuards(OptionalJwtAuthGuard)
   async createMessage(
     @Body()
     body: {
       ticketId?: string;
       content: string;
       guestSessionId?: string;
-      userId?: string;
     },
+    @Req() req: SupportRequest,
   ) {
     const { ticket, ticketId, message } =
-      await this.supportChatService.createCustomerMessage(body);
+      await this.supportChatService.createCustomerMessage({
+        ticketId: body.ticketId,
+        content: body.content,
+        guestSessionId: body.guestSessionId,
+        userId: req.user?.id,
+      });
 
     if (ticket?.status === 'PENDING') {
       this.supportChatGateway.server.to('support_admins').emit('new_ticket', {
@@ -86,13 +100,12 @@ export class SupportChatController {
   }
 
   @Post('merge')
-  // @UseGuards(JwtAuthGuard) // User must be logged in to merge
+  @UseGuards(JwtAuthGuard)
   async mergeSession(
     @Body() body: { guestSessionId: string },
-    @Req() req: any,
+    @Req() req: SupportRequest,
   ) {
-    // Assuming req.user contains the authenticated user
-    const userId = req.user?.id || body['userId']; // fallback for testing without guard
+    const userId = req.user?.id;
     if (!userId || !body.guestSessionId) {
       return { success: false, message: 'Missing userId or guestSessionId' };
     }

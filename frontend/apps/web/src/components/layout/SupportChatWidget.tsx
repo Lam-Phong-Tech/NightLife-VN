@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { io, Socket } from "socket.io-client";
-import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { getAuthSessionToken, type AuthUser } from "@/lib/auth/session";
 import { translateText } from "@/lib/i18n/client-translations";
 import {
   intlLocaleByLanguage,
@@ -49,6 +49,11 @@ type SupportSessionHistoryPayload = {
   messages?: SupportMessagePayload[];
 };
 
+type SupportSessionMergePayload = {
+  success?: boolean;
+  ticket?: { id?: string } | null;
+};
+
 type SendSupportMessagePayload = {
   ticketId: string | null;
   content: string;
@@ -61,6 +66,7 @@ type SendSupportMessagePayload = {
 type SupportChatWidgetProps = {
   isMobile: boolean;
   isOpen: boolean;
+  currentUser: AuthUser | null;
   onOpen?: () => void;
   onOpenChange: (open: boolean) => void;
 };
@@ -91,9 +97,13 @@ function mapSupportMessageToChatMessage(
 async function sendSupportMessageByHttp(
   payload: SendSupportMessagePayload,
 ): Promise<SupportMessagePayload> {
+  const token = getAuthSessionToken();
   const response = await fetch(`${getApiBaseUrl()}/api/support/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(payload),
   });
   const data = (await response.json().catch(() => null)) as SupportMessagePayload | null;
@@ -610,6 +620,7 @@ function SupportChatButton({
 export function SupportChatWidget({
   isMobile,
   isOpen,
+  currentUser,
   onOpen,
   onOpenChange,
 }: SupportChatWidgetProps) {
@@ -620,7 +631,6 @@ export function SupportChatWidget({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string>("");
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
   const [hasOpened, setHasOpened] = useState(false);
@@ -650,9 +660,6 @@ export function SupportChatWidget({
   }, [pathname, onOpenChange]);
 
   useEffect(() => {
-    const user = getAuthUser();
-    if (user) setCurrentUser(user);
-
     let gId = localStorage.getItem("vy_guest_session_id");
     if (!gId) {
       gId = "guest_" + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
@@ -665,6 +672,44 @@ export function SupportChatWidget({
       setTicketId(savedTicketId);
     }
   }, []);
+
+  useEffect(() => {
+    if (!guestSessionId || !currentUser?.id) return;
+
+    const token = getAuthSessionToken();
+    if (!token) return;
+
+    const controller = new AbortController();
+    fetch(`${getApiBaseUrl()}/api/support/merge`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ guestSessionId }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as SupportSessionMergePayload | null;
+        if (!response.ok || !data?.success) {
+          throw new Error("Support session merge failed");
+        }
+        return data;
+      })
+      .then((data) => {
+        const mergedTicketId = data.ticket?.id;
+        if (mergedTicketId) {
+          setTicketId(mergedTicketId);
+          localStorage.setItem("vy_support_ticket_id", mergedTicketId);
+        }
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("[SupportChat] Could not merge guest session:", error);
+      });
+
+    return () => controller.abort();
+  }, [guestSessionId, currentUser?.id]);
 
   useEffect(() => {
     if (!guestSessionId || ticketId || hasLoadedSessionHistoryRef.current) return;
@@ -750,10 +795,12 @@ export function SupportChatWidget({
     if (!hasOpened) return;
 
     const socketConfig = getSupportSocketConfig();
+    const token = currentUser?.id ? getAuthSessionToken() : "";
 
     const newSocket = io(socketConfig.host + '/support', {
       path: socketConfig.path,
-      query: ticketId ? { ticketId } : undefined
+      query: ticketId ? { ticketId } : undefined,
+      auth: token ? { token } : undefined,
     });
     setSocket(newSocket);
     
@@ -802,7 +849,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, [hasOpened]);
+  }, [hasOpened, currentUser?.id]);
 
   useEffect(() => {
     if (!isOpen) return;

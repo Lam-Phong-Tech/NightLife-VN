@@ -38,7 +38,9 @@ type SupportActionResponse = {
 type SessionMergedPayload = {
   ticketId: string;
   user?: {
+    id?: string;
     displayName?: string | null;
+    email?: string | null;
   } | null;
 };
 
@@ -183,6 +185,22 @@ export function AdminSupportDashboard() {
     });
 
     newSocket.on('session_merged', (data: SessionMergedPayload) => {
+      const applyMergedIdentity = (ticket: SupportTicketPayload): SupportTicketPayload =>
+        ticket.id === data.ticketId
+          ? {
+              ...ticket,
+              userId: data.user?.id ?? ticket.userId,
+              user: data.user
+                ? {
+                    ...ticket.user,
+                    ...data.user,
+                  }
+                : ticket.user,
+            }
+          : ticket;
+
+      setPendingTickets((prev) => prev.map(applyMergedIdentity));
+      setActiveTicketInfo((prev) => (prev ? applyMergedIdentity(prev) : prev));
       setToast(`Khách hàng đã đăng nhập: ${data.user?.displayName || 'Tài khoản mới'}`);
       setTimeout(() => setToast(null), 4000);
     });
