@@ -101,6 +101,8 @@ const exactMessageTranslations: Record<string, string> = {
   "coupon issue is not available for bill reconciliation":
     "Mã ưu đãi này chưa thể đối soát hóa đơn.",
   "coupon issue has expired": "Mã ưu đãi đã hết hạn.",
+  "coupon issue has already been used":
+    "Mã ưu đãi này đã được sử dụng rồi, không thể quét lại.",
   "coupon issue is not usable": "Mã ưu đãi không còn sử dụng được.",
   "coupon not found": "Không tìm thấy ưu đãi.",
   "couponid must match couponissue.couponid": "Mã coupon không khớp với mã ưu đãi đã lưu.",

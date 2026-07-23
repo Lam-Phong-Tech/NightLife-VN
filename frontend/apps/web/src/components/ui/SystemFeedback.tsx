@@ -446,7 +446,7 @@ function FeedbackBottomSheet({ sheet, onClose }: { sheet: SheetInput; onClose: (
 const feedbackStyles = `
   .nl-toast-viewport {
     position: fixed;
-    z-index: 220;
+    z-index: 10080;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -692,7 +692,7 @@ const feedbackStyles = `
   @media (max-width: 767px) {
     .nl-toast-top-right,
     .nl-toast-top {
-      top: calc(12px + env(safe-area-inset-top));
+      top: calc(88px + env(safe-area-inset-top));
       left: 12px;
       right: 12px;
       transform: none;

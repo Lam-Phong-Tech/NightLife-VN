@@ -651,11 +651,25 @@ const getFriendlyScanErrorMessage = (error: unknown) => {
     return 'Không kiểm tra được mã. Thử lại hoặc dán link QR/mã đặt chỗ thủ công.';
   }
 
-  if (/cannot access data for this store/i.test(error.message)) {
-    return 'Bạn không có quyền xử lý mã này hoặc mã không thuộc quán được phân quyền. Kiểm tra lại quán, quyền nhân viên, hạn QR và trạng thái đã dùng/check-in.';
+  const message = error.message.trim();
+
+  if (/already been used/i.test(message) || /đã (được )?sử dụng/i.test(message)) {
+    return 'Mã QR này đã được sử dụng trước đó nên không thể quét lại. Vui lòng kiểm tra booking của khách hoặc dùng mã QR khác.';
   }
 
-  return `${error.message}. Kiểm tra QR có đúng quán, còn hạn và chưa check-in/USED.`;
+  if (/has expired/i.test(message) || /hết hạn/i.test(message)) {
+    return 'Mã QR này đã hết hạn nên không thể xác nhận. Vui lòng kiểm tra lại thời gian đặt hoặc yêu cầu khách đặt lại.';
+  }
+
+  if (/not usable/i.test(message) || /không còn sử dụng được/i.test(message)) {
+    return 'Mã QR này không còn ở trạng thái có thể dùng. Vui lòng kiểm tra lại thông tin booking của khách.';
+  }
+
+  if (/cannot access data for this store/i.test(message) || /không có quyền/i.test(message)) {
+    return 'Bạn không có quyền xử lý mã này hoặc mã không thuộc quán đang được phân quyền. Vui lòng kiểm tra lại quán và quyền nhân viên.';
+  }
+
+  return `${message}. Vui lòng kiểm tra QR có đúng quán, còn hạn và chưa được dùng trước đó.`;
 };
 
 const readQrFromVideoFrame = async (
