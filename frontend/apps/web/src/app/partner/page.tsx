@@ -504,19 +504,19 @@ const listingBirthMonthOptions = Array.from({ length: 12 }, (_, index) => ({
   label: `Tháng ${index + 1}`,
 }));
 const listingZodiacOptions = [
-  'Aries',
-  'Taurus',
-  'Gemini',
-  'Cancer',
-  'Leo',
-  'Virgo',
-  'Libra',
-  'Scorpio',
-  'Sagittarius',
-  'Capricorn',
-  'Aquarius',
-  'Pisces',
-].map((zodiac) => ({ value: zodiac, label: zodiac }));
+  { value: 'Aries', label: 'Bạch Dương' },
+  { value: 'Taurus', label: 'Kim Ngưu' },
+  { value: 'Gemini', label: 'Song Tử' },
+  { value: 'Cancer', label: 'Cự Giải' },
+  { value: 'Leo', label: 'Sư Tử' },
+  { value: 'Virgo', label: 'Xử Nữ' },
+  { value: 'Libra', label: 'Thiên Bình' },
+  { value: 'Scorpio', label: 'Bọ Cạp' },
+  { value: 'Sagittarius', label: 'Nhân Mã' },
+  { value: 'Capricorn', label: 'Ma Kết' },
+  { value: 'Aquarius', label: 'Bảo Bình' },
+  { value: 'Pisces', label: 'Song Ngư' },
+];
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
 type CastListField = 'tags' | 'hobbies' | 'languages' | 'youtubeLinks';
 const suggestedListingTags = [
@@ -6264,7 +6264,7 @@ export default function PartnerPage() {
             />
             {listingErrorText(`castProfiles.${index}.zodiacSign`)}
           </FormField>
-          <FormField label="Số đo (V1 - V2 - V3)">
+          <FormField label="Số đo (V1 - V2 - V3, cm)">
             <div className="partner-cast-measurements">
               {castMeasurementParts(cast.measurements).map((part, partIndex) => (
                 <input
@@ -6279,12 +6279,12 @@ export default function PartnerPage() {
             </div>
             {listingErrorText(`castProfiles.${index}.measurements`)}
           </FormField>
-          <FormField label="Chiều cao">
+          <FormField label="Chiều cao (cm)">
             <input
               inputMode="numeric"
               value={cast.heightCm ? String(cast.heightCm) : ''}
               onChange={(event) => updateCastProfile(index, 'heightCm', event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined)}
-              placeholder="VD: 165"
+              placeholder="VD: 165 cm"
               style={listingInputStyle(`castProfiles.${index}.heightCm`)}
             />
             {listingErrorText(`castProfiles.${index}.heightCm`)}
