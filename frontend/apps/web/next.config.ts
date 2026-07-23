@@ -77,6 +77,8 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     [
       "frame-src 'self'",
       "https://accounts.google.com",
+      "https://maps.google.com",
+      "https://www.google.com",
       "https://www.youtube.com",
       "https://www.youtube-nocookie.com",
       "https://player.vimeo.com",

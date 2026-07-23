@@ -18,6 +18,8 @@ describe("security headers configuration", () => {
     const policy = createContentSecurityPolicy(true);
 
     expect(policy).toContain("https://accounts.google.com");
+    expect(policy).toContain("https://maps.google.com");
+    expect(policy).toContain("https://www.google.com");
     expect(policy).toContain("https://www.youtube.com");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("upgrade-insecure-requests");
