@@ -90,14 +90,19 @@ export const openingText = (slot?: StoreOpeningHour | null) => {
 
 const mapQueryEmbedUrl = (store: PublicStoreDetail) => {
   if (typeof store.latitude === "number" && typeof store.longitude === "number") {
-    return `https://www.google.com/maps?q=${store.latitude},${store.longitude}&output=embed`;
+    return `https://maps.google.com/maps?q=${store.latitude},${store.longitude}&z=15&output=embed`;
   }
 
   const address = [store.address, store.district, store.city].filter(Boolean).join(", ");
   return address
-    ? `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=15&output=embed`
     : "";
 };
+
+const googleMapQueryEmbedUrl = (query: string) =>
+  query.trim()
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(query.trim())}&z=15&output=embed`
+    : "";
 
 const isShortGoogleMapUrl = (value: string) => {
   try {
@@ -122,7 +127,30 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
     }
 
     if (mapUrl.includes("/maps") || mapUrl.includes("maps.google.")) {
-      return `${mapUrl}${mapUrl.includes("?") ? "&" : "?"}output=embed`;
+      try {
+        const parsedMapUrl = new URL(mapUrl);
+        const coordinateMatch = decodeURIComponent(parsedMapUrl.href).match(
+          /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/,
+        );
+
+        if (coordinateMatch) {
+          return googleMapQueryEmbedUrl(`${coordinateMatch[1]},${coordinateMatch[2]}`);
+        }
+
+        const query =
+          parsedMapUrl.searchParams.get("q") ||
+          parsedMapUrl.searchParams.get("query") ||
+          parsedMapUrl.pathname
+            .split("/")
+            .map((part) => decodeURIComponent(part.replace(/\+/g, " ")))
+            .filter((part) => part && !["maps", "place", "search", "dir"].includes(part))
+            .at(0) ||
+          "";
+
+        return googleMapQueryEmbedUrl(query) || fallbackEmbedUrl;
+      } catch {
+        return fallbackEmbedUrl;
+      }
     }
   }
 
