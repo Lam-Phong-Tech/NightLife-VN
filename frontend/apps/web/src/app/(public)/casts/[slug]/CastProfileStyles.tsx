@@ -1335,6 +1335,12 @@ export function CastProfileStyles() {
         grid-template-rows: auto 1fr auto auto;
         gap: 16px;
         padding: 22px 20px 24px;
+        width: 100dvw;
+        max-width: 100dvw;
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+        box-sizing: border-box;
         touch-action: pan-y;
       }
 
@@ -1403,6 +1409,7 @@ export function CastProfileStyles() {
         min-height: 0;
         display: grid;
         place-items: center;
+        overflow: hidden;
       }
 
       .cast-lightbox-placeholder {
@@ -1540,6 +1547,10 @@ export function CastProfileStyles() {
         .cast-lightbox {
           background: rgba(4,4,7,.94);
           padding: 24px;
+          width: 100vw;
+          max-width: 100vw;
+          height: 100vh;
+          max-height: 100vh;
         }
 
         .cast-lightbox-media {
@@ -1572,6 +1583,68 @@ export function CastProfileStyles() {
         .cast-lightbox-topbar {
           width: min(1040px, 82vw);
           justify-self: center;
+        }
+      }
+
+      @media (max-width: 767px) {
+        .cast-lightbox {
+          grid-template-rows: auto minmax(0, 1fr) auto auto;
+          gap: 10px;
+          padding: calc(14px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
+        }
+
+        .cast-lightbox-topbar {
+          min-height: 44px;
+          padding-right: 48px;
+        }
+
+        .cast-lightbox-close {
+          position: fixed;
+          top: calc(12px + env(safe-area-inset-top));
+          right: calc(12px + env(safe-area-inset-right));
+          z-index: 5;
+          width: 42px;
+          height: 42px;
+          background: rgba(18,18,22,.78);
+          backdrop-filter: blur(8px);
+        }
+
+        .cast-lightbox-media {
+          align-self: stretch;
+          width: 100%;
+          max-width: 100%;
+          max-height: calc(100dvh - 178px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        }
+
+        .cast-lightbox-media img,
+        .cast-lightbox-media video {
+          width: auto;
+          height: auto;
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+
+        .cast-lightbox-media iframe {
+          width: 100%;
+          height: min(56vw, 44dvh);
+          max-height: 100%;
+        }
+
+        .cast-lightbox-caption {
+          min-width: 0;
+        }
+
+        .cast-lightbox-caption strong,
+        .cast-lightbox-caption span {
+          max-width: calc(100dvw - 24px);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .cast-lightbox-thumbs {
+          max-width: calc(100dvw - 24px);
         }
       }
 
