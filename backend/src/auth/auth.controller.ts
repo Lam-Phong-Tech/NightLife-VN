@@ -17,6 +17,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
+import { AuthRateLimit } from './auth-rate-limit.decorator';
+import { AuthRateLimitGuard } from './auth-rate-limit.guard';
 import { AuthService } from './auth.service';
 import {
   AuthResponseDto,
@@ -43,13 +45,27 @@ import {
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+
 @ApiTags('auth')
+@AuthRateLimit({
+  scope: 'auth',
+  limit: 60,
+  windowMs: 60 * 1000,
+})
+@UseGuards(AuthRateLimitGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
   @ApiCreatedResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'registration-verification',
+    limit: 10,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('register')
   register(@Body() dto: RegisterDto, @Req() request: Request) {
     return this.authService.register(dto, this.sessionContext(request));
@@ -57,6 +73,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Gửi mã OTP xác thực email đăng ký' })
   @ApiOkResponse({ type: RegistrationOtpRequestResponseDto })
+  @AuthRateLimit({
+    scope: 'registration-otp-request',
+    limit: 5,
+    identityLimit: 3,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('register/email-otp')
   requestRegistrationOtp(@Body() dto: RequestRegistrationOtpDto) {
     return this.authService.requestRegistrationOtp(dto);
@@ -64,6 +86,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập chung' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'password-login',
+    limit: 20,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('login')
   login(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.login(dto, this.sessionContext(request));
@@ -71,6 +99,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Gửi mã đặt lại mật khẩu qua email' })
   @ApiOkResponse({ type: PasswordResetRequestResponseDto })
+  @AuthRateLimit({
+    scope: 'password-reset-request',
+    limit: 5,
+    identityLimit: 3,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('password-reset/request')
   requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     return this.authService.requestPasswordReset(dto);
@@ -78,6 +112,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Xác thực mã đặt lại mật khẩu' })
   @ApiOkResponse({ type: PasswordResetVerifyResponseDto })
+  @AuthRateLimit({
+    scope: 'password-reset-verification',
+    limit: 10,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('password-reset/verify')
   verifyPasswordResetCode(@Body() dto: VerifyPasswordResetCodeDto) {
     return this.authService.verifyPasswordResetCode(dto);
@@ -85,6 +125,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Cập nhật mật khẩu mới sau khi xác thực mã' })
   @ApiOkResponse({ type: PasswordResetCompleteResponseDto })
+  @AuthRateLimit({
+    scope: 'password-reset-completion',
+    limit: 10,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('password-reset/complete')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
@@ -92,6 +138,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập cho Member' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'password-login',
+    limit: 20,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('login/member')
   loginMember(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.loginAs('USER', dto, this.sessionContext(request));
@@ -99,6 +151,11 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập Google cho Member' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'social-login',
+    limit: 20,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('google/member')
   loginGoogleMember(@Body() dto: GoogleAuthDto, @Req() request: Request) {
     return this.authService.loginGoogleMember(
@@ -122,6 +179,11 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Bắt đầu luồng đăng nhập Line' })
+  @AuthRateLimit({
+    scope: 'line-login',
+    limit: 30,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Get('line/start')
   startLineLogin(
     @Query('redirect') redirect: string | undefined,
@@ -131,6 +193,11 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Callback xử lý đăng nhập Line' })
+  @AuthRateLimit({
+    scope: 'line-login',
+    limit: 30,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Get('line/callback')
   handleLineCallback(
     @Query('code') code: string | undefined,
@@ -155,6 +222,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập cho Partner' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'password-login',
+    limit: 20,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('login/partner')
   loginPartner(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.loginForPortal(
@@ -166,6 +239,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập cho Operator' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'password-login',
+    limit: 20,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('login/operator')
   loginOperator(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.loginAs(
@@ -177,6 +256,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Đăng nhập cho Admin' })
   @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'password-login',
+    limit: 20,
+    identityLimit: 5,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
   @Post('login/admin')
   loginAdmin(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.loginForPortal(

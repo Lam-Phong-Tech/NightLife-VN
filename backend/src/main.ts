@@ -1,10 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { Express } from 'express';
 import { AppModule } from './app.module';
+import { createSecurityHeadersMiddleware } from './security/security-headers.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const expressApp = app.getHttpAdapter().getInstance() as Express;
+  expressApp.disable('x-powered-by');
+  expressApp.set('trust proxy', trustProxySetting());
+  app.use(
+    createSecurityHeadersMiddleware(process.env.NODE_ENV === 'production'),
+  );
   const productionOrigins = [
     'https://demonightlight.test9.io.vn',
     'https://www.demonightlight.test9.io.vn',
@@ -65,4 +73,22 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3001);
 }
-bootstrap();
+void bootstrap();
+
+function trustProxySetting(): boolean | number | string {
+  const configuredValue = process.env.TRUST_PROXY?.trim();
+
+  if (!configuredValue) {
+    return process.env.NODE_ENV === 'production' ? 1 : false;
+  }
+
+  if (configuredValue === 'true' || configuredValue === 'false') {
+    return configuredValue === 'true';
+  }
+
+  if (/^\d+$/.test(configuredValue)) {
+    return Number(configuredValue);
+  }
+
+  return configuredValue;
+}
