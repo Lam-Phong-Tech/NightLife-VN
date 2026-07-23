@@ -1350,7 +1350,7 @@ export class NightlifeDataService {
         : await this.loadCastRankingItems(configByTargetId);
     const data = rankedItems.slice(0, limit).map((item, index) => ({
       ...item,
-      rank: index + 1,
+      rank: item.pinRank ?? index + 1,
     }));
 
     return {

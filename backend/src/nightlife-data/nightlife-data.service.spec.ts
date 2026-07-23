@@ -1299,6 +1299,55 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('keeps admin pin rank and sponsored flag on public store rankings', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'store-five',
+        cityCode: 'hn',
+        category: null,
+        scope: 'global',
+        manualScore: 25,
+        pinRank: 5,
+        sponsored: true,
+        updatedAt: new Date('2026-07-20T00:00:00.000Z'),
+      },
+    ] as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-five',
+        name: 'Pinned Five Store',
+        slug: 'pinned-five-store',
+        category: 'BAR',
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        phone: '0900000000',
+        area: {
+          id: 'area-hn',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Ha Noi',
+          district: 'Hoan Kiem',
+        },
+        media: [{ url: 'https://example.com/store.jpg', purpose: 'hero' }],
+      },
+    ] as never);
+
+    const result = await service.listPublicRankings({
+      targetType: 'STORE',
+      city: 'hn',
+      limit: '10',
+    });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        targetId: 'store-five',
+        rank: 5,
+        pinRank: 5,
+        sponsored: true,
+      }),
+    ]);
+  });
+
   it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';

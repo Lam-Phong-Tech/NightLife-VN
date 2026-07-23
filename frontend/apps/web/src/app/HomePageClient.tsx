@@ -356,6 +356,7 @@ type RankedItem = {
   name?: string;
   area?: string;
   href?: string;
+  sponsored?: boolean;
 };
 
 type HomeBanner = {
@@ -462,23 +463,52 @@ function mergeFeaturedRankingItems(items: PublicRankingItem[], limit: number) {
   const itemByTargetId = new globalThis.Map<string, PublicRankingItem>();
 
   items.forEach((item) => {
-    if (!itemByTargetId.has(item.targetId)) {
+    const current = itemByTargetId.get(item.targetId);
+    if (!current || comparePublicRankingItems(item, current) < 0) {
       itemByTargetId.set(item.targetId, item);
     }
   });
 
   return [...itemByTargetId.values()]
-    .sort((first, second) => {
-      const firstPin = first.pinRank ?? Number.POSITIVE_INFINITY;
-      const secondPin = second.pinRank ?? Number.POSITIVE_INFINITY;
-      if (firstPin !== secondPin) return firstPin - secondPin;
-
-      const scoreDiff = (second.manualScore ?? 0) - (first.manualScore ?? 0);
-      if (scoreDiff !== 0) return scoreDiff;
-
-      return first.name.localeCompare(second.name);
-    })
+    .sort(comparePublicRankingItems)
     .slice(0, limit);
+}
+
+function comparePublicRankingItems(first: PublicRankingItem, second: PublicRankingItem) {
+  const firstPin = first.pinRank ?? first.rank ?? Number.POSITIVE_INFINITY;
+  const secondPin = second.pinRank ?? second.rank ?? Number.POSITIVE_INFINITY;
+  if (firstPin !== secondPin) return firstPin - secondPin;
+
+  const scoreDiff = (second.manualScore ?? 0) - (first.manualScore ?? 0);
+  if (scoreDiff !== 0) return scoreDiff;
+
+  if (first.sponsored !== second.sponsored) {
+    return first.sponsored ? -1 : 1;
+  }
+
+  return first.name.localeCompare(second.name);
+}
+
+async function listHomeStoreRankingItems(city: ReturnType<typeof regionToCityCode>) {
+  const baseParams = { targetType: "STORE" as const, city, limit: 10 };
+  const responses = await Promise.allSettled([
+    rankingsApi.list(baseParams),
+    rankingsApi.list({ ...baseParams, scope: "recommend-home" }),
+    rankingsApi.list({ ...baseParams, scope: "featured_home" }),
+  ]);
+  const successfulResponses = responses
+    .filter((response): response is PromiseFulfilledResult<Awaited<ReturnType<typeof rankingsApi.list>>> => response.status === "fulfilled")
+    .map((response) => response.value);
+
+  if (!successfulResponses.length) {
+    const failedResponse = responses.find((response) => response.status === "rejected") as PromiseRejectedResult | undefined;
+    throw failedResponse?.reason ?? new Error("Ranking API error");
+  }
+
+  return mergeFeaturedRankingItems(
+    successfulResponses.flatMap((response) => response.data),
+    10,
+  );
 }
 
 function backgroundFromUrl(value?: string | null) {
@@ -602,11 +632,12 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
 
 function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
   return {
-    rank: item.rank,
+    rank: item.pinRank ?? item.rank,
     img: backgroundFromUrl(item.image),
     name: item.name,
     area: storeAreaText(item.area, item.cityCode, item.city),
     href: item.href,
+    sponsored: item.sponsored,
   };
 }
 
@@ -2341,6 +2372,27 @@ function RankingRow({ item }: { item: RankedItem }) {
           <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none" }}>
             Top {item.rank}
           </span>
+          {item.sponsored ? (
+            <span
+              data-testid="home-ranking-sponsored-badge"
+              style={{
+                minHeight: 22,
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: 999,
+                padding: "0 8px",
+                border: "1px solid rgba(240,221,168,.45)",
+                background: "rgba(240,221,168,.16)",
+                color: colors.goldSoft,
+                fontSize: "10.5px",
+                fontWeight: 950,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Tài trợ
+            </span>
+          ) : null}
         </div>
         <div style={{ fontSize: isPodium ? "18px" : "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
         <div
@@ -3263,12 +3315,12 @@ export default function HomePageClient() {
 
     Promise.all([
       rankingsApi.list({ targetType: "CAST", city, limit: 10 }),
-      rankingsApi.list({ targetType: "STORE", city, limit: 10 }),
+      listHomeStoreRankingItems(city),
     ])
-      .then(([castResponse, storeResponse]) => {
+      .then(([castResponse, storeItems]) => {
         if (cancelled) return;
         setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
-        setStoreRankItems(storeResponse.data.map(mapRankingToRankedItem));
+        setStoreRankItems(storeItems.map(mapRankingToRankedItem));
       })
       .catch(() => {
         if (!cancelled) {

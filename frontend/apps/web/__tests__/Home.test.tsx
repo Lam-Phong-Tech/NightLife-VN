@@ -354,22 +354,27 @@ describe('Home Page', () => {
     renderHome();
 
     expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 50 });
-    expect(listPublicCouponsMock).toHaveBeenCalled();
-    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 10 });
-    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 10 });
-    expect(rankingsListMock).toHaveBeenCalledWith({
-      targetType: 'STORE',
-      city: 'hn',
-      category: 'RESTAURANT',
-      scope: 'featured_home',
-      limit: 8,
+    await waitFor(() => {
+      expect(listPublicCouponsMock).toHaveBeenCalled();
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 10 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 10 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'recommend-home', limit: 10 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'featured_home', limit: 10 });
+      expect(rankingsListMock).toHaveBeenCalledWith({
+        targetType: 'STORE',
+        city: 'hn',
+        category: 'RESTAURANT',
+        scope: 'featured_home',
+        limit: 8,
+      });
+      expect(contentHotVideosMock).toHaveBeenCalledWith('all');
     });
-    expect(contentHotVideosMock).toHaveBeenCalledWith('all');
 
     expect(await screen.findAllByText('API Neon Lounge')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Coupon')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
+    expect(await screen.findAllByTestId('home-ranking-sponsored-badge')).not.toHaveLength(0);
     expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
     expect(document.body.textContent ?? '').not.toMatch(
       /Ã‚Â·|NhÃƒ|HÃƒ|NÃ¡Â»|tÃ¡Â»|Ã„â€˜|ChÃ†|Ã¡Âº|Ã¡Â»|Ä|Æ¯/,
