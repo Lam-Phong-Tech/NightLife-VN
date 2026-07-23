@@ -52,6 +52,7 @@ import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
 import { InlineLoading, TableLoadingRows } from '@/components/ui/DataLoading';
+import { validateStoreName, validateVietnamStorePhone } from '@/lib/store-form-validation';
 
 const colors = {
   bg: 'var(--partner-bg, #0c0c0f)',
@@ -1021,7 +1022,6 @@ const buildListingMenuSummary = (
 };
 
 const openingHourPattern = /^([01]\d|2[0-4]):[0-5]\d\s*[-–]\s*([01]\d|2[0-4]):[0-5]\d$/;
-const phonePattern = /^\+?[0-9\s().-]{8,18}$/;
 const splitOpeningHourSlots = (value?: string | null) =>
   (value ?? '')
     .split(',')
@@ -1036,21 +1036,87 @@ const splitOpeningHourSlot = (slot?: string | null) => {
 const formatOpeningHourSlot = (open: string, close: string) =>
   open || close ? `${open || '19:00'} - ${close || '24:00'}` : '';
 
-const hasValidOpeningHourSlots = (value?: string | null) => {
+const listingTimeToMinutes = (value: string) => {
+  const [hour = Number.NaN, minute = Number.NaN] = value.split(':').map(Number);
+  return hour * 60 + minute;
+};
+
+const validateListingOpeningHourSlots = (
+  value?: string | null,
+  requireSlots = false,
+): { error: string; normalizedSlots: string[] } => {
   const slots = splitOpeningHourSlots(value);
-  if (slots.length === 0) return false;
-  return slots.every((slot) => {
-    if (!openingHourPattern.test(slot)) return false;
+  if (!slots.length) {
+    return {
+      error: requireSlots ? 'Ngày đang mở cần có khung giờ.' : '',
+      normalizedSlots: [],
+    };
+  }
+
+  const normalizedSlots: string[] = [];
+  const intervals: Array<{ start: number; end: number; index: number }> = [];
+
+  for (const [index, slot] of slots.entries()) {
+    if (!openingHourPattern.test(slot)) {
+      return {
+        error: 'Nhập đúng dạng HH:mm - HH:mm, ví dụ 08:00 - 12:00.',
+        normalizedSlots,
+      };
+    }
+
     const { open, close } = splitOpeningHourSlot(slot);
-    const [openH = Number.NaN, openM = Number.NaN] = open.split(':').map(Number);
-    const [closeH = Number.NaN, closeM = Number.NaN] = close.split(':').map(Number);
-    if (openH > 23 || openM > 59) return false;
-    if (closeH > 24 || (closeH === 24 && closeM > 0) || closeM > 59) return false;
-    const openTotal = (openH || 0) * 60 + (openM || 0);
-    const closeTotal = (closeH || 0) * 60 + (closeM || 0);
-    if (closeTotal <= openTotal && !(openTotal === 0 && closeTotal === 0)) return false;
-    return true;
-  });
+    const [openHour = Number.NaN, openMinute = Number.NaN] = open.split(':').map(Number);
+    const [closeHour = Number.NaN, closeMinute = Number.NaN] = close.split(':').map(Number);
+    if (
+      openHour > 23 ||
+      openMinute > 59 ||
+      closeHour > 24 ||
+      (closeHour === 24 && closeMinute > 0) ||
+      closeMinute > 59
+    ) {
+      return {
+        error: 'Giờ kết thúc phải lớn hơn bắt đầu và tối đa là 24:00.',
+        normalizedSlots,
+      };
+    }
+
+    const openTotal = listingTimeToMinutes(open);
+    const closeTotal = listingTimeToMinutes(close);
+    if (closeTotal <= openTotal && !(openTotal === 0 && closeTotal === 0)) {
+      return {
+        error: 'Giờ kết thúc phải lớn hơn giờ bắt đầu (không hỗ trợ qua đêm).',
+        normalizedSlots,
+      };
+    }
+
+    intervals.push({
+      start: openTotal,
+      end: openTotal === 0 && closeTotal === 0 ? 1440 : closeTotal,
+      index,
+    });
+    normalizedSlots.push(formatOpeningHourSlot(open, close));
+  }
+
+  for (let i = 0; i < intervals.length; i += 1) {
+    for (let j = i + 1; j < intervals.length; j += 1) {
+      const a = intervals[i];
+      const b = intervals[j];
+      if (!a || !b) continue;
+      if (Math.max(a.start, b.start) < Math.min(a.end, b.end)) {
+        return {
+          error: 'Khung giờ bị trùng lặp.',
+          normalizedSlots,
+        };
+      }
+    }
+  }
+
+  return { error: '', normalizedSlots };
+};
+
+const getListingOpeningHourPreviewError = (item: PartnerListingOpeningHour) => {
+  if (item.isOff) return '';
+  return validateListingOpeningHourSlots(item.hours, false).error;
 };
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
@@ -1074,10 +1140,9 @@ const validateListingDraft = (
     }
   };
 
-  if (isBlank(draft.storeName)) {
-    errors.storeName = 'Nhập tên quán.';
-  } else if (draft.storeName.trim().length < 2) {
-    errors.storeName = 'Tên quán cần ít nhất 2 ký tự.';
+  const storeNameError = validateStoreName(draft.storeName);
+  if (storeNameError) {
+    errors.storeName = storeNameError;
   }
 
   const category = draft.storeCategory || draft.businessType;
@@ -1087,8 +1152,9 @@ const validateListingDraft = (
   requireOnSubmit('streetAddress', draft.streetAddress, 'Nhập số nhà, tên đường.');
   requireOnSubmit('description', draft.description, 'Nhập mô tả quán.');
 
-  if (hasText(draft.phone) && !phonePattern.test(draft.phone.trim())) {
-    errors.phone = 'Số điện thoại chỉ gồm số, dấu +, khoảng trắng hoặc dấu chấm/gạch.';
+  const phoneError = validateVietnamStorePhone(draft.phone);
+  if (phoneError) {
+    errors.phone = phoneError;
   }
   addFormatError('mapUrl', draft.mapUrl, 'Link Google Maps phải bắt đầu bằng http hoặc https.');
 
@@ -1104,10 +1170,12 @@ const validateListingDraft = (
       errors[path] = `Nhập giờ mở cửa cho ${item.day}.`;
       return;
     }
-    if (hasText(item.hours) && !hasValidOpeningHourSlots(item.hours)) {
-      errors[path] = 'Định dạng giờ phải là HH:mm - HH:mm, có thể thêm nhiều khung bằng dấu phẩy.';
+    const slotValidation = validateListingOpeningHourSlots(item.hours, mode === 'submit');
+    if (slotValidation.error) {
+      errors[path] = slotValidation.error;
     }
   });
+  const castDisabledForCategory = category === 'MASSAGE_SPA' || category === 'RESTAURANT';
   draft.castProfiles.forEach((cast, index) => {
     const rowHasData = Boolean(
       cast.stageName.trim() ||
@@ -1124,14 +1192,16 @@ const validateListingDraft = (
     );
     if (!rowHasData) return;
 
-    if (isBlank(cast.stageName)) {
+    if (castDisabledForCategory) {
+      errors[`castProfiles.${index}.stageName`] = 'Không thể thêm Cast vào Massage & Spa hoặc Nhà hàng.';
+    } else if (isBlank(cast.stageName)) {
       errors[`castProfiles.${index}.stageName`] = 'Nhập tên cast.';
     }
     if (cast.birthMonth !== undefined && (cast.birthMonth < 1 || cast.birthMonth > 12)) {
       errors[`castProfiles.${index}.birthMonth`] = 'Tháng sinh phải từ 1 đến 12.';
     }
-    if (cast.heightCm !== undefined && (cast.heightCm < 120 || cast.heightCm > 220)) {
-      errors[`castProfiles.${index}.heightCm`] = 'Chiều cao hợp lệ trong khoảng 120 - 220 cm.';
+    if (cast.heightCm !== undefined && (cast.heightCm <= 0 || cast.heightCm < 50 || cast.heightCm > 250)) {
+      errors[`castProfiles.${index}.heightCm`] = 'Chiều cao không hợp lệ (phải trong khoảng 50 - 250 cm).';
     }
     splitInlineList(cast.youtubeLinks?.join(',')).forEach((url, urlIndex) => {
       if (!isValidUrl(url)) {
@@ -6798,7 +6868,9 @@ export default function PartnerPage() {
             {openingRows.map((item, index) => {
               const slots = splitOpeningHourSlots(item.hours);
               const visibleSlots = slots.length ? slots : [defaultListingOpeningSlot];
-              const hasHourError = Boolean(listingErrors[`openingHourItems.${index}.hours`]);
+              const hourErrorPath = `openingHourItems.${index}.hours`;
+              const hourError = listingErrors[hourErrorPath] || getListingOpeningHourPreviewError(item);
+              const hasHourError = Boolean(hourError);
 
               return (
                 <div key={`${item.day}-${index}`} className="partner-hour-row">
@@ -6846,7 +6918,18 @@ export default function PartnerPage() {
                         + Khung giờ
                       </button>
                     ) : null}
-                    {listingErrorText(`openingHourItems.${index}.hours`)}
+                    {hourError ? (
+                      <span
+                        style={{
+                          color: colors.danger,
+                          fontSize: '11.5px',
+                          fontWeight: 800,
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        {hourError}
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     type="button"
