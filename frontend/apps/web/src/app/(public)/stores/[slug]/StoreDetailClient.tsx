@@ -577,6 +577,63 @@ const rawOpeningSummary = (store: PublicStoreDetail) => {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 };
 
+type OpeningSummaryRow = {
+  dayLabel: string;
+  hours: string;
+  weekdayKey: WeekdayKey | null;
+};
+
+const weekdayKeyFromSummaryLabel = (label: string): WeekdayKey | null => {
+  const normalized = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "cn" || normalized.includes("chu nhat") || normalized.includes("sunday")) {
+    return "sunday";
+  }
+
+  if (normalized.includes("monday") || normalized === "mon") return "monday";
+  if (normalized.includes("tuesday") || normalized === "tue") return "tuesday";
+  if (normalized.includes("wednesday") || normalized === "wed") return "wednesday";
+  if (normalized.includes("thursday") || normalized === "thu") return "thursday";
+  if (normalized.includes("friday") || normalized === "fri") return "friday";
+  if (normalized.includes("saturday") || normalized === "sat") return "saturday";
+
+  const dayNumber = normalized.match(/[2-7]/)?.[0];
+  if (dayNumber === "2") return "monday";
+  if (dayNumber === "3") return "tuesday";
+  if (dayNumber === "4") return "wednesday";
+  if (dayNumber === "5") return "thursday";
+  if (dayNumber === "6") return "friday";
+  if (dayNumber === "7") return "saturday";
+
+  return null;
+};
+
+const splitOpeningSummaryRows = (summary?: string | null): OpeningSummaryRow[] => {
+  if (!summary) return [];
+
+  return summary
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex < 0) {
+        return { dayLabel: "", hours: part, weekdayKey: null };
+      }
+
+      const dayLabel = part.slice(0, separatorIndex).trim();
+      const hours = part.slice(separatorIndex + 1).trim();
+      return { dayLabel, hours: hours || part, weekdayKey: weekdayKeyFromSummaryLabel(dayLabel) };
+    });
+};
+
+const openingSummaryForDay = (summary: string | null, weekday: WeekdayKey) =>
+  splitOpeningSummaryRows(summary).find((row) => row.weekdayKey === weekday)?.hours ?? summary;
+
 const priceRangeText = (store: PublicStoreDetail, language: LanguageCode) => {
   const values = store.priceReference.items
     .map((item) => item.amountVnd)
@@ -930,13 +987,33 @@ function HoursList({
 }) {
   const activeLanguage = useActiveLanguage();
   const summary = rawOpeningSummary(store);
+  const hasDailyOpeningHours = Boolean(
+    openingHours && weekdayLabels.some(([key]) => openingHours[key]),
+  );
+  const summaryRows = splitOpeningSummaryRows(summary);
 
-  if (summary) {
+  if (!hasDailyOpeningHours && summaryRows.length > 1) {
+    return (
+      <div className="hours-list">
+        {summaryRows.map((row, index) => (
+          <div
+            className={row.weekdayKey === today ? "today" : undefined}
+            key={`${row.dayLabel}-${index}`}
+          >
+            <span>{translateText(row.dayLabel || "Giờ mở cửa", activeLanguage)}</span>
+            <strong>{translateText(row.hours, activeLanguage)}</strong>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!hasDailyOpeningHours && summary) {
     return (
       <div className="hours-list">
         <div className="today">
           <span>{translateText("Giờ mở cửa", activeLanguage)}</span>
-          <strong>{summary}</strong>
+          <strong>{translateText(summary, activeLanguage)}</strong>
         </div>
       </div>
     );
@@ -1630,7 +1707,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     [store.openingHours],
   );
   const openingSummary = rawOpeningSummary(store);
-  const rawTodayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
+  const rawTodayOpening = normalizedOpeningHours?.[today]
+    ? openingText(normalizedOpeningHours[today])
+    : (openingSummaryForDay(openingSummary, today) ?? openingText(normalizedOpeningHours?.[today]));
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = isStoreOpenAt(normalizedOpeningHours, openingSummary, statusNow);
   const categoryLabel = translateText(
@@ -3046,6 +3125,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-gold-hi);
           font-size: 14px;
           line-height: 1.25;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .quick-stats span,
@@ -4518,12 +4599,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hours-list span {
           color: var(--vy-text);
           font-size: 13px;
+          min-width: 0;
         }
 
         .hours-list strong {
           color: var(--vy-gold-hi);
           font-size: 13px;
           text-align: right;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .empty-state {
@@ -5002,6 +5086,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .quick-stats strong {
             font-size: 12px;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
           }
 
           .quick-stats span {
