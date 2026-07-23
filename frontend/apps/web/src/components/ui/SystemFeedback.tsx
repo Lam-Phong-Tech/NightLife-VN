@@ -19,6 +19,12 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import {
+  languageChangedEvent,
+  readStoredLanguage,
+  translateText,
+  type LanguageCode,
+} from "@/lib/i18n/client-translations";
 
 type FeedbackTone = "success" | "info" | "warning" | "error" | "gold";
 type ToastPlacement = "top-right" | "top" | "bottom";
@@ -155,10 +161,33 @@ function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function isUserFeedbackRoute() {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname.toLowerCase();
+  const pathname = window.location.pathname;
+  return (
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/partner") &&
+    !hostname.startsWith("admin.") &&
+    !hostname.startsWith("partner.")
+  );
+}
+
+function translateFeedbackText(value: string | undefined, language: LanguageCode, enabled: boolean) {
+  if (!value) return value;
+  return enabled ? translateText(value, language) : value;
+}
+
+function translateFeedbackNode(value: ReactNode, language: LanguageCode, enabled: boolean) {
+  return typeof value === "string" && enabled ? translateText(value, language) : value;
+}
+
 export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastState[]>([]);
   const [modal, setModal] = useState<ModalInput | null>(null);
   const [sheet, setSheet] = useState<SheetInput | null>(null);
+  const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(() => readStoredLanguage());
+  const shouldTranslateFeedback = isUserFeedbackRoute();
 
   const dismissToast = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -217,6 +246,18 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
   const closeBottomSheet = useCallback(() => setSheet(null), []);
 
   useEffect(() => {
+    const syncLanguage = (event?: Event) => {
+      const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }> | undefined)?.detail
+        ?.language;
+      setActiveLanguage(nextLanguage ?? readStoredLanguage());
+    };
+
+    syncLanguage();
+    window.addEventListener(languageChangedEvent, syncLanguage);
+    return () => window.removeEventListener(languageChangedEvent, syncLanguage);
+  }, []);
+
+  useEffect(() => {
     if (!modal && !sheet) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -259,19 +300,39 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
         toasts={toasts.filter((toast) => toast.placement === "top-right")}
         placement="top-right"
         onDismiss={dismissToast}
+        language={activeLanguage}
+        shouldTranslate={shouldTranslateFeedback}
       />
       <ToastViewport
         toasts={toasts.filter((toast) => toast.placement === "top")}
         placement="top"
         onDismiss={dismissToast}
+        language={activeLanguage}
+        shouldTranslate={shouldTranslateFeedback}
       />
       <ToastViewport
         toasts={toasts.filter((toast) => toast.placement === "bottom")}
         placement="bottom"
         onDismiss={dismissToast}
+        language={activeLanguage}
+        shouldTranslate={shouldTranslateFeedback}
       />
-      {modal ? <FeedbackModal modal={modal} onClose={closeModal} /> : null}
-      {sheet ? <FeedbackBottomSheet sheet={sheet} onClose={closeBottomSheet} /> : null}
+      {modal ? (
+        <FeedbackModal
+          modal={modal}
+          onClose={closeModal}
+          language={activeLanguage}
+          shouldTranslate={shouldTranslateFeedback}
+        />
+      ) : null}
+      {sheet ? (
+        <FeedbackBottomSheet
+          sheet={sheet}
+          onClose={closeBottomSheet}
+          language={activeLanguage}
+          shouldTranslate={shouldTranslateFeedback}
+        />
+      ) : null}
       <style>{feedbackStyles}</style>
     </SystemFeedbackContext.Provider>
   );
@@ -281,25 +342,49 @@ function ToastViewport({
   toasts,
   placement,
   onDismiss,
+  language,
+  shouldTranslate,
 }: {
   toasts: ToastState[];
   placement: ToastPlacement;
   onDismiss: (id: string) => void;
+  language: LanguageCode;
+  shouldTranslate: boolean;
 }) {
   if (toasts.length === 0) return null;
 
   return (
     <div className={`nl-toast-viewport nl-toast-${placement}`} aria-live="polite" aria-atomic="false">
       {toasts.map((toast) => (
-        <FeedbackToast key={toast.id} toast={toast} onDismiss={() => onDismiss(toast.id)} />
+        <FeedbackToast
+          key={toast.id}
+          toast={toast}
+          onDismiss={() => onDismiss(toast.id)}
+          language={language}
+          shouldTranslate={shouldTranslate}
+        />
       ))}
     </div>
   );
 }
 
-function FeedbackToast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
+function FeedbackToast({
+  toast,
+  onDismiss,
+  language,
+  shouldTranslate,
+}: {
+  toast: ToastState;
+  onDismiss: () => void;
+  language: LanguageCode;
+  shouldTranslate: boolean;
+}) {
   const config = toneConfig[toast.tone];
   const Icon = toast.loading ? Loader2 : config.icon;
+  const title = translateFeedbackText(toast.title, language, shouldTranslate) ?? toast.title;
+  const description = translateFeedbackText(toast.description, language, shouldTranslate);
+  const actionLabel = translateFeedbackText(toast.actionLabel, language, shouldTranslate);
+  const closeLabel = translateFeedbackText("Đóng thông báo", language, shouldTranslate) ?? "Đóng thông báo";
 
   return (
     <section
@@ -319,15 +404,15 @@ function FeedbackToast({ toast, onDismiss }: { toast: ToastState; onDismiss: () 
         <Icon size={toast.loading ? 20 : 16} strokeWidth={toast.loading ? 2.4 : 2.2} className={toast.loading ? "nl-spin" : undefined} />
       </span>
       <div className="nl-system-toast-copy">
-        <div style={{ color: toast.loading ? colors.text : config.title }}>{toast.title}</div>
-        {toast.description ? <p>{toast.description}</p> : null}
+        <div style={{ color: toast.loading ? colors.text : config.title }}>{title}</div>
+        {description ? <p>{description}</p> : null}
         {toast.loading ? (
           <div className="nl-system-toast-progress">
             <i style={{ width: `${Math.max(8, Math.min(100, toast.progress ?? 62))}%` }} />
           </div>
         ) : null}
       </div>
-      {toast.actionLabel ? (
+      {actionLabel ? (
         <button
           type="button"
           className="nl-system-toast-action"
@@ -336,11 +421,11 @@ function FeedbackToast({ toast, onDismiss }: { toast: ToastState; onDismiss: () 
             onDismiss();
           }}
         >
-          {toast.actionLabel}
+          {actionLabel}
         </button>
       ) : null}
       {!toast.loading ? (
-        <button type="button" className="nl-system-toast-close" aria-label="Đóng thông báo" onClick={onDismiss}>
+        <button type="button" className="nl-system-toast-close" aria-label={closeLabel} onClick={onDismiss}>
           <X size={16} />
         </button>
       ) : null}
@@ -348,10 +433,27 @@ function FeedbackToast({ toast, onDismiss }: { toast: ToastState; onDismiss: () 
   );
 }
 
-function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => void }) {
+function FeedbackModal({
+  modal,
+  onClose,
+  language,
+  shouldTranslate,
+}: {
+  modal: ModalInput;
+  onClose: () => void;
+  language: LanguageCode;
+  shouldTranslate: boolean;
+}) {
   const tone = modal.tone ?? (modal.destructive ? "error" : "success");
   const config = toneConfig[tone];
   const Icon = modal.destructive ? Trash2 : config.icon;
+  const title = translateFeedbackText(modal.title, language, shouldTranslate) ?? modal.title;
+  const description = translateFeedbackNode(modal.description, language, shouldTranslate);
+  const secondaryLabel = translateFeedbackText(modal.secondaryLabel, language, shouldTranslate);
+  const primaryLabel =
+    translateFeedbackText(modal.primaryLabel ?? "Đã hiểu", language, shouldTranslate) ??
+    modal.primaryLabel ??
+    "Đã hiểu";
 
   return (
     <div className="nl-system-modal-overlay" role="presentation" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
@@ -372,10 +474,10 @@ function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => v
         >
           <Icon size={modal.destructive ? 27 : 28} strokeWidth={modal.destructive ? 1.9 : 2.2} />
         </span>
-        <h2 id="nl-system-modal-title">{modal.title}</h2>
-        <div className="nl-system-modal-desc">{modal.description}</div>
+        <h2 id="nl-system-modal-title">{title}</h2>
+        <div className="nl-system-modal-desc">{description}</div>
         <div className="nl-system-modal-actions">
-          {modal.secondaryLabel ? (
+          {secondaryLabel ? (
             <button
               type="button"
               className="nl-system-secondary-button"
@@ -384,7 +486,7 @@ function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => v
                 onClose();
               }}
             >
-              {modal.secondaryLabel}
+              {secondaryLabel}
             </button>
           ) : null}
           <button
@@ -395,7 +497,7 @@ function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => v
               onClose();
             }}
           >
-            {modal.primaryLabel ?? "Đã hiểu"}
+            {primaryLabel}
           </button>
         </div>
       </section>
@@ -403,7 +505,28 @@ function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => v
   );
 }
 
-function FeedbackBottomSheet({ sheet, onClose }: { sheet: SheetInput; onClose: () => void }) {
+function FeedbackBottomSheet({
+  sheet,
+  onClose,
+  language,
+  shouldTranslate,
+}: {
+  sheet: SheetInput;
+  onClose: () => void;
+  language: LanguageCode;
+  shouldTranslate: boolean;
+}) {
+  const title = translateFeedbackText(sheet.title, language, shouldTranslate) ?? sheet.title;
+  const description = translateFeedbackNode(sheet.description, language, shouldTranslate);
+  const secondaryLabel =
+    translateFeedbackText(sheet.secondaryLabel ?? "Để sau", language, shouldTranslate) ??
+    sheet.secondaryLabel ??
+    "Để sau";
+  const primaryLabel =
+    translateFeedbackText(sheet.primaryLabel ?? "Xác nhận", language, shouldTranslate) ??
+    sheet.primaryLabel ??
+    "Xác nhận";
+
   return (
     <div className="nl-system-sheet-overlay" role="presentation" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
       <section
@@ -414,8 +537,8 @@ function FeedbackBottomSheet({ sheet, onClose }: { sheet: SheetInput; onClose: (
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="nl-system-sheet-handle" />
-        <h2 id="nl-system-sheet-title">{sheet.title}</h2>
-        <p>{sheet.description}</p>
+        <h2 id="nl-system-sheet-title">{title}</h2>
+        <p>{description}</p>
         <div className="nl-system-sheet-actions">
           <button
             type="button"
@@ -425,7 +548,7 @@ function FeedbackBottomSheet({ sheet, onClose }: { sheet: SheetInput; onClose: (
               onClose();
             }}
           >
-            {sheet.secondaryLabel ?? "Để sau"}
+            {secondaryLabel}
           </button>
           <button
             type="button"
@@ -435,7 +558,7 @@ function FeedbackBottomSheet({ sheet, onClose }: { sheet: SheetInput; onClose: (
               onClose();
             }}
           >
-            {sheet.primaryLabel ?? "Xác nhận"}
+            {primaryLabel}
           </button>
         </div>
       </section>

@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  defaultLanguageCode,
-  languageChangedEvent,
-  readStoredLanguage,
-  type LanguageCode,
-} from "./client-translations";
+import { languageChangedEvent, readStoredLanguage, type LanguageCode } from "./client-translations";
 
 export type { LanguageCode };
 
@@ -19,7 +14,7 @@ export const intlLocaleByLanguage: Record<LanguageCode, string> = {
 };
 
 export function useActiveLanguage() {
-  const [language, setLanguage] = useState<LanguageCode>(defaultLanguageCode);
+  const [language, setLanguage] = useState<LanguageCode>(() => readStoredLanguage());
 
   useEffect(() => {
     const syncLanguage = (event?: Event) => {

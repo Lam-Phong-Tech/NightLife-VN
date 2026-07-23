@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useLayoutEffect } from "react";
 import {
   getVietnameseSource,
   languageChangedEvent,
@@ -117,17 +117,23 @@ function shouldSkipRoute(pathname: string) {
 export function ClientLanguageTranslator({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (shouldSkipRoute(pathname)) {
       return undefined;
     }
 
     let language = readStoredLanguage();
     let timers: number[] = [];
+    let frame = 0;
 
     const scheduleApply = () => {
       timers.forEach((timer) => window.clearTimeout(timer));
-      timers = [30, 240, 900].map((delay) =>
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+      applyTranslations(language);
+      frame = window.requestAnimationFrame(() => applyTranslations(language));
+      timers = [120, 480].map((delay) =>
         window.setTimeout(() => applyTranslations(language), delay),
       );
     };
@@ -152,6 +158,9 @@ export function ClientLanguageTranslator({ children }: { children: React.ReactNo
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
       observer.disconnect();
       window.removeEventListener(languageChangedEvent, onLanguageChange);
     };
