@@ -686,7 +686,7 @@ function AdminCastsContent() {
       zodiacSign: c.zodiacSign || '',
       heightCm: c.heightCm || '',
       measurements: c.measurements || '',
-      languages: c.languages || [],
+      languages: (c.languages || []).filter((language: string) => COMMON_LANGS.includes(language)),
       hobbies: c.hobbies || [],
       tags: c.tags || [],
       youtubeLinks: c.youtubeLinks || [],
@@ -778,6 +778,7 @@ function AdminCastsContent() {
 
       const payload = {
         ...formData,
+        languages: (formData.languages || []).filter((language: string) => COMMON_LANGS.includes(language)),
         birthMonth: formData.birthMonth ? parseInt(formData.birthMonth, 10) : undefined,
         heightCm: formData.heightCm ? parseInt(formData.heightCm, 10) : undefined,
         mediaIds: [avatarImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
@@ -1670,17 +1671,6 @@ function AdminCastsContent() {
                       </div>
                     );
                   })}
-                  <input 
-                    type="text" 
-                    placeholder="Thêm ngôn ngữ, ngăn cách bởi dấu phẩy..."
-                    value={formData.languages?.filter((l: string) => !COMMON_LANGS.includes(l)).join(', ') || ''}
-                    onChange={(e) => {
-                      const others = e.target.value.split(',').map(s=>s.trim()).filter(Boolean);
-                      const currentCommon = formData.languages.filter((l: string) => COMMON_LANGS.includes(l));
-                      setFormData({...formData, languages: [...currentCommon, ...others]});
-                    }}
-                    style={{ background: 'transparent', border: 'none', outline: 'none', color: colors.text, fontSize: '13px', marginLeft: '8px', flex: 1, minWidth: '100px' }}
-                  />
                 </div>
               </div>
 
