@@ -1163,7 +1163,12 @@ export function PublicRankingsContract() {
         'P0 category: BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Lowercase aliases such as girls_bar and massage_spa are accepted.',
       example: 'club',
     }),
-    ApiQuery({ name: 'limit', required: false, example: '5' }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      description: 'Number of ranking rows to return. Top 5 maximum.',
+      example: '5',
+    }),
     ApiOkResponse({
       description: 'Curated public ranking response.',
       type: PublicRankingResponseDto,

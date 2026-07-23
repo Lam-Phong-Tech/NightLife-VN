@@ -278,6 +278,7 @@ describe('Public discovery listing API (e2e)', () => {
     });
     expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        take: 1,
         where: expect.objectContaining({
           targetType: 'CAST',
           scope: 'global',
@@ -392,6 +393,7 @@ describe('Public discovery listing API (e2e)', () => {
 
     expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        take: 5,
         where: expect.objectContaining({
           targetType: 'STORE',
           AND: expect.arrayContaining([{ cityCode: 'all' }]),
@@ -422,6 +424,15 @@ describe('Public discovery listing API (e2e)', () => {
     await request(app.getHttpServer())
       .get('/rankings')
       .query({ city: 'tokyo' })
+      .expect(400);
+
+    expect(prisma.rankingConfig.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects public ranking limits above Top 5', async () => {
+    await request(app.getHttpServer())
+      .get('/rankings')
+      .query({ targetType: 'CAST', city: 'hn', limit: '6' })
       .expect(400);
 
     expect(prisma.rankingConfig.findMany).not.toHaveBeenCalled();

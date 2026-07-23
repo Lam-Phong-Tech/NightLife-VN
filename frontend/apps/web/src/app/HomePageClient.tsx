@@ -490,7 +490,7 @@ function comparePublicRankingItems(first: PublicRankingItem, second: PublicRanki
 }
 
 async function listHomeStoreRankingItems(city: ReturnType<typeof regionToCityCode>) {
-  const baseParams = { targetType: "STORE" as const, city, limit: 10 };
+  const baseParams = { targetType: "STORE" as const, city, limit: 5 };
   const responses = await Promise.allSettled([
     rankingsApi.list(baseParams),
     rankingsApi.list({ ...baseParams, scope: "recommend-home" }),
@@ -507,7 +507,7 @@ async function listHomeStoreRankingItems(city: ReturnType<typeof regionToCityCod
 
   return mergeFeaturedRankingItems(
     successfulResponses.flatMap((response) => response.data),
-    10,
+    5,
   );
 }
 
@@ -3314,7 +3314,7 @@ export default function HomePageClient() {
     });
 
     Promise.all([
-      rankingsApi.list({ targetType: "CAST", city, limit: 10 }),
+      rankingsApi.list({ targetType: "CAST", city, limit: 5 }),
       listHomeStoreRankingItems(city),
     ])
       .then(([castResponse, storeItems]) => {
@@ -3352,7 +3352,7 @@ export default function HomePageClient() {
     });
 
     const loadFeaturedServices = async () => {
-      const limit = 8;
+      const limit = 5;
       const baseParams = {
         targetType: "STORE" as const,
         category,

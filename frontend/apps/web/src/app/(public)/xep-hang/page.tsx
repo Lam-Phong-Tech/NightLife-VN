@@ -84,7 +84,7 @@ const targetTypeByKind: Record<RankingKind, RankingTargetType> = {
 };
 
 const initialVisibleRankings = 5;
-const maxPreloadedRankings = 10;
+const maxPreloadedRankings = 5;
 
 function phoneHref(phone: string) {
   const normalized = phone.trim().replace(/[^\d+]/g, "");

@@ -182,7 +182,8 @@ const BOOKING_POLICY_CUTOFF_MINUTES = [30, 60, 120] as const;
 const DEFAULT_BOOKING_CUTOFF_MINUTES = 60;
 const DEFAULT_PUBLIC_LIMIT = 24;
 const DEFAULT_RANKING_LIMIT = 5;
-const MAX_RANKING_LIMIT = 20;
+const MAX_RANKING_LIMIT = 5;
+const MAX_ACTIVE_RANKINGS_PER_GROUP = 5;
 const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
@@ -864,7 +865,7 @@ type AdminRankingConfigRecord = {
   manualScore: number;
   pinRank: number | null;
   sponsored: boolean;
-  status: string;
+  status: RankingConfigStatus;
   startsAt: Date | null;
   endsAt: Date | null;
   createdAt: Date;
@@ -1331,7 +1332,7 @@ export class NightlifeDataService {
         { manualScore: 'desc' },
         { updatedAt: 'desc' },
       ],
-      take: limit * 4,
+      take: limit,
       select: {
         targetId: true,
         cityCode: true,
@@ -1606,6 +1607,7 @@ export class NightlifeDataService {
     const scope = this.resolveAdminRankingScope(dto.scope);
     const pinRank = dto.pinRank ?? null;
     const manualScore = dto.manualScore ?? 0;
+    const status = (dto.status ?? 'ACTIVE') as RankingConfigStatus;
     const { startsAt, endsAt } = this.resolveRankingWindow(
       dto.startsAt,
       dto.endsAt,
@@ -1618,6 +1620,13 @@ export class NightlifeDataService {
       category,
       scope,
       pinRank,
+    });
+    await this.assertRankingGroupCapacity({
+      targetType,
+      cityCode,
+      category,
+      scope,
+      status,
     });
 
     const config = await this.prisma.$transaction(async (tx) => {
@@ -1633,7 +1642,7 @@ export class NightlifeDataService {
           pinRank,
           manualScore,
           sponsored: dto.sponsored ?? false,
-          status: (dto.status ?? 'ACTIVE') as RankingConfigStatus,
+          status,
           startsAt,
           endsAt,
         },
@@ -1731,6 +1740,10 @@ export class NightlifeDataService {
         : current.scope;
     const pinRank =
       dto.pinRank !== undefined ? (dto.pinRank ?? null) : current.pinRank;
+    const status =
+      dto.status !== undefined
+        ? (dto.status as RankingConfigStatus)
+        : current.status;
     const startsAtInput =
       dto.startsAt !== undefined
         ? dto.startsAt
@@ -1753,6 +1766,14 @@ export class NightlifeDataService {
       category,
       scope,
       pinRank,
+      excludeId: rankingId,
+    });
+    await this.assertRankingGroupCapacity({
+      targetType,
+      cityCode,
+      category,
+      scope,
+      status,
       excludeId: rankingId,
     });
 
@@ -16061,6 +16082,37 @@ export class NightlifeDataService {
     if (collision) {
       throw new BadRequestException(
         `Ranking collision: Rank ${input.pinRank} is already pinned for targetType ${input.targetType}, cityCode ${input.cityCode}, category ${input.category}, scope ${input.scope}.`,
+      );
+    }
+  }
+
+  private async assertRankingGroupCapacity(input: {
+    targetType: RankingTargetType;
+    cityCode: string;
+    category: StoreCategory | null;
+    scope: string;
+    status: RankingConfigStatus;
+    excludeId?: string;
+  }) {
+    if (input.status !== 'ACTIVE') {
+      return;
+    }
+
+    const activeCount = await this.prisma.rankingConfig.count({
+      where: {
+        targetType: input.targetType,
+        cityCode: input.cityCode,
+        category: input.category,
+        scope: input.scope,
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...(input.excludeId ? { NOT: { id: input.excludeId } } : {}),
+      },
+    });
+
+    if (activeCount >= MAX_ACTIVE_RANKINGS_PER_GROUP) {
+      throw new BadRequestException(
+        `Ranking group supports at most ${MAX_ACTIVE_RANKINGS_PER_GROUP} active items.`,
       );
     }
   }

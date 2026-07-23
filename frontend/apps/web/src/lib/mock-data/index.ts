@@ -61,9 +61,7 @@ export const rankListQuan: Venue[] = [
   { rank: 2, numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sora Lounge', area: 'Quận 1 · HCM', href: '/stores/sora-lounge' },
   { rank: 3, numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'KTV Hoàng Gia', area: 'Kim Mã · HN', href: '/stores/ktv-hoang-gia' },
   { rank: 4, numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)', img: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Diamond Bar', area: 'Quận 3 · HCM', href: '/stores/diamond-bar' },
-  { rank: 5, numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sakura Lounge', area: 'Trúc Bạch · HN', href: '/stores/sakura-lounge' },
-  { rank: 6, numColor: '#14532d', crown: 'linear-gradient(140deg, #bbf7d0, #16a34a)', img: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Jade Lounge', area: 'Hoàn Kiếm · HN', href: '/stores/jade-lounge' },
-  { rank: 7, numColor: '#312e81', crown: 'linear-gradient(140deg, #c4b5fd, #7c3aed)', img: "url('https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Star KTV', area: 'Cầu Giấy · HN', href: '/stores/star-ktv' }
+  { rank: 5, numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sakura Lounge', area: 'Trúc Bạch · HN', href: '/stores/sakura-lounge' }
 ];
 
 export const rankListCast: Cast[] = [
@@ -71,9 +69,7 @@ export const rankListCast: Cast[] = [
   { rank: 2, numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Hana', area: 'Quận 1 · HCM', href: '/casts/hana' },
   { rank: 3, numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Rina', area: 'Kim Mã · HN', href: '/casts/rina' },
   { rank: 4, numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)', img: "url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Michi', area: 'Club Lumière · HN', href: '/casts/michi' },
-  { rank: 5, numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Aiko', area: 'Sora Lounge · HCM', href: '/casts/aiko' },
-  { rank: 6, numColor: '#14532d', crown: 'linear-gradient(140deg, #bbf7d0, #16a34a)', img: "url('https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Yuna', area: 'Neon Club · HN', href: '/casts/yuna-neon' },
-  { rank: 7, numColor: '#312e81', crown: 'linear-gradient(140deg, #c4b5fd, #7c3aed)', img: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Akari', area: 'Jade Lounge · HN', href: '/casts/akari-jade' }
+  { rank: 5, numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Aiko', area: 'Sora Lounge · HCM', href: '/casts/aiko' }
 ];
 
 export const svcData: Venue[] = [

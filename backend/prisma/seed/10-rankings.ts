@@ -17,11 +17,6 @@ const CAST_RANKINGS = [
   { slug: 'yuna-neon',        pinRank: 3, reason: 'Party queen — Neon Club, HN Tây Hồ. Best party entertainer.' },
   { slug: 'akari-jade',       pinRank: 4, reason: 'Sophisticated — Jade Lounge, HN Hoàn Kiếm. Certified sommelier.' },
   { slug: 'mai-golden',       pinRank: 5, reason: 'Talented singer — Golden Voice KTV, HCM Q7. J-POP specialist.' },
-  { slug: 'hana-tokyo',       pinRank: 6, reason: 'Sweet and charming — Tokyo Kitchen, HN. Excellent service.' },
-  { slug: 'linh-moonlight',   pinRank: 7, reason: 'Rising star — Moonlight Bar, HCM Q1. Beautiful voice.' },
-  { slug: 'chloe-velvet',     pinRank: 8, reason: 'Best dancer — Velvet Club, HCM Q1. Crowd favorite.' },
-  { slug: 'minh-crimson',     pinRank: 9, reason: 'Amazing mixologist — Crimson Bar, HN. Creative drinks.' },
-  { slug: 'bao-hanami',       pinRank: 10, reason: 'Attentive service — Hanami Dining, HCM. Great hospitality.' },
 ];
 
 const STORE_RANKINGS = [
@@ -31,11 +26,6 @@ const STORE_RANKINGS = [
   { slug: 'crimson-bar',    pinRank: 3, reason: 'Best bar in Hanoi Old Quarter. Craft beers & live jazz.', scope: 'global' },
   { slug: 'sakura-lounge',  pinRank: 4, reason: 'Premium Japanese-style lounge HCM. Private VIP rooms.', scope: 'global' },
   { slug: 'neon-club',      pinRank: 5, reason: 'Top club in Hanoi by West Lake. Cutting-edge EDM.', scope: 'global' },
-  { slug: 'golden-voice-ktv', pinRank: 6, reason: 'Best KTV in District 7. Great sound system.', scope: 'global' },
-  { slug: 'jade-lounge',    pinRank: 7, reason: 'Luxury lounge in Hanoi. Elegant atmosphere.', scope: 'global' },
-  { slug: 'ruby-karaoke',   pinRank: 8, reason: 'Top karaoke spot in Da Nang. Perfect for parties.', scope: 'global' },
-  { slug: 'sky-bar-36',     pinRank: 9, reason: 'Highest bar in Da Nang. Stunning city views.', scope: 'global' },
-  { slug: 'lotus-massage-spa', pinRank: 10, reason: 'Best massage spa in HCM District 3. Very relaxing.', scope: 'global' },
   
   // featured_home rankings
   { slug: 'hanami-dining',      pinRank: 1, reason: 'Best JP Dining HCM', scope: 'featured_home' },

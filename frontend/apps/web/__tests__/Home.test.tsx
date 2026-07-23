@@ -105,7 +105,7 @@ const now = '2026-07-05T00:00:00.000Z';
 
 const rankingMeta = {
   city: 'all',
-  limit: 10,
+  limit: 5,
   total: 1,
 };
 
@@ -356,16 +356,16 @@ describe('Home Page', () => {
     expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 50 });
     await waitFor(() => {
       expect(listPublicCouponsMock).toHaveBeenCalled();
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 10 });
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 10 });
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'recommend-home', limit: 10 });
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'featured_home', limit: 10 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 5 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 5 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'recommend-home', limit: 5 });
+      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'featured_home', limit: 5 });
       expect(rankingsListMock).toHaveBeenCalledWith({
         targetType: 'STORE',
         city: 'hn',
         category: 'RESTAURANT',
         scope: 'featured_home',
-        limit: 8,
+        limit: 5,
       });
       expect(contentHotVideosMock).toHaveBeenCalledWith('all');
     });
@@ -412,7 +412,7 @@ describe('Home Page', () => {
 
   it('routes coupon CTAs into the store/booking flow without claiming a standalone code', async () => {
     renderHome();
-    await screen.findAllByText('API Coupon');
+    await screen.findAllByText('API Coupon', {}, { timeout: 5000 });
 
     const couponCta = screen.getAllByTestId('home-coupon-cta')[0] as HTMLAnchorElement;
     expect(couponCta).toHaveTextContent('Xem ưu đãi');

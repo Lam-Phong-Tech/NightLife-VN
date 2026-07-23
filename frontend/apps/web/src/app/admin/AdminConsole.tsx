@@ -4329,6 +4329,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             <input
               type="number"
               min={1}
+              max={5}
               value={rankingForm.pinRank}
               onChange={(event) => setRankingForm((current) => ({ ...current, pinRank: event.target.value }))}
               style={inputStyle()}

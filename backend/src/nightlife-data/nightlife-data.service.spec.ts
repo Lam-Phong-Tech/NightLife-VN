@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Logger,
   NotFoundException,
@@ -109,6 +110,7 @@ describe('NightlifeDataService', () => {
       count: jest.fn(),
     },
     rankingConfig: {
+      count: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
@@ -262,6 +264,7 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.rankingConfig.count.mockResolvedValue(0);
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
     accessService.ensureStoreAccess.mockResolvedValue(undefined);
     prisma.user.findUnique.mockResolvedValue(null);
@@ -1336,7 +1339,7 @@ describe('NightlifeDataService', () => {
     const result = await service.listPublicRankings({
       targetType: 'STORE',
       city: 'hn',
-      limit: '10',
+      limit: '5',
     });
 
     expect(result.data).toEqual([
@@ -1460,6 +1463,44 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+  });
+
+  it('rejects a sixth active ranking in the same group', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+
+    prisma.store.findFirst.mockResolvedValue({ id: storeId });
+    prisma.rankingConfig.findFirst.mockResolvedValue(null);
+    prisma.rankingConfig.count.mockResolvedValue(5);
+
+    await expect(
+      service.createAdminRankingConfig(
+        { id: 'admin-1', role: 'ADMIN' },
+        {
+          targetType: 'STORE',
+          targetId: storeId,
+          cityCode: 'hn',
+          category: 'club',
+          scope: 'global',
+          pinRank: 5,
+        },
+      ),
+    ).rejects.toThrow(
+      new BadRequestException(
+        'Ranking group supports at most 5 active items.',
+      ),
+    );
+
+    expect(prisma.rankingConfig.count).toHaveBeenCalledWith({
+      where: {
+        targetType: 'STORE',
+        cityCode: 'hn',
+        category: 'CLUB',
+        scope: 'global',
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    });
+    expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
   });
 
   it('logs minimal audit and notification fields when updating a ranking config', async () => {

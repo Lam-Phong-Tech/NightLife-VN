@@ -97,6 +97,6 @@ export class PublicRankingQueryDto {
   scope?: string;
 
   @IsOptional()
-  @Matches(/^\d{1,2}$/)
+  @Matches(/^[1-5]$/)
   limit?: string;
 }
