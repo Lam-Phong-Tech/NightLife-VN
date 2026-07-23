@@ -49,7 +49,7 @@ const INIT_VOUCHER: CapRow[] = [
 
 const INIT_CAST: CapRow[] = [
   ['Quản lý hồ sơ Cast', 'canManageCast', 1, 1, 1, 1, 0],
-  ['Xoá mềm Cast (Soft Delete)', 'canSoftDeleteCast', 1, 0, 0, 0, 0],
+  ['Xoá Cast (Soft Delete)', 'canSoftDeleteCast', 1, 0, 0, 0, 0],
   ['Xoá cứng Cast (Hard Delete)', 'canHardDeleteCast', 0, 0, 0, 0, 0], // Only Super Admin
 ];
 

@@ -903,10 +903,10 @@ function AdminCastsContent() {
 
   const handleDeleteCast = async (hard: boolean) => {
     if (!selectedCast) return;
-    if (!window.confirm(hard ? 'Bạn có chắc chắn muốn xóa vĩnh viễn cast này?' : 'Bạn có chắc chắn muốn xóa (mềm) cast này?')) return;
+    if (!window.confirm(hard ? 'Bạn có chắc chắn muốn xóa vĩnh viễn cast này?' : 'Bạn có chắc chắn muốn xóa cast này?')) return;
     try {
       await apiClient(`/admin/casts/${selectedCast.id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
-      showToast(hard ? 'Đã xóa vĩnh viễn cast' : 'Đã xóa mềm cast');
+      showToast(hard ? 'Đã xóa vĩnh viễn cast' : 'Đã xóa cast');
       finishDrawerAfterSave();
       fetchCasts();
     } catch (e: any) {
@@ -2120,7 +2120,7 @@ function AdminCastsContent() {
                       width: '100px', background: 'transparent', color: colors.gold, border: `1px solid ${colors.gold}`,
                       height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
                     }}>
-                      Xóa mềm
+                      Xóa
                     </button>
                   )}
                   {userRole === 'SUPER_ADMIN' && (

@@ -36,7 +36,7 @@ const getStatusMeta = (status: string) => {
   if (status === 'DRAFT' || status === 'draft' || status === 'Nháp') return { label: 'Nháp', style: 'warn' };
   if (status === 'SUSPENDED' || status === 'hidden' || status === 'Đang ẩn') return { label: 'Đang ẩn', style: 'muted' };
   if (status === 'PENDING_REVIEW') return { label: 'Chờ duyệt', style: 'info' };
-  if (status === 'DELETED') return { label: 'Đã xóa mềm', style: 'error' };
+  if (status === 'DELETED') return { label: 'Đã xóa', style: 'error' };
   return { label: status, style: 'muted' };
 };
 
@@ -1297,18 +1297,18 @@ function AdminStoresContent() {
 
   const handleSoftDeleteStore = async () => {
     feedback.showModal({
-      title: 'Xóa mềm quán',
-      description: 'Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.',
+      title: 'Xóa quán',
+      description: 'Xóa quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.',
       onPrimary: async () => {
         try {
           await apiClient(`/admin/stores/${selectedStore?.id}?hard=false`, { method: 'DELETE' });
-          showToast('Đã xóa mềm quán');
+          showToast('Đã xóa quán');
           closeDrawer();
           fetchStores();
           fetchPartnerAccounts();
           feedback.closeModal();
         } catch (err: any) {
-          showToast(err.message || 'Không thể xóa mềm quán');
+          showToast(err.message || 'Không thể xóa quán');
         }
       }
     });
@@ -2094,7 +2094,7 @@ function AdminStoresContent() {
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.8px', color: '#8c8679', lineHeight: 1.55 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '2px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-                <span>Mỗi quán chỉ liên kết đúng 1 tài khoản Đối tác. Khi quán bị <b style={{ color: '#e88b99' }}>xóa mềm</b>, quyền truy cập của tài khoản này sẽ tạm khóa; khôi phục quán sẽ mở lại quyền.</span>
+                <span>Mỗi quán chỉ liên kết đúng 1 tài khoản Đối tác. Khi quán bị <b style={{ color: '#e88b99' }}>xóa</b>, quyền truy cập của tài khoản này sẽ tạm khóa; khôi phục quán sẽ mở lại quyền.</span>
               </div>
             </div>
 
@@ -2102,7 +2102,7 @@ function AdminStoresContent() {
               {selectedStore && !isSelectedDeleted && (
                 <span onClick={handleSoftDeleteStore} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 700, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.32)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
-                  Xóa mềm
+                  Xóa
                 </span>
               )}
               {selectedStore && isSelectedDeleted && (
