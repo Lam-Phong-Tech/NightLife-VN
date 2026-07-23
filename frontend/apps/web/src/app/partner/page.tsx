@@ -4599,6 +4599,14 @@ export default function PartnerPage() {
       return;
     }
 
+    if (options.purpose === 'PARTNER_STORE_GALLERY') {
+      const currentCount = listingDraft.galleryUrls.filter((url) => safeListingText(url).trim()).length;
+      if (currentCount + files.length > 10) {
+        setListingNotice('Album chỉ được lưu tối đa 10 ảnh!');
+        return;
+      }
+    }
+
     const validationError = files
       .map((file) =>
         options.kind === 'image'
@@ -5033,7 +5041,10 @@ export default function PartnerPage() {
       </section>
 
       <section className="partner-listing-section">
-        <div className="partner-listing-section-title">Album ảnh</div>
+        <div className="partner-listing-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Album ảnh</span>
+          <span style={{ fontSize: '12px', color: colors.muted, fontWeight: 400, textTransform: 'none' }}>(Tối đa 10 ảnh)</span>
+        </div>
         <div
           style={{
             display: 'grid',

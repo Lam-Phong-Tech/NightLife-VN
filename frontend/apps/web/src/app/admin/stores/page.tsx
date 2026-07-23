@@ -1178,8 +1178,8 @@ function AdminStoresContent() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    if (files.length > 10) {
-      showToast('Bạn chỉ được tải lên tối đa 10 ảnh cùng lúc');
+    if (albums.length + files.length > 10) {
+      showToast('Album chỉ được tải lên tối đa 10 ảnh!');
       if (imageUploadRef.current) imageUploadRef.current.value = '';
       return;
     }
@@ -1750,12 +1750,21 @@ function AdminStoresContent() {
                       value={formData.description} 
                       onChange={(val: any) => updateForm('description', val)}
                       style={{ background: 'rgba(255,255,255,.02)', color: '#f3f0ea' }}
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ]
+                      }}
                     />
                   </div>
                   <style dangerouslySetInnerHTML={{__html: `
                     .ql-toolbar { background: rgba(255,255,255,.03); border: none !important; border-bottom: 1px solid rgba(255,255,255,.08) !important; }
                     .ql-container { border: none !important; font-size: 13.5px; font-family: inherit; }
-                    .ql-editor { min-height: 120px; }
+                    .ql-editor { min-height: 120px; color: #f3f0ea !important; }
+                    .ql-editor * { background-color: transparent !important; color: inherit !important; }
                     .ql-stroke { stroke: #c5c0b6 !important; }
                     .ql-fill { fill: #c5c0b6 !important; }
                   `}} />
@@ -1909,7 +1918,10 @@ function AdminStoresContent() {
                 <input type="file" accept={STORE_IMAGE_ACCEPT} hidden ref={coverImageUploadRef} onChange={handleUploadCoverImage} />
               </div>
 
-              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Album ảnh</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>Album ảnh</span>
+                <span style={{ fontSize: '11px', color: '#8c8679', textTransform: 'none', fontWeight: 400, letterSpacing: 'normal' }}>(Tối đa 10 ảnh)</span>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
                 {albums.map((al: any) => (
                   <div key={al.id} style={{ position: 'relative', aspectRatio: 1, borderRadius: '11px', background: al.url ? (al.url.startsWith('linear-gradient') ? al.url : `url(${resolveClientUrl(al.url)}) center/cover no-repeat`) : g1 }}>
@@ -1918,11 +1930,13 @@ function AdminStoresContent() {
                     </span>
                   </div>
                 ))}
-                <div onClick={() => imageUploadRef.current?.click()} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  <span style={{ fontSize: '9.5px' }}>{uploadingImage ? 'Đang tải...' : 'Tải lên'}</span>
-                  <input type="file" accept={STORE_IMAGE_ACCEPT} multiple hidden ref={imageUploadRef} onChange={handleUploadImage} />
-                </div>
+                <input type="file" accept={STORE_IMAGE_ACCEPT} multiple hidden ref={imageUploadRef} onChange={handleUploadImage} />
+                {albums.length < 10 && (
+                  <div onClick={() => imageUploadRef.current?.click()} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    <span style={{ fontSize: '9.5px' }}>{uploadingImage ? 'Đang tải...' : 'Tải lên'}</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Video quán</div>
