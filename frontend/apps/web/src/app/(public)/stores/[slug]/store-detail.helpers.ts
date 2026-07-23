@@ -89,14 +89,18 @@ export const openingText = (slot?: StoreOpeningHour | null) => {
 };
 
 const mapQueryEmbedUrl = (store: PublicStoreDetail) => {
+  const address = [store.address, store.district, store.city].filter(Boolean).join(", ");
+  const query = [readableName(store.name), address].filter(Boolean).join(", ");
+
+  if (query) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`;
+  }
+
   if (typeof store.latitude === "number" && typeof store.longitude === "number") {
     return `https://maps.google.com/maps?q=${store.latitude},${store.longitude}&z=15&output=embed`;
   }
 
-  const address = [store.address, store.district, store.city].filter(Boolean).join(", ");
-  return address
-    ? `https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=15&output=embed`
-    : "";
+  return "";
 };
 
 const googleMapQueryEmbedUrl = (query: string) =>
@@ -140,9 +144,12 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
         const parsedMapUrl = new URL(mapUrl);
         const decodedHref = decodeURIComponent(parsedMapUrl.href);
 
-        const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
-        if (pinMatch) {
-          return googleMapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
+        const placeMatch = parsedMapUrl.pathname.match(/\/place\/([^\/]+)/);
+        if (placeMatch && placeMatch[1]) {
+          const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+          if (placeName && !placeName.startsWith("@")) {
+            return googleMapQueryEmbedUrl(placeName);
+          }
         }
 
         const queryParam =
@@ -154,12 +161,9 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
           return googleMapQueryEmbedUrl(queryParam.trim());
         }
 
-        const placeMatch = parsedMapUrl.pathname.match(/\/place\/([^\/]+)/);
-        if (placeMatch && placeMatch[1]) {
-          const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
-          if (placeName && !placeName.startsWith("@")) {
-            return googleMapQueryEmbedUrl(placeName);
-          }
+        const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
+        if (pinMatch) {
+          return googleMapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
         }
 
         const coordinateMatch = decodedHref.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);

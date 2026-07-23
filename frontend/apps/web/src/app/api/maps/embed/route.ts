@@ -57,10 +57,13 @@ const googleMapEmbedFromUrl = (value: string) => {
 
     const decodedHref = decodeURIComponent(parsed.href);
 
-    // 1. Check for exact pin coordinates in data parameter (!3d<lat>!4d<lng>)
-    const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
-    if (pinMatch) {
-      return mapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
+    // 1. Check for place name in URL path (/place/<place_name>/)
+    const placeMatch = parsed.pathname.match(/\/place\/([^\/]+)/);
+    if (placeMatch && placeMatch[1]) {
+      const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+      if (placeName && !placeName.startsWith("@")) {
+        return mapQueryEmbedUrl(placeName);
+      }
     }
 
     // 2. Check for explicit query parameters
@@ -73,18 +76,15 @@ const googleMapEmbedFromUrl = (value: string) => {
       return mapQueryEmbedUrl(queryParam.trim());
     }
 
-    // 3. Check for place name in URL path (/place/<place_name>/)
-    const placeMatch = parsed.pathname.match(/\/place\/([^\/]+)/);
-    if (placeMatch && placeMatch[1]) {
-      const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
-      if (placeName && !placeName.startsWith("@")) {
-        return mapQueryEmbedUrl(placeName);
-      }
-    }
-
     const usefulSegment = firstUsefulPathSegment(parsed);
     if (usefulSegment) {
       return mapQueryEmbedUrl(usefulSegment);
+    }
+
+    // 3. Check for exact pin coordinates in data parameter (!3d<lat>!4d<lng>)
+    const pinMatch = decodedHref.match(/!3d(-?\d+(?:\.\d+)?)[^\d!]*!4d(-?\d+(?:\.\d+)?)/);
+    if (pinMatch) {
+      return mapQueryEmbedUrl(`${pinMatch[1]},${pinMatch[2]}`);
     }
 
     // 4. Fallback to @lat,lng camera/viewport center
