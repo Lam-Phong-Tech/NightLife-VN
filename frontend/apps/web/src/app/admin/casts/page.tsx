@@ -407,6 +407,7 @@ function AdminCastsContent() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [avatarImage, setAvatarImage] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; label: string } | null>(null);
   
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const albumUploadRef = useRef<HTMLInputElement>(null);
@@ -425,6 +426,23 @@ function AdminCastsContent() {
   const [zodiacPickerOpen, setZodiacPickerOpen] = useState(false);
   const [hobbyInput, setHobbyInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+
+  useEffect(() => {
+    if (!previewImage) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closePreview = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewImage(null);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closePreview);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closePreview);
+    };
+  }, [previewImage]);
 
   const fetchCasts = async () => {
     try {
@@ -646,6 +664,7 @@ function AdminCastsContent() {
   };
 
   const closeDrawer = () => {
+    setPreviewImage(null);
     setSelectedCast(null);
     setIsAddingCast(false);
     setStorePickerOpen(false);
@@ -1811,8 +1830,14 @@ function AdminCastsContent() {
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                   {avatarImage && (
-                    <div style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0, backgroundImage: `url(${avatarImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                      <button onClick={() => setAvatarImage(null)} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        aria-label="Xem ảnh đại diện kích thước lớn"
+                        onClick={() => setPreviewImage({ url: avatarImage.url, label: 'Ảnh đại diện' })}
+                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${avatarImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
+                      />
+                      <button type="button" aria-label="Xóa ảnh đại diện" onClick={() => setAvatarImage(null)} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
                       </button>
                     </div>
@@ -1842,8 +1867,17 @@ function AdminCastsContent() {
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                   {albums.map((m, i) => (
-                    <div key={i} style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0, backgroundImage: `url(${m.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                      <button onClick={() => setAlbums(albums.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                      key={m.id || m.url || i}
+                      style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0 }}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`Xem ảnh album ${i + 1} kích thước lớn`}
+                        onClick={() => setPreviewImage({ url: m.url, label: `Ảnh album ${i + 1}` })}
+                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${m.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
+                      />
+                      <button type="button" aria-label={`Xóa ảnh album ${i + 1}`} onClick={() => setAlbums(albums.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
                       </button>
                     </div>
@@ -1991,6 +2025,43 @@ function AdminCastsContent() {
           </>
         )}
       </div>
+
+      {previewImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={previewImage.label}
+          onClick={() => setPreviewImage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '32px',
+            background: 'rgba(0,0,0,.88)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div onClick={(event) => event.stopPropagation()} style={{ position: 'relative', maxWidth: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <button
+              type="button"
+              aria-label="Đóng ảnh phóng to"
+              onClick={() => setPreviewImage(null)}
+              style={{ position: 'absolute', top: '-18px', right: '-18px', zIndex: 1, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)', background: 'rgba(15,15,19,.9)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={previewImage.url}
+              alt={previewImage.label}
+              style={{ display: 'block', maxWidth: 'calc(100vw - 64px)', maxHeight: 'calc(100vh - 96px)', objectFit: 'contain', borderRadius: '14px', boxShadow: '0 24px 80px rgba(0,0,0,.65)' }}
+            />
+            <div style={{ color: '#f3f0ea', fontSize: '13px', fontWeight: 600 }}>{previewImage.label}</div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
