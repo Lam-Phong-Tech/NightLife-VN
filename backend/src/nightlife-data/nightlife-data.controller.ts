@@ -117,7 +117,10 @@ import {
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
 } from './dto/create-partner-request.dto';
-import { PartnerListingDraftDto } from './dto/partner-listing.dto';
+import {
+  PartnerListingCastSubmitDto,
+  PartnerListingDraftDto,
+} from './dto/partner-listing.dto';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -601,7 +604,7 @@ export class NightlifeDataController {
   submitPartnerListingCasts(
     @Req() request: RequestWithUser,
     @Param('storeId') storeId: string,
-    @Body() dto: PartnerListingDraftDto,
+    @Body() dto: PartnerListingCastSubmitDto,
   ) {
     return this.nightlifeDataService.submitPartnerListingCasts(
       request.user,

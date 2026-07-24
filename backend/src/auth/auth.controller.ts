@@ -139,7 +139,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập cho Member' })
   @ApiOkResponse({ type: AuthResponseDto })
   @AuthRateLimit({
-    scope: 'password-login',
+    scope: 'member-password-login',
     limit: 20,
     identityLimit: 5,
     windowMs: FIFTEEN_MINUTES_MS,
@@ -223,7 +223,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập cho Partner' })
   @ApiOkResponse({ type: AuthResponseDto })
   @AuthRateLimit({
-    scope: 'password-login',
+    scope: 'partner-password-login',
     limit: 20,
     identityLimit: 5,
     windowMs: FIFTEEN_MINUTES_MS,
@@ -240,7 +240,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập cho Operator' })
   @ApiOkResponse({ type: AuthResponseDto })
   @AuthRateLimit({
-    scope: 'password-login',
+    scope: 'operator-password-login',
     limit: 20,
     identityLimit: 5,
     windowMs: FIFTEEN_MINUTES_MS,
@@ -257,7 +257,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập cho Admin' })
   @ApiOkResponse({ type: AuthResponseDto })
   @AuthRateLimit({
-    scope: 'password-login',
+    scope: 'admin-password-login',
     limit: 20,
     identityLimit: 5,
     windowMs: FIFTEEN_MINUTES_MS,

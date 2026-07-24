@@ -372,3 +372,13 @@ export class PartnerListingDraftDto {
   @IsUrl({ require_tld: false }, { each: true })
   mediaUrls?: string[];
 }
+
+export class PartnerListingCastSubmitDto {
+  @ApiPropertyOptional({ type: [PartnerListingCastDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => PartnerListingCastDto)
+  castProfiles?: PartnerListingCastDto[];
+}

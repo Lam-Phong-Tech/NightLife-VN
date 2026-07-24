@@ -109,6 +109,7 @@ import {
   ReviewPartnerRequestDto,
 } from './dto/create-partner-request.dto';
 import {
+  PartnerListingCastSubmitDto,
   PartnerListingCastDto,
   PartnerListingDraftDto,
   PartnerListingMenuGroupDto,
@@ -3284,7 +3285,7 @@ export class NightlifeDataService {
   async submitPartnerListingCasts(
     user: AuthenticatedUser,
     storeId: string,
-    dto: PartnerListingDraftDto,
+    dto: PartnerListingCastSubmitDto,
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
     const requestCastProfiles = Array.isArray(dto.castProfiles)
