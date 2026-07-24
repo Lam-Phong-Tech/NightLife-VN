@@ -149,7 +149,7 @@ const entries: TranslationEntry[] = [
     en: "When you reserve a table, book a Cast, or book a tour, your history will appear here.",
     ja: "テーブル予約、Cast予約、ツアー予約をすると、履歴がここに表示されます。",
     ko: "테이블, Cast 또는 투어를 예약하면 내역이 여기에 표시됩니다.",
-    zh: "当你预订座位、预约 Cast 或预订行程后，历史记录会显示在这里。",
+    zh: "当你预订座位、预约 陪伴人员 或预订行程后，历史记录会显示在这里。",
   },
   {
     vi: "Mã OTP",
@@ -310,14 +310,14 @@ const entries: TranslationEntry[] = [
     en: "Find Cast",
     ja: "キャストを探す",
     ko: "캐스트 찾기",
-    zh: "查找 Cast",
+    zh: "查找 陪伴人员",
   },
   {
     vi: "Cast",
     en: "Cast",
     ja: "キャスト",
     ko: "캐스트",
-    zh: "Cast",
+    zh: "陪伴人员",
   },
   {
     vi: "Ưu đãi",
@@ -891,7 +891,7 @@ const entries: TranslationEntry[] = [
     en: "Saved venues & Cast",
     ja: "保存済み店舗・キャスト",
     ko: "저장한 매장 & 캐스트",
-    zh: "已保存店铺和 Cast",
+    zh: "已保存店铺和 陪伴人员",
   },
   {
     vi: "Danh sách yêu thích để đặt lại nhanh",
@@ -1269,7 +1269,7 @@ const entries: TranslationEntry[] = [
     en: "Search nearby venues or Cast...",
     ja: "近くの店舗やキャストを検索...",
     ko: "가까운 매장 또는 캐스트 검색...",
-    zh: "搜索附近店铺或 Cast...",
+    zh: "搜索附近店铺或 陪伴人员...",
   },
   {
     vi: "Vui lòng nhập ghi chú nếu có",
@@ -1304,14 +1304,14 @@ const entries: TranslationEntry[] = [
     en: "Selected Cast",
     ja: "選択したキャスト",
     ko: "선택한 캐스트",
-    zh: "已选 Cast",
+    zh: "已选 陪伴人员",
   },
   {
     vi: "Không chọn cast",
     en: "No Cast selected",
     ja: "キャスト未選択",
     ko: "선택한 캐스트 없음",
-    zh: "未选择 Cast",
+    zh: "未选择 陪伴人员",
   },
   {
     vi: "Ghi chú (tùy chọn)",
@@ -1360,7 +1360,7 @@ const entries: TranslationEntry[] = [
     en: "Search Cast by name, venue, or language...",
     ja: "名前、店舗、言語でキャストを検索...",
     ko: "이름, 매장, 언어로 캐스트 검색...",
-    zh: "按姓名、店铺或语言搜索 Cast...",
+    zh: "按姓名、店铺或语言搜索 陪伴人员...",
   },
   {
     vi: "Tìm quán, khu vực hoặc loại hình...",
@@ -1808,7 +1808,7 @@ const entries: TranslationEntry[] = [
     en: "Book with Cast",
     ja: "キャストを指定して予約",
     ko: "캐스트로 예약",
-    zh: "按 Cast 预约",
+    zh: "按 陪伴人员 预约",
   },
   {
     vi: "API ranking đang lỗi",
@@ -2032,7 +2032,7 @@ const entries: TranslationEntry[] = [
     en: "No Cast image yet",
     ja: "Cast画像はまだありません",
     ko: "아직 Cast 이미지가 없습니다",
-    zh: "暂无 Cast 图片",
+    zh: "暂无 陪伴人员 图片",
   },
   {
     vi: "Chưa có ảnh quán",
@@ -2501,7 +2501,7 @@ const entries: TranslationEntry[] = [
     en: "Tap the heart on venues or Cast to save them.",
     ja: "店舗やキャストのハートを押してお気に入りに保存できます。",
     ko: "매장이나 캐스트의 하트를 눌러 즐겨찾기에 저장하세요.",
-    zh: "点击店铺或 Cast 上的心形图标即可收藏。",
+    zh: "点击店铺或 陪伴人员 上的心形图标即可收藏。",
   },
   {
     vi: "Không tìm thấy kết quả",
@@ -2557,7 +2557,7 @@ const entries: TranslationEntry[] = [
     en: "Your table or Cast bookings will appear here.",
     ja: "席やキャストを予約すると履歴がここに表示されます。",
     ko: "테이블이나 캐스트를 예약하면 내역이 여기에 표시됩니다.",
-    zh: "您预约桌位或 Cast 后，记录会显示在这里。",
+    zh: "您预约桌位或 陪伴人员 后，记录会显示在这里。",
   },
   {
     vi: "Chưa có đặt chỗ ở trạng thái này",
@@ -2718,7 +2718,7 @@ const entries: TranslationEntry[] = [
     en: "Cast photo",
     ja: "キャスト写真",
     ko: "캐스트 사진",
-    zh: "Cast 照片",
+    zh: "陪伴人员 照片",
   },
   {
     vi: "Địa điểm",
@@ -2900,7 +2900,7 @@ const entries: TranslationEntry[] = [
     en: "Discover venues, Cast, deals, and nightlife guides in Vietnam.",
     ja: "ベトナムの店舗、キャスト、特典、ナイトライフガイドを探せます。",
     ko: "베트남의 매장, 캐스트, 혜택, 나이트라이프 가이드를 만나보세요.",
-    zh: "探索越南的店铺、Cast、优惠和夜生活指南。",
+    zh: "探索越南的店铺、陪伴人员、优惠和夜生活指南。",
   },
   {
     vi: "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
@@ -2942,14 +2942,14 @@ const entries: TranslationEntry[] = [
     en: "Tap the heart on a venue or Cast to save it and view it here quickly.",
     ja: "店舗やキャストのハートを押すと保存され、ここですぐ確認できます。",
     ko: "매장이나 캐스트의 하트를 눌러 저장하면 여기에서 빠르게 볼 수 있습니다.",
-    zh: "点击店铺或 Cast 上的心形图标即可保存，并在这里快速查看。",
+    zh: "点击店铺或 陪伴人员 上的心形图标即可保存，并在这里快速查看。",
   },
   {
     vi: "Khám phá cast",
     en: "Explore Cast",
     ja: "キャストを探す",
     ko: "캐스트 둘러보기",
-    zh: "探索 Cast",
+    zh: "探索 陪伴人员",
   },
   {
     vi: "Hội viên NightLife",
@@ -3019,7 +3019,7 @@ const entries: TranslationEntry[] = [
     en: "Find Cast",
     ja: "キャストを探す",
     ko: "캐스트 찾기",
-    zh: "查找 Cast",
+    zh: "查找 陪伴人员",
   },
   {
     vi: "Tìm",
@@ -3180,7 +3180,7 @@ const entries: TranslationEntry[] = [
     en: "Filter Cast by your needs",
     ja: "希望条件でキャストを絞り込み",
     ko: "조건에 맞게 캐스트 필터링",
-    zh: "按需求筛选 Cast",
+    zh: "按需求筛选 陪伴人员",
   },
   {
     vi: "Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.",
@@ -3243,7 +3243,7 @@ const entries: TranslationEntry[] = [
     en: "Cast list",
     ja: "キャスト一覧",
     ko: "캐스트 목록",
-    zh: "Cast 列表",
+    zh: "陪伴人员 列表",
   },
   {
     vi: "Gợi ý tìm kiếm",
@@ -3257,7 +3257,7 @@ const entries: TranslationEntry[] = [
     en: "Suggested Cast",
     ja: "おすすめキャスト",
     ko: "추천 캐스트",
-    zh: "推荐 Cast",
+    zh: "推荐 陪伴人员",
   },
   {
     vi: "Không có gợi ý trùng khớp.",
@@ -3299,7 +3299,7 @@ const entries: TranslationEntry[] = [
     en: "No matching Cast",
     ja: "条件に合うキャストがいません",
     ko: "조건에 맞는 캐스트가 없습니다",
-    zh: "没有匹配的 Cast",
+    zh: "没有匹配的 陪伴人员",
   },
   {
     vi: "Đổi khu vực, ngôn ngữ hoặc khoảng giá để xem thêm.",
@@ -3670,7 +3670,7 @@ const entries: TranslationEntry[] = [
     en: "Cast on duty",
     ja: "在籍キャスト",
     ko: "근무 중인 캐스트",
-    zh: "在岗 Cast",
+    zh: "在岗 陪伴人员",
   },
   {
     vi: "Đặt bàn ngay",
@@ -3698,7 +3698,7 @@ const entries: TranslationEntry[] = [
     en: "Cast nationality",
     ja: "キャスト国籍",
     ko: "캐스트 국적",
-    zh: "Cast 国籍",
+    zh: "陪伴人员 国籍",
   },
   {
     vi: "Nhật Bản · Việt Nam",
@@ -3719,7 +3719,7 @@ const entries: TranslationEntry[] = [
     en: "Similar Cast",
     ja: "似ているキャスト",
     ko: "비슷한 캐스트",
-    zh: "相似 Cast",
+    zh: "相似 陪伴人员",
   },
   {
     vi: "Xem quán",
@@ -3733,7 +3733,7 @@ const entries: TranslationEntry[] = [
     en: "Book this Cast",
     ja: "このキャストを予約",
     ko: "이 캐스트 예약",
-    zh: "预约此 Cast",
+    zh: "预约此 陪伴人员",
   },
   {
     vi: "Sở thích",
@@ -3803,7 +3803,7 @@ const entries: TranslationEntry[] = [
     en: "Open Cast gallery",
     ja: "キャストギャラリーを開く",
     ko: "캐스트 갤러리 열기",
-    zh: "打开 Cast 相册",
+    zh: "打开 陪伴人员 相册",
   },
   {
     vi: "Mở video SNS",
@@ -4135,7 +4135,7 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     en: "Prices, table availability, Cast, and deals in this article are for reference only. Final details will be confirmed by Admin when the guest sends a booking request.",
     ja: "記事内の料金、席の空き状況、キャスト、特典は参考情報です。最終情報は、予約リクエスト送信時に管理者が確認します。",
     ko: "글에 있는 가격, 좌석 상황, Cast, 혜택은 참고용입니다. 최종 정보는 고객이 예약 요청을 보낼 때 관리자가 확인합니다.",
-    zh: "文章中的价格、座位状态、Cast 和优惠仅供参考。客人提交预订请求后，最终信息将由管理员确认。",
+    zh: "文章中的价格、座位状态、陪伴人员 和优惠仅供参考。客人提交预订请求后，最终信息将由管理员确认。",
   },
   {
     vi: "Không tìm thấy bài viết",
@@ -4394,14 +4394,14 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     en: "This Cast does not exist or is not public on Vietyoru yet.",
     ja: "このキャストは存在しないか、まだVietyoruで公開されていません。",
     ko: "이 Cast는 존재하지 않거나 아직 Vietyoru에 공개되지 않았습니다.",
-    zh: "该 Cast 不存在或尚未在 Vietyoru 公开。",
+    zh: "该 陪伴人员 不存在或尚未在 Vietyoru 公开。",
   },
   {
     vi: "Cast này không tồn tại, chưa active hoặc chưa được duyệt public qua CMS.",
     en: "This Cast does not exist, is not active, or has not been approved for public CMS display.",
     ja: "このキャストは存在しない、アクティブでない、またはCMSで公開承認されていません。",
     ko: "이 Cast는 존재하지 않거나 활성 상태가 아니며 CMS 공개 승인이 완료되지 않았습니다.",
-    zh: "该 Cast 不存在、未启用，或尚未通过 CMS 公开审核。",
+    zh: "该 陪伴人员 不存在、未启用，或尚未通过 CMS 公开审核。",
   },
   {
     vi: "Coupon đã lưu",
@@ -4646,7 +4646,7 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     en: "Cast reservation request sent",
     ja: "キャスト指名予約を送信しました",
     ko: "캐스트 예약 요청을 보냈습니다",
-    zh: "Cast 预约请求已发送",
+    zh: "陪伴人员 预约请求已发送",
   },
   {
     vi: "Lịch đặt đã được đổi",
@@ -4905,7 +4905,7 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     en: "Displayed prices, table availability, cast availability, and deals are references until admin confirms them with the venue.",
     ja: "表示される料金、席状況、キャスト、特典は、管理者が店舗に確認するまで参考情報です。",
     ko: "표시된 가격, 좌석 상태, 캐스트 및 혜택은 관리자가 매장에 확인하기 전까지 참고용입니다.",
-    zh: "显示的价格、座位状态、Cast 和优惠在管理员与店铺确认前仅供参考。",
+    zh: "显示的价格、座位状态、陪伴人员 和优惠在管理员与店铺确认前仅供参考。",
   },
   {
     vi: "Tài khoản và hành vi",
@@ -5262,7 +5262,7 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     en: "Missing venue or cast information for this reservation.",
     ja: "予約に必要な店舗またはキャスト情報が不足しています。",
     ko: "예약에 필요한 매장 또는 캐스트 정보가 없습니다.",
-    zh: "缺少本次预订所需的店铺或 Cast 信息。",
+    zh: "缺少本次预订所需的店铺或 陪伴人员 信息。",
   },
   {
     vi: "Không gửi được yêu cầu đặt bàn.",
@@ -6099,14 +6099,14 @@ const termEntries: TranslationEntry[] = [
     en: "No public Cast yet",
     ja: "公開キャストはまだありません",
     ko: "공개된 캐스트가 아직 없습니다",
-    zh: "暂无公开 Cast",
+    zh: "暂无公开 陪伴人员",
   },
   {
     vi: "Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng.",
     en: "The venue will update Cast profiles when service schedules are ready.",
     ja: "勤務スケジュールが整い次第、店舗がキャストプロフィールを更新します。",
     ko: "서비스 일정이 준비되면 매장에서 캐스트 프로필을 업데이트합니다.",
-    zh: "服务排期准备好后，店铺会更新 Cast 资料。",
+    zh: "服务排期准备好后，店铺会更新 陪伴人员 资料。",
   },
   {
     vi: "Chưa có bảng giá",
@@ -6708,7 +6708,7 @@ const termEntries: TranslationEntry[] = [
     en: "This page may have been renamed or no longer exists. Try searching for a venue, Cast, or return home.",
     ja: "このページは名称が変更されたか、存在しない可能性があります。店舗やキャストを検索するか、ホームへ戻ってください。",
     ko: "이 페이지는 이름이 변경되었거나 더 이상 존재하지 않을 수 있습니다. 매장이나 Cast를 검색하거나 홈으로 돌아가세요.",
-    zh: "该页面可能已更名或不再存在。请尝试搜索店铺、Cast，或返回首页。",
+    zh: "该页面可能已更名或不再存在。请尝试搜索店铺、陪伴人员，或返回首页。",
   },
   {
     vi: "Về trang chủ",
@@ -6722,7 +6722,7 @@ const termEntries: TranslationEntry[] = [
     en: "Search venues or Cast...",
     ja: "店舗またはキャストを検索...",
     ko: "매장 또는 Cast 검색...",
-    zh: "搜索店铺或 Cast...",
+    zh: "搜索店铺或 陪伴人员...",
   },
   {
     vi: "Sự cố hệ thống",
@@ -6813,21 +6813,21 @@ const termEntries: TranslationEntry[] = [
     en: "Cast not found",
     ja: "キャストが見つかりません",
     ko: "Cast를 찾을 수 없습니다",
-    zh: "未找到 Cast",
+    zh: "未找到 陪伴人员",
   },
   {
     vi: "Cast này không tồn tại, chưa active hoặc chưa được duyệt public qua CMS.",
     en: "This Cast does not exist, is not active, or has not been approved for public display in the CMS.",
     ja: "このキャストは存在しない、アクティブではない、またはCMSで公開承認されていません。",
     ko: "이 Cast는 존재하지 않거나 활성화되지 않았거나 CMS에서 공개 승인을 받지 않았습니다.",
-    zh: "该 Cast 不存在、未启用，或尚未在 CMS 中获准公开显示。",
+    zh: "该 陪伴人员 不存在、未启用，或尚未在 CMS 中获准公开显示。",
   },
   {
     vi: "Xem danh sách cast",
     en: "View Cast list",
     ja: "キャスト一覧を見る",
     ko: "Cast 목록 보기",
-    zh: "查看 Cast 列表",
+    zh: "查看 陪伴人员 列表",
   },
   {
     vi: "Không tải được thông tin quán",
@@ -6855,21 +6855,21 @@ const termEntries: TranslationEntry[] = [
     en: "Could not load Cast profile",
     ja: "キャストプロフィールを読み込めませんでした",
     ko: "Cast 프로필을 불러올 수 없습니다",
-    zh: "无法加载 Cast 资料",
+    zh: "无法加载 陪伴人员 资料",
   },
   {
     vi: "Hệ thống chưa lấy được dữ liệu cast detail. Bạn có thể thử lại hoặc quay về danh sách cast.",
     en: "The system could not load the Cast detail data. You can try again or return to the Cast list.",
     ja: "キャスト詳細データを取得できませんでした。再試行するか、キャスト一覧へ戻ってください。",
     ko: "Cast 상세 데이터를 불러오지 못했습니다. 다시 시도하거나 Cast 목록으로 돌아가세요.",
-    zh: "系统无法加载 Cast 详情。你可以重试或返回 Cast 列表。",
+    zh: "系统无法加载 陪伴人员 详情。你可以重试或返回 陪伴人员 列表。",
   },
   {
     vi: "Danh sách cast",
     en: "Cast list",
     ja: "キャスト一覧",
     ko: "Cast 목록",
-    zh: "Cast 列表",
+    zh: "陪伴人员 列表",
   },
   {
     vi: "Hệ thống đang cập nhật",
@@ -6883,7 +6883,7 @@ const termEntries: TranslationEntry[] = [
     en: "The support guide is being completed. You can return home or keep browsing venues, Cast, and deals while waiting for the update.",
     ja: "サポートガイドは現在準備中です。更新を待つ間、ホームへ戻るか、店舗・キャスト・特典を引き続きご覧ください。",
     ko: "지원 가이드를 준비 중입니다. 업데이트를 기다리는 동안 홈으로 돌아가거나 매장, Cast, 혜택을 계속 둘러보세요.",
-    zh: "支持指南正在完善中。等待更新期间，你可以返回首页，或继续浏览店铺、Cast 和优惠。",
+    zh: "支持指南正在完善中。等待更新期间，你可以返回首页，或继续浏览店铺、陪伴人员 和优惠。",
   },
 ];
 
@@ -7068,7 +7068,7 @@ function translatePattern(
       en: action === "cast" ? "Confirm last-minute Cast booking" : "Confirm last-minute table booking",
       ja: action === "cast" ? "直前のCast予約を確認" : "直前の席予約を確認",
       ko: action === "cast" ? "임박한 캐스트 예약 확인" : "임박한 테이블 예약 확인",
-      zh: action === "cast" ? "确认临近时间预约 Cast" : "确认临近时间订桌",
+      zh: action === "cast" ? "确认临近时间预约 陪伴人员" : "确认临近时间订桌",
     }[language];
   }
 
@@ -7079,7 +7079,7 @@ function translatePattern(
       en: action === "cast" ? "Confirm Cast booking" : "Confirm table booking",
       ja: action === "cast" ? "Cast予約を確認" : "席予約を確認",
       ko: action === "cast" ? "캐스트 예약 확인" : "테이블 예약 확인",
-      zh: action === "cast" ? "确认预约 Cast" : "确认订桌",
+      zh: action === "cast" ? "确认预约 陪伴人员" : "确认订桌",
     }[language];
   }
 
@@ -7105,7 +7105,7 @@ function translatePattern(
           : `${date} ${time} 테이블 예약 시간이 곧 시작됩니다. 이 시간으로 예약하시겠습니까?`,
       zh:
         action === "cast"
-          ? `${date} ${time} 的 Cast 预约距离开始时间很近。仍要预约这个时间吗？`
+          ? `${date} ${time} 的陪伴人员预约距离开始时间很近。仍要预约这个时间吗？`
           : `${date} ${time} 的订桌距离开始时间很近。仍要预约这个时间吗？`,
     }[language];
   }
@@ -7132,7 +7132,7 @@ function translatePattern(
           : `${date} ${time} 테이블 예약 요청을 보내시겠습니까?`,
       zh:
         action === "cast"
-          ? `要发送 ${date} ${time} 的 Cast 预约请求吗？`
+          ? `要发送 ${date} ${time} 的陪伴人员预约请求吗？`
           : `要发送 ${date} ${time} 的订桌请求吗？`,
     }[language];
   }
@@ -7150,7 +7150,7 @@ function translatePattern(
         en: `Your tour reservation request for ${target} at ${time} has been received. Admin will check each venue and cast stop in the itinerary.`,
         ja: `${target}の${time}のツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。`,
         ko: `${target} ${time} 투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.`,
-        zh: `已收到你预订 ${target} ${time} 行程的请求。管理员会检查行程中的每个场所和 Cast。`,
+        zh: `已收到你预订 ${target} ${time} 行程的请求。管理员会检查行程中的每个场所和 陪伴人员。`,
       }[language];
     }
 
@@ -7159,7 +7159,7 @@ function translatePattern(
         en: `Your tour reservation request for ${target} has been received. Admin will check each venue and cast stop in the itinerary.`,
         ja: `${target}のツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。`,
         ko: `${target} 투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.`,
-        zh: `已收到你预订 ${target} 行程的请求。管理员会检查行程中的每个场所和 Cast。`,
+        zh: `已收到你预订 ${target} 行程的请求。管理员会检查行程中的每个场所和 陪伴人员。`,
       }[language];
     }
 
@@ -7167,7 +7167,7 @@ function translatePattern(
       en: "Your tour reservation request has been received. Admin will check each venue and cast stop in the itinerary.",
       ja: "ツアー予約リクエストを受け付けました。管理者が行程内の各店舗とキャストを確認します。",
       ko: "투어 예약 요청이 접수되었습니다. 관리자가 일정의 각 매장과 캐스트를 확인합니다.",
-      zh: "已收到你的行程预订请求。管理员会检查行程中的每个场所和 Cast。",
+      zh: "已收到你的行程预订请求。管理员会检查行程中的每个场所和 陪伴人员。",
     }[language];
   }
 
@@ -7524,7 +7524,7 @@ function translatePattern(
       en: `Cast in ${area}`,
       ja: `${area}のキャスト`,
       ko: `${area} Cast`,
-      zh: `${area} Cast`,
+      zh: `${area}陪伴人员`,
     }[language];
   }
 
@@ -7715,7 +7715,7 @@ function translatePattern(
       en: `${count} Cast members`,
       ja: `${count}人のキャスト`,
       ko: `캐스트 ${count}명`,
-      zh: `${count} 位 Cast`,
+      zh: `${count} 位陪伴人员`,
     }[language];
   }
 
@@ -7726,7 +7726,7 @@ function translatePattern(
       en: `${count} Cast`,
       ja: `${count}人のキャスト`,
       ko: `캐스트 ${count}명`,
-      zh: `${count} 位 Cast`,
+      zh: `${count} 位陪伴人员`,
     }[language];
   }
 
@@ -7748,7 +7748,7 @@ function translatePattern(
       en: `View ${count} Cast`,
       ja: `${count}人のキャストを見る`,
       ko: `캐스트 ${count}명 보기`,
-      zh: `查看 ${count} 位 Cast`,
+      zh: `查看 ${count} 位 陪伴人员`,
     }[language];
   }
 
@@ -7792,7 +7792,7 @@ function translatePattern(
       en: `Find night Cast in ${city}`,
       ja: `${city}の夜キャストを探す`,
       ko: `${city} 밤 캐스트 찾기`,
-      zh: `查找${city}夜间 Cast`,
+      zh: `查找${city}夜间 陪伴人员`,
     }[language];
   }
 

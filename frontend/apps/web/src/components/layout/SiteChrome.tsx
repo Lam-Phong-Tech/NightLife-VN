@@ -270,7 +270,7 @@ const footerCopy: Record<
     bookingNote: "18+ · 가격과 예약 가능 여부는 관리자가 재확인합니다.",
   },
   zh: {
-    description: "探索越南的场所、Cast、优惠和夜生活指南。",
+    description: "探索越南的场所、陪伴人员、优惠和夜生活指南。",
     legalPlaceholder: "正式内容提供前，法律文本暂为占位内容。",
     mobileNotice: (brandName) => `© 2026 ${brandName}. 18+ · 价格和预订状态由管理员确认。`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,

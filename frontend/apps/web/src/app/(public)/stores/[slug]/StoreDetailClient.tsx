@@ -2606,7 +2606,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             {!isServiceOnlyBooking ? (
               <section>
                 <SectionTitle
-                  title="Cast đang làm"
+                  title={translateText("Cast đang làm", activeLanguage)}
                   meta={formatStoreCastCount(store.casts.length, activeLanguage)}
                 />
                 <CastRail store={store} />
