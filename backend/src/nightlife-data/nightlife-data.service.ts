@@ -16309,7 +16309,6 @@ export class NightlifeDataService {
 
     return {
       OR: [
-        { cityCode: null },
         { cityCode: 'all' },
         { cityCode: { in: cityVariants } },
       ],
@@ -16357,7 +16356,7 @@ export class NightlifeDataService {
     const stores = await this.prisma.store.findMany({
       where: {
         deletedAt: null,
-        status: { in: ['ACTIVE', 'APPROVED'] },
+        status: 'ACTIVE',
         id: { in: targetIds },
       },
       select: {
@@ -16418,7 +16417,7 @@ export class NightlifeDataService {
         isPublic: true,
         store: {
           deletedAt: null,
-          status: { in: ['ACTIVE', 'APPROVED'] },
+          status: 'ACTIVE',
         },
       },
       select: {
