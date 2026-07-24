@@ -99,15 +99,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     currentPage * blogPageSize,
   );
   const paginationItems = getPaginationItems(currentPage, totalPages);
-  const getPageHref = (page: number) => ({
-    pathname: "/blog",
-    query: {
-      ...(query ? { q: query } : {}),
-      ...(activeCategory ? { category: activeCategory } : {}),
-      ...(activeTag ? { tag: activeTag } : {}),
-      ...(page > 1 ? { page: String(page) } : {}),
-    },
-  });
   const structuredData = jsonLdGraph([
     breadcrumbJsonLd(
       [
@@ -131,7 +122,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       totalPages={totalPages}
       paginationItems={paginationItems}
       hasFilter={hasFilter}
-      getPageHref={getPageHref}
       structuredData={structuredData}
     />
   );

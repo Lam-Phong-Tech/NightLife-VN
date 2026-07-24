@@ -21,7 +21,6 @@ type BlogClientProps = {
   totalPages: number;
   paginationItems: Array<number | "ellipsis">;
   hasFilter: boolean;
-  getPageHref: (page: number) => { pathname: string; query: Record<string, string> };
   structuredData: Record<string, unknown>;
 };
 
@@ -67,10 +66,19 @@ export function BlogClient({
   totalPages,
   paginationItems,
   hasFilter,
-  getPageHref,
   structuredData,
 }: BlogClientProps) {
   const activeLanguage = useActiveLanguage();
+
+  const getPageHref = (page: number) => ({
+    pathname: "/blog",
+    query: {
+      ...(query ? { q: query } : {}),
+      ...(activeCategory ? { category: activeCategory } : {}),
+      ...(activeTag ? { tag: activeTag } : {}),
+      ...(page > 1 ? { page: String(page) } : {}),
+    },
+  });
 
   return (
     <main

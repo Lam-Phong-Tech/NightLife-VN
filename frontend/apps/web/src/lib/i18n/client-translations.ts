@@ -26,6 +26,125 @@ type TranslationEntry = {
 
 const entries: TranslationEntry[] = [
   {
+    vi: "điểm",
+    en: "pts",
+    ja: "pt",
+    ko: "점",
+    zh: "积分",
+  },
+  {
+    vi: "Đặt cast thất bại",
+    en: "Cast booking failed",
+    ja: "キャスト予約失敗",
+    ko: "캐스트 예약 실패",
+    zh: "Cast 预约失败",
+  },
+  {
+    vi: "Đặt cast thành công",
+    en: "Cast booking successful",
+    ja: "キャスト予約完了",
+    ko: "캐스트 예약 성공",
+    zh: "Cast 预约成功",
+  },
+  {
+    vi: "Đặt bàn thất bại",
+    en: "Table booking failed",
+    ja: "席予約失敗",
+    ko: "테이블 예약 실패",
+    zh: "订桌失败",
+  },
+  {
+    vi: "Đặt bàn thành công",
+    en: "Table booking successful",
+    ja: "席予約完了",
+    ko: "테이블 예약 성공",
+    zh: "订桌成功",
+  },
+  {
+    vi: "Đặt chỗ thất bại",
+    en: "Reservation failed",
+    ja: "予約失敗",
+    ko: "예약 실패",
+    zh: "预约失败",
+  },
+  {
+    vi: "Đặt chỗ thành công",
+    en: "Reservation successful",
+    ja: "予約完了",
+    ko: "예약 성공",
+    zh: "预约成功",
+  },
+  {
+    vi: "Đặt tour thất bại",
+    en: "Tour booking failed",
+    ja: "ツアー予約失敗",
+    ko: "투어 예약 실패",
+    zh: "行程预约失败",
+  },
+  {
+    vi: "Đặt tour thành công",
+    en: "Tour booking successful",
+    ja: "ツアー予約完了",
+    ko: "투어 예약 성공",
+    zh: "行程预约成功",
+  },
+  {
+    vi: "Hủy booking thất bại",
+    en: "Booking cancellation failed",
+    ja: "予約キャンセル失敗",
+    ko: "예약 취소 실패",
+    zh: "取消预约失败",
+  },
+  {
+    vi: "Hủy booking thành công",
+    en: "Booking cancelled successfully",
+    ja: "予約キャンセル完了",
+    ko: "예약 취소 성공",
+    zh: "取消预约成功",
+  },
+  {
+    vi: "Đổi lịch thất bại",
+    en: "Rescheduling failed",
+    ja: "日程変更失敗",
+    ko: "일정 변경 실패",
+    zh: "改期失败",
+  },
+  {
+    vi: "Đổi lịch thành công",
+    en: "Rescheduled successfully",
+    ja: "日程変更完了",
+    ko: "일정 변경 성공",
+    zh: "改期成功",
+  },
+  {
+    vi: "Gửi hóa đơn thất bại",
+    en: "Bill submission failed",
+    ja: "請求書送信失敗",
+    ko: "영수증 제출 실패",
+    zh: "提交账单失败",
+  },
+  {
+    vi: "Gửi hóa đơn thành công",
+    en: "Bill submitted successfully",
+    ja: "請求書送信完了",
+    ko: "영수증 제출 성공",
+    zh: "提交账单成功",
+  },
+  {
+    vi: "Thành công",
+    en: "Success",
+    ja: "成功",
+    ko: "성공",
+    zh: "成功",
+  },
+  {
+    vi: "Thất bại",
+    en: "Failed",
+    ja: "失敗",
+    ko: "실패",
+    zh: "失败",
+  },
+  {
     vi: "Nhu cầu",
     en: "Purpose",
     ja: "目的",
@@ -8051,6 +8170,41 @@ function translatePattern(
       ko: `${target}이(가) 즐겨찾기 목록에서 삭제되었습니다.`,
       zh: `${target}已从 your 收藏列表中移除。`,
     }[language];
+  }
+
+  const pointsAddedTierMatch = normalized.match(
+    /^Điểm được cộng sau khi Admin duyệt hóa đơn\.\s*Hạng khách hiện tại:\s*(.+?)\.?$/i
+  );
+  if (pointsAddedTierMatch) {
+    const tierName = pointsAddedTierMatch[1]?.trim() ?? "";
+    return {
+      en: `Points are awarded after Admin approves the bill. Current membership tier: ${tierName}.`,
+      ja: `請求書を承認後にポイントが加算されます。現在の会員ランク: ${tierName}。`,
+      ko: `영수증 승인 후 포인트가 적립됩니다. 현재 회원 등급: ${tierName}.`,
+      zh: `账单审核通过后将获得积分。当前会员等级：${tierName}。`,
+    }[language];
+  }
+
+  const actionStatusMatch = normalized.match(
+    /^(Đặt cast|Đặt bàn|Đặt tour|Đặt chỗ|Hủy booking|Đổi lịch|Gửi hóa đơn|Đọc hóa đơn|Sao chép mã|Đổi mật khẩu)\s+(thành công|thất bại)$/i
+  );
+  if (actionStatusMatch) {
+    const rawAction = actionStatusMatch[1] ?? "";
+    const isSuccess = actionStatusMatch[2]?.toLowerCase() === "thành công";
+    const translatedAction = translateText(rawAction, language);
+
+    if (language === "en") {
+      return `${translatedAction} ${isSuccess ? "successful" : "failed"}`;
+    }
+    if (language === "ja") {
+      return `${translatedAction}${isSuccess ? "完了" : "失敗"}`;
+    }
+    if (language === "ko") {
+      return `${translatedAction} ${isSuccess ? "성공" : "실패"}`;
+    }
+    if (language === "zh") {
+      return `${translatedAction}${isSuccess ? "成功" : "失败"}`;
+    }
   }
 
   const changed = replaceTerms(value, language);
