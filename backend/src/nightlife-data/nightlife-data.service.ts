@@ -154,11 +154,6 @@ const REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES: Record<string, number> = {
   UTC: 0,
 };
 const REVENUE_REPORT_BILL_STATUSES = ['VERIFIED', 'PAID'] as const;
-const MEMBER_POINT_TIER_THRESHOLDS = [
-  { name: 'Premium+', points: 250 },
-  { name: 'Elite', points: 500 },
-  { name: 'Diamond', points: 1000 },
-] as const;
 const POINT_EXPIRING_SOON_MS = 30 * DAY_MS;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const BOOKING_DATE_WINDOW_DAYS = 14;
@@ -6472,16 +6467,8 @@ export class NightlifeDataService {
     }
 
     availablePoints = Math.max(0, availablePoints);
-    const nextTier =
-      MEMBER_POINT_TIER_THRESHOLDS.find(
-        (tier) => availablePoints < tier.points,
-      ) ??
-      MEMBER_POINT_TIER_THRESHOLDS[MEMBER_POINT_TIER_THRESHOLDS.length - 1];
-    const pointsToNextTier = Math.max(nextTier.points - availablePoints, 0);
-    const progressPercent = Math.min(
-      100,
-      Math.round((availablePoints / nextTier.points) * 100),
-    );
+    const pointDisplayThreshold = Math.max(availablePoints, 1);
+    const progressPercent = availablePoints > 0 ? 100 : 0;
 
     return {
       availablePoints,
@@ -6489,9 +6476,9 @@ export class NightlifeDataService {
       spentPoints,
       expiredPoints,
       expiringSoonPoints,
-      nextTierName: nextTier.name,
-      nextTierThreshold: nextTier.points,
-      pointsToNextTier,
+      nextTierName: 'Member/VIP',
+      nextTierThreshold: pointDisplayThreshold,
+      pointsToNextTier: 0,
       progressPercent,
       asOf: now.toISOString(),
       recentLedgers: ledgers.slice(0, 10).map((ledger) => ({

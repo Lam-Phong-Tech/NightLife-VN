@@ -41,9 +41,14 @@ const colors = {
   goldGrad: "var(--vy-gold-grad)",
 };
 
-const defaultPointTarget = 250;
-const defaultNextTierName = "Premium+";
 const pointFormatter = new Intl.NumberFormat("vi-VN");
+
+const getBaTierLabel = (tier?: string | null) => {
+  const normalizedTier = tier?.trim().toUpperCase();
+  if (normalizedTier === "VIP" || normalizedTier === "PREMIUM") return "VIP";
+  if (normalizedTier === "GUEST") return "GUEST";
+  return "MEMBER";
+};
 
 const menuItems = [
   { title: "Lịch sử đặt chỗ", desc: "Theo dõi yêu cầu và trạng thái xác nhận", href: "/lich-su-dat-cho", icon: CalendarDays },
@@ -114,13 +119,10 @@ export default function Page() {
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const accountEmail = authUser?.email || "";
-  const tier = authUser?.tier || "FREE";
+  const tier = getBaTierLabel(authUser?.tier);
   const canLoadPoints = authUser?.role === "USER";
   const rewardPoints = Math.max(0, pointSummary?.availablePoints ?? 0);
-  const rewardTarget = Math.max(pointSummary?.nextTierThreshold ?? defaultPointTarget, 1);
-  const rewardProgress = Math.min(100, Math.max(0, pointSummary?.progressPercent ?? Math.round((rewardPoints / rewardTarget) * 100)));
-  const nextTierName = pointSummary?.nextTierName ?? defaultNextTierName;
-  const pointsToNextTier = Math.max(0, pointSummary?.pointsToNextTier ?? rewardTarget - rewardPoints);
+  const rewardProgress = rewardPoints > 0 ? 100 : 0;
   const isLoadingPoints = Boolean(canLoadPoints && pointSummaryStatus === "loading");
   const pointSummaryError = Boolean(canLoadPoints && pointSummaryStatus === "error");
 
@@ -247,7 +249,7 @@ export default function Page() {
               <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
                   <span>Điểm thưởng</span>
-                  <span>{pointFormatter.format(rewardPoints)} / {pointFormatter.format(rewardTarget)}</span>
+                  <span>{pointFormatter.format(rewardPoints)} điểm</span>
                 </div>
                 <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
                   <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
@@ -257,9 +259,7 @@ export default function Page() {
                     ? <InlineLoading label="Đang cập nhật điểm thưởng" />
                     : pointSummaryError
                       ? "Chưa tải được điểm thật, vui lòng thử lại."
-                      : pointsToNextTier > 0
-                        ? `Cần thêm ${pointFormatter.format(pointsToNextTier)} điểm để lên hạng ${nextTierName}`
-                        : `Đã đủ điểm để lên hạng ${nextTierName}`}
+                      : `Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ${tier}.`}
                 </p>
               </div>
             </section>

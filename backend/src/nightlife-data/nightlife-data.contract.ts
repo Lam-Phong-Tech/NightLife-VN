@@ -644,10 +644,10 @@ const memberPointSummaryExample = {
   spentPoints: 30,
   expiredPoints: 40,
   expiringSoonPoints: 6,
-  nextTierName: 'Premium+',
-  nextTierThreshold: 250,
-  pointsToNextTier: 94,
-  progressPercent: 62,
+  nextTierName: 'Member/VIP',
+  nextTierThreshold: 156,
+  pointsToNextTier: 0,
+  progressPercent: 100,
   asOf: '2026-07-03T10:00:00.000Z',
   recentLedgers: [
     {
@@ -2164,10 +2164,10 @@ export function MemberPointSummaryContract() {
     ApiOperation({
       summary: 'Loyalty action: member reads current point balance',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Computes the member point balance from posted PointLedger rows, excludes expired earn/positive adjustment rows, and returns the next tier progress used by the account screen.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Computes the member point balance from posted PointLedger rows, excludes expired earn/positive adjustment rows, and returns BA-compatible loyalty summary data. Approved bills earn 10 points per 1,000,000 VND, and the BA customer tiers are Guest, Member, and VIP.',
     }),
     ApiOkResponse({
-      description: 'Current member point balance and tier progress.',
+      description: 'Current member point balance and BA-compatible loyalty summary.',
       schema: { example: memberPointSummaryExample },
     }),
     ApiUnauthorizedResponse({

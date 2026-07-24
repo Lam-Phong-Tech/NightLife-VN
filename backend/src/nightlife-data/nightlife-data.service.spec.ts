@@ -9608,10 +9608,10 @@ describe('NightlifeDataService', () => {
       spentPoints: 30,
       expiredPoints: 40,
       expiringSoonPoints: 6,
-      nextTierName: 'Premium+',
-      nextTierThreshold: 250,
-      pointsToNextTier: 94,
-      progressPercent: 62,
+      nextTierName: 'Member/VIP',
+      nextTierThreshold: 156,
+      pointsToNextTier: 0,
+      progressPercent: 100,
       asOf: '2026-07-03T10:00:00.000Z',
     });
     expect(summary.recentLedgers).toHaveLength(5);
