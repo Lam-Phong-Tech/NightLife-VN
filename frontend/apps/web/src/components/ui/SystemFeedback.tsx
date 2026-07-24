@@ -19,17 +19,13 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-<<<<<<< HEAD
 import {
   languageChangedEvent,
   readStoredLanguage,
   translateText,
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
-=======
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
-import { translateText } from "@/lib/i18n/client-translations";
->>>>>>> c5d501bb3 (fix(i18n): synchronize language translations across account, favorites modal, toast feedback, venue filter, and blog page)
 
 type FeedbackTone = "success" | "info" | "warning" | "error" | "gold";
 type ToastPlacement = "top-right" | "top" | "bottom";
