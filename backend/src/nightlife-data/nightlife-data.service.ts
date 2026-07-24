@@ -544,6 +544,7 @@ type PartnerRequestCmsRecord = {
       id: string;
       stageName: string;
       publicAlias: string | null;
+      slug: string;
       bio: string | null;
       publicBio: string | null;
       tags: string[];
@@ -3341,6 +3342,15 @@ export class NightlifeDataService {
         draftCastIds.push(cast.id);
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
+        await tx.media.updateMany({
+          where: { castId: cast.id, deletedAt: null },
+          data: {
+            status: 'HIDDEN',
+            access: 'PROTECTED',
+            deletedAt: submittedAt,
+          },
+        });
+
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
           const media = await this.createPartnerRequestMedia(
             {
@@ -7920,7 +7930,7 @@ export class NightlifeDataService {
                       id: { in: request.draftMediaIds },
                       castId,
                     },
-                    data: { castId: targetCast.id, storeId: request.store.id },
+                    data: { castId: targetCast.id, storeId: null },
                   });
                   await tx.cast.update({
                     where: { id: castId },
@@ -16576,7 +16586,7 @@ export class NightlifeDataService {
         partnerAccountId: true,
         ownerId: true,
         media: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, castId: null },
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -16593,6 +16603,7 @@ export class NightlifeDataService {
             id: true,
             stageName: true,
             publicAlias: true,
+            slug: true,
             bio: true,
             publicBio: true,
             tags: true,
@@ -17088,17 +17099,37 @@ export class NightlifeDataService {
     return imagePosition <= 1 ? 'CAST_AVATAR' : 'CAST_PHOTO';
   }
 
+  private partnerListingCastEditSourceId(profile: { slug?: string | null }) {
+    const slug = this.cleanNullableText(profile.slug);
+    const prefix = 'partner-cast-edit-';
+
+    if (!slug?.startsWith(prefix)) {
+      return null;
+    }
+
+    const sourceId = slug.slice(prefix.length);
+    return this.isUuid(sourceId) ? sourceId : null;
+  }
+
   private partnerListingCastProfilesFromStore(
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
   ): PartnerListingCastDto[] {
     const storeCasts = store.casts || [];
     const storeMedia = store.media || [];
+    const profilesById = new Map<string, PartnerListingCastDto>();
 
-    return storeCasts.map((cast, index) => {
+    storeCasts.forEach((cast, index) => {
       const castMedia = [...storeMedia, ...(cast.media ?? [])];
+      const editSourceId = this.partnerListingCastEditSourceId(cast);
+      const profileId = editSourceId ?? cast.id;
+      const isEditDraft = Boolean(editSourceId);
 
-      return {
-        id: cast.id,
+      if (profilesById.has(profileId) && !isEditDraft) {
+        return;
+      }
+
+      profilesById.set(profileId, {
+        id: profileId,
         stageName:
           this.cleanPartnerListingText(cast.stageName) ??
           this.cleanPartnerListingText(cast.publicAlias) ??
@@ -17123,8 +17154,10 @@ export class NightlifeDataService {
         isPublic: cast.isPublic,
         status: cast.status,
         mediaUrls: this.partnerListingCastMediaUrls(castMedia, cast.id),
-      };
+      });
     });
+
+    return [...profilesById.values()];
   }
 
   private mergePartnerListingCastProfiles(
@@ -18100,7 +18133,7 @@ export class NightlifeDataService {
           pricingInfo: true,
           tags: true,
           media: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, castId: null },
             orderBy: { createdAt: 'asc' },
             select: {
               id: true,
@@ -18117,6 +18150,7 @@ export class NightlifeDataService {
               id: true,
               stageName: true,
               publicAlias: true,
+              slug: true,
               bio: true,
               publicBio: true,
               tags: true,
@@ -18682,6 +18716,10 @@ export class NightlifeDataService {
         }
 
         const profile: PartnerRequestCastDto = { stageName };
+        const profileId =
+          typeof record.id === 'string'
+            ? this.cleanNullableText(record.id)
+            : null;
         const storeName =
           typeof record.storeName === 'string'
             ? this.cleanPartnerListingText(record.storeName)
@@ -18738,6 +18776,9 @@ export class NightlifeDataService {
             ? this.normalizePartnerCastStatus(record.status)
             : undefined;
 
+        if (profileId && this.isUuid(profileId)) {
+          profile.id = profileId;
+        }
         if (storeName) {
           profile.storeName = storeName;
         }
@@ -22311,6 +22352,114 @@ export class NightlifeDataService {
     const existing = await this.prisma.cast.findUniqueOrThrow({
       where: { id },
     });
+    const partnerEditSourceId = this.partnerListingCastEditSourceId(existing);
+
+    if (
+      partnerEditSourceId &&
+      existing.status === 'PENDING_REVIEW' &&
+      dto.status === 'ACTIVE'
+    ) {
+      const now = new Date();
+
+      return this.prisma.$transaction(async (tx) => {
+        const targetCast = await tx.cast.findFirst({
+          where: {
+            id: partnerEditSourceId,
+            storeId: existing.storeId,
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+
+        if (!targetCast) {
+          throw new NotFoundException('Original cast for review was not found');
+        }
+
+        const draftMediaIds = (
+          await tx.media.findMany({
+            where: { castId: existing.id, deletedAt: null },
+            select: { id: true },
+          })
+        ).map((media) => media.id);
+        const mediaIdsToPublish =
+          dto.mediaIds !== undefined ? dto.mediaIds : draftMediaIds;
+
+        const updatedTarget = await tx.cast.update({
+          where: { id: targetCast.id },
+          data: {
+            stageName: dto.stageName ?? existing.stageName,
+            storeId: dto.storeId ?? existing.storeId,
+            bio: dto.bio !== undefined ? dto.bio : existing.bio,
+            publicBio: dto.bio !== undefined ? dto.bio : existing.publicBio,
+            birthMonth:
+              dto.birthMonth !== undefined
+                ? dto.birthMonth
+                : existing.birthMonth,
+            zodiacSign:
+              dto.zodiacSign !== undefined
+                ? dto.zodiacSign
+                : existing.zodiacSign,
+            heightCm:
+              dto.heightCm !== undefined ? dto.heightCm : existing.heightCm,
+            measurements:
+              dto.measurements !== undefined
+                ? dto.measurements
+                : existing.measurements,
+            languages: dto.languages ?? existing.languages,
+            hobbies: dto.hobbies ?? existing.hobbies,
+            tags: dto.tags ?? existing.tags,
+            youtubeLinks: dto.youtubeLinks ?? existing.youtubeLinks,
+            isPublic: dto.isPublic ?? true,
+            status: 'ACTIVE',
+          },
+        });
+
+        await tx.media.updateMany({
+          where: {
+            castId: targetCast.id,
+            deletedAt: null,
+            ...(mediaIdsToPublish.length
+              ? { id: { notIn: mediaIdsToPublish } }
+              : {}),
+          },
+          data: {
+            status: 'HIDDEN',
+            access: 'PROTECTED',
+            deletedAt: now,
+          },
+        });
+
+        if (mediaIdsToPublish.length) {
+          await tx.media.updateMany({
+            where: { id: { in: mediaIdsToPublish }, deletedAt: null },
+            data: {
+              castId: targetCast.id,
+              storeId: null,
+              status: 'READY',
+              access: 'PUBLIC',
+            },
+          });
+        }
+
+        await tx.cast.update({
+          where: { id: existing.id },
+          data: {
+            status: 'DELETED',
+            isPublic: false,
+            deletedAt: now,
+          },
+          select: { id: true },
+        });
+
+        await this.syncAdminCastMediaPurposes(
+          targetCast.id,
+          mediaIdsToPublish,
+        );
+
+        return updatedTarget;
+      });
+    }
+
     let slug: string | undefined;
     if (
       dto.stageName &&
@@ -22386,21 +22535,21 @@ export class NightlifeDataService {
     if (avatarId) {
       await this.prisma.media.update({
         where: { id: avatarId },
-        data: { purpose: 'CAST_AVATAR' },
+        data: { purpose: 'CAST_AVATAR', storeId: null },
       });
     }
 
     if (albumImageIds.length) {
       await this.prisma.media.updateMany({
         where: { id: { in: albumImageIds }, castId },
-        data: { purpose: 'CAST_PHOTO' },
+        data: { purpose: 'CAST_PHOTO', storeId: null },
       });
     }
 
     if (videoIds.length) {
       await this.prisma.media.updateMany({
         where: { id: { in: videoIds }, castId },
-        data: { purpose: 'CAST_VIDEO' },
+        data: { purpose: 'CAST_VIDEO', storeId: null },
       });
     }
   }
