@@ -17912,9 +17912,7 @@ export class NightlifeDataService {
           where: {
             storeId,
             slug: stableSlug,
-            status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
             isPublic: false,
-            deletedAt: null,
           },
           select: { id: true, status: true, isPublic: true, slug: true },
         });
@@ -17960,7 +17958,7 @@ export class NightlifeDataService {
     if (existingDraft) {
       const cast = await client.cast.update({
         where: { id: existingDraft.id },
-        data,
+        data: { ...data, deletedAt: null },
         select: { id: true },
       });
 

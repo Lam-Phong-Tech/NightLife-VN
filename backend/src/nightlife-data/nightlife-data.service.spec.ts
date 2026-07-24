@@ -4581,6 +4581,122 @@ describe('NightlifeDataService', () => {
     expect(prisma.content.upsert).not.toHaveBeenCalled();
   });
 
+  it('reuses a soft-deleted partner cast edit draft instead of creating a duplicate slug', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const existingCastId = '22222222-2222-4222-8222-222222222222';
+    const softDeletedDraftId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: 'Live DJ and private tables',
+      address: '22 Nguyen Hue, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: '0901000000',
+      openingHours: null,
+      pricingInfo: null,
+      mapUrl: null,
+      tags: ['VIP'],
+      partnerAccountId: 'partner-account-1',
+      ownerId: 'partner-a',
+      media: [],
+      casts: [
+        {
+          id: existingCastId,
+          stageName: 'Hanh',
+          publicAlias: null,
+          slug: 'hanh',
+          bio: 'Original host',
+          publicBio: 'Original host',
+          tags: ['Sang'],
+          youtubeLinks: [],
+          languages: ['VN'],
+          birthMonth: 7,
+          zodiacSign: 'Cancer',
+          heightCm: 165,
+          measurements: '60-90-60',
+          hobbies: ['hat'],
+          hourlyRateVnd: null,
+          isPublic: true,
+          status: 'ACTIVE',
+          media: [],
+        },
+      ],
+    });
+    prisma.cast.findFirst
+      .mockResolvedValueOnce({
+        id: existingCastId,
+        status: 'ACTIVE',
+        isPublic: true,
+        slug: 'hanh',
+      })
+      .mockResolvedValueOnce({
+        id: softDeletedDraftId,
+        status: 'DELETED',
+        isPublic: false,
+        slug: `partner-cast-edit-${existingCastId}`,
+      });
+    prisma.cast.update.mockResolvedValueOnce({ id: softDeletedDraftId });
+
+    await expect(
+      service.submitPartnerListingCasts(
+        { id: 'partner-a', role: 'PARTNER' },
+        storeId,
+        {
+          castProfiles: [
+            {
+              id: existingCastId,
+              stageName: 'Hanh',
+              bio: 'Updated host',
+              tags: ['Sang'],
+              languages: ['VN'],
+              birthMonth: 7,
+              zodiacSign: 'Cancer',
+              heightCm: 165,
+              measurements: '60-90-60',
+              hobbies: ['hat'],
+            },
+          ],
+        },
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+        draft: expect.objectContaining({ castCount: 1 }),
+      }),
+    );
+
+    expect(prisma.cast.create).not.toHaveBeenCalled();
+    expect(prisma.cast.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          storeId,
+          slug: `partner-cast-edit-${existingCastId}`,
+          isPublic: false,
+        },
+        select: { id: true, status: true, isPublic: true, slug: true },
+      }),
+    );
+    expect(prisma.cast.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: softDeletedDraftId },
+        data: expect.objectContaining({
+          stageName: 'Hanh',
+          bio: 'Updated host',
+          publicBio: 'Updated host',
+          isPublic: false,
+          status: 'PENDING_REVIEW',
+          deletedAt: null,
+        }),
+        select: { id: true },
+      }),
+    );
+  });
+
   it('does not submit cast-only changes through the partner listing store review flow', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';
