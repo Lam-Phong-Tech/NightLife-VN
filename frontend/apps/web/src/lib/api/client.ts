@@ -64,7 +64,7 @@ const exactMessageTranslations: Record<string, string> = {
     "Chưa gửi được mã OTP qua email. Vui lòng thử lại sau hoặc liên hệ Admin.",
   "registration otp was sent recently": "Mã OTP vừa được gửi. Vui lòng đợi một chút rồi gửi lại.",
   "invalid or expired registration otp": "Mã OTP không đúng hoặc đã hết hạn.",
-  "emailotp must be a 6 digit number": "Mã OTP phải gồm 6 chữ số.",
+  "emailotp must be an 8 digit number": "Mã OTP phải gồm 8 chữ số.",
   "account is not active": "Tài khoản chưa hoạt động hoặc đã bị khóa.",
   "booking change request not found": "Không tìm thấy yêu cầu đổi lịch booking.",
   "booking not found": "Không tìm thấy booking.",

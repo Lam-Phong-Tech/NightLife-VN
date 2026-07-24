@@ -460,11 +460,18 @@ const entries: TranslationEntry[] = [
     zh: "请输入 OTP 验证码。",
   },
   {
-    vi: "Mã OTP phải gồm 6 chữ số.",
-    en: "OTP code must be 6 digits.",
-    ja: "OTPコードは6桁の数字で入力してください。",
-    ko: "OTP 코드는 숫자 6자리여야 합니다.",
-    zh: "OTP 验证码必须为 6 位数字。",
+    vi: "Mã OTP phải gồm 8 chữ số.",
+    en: "OTP code must be 8 digits.",
+    ja: "OTPコードは8桁の数字で入力してください。",
+    ko: "OTP 코드는 숫자 8자리여야 합니다.",
+    zh: "OTP 验证码必须为 8 位数字。",
+  },
+  {
+    vi: "Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.",
+    en: "Account/Email blocked from registration due to entering wrong OTP 5 times.",
+    ja: "OTPの誤入力が5回を超えたため、アカウント/メールの新規登録がブロックされました。",
+    ko: "OTP 5회 이상 오입력으로 인해 해당 계정/이메일의 회원가입이 차단되었습니다.",
+    zh: "因输入错误 OTP 超过 5 次，该账号/邮箱已被禁止注册。",
   },
   {
     vi: "Vui lòng nhập mã xác nhận.",

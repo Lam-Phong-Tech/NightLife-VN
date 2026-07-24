@@ -183,8 +183,8 @@ function validateAuthForm({
       return "Vui lòng nhập mã OTP.";
     }
 
-    if (!/^\d{6}$/.test(normalizedEmailOtp)) {
-      return "Mã OTP phải gồm 6 chữ số.";
+    if (!/^\d{8}$/.test(normalizedEmailOtp)) {
+      return "Mã OTP phải gồm 8 chữ số.";
     }
   } else if (normalizedPassword.length < 8) {
     return "Mật khẩu cần tối thiểu 8 ký tự.";
@@ -757,14 +757,14 @@ export default function Page() {
                     icon={<ShieldCheck size={16} />}
                     label={translateText("Mã OTP", activeLanguage)}
                     value={emailOtp}
-                    onChange={(value) => setEmailOtp(value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(value) => setEmailOtp(value.replace(/\D/g, "").slice(0, 8))}
                     placeholder={translateText("Nhập mã OTP", activeLanguage)}
                     type="text"
                     autoComplete="off"
                     inputMode="numeric"
                     name="nl-register-email-otp"
                     required
-                    maxLength={6}
+                    maxLength={8}
                     action={
                       <button
                         type="button"

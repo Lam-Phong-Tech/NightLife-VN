@@ -47,11 +47,11 @@ export class RegisterDto {
   })
   displayName: string;
 
-  @ApiProperty({ minLength: 6, maxLength: 6, example: '123456' })
+  @ApiProperty({ minLength: 8, maxLength: 8, example: '12345678' })
   @Transform(trimString)
   @IsString()
-  @Matches(/^\d{6}$/, {
-    message: 'emailOtp must be a 6 digit number',
+  @Matches(/^\d{8}$/, {
+    message: 'emailOtp must be an 8 digit number',
   })
   emailOtp: string;
 }

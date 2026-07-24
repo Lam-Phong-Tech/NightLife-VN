@@ -150,6 +150,10 @@ export class AuthService {
     string,
     RegistrationOtpRecord
   >();
+  private readonly blockedRegistrationEmails = new Map<
+    string,
+    { blockedAt: Date; reason: string }
+  >();
 
   constructor(
     private readonly configService: ConfigService,
@@ -161,6 +165,13 @@ export class AuthService {
 
   async requestRegistrationOtp(dto: RequestRegistrationOtpDto) {
     const email = dto.email.trim().toLowerCase();
+
+    if (this.blockedRegistrationEmails.has(email)) {
+      throw new ForbiddenException(
+        'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+      );
+    }
+
     const existingUser = await this.usersService.findByEmail(email);
 
     if (existingUser) {
@@ -209,6 +220,14 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, sessionContext?: SessionContext) {
+    const email = dto.email.trim().toLowerCase();
+
+    if (this.blockedRegistrationEmails.has(email)) {
+      throw new ForbiddenException(
+        'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+      );
+    }
+
     this.consumeRegistrationOtp(dto.email, dto.emailOtp);
 
     const user = await this.usersService.createUser({
@@ -957,6 +976,13 @@ export class AuthService {
   private consumeRegistrationOtp(email: string, code: string) {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedCode = code.trim();
+
+    if (this.blockedRegistrationEmails.has(normalizedEmail)) {
+      throw new ForbiddenException(
+        'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+      );
+    }
+
     const token = this.registrationOtpTokens.get(normalizedEmail);
     const now = new Date();
 
@@ -967,10 +993,18 @@ export class AuthService {
     ) {
       if (token) {
         token.attempts += 1;
-        if (
-          token.expiresAt <= now ||
-          token.attempts >= registrationOtpMaxAttempts
-        ) {
+        if (token.attempts >= registrationOtpMaxAttempts) {
+          this.registrationOtpTokens.delete(normalizedEmail);
+          this.blockedRegistrationEmails.set(normalizedEmail, {
+            blockedAt: now,
+            reason: 'Entered wrong OTP 5 times',
+          });
+          throw new ForbiddenException(
+            'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+          );
+        }
+
+        if (token.expiresAt <= now) {
           this.registrationOtpTokens.delete(normalizedEmail);
         }
       }
@@ -986,7 +1020,7 @@ export class AuthService {
   }
 
   private generateEmailOtpCode() {
-    return String(randomInt(100000, 1000000));
+    return String(randomInt(10000000, 100000000));
   }
 
   private hashPasswordResetValue(email: string, value: string) {

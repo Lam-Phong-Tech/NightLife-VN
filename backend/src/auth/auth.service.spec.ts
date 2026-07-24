@@ -196,11 +196,48 @@ describe('AuthService', () => {
         email: user.email,
         password: 'Str0ngPass!',
         displayName: user.displayName,
-        emailOtp: '000000',
+        emailOtp: '00000000',
       }),
     ).rejects.toThrow('Invalid or expired registration OTP');
 
     expect(usersService.createUser).not.toHaveBeenCalled();
+  });
+
+  it('blocks registration after 5 failed OTP attempts', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    emailNotificationService.sendRegistrationOtpEmail.mockResolvedValue({
+      messageId: 'otp-mail-2',
+    });
+
+    const targetEmail = 'spam-test@nightlife.vn';
+    await service.requestRegistrationOtp({ email: targetEmail });
+
+    // Fail 4 times
+    for (let i = 0; i < 4; i++) {
+      await expect(
+        service.register({
+          email: targetEmail,
+          password: 'Str0ngPass!',
+          displayName: 'Spam Tester',
+          emailOtp: '11111111',
+        }),
+      ).rejects.toThrow('Invalid or expired registration OTP');
+    }
+
+    // 5th failed attempt triggers block
+    await expect(
+      service.register({
+        email: targetEmail,
+        password: 'Str0ngPass!',
+        displayName: 'Spam Tester',
+        emailOtp: '11111111',
+      }),
+    ).rejects.toThrow('Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.');
+
+    // Further requestRegistrationOtp calls are blocked
+    await expect(
+      service.requestRegistrationOtp({ email: targetEmail }),
+    ).rejects.toThrow('Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.');
   });
 
   it('logs in with validated credentials', async () => {
