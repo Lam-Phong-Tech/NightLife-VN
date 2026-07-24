@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
-import { apiClient, apiFormDataClient } from '@/lib/api/client';
+import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import {
   ADMIN_VIDEO_ACCEPT,
   getAdminVideoValidationError,
@@ -247,6 +247,16 @@ type AdminCastMediaItem = {
   type?: string | null;
   purpose?: string | null;
 };
+
+const adminCastMediaUrl = (url?: string | null) => {
+  const trimmed = typeof url === 'string' ? url.trim() : '';
+  return resolveClientUrl(trimmed) || trimmed;
+};
+
+const normalizeAdminCastMedia = (media: AdminCastMediaItem): AdminCastMediaItem => ({
+  ...media,
+  url: adminCastMediaUrl(media.url),
+});
 
 const normalizeListResponse = (value: any): any[] => {
   if (Array.isArray(value)) return value;
@@ -764,7 +774,7 @@ function AdminCastsContent() {
       status: c.status || 'ACTIVE'
     });
     
-    const mediaList = c.media || [];
+    const mediaList = (c.media || []).map(normalizeAdminCastMedia);
     const imageList = mediaList.filter(isCastImageMedia);
     const videoList = mediaList.filter(isCastVideoMedia);
     
@@ -1357,7 +1367,9 @@ function AdminCastsContent() {
               const statusLabel = getStatusLabel(cast.status, cast.isPublic);
               const statusStyle = getStatusStyle(statusLabel);
               const avatarStyle = getAvatarStyle(cast.stageName);
-              const avatarMedia = getCastAvatarMedia(cast.media);
+              const avatarMedia = getCastAvatarMedia(
+                (cast.media || []).map(normalizeAdminCastMedia),
+              );
               const storeName = cast.store?.name || 'Không rõ';
               
               return (
@@ -1385,7 +1397,7 @@ function AdminCastsContent() {
                         ...(!avatarMedia?.url ? avatarStyle : { background: colors.surface2 })
                       }}>
                         {avatarMedia?.url ? (
-                          <img src={avatarMedia.url} alt={cast.stageName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={adminCastMediaUrl(avatarMedia.url)} alt={cast.stageName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           (cast.stageName || 'A').charAt(0).toUpperCase()
                         )}
@@ -1953,8 +1965,8 @@ function AdminCastsContent() {
                       <button
                         type="button"
                         aria-label="Xem ảnh đại diện kích thước lớn"
-                        onClick={() => setPreviewImage({ url: avatarImage.url, label: 'Ảnh đại diện' })}
-                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${avatarImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
+                        onClick={() => setPreviewImage({ url: adminCastMediaUrl(avatarImage.url), label: 'Ảnh đại diện' })}
+                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${adminCastMediaUrl(avatarImage.url)})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
                       />
                       <button type="button" aria-label="Xóa ảnh đại diện" onClick={() => { removeCastMedia(avatarImage); setAvatarImage(null); }} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />
@@ -1993,8 +2005,8 @@ function AdminCastsContent() {
                       <button
                         type="button"
                         aria-label={`Xem ảnh album ${i + 1} kích thước lớn`}
-                        onClick={() => setPreviewImage({ url: m.url, label: `Ảnh album ${i + 1}` })}
-                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${m.url})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
+                        onClick={() => setPreviewImage({ url: adminCastMediaUrl(m.url), label: `Ảnh album ${i + 1}` })}
+                        style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', backgroundImage: `url(${adminCastMediaUrl(m.url)})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'zoom-in' }}
                       />
                       <button type="button" aria-label={`Xóa ảnh album ${i + 1}`} onClick={() => { removeCastMedia(m); setAlbums(albums.filter((_, idx) => idx !== i)); }} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={14} />

@@ -4210,18 +4210,11 @@ describe('NightlifeDataService', () => {
       ownerId: null,
       media: [
         {
-          id: 'cast-video-1',
-          url: 'https://cdn.example.com/aoi.mp4',
-          purpose: 'CAST_VIDEO',
-          type: 'VIDEO',
-          castId: 'cast-aoi',
-        },
-        {
-          id: 'cast-avatar-1',
-          url: 'https://cdn.example.com/aoi.jpg',
-          purpose: 'CAST_AVATAR',
+          id: 'store-gallery-1',
+          url: 'https://cdn.example.com/store.jpg',
+          purpose: 'STORE_GALLERY',
           type: 'IMAGE',
-          castId: 'cast-aoi',
+          castId: null,
         },
       ],
       casts: [
@@ -4242,6 +4235,22 @@ describe('NightlifeDataService', () => {
           hourlyRateVnd: 1200000,
           isPublic: true,
           status: 'ACTIVE',
+          media: [
+            {
+              id: 'cast-video-1',
+              url: 'https://cdn.example.com/aoi.mp4',
+              purpose: 'CAST_VIDEO',
+              type: 'VIDEO',
+              castId: 'cast-aoi',
+            },
+            {
+              id: 'cast-avatar-1',
+              url: 'https://cdn.example.com/aoi.jpg',
+              purpose: 'CAST_AVATAR',
+              type: 'IMAGE',
+              castId: 'cast-aoi',
+            },
+          ],
         },
       ],
     });

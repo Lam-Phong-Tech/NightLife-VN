@@ -16579,7 +16579,11 @@ export class NightlifeDataService {
         partnerAccountId: true,
         ownerId: true,
         media: {
-          where: { deletedAt: null, castId: null },
+          where: {
+            deletedAt: null,
+            castId: null,
+            status: 'READY',
+          },
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -16611,7 +16615,10 @@ export class NightlifeDataService {
             isPublic: true,
             status: true,
             media: {
-              where: { deletedAt: null },
+              where: {
+                deletedAt: null,
+                status: 'READY',
+              },
               orderBy: { createdAt: 'asc' },
               select: {
                 id: true,
@@ -17108,11 +17115,10 @@ export class NightlifeDataService {
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
   ): PartnerListingCastDto[] {
     const storeCasts = store.casts || [];
-    const storeMedia = store.media || [];
     const profilesById = new Map<string, PartnerListingCastDto>();
 
     storeCasts.forEach((cast, index) => {
-      const castMedia = [...storeMedia, ...(cast.media ?? [])];
+      const castMedia = cast.media ?? [];
       const editSourceId = this.partnerListingCastEditSourceId(cast);
       const profileId = editSourceId ?? cast.id;
       const isEditDraft = Boolean(editSourceId);
@@ -22279,6 +22285,10 @@ export class NightlifeDataService {
             },
           },
           media: {
+            where: {
+              deletedAt: null,
+              status: 'READY',
+            },
             orderBy: { createdAt: 'desc' },
             select: { id: true, url: true, type: true, purpose: true },
           },
