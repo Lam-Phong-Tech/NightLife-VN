@@ -22468,6 +22468,7 @@ export class NightlifeDataService {
         await this.syncAdminCastMediaPurposes(
           targetCast.id,
           mediaIdsToPublish,
+          tx,
         );
 
         return updatedTarget;
@@ -22511,19 +22512,37 @@ export class NightlifeDataService {
         ...(dto.youtubeLinks && { youtubeLinks: dto.youtubeLinks }),
         ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
         ...(dto.status && { status: dto.status }),
-        ...(mediaIds !== undefined
-          ? {
-              media: {
-                set: mediaIds.map((id) => ({ id })), // Replace existing relations
-              },
-            }
-          : {}),
       },
     });
 
-    await this.syncAdminCastMediaPurposes(updated.id, mediaIds);
+    await this.replaceAdminCastMedia(updated.id, mediaIds);
 
     return updated;
+  }
+
+  private async replaceAdminCastMedia(
+    castId: string,
+    mediaIds?: string[],
+    prisma: NightlifePrismaClient = this.prisma,
+  ) {
+    if (mediaIds === undefined) {
+      return;
+    }
+
+    await prisma.media.updateMany({
+      where: {
+        castId,
+        deletedAt: null,
+        ...(mediaIds.length ? { id: { notIn: mediaIds } } : {}),
+      },
+      data: {
+        castId: null,
+        status: 'HIDDEN',
+        access: 'PROTECTED',
+      },
+    });
+
+    await this.syncAdminCastMediaPurposes(castId, mediaIds, prisma);
   }
 
   private async resolveAdminCastMediaIds(mediaIds?: string[]) {
@@ -22553,6 +22572,7 @@ export class NightlifeDataService {
   private async syncAdminCastMediaPurposes(
     castId: string,
     mediaIds?: string[],
+    prisma: NightlifePrismaClient = this.prisma,
   ) {
     const uniqueMediaIds = Array.from(
       new Set((mediaIds ?? []).filter(Boolean)),
@@ -22561,7 +22581,7 @@ export class NightlifeDataService {
       return;
     }
 
-    await this.prisma.media.updateMany({
+    await prisma.media.updateMany({
       where: { id: { in: uniqueMediaIds } },
       data: {
         castId,
@@ -22572,7 +22592,7 @@ export class NightlifeDataService {
       },
     });
 
-    const media = await this.prisma.media.findMany({
+    const media = await prisma.media.findMany({
       where: { id: { in: uniqueMediaIds }, castId },
       select: { id: true, type: true },
     });
@@ -22587,21 +22607,21 @@ export class NightlifeDataService {
     );
 
     if (avatarId) {
-      await this.prisma.media.update({
+      await prisma.media.update({
         where: { id: avatarId },
         data: { purpose: 'CAST_AVATAR', storeId: null },
       });
     }
 
     if (albumImageIds.length) {
-      await this.prisma.media.updateMany({
+      await prisma.media.updateMany({
         where: { id: { in: albumImageIds }, castId },
         data: { purpose: 'CAST_PHOTO', storeId: null },
       });
     }
 
     if (videoIds.length) {
-      await this.prisma.media.updateMany({
+      await prisma.media.updateMany({
         where: { id: { in: videoIds }, castId },
         data: { purpose: 'CAST_VIDEO', storeId: null },
       });

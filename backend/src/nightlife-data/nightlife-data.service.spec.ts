@@ -4838,14 +4838,22 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.cast.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          media: {
-            set: [{ id: avatarMediaId }, { id: albumMediaId }],
-          },
-        }),
+        data: expect.not.objectContaining({ media: expect.anything() }),
       }),
     );
     expect(prisma.media.updateMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        castId,
+        deletedAt: null,
+        id: { notIn: [avatarMediaId, albumMediaId] },
+      },
+      data: {
+        castId: null,
+        status: 'HIDDEN',
+        access: 'PROTECTED',
+      },
+    });
+    expect(prisma.media.updateMany).toHaveBeenNthCalledWith(2, {
       where: { id: { in: [avatarMediaId, albumMediaId] } },
       data: {
         castId,
@@ -4859,7 +4867,7 @@ describe('NightlifeDataService', () => {
       where: { id: avatarMediaId },
       data: { purpose: 'CAST_AVATAR', storeId: null },
     });
-    expect(prisma.media.updateMany).toHaveBeenNthCalledWith(2, {
+    expect(prisma.media.updateMany).toHaveBeenNthCalledWith(3, {
       where: { id: { in: [albumMediaId] }, castId },
       data: { purpose: 'CAST_PHOTO', storeId: null },
     });
@@ -4890,9 +4898,16 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.cast.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          media: { set: [{ id: validMediaId }] },
-        }),
+        data: expect.not.objectContaining({ media: expect.anything() }),
+      }),
+    );
+    expect(prisma.media.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          castId,
+          deletedAt: null,
+          id: { notIn: [validMediaId] },
+        },
       }),
     );
     expect(prisma.media.updateMany).toHaveBeenCalledWith(
