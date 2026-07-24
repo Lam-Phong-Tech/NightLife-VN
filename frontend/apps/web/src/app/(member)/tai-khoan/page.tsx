@@ -24,6 +24,8 @@ import {
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { InlineLoading } from "@/components/ui/DataLoading";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
+import { translateText } from "@/lib/i18n/client-translations";
 
 const colors = {
   bg: "var(--vy-bg)",
@@ -58,6 +60,7 @@ const menuItems = [
 ];
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authStatus, setAuthStatus] = useState<"checking" | "ready" | "redirecting">("checking");
   const [pointSummary, setPointSummary] = useState<MemberPointSummary | null>(null);
@@ -248,18 +251,18 @@ export default function Page() {
 
               <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
-                  <span>Điểm thưởng</span>
-                  <span>{pointFormatter.format(rewardPoints)} điểm</span>
+                  <span>{translateText("Điểm thưởng", activeLanguage)}</span>
+                  <span>{pointFormatter.format(rewardPoints)} {translateText("điểm", activeLanguage)}</span>
                 </div>
                 <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
                   <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
                 </div>
                 <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
                   {isLoadingPoints
-                    ? <InlineLoading label="Đang cập nhật điểm thưởng" />
+                    ? <InlineLoading label={translateText("Đang cập nhật điểm thưởng", activeLanguage)} />
                     : pointSummaryError
-                      ? "Chưa tải được điểm thật, vui lòng thử lại."
-                      : `Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ${tier}.`}
+                      ? translateText("Chưa tải được điểm thật, vui lòng thử lại.", activeLanguage)
+                      : translateText(`Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ${tier}.`, activeLanguage)}
                 </p>
               </div>
             </section>
@@ -267,12 +270,12 @@ export default function Page() {
             <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
                 <Crown size={18} />
-                Quyền lợi thành viên
+                {translateText("Quyền lợi thành viên", activeLanguage)}
               </div>
               <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                <Benefit icon={<Star size={15} />} text="Ưu tiên xác nhận bàn VIP" />
-                <Benefit icon={<Percent size={15} />} text="Nhận coupon riêng theo hạng" />
-                <Benefit icon={<CalendarDays size={15} />} text="Lưu lịch đặt chỗ và đặt lại nhanh" />
+                <Benefit icon={<Star size={15} />} text={translateText("Ưu tiên xác nhận bàn VIP", activeLanguage)} />
+                <Benefit icon={<Percent size={15} />} text={translateText("Nhận coupon riêng theo hạng", activeLanguage)} />
+                <Benefit icon={<CalendarDays size={15} />} text={translateText("Lưu lịch đặt chỗ và đặt lại nhanh", activeLanguage)} />
               </div>
             </section>
           </aside>
@@ -300,8 +303,8 @@ export default function Page() {
                       <Icon size={19} />
                     </span>
                     <span style={{ minWidth: 0 }}>
-                      <strong style={{ display: "block", fontSize: 14.5, fontWeight: 900 }}>{item.title}</strong>
-                      <small style={{ display: "block", marginTop: 4, color: colors.muted, fontSize: 12 }}>{item.desc}</small>
+                      <strong style={{ display: "block", fontSize: 14.5, fontWeight: 900 }}>{translateText(item.title, activeLanguage)}</strong>
+                      <small style={{ display: "block", marginTop: 4, color: colors.muted, fontSize: 12 }}>{translateText(item.desc, activeLanguage)}</small>
                     </span>
                     <ChevronRight size={18} color={colors.dim} />
                   </Link>
@@ -323,7 +326,7 @@ export default function Page() {
                 <span style={{ ...accountIconStyle, color: colors.danger, background: "rgba(255,107,139,.1)", borderColor: "rgba(255,107,139,.24)" }}>
                   <LogOut size={19} />
                 </span>
-                <strong style={{ fontSize: 14.5, fontWeight: 900 }}>Đăng xuất</strong>
+                <strong style={{ fontSize: 14.5, fontWeight: 900 }}>{translateText("Đăng xuất", activeLanguage)}</strong>
                 <ChevronRight size={18} color={colors.danger} />
               </Link>
             </section>

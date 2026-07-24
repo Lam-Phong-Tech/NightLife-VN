@@ -26,6 +26,160 @@ type TranslationEntry = {
 
 const entries: TranslationEntry[] = [
   {
+    vi: "Nhu cầu",
+    en: "Purpose",
+    ja: "目的",
+    ko: "목적",
+    zh: "需求",
+  },
+  {
+    vi: "Lưu quán yêu thích?",
+    en: "Save favorite venue?",
+    ja: "お気に入り店舗を保存しますか？",
+    ko: "즐겨찾기 매장을 저장하시겠습니까?",
+    zh: "保存收藏店铺？",
+  },
+  {
+    vi: "Bỏ lưu quán?",
+    en: "Remove favorite venue?",
+    ja: "お気に入りを解除しますか？",
+    ko: "즐겨찾기를 해제하시겠습니까?",
+    zh: "取消收藏店铺？",
+  },
+  {
+    vi: "Lưu cast yêu thích?",
+    en: "Save favorite cast?",
+    ja: "お気に入りキャストを保存しますか？",
+    ko: "즐겨찾기 캐스트를 저장하시겠습니까?",
+    zh: "保存收藏 Cast？",
+  },
+  {
+    vi: "Bỏ lưu cast?",
+    en: "Remove favorite cast?",
+    ja: "お気に入りキャストを解除しますか？",
+    ko: "즐겨찾기 캐스트를 해제하시겠습니까?",
+    zh: "取消收藏 Cast？",
+  },
+  {
+    vi: "Đã thêm quán yêu thích",
+    en: "Added to favorite venues",
+    ja: "お気に入り店舗を追加しました",
+    ko: "즐겨찾기 매장이 추가되었습니다",
+    zh: "已添加到收藏店铺",
+  },
+  {
+    vi: "Đã bỏ lưu quán",
+    en: "Removed from favorite venues",
+    ja: "お気に入り店舗を解除しました",
+    ko: "즐겨찾기 매장이 해제되었습니다",
+    zh: "已取消收藏店铺",
+  },
+  {
+    vi: "Đã thêm cast yêu thích",
+    en: "Added to favorite cast",
+    ja: "お気に入りキャストを追加しました",
+    ko: "즐겨찾기 캐스트가 추가되었습니다",
+    zh: "已添加到收藏 Cast",
+  },
+  {
+    vi: "Đã bỏ lưu cast",
+    en: "Removed from favorite cast",
+    ja: "お気に入りキャストを解除しました",
+    ko: "즐겨찾기 캐스트가 해제되었습니다",
+    zh: "已取消收藏 Cast",
+  },
+  {
+    vi: "Lưu quán",
+    en: "Save venue",
+    ja: "店舗を保存",
+    ko: "매장 저장",
+    zh: "保存店铺",
+  },
+  {
+    vi: "Bỏ lưu",
+    en: "Remove favorite",
+    ja: "保存を解除",
+    ko: "저장 취소",
+    zh: "取消保存",
+  },
+  {
+    vi: "Điểm",
+    en: "Points",
+    ja: "ポイント",
+    ko: "포인트",
+    zh: "积分",
+  },
+  {
+    vi: "0 điểm",
+    en: "0 pts",
+    ja: "0 pt",
+    ko: "0점",
+    zh: "0 积分",
+  },
+  {
+    vi: "Điểm thưởng",
+    en: "Reward points",
+    ja: "ポイント",
+    ko: "리워드 포인트",
+    zh: "奖励积分",
+  },
+  {
+    vi: "Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: MEMBER.",
+    en: "Points are awarded after Admin approves the bill. Current membership tier: MEMBER.",
+    ja: "請求書を承認後にポイントが加算されます。現在の会員ランク: MEMBER。",
+    ko: "영수증 승인 후 포인트가 적립됩니다. 현재 회원 등급: MEMBER.",
+    zh: "账单审核通过后将获得积分。当前会员等级：MEMBER。",
+  },
+  {
+    vi: "Đang cập nhật điểm thưởng",
+    en: "Updating reward points",
+    ja: "ポイントを更新中",
+    ko: "리워드 포인트 업데이트 중",
+    zh: "正在更新奖励积分",
+  },
+  {
+    vi: "Chưa tải được điểm thật, vui lòng thử lại.",
+    en: "Could not load actual points, please try again.",
+    ja: "ポイント情報を読み込めませんでした。もう一度お試しください。",
+    ko: "포인트 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
+    zh: "无法加载真实积分，请重试。",
+  },
+  {
+    vi: "Tìm bài viết...",
+    en: "Search articles...",
+    ja: "記事を検索...",
+    ko: "글 검색...",
+    zh: "搜索文章...",
+  },
+  {
+    vi: "Tìm kiếm",
+    en: "Search",
+    ja: "検索",
+    ko: "검색",
+    zh: "搜索",
+  },
+  {
+    vi: "Nổi bật",
+    en: "Featured",
+    ja: "注目",
+    ko: "추천",
+    zh: "精选",
+  },
+  {
+    vi: "Cẩm nang nightlife cho mỗi lần xuống phố",
+    en: "Nightlife guide for every night out",
+    ja: "夜の外出に役立つナイトライフガイド",
+    ko: "외출할 때마다 유용한 나이트라이프 가이드",
+    zh: "每次出行的夜生活指南",
+  },
+  {
+    vi: "Gợi ý khu vực, etiquette, ưu đãi và mẹo đặt chỗ để khách có một buổi tối rõ ràng hơn trước khi gửi yêu cầu.",
+    en: "Area tips, etiquette, offers, and booking tricks so you have a clearer night before requesting.",
+    ja: "リクエスト前に夜の流れが分かるよう、エリア情報、マナー、特典、予約のコツを紹介します。",
+    ko: "요청 전 밤 일정을 쉽게 알 수 있도록 지역 정보, 에티켓, 혜택, 예약 팁을 소개합니다.",
+    zh: "在提交请求前，为你提供区域建议、礼仪、优惠和预订技巧。",
+  },
+  {
     vi: "Email này đã được đăng ký.",
     en: "This email is already registered.",
     ja: "このメールアドレスはすでに登録されています。",
@@ -7852,6 +8006,50 @@ function translatePattern(
       ja: `信頼度 ${confidence}`,
       ko: `신뢰도 ${confidence}`,
       zh: `可信度 ${confidence}`,
+    }[language];
+  }
+
+  const addFavConfirmMatch = normalized.match(/^Thêm\s+(.+?)\s+vào danh sách yêu thích của bạn\.$/i);
+  if (addFavConfirmMatch) {
+    const target = translateText(addFavConfirmMatch[1] ?? "", language);
+    return {
+      en: `Add ${target} to your favorites.`,
+      ja: `${target}をお気に入りリストに追加します。`,
+      ko: `${target}을(를) 즐겨찾기 목록에 추가합니다.`,
+      zh: `将 ${target} 添加到你的收藏列表。`,
+    }[language];
+  }
+
+  const removeFavConfirmMatch = normalized.match(/^Gỡ\s+(.+?)\s+khỏi danh sách yêu thích của bạn\.$/i);
+  if (removeFavConfirmMatch) {
+    const target = translateText(removeFavConfirmMatch[1] ?? "", language);
+    return {
+      en: `Remove ${target} from your favorites.`,
+      ja: `${target}をお気に入りリストから削除します。`,
+      ko: `${target}을(를) 즐겨찾기 목록에서 삭제합니다.`,
+      zh: `将 ${target} 从 your 收藏列表中移除。`,
+    }[language];
+  }
+
+  const favSavedMatch = normalized.match(/^(.+?)\s+đã được lưu vào danh sách yêu thích\.$/i);
+  if (favSavedMatch) {
+    const target = translateText(favSavedMatch[1] ?? "", language);
+    return {
+      en: `${target} has been saved to your favorites.`,
+      ja: `${target}がお気に入りリストに保存されました。`,
+      ko: `${target}이(가) 즐겨찾기 목록에 저장되었습니다.`,
+      zh: `${target}已保存到你的收藏列表。`,
+    }[language];
+  }
+
+  const favUnsavedMatch = normalized.match(/^(.+?)\s+đã được gỡ khỏi danh sách yêu thích\.$/i);
+  if (favUnsavedMatch) {
+    const target = translateText(favUnsavedMatch[1] ?? "", language);
+    return {
+      en: `${target} has been removed from your favorites.`,
+      ja: `${target}がお気に入りリストから削除されました。`,
+      ko: `${target}이(가) 즐겨찾기 목록에서 삭제되었습니다.`,
+      zh: `${target}已从 your 收藏列表中移除。`,
     }[language];
   }
 
