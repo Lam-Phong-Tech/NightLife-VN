@@ -21803,31 +21803,50 @@ export class NightlifeDataService {
     const commissionAmount =
       (commissionResult._sum as any)?.commissionAmountVnd || 0;
 
-    const revenue7Days: any[] = [];
+    const { timezone: revenue7DaysTimezone, timezoneOffsetMinutes } =
+      this.resolveRevenueReportTimezone();
+    const todayDateKey = this.toRevenueReportDateKey(
+      new Date(),
+      timezoneOffsetMinutes,
+    );
+    const revenue7DayDateKeys = Array.from({ length: 7 }, (_, index) =>
+      this.shiftRevenueReportDateKey(todayDateKey, index - 6),
+    );
     const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const nextD = new Date(d);
-      nextD.setDate(nextD.getDate() + 1);
+    const revenue7Days = await Promise.all(
+      revenue7DayDateKeys.map(async (dateKey) => {
+        const dayStart = this.revenueReportLocalDateStartUtc(
+          dateKey,
+          timezoneOffsetMinutes,
+        );
+        const dayEndExclusive = this.revenueReportLocalDateStartUtc(
+          this.shiftRevenueReportDateKey(dateKey, 1),
+          timezoneOffsetMinutes,
+        );
+        const rev = await this.prisma.bill
+          .aggregate({
+            _sum: { totalVnd: true } as any,
+            where: {
+              status: { in: ['VERIFIED', 'PAID'] } as any,
+              usedAt: { gte: dayStart, lt: dayEndExclusive },
+              ...scopedStoreRelation,
+            },
+          })
+          .catch(() => ({ _sum: { totalVnd: 0 } }));
+        const [year, month, day] = dateKey.split('-').map(Number);
+        const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 
-      const rev = await this.prisma.bill
-        .aggregate({
-          _sum: { totalVnd: true } as any,
-          where: {
-            status: { in: ['VERIFIED', 'PAID'] } as any,
-            usedAt: { gte: d, lt: nextD },
-            ...scopedStoreRelation,
-          },
-        })
-        .catch(() => ({ _sum: { totalVnd: 0 } }));
-
-      revenue7Days.push({
-        date: daysOfWeek[d.getDay()], // format T2, T3...
-        revenue: (rev._sum as any)?.totalVnd || 0,
-      });
-    }
+        return {
+          date: daysOfWeek[weekday], // format T2, T3...
+          dateKey,
+          revenue: (rev._sum as any)?.totalVnd || 0,
+        };
+      }),
+    );
+    const revenue7DaysTotal = revenue7Days.reduce(
+      (sum, day) => sum + day.revenue,
+      0,
+    );
 
     const recentBookings = await this.prisma.booking
       .findMany({
@@ -21915,6 +21934,10 @@ export class NightlifeDataService {
       monthlyRevenue,
       commissionAmount,
       revenue7Days,
+      revenue7DaysTotal,
+      revenue7DaysFrom: revenue7DayDateKeys[0],
+      revenue7DaysTo: revenue7DayDateKeys[revenue7DayDateKeys.length - 1],
+      revenue7DaysTimezone,
       recentBookings: recentBookingsMapped,
       telegramLogs,
     };

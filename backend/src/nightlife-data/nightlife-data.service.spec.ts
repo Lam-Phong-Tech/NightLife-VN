@@ -10098,6 +10098,10 @@ describe('NightlifeDataService', () => {
       expect(result.pendingPartners).toBe(4);
       expect(result.monthlyRevenue).toBe(500000);
       expect(result.commissionAmount).toBe(50000);
+      expect(result.revenue7Days).toHaveLength(7);
+      expect(result.revenue7DaysTotal).toBe(3500000);
+      expect(result.revenue7DaysFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.revenue7DaysTo).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(result.telegramLogs).toEqual([]);
     });
   });

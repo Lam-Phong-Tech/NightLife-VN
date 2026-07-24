@@ -2431,9 +2431,13 @@ const adminDashboardStatsExample = {
   monthlyRevenue: 312000000,
   pendingPartners: 3,
   revenue7Days: [
-    { date: '2026-07-01', revenue: 15000000 },
-    { date: '2026-07-02', revenue: 20000000 },
+    { date: 'T4', dateKey: '2026-07-22', revenue: 15000000 },
+    { date: 'T5', dateKey: '2026-07-23', revenue: 20000000 },
   ],
+  revenue7DaysTotal: 35000000,
+  revenue7DaysFrom: '2026-07-17',
+  revenue7DaysTo: '2026-07-23',
+  revenue7DaysTimezone: 'Asia/Ho_Chi_Minh',
   recentBookings: [],
   telegramLogs: [],
 };

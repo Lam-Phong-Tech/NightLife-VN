@@ -24,7 +24,10 @@ type AdminDashboardStats = {
   monthlyRevenue: number;
   commissionAmount?: number;
   pendingPartners: number;
-  revenue7Days: { date: string; revenue: number }[];
+  revenue7Days: { date: string; dateKey?: string; revenue: number }[];
+  revenue7DaysTotal?: number;
+  revenue7DaysFrom?: string;
+  revenue7DaysTo?: string;
   recentBookings: {
     id: string;
     scheduledAt: string;
@@ -132,6 +135,12 @@ function AdminDashboardContent() {
     const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
     return `${days[d.getDay()]} · ${d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
   };
+  const formatDateKeyShort = (dateKey?: string) => {
+    if (!dateKey) return "";
+    const [year, month, day] = dateKey.split("-").map(Number);
+    if (!year || !month || !day) return dateKey;
+    return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+  };
 
   // Convert stats to fallbacks
   const pendingBills = stats?.pendingBills ?? 0;
@@ -149,7 +158,14 @@ function AdminDashboardContent() {
 
   // Chart
   const chartData = stats?.revenue7Days || [];
-  const maxRev = chartData.length > 0 ? Math.max(...chartData.map((d) => d.revenue), 1) : 1;
+  const revenue7DaysTotal =
+    stats?.revenue7DaysTotal ?? chartData.reduce((sum, day) => sum + day.revenue, 0);
+  const maxRev = chartData.reduce((max, day) => Math.max(max, day.revenue), 0);
+  const hasRevenue7Days = maxRev > 0;
+  const revenue7DaysRange =
+    stats?.revenue7DaysFrom && stats?.revenue7DaysTo
+      ? `${formatDateKeyShort(stats.revenue7DaysFrom)} - ${formatDateKeyShort(stats.revenue7DaysTo)}`
+      : "7 ngày gần nhất";
 
   const handleExport = async () => {
     if (isExporting) return;
@@ -1366,7 +1382,7 @@ function AdminDashboardContent() {
                   <span style={{ fontSize: "14px", fontWeight: 600, color: "#f3f0ea" }}>
                     Doanh thu 7 ngày
                   </span>
-                  <span style={{ fontSize: "11px", color: "#8c8679" }}>Gộp · triệu ₫</span>
+                  <span style={{ fontSize: "11px", color: "#8c8679" }}>Bill đã duyệt</span>
                 </div>
                 <div
                   style={{
@@ -1376,18 +1392,43 @@ function AdminDashboardContent() {
                     margin: "6px 0 16px",
                   }}
                 >
-                  {formatVnd(monthlyRevenue).replace("M₫", "")}
+                  {formatVnd(revenue7DaysTotal)}
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#8c8679" }}>
                     {" "}
-                    M₫ · tháng 6
+                    · {revenue7DaysRange}
                   </span>
                 </div>
                 <div
-                  style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: "120px" }}
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "flex-end",
+                    gap: "10px",
+                    height: "120px",
+                  }}
                 >
+                  {!hasRevenue7Days && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: "14px 0 26px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "0 18px",
+                        color: "#8c8679",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Chưa có hóa đơn đã duyệt trong 7 ngày gần nhất.
+                    </div>
+                  )}
                   {chartData.map((d, i) => {
                     const isLast = i === chartData.length - 1 || i === chartData.length - 2; // style difference for weekend
-                    const h = Math.max(10, (d.revenue / maxRev) * 100);
+                    const h = hasRevenue7Days ? Math.max(10, (d.revenue / maxRev) * 100) : 4;
                     const bg = isLast
                       ? "linear-gradient(180deg,#f4e3b4,#d4b26a)"
                       : "linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12))";
