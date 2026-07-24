@@ -22527,6 +22527,17 @@ export class NightlifeDataService {
       return;
     }
 
+    await this.prisma.media.updateMany({
+      where: { id: { in: uniqueMediaIds } },
+      data: {
+        castId,
+        storeId: null,
+        status: 'READY',
+        access: 'PUBLIC',
+        deletedAt: null,
+      },
+    });
+
     const media = await this.prisma.media.findMany({
       where: { id: { in: uniqueMediaIds }, castId },
       select: { id: true, type: true },

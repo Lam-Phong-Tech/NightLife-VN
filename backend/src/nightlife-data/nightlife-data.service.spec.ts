@@ -91,6 +91,7 @@ describe('NightlifeDataService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -98,6 +99,7 @@ describe('NightlifeDataService', () => {
     media: {
       create: jest.fn(),
       findMany: jest.fn(),
+      update: jest.fn(),
       updateMany: jest.fn(),
     },
     content: {
@@ -321,6 +323,7 @@ describe('NightlifeDataService', () => {
     prisma.cast.updateMany.mockResolvedValue({ count: 1 });
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' });
     prisma.media.findMany.mockResolvedValue([] as never);
+    prisma.media.update.mockResolvedValue({ id: 'media-draft-1' });
     prisma.media.updateMany.mockResolvedValue({ count: 1 });
     prisma.content.create.mockResolvedValue({ id: 'content-draft-1' });
     prisma.content.upsert.mockResolvedValue({
@@ -4800,6 +4803,53 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+  });
+
+  it('publishes selected cast media when saving an admin cast', async () => {
+    const castId = '11111111-1111-4111-8111-111111111111';
+    const avatarMediaId = '22222222-2222-4222-8222-222222222222';
+    const albumMediaId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.cast.findUniqueOrThrow.mockResolvedValueOnce({
+      id: castId,
+      stageName: 'Hanh',
+      slug: 'hanh',
+      storeId: 'store-velvet',
+      status: 'ACTIVE',
+      isPublic: true,
+      deletedAt: null,
+    });
+    prisma.cast.update.mockResolvedValueOnce({
+      id: castId,
+      stageName: 'Hanh',
+    });
+    prisma.media.findMany.mockResolvedValueOnce([
+      { id: avatarMediaId, type: 'IMAGE' },
+      { id: albumMediaId, type: 'IMAGE' },
+    ]);
+
+    await service.updateAdminCast(castId, {
+      mediaIds: [avatarMediaId, albumMediaId],
+    });
+
+    expect(prisma.media.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: { in: [avatarMediaId, albumMediaId] } },
+      data: {
+        castId,
+        storeId: null,
+        status: 'READY',
+        access: 'PUBLIC',
+        deletedAt: null,
+      },
+    });
+    expect(prisma.media.update).toHaveBeenCalledWith({
+      where: { id: avatarMediaId },
+      data: { purpose: 'CAST_AVATAR', storeId: null },
+    });
+    expect(prisma.media.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: { in: [albumMediaId] }, castId },
+      data: { purpose: 'CAST_PHOTO', storeId: null },
+    });
   });
 
   it('does not submit cast-only changes through the partner listing store review flow', async () => {
