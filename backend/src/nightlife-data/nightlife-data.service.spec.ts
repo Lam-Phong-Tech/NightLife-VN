@@ -1014,7 +1014,18 @@ describe('NightlifeDataService', () => {
           tags: ['club', 'vip'],
           languages: ['ja', 'vi'],
           hourlyRateVnd: 700000,
-          media: [{ url: 'https://example.com/yuna.jpg' }],
+          media: [
+            {
+              url: 'https://example.com/yuna-gallery.jpg',
+              type: 'IMAGE',
+              purpose: 'CAST_PHOTO',
+            },
+            {
+              url: 'https://example.com/yuna.jpg',
+              type: 'IMAGE',
+              purpose: 'CAST_AVATAR',
+            },
+          ],
         },
       ],
       coupons: [

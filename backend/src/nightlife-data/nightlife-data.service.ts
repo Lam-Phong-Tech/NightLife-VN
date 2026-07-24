@@ -2196,9 +2196,11 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 1,
+              take: 8,
               select: {
                 url: true,
+                type: true,
+                purpose: true,
               },
             },
           },
