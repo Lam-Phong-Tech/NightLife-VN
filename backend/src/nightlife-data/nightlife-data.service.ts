@@ -146,6 +146,7 @@ const BILL_REVENUE_RULE_VERSION = 'ba-v3.2';
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
+const BILL_LOYALTY_VIP_THRESHOLD_POINTS = 300;
 const NEGATIVE_COMMISSION_FLAG =
   'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED';
 const DEFAULT_REVENUE_REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
@@ -6419,71 +6420,39 @@ export class NightlifeDataService {
       },
     });
 
-    let availablePoints = 0;
-    let earnedPoints = 0;
-    let spentPoints = 0;
-    let expiredPoints = 0;
-    let expiringSoonPoints = 0;
-
-    for (const ledger of ledgers) {
-      const points = Number.isFinite(ledger.points) ? ledger.points : 0;
-      const isPositiveLedger =
-        ledger.type === 'EARN' || (ledger.type === 'ADJUST' && points > 0);
-      const isExpired =
-        isPositiveLedger &&
-        Boolean(ledger.expiresAt && ledger.expiresAt <= now);
-
-      if (isExpired) {
-        expiredPoints += Math.max(points, 0);
-        continue;
-      }
-
-      if (ledger.type === 'EARN') {
-        earnedPoints += points;
-        availablePoints += points;
-        if (ledger.expiresAt && ledger.expiresAt <= expiringSoonCutoff) {
-          expiringSoonPoints += points;
-        }
-        continue;
-      }
-
-      if (ledger.type === 'ADJUST') {
-        availablePoints += points;
-        if (points >= 0) {
-          earnedPoints += points;
-          if (ledger.expiresAt && ledger.expiresAt <= expiringSoonCutoff) {
-            expiringSoonPoints += points;
-          }
-        } else {
-          spentPoints += Math.abs(points);
-        }
-        continue;
-      }
-
-      if (
-        ledger.type === 'REDEEM' ||
-        ledger.type === 'REVERSE' ||
-        ledger.type === 'EXPIRE'
-      ) {
-        const pointsUsed = Math.abs(points);
-        spentPoints += pointsUsed;
-        availablePoints -= pointsUsed;
-      }
-    }
-
-    availablePoints = Math.max(0, availablePoints);
-    const pointDisplayThreshold = Math.max(availablePoints, 1);
-    const progressPercent = availablePoints > 0 ? 100 : 0;
-
-    return {
+    const {
       availablePoints,
       earnedPoints,
       spentPoints,
       expiredPoints,
       expiringSoonPoints,
-      nextTierName: 'Member/VIP',
-      nextTierThreshold: pointDisplayThreshold,
-      pointsToNextTier: 0,
+    } = this.summarizeMemberPointLedgers(ledgers, now, expiringSoonCutoff);
+    const currentTier = this.resolveMemberTierFromPoints(availablePoints);
+    const nextTierThreshold = BILL_LOYALTY_VIP_THRESHOLD_POINTS;
+    const pointsToNextTier =
+      currentTier === UserTier.VIP
+        ? 0
+        : Math.max(0, nextTierThreshold - availablePoints);
+    const progressPercent =
+      currentTier === UserTier.VIP
+        ? 100
+        : Math.min(
+            100,
+            Math.round((availablePoints / nextTierThreshold) * 100),
+          );
+
+    await this.syncUserLoyaltyTier(this.prisma, userId, currentTier);
+
+    return {
+      currentTier,
+      availablePoints,
+      earnedPoints,
+      spentPoints,
+      expiredPoints,
+      expiringSoonPoints,
+      nextTierName: currentTier === UserTier.VIP ? 'VIP' : 'VIP',
+      nextTierThreshold,
+      pointsToNextTier,
       progressPercent,
       asOf: now.toISOString(),
       recentLedgers: ledgers.slice(0, 10).map((ledger) => ({
@@ -8922,6 +8891,7 @@ export class NightlifeDataService {
 
       if (loyaltyAward) {
         await this.recordBillLoyaltyLedger(tx, loyaltyAward);
+        await this.refreshUserLoyaltyTier(tx, loyaltyAward.userId, now);
       }
 
       let adminCouponIssueId: string | null = null;
@@ -14860,6 +14830,132 @@ export class NightlifeDataService {
         expiresAt: award.expiresAt,
         postedAt: award.postedAt,
       },
+    });
+  }
+
+  private summarizeMemberPointLedgers(
+    ledgers: Array<{
+      type: string;
+      points: number;
+      expiresAt?: Date | null;
+    }>,
+    now: Date,
+    expiringSoonCutoff?: Date,
+  ) {
+    let availablePoints = 0;
+    let earnedPoints = 0;
+    let spentPoints = 0;
+    let expiredPoints = 0;
+    let expiringSoonPoints = 0;
+
+    for (const ledger of ledgers) {
+      const points = Number.isFinite(ledger.points) ? ledger.points : 0;
+      const isPositiveLedger =
+        ledger.type === 'EARN' || (ledger.type === 'ADJUST' && points > 0);
+      const isExpired =
+        isPositiveLedger &&
+        Boolean(ledger.expiresAt && ledger.expiresAt <= now);
+
+      if (isExpired) {
+        expiredPoints += Math.max(points, 0);
+        continue;
+      }
+
+      if (ledger.type === 'EARN') {
+        earnedPoints += points;
+        availablePoints += points;
+        if (
+          expiringSoonCutoff &&
+          ledger.expiresAt &&
+          ledger.expiresAt <= expiringSoonCutoff
+        ) {
+          expiringSoonPoints += points;
+        }
+        continue;
+      }
+
+      if (ledger.type === 'ADJUST') {
+        availablePoints += points;
+        if (points >= 0) {
+          earnedPoints += points;
+          if (
+            expiringSoonCutoff &&
+            ledger.expiresAt &&
+            ledger.expiresAt <= expiringSoonCutoff
+          ) {
+            expiringSoonPoints += points;
+          }
+        } else {
+          spentPoints += Math.abs(points);
+        }
+        continue;
+      }
+
+      if (
+        ledger.type === 'REDEEM' ||
+        ledger.type === 'REVERSE' ||
+        ledger.type === 'EXPIRE'
+      ) {
+        const pointsUsed = Math.abs(points);
+        spentPoints += pointsUsed;
+        availablePoints -= pointsUsed;
+      }
+    }
+
+    return {
+      availablePoints: Math.max(0, availablePoints),
+      earnedPoints,
+      spentPoints,
+      expiredPoints,
+      expiringSoonPoints,
+    };
+  }
+
+  private resolveMemberTierFromPoints(points: number) {
+    return points >= BILL_LOYALTY_VIP_THRESHOLD_POINTS
+      ? UserTier.VIP
+      : UserTier.MEMBER;
+  }
+
+  private async refreshUserLoyaltyTier(
+    client: NightlifePrismaClient,
+    userId: string,
+    now: Date,
+  ) {
+    const ledgers = await client.pointLedger.findMany({
+      where: {
+        userId,
+        status: 'POSTED',
+      },
+      select: {
+        type: true,
+        points: true,
+        expiresAt: true,
+      },
+    });
+    const { availablePoints } = this.summarizeMemberPointLedgers(ledgers, now);
+    const currentTier = this.resolveMemberTierFromPoints(availablePoints);
+    await this.syncUserLoyaltyTier(client, userId, currentTier);
+    return currentTier;
+  }
+
+  private async syncUserLoyaltyTier(
+    client: NightlifePrismaClient,
+    userId: string,
+    tier: UserTier,
+  ) {
+    const user = await client.user.findUnique({
+      where: { id: userId },
+      select: { role: true, tier: true },
+    });
+
+    if (!user || user.role !== 'USER' || user.tier === tier) {
+      return;
+    }
+
+    await client.user.update({
+      where: { id: userId },
+      data: { tier },
     });
   }
 

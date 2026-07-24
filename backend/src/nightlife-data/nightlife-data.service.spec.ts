@@ -9606,6 +9606,11 @@ describe('NightlifeDataService', () => {
         createdAt: new Date('2025-06-01T10:00:00.000Z'),
       },
     ] as never);
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'member-1',
+      role: 'USER',
+      tier: 'FREE',
+    });
 
     const summary = await service.getMemberPointSummary('member-1');
 
@@ -9618,18 +9623,61 @@ describe('NightlifeDataService', () => {
       }),
     );
     expect(summary).toMatchObject({
+      currentTier: 'MEMBER',
       availablePoints: 156,
       earnedPoints: 186,
       spentPoints: 30,
       expiredPoints: 40,
       expiringSoonPoints: 6,
-      nextTierName: 'Member/VIP',
-      nextTierThreshold: 156,
-      pointsToNextTier: 0,
-      progressPercent: 100,
+      nextTierName: 'VIP',
+      nextTierThreshold: 300,
+      pointsToNextTier: 144,
+      progressPercent: 52,
       asOf: '2026-07-03T10:00:00.000Z',
     });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'member-1' },
+      data: { tier: 'MEMBER' },
+    });
     expect(summary.recentLedgers).toHaveLength(5);
+  });
+
+  it('promotes member point summary to VIP from 300 valid points', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.pointLedger.findMany.mockResolvedValue([
+      {
+        id: 'ledger-vip',
+        type: 'EARN',
+        amountVnd: 33000000,
+        points: 330,
+        billId: 'bill-vip',
+        bookingId: null,
+        description: 'Approved bill points',
+        expiresAt: new Date('2027-07-01T10:00:00.000Z'),
+        postedAt: new Date('2026-07-01T10:00:00.000Z'),
+        createdAt: new Date('2026-07-01T10:00:00.000Z'),
+      },
+    ] as never);
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'member-1',
+      role: 'USER',
+      tier: 'MEMBER',
+    });
+
+    const summary = await service.getMemberPointSummary('member-1');
+
+    expect(summary).toMatchObject({
+      currentTier: 'VIP',
+      availablePoints: 330,
+      nextTierName: 'VIP',
+      nextTierThreshold: 300,
+      pointsToNextTier: 0,
+      progressPercent: 100,
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'member-1' },
+      data: { tier: 'VIP' },
+    });
   });
 
   it('adds a posted loyalty point ledger for member bills after approval', async () => {

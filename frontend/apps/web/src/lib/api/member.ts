@@ -16,6 +16,7 @@ export type MemberPointLedgerEntry = {
 };
 
 export type MemberPointSummary = {
+  currentTier: string;
   availablePoints: number;
   earnedPoints: number;
   spentPoints: number;

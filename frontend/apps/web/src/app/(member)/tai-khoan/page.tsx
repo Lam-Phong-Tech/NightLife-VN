@@ -119,10 +119,10 @@ export default function Page() {
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const accountEmail = authUser?.email || "";
-  const tier = getBaTierLabel(authUser?.tier);
   const canLoadPoints = authUser?.role === "USER";
   const rewardPoints = Math.max(0, pointSummary?.availablePoints ?? 0);
-  const rewardProgress = rewardPoints > 0 ? 100 : 0;
+  const tier = getBaTierLabel(pointSummary?.currentTier ?? authUser?.tier);
+  const rewardProgress = Math.max(0, Math.min(100, pointSummary?.progressPercent ?? 0));
   const isLoadingPoints = Boolean(canLoadPoints && pointSummaryStatus === "loading");
   const pointSummaryError = Boolean(canLoadPoints && pointSummaryStatus === "error");
 
