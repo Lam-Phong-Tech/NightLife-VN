@@ -16468,7 +16468,7 @@ export class NightlifeDataService {
       includeDefaultTierCoupons
         ? []
         : DEFAULT_TIER_COUPON_CODES.map((code) => ({
-            code: { not: { contains: code, mode: 'insensitive' } },
+            code: { contains: code, mode: 'insensitive' },
           }));
 
     return {
@@ -16477,7 +16477,7 @@ export class NightlifeDataService {
       startsAt: { lte: now },
       OR: [{ endsAt: null }, { endsAt: { gt: now } }],
       ...(defaultTierCouponExclusion.length
-        ? { AND: defaultTierCouponExclusion }
+        ? { NOT: defaultTierCouponExclusion }
         : {}),
     };
   }

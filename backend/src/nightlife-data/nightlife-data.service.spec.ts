@@ -564,11 +564,11 @@ describe('NightlifeDataService', () => {
     const publicStoreQuery = prisma.store.findMany.mock.calls.find(
       ([args]) => (args as any)?.select?.coupons,
     )?.[0] as any;
-    expect(publicStoreQuery.select.coupons.where.AND).toEqual(
+    expect(publicStoreQuery.select.coupons.where.NOT).toEqual(
       expect.arrayContaining([
-        { code: { not: { contains: 'GUEST5', mode: 'insensitive' } } },
-        { code: { not: { contains: 'MEMBER8', mode: 'insensitive' } } },
-        { code: { not: { contains: 'VIP10', mode: 'insensitive' } } },
+        { code: { contains: 'GUEST5', mode: 'insensitive' } },
+        { code: { contains: 'MEMBER8', mode: 'insensitive' } },
+        { code: { contains: 'VIP10', mode: 'insensitive' } },
       ]),
     );
   });
@@ -935,22 +935,10 @@ describe('NightlifeDataService', () => {
                   deletedAt: null,
                   startsAt: expect.objectContaining({ lte: expect.any(Date) }),
                   OR: expect.any(Array),
-                  AND: expect.arrayContaining([
-                    {
-                      code: {
-                        not: { contains: 'GUEST5', mode: 'insensitive' },
-                      },
-                    },
-                    {
-                      code: {
-                        not: { contains: 'MEMBER8', mode: 'insensitive' },
-                      },
-                    },
-                    {
-                      code: {
-                        not: { contains: 'VIP10', mode: 'insensitive' },
-                      },
-                    },
+                  NOT: expect.arrayContaining([
+                    { code: { contains: 'GUEST5', mode: 'insensitive' } },
+                    { code: { contains: 'MEMBER8', mode: 'insensitive' } },
+                    { code: { contains: 'VIP10', mode: 'insensitive' } },
                   ]),
                 }),
               },
