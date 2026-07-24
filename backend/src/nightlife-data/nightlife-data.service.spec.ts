@@ -561,6 +561,16 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    const publicStoreQuery = prisma.store.findMany.mock.calls.find(
+      ([args]) => (args as any)?.select?.coupons,
+    )?.[0] as any;
+    expect(publicStoreQuery.select.coupons.where.AND).toEqual(
+      expect.arrayContaining([
+        { code: { not: { contains: 'GUEST5', mode: 'insensitive' } } },
+        { code: { not: { contains: 'MEMBER8', mode: 'insensitive' } } },
+        { code: { not: { contains: 'VIP10', mode: 'insensitive' } } },
+      ]),
+    );
   });
 
   it('does not limit public stores to Hanoi and HCM when city is all', async () => {
@@ -925,6 +935,23 @@ describe('NightlifeDataService', () => {
                   deletedAt: null,
                   startsAt: expect.objectContaining({ lte: expect.any(Date) }),
                   OR: expect.any(Array),
+                  AND: expect.arrayContaining([
+                    {
+                      code: {
+                        not: { contains: 'GUEST5', mode: 'insensitive' },
+                      },
+                    },
+                    {
+                      code: {
+                        not: { contains: 'MEMBER8', mode: 'insensitive' },
+                      },
+                    },
+                    {
+                      code: {
+                        not: { contains: 'VIP10', mode: 'insensitive' },
+                      },
+                    },
+                  ]),
                 }),
               },
             }),

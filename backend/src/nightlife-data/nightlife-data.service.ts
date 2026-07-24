@@ -174,6 +174,7 @@ const COUPON_CLAIM_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const COUPON_CLAIM_RATE_LIMIT = 5;
 const COUPON_CLAIM_FRAUD_WINDOW_MS = 60 * 60 * 1000;
 const COUPON_CLAIM_FRAUD_THRESHOLD = 5;
+const DEFAULT_TIER_COUPON_CODES = ['GUEST5', 'MEMBER8', 'VIP10'] as const;
 const BOOKING_POLICY_CUTOFF_MINUTES = [30, 60, 120] as const;
 const DEFAULT_BOOKING_CUTOFF_MINUTES = 60;
 const DEFAULT_PUBLIC_LIMIT = 24;
@@ -2042,7 +2043,9 @@ export class NightlifeDataService {
             },
           },
           coupons: {
-            where: this.buildActiveCouponWhere(now),
+            where: this.buildActiveCouponWhere(now, {
+              includeDefaultTierCoupons: false,
+            }),
             orderBy: { startsAt: 'desc' },
             take: 1,
             select: {
@@ -2232,7 +2235,9 @@ export class NightlifeDataService {
           },
         },
         coupons: {
-          where: this.buildActiveCouponWhere(now),
+          where: this.buildActiveCouponWhere(now, {
+            includeDefaultTierCoupons: false,
+          }),
           orderBy: { startsAt: 'desc' },
           select: {
             id: true,
@@ -6634,7 +6639,9 @@ export class NightlifeDataService {
               },
             },
             coupons: {
-              where: this.buildActiveCouponWhere(now),
+              where: this.buildActiveCouponWhere(now, {
+                includeDefaultTierCoupons: false,
+              }),
               orderBy: { startsAt: 'desc' },
               take: 1,
               select: {
@@ -15547,7 +15554,9 @@ export class NightlifeDataService {
     if (hasActiveCoupon) {
       and.push({
         coupons: {
-          some: this.buildActiveCouponWhere(now),
+          some: this.buildActiveCouponWhere(now, {
+            includeDefaultTierCoupons: false,
+          }),
         },
       });
     }
@@ -16449,12 +16458,27 @@ export class NightlifeDataService {
     );
   }
 
-  private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {
+  private buildActiveCouponWhere(
+    now: Date,
+    options: { includeDefaultTierCoupons?: boolean } = {},
+  ): Prisma.CouponWhereInput {
+    const includeDefaultTierCoupons =
+      options.includeDefaultTierCoupons ?? true;
+    const defaultTierCouponExclusion: Prisma.CouponWhereInput[] =
+      includeDefaultTierCoupons
+        ? []
+        : DEFAULT_TIER_COUPON_CODES.map((code) => ({
+            code: { not: { contains: code, mode: 'insensitive' } },
+          }));
+
     return {
       status: 'ACTIVE',
       deletedAt: null,
       startsAt: { lte: now },
       OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      ...(defaultTierCouponExclusion.length
+        ? { AND: defaultTierCouponExclusion }
+        : {}),
     };
   }
 
@@ -23412,7 +23436,9 @@ export class NightlifeDataService {
     const preferredSlugs = this.parsePublicHomeSlugs(query.storeSlugs);
     const now = new Date();
     const since = new Date(now.getTime() - 30 * DAY_MS);
-    const activeCouponWhere = this.buildActiveCouponWhere(now);
+    const activeCouponWhere = this.buildActiveCouponWhere(now, {
+      includeDefaultTierCoupons: false,
+    });
 
     // Retrieve store rankings for 'recommend-home' scope
     const rankingConfigs = await this.prisma.rankingConfig.findMany({
@@ -23804,7 +23830,9 @@ export class NightlifeDataService {
           },
         },
         coupons: {
-          where: this.buildActiveCouponWhere(new Date()),
+          where: this.buildActiveCouponWhere(new Date(), {
+            includeDefaultTierCoupons: false,
+          }),
           orderBy: { startsAt: 'desc' },
           take: 1,
           select: {
