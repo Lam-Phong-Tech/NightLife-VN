@@ -22315,6 +22315,7 @@ export class NightlifeDataService {
   async createAdminCast(
     dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
   ) {
+    const mediaIds = await this.resolveAdminCastMediaIds(dto.mediaIds);
     let slug = this.generateSlug(dto.stageName);
     let counter = 1;
     while (!(await this.checkAdminCastSlug(slug)).available) {
@@ -22339,17 +22340,17 @@ export class NightlifeDataService {
         youtubeLinks: dto.youtubeLinks || [],
         isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
         status: dto.status || 'DRAFT',
-        ...(dto.mediaIds && dto.mediaIds.length > 0
+        ...(mediaIds.length > 0
           ? {
               media: {
-                connect: dto.mediaIds.map((id) => ({ id })),
+                connect: mediaIds.map((id) => ({ id })),
               },
             }
           : {}),
       },
     });
 
-    await this.syncAdminCastMediaPurposes(newCast.id, dto.mediaIds);
+    await this.syncAdminCastMediaPurposes(newCast.id, mediaIds);
 
     return newCast;
   }
@@ -22482,6 +22483,11 @@ export class NightlifeDataService {
       }
     }
 
+    const mediaIds =
+      dto.mediaIds !== undefined
+        ? await this.resolveAdminCastMediaIds(dto.mediaIds)
+        : undefined;
+
     const updated = await this.prisma.cast.update({
       where: { id },
       data: {
@@ -22501,19 +22507,43 @@ export class NightlifeDataService {
         ...(dto.youtubeLinks && { youtubeLinks: dto.youtubeLinks }),
         ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
         ...(dto.status && { status: dto.status }),
-        ...(dto.mediaIds
+        ...(mediaIds !== undefined
           ? {
               media: {
-                set: dto.mediaIds.map((id) => ({ id })), // Replace existing relations
+                set: mediaIds.map((id) => ({ id })), // Replace existing relations
               },
             }
           : {}),
       },
     });
 
-    await this.syncAdminCastMediaPurposes(updated.id, dto.mediaIds);
+    await this.syncAdminCastMediaPurposes(updated.id, mediaIds);
 
     return updated;
+  }
+
+  private async resolveAdminCastMediaIds(mediaIds?: string[]) {
+    const uniqueIds = Array.from(
+      new Set(
+        (mediaIds ?? []).filter(
+          (id): id is string =>
+            typeof id === 'string' &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              id,
+            ),
+        ),
+      ),
+    );
+    if (!uniqueIds.length) {
+      return [];
+    }
+
+    const existingMedia = await this.prisma.media.findMany({
+      where: { id: { in: uniqueIds }, deletedAt: null },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingMedia.map((media) => media.id));
+    return uniqueIds.filter((id) => existingIds.has(id));
   }
 
   private async syncAdminCastMediaPurposes(

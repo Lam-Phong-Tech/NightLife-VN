@@ -4824,6 +4824,10 @@ describe('NightlifeDataService', () => {
       stageName: 'Hanh',
     });
     prisma.media.findMany.mockResolvedValueOnce([
+      { id: avatarMediaId },
+      { id: albumMediaId },
+    ]);
+    prisma.media.findMany.mockResolvedValueOnce([
       { id: avatarMediaId, type: 'IMAGE' },
       { id: albumMediaId, type: 'IMAGE' },
     ]);
@@ -4832,6 +4836,15 @@ describe('NightlifeDataService', () => {
       mediaIds: [avatarMediaId, albumMediaId],
     });
 
+    expect(prisma.cast.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          media: {
+            set: [{ id: avatarMediaId }, { id: albumMediaId }],
+          },
+        }),
+      }),
+    );
     expect(prisma.media.updateMany).toHaveBeenNthCalledWith(1, {
       where: { id: { in: [avatarMediaId, albumMediaId] } },
       data: {
@@ -4850,6 +4863,43 @@ describe('NightlifeDataService', () => {
       where: { id: { in: [albumMediaId] }, castId },
       data: { purpose: 'CAST_PHOTO', storeId: null },
     });
+  });
+
+  it('ignores invalid media ids when saving an admin cast', async () => {
+    const castId = '11111111-1111-4111-8111-111111111111';
+    const validMediaId = '22222222-2222-4222-8222-222222222222';
+
+    prisma.cast.findUniqueOrThrow.mockResolvedValueOnce({
+      id: castId,
+      stageName: 'Hanh',
+      slug: 'hanh',
+      storeId: 'store-velvet',
+      status: 'ACTIVE',
+      isPublic: true,
+      deletedAt: null,
+    });
+    prisma.media.findMany.mockResolvedValueOnce([{ id: validMediaId }]);
+    prisma.cast.update.mockResolvedValueOnce({ id: castId });
+    prisma.media.findMany.mockResolvedValueOnce([
+      { id: validMediaId, type: 'IMAGE' },
+    ]);
+
+    await service.updateAdminCast(castId, {
+      mediaIds: ['legacy-preview-id', validMediaId],
+    });
+
+    expect(prisma.cast.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          media: { set: [{ id: validMediaId }] },
+        }),
+      }),
+    );
+    expect(prisma.media.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: [validMediaId] } },
+      }),
+    );
   });
 
   it('does not submit cast-only changes through the partner listing store review flow', async () => {
