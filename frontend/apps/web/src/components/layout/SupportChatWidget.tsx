@@ -35,6 +35,11 @@ const chatColors = {
   userGrad: "linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57)",
 };
 
+const supportConnectionLabel = (
+  status: "connected" | "disconnected" | "error",
+  language: LanguageCode,
+) => `● ${translateText(status === "connected" ? "Đang trực tuyến" : "Mất kết nối", language)}`;
+
 type SupportMessagePayload = {
   id?: string;
   ticketId?: string;
@@ -461,7 +466,7 @@ function DesktopSupportChatPanel({
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
           <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "1px" }}>
-            {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
+            {supportConnectionLabel(connectionStatus, activeLanguage)}
           </div>
         </div>
         <IconCircleButton label={translateText("Đóng chat hỗ trợ", activeLanguage)} onClick={onClose}>
@@ -562,7 +567,7 @@ function MobileSupportChatPanel({
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
           <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "2px" }}>
-            {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
+            {supportConnectionLabel(connectionStatus, activeLanguage)}
           </div>
         </div>
       </div>

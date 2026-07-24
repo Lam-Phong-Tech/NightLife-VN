@@ -359,10 +359,18 @@ const storeCastOptionMeta = (
 ) =>
   formatNationalities(cast.languages, language) || cast.languages.filter(Boolean).join(", ");
 
+const normalizeVietnameseLocationText = (value: string) =>
+  value
+    .replace(/\bQu\?n\s*(\d+)\b/gi, "Quận $1")
+    .replace(/\bQuan\s*(\d+)\b/gi, "Quận $1")
+    .replace(/\bQ\.?\s*(\d+)\b/gi, "Quận $1")
+    .replace(/\bPhu\?ng\s*(\d+)\b/gi, "Phường $1")
+    .replace(/\bPhuong\s*(\d+)\b/gi, "Phường $1");
+
 const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) =>
   parts
     .filter((part): part is string => Boolean(part))
-    .map((part) => translateText(part, language))
+    .map((part) => translateText(normalizeVietnameseLocationText(part), language))
     .join(" · ");
 
 const formatStoreCastCount = (count: number, language: LanguageCode) =>
@@ -430,7 +438,7 @@ const addressAdminLabelTranslations: Record<LanguageCode, Record<string, string>
 };
 
 const localizeAddressAdminLabels = (value: string, language: LanguageCode) =>
-  value.replace(
+  normalizeVietnameseLocationText(value).replace(
     /\b(?:Ward|District|City)\b|Phường|Quận|Thành phố/g,
     (label) => addressAdminLabelTranslations[language][label] ?? label,
   );

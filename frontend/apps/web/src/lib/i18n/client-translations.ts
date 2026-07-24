@@ -5132,6 +5132,20 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "Vietyoru 支持",
   },
   {
+    vi: "Đang trực tuyến",
+    en: "Online",
+    ja: "オンライン",
+    ko: "온라인",
+    zh: "在线",
+  },
+  {
+    vi: "Mất kết nối",
+    en: "Disconnected",
+    ja: "接続が切れています",
+    ko: "연결 끊김",
+    zh: "连接已断开",
+  },
+  {
     vi: "Chăm sóc khách hàng",
     en: "Customer care",
     ja: "カスタマーサポート",
