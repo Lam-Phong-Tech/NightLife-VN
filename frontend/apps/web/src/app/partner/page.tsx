@@ -3660,7 +3660,12 @@ export default function PartnerPage() {
     setListingErrors({});
     setListingDraft(parseDraft(response.draft));
     setLiveData(response.live ? parseDraft(response.live) : null);
-    setListingNotice(response.message);
+    setListingNotice(
+      response.message === 'Partner listing draft loaded' ||
+        response.message === 'Current store data loaded as listing draft'
+        ? ''
+        : response.message,
+    );
     setSelectedProvinceCode('');
     setSelectedWardCode('');
   }, [setSelectedProvinceCode, setSelectedWardCode]);

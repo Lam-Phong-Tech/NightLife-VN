@@ -557,6 +557,13 @@ type PartnerRequestCmsRecord = {
       hourlyRateVnd: number | null;
       isPublic: boolean;
       status: CastStatus;
+      media: {
+        id: string;
+        url: string;
+        purpose: string | null;
+        type: MediaType;
+        castId: string | null;
+      }[];
     }[];
   };
   notificationLog: {
@@ -16599,6 +16606,17 @@ export class NightlifeDataService {
             hourlyRateVnd: true,
             isPublic: true,
             status: true,
+            media: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'asc' },
+              select: {
+                id: true,
+                url: true,
+                purpose: true,
+                type: true,
+                castId: true,
+              },
+            },
           },
         },
       },
@@ -17076,33 +17094,37 @@ export class NightlifeDataService {
     const storeCasts = store.casts || [];
     const storeMedia = store.media || [];
 
-    return storeCasts.map((cast, index) => ({
-      id: cast.id,
-      stageName:
-        this.cleanPartnerListingText(cast.stageName) ??
-        this.cleanPartnerListingText(cast.publicAlias) ??
-        `Cast ${index + 1}`,
-      storeName: this.cleanPartnerListingText(store.name) ?? undefined,
-      bio:
-        this.cleanPartnerListingText(cast.bio) ??
-        this.cleanPartnerListingText(cast.publicBio) ??
-        '',
-      tags: this.cleanPartnerListingStringArray(cast.tags, 12),
-      languages: this.cleanPartnerListingStringArray(cast.languages, 8),
-      birthMonth: cast.birthMonth ?? undefined,
-      zodiacSign: this.cleanPartnerListingText(cast.zodiacSign) ?? undefined,
-      heightCm: cast.heightCm ?? undefined,
-      measurements:
-        this.cleanPartnerListingText(cast.measurements) ?? undefined,
-      hobbies: this.cleanPartnerListingStringArray(cast.hobbies, 12),
-      youtubeLinks: this.cleanPartnerListingStringArray(cast.youtubeLinks, 8),
-      hourlyRateVnd: cast.hourlyRateVnd
-        ? Number(cast.hourlyRateVnd)
-        : undefined,
-      isPublic: cast.isPublic,
-      status: cast.status,
-      mediaUrls: this.partnerListingCastMediaUrls(storeMedia, cast.id),
-    }));
+    return storeCasts.map((cast, index) => {
+      const castMedia = [...storeMedia, ...(cast.media ?? [])];
+
+      return {
+        id: cast.id,
+        stageName:
+          this.cleanPartnerListingText(cast.stageName) ??
+          this.cleanPartnerListingText(cast.publicAlias) ??
+          `Cast ${index + 1}`,
+        storeName: this.cleanPartnerListingText(store.name) ?? undefined,
+        bio:
+          this.cleanPartnerListingText(cast.bio) ??
+          this.cleanPartnerListingText(cast.publicBio) ??
+          '',
+        tags: this.cleanPartnerListingStringArray(cast.tags, 12),
+        languages: this.cleanPartnerListingStringArray(cast.languages, 8),
+        birthMonth: cast.birthMonth ?? undefined,
+        zodiacSign: this.cleanPartnerListingText(cast.zodiacSign) ?? undefined,
+        heightCm: cast.heightCm ?? undefined,
+        measurements:
+          this.cleanPartnerListingText(cast.measurements) ?? undefined,
+        hobbies: this.cleanPartnerListingStringArray(cast.hobbies, 12),
+        youtubeLinks: this.cleanPartnerListingStringArray(cast.youtubeLinks, 8),
+        hourlyRateVnd: cast.hourlyRateVnd
+          ? Number(cast.hourlyRateVnd)
+          : undefined,
+        isPublic: cast.isPublic,
+        status: cast.status,
+        mediaUrls: this.partnerListingCastMediaUrls(castMedia, cast.id),
+      };
+    });
   }
 
   private mergePartnerListingCastProfiles(
@@ -18108,6 +18130,17 @@ export class NightlifeDataService {
               hourlyRateVnd: true,
               isPublic: true,
               status: true,
+              media: {
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'asc' },
+                select: {
+                  id: true,
+                  url: true,
+                  purpose: true,
+                  type: true,
+                  castId: true,
+                },
+              },
             },
           },
         },
