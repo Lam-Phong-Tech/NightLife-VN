@@ -23572,7 +23572,7 @@ export class NightlifeDataService {
         scope: 'recommend-home',
         status: 'ACTIVE',
         deletedAt: null,
-        ...this.buildPublicRankingConfigCityWhere(rankingCityCode),
+        ...(rankingCityCode ? { cityCode: rankingCityCode } : {}),
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }],
       },
