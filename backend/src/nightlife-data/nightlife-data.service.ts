@@ -3342,15 +3342,6 @@ export class NightlifeDataService {
         draftCastIds.push(cast.id);
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
-        await tx.media.updateMany({
-          where: { castId: cast.id, deletedAt: null },
-          data: {
-            status: 'HIDDEN',
-            access: 'PROTECTED',
-            deletedAt: submittedAt,
-          },
-        });
-
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
           const media = await this.createPartnerRequestMedia(
             {

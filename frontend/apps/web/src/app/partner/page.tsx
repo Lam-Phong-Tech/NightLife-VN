@@ -1725,7 +1725,7 @@ export default function PartnerPage() {
   const listingDraft = isViewingLive && liveData ? liveData : draftState;
   const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
   const [listingContentId, setListingContentId] = useState<string | null>(null);
-  const [listingNotice, setListingNotice] = useState('');
+  const [, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
   const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
@@ -7578,26 +7578,6 @@ export default function PartnerPage() {
           </button>
         ))}
       </div>
-
-      {listingNotice ? (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            border: `1px solid ${colors.borderGold22}`,
-            background: 'rgba(212,178,106,.09)',
-            color: colors.goldBright,
-            borderRadius: '12px',
-            padding: '10px 12px',
-            fontSize: '12.5px',
-            fontWeight: 800,
-            lineHeight: 1.5,
-            margin: '0 0 14px',
-          }}
-        >
-          {listingNotice}
-        </div>
-      ) : null}
 
       {renderListingTab()}
 
