@@ -59,6 +59,10 @@ type SupportSessionMergePayload = {
   ticket?: { id?: string } | null;
 };
 
+type SupportTicketClosedPayload = {
+  ticketId?: string;
+};
+
 type SendSupportMessagePayload = {
   ticketId: string | null;
   content: string;
@@ -640,6 +644,7 @@ export function SupportChatWidget({
   const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
   const [hasOpened, setHasOpened] = useState(false);
   const hasLoadedSessionHistoryRef = useRef(false);
+  const closedTicketIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) setHasOpened(true);
@@ -703,7 +708,7 @@ export function SupportChatWidget({
       })
       .then((data) => {
         const mergedTicketId = data.ticket?.id;
-        if (mergedTicketId) {
+        if (mergedTicketId && !closedTicketIdsRef.current.has(mergedTicketId)) {
           setTicketId(mergedTicketId);
           localStorage.setItem("vy_support_ticket_id", mergedTicketId);
         }
@@ -730,6 +735,10 @@ export function SupportChatWidget({
       .then((res) => res.json())
       .then((data: SupportSessionHistoryPayload) => {
         const restoredTicketId = data?.ticket?.id;
+        if (restoredTicketId && closedTicketIdsRef.current.has(restoredTicketId)) {
+          return;
+        }
+
         if (restoredTicketId) {
           setTicketId(restoredTicketId);
           localStorage.setItem("vy_support_ticket_id", restoredTicketId);
@@ -750,10 +759,13 @@ export function SupportChatWidget({
 
   useEffect(() => {
     if (!ticketId) return;
+    const historyTicketId = ticketId;
     setIsLoadingHistory(true);
     fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
       .then(res => res.json())
       .then((data: unknown) => {
+        if (closedTicketIdsRef.current.has(historyTicketId)) return;
+
         if (Array.isArray(data)) {
           const mapped = data.map((message) =>
             mapSupportMessageToChatMessage(
@@ -814,6 +826,8 @@ export function SupportChatWidget({
     newSocket.on('connect_error', () => setConnectionStatus('error'));
 
     newSocket.on('receive_message', (msg: SupportMessagePayload) => {
+      if (msg.ticketId && closedTicketIdsRef.current.has(msg.ticketId)) return;
+
       setMessages(prev => {
         // Prevent duplicate if we already have it from optimistic UI
         if (msg.id && prev.some(m => m.id === msg.id)) return prev;
@@ -825,6 +839,8 @@ export function SupportChatWidget({
     });
 
     newSocket.on('system_message', (msg: SupportMessagePayload) => {
+      if (msg.ticketId && closedTicketIdsRef.current.has(msg.ticketId)) return;
+
       setMessages(prev => {
         if (msg.id && prev.some(m => m.id === msg.id)) return prev;
         return [
@@ -837,16 +853,13 @@ export function SupportChatWidget({
       });
     });
 
-    newSocket.on('ticket_closed', () => {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: 'closed-' + Date.now().toString(),
-          from: 'support',
-          text: 'Phiên chat đã được đóng bởi nhân viên hỗ trợ.',
-          time: formatChatTime(new Date(), activeLanguageRef.current),
-        }
-      ]);
+    newSocket.on('ticket_closed', (data?: SupportTicketClosedPayload) => {
+      if (data?.ticketId) {
+        closedTicketIdsRef.current.add(data.ticketId);
+      }
+
+      setMessages([]);
+      setDraft("");
       setTicketId(null);
       localStorage.removeItem("vy_support_ticket_id");
     });
