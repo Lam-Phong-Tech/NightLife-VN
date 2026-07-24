@@ -16468,7 +16468,7 @@ export class NightlifeDataService {
       includeDefaultTierCoupons
         ? []
         : DEFAULT_TIER_COUPON_CODES.map((code) => ({
-            code: { contains: code, mode: 'insensitive' },
+            code: { contains: code },
           }));
 
     return {

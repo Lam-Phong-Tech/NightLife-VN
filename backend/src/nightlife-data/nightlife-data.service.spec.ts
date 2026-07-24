@@ -566,9 +566,9 @@ describe('NightlifeDataService', () => {
     )?.[0] as any;
     expect(publicStoreQuery.select.coupons.where.NOT).toEqual(
       expect.arrayContaining([
-        { code: { contains: 'GUEST5', mode: 'insensitive' } },
-        { code: { contains: 'MEMBER8', mode: 'insensitive' } },
-        { code: { contains: 'VIP10', mode: 'insensitive' } },
+        { code: { contains: 'GUEST5' } },
+        { code: { contains: 'MEMBER8' } },
+        { code: { contains: 'VIP10' } },
       ]),
     );
   });
@@ -936,9 +936,9 @@ describe('NightlifeDataService', () => {
                   startsAt: expect.objectContaining({ lte: expect.any(Date) }),
                   OR: expect.any(Array),
                   NOT: expect.arrayContaining([
-                    { code: { contains: 'GUEST5', mode: 'insensitive' } },
-                    { code: { contains: 'MEMBER8', mode: 'insensitive' } },
-                    { code: { contains: 'VIP10', mode: 'insensitive' } },
+                    { code: { contains: 'GUEST5' } },
+                    { code: { contains: 'MEMBER8' } },
+                    { code: { contains: 'VIP10' } },
                   ]),
                 }),
               },
