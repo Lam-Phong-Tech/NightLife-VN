@@ -80,7 +80,7 @@ describe('NightlifeDataService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
-      findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
     },
@@ -4693,6 +4693,100 @@ describe('NightlifeDataService', () => {
           deletedAt: null,
         }),
         select: { id: true },
+      }),
+    );
+  });
+
+  it('hides the live source cast from the admin list while its partner edit draft is pending', async () => {
+    const sourceCastId = '22222222-2222-4222-8222-222222222222';
+    const draftCastId = '33333333-3333-4333-8333-333333333333';
+    const sourceCast = {
+      id: sourceCastId,
+      storeId: '11111111-1111-4111-8111-111111111111',
+      stageName: 'Hanh',
+      slug: 'hanh',
+      bio: 'Original host',
+      publicBio: 'Original host',
+      tags: [],
+      youtubeLinks: [],
+      languages: ['VN'],
+      birthMonth: 7,
+      zodiacSign: 'Cancer',
+      heightCm: 165,
+      measurements: '60-90-60',
+      hobbies: [],
+      styleTags: [],
+      isPublic: true,
+      hourlyRateVnd: null,
+      status: 'ACTIVE',
+      userId: null,
+      deletedAt: null,
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+      store: null,
+      media: [],
+    };
+    const pendingDraft = {
+      ...sourceCast,
+      id: draftCastId,
+      stageName: 'Hanh updated',
+      slug: `partner-cast-edit-${sourceCastId}`,
+      isPublic: false,
+      status: 'PENDING_REVIEW',
+    };
+
+    prisma.cast.count.mockResolvedValueOnce(2);
+    prisma.cast.findMany.mockResolvedValueOnce([pendingDraft, sourceCast]);
+
+    await expect(service.listAdminCasts({ limit: 100 })).resolves.toEqual(
+      expect.objectContaining({
+        data: [pendingDraft],
+        total: 1,
+      }),
+    );
+  });
+
+  it('does not attach cast-owned media to a store album when saving an admin store', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const storeMediaId = '22222222-2222-4222-8222-222222222222';
+    const castMediaId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
+      id: storeId,
+      name: 'Velvet Club',
+      slug: 'velvet-club',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      city: 'Ho Chi Minh City',
+      address: '22 Nguyen Hue',
+      mapUrl: null,
+      phone: null,
+      description: null,
+      tags: [],
+      openingHours: null,
+      pricingInfo: null,
+    });
+    prisma.media.findMany.mockResolvedValueOnce([{ id: storeMediaId }]);
+    prisma.store.update.mockResolvedValueOnce({ id: storeId });
+
+    await service.updateAdminStore(storeId, {
+      mediaIds: [storeMediaId, castMediaId],
+    });
+
+    expect(prisma.media.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: [storeMediaId, castMediaId] },
+        castId: null,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(prisma.store.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: storeId },
+        data: expect.objectContaining({
+          media: { set: [{ id: storeMediaId }] },
+        }),
       }),
     );
   });

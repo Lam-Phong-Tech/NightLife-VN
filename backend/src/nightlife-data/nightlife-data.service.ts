@@ -22284,9 +22284,27 @@ export class NightlifeDataService {
       }),
     ]);
 
+    const pendingEditSourceIds = new Set(
+      items
+        .filter(
+          (cast) =>
+            cast.status === 'PENDING_REVIEW' &&
+            !cast.isPublic,
+        )
+        .map((cast) => this.partnerListingCastEditSourceId(cast))
+        .filter((id): id is string => Boolean(id)),
+    );
+    const visibleItems = items.filter(
+      (cast) =>
+        !(
+          pendingEditSourceIds.has(cast.id) &&
+          cast.status !== 'PENDING_REVIEW'
+        ),
+    );
+
     return {
-      data: items,
-      total,
+      data: visibleItems,
+      total: total - (items.length - visibleItems.length),
       page,
       limit,
     };
@@ -22708,6 +22726,20 @@ export class NightlifeDataService {
       );
     }
 
+    const scopedStoreMediaIds =
+      dto.mediaIds !== undefined
+        ? (
+            await this.prisma.media.findMany({
+              where: {
+                id: { in: dto.mediaIds },
+                castId: null,
+                deletedAt: null,
+              },
+              select: { id: true },
+            })
+          ).map((media) => media.id)
+        : undefined;
+
     const updated = await this.prisma.store.update({
       where: { id },
       data: {
@@ -22728,10 +22760,10 @@ export class NightlifeDataService {
         }),
         ...(dto.status && { status: dto.status }),
         ...(areaId && { areaId }),
-        ...(dto.mediaIds
+        ...(scopedStoreMediaIds
           ? {
               media: {
-                set: dto.mediaIds.map((mid) => ({ id: mid })),
+                set: scopedStoreMediaIds.map((mid) => ({ id: mid })),
               },
             }
           : {}),
