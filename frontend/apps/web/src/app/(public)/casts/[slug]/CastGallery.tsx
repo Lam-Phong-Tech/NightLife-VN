@@ -376,13 +376,6 @@ function CastLightbox({
         </button>
       ) : null}
 
-      <div className="cast-lightbox-caption">
-        <div>
-          <strong>{media.alt}</strong>
-          {media.purpose ? <span>{media.purpose}</span> : null}
-        </div>
-      </div>
-
       <div className="cast-lightbox-thumbs">
         {gallery.map((item, itemIndex) => {
           const isPlaceholder = isPlaceholderCastMedia(item);

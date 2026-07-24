@@ -1483,28 +1483,6 @@ export function CastProfileStyles() {
         background: #000;
       }
 
-      .cast-lightbox-caption {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .cast-lightbox-caption strong,
-      .cast-lightbox-caption span {
-        display: block;
-      }
-
-      .cast-lightbox-caption strong {
-        color: var(--vy-text);
-        font-size: 14px;
-      }
-
-      .cast-lightbox-caption span {
-        color: #9b958a;
-        font-size: 11px;
-        margin-top: 2px;
-      }
-
       .cast-lightbox-thumbs {
         display: flex;
         gap: 8px;
@@ -1618,7 +1596,6 @@ export function CastProfileStyles() {
           border-radius: 18px;
         }
 
-        .cast-lightbox-caption,
         .cast-lightbox-thumbs,
         .cast-lightbox-topbar {
           width: min(1040px, 82vw);
@@ -1628,7 +1605,7 @@ export function CastProfileStyles() {
 
       @media (max-width: 767px) {
         .cast-lightbox {
-          grid-template-rows: auto minmax(0, 1fr) auto auto;
+          grid-template-rows: auto minmax(0, 1fr) auto;
           gap: 10px;
           padding: calc(14px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
         }
@@ -1669,18 +1646,6 @@ export function CastProfileStyles() {
           width: 100%;
           height: min(56vw, 44dvh);
           max-height: 100%;
-        }
-
-        .cast-lightbox-caption {
-          min-width: 0;
-        }
-
-        .cast-lightbox-caption strong,
-        .cast-lightbox-caption span {
-          max-width: calc(100dvw - 24px);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
         }
 
         .cast-lightbox-thumbs {
