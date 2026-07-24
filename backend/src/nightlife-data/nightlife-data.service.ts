@@ -988,9 +988,40 @@ type CouponSummary = {
   minSpendVnd?: number | null;
 };
 
+const CAST_MEDIA_PURPOSES = [
+  'CAST_AVATAR',
+  'CAST_PHOTO',
+  'CAST_GALLERY',
+  'CAST_PROFILE',
+  'CAST_VIDEO',
+  'PARTNER_CAST_IMAGE',
+  'PARTNER_CAST_VIDEO',
+  'PARTNER_LISTING_CAST',
+];
+
 @Injectable()
 export class NightlifeDataService {
   private readonly logger = new Logger(NightlifeDataService.name);
+
+  private storeMediaWhere(
+    extra: Prisma.MediaWhereInput = {},
+  ): Prisma.MediaWhereInput {
+    return {
+      ...extra,
+      deletedAt: null,
+      castId: null,
+      status: 'READY',
+      AND: [
+        ...(Array.isArray(extra.AND) ? extra.AND : extra.AND ? [extra.AND] : []),
+        {
+          OR: [
+            { purpose: null },
+            { purpose: { notIn: CAST_MEDIA_PURPOSES } },
+          ],
+        },
+      ],
+    };
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -16579,11 +16610,7 @@ export class NightlifeDataService {
         partnerAccountId: true,
         ownerId: true,
         media: {
-          where: {
-            deletedAt: null,
-            castId: null,
-            status: 'READY',
-          },
+          where: this.storeMediaWhere(),
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -22069,7 +22096,7 @@ export class NightlifeDataService {
             select: { id: true },
           },
           media: {
-            where: { deletedAt: null, castId: null },
+            where: this.storeMediaWhere(),
             orderBy: { createdAt: 'asc' },
           },
           area: true,
@@ -22736,6 +22763,15 @@ export class NightlifeDataService {
     );
     let areaId: string | undefined;
     areaId = await this.inferAreaFromAddress(storeAddress || '', dto.city);
+    const scopedStoreMediaIds =
+      dto.mediaIds && dto.mediaIds.length > 0
+        ? (
+            await this.prisma.media.findMany({
+              where: this.storeMediaWhere({ id: { in: dto.mediaIds } }),
+              select: { id: true },
+            })
+          ).map((media) => media.id)
+        : [];
 
     const newStore = await this.prisma.store.create({
       data: {
@@ -22752,10 +22788,10 @@ export class NightlifeDataService {
         pricingInfo: dto.pricingInfo,
         status: dto.status || 'ACTIVE',
         areaId,
-        ...(dto.mediaIds && dto.mediaIds.length > 0
+        ...(scopedStoreMediaIds.length > 0
           ? {
               media: {
-                connect: dto.mediaIds.map((id) => ({ id })),
+                connect: scopedStoreMediaIds.map((id) => ({ id })),
               },
             }
           : {}),
@@ -22807,11 +22843,7 @@ export class NightlifeDataService {
       dto.mediaIds !== undefined
         ? (
             await this.prisma.media.findMany({
-              where: {
-                id: { in: dto.mediaIds },
-                castId: null,
-                deletedAt: null,
-              },
+              where: this.storeMediaWhere({ id: { in: dto.mediaIds } }),
               select: { id: true },
             })
           ).map((media) => media.id)

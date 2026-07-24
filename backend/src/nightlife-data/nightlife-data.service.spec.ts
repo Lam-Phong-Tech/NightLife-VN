@@ -4801,6 +4801,28 @@ describe('NightlifeDataService', () => {
         id: { in: [storeMediaId, castMediaId] },
         castId: null,
         deletedAt: null,
+        status: 'READY',
+        AND: [
+          {
+            OR: [
+              { purpose: null },
+              {
+                purpose: {
+                  notIn: [
+                    'CAST_AVATAR',
+                    'CAST_PHOTO',
+                    'CAST_GALLERY',
+                    'CAST_PROFILE',
+                    'CAST_VIDEO',
+                    'PARTNER_CAST_IMAGE',
+                    'PARTNER_CAST_VIDEO',
+                    'PARTNER_LISTING_CAST',
+                  ],
+                },
+              },
+            ],
+          },
+        ],
       },
       select: { id: true },
     });
