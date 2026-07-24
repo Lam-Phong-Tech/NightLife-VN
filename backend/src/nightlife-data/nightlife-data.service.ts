@@ -657,6 +657,10 @@ const CITY_ALIASES: Record<string, string> = {
   all: 'all',
   'tat-ca': 'all',
   'tong-hop': 'all',
+  '01': 'hn',
+  '79': 'hcm',
+  '43': 'dn',
+  '31': 'hp',
   hn: 'hn',
   hanoi: 'hn',
   'ha-noi': 'hn',
@@ -1422,11 +1426,20 @@ export class NightlifeDataService {
         ? this.resolveAdminRankingScope(query.scope)
         : undefined;
 
+    const cityVariants =
+      cityCode === 'hn'
+        ? ['hn', '01', 'hanoi', 'ha-noi', 'ha noi', 'Hà Nội', 'Hanoi']
+        : cityCode === 'hcm'
+          ? ['hcm', '79', 'tphcm', 'tp-hcm', 'tp hcm', 'ho-chi-minh', 'saigon', 'Hồ Chí Minh', 'Ho Chi Minh']
+          : cityCode && cityCode !== 'all'
+            ? [cityCode]
+            : undefined;
+
     const configs = await this.prisma.rankingConfig.findMany({
       where: {
         deletedAt: null,
         ...(targetType ? { targetType } : {}),
-        ...(cityCode ? { cityCode } : {}),
+        ...(cityVariants ? { cityCode: { in: cityVariants } } : {}),
         ...(hasCategoryFilter ? { category } : {}),
         ...(scope ? { scope } : {}),
       },
@@ -16283,7 +16296,24 @@ export class NightlifeDataService {
   private buildPublicRankingConfigCityWhere(
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
-    return cityCode ? { cityCode } : {};
+    if (!cityCode || cityCode === 'all') {
+      return {};
+    }
+
+    const cityVariants =
+      cityCode === 'hn'
+        ? ['hn', '01', 'hanoi', 'ha-noi', 'ha noi', 'Hà Nội', 'Hanoi']
+        : cityCode === 'hcm'
+          ? ['hcm', '79', 'tphcm', 'tp-hcm', 'tp hcm', 'ho-chi-minh', 'saigon', 'Hồ Chí Minh', 'Ho Chi Minh']
+          : [cityCode];
+
+    return {
+      OR: [
+        { cityCode: null },
+        { cityCode: 'all' },
+        { cityCode: { in: cityVariants } },
+      ],
+    };
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
@@ -16327,7 +16357,7 @@ export class NightlifeDataService {
     const stores = await this.prisma.store.findMany({
       where: {
         deletedAt: null,
-        status: 'ACTIVE',
+        status: { in: ['ACTIVE', 'APPROVED'] },
         id: { in: targetIds },
       },
       select: {
@@ -16388,7 +16418,7 @@ export class NightlifeDataService {
         isPublic: true,
         store: {
           deletedAt: null,
-          status: 'ACTIVE',
+          status: { in: ['ACTIVE', 'APPROVED'] },
         },
       },
       select: {
