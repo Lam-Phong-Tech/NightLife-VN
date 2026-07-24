@@ -1448,10 +1448,14 @@ function AdminDashboardContent() {
                       >
                         <span
                           style={{
+                            display: "block",
                             width: "100%",
                             height: `${h}%`,
+                            minHeight: hasRevenue7Days ? "10px" : "4px",
                             background: bg,
                             borderRadius: "6px 6px 0 0",
+                            boxShadow: d.revenue > 0 ? "0 0 18px rgba(212,178,106,.18)" : "none",
+                            opacity: d.revenue > 0 ? 1 : 0.35,
                             transition: "height 0.3s ease",
                           }}
                         ></span>

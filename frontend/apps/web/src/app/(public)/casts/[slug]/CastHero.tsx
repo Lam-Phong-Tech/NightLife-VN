@@ -56,6 +56,11 @@ export function CastHero({
       onPointerDown={onHeroPointerDown}
       onPointerUp={onHeroPointerUp}
       onPointerCancel={onHeroPointerCancel}
+      onClick={(event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest("a, button")) return;
+        onOpenGallery();
+      }}
       style={{
         background: `linear-gradient(180deg, rgba(12,12,15,.18) 0%, rgba(12,12,15,0) 28%, rgba(12,12,15,.58) 64%, rgba(12,12,15,.97) 100%), ${mediaPreviewBg(activeMedia, profile.thumbnailUrl)}`,
       }}

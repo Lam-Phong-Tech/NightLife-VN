@@ -198,6 +198,32 @@ export function CastGallery({
             <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
           </button>
         ) : null}
+        {gallery.length > 1 ? (
+          <div className="cast-desktop-media-nav" aria-label={copy.gallery}>
+            <button
+              type="button"
+              className="previous"
+              onClick={(event) => {
+                event.stopPropagation();
+                showPrevious();
+              }}
+              aria-label={copy.photoPrevious}
+            >
+              <ChevronLeft size={24} strokeWidth={2.2} />
+            </button>
+            <button
+              type="button"
+              className="next"
+              onClick={(event) => {
+                event.stopPropagation();
+                showNext();
+              }}
+              aria-label={copy.photoNext}
+            >
+              <ChevronRight size={24} strokeWidth={2.2} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="cast-desktop-thumbs">

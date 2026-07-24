@@ -1234,6 +1234,46 @@ export function CastProfileStyles() {
         backdrop-filter: blur(8px);
       }
 
+      .cast-desktop-media-nav {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      .cast-desktop-media-nav button {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 999px;
+        background: rgba(17,17,20,.6);
+        color: #f6ecda;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        pointer-events: auto;
+        box-shadow: 0 14px 30px -18px rgba(0,0,0,.9);
+        backdrop-filter: blur(8px);
+      }
+
+      .cast-desktop-media-nav button:where(:hover, :focus-visible) {
+        background: rgba(212,178,106,.22);
+        border-color: rgba(212,178,106,.45);
+      }
+
+      .cast-desktop-media-nav .previous {
+        left: 14px;
+      }
+
+      .cast-desktop-media-nav .next {
+        right: 14px;
+      }
+
       .cast-desktop-thumbs {
         gap: 8px;
         margin-top: 10px;
