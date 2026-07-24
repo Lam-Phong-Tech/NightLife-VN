@@ -22370,6 +22370,10 @@ export class NightlifeDataService {
       dto.status === 'ACTIVE'
     ) {
       const now = new Date();
+      const requestedMediaIds =
+        dto.mediaIds !== undefined
+          ? await this.resolveAdminCastMediaIds(dto.mediaIds)
+          : undefined;
 
       return this.prisma.$transaction(async (tx) => {
         const targetCast = await tx.cast.findFirst({
@@ -22392,7 +22396,7 @@ export class NightlifeDataService {
           })
         ).map((media) => media.id);
         const mediaIdsToPublish =
-          dto.mediaIds !== undefined ? dto.mediaIds : draftMediaIds;
+          requestedMediaIds !== undefined ? requestedMediaIds : draftMediaIds;
 
         const updatedTarget = await tx.cast.update({
           where: { id: targetCast.id },

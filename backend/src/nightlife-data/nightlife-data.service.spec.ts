@@ -4902,6 +4902,60 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('ignores invalid media ids when approving a partner cast edit draft', async () => {
+    const sourceCastId = '11111111-1111-4111-8111-111111111111';
+    const draftCastId = '22222222-2222-4222-8222-222222222222';
+    const validMediaId = '33333333-3333-4333-8333-333333333333';
+
+    prisma.cast.findUniqueOrThrow.mockResolvedValueOnce({
+      id: draftCastId,
+      storeId: 'store-velvet',
+      stageName: 'Hanh',
+      slug: `partner-cast-edit-${sourceCastId}`,
+      bio: 'Updated host',
+      publicBio: 'Updated host',
+      birthMonth: 7,
+      zodiacSign: 'Cancer',
+      heightCm: 170,
+      measurements: '80-80-80',
+      languages: ['VN'],
+      hobbies: ['hat'],
+      tags: ['sang'],
+      youtubeLinks: [],
+      status: 'PENDING_REVIEW',
+      isPublic: false,
+      deletedAt: null,
+    });
+    prisma.media.findMany
+      .mockResolvedValueOnce([{ id: validMediaId }])
+      .mockResolvedValueOnce([{ id: validMediaId }])
+      .mockResolvedValueOnce([{ id: validMediaId, type: 'IMAGE' }]);
+    prisma.cast.findFirst.mockResolvedValueOnce({ id: sourceCastId });
+    prisma.cast.update
+      .mockResolvedValueOnce({ id: sourceCastId })
+      .mockResolvedValueOnce({ id: draftCastId });
+
+    await service.updateAdminCast(draftCastId, {
+      status: 'ACTIVE',
+      mediaIds: ['legacy-preview-id', validMediaId],
+    });
+
+    expect(prisma.media.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: [validMediaId] }, deletedAt: null },
+      data: {
+        castId: sourceCastId,
+        storeId: null,
+        status: 'READY',
+        access: 'PUBLIC',
+      },
+    });
+    expect(
+      prisma.media.updateMany.mock.calls.some((call) =>
+        JSON.stringify(call[0]).includes('legacy-preview-id'),
+      ),
+    ).toBe(false);
+  });
+
   it('does not submit cast-only changes through the partner listing store review flow', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';
