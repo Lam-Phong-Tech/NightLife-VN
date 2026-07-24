@@ -1424,16 +1424,18 @@ export class NightlifeDataService {
     const scope =
       query.scope !== undefined && query.scope !== ''
         ? this.resolveAdminRankingScope(query.scope)
-        : undefined;
+        : 'global';
 
     const cityVariants =
       cityCode === 'hn'
         ? ['hn', '01', 'hanoi', 'ha-noi', 'ha noi', 'Hà Nội', 'Hanoi']
         : cityCode === 'hcm'
           ? ['hcm', '79', 'tphcm', 'tp-hcm', 'tp hcm', 'ho-chi-minh', 'saigon', 'Hồ Chí Minh', 'Ho Chi Minh']
-          : cityCode && cityCode !== 'all'
-            ? [cityCode]
-            : undefined;
+          : cityCode === 'all'
+            ? ['all']
+            : cityCode
+              ? [cityCode]
+              : undefined;
 
     const configs = await this.prisma.rankingConfig.findMany({
       where: {

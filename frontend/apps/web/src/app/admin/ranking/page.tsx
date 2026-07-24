@@ -397,8 +397,8 @@ function AdminRankingsClient() {
         else storeItems.push(obj);
       });
       
-      setCasts(castItems);
-      setStores(storeItems);
+      setCasts(castItems.slice(0, 5));
+      setStores(storeItems.slice(0, 5));
     } catch (e: any) {
       console.error(e);
       showToast(e.message || 'Không tải được danh sách xếp hạng', 'error');
