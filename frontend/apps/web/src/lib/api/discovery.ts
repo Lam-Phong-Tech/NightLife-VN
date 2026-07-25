@@ -94,48 +94,7 @@ const toParams = (params: DiscoveryParams = {}) => {
   return searchParams;
 };
 
-const demoAreas: PublicArea[] = [
-  {
-    id: "area-hn-hoan-kiem",
-    code: "hn-hoan-kiem",
-    name: "Hoan Kiem",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Hoan Kiem",
-  },
-  {
-    id: "area-hn-tay-ho",
-    code: "hn-tay-ho",
-    name: "Tay Ho",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Tay Ho",
-  },
-  {
-    id: "area-hcm-q1",
-    code: "hcm-q1",
-    name: "Quan 1",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 1",
-  },
-  {
-    id: "area-hcm-q3",
-    code: "hcm-q3",
-    name: "Quan 3",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 3",
-  },
-  {
-    id: "area-hcm-q7",
-    code: "hcm-q7",
-    name: "Quan 7",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 7",
-  },
-];
+const demoAreas: PublicArea[] = [];
 
 const areaByCode = new Map(demoAreas.map((area) => [area.code, area]));
 
@@ -152,231 +111,13 @@ const buildStore = (
   };
 };
 
-const demoStores: PublicStore[] = [
-  buildStore({
-    id: "store-crimson-hoan-kiem",
-    name: "Crimson Bar Hoan Kiem",
-    slug: "crimson-bar-hoan-kiem",
-    category: "BAR",
-    description: "Cocktail bar gan ho Hoan Kiem, phu hop hen nhe va meetup nho.",
-    address: "12 Ly Thai To, Hoan Kiem",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Hoan Kiem",
-    areaCode: "hn-hoan-kiem",
-    latitude: 21.0279,
-    longitude: 105.8522,
-  }),
-  buildStore({
-    id: "store-jade-casino-hoan-kiem",
-    name: "Jade Casino Hoan Kiem",
-    slug: "jade-casino-hoan-kiem",
-    category: "CASINO",
-    description: "Casino lounge tai Hoan Kiem, co ban VIP va do uong dem.",
-    address: "88 Ly Thuong Kiet, Hoan Kiem",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Hoan Kiem",
-    areaCode: "hn-hoan-kiem",
-    latitude: 21.0245,
-    longitude: 105.8485,
-  }),
-  buildStore({
-    id: "store-neon-tay-ho",
-    name: "Neon District Club",
-    slug: "neon-district-club",
-    category: "CLUB",
-    description: "Club nhac dien tu tai Tay Ho, co khu VIP va ban lon.",
-    address: "28 To Ngoc Van, Tay Ho",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Tay Ho",
-    areaCode: "hn-tay-ho",
-    latitude: 21.0603,
-    longitude: 105.8237,
-  }),
-  buildStore({
-    id: "store-tokyo-kitchen-hoan-kiem",
-    name: "Tokyo Kitchen Old Quarter",
-    slug: "tokyo-kitchen-old-quarter",
-    category: "RESTAURANT",
-    description: "Nha hang phong cach izakaya, co phong rieng cho nhom nho.",
-    address: "7 Hang Bac, Hoan Kiem",
-    city: "Ha Noi",
-    cityCode: "hn",
-    district: "Hoan Kiem",
-    areaCode: "hn-hoan-kiem",
-    latitude: 21.0341,
-    longitude: 105.8525,
-  }),
-  buildStore({
-    id: "store-moonlight-q1",
-    name: "Moonlight Q1 Bar",
-    slug: "moonlight-q1-bar",
-    category: "BAR",
-    description: "Rooftop bar trung tam Quan 1, view thanh pho va cocktail signature.",
-    address: "45 Nguyen Hue, Quan 1",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 1",
-    areaCode: "hcm-q1",
-    latitude: 10.7731,
-    longitude: 106.7042,
-  }),
-  buildStore({
-    id: "store-sakura-lounge-q3",
-    name: "Sakura Lounge Quan 3",
-    slug: "sakura-lounge-quan-3",
-    category: "GIRLS_BAR",
-    description: "Girls bar phong cach nhat tai Quan 3, phu hop booking cast.",
-    address: "18 Vo Van Tan, Quan 3",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 3",
-    areaCode: "hcm-q3",
-    latitude: 10.7826,
-    longitude: 106.6921,
-  }),
-  buildStore({
-    id: "store-golden-ktv-q7",
-    name: "Golden Voice KTV Quan 7",
-    slug: "golden-voice-ktv-quan-7",
-    category: "KARAOKE",
-    description: "Karaoke/KTV phong VIP tai Quan 7, phu hop tiec nhom.",
-    address: "67 Nguyen Thi Thap, Quan 7",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 7",
-    areaCode: "hcm-q7",
-    latitude: 10.7385,
-    longitude: 106.7219,
-  }),
-  buildStore({
-    id: "store-lotus-massage-q3",
-    name: "Lotus Massage Spa Quan 3",
-    slug: "lotus-massage-spa-quan-3",
-    category: "MASSAGE_SPA",
-    description: "Massage spa mo muon tai Quan 3, co goi thu gian sau tiec.",
-    address: "12 Nguyen Dinh Chieu, Quan 3",
-    city: "TP.HCM",
-    cityCode: "hcm",
-    district: "Quan 3",
-    areaCode: "hcm-q3",
-    latitude: 10.7829,
-    longitude: 106.691,
-  }),
-];
+const demoStores: PublicStore[] = [];
 
 const storeBySlug = new Map(demoStores.map((store) => [store.slug, store]));
-const demoActiveCouponStoreSlugs = new Set([
-  "crimson-bar-hoan-kiem",
-  "neon-district-club",
-  "moonlight-q1-bar",
-  "golden-voice-ktv-quan-7",
-]);
-const demoPrioritySlugs = new Map(
-  ["neon-district-club", "moonlight-q1-bar", "crimson-bar-hoan-kiem", "sakura-lounge-quan-3"].map(
-    (slug, index) => [slug, index],
-  ),
-);
+const demoActiveCouponStoreSlugs = new Set<string>();
+const demoPrioritySlugs = new Map<string, number>();
 
-const buildCast = (
-  cast: Omit<PublicCast, "store" | "distanceKm"> & { storeSlug: string },
-): PublicCast => {
-  const { storeSlug, ...castFields } = cast;
-  const store = storeBySlug.get(storeSlug);
-
-  if (!store) {
-    throw new Error(`Missing demo store: ${storeSlug}`);
-  }
-
-  return {
-    ...castFields,
-    thumbnailUrl: castImageForSlug(castFields.slug),
-    store,
-    distanceKm: null,
-  };
-};
-
-const demoCasts: PublicCast[] = [
-  buildCast({
-    id: "cast-yuna-neon",
-    slug: "yuna-neon-district",
-    stageName: "Yuna",
-    name: "Yuna",
-    publicAlias: "Yuna Neon",
-    tags: ["club", "vip", "dance"],
-    languages: ["vi", "en"],
-    hourlyRateVnd: 950000,
-    storeSlug: "neon-district-club",
-  }),
-  buildCast({
-    id: "cast-linh-crimson",
-    slug: "linh-crimson-bar",
-    stageName: "Linh",
-    name: "Linh",
-    publicAlias: "Linh Crimson",
-    tags: ["bar", "cocktail", "chill"],
-    languages: ["vi", "en"],
-    hourlyRateVnd: 780000,
-    storeSlug: "crimson-bar-hoan-kiem",
-  }),
-  buildCast({
-    id: "cast-kotone-tokyo",
-    slug: "kotone-tokyo-kitchen",
-    stageName: "Kotone",
-    name: "Kotone",
-    publicAlias: "Kotone",
-    tags: ["restaurant", "japanese", "dinner"],
-    languages: ["ja", "en"],
-    hourlyRateVnd: 880000,
-    storeSlug: "tokyo-kitchen-old-quarter",
-  }),
-  buildCast({
-    id: "cast-sakura-moonlight",
-    slug: "sakura-moonlight-q1",
-    stageName: "Sakura",
-    name: "Sakura",
-    publicAlias: "Sakura Moonlight",
-    tags: ["bar", "rooftop", "business"],
-    languages: ["vi", "ja", "en"],
-    hourlyRateVnd: 1100000,
-    storeSlug: "moonlight-q1-bar",
-  }),
-  buildCast({
-    id: "cast-hana-sakura-lounge",
-    slug: "hana-sakura-lounge",
-    stageName: "Hana",
-    name: "Hana",
-    publicAlias: "Hana Lounge",
-    tags: ["lounge", "talk", "vip"],
-    languages: ["vi", "en"],
-    hourlyRateVnd: 920000,
-    storeSlug: "sakura-lounge-quan-3",
-  }),
-  buildCast({
-    id: "cast-mika-golden-ktv",
-    slug: "mika-golden-ktv",
-    stageName: "Mika",
-    name: "Mika",
-    publicAlias: "Mika KTV",
-    tags: ["ktv", "karaoke", "group"],
-    languages: ["vi", "ja"],
-    hourlyRateVnd: 820000,
-    storeSlug: "golden-voice-ktv-quan-7",
-  }),
-  buildCast({
-    id: "cast-sumi-lotus-massage",
-    slug: "sumi-lotus-massage-spa",
-    stageName: "Sumi",
-    name: "Sumi",
-    publicAlias: "Sumi Spa",
-    tags: ["massage-spa", "relax", "wellness"],
-    languages: ["vi"],
-    hourlyRateVnd: 680000,
-    storeSlug: "lotus-massage-spa-quan-3",
-  }),
-];
+const demoCasts: PublicCast[] = [];
 
 const demoCastSlugAliases: Record<string, string> = {
   "kotone-tokyo": "kotone-tokyo-kitchen",
@@ -660,14 +401,10 @@ const withDemoFallback = async <T extends unknown[]>(
   request: () => Promise<T>,
   fallback: () => T,
 ) => {
-  const fallbackItems = fallback();
-
   try {
-    const items = await request();
-
-    return items.length > 0 || fallbackItems.length === 0 ? items : fallbackItems;
+    return await request();
   } catch {
-    return fallbackItems;
+    return fallback();
   }
 };
 
