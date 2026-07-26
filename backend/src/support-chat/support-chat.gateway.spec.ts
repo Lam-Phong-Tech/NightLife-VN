@@ -211,6 +211,7 @@ describe('SupportChatGateway', () => {
       activePrivilegedJti: 'new-session-id',
     });
     const disconnect = jest.fn();
+    const emit = jest.fn();
     const client = {
       id: 'old-admin-socket',
       data: {
@@ -221,6 +222,7 @@ describe('SupportChatGateway', () => {
         },
       },
       join: jest.fn(),
+      emit,
       disconnect,
     } as unknown as Socket;
 
@@ -231,6 +233,13 @@ describe('SupportChatGateway', () => {
       error: 'Phiên đăng nhập quản trị không hợp lệ. Vui lòng đăng nhập lại.',
     });
 
+    expect(emit).toHaveBeenCalledWith(
+      'session_replaced',
+      expect.objectContaining({ code: 'SESSION_REPLACED' }),
+    );
+    expect(emit.mock.invocationCallOrder[0]).toBeLessThan(
+      disconnect.mock.invocationCallOrder[0],
+    );
     expect(disconnect).toHaveBeenCalledWith(true);
     expect(claimTicketMock).not.toHaveBeenCalled();
   });

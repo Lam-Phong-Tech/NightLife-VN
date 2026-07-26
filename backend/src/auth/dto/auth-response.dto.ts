@@ -26,12 +26,37 @@ export class PublicUserDto {
   createdAt: Date;
 }
 
+export class ReplacedSessionDto {
+  @ApiProperty({
+    example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0',
+    nullable: true,
+  })
+  userAgent: string | null;
+
+  @ApiProperty({ example: '203.113.131.xxx', nullable: true })
+  ipAddress: string | null;
+
+  @ApiProperty({ example: '2026-07-26T08:04:00.000Z', nullable: true })
+  lastSeenAt: string | null;
+
+  @ApiProperty({ example: '2026-07-25T02:00:00.000Z' })
+  createdAt: string;
+}
+
 export class AuthResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken: string;
 
   @ApiProperty({ type: PublicUserDto })
   user: PublicUserDto;
+
+  @ApiProperty({
+    type: ReplacedSessionDto,
+    required: false,
+    description:
+      'Set when this privileged login revoked an active session on another device.',
+  })
+  replacedSession?: ReplacedSessionDto;
 }
 
 export class LogoutResponseDto {

@@ -12,9 +12,17 @@ export type AuthUser = {
   status?: string;
 };
 
+export type ReplacedSessionInfo = {
+  userAgent: string | null;
+  ipAddress: string | null;
+  lastSeenAt: string | null;
+  createdAt: string;
+};
+
 export type AuthResponse = {
   accessToken: string;
   user: AuthUser;
+  replacedSession?: ReplacedSessionInfo;
 };
 
 export type ActiveBrowserAuthSession = {
@@ -258,6 +266,22 @@ const getValidAuthToken = () => {
 export const getAuthSessionToken = () => {
   ensureAuthSessionSyncListener();
   return getValidAuthToken();
+};
+
+export const getRealtimeSessionToken = () => {
+  if (typeof window === "undefined") return "";
+  ensureAuthSessionSyncListener();
+  const cookies = parseCookies();
+  // Privileged scopes first: single-session enforcement only applies to them,
+  // so their token is the one that must be reachable for a replacement push.
+  const prefixes: SessionScopePrefix[] = ["admin_", "partner_", ""];
+  for (const prefix of prefixes) {
+    const token = cookies[`${prefix}auth_token`] || "";
+    if (token && !isTokenExpired(token)) {
+      return token;
+    }
+  }
+  return "";
 };
 
 export const getAuthSessionTokenForRole = (role: AuthRole) => {

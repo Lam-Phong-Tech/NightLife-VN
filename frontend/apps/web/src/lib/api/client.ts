@@ -1,9 +1,15 @@
-import { clearAuthSession, getAuthSessionToken } from "../auth/session";
+import {
+  clearAuthSession,
+  getActiveBrowserAuthSession,
+  getAuthSessionToken,
+} from "../auth/session";
+import { recordSessionReplacedNotice } from "../auth/session-replaced-notice";
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -31,13 +37,35 @@ const endpointPathname = (endpoint: string) => {
   }
 };
 
-const clearStaleSessionOnUnauthorized = (endpoint: string, status: number, token: string | null) => {
+const clearStaleSessionOnUnauthorized = (
+  endpoint: string,
+  status: number,
+  token: string | null,
+  code?: string,
+) => {
   if (typeof window === "undefined" || status !== 401 || !token) return;
 
   const path = endpointPathname(endpoint);
   if (authEntryEndpointPattern.test(path)) return;
 
+  if (code === "SESSION_REPLACED") {
+    // Capture the role before the cookies are wiped so the warning can point
+    // back to the right login portal.
+    const role = getActiveBrowserAuthSession()?.role;
+    recordSessionReplacedNotice({ role });
+  }
+
   clearAuthSession();
+};
+
+const readApiErrorCode = (errorData: unknown): string | undefined => {
+  if (errorData && typeof errorData === "object") {
+    const code = (errorData as { code?: unknown }).code;
+    if (typeof code === "string" && code.trim()) {
+      return code;
+    }
+  }
+  return undefined;
 };
 
 const genericStatusMessages: Record<number, string> = {
@@ -492,19 +520,21 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    clearStaleSessionOnUnauthorized(endpoint, response.status, token);
     let errorMessage = translateApiMessage(
       undefined,
       response.status,
       "Không tải được dữ liệu. Vui lòng thử lại.",
     );
+    let errorCode: string | undefined;
     try {
       const errorData = await response.json();
+      errorCode = readApiErrorCode(errorData);
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
     } catch {
       // Ignored
     }
-    throw new ApiError(response.status, errorMessage);
+    clearStaleSessionOnUnauthorized(endpoint, response.status, token, errorCode);
+    throw new ApiError(response.status, errorMessage, errorCode);
   }
 
   // Handle empty responses (like 204 No Content)
@@ -538,19 +568,21 @@ export const apiFormDataClient = async <T>(
   });
 
   if (!response.ok) {
-    clearStaleSessionOnUnauthorized(endpoint, response.status, token);
     let errorMessage = translateApiMessage(
       undefined,
       response.status,
       "Không tải file lên được. Vui lòng thử lại.",
     );
+    let errorCode: string | undefined;
     try {
       const errorData = await response.json();
+      errorCode = readApiErrorCode(errorData);
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
     } catch {
       // Ignored
     }
-    throw new ApiError(response.status, errorMessage);
+    clearStaleSessionOnUnauthorized(endpoint, response.status, token, errorCode);
+    throw new ApiError(response.status, errorMessage, errorCode);
   }
 
   if (response.status === 204) {

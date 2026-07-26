@@ -25,6 +25,37 @@ export function AuthRedirectNotice() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const notice = url.searchParams.get("auth_notice");
+    if (notice === "device-replaced") {
+      const device = url.searchParams.get("prev_device") || "thiết bị khác";
+      const seenRaw = url.searchParams.get("prev_seen");
+      let seenLabel = "";
+      if (seenRaw) {
+        const seenDate = new Date(seenRaw);
+        if (!Number.isNaN(seenDate.getTime())) {
+          seenLabel = seenDate.toLocaleString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            day: "2-digit",
+            month: "2-digit",
+          });
+        }
+      }
+
+      feedback.showToast({
+        tone: "warning",
+        title: "Đăng nhập này đã đăng xuất một thiết bị khác.",
+        description: `Phiên đăng nhập trên ${device}${seenLabel ? ` (hoạt động gần nhất ${seenLabel})` : ""} đã bị đăng xuất. Nếu không phải bạn thực hiện, vui lòng đổi mật khẩu ngay.`,
+        durationMs: 10000,
+        placement: "top-right",
+      });
+
+      url.searchParams.delete("auth_notice");
+      url.searchParams.delete("prev_device");
+      url.searchParams.delete("prev_seen");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      return;
+    }
+
     if (notice === "partner-registration-blocked") {
       feedback.showToast({
         tone: "warning",

@@ -1,27 +1,90 @@
 import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
+type AuthSocketUser = {
+  id: string;
+  role?: string;
+  jti: string;
+};
+
+type AuthSocketData = {
+  authUser?: AuthSocketUser;
+};
+
+export type SessionReplacedPayload = {
+  reason: 'LOGIN_FROM_ANOTHER_BROWSER';
+  role: string;
+  newDevice: {
+    userAgent: string | null;
+    ipAddress: string | null;
+    at: string;
+  };
+};
+
 @WebSocketGateway({
   cors: {
     origin: '*',
   },
 })
-export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class SocketGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(SocketGateway.name);
 
+  constructor(private readonly jwtService: JwtService) {}
+
+  afterInit(server: Server) {
+    server.use((client, next) => {
+      const token =
+        typeof client.handshake.auth?.token === 'string'
+          ? client.handshake.auth.token.trim()
+          : '';
+
+      if (!token) {
+        next();
+        return;
+      }
+
+      // The session room is only used to address pushes, never to authorize
+      // actions, so signature + expiry verification is enough here.
+      void this.jwtService
+        .verifyAsync<{ sub?: string; role?: string; jti?: string }>(token)
+        .then((payload) => {
+          if (payload?.sub && payload?.jti) {
+            (client.data as AuthSocketData).authUser = {
+              id: payload.sub,
+              role: payload.role,
+              jti: payload.jti,
+            };
+          }
+          next();
+        })
+        .catch(() => {
+          // Invalid or expired token: fall back to a guest connection.
+          next();
+        });
+    });
+  }
+
   handleConnection(client: Socket) {
+    const authUser = (client.data as AuthSocketData).authUser;
+    if (authUser) {
+      void client.join(`session_${authUser.jti}`);
+    }
     this.logger.log(`Client connected: ${client.id}`);
   }
 
@@ -45,6 +108,18 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         `Client ${client.id} joined room booking_${payload.bookingId}`,
       );
     }
+  }
+
+  notifySessionReplaced(
+    replacedJtis: string[],
+    payload: SessionReplacedPayload,
+  ) {
+    for (const jti of replacedJtis) {
+      this.server.to(`session_${jti}`).emit('session_replaced', payload);
+    }
+    this.logger.log(
+      `Emitted session_replaced to ${replacedJtis.length} replaced session(s)`,
+    );
   }
 
   notifyBookingStatusUpdate(userId: string, booking: any) {

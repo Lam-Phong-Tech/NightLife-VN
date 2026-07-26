@@ -19,6 +19,10 @@ import {
 } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { EmailNotificationService } from '../notifications/email-notification.service';
+import {
+  SocketGateway,
+  type SessionReplacedPayload,
+} from '../notifications/socket.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
@@ -29,7 +33,7 @@ import {
   VerifyPasswordResetCodeDto,
 } from './dto/password-reset.dto';
 import { RegisterDto, RequestRegistrationOtpDto } from './dto/register.dto';
-import { requiresSinglePrivilegedSession } from './session-policy';
+import { maskIpAddress, requiresSinglePrivilegedSession } from './session-policy';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -162,6 +166,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
     private readonly emailNotificationService: EmailNotificationService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async requestRegistrationOtp(dto: RequestRegistrationOtpDto) {
@@ -709,9 +714,32 @@ export class AuthService {
       expiresAt,
     };
 
+    let replacedSession:
+      | {
+          userAgent: string | null;
+          ipAddress: string | null;
+          lastSeenAt: string | null;
+          createdAt: string;
+        }
+      | undefined;
+
     if (requiresSinglePrivilegedSession(user.role)) {
       const now = new Date();
-      await this.prisma.$transaction(async (tx) => {
+      const replacedSessions = await this.prisma.$transaction(async (tx) => {
+        const activeSessions = await tx.userSession.findMany({
+          where: {
+            userId: user.id,
+            status: 'ACTIVE',
+            expiresAt: { gt: now },
+          },
+          select: {
+            jti: true,
+            userAgent: true,
+            ipAddress: true,
+            lastSeenAt: true,
+            createdAt: true,
+          },
+        });
         await tx.userSession.updateMany({
           where: {
             userId: user.id,
@@ -729,7 +757,43 @@ export class AuthService {
           data: { activePrivilegedJti: jti },
         });
         await tx.userSession.create({ data: sessionData });
+        return activeSessions;
       });
+
+      if (replacedSessions.length > 0) {
+        const payload: SessionReplacedPayload = {
+          reason: 'LOGIN_FROM_ANOTHER_BROWSER',
+          role: user.role,
+          newDevice: {
+            userAgent: sessionContext?.userAgent ?? null,
+            ipAddress: maskIpAddress(sessionContext?.ipAddress),
+            at: now.toISOString(),
+          },
+        };
+        try {
+          this.socketGateway.notifySessionReplaced(
+            replacedSessions.map((session) => session.jti),
+            payload,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to emit session_replaced for user ${user.id}: ${String(error)}`,
+          );
+        }
+
+        const latest = replacedSessions.reduce((candidate, session) =>
+          (session.lastSeenAt ?? session.createdAt) >
+          (candidate.lastSeenAt ?? candidate.createdAt)
+            ? session
+            : candidate,
+        );
+        replacedSession = {
+          userAgent: latest.userAgent ?? null,
+          ipAddress: maskIpAddress(latest.ipAddress),
+          lastSeenAt: latest.lastSeenAt ? latest.lastSeenAt.toISOString() : null,
+          createdAt: latest.createdAt.toISOString(),
+        };
+      }
     } else {
       await this.prisma.userSession.create({ data: sessionData });
     }
@@ -745,6 +809,7 @@ export class AuthService {
         { jwtid: jti },
       ),
       user: this.usersService.toPublicUser(user),
+      ...(replacedSession ? { replacedSession } : {}),
     };
   }
 

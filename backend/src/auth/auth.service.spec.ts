@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
+import { SocketGateway } from '../notifications/socket.gateway';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 
@@ -71,12 +72,18 @@ describe('AuthService', () => {
     userSession: {
       create: jest.fn(),
       updateMany: jest.fn(),
+      findMany: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
 
   (prisma.$transaction as jest.Mock).mockImplementation(
     async (callback: (tx: typeof prisma) => unknown) => callback(prisma),
   );
+  (prisma.userSession.findMany as jest.Mock).mockResolvedValue([]);
+
+  const socketGateway = {
+    notifySessionReplaced: jest.fn(),
+  } as unknown as jest.Mocked<SocketGateway>;
 
   const emailNotificationService = {
     sendPasswordResetCodeEmail: jest.fn(),
@@ -150,6 +157,7 @@ describe('AuthService', () => {
       usersService,
       prisma,
       emailNotificationService,
+      socketGateway,
     );
   });
 
@@ -204,6 +212,7 @@ describe('AuthService', () => {
     });
     expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(socketGateway.notifySessionReplaced).not.toHaveBeenCalled();
   });
 
   it('does not register a user without a valid email OTP', async () => {
@@ -304,6 +313,66 @@ describe('AuthService', () => {
       where: { id: user.id },
       data: { activePrivilegedJti: expect.any(String) },
     });
+  });
+
+  it('returns replaced session details and notifies the replaced device on privileged login', async () => {
+    usersService.validateCredentials.mockResolvedValue(user as never);
+    const lastSeenAt = new Date('2026-07-26T08:04:00.000Z');
+    const createdAt = new Date('2026-07-25T02:00:00.000Z');
+    (prisma.userSession.findMany as jest.Mock).mockResolvedValueOnce([
+      {
+        jti: 'old-jti',
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0',
+        ipAddress: '203.113.131.45',
+        lastSeenAt,
+        createdAt,
+      },
+    ]);
+
+    const response = await service.login(
+      {
+        email: user.email,
+        password: 'Str0ngPass!',
+      },
+      {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Firefox/128.0',
+        ipAddress: '118.70.12.34',
+      },
+    );
+
+    expect(response.replacedSession).toEqual({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0',
+      ipAddress: '203.113.131.xxx',
+      lastSeenAt: lastSeenAt.toISOString(),
+      createdAt: createdAt.toISOString(),
+    });
+    expect(socketGateway.notifySessionReplaced).toHaveBeenCalledWith(
+      ['old-jti'],
+      expect.objectContaining({
+        reason: 'LOGIN_FROM_ANOTHER_BROWSER',
+        role: user.role,
+        newDevice: expect.objectContaining({
+          userAgent:
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Firefox/128.0',
+          ipAddress: '118.70.12.xxx',
+          at: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it('omits replaced session details when no other device was signed in', async () => {
+    usersService.validateCredentials.mockResolvedValue(user as never);
+
+    const response = await service.login({
+      email: user.email,
+      password: 'Str0ngPass!',
+    });
+
+    expect(response.replacedSession).toBeUndefined();
+    expect(socketGateway.notifySessionReplaced).not.toHaveBeenCalled();
   });
 
   it('logs in through a role-specific portal only when the role matches', async () => {

@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { authSessionChangeEvent, getAuthUser } from '@/lib/auth/session';
+import {
+  authSessionChangeEvent,
+  getAuthUser,
+  getRealtimeSessionToken,
+} from '@/lib/auth/session';
 import {
   memberNotificationCreatedEvent,
   type MemberNotificationSocketPayload,
@@ -33,11 +37,15 @@ export const SocketProvider = ({
   const [sessionUserId, setSessionUserId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : (getAuthUser()?.id ?? null),
   );
+  const [sessionToken, setSessionToken] = useState<string>(() =>
+    typeof window === 'undefined' ? '' : getRealtimeSessionToken(),
+  );
   const activeUserId = userId ?? sessionUserId ?? undefined;
 
   useEffect(() => {
     const updateSessionUser = () => {
       setSessionUserId(getAuthUser()?.id ?? null);
+      setSessionToken(getRealtimeSessionToken());
     };
 
     window.addEventListener(authSessionChangeEvent, updateSessionUser);
@@ -57,6 +65,7 @@ export const SocketProvider = ({
       path: socketConfig.path,
       transports: ['websocket'],
       autoConnect: true,
+      auth: sessionToken ? { token: sessionToken } : {},
     });
 
     socketInstance.on('connect', () => {
@@ -101,7 +110,7 @@ export const SocketProvider = ({
     return () => {
       socketInstance.disconnect();
     };
-  }, [activeUserId]);
+  }, [activeUserId, sessionToken]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

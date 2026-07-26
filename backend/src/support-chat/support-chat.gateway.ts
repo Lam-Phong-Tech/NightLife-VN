@@ -14,7 +14,10 @@ import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
 import { SupportSenderType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { requiresSinglePrivilegedSession } from '../auth/session-policy';
+import {
+  requiresSinglePrivilegedSession,
+  SESSION_REPLACED_ERROR,
+} from '../auth/session-policy';
 
 type SupportJwtPayload = {
   sub?: string;
@@ -337,11 +340,20 @@ export class SupportChatGateway
 
     if (!(await this.isStoredSocketSessionActive(user))) {
       this.onlineAdmins.delete(client.id);
+      this.emitSessionReplaced(client);
       client.disconnect(true);
       throw new Error('UNAUTHORIZED');
     }
 
     return user;
+  }
+
+  private emitSessionReplaced(client: Socket) {
+    client.emit('session_replaced', {
+      code: SESSION_REPLACED_ERROR.code,
+      message: SESSION_REPLACED_ERROR.message,
+      occurredAt: new Date().toISOString(),
+    });
   }
 
   private async isStoredSocketSessionActive(socketUser: SupportSocketUser) {
@@ -404,6 +416,7 @@ export class SupportChatGateway
           }
 
           this.onlineAdmins.delete(client.id);
+          this.emitSessionReplaced(client);
           client.disconnect(true);
         }),
       );

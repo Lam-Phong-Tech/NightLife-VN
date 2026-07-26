@@ -40,6 +40,32 @@ describe("auth redirect notice", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("warns the new device that this login signed out another device", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/admin?auth_notice=device-replaced&prev_device=Chrome%20tr%C3%AAn%20Windows&prev_seen=2026-07-26T08:04:00.000Z",
+    );
+
+    render(<AuthRedirectNotice />);
+
+    await waitFor(() => {
+      expect(feedbackMocks.showToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tone: "warning",
+          title: "Đăng nhập này đã đăng xuất một thiết bị khác.",
+          description: expect.stringContaining("Chrome trên Windows"),
+        }),
+      );
+    });
+
+    const description = feedbackMocks.showToast.mock.calls[0][0].description as string;
+    expect(description).toContain("đổi mật khẩu");
+
+    expect(window.location.pathname).toBe("/admin");
+    expect(window.location.search).toBe("");
+  });
+
   it("explains why an authenticated partner cannot submit another registration", async () => {
     window.history.replaceState(
       {},

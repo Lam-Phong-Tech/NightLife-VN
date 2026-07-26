@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
 import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/session';
+import { recordSessionReplacedNotice } from '@/lib/auth/session-replaced-notice';
 import { getSupportSocketConfig, getApiBaseUrl } from '@/lib/socket-config';
 import { filterAdminSupportTickets, type AdminSupportTicketFilter } from './admin-support-ticket-filter';
 
@@ -108,6 +109,11 @@ export function AdminSupportDashboard() {
 
     newSocket.on('disconnect', (reason) => {
       console.log('[Admin Dashboard] Socket disconnected. Reason:', reason);
+    });
+
+    newSocket.on('session_replaced', () => {
+      // The global SessionSecurityWatcher renders the warning and clears cookies.
+      recordSessionReplacedNotice({ role: currentUser.role });
     });
 
     // Initial load pending tickets via REST API

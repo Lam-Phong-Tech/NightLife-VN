@@ -1,4 +1,5 @@
 import { ApiError, apiClient, buildApiUrl } from "./client";
+import { formatDeviceLabel } from "../auth/device-label";
 import {
   clearAuthSession,
   getActiveBrowserAuthSession,
@@ -313,10 +314,26 @@ export const activatePortalAuthSession = async (
   }
 
   const portal = portalForRole(session.user.role);
-  const redirectTo =
+  let redirectTo =
     options.redirectTo && isSafePortalRedirect(portal, options.redirectTo)
       ? options.redirectTo
       : portalHomePath(portal);
+
+  if (session.replacedSession) {
+    const url = new URL(redirectTo, window.location.origin);
+    url.searchParams.set("auth_notice", "device-replaced");
+    url.searchParams.set(
+      "prev_device",
+      formatDeviceLabel(session.replacedSession.userAgent),
+    );
+    const lastSeen =
+      session.replacedSession.lastSeenAt ?? session.replacedSession.createdAt;
+    if (lastSeen) {
+      url.searchParams.set("prev_seen", lastSeen);
+    }
+    redirectTo = `${url.pathname}${url.search}${url.hash}`;
+  }
+
   const hostKind = getNightlifeHostKind(window.location.hostname);
 
   if (hostKind === "local" || hostKind === "unknown") {

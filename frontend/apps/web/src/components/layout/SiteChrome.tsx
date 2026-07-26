@@ -53,6 +53,7 @@ import {
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 import { AuthRedirectNotice } from "@/components/auth/AuthRedirectNotice";
+import { SessionSecurityWatcher } from "@/components/auth/SessionSecurityWatcher";
 import { LanguagePicker } from "./LanguagePicker";
 import { HybridPreloader } from "./HybridPreloader";
 import { SupportChatWidget } from "./SupportChatWidget";
@@ -2159,6 +2160,7 @@ export function SiteChrome({
     return (
       <SystemFeedbackProvider>
         <AuthRedirectNotice />
+        <SessionSecurityWatcher />
         {customerRouteMotionEnabled ? (
           <>
             {hybridPreloader}
@@ -2176,6 +2178,7 @@ export function SiteChrome({
   return (
     <SystemFeedbackProvider>
       <AuthRedirectNotice />
+      <SessionSecurityWatcher />
       <div
         style={{
           minHeight: "100vh",
