@@ -8,6 +8,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import { OnModuleDestroy } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
@@ -25,6 +26,7 @@ type SupportJwtPayload = {
 type SupportSocketUser = {
   id: string;
   role: string;
+  jti: string;
 };
 
 type SupportSocketData = {
@@ -71,13 +73,19 @@ const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
   },
 })
 export class SupportChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+  implements
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleDestroy
 {
   @WebSocketServer()
   server: Server;
 
   // Set to maintain online admins' socket IDs or user IDs
   private onlineAdmins: Set<string> = new Set();
+  private privilegedSessionSweep?: ReturnType<typeof setInterval>;
+  private privilegedSessionSweepRunning = false;
 
   constructor(
     private readonly supportChatService: SupportChatService,
@@ -106,6 +114,24 @@ export class SupportChatGateway
           next(new Error('UNAUTHORIZED'));
         });
     });
+
+    if (server.sockets?.sockets) {
+      this.privilegedSessionSweep = setInterval(() => {
+        void this.disconnectReplacedPrivilegedSockets().catch((error) => {
+          console.error(
+            '[SupportChat] Privileged session sweep failed:',
+            error,
+          );
+        });
+      }, 15_000);
+      this.privilegedSessionSweep.unref?.();
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.privilegedSessionSweep) {
+      clearInterval(this.privilegedSessionSweep);
+    }
   }
 
   handleConnection(client: Socket) {
@@ -164,8 +190,11 @@ export class SupportChatGateway
       if (!data.content || data.content.trim() === '')
         return { error: 'Content is required' };
 
-      const socketUser = this.getSocketUser(client);
+      let socketUser = this.getSocketUser(client);
       const isAdminSender = this.isAdminSocket(client);
+      if (isAdminSender) {
+        socketUser = await this.requireAdmin(client);
+      }
       if (isAdminSender && !data.ticketId) {
         return { error: 'Ticket ID is required' };
       }
@@ -223,12 +252,19 @@ export class SupportChatGateway
   }
 
   @SubscribeMessage('rejoin_ticket')
-  handleRejoinTicket(
+  async handleRejoinTicket(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { ticketId: string },
   ) {
-    if (data.ticketId) {
-      void client.join(`ticket_${data.ticketId}`);
+    try {
+      if (this.isAdminSocket(client)) {
+        await this.requireAdmin(client);
+      }
+      if (data.ticketId) {
+        void client.join(`ticket_${data.ticketId}`);
+      }
+    } catch {
+      return { error: 'UNAUTHORIZED' };
     }
   }
 
@@ -238,7 +274,7 @@ export class SupportChatGateway
     @MessageBody() data: { ticketId: string },
   ) {
     try {
-      const admin = this.requireAdmin(client);
+      const admin = await this.requireAdmin(client);
       const ticket = await this.supportChatService.claimTicket(
         data.ticketId,
         admin.id,
@@ -272,7 +308,7 @@ export class SupportChatGateway
     @MessageBody() data: { ticketId: string },
   ) {
     try {
-      this.requireAdmin(client);
+      await this.requireAdmin(client);
       const ticket = await this.supportChatService.closeTicket(data.ticketId);
       this.server
         .to(`ticket_${data.ticketId}`)
@@ -293,12 +329,87 @@ export class SupportChatGateway
     return Boolean(user && supportAdminRoles.has(user.role));
   }
 
-  private requireAdmin(client: Socket) {
+  private async requireAdmin(client: Socket) {
     const user = this.getSocketUser(client);
     if (!user || !supportAdminRoles.has(user.role)) {
       throw new Error('UNAUTHORIZED');
     }
+
+    if (!(await this.isStoredSocketSessionActive(user))) {
+      this.onlineAdmins.delete(client.id);
+      client.disconnect(true);
+      throw new Error('UNAUTHORIZED');
+    }
+
     return user;
+  }
+
+  private async isStoredSocketSessionActive(socketUser: SupportSocketUser) {
+    const [user, revokedToken, session] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: socketUser.id },
+        select: {
+          id: true,
+          role: true,
+          status: true,
+          deletedAt: true,
+          activePrivilegedJti: true,
+        },
+      }),
+      this.prisma.tokenBlacklist.findUnique({
+        where: { jti: socketUser.jti },
+        select: { expiresAt: true },
+      }),
+      this.prisma.userSession.findUnique({
+        where: { jti: socketUser.jti },
+        select: {
+          userId: true,
+          status: true,
+          expiresAt: true,
+        },
+      }),
+    ]);
+
+    const now = new Date();
+    return Boolean(
+      user &&
+      !user.deletedAt &&
+      user.status === 'ACTIVE' &&
+      String(user.role).toUpperCase() === socketUser.role &&
+      requiresSinglePrivilegedSession(user.role) &&
+      user.activePrivilegedJti === socketUser.jti &&
+      (!revokedToken || revokedToken.expiresAt <= now) &&
+      session &&
+      session.userId === user.id &&
+      session.status === 'ACTIVE' &&
+      session.expiresAt > now,
+    );
+  }
+
+  private async disconnectReplacedPrivilegedSockets() {
+    if (this.privilegedSessionSweepRunning) return;
+    this.privilegedSessionSweepRunning = true;
+
+    try {
+      const sockets = Array.from(this.server.sockets.sockets.values());
+      await Promise.all(
+        sockets.map(async (client) => {
+          const user = this.getSocketUser(client);
+          if (
+            !user ||
+            !supportAdminRoles.has(user.role) ||
+            (await this.isStoredSocketSessionActive(user))
+          ) {
+            return;
+          }
+
+          this.onlineAdmins.delete(client.id);
+          client.disconnect(true);
+        }),
+      );
+    } finally {
+      this.privilegedSessionSweepRunning = false;
+    }
   }
 
   private async authenticateSocket(token: string): Promise<SupportSocketUser> {
@@ -352,6 +463,7 @@ export class SupportChatGateway
     return {
       id: user.id,
       role: String(user.role).toUpperCase(),
+      jti: payload.jti,
     };
   }
 

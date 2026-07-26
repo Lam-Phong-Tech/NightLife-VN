@@ -22,6 +22,19 @@ describe('SupportChatGateway', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 'verified-admin-id',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      deletedAt: null,
+      activePrivilegedJti: 'session-id',
+    });
+    (prisma.tokenBlacklist.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.userSession.findUnique as jest.Mock).mockResolvedValue({
+      userId: 'verified-admin-id',
+      status: 'ACTIVE',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
     gateway = new SupportChatGateway(supportChatService, jwtService, prisma);
     gateway.server = {
       emit: jest.fn(),
@@ -59,7 +72,7 @@ describe('SupportChatGateway', () => {
       }),
     } as unknown as Server);
     const clientData: {
-      supportUser?: { id: string; role: string };
+      supportUser?: { id: string; role: string; jti: string };
     } = {};
     const client = {
       data: clientData,
@@ -78,6 +91,7 @@ describe('SupportChatGateway', () => {
     expect(clientData.supportUser).toEqual({
       id: 'verified-admin-id',
       role: 'ADMIN',
+      jti: 'session-id',
     });
   });
 
@@ -112,7 +126,7 @@ describe('SupportChatGateway', () => {
       }),
     } as unknown as Server);
     const clientData: {
-      supportUser?: { id: string; role: string };
+      supportUser?: { id: string; role: string; jti: string };
     } = {};
     const client = {
       data: clientData,
@@ -145,7 +159,7 @@ describe('SupportChatGateway', () => {
       }),
     } as unknown as Server);
     const clientData: {
-      supportUser?: { id: string; role: string };
+      supportUser?: { id: string; role: string; jti: string };
     } = {};
     const client = {
       data: clientData,
@@ -172,9 +186,11 @@ describe('SupportChatGateway', () => {
         supportUser: {
           id: 'verified-admin-id',
           role: 'ADMIN',
+          jti: 'session-id',
         },
       },
       join: jest.fn(),
+      disconnect: jest.fn(),
     } as unknown as Socket;
 
     await expect(
@@ -184,6 +200,39 @@ describe('SupportChatGateway', () => {
       'ticket-1',
       'verified-admin-id',
     );
+  });
+
+  it('disconnects an already-open admin socket after its session is replaced', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 'verified-admin-id',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      deletedAt: null,
+      activePrivilegedJti: 'new-session-id',
+    });
+    const disconnect = jest.fn();
+    const client = {
+      id: 'old-admin-socket',
+      data: {
+        supportUser: {
+          id: 'verified-admin-id',
+          role: 'ADMIN',
+          jti: 'old-session-id',
+        },
+      },
+      join: jest.fn(),
+      disconnect,
+    } as unknown as Socket;
+
+    await expect(
+      gateway.handleClaimTicket(client, { ticketId: 'ticket-1' }),
+    ).resolves.toEqual({
+      success: false,
+      error: 'Phiên đăng nhập quản trị không hợp lệ. Vui lòng đăng nhập lại.',
+    });
+
+    expect(disconnect).toHaveBeenCalledWith(true);
+    expect(claimTicketMock).not.toHaveBeenCalled();
   });
 
   it('rejects ticket claims from an unauthenticated socket', async () => {
