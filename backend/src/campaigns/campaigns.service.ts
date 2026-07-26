@@ -1,10 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, CampaignStatus } from '@prisma/client';
+import { Prisma, Campaign, CampaignStatus } from '@prisma/client';
+import { AuthenticatedUser } from '../access/access.service';
 
 @Injectable()
 export class CampaignsService {
   constructor(private prisma: PrismaService) {}
+
+  private campaignAuditSnapshot(campaign: Campaign) {
+    return {
+      name: campaign.name,
+      discountType: campaign.discountType,
+      discountValue: campaign.discountValue,
+      targetStoreId: campaign.targetStoreId,
+      startsAt: campaign.startsAt?.toISOString() ?? null,
+      endsAt: campaign.endsAt?.toISOString() ?? null,
+      status: campaign.status,
+    } as Prisma.InputJsonValue;
+  }
+
+  private campaignChangedFields(data: Prisma.CampaignUpdateInput) {
+    return Object.entries(data)
+      .filter(([, value]) => value !== undefined)
+      .map(([key]) => (key === 'targetStore' ? 'targetStoreId' : key));
+  }
+
+  private auditActorFields(actor: AuthenticatedUser) {
+    return {
+      actorId: actor.id,
+      actorType: 'ADMIN',
+      actorName: actor.email ?? 'Unknown',
+      actorRole: actor.role ?? 'ADMIN',
+    };
+  }
 
   async pauseEndedCampaigns(now = new Date()) {
     const result = await this.prisma.campaign.updateMany({
@@ -84,44 +112,117 @@ export class CampaignsService {
     return campaign;
   }
 
-  async create(data: Prisma.CampaignCreateInput) {
-    return this.prisma.campaign.create({
-      data,
-      include: {
-        targetStore: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            area: true,
-            slug: true,
+  async create(data: Prisma.CampaignCreateInput, actor: AuthenticatedUser) {
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.campaign.create({
+        data,
+        include: {
+          targetStore: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              area: true,
+              slug: true,
+            },
           },
         },
-      },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Campaign',
+          action: 'campaign.create',
+          targetType: 'Campaign',
+          targetId: created.id,
+          entityDisplayCode: `CAMP-${created.id.substring(0, 8)}`,
+          beforeJson: Prisma.JsonNull,
+          afterJson: this.campaignAuditSnapshot(created),
+          changeSummary: `Created campaign "${created.name}"`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return created;
     });
   }
 
-  async update(id: string, data: Prisma.CampaignUpdateInput) {
-    return this.prisma.campaign.update({
-      where: { id },
-      data,
-      include: {
-        targetStore: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            area: true,
-            slug: true,
+  async update(
+    id: string,
+    data: Prisma.CampaignUpdateInput,
+    actor: AuthenticatedUser,
+  ) {
+    const existing = await this.prisma.campaign.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Campaign with ID ${id} not found`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.campaign.update({
+        where: { id },
+        data,
+        include: {
+          targetStore: {
+            select: {
+              id: true,
+              name: true,
+              category: true,
+              area: true,
+              slug: true,
+            },
           },
         },
-      },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Campaign',
+          action: 'campaign.update',
+          targetType: 'Campaign',
+          targetId: id,
+          entityDisplayCode: `CAMP-${id.substring(0, 8)}`,
+          beforeJson: this.campaignAuditSnapshot(existing),
+          afterJson: this.campaignAuditSnapshot(updated),
+          changedFields: this.campaignChangedFields(data),
+          changeSummary: `Updated campaign "${updated.name}"`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return updated;
     });
   }
 
-  async remove(id: string) {
-    return this.prisma.campaign.delete({
-      where: { id },
+  async remove(id: string, actor: AuthenticatedUser) {
+    const existing = await this.prisma.campaign.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Campaign with ID ${id} not found`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const deleted = await tx.campaign.update({
+        where: { id },
+        data: { status: CampaignStatus.DELETED },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Campaign',
+          action: 'campaign.delete',
+          targetType: 'Campaign',
+          targetId: id,
+          entityDisplayCode: `CAMP-${id.substring(0, 8)}`,
+          beforeJson: this.campaignAuditSnapshot(existing),
+          afterJson: this.campaignAuditSnapshot(deleted),
+          changeSummary: `Deleted campaign "${existing.name}" (soft delete)`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return deleted;
     });
   }
 }

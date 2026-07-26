@@ -107,6 +107,15 @@ const actionNames: Record<string, string> = {
   'COUPON_ISSUE_BOOKING_QR_ISSUED': 'Phát hành ưu đãi qua đặt lịch',
   'BOOKING_RESCHEDULE_REQUESTED': 'Yêu cầu đổi lịch hẹn',
   'BOOKING_RESCHEDULED_SELF_SERVICE': 'Khách tự đổi lịch hẹn',
+  'campaign.create': 'Tạo campaign ưu đãi',
+  'campaign.update': 'Cập nhật campaign ưu đãi',
+  'campaign.delete': 'Xóa campaign ưu đãi',
+  'category.create': 'Tạo danh mục',
+  'category.update': 'Cập nhật danh mục',
+  'category.delete': 'Xóa danh mục',
+  'tour.create': 'Tạo tour',
+  'tour.update': 'Cập nhật tour',
+  'tour.delete': 'Xóa tour',
 };
 
 function getJsonDiff(before: any, after: any): DiffItem[] {
@@ -251,7 +260,10 @@ export default function AdminAuditLogsPage() {
     { id: 'Booking', label: 'Booking' },
     { id: 'Bill', label: 'Bill (Hóa đơn)' },
     { id: 'QR', label: 'QR Ưu đãi' },
-    { id: 'User', label: 'Người dùng/Admin' }
+    { id: 'User', label: 'Người dùng/Admin' },
+    { id: 'Campaign', label: 'Campaign (Ưu đãi)' },
+    { id: 'Category', label: 'Danh mục' },
+    { id: 'Tour', label: 'Tour' }
   ];
 
   const resultOptions = [

@@ -7,10 +7,16 @@ import {
   Param,
   Delete,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { CampaignsService } from './campaigns.service';
-import { Prisma, CampaignStatus, DiscountType } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AuthenticatedUser } from '../access/access.service';
+import { Prisma, CampaignStatus, DiscountType, UserRole } from '@prisma/client';
 import {
   IsString,
   IsNumber,
@@ -49,13 +55,21 @@ export class CreateCampaignDto {
 
 export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {}
 
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser;
+}
+
 @Controller('admin/campaigns')
-// TODO: Add AdminGuard if applicable
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
   @Post()
-  create(@Body() createCampaignDto: CreateCampaignDto) {
+  create(
+    @Body() createCampaignDto: CreateCampaignDto,
+    @Req() req: RequestWithUser,
+  ) {
     const data: Prisma.CampaignCreateInput = {
       name: createCampaignDto.name,
       discountType: createCampaignDto.discountType,
@@ -69,10 +83,11 @@ export class CampaignsController {
       data.targetStore = { connect: { id: createCampaignDto.targetStoreId } };
     }
 
-    return this.campaignsService.create(data);
+    return this.campaignsService.create(data, req.user);
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -89,6 +104,7 @@ export class CampaignsController {
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
   findOne(@Param('id') id: string) {
     return this.campaignsService.findOne(id);
   }
@@ -97,6 +113,7 @@ export class CampaignsController {
   update(
     @Param('id') id: string,
     @Body() updateCampaignDto: UpdateCampaignDto,
+    @Req() req: RequestWithUser,
   ) {
     const data: Prisma.CampaignUpdateInput = {
       name: updateCampaignDto.name,
@@ -113,12 +130,12 @@ export class CampaignsController {
       data.targetStore = { connect: { id: updateCampaignDto.targetStoreId } };
     }
 
-    return this.campaignsService.update(id, data);
+    return this.campaignsService.update(id, data, req.user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     // Soft delete
-    return this.campaignsService.update(id, { status: 'DELETED' });
+    return this.campaignsService.remove(id, req.user);
   }
 }

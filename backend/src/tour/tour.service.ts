@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Tour } from '@prisma/client';
+import { AuthenticatedUser } from '../access/access.service';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import {
@@ -22,6 +23,46 @@ import {
 @Injectable()
 export class TourService {
   constructor(private prisma: PrismaService) {}
+
+  private tourAuditSnapshot(
+    tour: Tour & { stops?: { storeId: string; order: number }[] },
+  ) {
+    return {
+      title: tour.title,
+      subtitle: tour.subtitle,
+      city: tour.city,
+      durationHours: tour.durationHours,
+      priceTier: tour.priceTier,
+      coverUrl: tour.coverUrl,
+      status: tour.status,
+      homeRank: tour.homeRank,
+      departureTimes: tour.departureTimes,
+      departureSchedule: tour.departureSchedule,
+      ...(tour.stops
+        ? {
+            stops: tour.stops.map((stop) => ({
+              storeId: stop.storeId,
+              order: stop.order,
+            })),
+          }
+        : {}),
+    } as Prisma.InputJsonValue;
+  }
+
+  private tourChangedFields(dto: UpdateTourDto) {
+    return Object.entries(dto)
+      .filter(([, value]) => value !== undefined)
+      .map(([key]) => key);
+  }
+
+  private auditActorFields(actor: AuthenticatedUser) {
+    return {
+      actorId: actor.id,
+      actorType: 'ADMIN',
+      actorName: actor.email ?? 'Unknown',
+      actorRole: actor.role ?? 'ADMIN',
+    };
+  }
 
   private async validateTourCoverUrl(coverUrl: string | undefined) {
     const validationError = getTourCoverUrlValidationError(coverUrl);
@@ -315,7 +356,7 @@ export class TourService {
     return tour;
   }
 
-  async create(dto: CreateTourDto) {
+  async create(dto: CreateTourDto, actor: AuthenticatedUser) {
     const { stops, ...tourData } = dto;
     await this.validateTourCoverUrl(tourData.coverUrl);
 
@@ -355,7 +396,7 @@ export class TourService {
         });
       }
 
-      return tx.tour.findUnique({
+      const created = await tx.tour.findUnique({
         where: { id: tour.id },
         include: {
           stops: {
@@ -364,10 +405,27 @@ export class TourService {
           },
         },
       });
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Tour',
+          action: 'tour.create',
+          targetType: 'Tour',
+          targetId: tour.id,
+          entityDisplayCode: `TOUR-${tour.id.substring(0, 8)}`,
+          beforeJson: Prisma.JsonNull,
+          afterJson: this.tourAuditSnapshot(created ?? tour),
+          changeSummary: `Created tour "${tour.title}"`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return created;
     });
   }
 
-  async update(id: string, dto: UpdateTourDto) {
+  async update(id: string, dto: UpdateTourDto, actor: AuthenticatedUser) {
     const { stops, ...tourData } = dto;
     await this.validateTourCoverUrl(tourData.coverUrl);
 
@@ -393,6 +451,12 @@ export class TourService {
 
     const existing = await this.prisma.tour.findFirst({
       where: { id, status: { not: 'DELETED' } },
+      include: {
+        stops: {
+          orderBy: { order: 'asc' },
+          select: { storeId: true, order: true },
+        },
+      },
     });
     if (!existing) {
       throw new NotFoundException(`Tour with ID ${id} not found`);
@@ -435,7 +499,7 @@ export class TourService {
         }
       }
 
-      return tx.tour.findUnique({
+      const updated = await tx.tour.findUnique({
         where: { id },
         include: {
           stops: {
@@ -444,23 +508,76 @@ export class TourService {
           },
         },
       });
+
+      const changedFields = this.tourChangedFields(dto);
+      if (departureSchedule) {
+        // Both columns are rewritten whenever either input is provided.
+        for (const field of ['departureTimes', 'departureSchedule']) {
+          if (!changedFields.includes(field)) {
+            changedFields.push(field);
+          }
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Tour',
+          action: 'tour.update',
+          targetType: 'Tour',
+          targetId: id,
+          entityDisplayCode: `TOUR-${id.substring(0, 8)}`,
+          beforeJson: this.tourAuditSnapshot(existing),
+          afterJson: this.tourAuditSnapshot(updated ?? existing),
+          changedFields,
+          changeSummary: `Updated tour "${(updated ?? existing).title}"`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return updated;
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actor: AuthenticatedUser) {
     const tour = await this.prisma.tour.findFirst({
       where: { id, status: { not: 'DELETED' } },
+      include: {
+        stops: {
+          orderBy: { order: 'asc' },
+          select: { storeId: true, order: true },
+        },
+      },
     });
     if (!tour) {
       throw new NotFoundException(`Tour with ID ${id} not found`);
     }
 
-    return this.prisma.tour.update({
-      where: { id },
-      data: {
-        status: 'DELETED',
-        deletedAt: new Date(),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const deleted = await tx.tour.update({
+        where: { id },
+        data: {
+          status: 'DELETED',
+          deletedAt: new Date(),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          ...this.auditActorFields(actor),
+          module: 'Tour',
+          action: 'tour.delete',
+          targetType: 'Tour',
+          targetId: id,
+          entityDisplayCode: `TOUR-${id.substring(0, 8)}`,
+          beforeJson: this.tourAuditSnapshot(tour),
+          afterJson: this.tourAuditSnapshot({ ...deleted, stops: tour.stops }),
+          changeSummary: `Deleted tour "${tour.title}" (soft delete)`,
+          result: 'SUCCESS',
+        },
+      });
+
+      return deleted;
     });
   }
 }

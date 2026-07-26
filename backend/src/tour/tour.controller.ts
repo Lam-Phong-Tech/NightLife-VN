@@ -7,22 +7,36 @@ import {
   Param,
   Delete,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { TourService } from './tour.service';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
-import { Prisma, ProfileStatus } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AuthenticatedUser } from '../access/access.service';
+import { Prisma, ProfileStatus, UserRole } from '@prisma/client';
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser;
+}
 
 @Controller('admin/tours')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class TourController {
   constructor(private readonly tourService: TourService) {}
 
   @Post()
-  create(@Body() createTourDto: CreateTourDto) {
-    return this.tourService.create(createTourDto);
+  create(@Body() createTourDto: CreateTourDto, @Req() req: RequestWithUser) {
+    return this.tourService.create(createTourDto, req.user);
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -52,17 +66,22 @@ export class TourController {
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
   findOne(@Param('id') id: string) {
     return this.tourService.findOne(id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateTourDto: UpdateTourDto) {
-    return this.tourService.update(id, updateTourDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTourDto: UpdateTourDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.tourService.update(id, updateTourDto, req.user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tourService.remove(id);
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.tourService.remove(id, req.user);
   }
 }
