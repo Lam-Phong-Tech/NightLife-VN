@@ -5,7 +5,6 @@ import {
   authLoginUrl,
   getNightlifeHostKind,
   nightlifeOrigins,
-  portalForRole,
   portalHomePath,
   portalOrigin,
   type AuthPortal,
@@ -20,16 +19,19 @@ const loginPaths = new Set(["/dang-nhap", "/dang-nhap-doi-tac", "/admin/dang-nha
 const languageCodes = new Set(["vi", "en", "ja", "ko", "zh"]);
 const portalSessions = [
   {
+    portal: "admin",
     prefix: "admin_",
     roles: ["OPERATOR", "ADMIN", "SUPER_ADMIN"],
     homePath: "/admin",
   },
   {
+    portal: "partner",
     prefix: "partner_",
     roles: ["PARTNER", "STAFF"],
     homePath: "/partner",
   },
   {
+    portal: "member",
     prefix: "",
     roles: ["USER"],
     homePath: "/tai-khoan",
@@ -78,8 +80,9 @@ function getSessionRole(request: NextRequest, token: string, prefix: string) {
   return (request.cookies.get(`${prefix}user_role`)?.value || "PUBLIC").toUpperCase();
 }
 
-function getAuthenticatedHomePath(request: NextRequest) {
+function getAuthenticatedHomePath(request: NextRequest, requestedPortal?: AuthPortal) {
   for (const session of portalSessions) {
+    if (requestedPortal && session.portal !== requestedPortal) continue;
     const token = request.cookies.get(`${session.prefix}auth_token`)?.value;
     if (!token) continue;
 
@@ -99,15 +102,6 @@ function getRequestedPortal(pathname: string): AuthPortal {
   if (pathname.startsWith("/admin")) return "admin";
   if (pathname.startsWith("/partner") || pathname === "/dang-nhap-doi-tac") return "partner";
   return "member";
-}
-
-function getRequestedPortalForNotice(request: NextRequest, pathname: string): AuthPortal {
-  const portal = request.nextUrl.searchParams.get("portal");
-  if (portal === "admin" || portal === "partner" || portal === "member") {
-    return portal;
-  }
-
-  return getRequestedPortal(pathname);
 }
 
 function externalPortalUrl(request: NextRequest, portal: AuthPortal, pathname: string) {
@@ -145,30 +139,6 @@ function centralLoginUrl(request: NextRequest, portal: AuthPortal, redirectPath:
   return applyRequestedLanguage(authLoginUrl(portal, redirectPath));
 }
 
-function redirectActiveSession(
-  request: NextRequest,
-  session: NonNullable<ReturnType<typeof getAuthenticatedHomePath>>,
-  requestedPathname: string,
-) {
-  const portal = portalForRole(session.role);
-  const requestedPortal = getRequestedPortalForNotice(request, requestedPathname);
-  if (getNightlifeHostKind(getRequestHostname(request)) === "auth") {
-    const handoffUrl = new URL("/chuyen-tiep", nightlifeOrigins.auth);
-    handoffUrl.searchParams.set("portal", portal);
-    handoffUrl.searchParams.set("redirect", portalHomePath(portal));
-    handoffUrl.searchParams.set("auth_notice", "login-blocked");
-    handoffUrl.searchParams.set("requested_portal", requestedPortal);
-    handoffUrl.searchParams.set("active_role", session.role);
-    return NextResponse.redirect(handoffUrl);
-  }
-
-  const redirectUrl = externalPortalUrl(request, portal, session.homePath);
-  redirectUrl.searchParams.set("auth_notice", "login-blocked");
-  redirectUrl.searchParams.set("requested_portal", requestedPortal);
-  redirectUrl.searchParams.set("active_role", session.role);
-  return NextResponse.redirect(redirectUrl);
-}
-
 function redirectPartnerRegistration(request: NextRequest) {
   const redirectUrl = externalPortalUrl(request, "partner", "/partner");
   redirectUrl.searchParams.set("auth_notice", "partner-registration-blocked");
@@ -188,11 +158,6 @@ export function middleware(request: NextRequest) {
   if (hostKind === "auth") {
     if (pathname === "/chuyen-tiep") {
       return NextResponse.next();
-    }
-
-    const authenticatedSession = getAuthenticatedHomePath(request);
-    if (authenticatedSession) {
-      return redirectActiveSession(request, authenticatedSession, pathname);
     }
 
     if (pathname === "/") {
@@ -218,10 +183,6 @@ export function middleware(request: NextRequest) {
 
   if (hostKind !== "local" && hostKind !== "unknown" && hostKind !== "auth") {
     if (loginPaths.has(pathname)) {
-      const authenticatedSession = getAuthenticatedHomePath(request);
-      if (authenticatedSession) {
-        return redirectActiveSession(request, authenticatedSession, pathname);
-      }
       const portal = getRequestedPortal(pathname);
       const requestedRedirect =
         request.nextUrl.searchParams.get("redirect") || portalHomePath(portal);
@@ -258,15 +219,8 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  if (loginPaths.has(pathname)) {
-    const authenticatedSession = getAuthenticatedHomePath(request);
-    if (authenticatedSession) {
-      return redirectActiveSession(request, authenticatedSession, pathname);
-    }
-  }
-
   if (pathname === "/dang-ky-doi-tac") {
-    const authenticatedSession = getAuthenticatedHomePath(request);
+    const authenticatedSession = getAuthenticatedHomePath(request, "partner");
     if (authenticatedSession?.role === "PARTNER") {
       return redirectPartnerRegistration(request);
     }
@@ -288,11 +242,6 @@ export function middleware(request: NextRequest) {
 
   // Protect paths requiring authentication
   if ((isMemberPath || isPartnerPath || isAdminPath) && (!token || !userRole)) {
-    const authenticatedSession = getAuthenticatedHomePath(request);
-    if (authenticatedSession) {
-      return redirectActiveSession(request, authenticatedSession, pathname);
-    }
-
     const portal: AuthPortal = isPartnerPath ? "partner" : isAdminPath ? "admin" : "member";
     const loginUrl = centralLoginUrl(request, portal, pathname);
     return NextResponse.redirect(loginUrl);

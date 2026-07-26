@@ -29,6 +29,7 @@ import {
   VerifyPasswordResetCodeDto,
 } from './dto/password-reset.dto';
 import { RegisterDto, RequestRegistrationOtpDto } from './dto/register.dto';
+import { requiresSinglePrivilegedSession } from './session-policy';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -621,36 +622,52 @@ export class AuthService {
       return { revoked: false };
     }
 
-    await this.prisma.tokenBlacklist.upsert({
-      where: { jti: user.jti },
-      update: {
-        reason: 'logout',
-        expiresAt: new Date(user.exp * 1000),
-      },
-      create: {
-        jti: user.jti,
-        userId: user.id,
-        reason: 'logout',
-        expiresAt: new Date(user.exp * 1000),
-      },
-    });
+    const jti = user.jti;
+    const tokenExpiresAt = new Date(user.exp * 1000);
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tokenBlacklist.upsert({
+        where: { jti },
+        update: {
+          reason: 'logout',
+          expiresAt: tokenExpiresAt,
+        },
+        create: {
+          jti,
+          userId: user.id,
+          reason: 'logout',
+          expiresAt: tokenExpiresAt,
+        },
+      });
 
-    await this.prisma.userSession.updateMany({
-      where: {
-        userId: user.id,
-        jti: user.jti,
-      },
-      data: {
-        status: 'REVOKED',
-        revokedAt: new Date(),
-        lastSeenAt: new Date(),
-      },
+      await tx.userSession.updateMany({
+        where: {
+          userId: user.id,
+          jti,
+        },
+        data: {
+          status: 'REVOKED',
+          revokedAt: now,
+          lastSeenAt: now,
+          revokedReason: 'LOGOUT',
+        },
+      });
+
+      await tx.user.updateMany({
+        where: {
+          id: user.id,
+          activePrivilegedJti: jti,
+        },
+        data: {
+          activePrivilegedJti: null,
+        },
+      });
     });
 
     return { revoked: true };
   }
 
-  clearAuthCookies(response: Response) {
+  clearAuthCookies(response: Response, role?: string) {
     const options = {
       path: '/',
       sameSite: 'lax' as const,
@@ -658,7 +675,9 @@ export class AuthService {
     };
 
     const cookieNames = ['auth_token', 'user_role', 'user_email', 'user_name'];
-    const prefixes = ['', 'admin_', 'partner_'];
+    const prefixes = role
+      ? [this.authCookiePrefixForRole(role)]
+      : ['', 'admin_', 'partner_'];
 
     for (const prefix of prefixes) {
       for (const name of cookieNames) {
@@ -682,16 +701,38 @@ export class AuthService {
   ) {
     const jti = randomUUID();
     const expiresAt = this.resolveJwtExpiresAt();
+    const sessionData = {
+      userId: user.id,
+      jti,
+      userAgent: sessionContext?.userAgent,
+      ipAddress: sessionContext?.ipAddress,
+      expiresAt,
+    };
 
-    await this.prisma.userSession.create({
-      data: {
-        userId: user.id,
-        jti,
-        userAgent: sessionContext?.userAgent,
-        ipAddress: sessionContext?.ipAddress,
-        expiresAt,
-      },
-    });
+    if (requiresSinglePrivilegedSession(user.role)) {
+      const now = new Date();
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userSession.updateMany({
+          where: {
+            userId: user.id,
+            status: 'ACTIVE',
+          },
+          data: {
+            status: 'REVOKED',
+            revokedAt: now,
+            lastSeenAt: now,
+            revokedReason: 'LOGIN_FROM_ANOTHER_BROWSER',
+          },
+        });
+        await tx.user.update({
+          where: { id: user.id },
+          data: { activePrivilegedJti: jti },
+        });
+        await tx.userSession.create({ data: sessionData });
+      });
+    } else {
+      await this.prisma.userSession.create({ data: sessionData });
+    }
 
     return {
       accessToken: this.jwtService.sign(
@@ -1104,7 +1145,7 @@ export class AuthService {
       secure: this.shouldUseSecureCookies(),
     };
 
-    this.clearAuthCookies(response);
+    this.clearAuthCookies(response, authResponse.user.role);
     response.cookie('auth_token', authResponse.accessToken, cookieOptions);
     response.cookie('user_role', authResponse.user.role, cookieOptions);
     response.cookie('user_email', authResponse.user.email, cookieOptions);
@@ -1113,6 +1154,16 @@ export class AuthService {
       authResponse.user.displayName ?? authResponse.user.email,
       cookieOptions,
     );
+  }
+
+  private authCookiePrefixForRole(role: string) {
+    if (['ADMIN', 'SUPER_ADMIN', 'OPERATOR'].includes(role)) {
+      return 'admin_';
+    }
+    if (['PARTNER', 'STAFF'].includes(role)) {
+      return 'partner_';
+    }
+    return '';
   }
 
   private oauthCookieOptions() {

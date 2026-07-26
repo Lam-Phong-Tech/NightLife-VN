@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import {
-  activateExclusiveAuthSession,
+  activatePortalAuthSession,
   getGoogleLoginConfig,
   getLineLoginConfig,
   loginGoogleMember,
@@ -300,12 +300,12 @@ export default function Page() {
           displayName: trimmedDisplayName,
           emailOtp: normalizedEmailOtp,
         });
-        await activateExclusiveAuthSession(session, { redirectTo });
+        await activatePortalAuthSession(session, { redirectTo });
         return;
       }
 
       const session = await loginMember({ email: normalizedEmail, password: normalizedPassword });
-      await activateExclusiveAuthSession(session, { redirectTo });
+      await activatePortalAuthSession(session, { redirectTo });
     } catch (error) {
       const detail =
         error instanceof ApiError
@@ -364,7 +364,7 @@ export default function Page() {
         const session = await loginGoogleMember({
           accessToken: response.access_token,
         });
-        await activateExclusiveAuthSession(session, { redirectTo });
+        await activatePortalAuthSession(session, { redirectTo });
       } catch (error) {
         const detail =
           error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập Google.";

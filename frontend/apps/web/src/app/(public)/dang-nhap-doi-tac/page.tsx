@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Eye, EyeOff, LogIn, Sun, Moon } from "lucide-react";
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { activateExclusiveAuthSession, loginPartner } from "@/lib/api/auth";
+import { activatePortalAuthSession, loginPartner } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { nightlifeOrigins } from "@/lib/auth/hosts";
@@ -123,7 +123,7 @@ function LoginContent({
         password,
       });
 
-      await activateExclusiveAuthSession(session, { redirectTo });
+      await activatePortalAuthSession(session, { redirectTo });
     } catch (error) {
       const detail =
         error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập.";

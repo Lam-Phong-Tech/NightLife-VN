@@ -13,6 +13,7 @@ import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
 import { SupportSenderType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { requiresSinglePrivilegedSession } from '../auth/session-policy';
 
 type SupportJwtPayload = {
   sub?: string;
@@ -314,6 +315,7 @@ export class SupportChatGateway
           role: true,
           status: true,
           deletedAt: true,
+          activePrivilegedJti: true,
         },
       }),
       this.prisma.tokenBlacklist.findUnique({
@@ -339,7 +341,10 @@ export class SupportChatGateway
       !session ||
       session.userId !== user.id ||
       session.status !== 'ACTIVE' ||
-      session.expiresAt <= now
+      session.expiresAt <= now ||
+      String(payload.role).toUpperCase() !== String(user.role).toUpperCase() ||
+      (requiresSinglePrivilegedSession(user.role) &&
+        user.activePrivilegedJti !== payload.jti)
     ) {
       throw new Error('Inactive socket session');
     }

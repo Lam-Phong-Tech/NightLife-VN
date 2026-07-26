@@ -39,6 +39,7 @@ describe('SupportChatGateway', () => {
       role: 'ADMIN',
       status: 'ACTIVE',
       deletedAt: null,
+      activePrivilegedJti: 'session-id',
     });
     (prisma.tokenBlacklist.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.userSession.findUnique as jest.Mock).mockResolvedValue({
@@ -78,6 +79,56 @@ describe('SupportChatGateway', () => {
       id: 'verified-admin-id',
       role: 'ADMIN',
     });
+  });
+
+  it('rejects a privileged socket after another browser replaces its session', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'verified-admin-id',
+      role: 'ADMIN',
+      jti: 'old-session-id',
+    });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: 'verified-admin-id',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      deletedAt: null,
+      activePrivilegedJti: 'new-session-id',
+    });
+    (prisma.tokenBlacklist.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.userSession.findUnique as jest.Mock).mockResolvedValue({
+      userId: 'verified-admin-id',
+      status: 'ACTIVE',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    type SocketMiddleware = (
+      client: Socket,
+      next: (error?: Error) => void,
+    ) => void;
+    let middleware: SocketMiddleware | undefined;
+    gateway.afterInit({
+      use: jest.fn<void, [SocketMiddleware]>((handler) => {
+        middleware = handler;
+      }),
+    } as unknown as Server);
+    const clientData: {
+      supportUser?: { id: string; role: string };
+    } = {};
+    const client = {
+      data: clientData,
+      handshake: { auth: { token: 'old-token' } },
+    } as unknown as Socket;
+    const next = jest.fn();
+
+    await new Promise<void>((resolve) => {
+      middleware?.(client, (error) => {
+        next(error);
+        resolve();
+      });
+    });
+
+    expect(next).toHaveBeenCalledWith(new Error('UNAUTHORIZED'));
+    expect(clientData.supportUser).toBeUndefined();
   });
 
   it('rejects an invalid authenticated socket before it connects', async () => {

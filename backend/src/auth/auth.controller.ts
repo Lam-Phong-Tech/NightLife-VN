@@ -299,11 +299,13 @@ export class AuthController {
   @Post('logout')
   async logout(
     @Req()
-    request: Request & { user: { id: string; jti?: string; exp?: number } },
+    request: Request & {
+      user: { id: string; role?: string; jti?: string; exp?: number };
+    },
     @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.authService.logout(request.user);
-    this.authService.clearAuthCookies(response);
+    this.authService.clearAuthCookies(response, request.user.role);
     return result;
   }
 

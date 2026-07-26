@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, LockKeyhole, LogIn, Mail } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { activateExclusiveAuthSession, loginAdmin } from "@/lib/api/auth";
+import { activatePortalAuthSession, loginAdmin } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 
@@ -133,7 +133,7 @@ export default function AdminLoginPage() {
         password: normalizedPassword,
       });
 
-      await activateExclusiveAuthSession(session, { redirectTo });
+      await activatePortalAuthSession(session, { redirectTo });
     } catch (error) {
       const detail =
         error instanceof ApiError ? error.message : "Khong ket noi duoc API dang nhap.";

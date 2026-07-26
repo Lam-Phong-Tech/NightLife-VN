@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { activateExclusiveAuthSession, logoutBrowserProfile } from "@/lib/api/auth";
+import { activatePortalAuthSession, logoutBrowserProfile } from "@/lib/api/auth";
 import {
   clearAuthSession,
   getActiveBrowserAuthSession,
@@ -40,7 +40,7 @@ const adminSession: AuthResponse = {
   },
 };
 
-describe("exclusive browser auth session", () => {
+describe("independent portal auth sessions", () => {
   beforeEach(() => {
     expireAllAuthCookies();
     window.localStorage.clear();
@@ -49,7 +49,7 @@ describe("exclusive browser auth session", () => {
     vi.restoreAllMocks();
   });
 
-  it("replaces member, partner, and admin storage with only the new session", () => {
+  it("replaces only the admin scope and preserves member and partner sessions", () => {
     document.cookie = "auth_token=old-member-token; path=/";
     document.cookie = "partner_auth_token=old-partner-token; path=/";
     document.cookie = "admin_auth_token=old-admin-token; path=/";
@@ -61,18 +61,18 @@ describe("exclusive browser auth session", () => {
     setAuthSession(adminSession);
 
     expect(document.cookie).toContain("admin_auth_token=new-admin-token");
-    expect(document.cookie).not.toContain("auth_token=old-member-token");
-    expect(document.cookie).not.toContain("partner_auth_token=old-partner-token");
+    expect(document.cookie).toContain("auth_token=old-member-token");
+    expect(document.cookie).toContain("partner_auth_token=old-partner-token");
     expect(document.cookie).not.toContain("admin_auth_token=old-admin-token");
-    expect(window.localStorage.getItem("nightlife_user")).toBeNull();
-    expect(window.localStorage.getItem("nightlife_partner_user")).toBeNull();
+    expect(window.localStorage.getItem("nightlife_user")).toContain('"role":"USER"');
+    expect(window.localStorage.getItem("nightlife_partner_user")).toContain('"role":"PARTNER"');
     expect(JSON.parse(window.localStorage.getItem("nightlife_admin_user") || "{}")).toMatchObject({
       id: "admin-1",
       role: "ADMIN",
     });
   });
 
-  it("clears every scoped session when logging out from any portal", () => {
+  it("clears only the current portal scope", () => {
     document.cookie = "auth_token=member-token; path=/";
     document.cookie = "partner_auth_token=partner-token; path=/";
     document.cookie = "admin_auth_token=admin-token; path=/";
@@ -83,10 +83,10 @@ describe("exclusive browser auth session", () => {
 
     clearAuthSession();
 
-    expect(getAllAuthSessionTokens()).toEqual([]);
-    expect(window.localStorage.getItem("nightlife_user")).toBeNull();
+    expect(getAllAuthSessionTokens()).toEqual(["member-token", "admin-token"]);
+    expect(window.localStorage.getItem("nightlife_user")).toBe("{}");
     expect(window.localStorage.getItem("nightlife_partner_user")).toBeNull();
-    expect(window.localStorage.getItem("nightlife_admin_user")).toBeNull();
+    expect(window.localStorage.getItem("nightlife_admin_user")).toBe("{}");
   });
 
   it("stores the session in the scope dictated by its role, not the current URL", () => {
@@ -108,19 +108,22 @@ describe("exclusive browser auth session", () => {
     expect(window.localStorage.getItem("nightlife_admin_user")).toBeNull();
   });
 
-  it("detects the active identity across portal URLs for the client-side login guard", () => {
+  it("detects an active identity only for the requested portal", () => {
     setAuthSession(adminSession);
     window.history.replaceState({}, "", "/dang-nhap-doi-tac");
 
-    expect(getActiveBrowserAuthSession()).toEqual({
+    expect(getActiveBrowserAuthSession("admin")).toEqual({
       role: "ADMIN",
       homePath: "/admin",
     });
+    expect(getActiveBrowserAuthSession("partner")).toBeNull();
+    expect(getActiveBrowserAuthSession("member")).toBeNull();
   });
 
-  it("revokes all previous tokens before completing an identity switch", async () => {
+  it("revokes only the previous token from the same portal", async () => {
     document.cookie = "auth_token=old-member-token; path=/";
     document.cookie = "partner_auth_token=old-partner-token; path=/";
+    document.cookie = "admin_auth_token=old-admin-token; path=/";
     window.history.replaceState({}, "", "/admin/dang-nhap");
     let finishRevocation: (() => void) | undefined;
     const revocationPending = new Promise<Response>((resolve) => {
@@ -128,33 +131,47 @@ describe("exclusive browser auth session", () => {
     });
     const fetchMock = vi.spyOn(globalThis, "fetch").mockReturnValue(revocationPending);
 
-    const activation = activateExclusiveAuthSession(adminSession);
+    const activation = activatePortalAuthSession(adminSession);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(getAllAuthSessionTokens()).toEqual(["old-member-token", "old-partner-token"]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getAllAuthSessionTokens()).toEqual([
+      "old-member-token",
+      "old-partner-token",
+      "old-admin-token",
+    ]);
     expect(
       fetchMock.mock.calls.map(
         ([, options]) => (options?.headers as Record<string, string>).Authorization,
       ),
-    ).toEqual(expect.arrayContaining(["Bearer old-member-token", "Bearer old-partner-token"]));
+    ).toEqual(["Bearer old-admin-token"]);
 
     finishRevocation?.();
     await activation;
 
-    expect(getAllAuthSessionTokens()).toEqual(["new-admin-token"]);
+    expect(getAllAuthSessionTokens()).toEqual([
+      "old-member-token",
+      "old-partner-token",
+      "new-admin-token",
+    ]);
   });
 
-  it("revokes and removes every legacy scoped token on profile logout", async () => {
+  it("revokes and removes only the current portal token on profile logout", async () => {
     document.cookie = "auth_token=member-token; path=/";
     document.cookie = "partner_auth_token=partner-token; path=/";
     document.cookie = "admin_auth_token=admin-token; path=/";
+    window.history.replaceState({}, "", "/partner");
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response("{}", { status: 201 }));
 
     await logoutBrowserProfile();
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(getAllAuthSessionTokens()).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect((firstCall?.[1]?.headers as Record<string, string>).Authorization).toBe(
+      "Bearer partner-token",
+    );
+    expect(getAllAuthSessionTokens()).toEqual(["member-token", "admin-token"]);
   });
 });

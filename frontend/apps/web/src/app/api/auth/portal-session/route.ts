@@ -17,7 +17,6 @@ type PublicUser = {
 };
 
 const authCookieNames = ["auth_token", "user_role", "user_email", "user_name"] as const;
-const authCookiePrefixes = ["", "partner_", "admin_"] as const;
 
 const requestHostname = (request: Request) => {
   const requestUrl = new URL(request.url);
@@ -56,16 +55,15 @@ const tokenMaxAge = (token: string) => {
   }
 };
 
-const clearPortalCookies = (response: NextResponse) => {
-  for (const prefix of authCookiePrefixes) {
-    for (const name of authCookieNames) {
-      response.cookies.set(`${prefix}${name}`, "", {
-        expires: new Date(0),
-        path: "/",
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-      });
-    }
+const clearPortalCookies = (response: NextResponse, portal: AuthPortal) => {
+  const prefix = cookiePrefixForPortal(portal);
+  for (const name of authCookieNames) {
+    response.cookies.set(`${prefix}${name}`, "", {
+      expires: new Date(0),
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 };
 
@@ -128,7 +126,7 @@ export async function POST(request: Request) {
     : portalHomePath(portal);
   const redirectOrigin = isLocalRequest ? requestUrl.origin : portalOrigin(portal);
   const response = NextResponse.redirect(new URL(redirectPath, redirectOrigin), 303);
-  clearPortalCookies(response);
+  clearPortalCookies(response, portal);
 
   const prefix = cookiePrefixForPortal(portal);
   const maxAge = tokenMaxAge(accessToken);

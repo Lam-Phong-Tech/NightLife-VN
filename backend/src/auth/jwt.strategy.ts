@@ -5,6 +5,11 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import {
+  requiresSinglePrivilegedSession,
+  SESSION_REPLACED_ERROR,
+  SESSION_ROLE_CHANGED_ERROR,
+} from './session-policy';
 
 type JwtPayload = {
   sub: string;
@@ -48,8 +53,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Account is not active');
     }
 
+    if (payload.role !== user.role) {
+      throw new UnauthorizedException(SESSION_ROLE_CHANGED_ERROR);
+    }
+
     if (!payload.jti) {
       throw new UnauthorizedException('Token session is not active');
+    }
+
+    if (
+      requiresSinglePrivilegedSession(user.role) &&
+      user.activePrivilegedJti !== payload.jti
+    ) {
+      throw new UnauthorizedException(SESSION_REPLACED_ERROR);
     }
 
     const revokedToken = await this.prisma.tokenBlacklist.findUnique({

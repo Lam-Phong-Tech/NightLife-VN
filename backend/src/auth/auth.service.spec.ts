@@ -54,6 +54,11 @@ describe('AuthService', () => {
   } as unknown as jest.Mocked<ConfigService>;
 
   const prisma = {
+    $transaction: jest.fn(),
+    user: {
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
     tokenBlacklist: {
       upsert: jest.fn(),
     },
@@ -68,6 +73,10 @@ describe('AuthService', () => {
       updateMany: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
+
+  (prisma.$transaction as jest.Mock).mockImplementation(
+    async (callback: (tx: typeof prisma) => unknown) => callback(prisma),
+  );
 
   const emailNotificationService = {
     sendPasswordResetCodeEmail: jest.fn(),
@@ -149,11 +158,16 @@ describe('AuthService', () => {
   });
 
   it('registers a user and returns a JWT auth response', async () => {
+    const member = {
+      ...user,
+      role: 'USER',
+      tier: 'FREE',
+    };
     usersService.findByEmail.mockResolvedValueOnce(null);
     emailNotificationService.sendRegistrationOtpEmail.mockResolvedValue({
       messageId: 'otp-mail-1',
     });
-    usersService.createUser.mockResolvedValue(user as never);
+    usersService.createUser.mockResolvedValue(member as never);
 
     await service.requestRegistrationOtp({ email: user.email });
     const emailOtp =
@@ -169,11 +183,11 @@ describe('AuthService', () => {
     ).resolves.toEqual({
       accessToken: 'jwt-token',
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        tier: user.tier,
-        status: user.status,
+        id: member.id,
+        email: member.email,
+        role: member.role,
+        tier: member.tier,
+        status: member.status,
       },
     });
     expect(usersService.createUser).toHaveBeenCalledWith({
@@ -183,11 +197,13 @@ describe('AuthService', () => {
     });
     expect(prisma.userSession.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        userId: user.id,
+        userId: member.id,
         jti: expect.any(String),
         expiresAt: expect.any(Date),
       }),
     });
+    expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('does not register a user without a valid email OTP', async () => {
@@ -232,12 +248,16 @@ describe('AuthService', () => {
         displayName: 'Spam Tester',
         emailOtp: '11111111',
       }),
-    ).rejects.toThrow('Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.');
+    ).rejects.toThrow(
+      'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+    );
 
     // Further requestRegistrationOtp calls are blocked
     await expect(
       service.requestRegistrationOtp({ email: targetEmail }),
-    ).rejects.toThrow('Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.');
+    ).rejects.toThrow(
+      'Tài khoản/Email đã bị chặn đăng ký do nhập sai OTP quá 5 lần.',
+    );
   });
 
   it('logs in with validated credentials', async () => {
@@ -267,6 +287,22 @@ describe('AuthService', () => {
         jti: expect.any(String),
         expiresAt: expect.any(Date),
       }),
+    });
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: user.id,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: expect.any(Date),
+        lastSeenAt: expect.any(Date),
+        revokedReason: 'LOGIN_FROM_ANOTHER_BROWSER',
+      },
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { activePrivilegedJti: expect.any(String) },
     });
   });
 
@@ -377,6 +413,8 @@ describe('AuthService', () => {
         userId: member.id,
       }),
     });
+    expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('creates a member when Google credential email is new', async () => {
@@ -589,21 +627,13 @@ describe('AuthService', () => {
         secure: true,
       }),
     );
-    expect(response.clearCookie).toHaveBeenCalledWith(
+    expect(response.clearCookie).not.toHaveBeenCalledWith(
       'admin_auth_token',
-      expect.objectContaining({
-        path: '/',
-        sameSite: 'lax',
-        secure: true,
-      }),
+      expect.anything(),
     );
-    expect(response.clearCookie).toHaveBeenCalledWith(
+    expect(response.clearCookie).not.toHaveBeenCalledWith(
       'partner_auth_token',
-      expect.objectContaining({
-        path: '/',
-        sameSite: 'lax',
-        secure: true,
-      }),
+      expect.anything(),
     );
     expect(response.redirect).toHaveBeenCalledWith(
       'https://demonightlight.test9.io.vn/tai-khoan',
@@ -644,6 +674,16 @@ describe('AuthService', () => {
         status: 'REVOKED',
         revokedAt: expect.any(Date),
         lastSeenAt: expect.any(Date),
+        revokedReason: 'LOGOUT',
+      },
+    });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'user-1',
+        activePrivilegedJti: 'token-id',
+      },
+      data: {
+        activePrivilegedJti: null,
       },
     });
   });
@@ -675,9 +715,7 @@ describe('AuthService', () => {
 
     await expect(
       service.requestPasswordReset({ email: partner.email }),
-    ).rejects.toThrow(
-      'Password reset is only available for user accounts',
-    );
+    ).rejects.toThrow('Password reset is only available for user accounts');
 
     expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
     expect(
@@ -723,9 +761,7 @@ describe('AuthService', () => {
         password: 'NewStr0ngPass!',
         confirmPassword: 'NewStr0ngPass!',
       }),
-    ).rejects.toThrow(
-      'Password reset is only available for user accounts',
-    );
+    ).rejects.toThrow('Password reset is only available for user accounts');
 
     expect(usersService.updatePassword).not.toHaveBeenCalled();
     expect(prisma.userSession.updateMany).not.toHaveBeenCalled();

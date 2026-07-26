@@ -55,5 +55,7 @@ describe("portal session handoff", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("https://admin.demonightlight.test9.io.vn/admin");
     expect(response.cookies.get("admin_auth_token")?.value).toBe(token);
+    expect(response.cookies.get("auth_token")).toBeUndefined();
+    expect(response.cookies.get("partner_auth_token")).toBeUndefined();
   });
 });

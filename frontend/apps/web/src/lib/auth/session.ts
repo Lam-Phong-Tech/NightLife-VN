@@ -1,4 +1,4 @@
-import { getNightlifeHostKind } from "./hosts";
+import { getNightlifeHostKind, type AuthPortal } from "./hosts";
 
 export type AuthRole = "USER" | "PARTNER" | "OPERATOR" | "ADMIN" | "SUPER_ADMIN" | "STAFF";
 
@@ -24,6 +24,7 @@ export type ActiveBrowserAuthSession = {
 
 const sessionCookieMaxAge = 60 * 60 * 24;
 const sessionScopePrefixes = ["", "partner_", "admin_"] as const;
+type SessionScopePrefix = (typeof sessionScopePrefixes)[number];
 const sessionCookieNames = ["auth_token", "user_role", "user_email", "user_name"] as const;
 const authSessionSyncKey = "nightlife_auth_session_sync";
 export const authSessionChangeEvent = "nightlife-auth-session-change";
@@ -150,26 +151,32 @@ export const getAllAuthSessionTokens = () => {
   );
 };
 
-export const getActiveBrowserAuthSession = (): ActiveBrowserAuthSession | null => {
+export const getActiveBrowserAuthSession = (
+  requestedPortal?: AuthPortal,
+): ActiveBrowserAuthSession | null => {
   if (typeof window === "undefined") return null;
 
   const cookies = parseCookies();
   const scopes: Array<{
-    prefix: (typeof sessionScopePrefixes)[number];
+    portal: AuthPortal;
+    prefix: SessionScopePrefix;
     roles: AuthRole[];
     homePath: ActiveBrowserAuthSession["homePath"];
   }> = [
     {
+      portal: "admin",
       prefix: "admin_",
       roles: ["OPERATOR", "ADMIN", "SUPER_ADMIN"],
       homePath: "/admin",
     },
     {
+      portal: "partner",
       prefix: "partner_",
       roles: ["PARTNER", "STAFF"],
       homePath: "/partner",
     },
     {
+      portal: "member",
       prefix: "",
       roles: ["USER"],
       homePath: "/tai-khoan",
@@ -177,6 +184,7 @@ export const getActiveBrowserAuthSession = (): ActiveBrowserAuthSession | null =
   ];
 
   for (const scope of scopes) {
+    if (requestedPortal && scope.portal !== requestedPortal) continue;
     const token = cookies[`${scope.prefix}auth_token`] || "";
     if (!token || isTokenExpired(token)) continue;
 
@@ -204,27 +212,30 @@ export const getAuthSessionExpiresAt = () => {
   return Number.isFinite(storedExpiresAt) && storedExpiresAt > 0 ? storedExpiresAt : null;
 };
 
-const clearStoredAuthSessions = () => {
+const clearStoredAuthSession = (prefix: SessionScopePrefix) => {
   if (typeof document !== "undefined") {
-    for (const prefix of sessionScopePrefixes) {
-      for (const name of sessionCookieNames) {
-        document.cookie = `${prefix}${name}=; path=/; max-age=0; SameSite=Lax`;
-      }
+    for (const name of sessionCookieNames) {
+      document.cookie = `${prefix}${name}=; path=/; max-age=0; SameSite=Lax`;
     }
   }
 
   if (typeof window !== "undefined") {
-    for (const prefix of sessionScopePrefixes) {
-      window.localStorage.removeItem(`nightlife_${prefix}user`);
-      window.localStorage.removeItem(`nightlife_${prefix}auth_expires_at`);
+    window.localStorage.removeItem(`nightlife_${prefix}user`);
+    window.localStorage.removeItem(`nightlife_${prefix}auth_expires_at`);
+    if (prefix === "") {
+      window.localStorage.removeItem("nightlife_guest_bookings");
+      window.sessionStorage.removeItem("nightlife_last_booking");
     }
-    window.localStorage.removeItem("nightlife_guest_bookings");
-    window.sessionStorage.removeItem("nightlife_last_booking");
   }
 };
 
 export const clearAuthSession = () => {
-  clearStoredAuthSessions();
+  clearStoredAuthSession(getSessionScopePrefix());
+  notifyAuthSessionChanged();
+};
+
+export const clearAuthSessionForRole = (role: AuthRole) => {
+  clearStoredAuthSession(getSessionScopePrefixForRole(role));
   notifyAuthSessionChanged();
 };
 
@@ -265,12 +276,12 @@ export const setAuthSession = (session: AuthResponse) => {
 
   const maxAge = getSessionCookieMaxAge(session.accessToken);
   if (maxAge <= 0) {
-    clearAuthSession();
+    clearAuthSessionForRole(session.user.role);
     return;
   }
 
-  clearStoredAuthSessions();
   const prefix = getSessionScopePrefixForRole(session.user.role);
+  clearStoredAuthSession(prefix);
 
   setCookie(`${prefix}auth_token`, session.accessToken, maxAge);
   setCookie(`${prefix}user_role`, session.user.role, maxAge);

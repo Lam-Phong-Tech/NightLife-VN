@@ -32,52 +32,34 @@ const runMiddleware = (
   return middleware(request);
 };
 
-const expectBlockedRedirect = (
-  response: ReturnType<typeof middleware>,
-  expected: {
-    pathname: string;
-    requestedPortal: string;
-    activeRole: string;
-  },
-) => {
-  const location = response.headers.get("location");
-  expect(location).not.toBeNull();
-
-  const url = new URL(location || "https://nightlife.test");
-  expect(url.pathname).toBe(expected.pathname);
-  expect(url.searchParams.get("auth_notice")).toBe("login-blocked");
-  expect(url.searchParams.get("requested_portal")).toBe(expected.requestedPortal);
-  expect(url.searchParams.get("active_role")).toBe(expected.activeRole);
-};
-
 describe("auth middleware login-page redirects", () => {
   it.each([
-    ["/admin/dang-nhap", "admin"],
-    ["/dang-nhap-doi-tac", "partner"],
-    ["/dang-nhap", "member"],
-  ])("redirects an authenticated admin away from %s", (pathname, requestedPortal) => {
-    const response = runMiddleware(pathname, {
-      admin_auth_token: createToken("SUPER_ADMIN"),
-    });
+    ["/admin/dang-nhap", "admin_auth_token", "SUPER_ADMIN"],
+    ["/dang-nhap-doi-tac", "partner_auth_token", "PARTNER"],
+    ["/dang-nhap", "auth_token", "USER"],
+  ])(
+    "lets %s validate its own stored session against the backend",
+    (pathname, cookieName, role) => {
+      const response = runMiddleware(pathname, {
+        [cookieName]: createToken(role),
+      });
 
-    expectBlockedRedirect(response, {
-      pathname: "/admin",
-      requestedPortal,
-      activeRole: "SUPER_ADMIN",
-    });
-  });
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+    },
+  );
 
-  it("redirects an authenticated partner to the partner portal", () => {
-    const response = runMiddleware("/dang-nhap-doi-tac", {
-      partner_auth_token: createToken("PARTNER"),
-    });
+  it.each(["/dang-nhap-doi-tac", "/dang-nhap"])(
+    "allows an authenticated admin to open the independent login page %s",
+    (pathname) => {
+      const response = runMiddleware(pathname, {
+        admin_auth_token: createToken("SUPER_ADMIN"),
+      });
 
-    expectBlockedRedirect(response, {
-      pathname: "/partner",
-      requestedPortal: "partner",
-      activeRole: "PARTNER",
-    });
-  });
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+    },
+  );
 
   it("blocks an authenticated partner from opening partner registration", () => {
     const response = runMiddleware("/dang-ky-doi-tac", {
@@ -100,28 +82,15 @@ describe("auth middleware login-page redirects", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("redirects an authenticated member to the member account page", () => {
-    const response = runMiddleware("/dang-nhap", {
-      auth_token: createToken("USER"),
-    });
-
-    expectBlockedRedirect(response, {
-      pathname: "/tai-khoan",
-      requestedPortal: "member",
-      activeRole: "USER",
-    });
-  });
-
-  it("redirects directly to the active admin portal when another protected portal is requested", () => {
+  it("requests a partner login instead of redirecting to another active portal", () => {
     const response = runMiddleware("/partner", {
       admin_auth_token: createToken("ADMIN"),
     });
+    const location = new URL(response.headers.get("location") || "https://nightlife.test");
 
-    expectBlockedRedirect(response, {
-      pathname: "/admin",
-      requestedPortal: "partner",
-      activeRole: "ADMIN",
-    });
+    expect(location.pathname).toBe("/");
+    expect(location.searchParams.get("portal")).toBe("partner");
+    expect(location.searchParams.get("redirect")).toBe("/partner");
   });
 
   it("allows the login page when the stored token has expired", () => {
@@ -217,25 +186,23 @@ describe("auth middleware login-page redirects", () => {
     );
   });
 
-  it("hands an active central auth session to the matching portal", () => {
+  it("opens the matching login page so the client can validate a central session", () => {
     const response = runMiddleware(
       "/?portal=partner",
-      { admin_auth_token: createToken("OPERATOR") },
+      { partner_auth_token: createToken("STAFF") },
       "auth.demonightlight.test9.io.vn",
     );
     const location = new URL(response.headers.get("location") || "https://invalid.test");
 
     expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
-    expect(location.pathname).toBe("/chuyen-tiep");
-    expect(location.searchParams.get("portal")).toBe("admin");
-    expect(location.searchParams.get("active_role")).toBe("OPERATOR");
-    expect(location.searchParams.get("requested_portal")).toBe("partner");
+    expect(location.pathname).toBe("/dang-nhap-doi-tac");
+    expect(location.searchParams.get("portal")).toBe("partner");
   });
 
-  it("keeps the central handoff on the public auth hostname behind the reverse proxy", () => {
+  it("keeps the central login validation on the public auth hostname behind the reverse proxy", () => {
     const response = runMiddleware(
       "/?portal=partner",
-      { admin_auth_token: createToken("ADMIN") },
+      { partner_auth_token: createToken("PARTNER") },
       "127.0.0.1",
       {
         host: "127.0.0.1:3009",
@@ -245,8 +212,7 @@ describe("auth middleware login-page redirects", () => {
     const location = new URL(response.headers.get("location") || "https://invalid.test");
 
     expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
-    expect(location.pathname).toBe("/chuyen-tiep");
-    expect(location.searchParams.get("portal")).toBe("admin");
-    expect(location.searchParams.get("requested_portal")).toBe("partner");
+    expect(location.pathname).toBe("/dang-nhap-doi-tac");
+    expect(location.searchParams.get("portal")).toBe("partner");
   });
 });

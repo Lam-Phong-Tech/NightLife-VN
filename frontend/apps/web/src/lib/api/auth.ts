@@ -2,9 +2,9 @@ import { ApiError, apiClient, buildApiUrl } from "./client";
 import {
   clearAuthSession,
   getActiveBrowserAuthSession,
-  getAllAuthSessionTokens,
   getAuthSessionToken,
   getAuthSessionTokenForRole,
+  getAuthUser,
   setAuthSession,
   type AuthResponse,
   type AuthRole,
@@ -297,13 +297,15 @@ const submitPortalSession = (accessToken: string, portal: AuthPortal, redirectTo
   form.submit();
 };
 
-export const activateExclusiveAuthSession = async (
+export const activatePortalAuthSession = async (
   session: AuthResponse,
   options?: { redirectTo?: string },
 ) => {
-  const previousTokens = getAllAuthSessionTokens().filter((token) => token !== session.accessToken);
+  const previousToken = getAuthSessionTokenForRole(session.user.role);
 
-  await revokeAuthTokens(previousTokens);
+  if (previousToken && previousToken !== session.accessToken) {
+    await revokeAuthTokens([previousToken]);
+  }
   setAuthSession(session);
 
   if (!options || typeof window === "undefined") {
@@ -327,14 +329,20 @@ export const activateExclusiveAuthSession = async (
 
 export const handoffActiveAuthSession = () => {
   if (typeof window === "undefined") return false;
-  const activeSession = getActiveBrowserAuthSession();
+  const params = new URLSearchParams(window.location.search);
+  const requestedPortal = params.get("portal");
+  const portal: AuthPortal | null =
+    requestedPortal === "admin" || requestedPortal === "partner" || requestedPortal === "member"
+      ? requestedPortal
+      : null;
+  if (!portal) return false;
+
+  const activeSession = getActiveBrowserAuthSession(portal);
   if (!activeSession) return false;
 
   const accessToken = getAuthSessionTokenForRole(activeSession.role);
   if (!accessToken) return false;
 
-  const portal = portalForRole(activeSession.role);
-  const params = new URLSearchParams(window.location.search);
   const requestedRedirect = params.get("redirect");
   let redirectTo =
     requestedRedirect && isSafePortalRedirect(portal, requestedRedirect)
@@ -343,10 +351,7 @@ export const handoffActiveAuthSession = () => {
   if (params.get("auth_notice") === "login-blocked") {
     const noticeUrl = new URL(redirectTo, window.location.origin);
     noticeUrl.searchParams.set("auth_notice", "login-blocked");
-    noticeUrl.searchParams.set(
-      "requested_portal",
-      params.get("requested_portal") || "member",
-    );
+    noticeUrl.searchParams.set("requested_portal", params.get("requested_portal") || "member");
     noticeUrl.searchParams.set("active_role", params.get("active_role") || activeSession.role);
     redirectTo = `${noticeUrl.pathname}${noticeUrl.search}`;
   }
@@ -355,18 +360,32 @@ export const handoffActiveAuthSession = () => {
 };
 
 export const logoutBrowserProfile = async () => {
-  const tokens = getAllAuthSessionTokens();
+  const token = getAuthSessionToken();
+  const role = getAuthUser()?.role;
   clearAuthSession();
-  await revokeAuthTokens(tokens);
+  if (token) {
+    await revokeAuthTokens([token]);
+  }
 
   if (typeof window === "undefined") return;
   const hostKind = getNightlifeHostKind(window.location.hostname);
   if (!["public", "partner", "admin"].includes(hostKind)) return;
+  const portal: AuthPortal = role
+    ? portalForRole(role)
+    : hostKind === "admin"
+      ? "admin"
+      : hostKind === "partner"
+        ? "partner"
+        : "member";
 
   try {
     await fetch(`${nightlifeOrigins.auth}/api/auth/clear-session`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ portal }),
     });
   } catch {
     // The local portal session has already been removed. Central auth cleanup
