@@ -1628,91 +1628,84 @@ export default function AdminContentPage() {
     : [];
 
   return (
-    <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
+    <div className="p-3.5 md:p-10 position-relative min-h-full">
       
       {/* TABS & BUTTON */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 mb-6 md:mb-8">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 custom-scrollbar whitespace-nowrap bg-[#121118] p-1.5 rounded-xl border border-white/5 max-w-full">
           <button 
             onClick={() => setActiveTab('campaign')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
               background: activeTab === 'campaign' ? colors.goldGrad : 'transparent',
               color: activeTab === 'campaign' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'campaign' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Campaign & Discount
           </button>
           <button 
             onClick={() => setActiveTab('banner')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
               background: activeTab === 'banner' ? colors.goldGrad : 'transparent',
               color: activeTab === 'banner' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'banner' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Banner
           </button>
           <button 
             onClick={() => setActiveTab('featured')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
               background: activeTab === 'featured' ? colors.goldGrad : 'transparent',
               color: activeTab === 'featured' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'featured' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Dịch vụ nổi bật
           </button>
           <button
             onClick={() => setActiveTab('recommend')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none',
               background: activeTab === 'recommend' ? colors.goldGrad : 'transparent',
               color: activeTab === 'recommend' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'recommend' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Đề xuất tối nay
           </button>
           <button
             onClick={() => setActiveTab('tour')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none',
               background: activeTab === 'tour' ? colors.goldGrad : 'transparent',
               color: activeTab === 'tour' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'tour' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Tour
           </button>
           <button 
             onClick={() => setActiveTab('video')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
               background: activeTab === 'video' ? colors.goldGrad : 'transparent',
               color: activeTab === 'video' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'video' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Video Hot
           </button>
           <button 
             onClick={() => setActiveTab('blog')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
             style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
               background: activeTab === 'blog' ? colors.goldGrad : 'transparent',
               color: activeTab === 'blog' ? colors.onGold : colors.muted,
               fontWeight: activeTab === 'blog' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
             }}
           >
             Blog
@@ -1739,10 +1732,9 @@ export default function AdminContentPage() {
               setIsAdding(activeTab);
             }
           }}
+          className="h-10 flex items-center justify-center gap-2 border-none px-5 rounded-lg text-xs md:text-sm font-bold cursor-pointer flex-none self-start md:self-auto"
           style={{
-            height: '40px', display: 'flex', alignItems: 'center', gap: '8px',
-            background: colors.goldGrad, color: colors.onGold, border: 'none', padding: '0 20px',
-            borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+            background: colors.goldGrad, color: colors.onGold
           }}
         >
           <Plus size={18} strokeWidth={3} />
@@ -1755,7 +1747,7 @@ export default function AdminContentPage() {
       {/* CAMPAIGN CONTENT */}
       {activeTab === 'campaign' && (
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <div className="max-md:hidden" style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
             <span style={{ textAlign: 'center' }}>STT</span><span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
           </div>
           
@@ -1778,12 +1770,32 @@ export default function AdminContentPage() {
               if (camp.status === 'EXPIRED') { statusColor = '#9ca3af'; statusBorder = 'rgba(156,163,175,0.3)'; statusText = 'Đã kết thúc'; }
 
               return (
-                <div key={camp.id} onClick={() => handleEditCampaign(camp)} style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-                  <span style={{ color: '#8c8679', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>{index + 1}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>{discountText}</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>{camp.name}</span></div>
-                  <span style={{ color: '#c5c0b6' }}>{storeName}</span>
-                  <span style={{ color: '#8c8679', fontSize: '12px' }}>{timeText}</span>
-                  <span style={{ textAlign: 'right' }}><span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>{statusText}</span></span>
+                <div 
+                  key={camp.id} 
+                  onClick={() => handleEditCampaign(camp)} 
+                  className="p-3.5 border-b border-white/[0.04] text-xs md:text-sm cursor-pointer max-md:flex max-md:flex-col max-md:gap-2 md:grid md:grid-cols-[48px_1.6fr_1.4fr_1.2fr_130px] md:gap-3 md:items-center md:px-4.5"
+                >
+                  <span className="max-md:hidden" style={{ color: '#8c8679', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>{index + 1}</span>
+                  
+                  {/* Mobile Row 1 / Desktop Col 2 */}
+                  <div className="flex items-center justify-between w-full md:w-auto gap-2">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '48px', flex: 'none' }}>{discountText}</span>
+                      <span className="truncate" style={{ color: '#f3f0ea', fontWeight: 600 }}>{camp.name}</span>
+                    </div>
+                    <div className="md:hidden">
+                      <span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 8px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 600 }}>{statusText}</span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Row 2 / Desktop Col 3 & 4 */}
+                  <div className="flex items-center justify-between w-full md:contents text-xs text-[#c5c0b6] pt-0.5 md:pt-0">
+                    <span style={{ color: '#c5c0b6' }}>{storeName}</span>
+                    <span style={{ color: '#8c8679', fontSize: '11.5px' }}>{timeText}</span>
+                  </div>
+
+                  {/* Desktop Col 5 */}
+                  <span className="max-md:hidden" style={{ textAlign: 'right' }}><span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>{statusText}</span></span>
                 </div>
               );
             })
@@ -1793,7 +1805,7 @@ export default function AdminContentPage() {
 
       {/* BANNER CONTENT */}
       {activeTab === 'banner' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           {banners.map((banner) => {
             const metadata = (banner.metadata as any) || {};
             const displayStatus = banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'DRAFT' ? 'Nháp' : 'Ẩn';
