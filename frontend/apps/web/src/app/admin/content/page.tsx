@@ -2550,12 +2550,13 @@ export default function AdminContentPage() {
 
 
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+          <div className="flex items-center gap-3 flex-wrap mt-2">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0 custom-scrollbar" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px' }}>
               {['Tất cả', 'Hà Nội', 'TP. Hồ Chí Minh'].map(region => (
                 <span 
                   key={region}
                   onClick={() => setVideoRegion(region)}
+                  className="whitespace-nowrap flex-none"
                   style={{ 
                     padding: '6px 20px', borderRadius: '8px', 
                     background: videoRegion === region ? colors.goldGrad : 'transparent', 
@@ -2569,7 +2570,7 @@ export default function AdminContentPage() {
                 </span>
               ))}
             </div>
-            <div style={{ flex: 1 }}></div>
+            <div className="max-sm:hidden" style={{ flex: 1 }}></div>
             <span style={{ fontSize: '13px', color: colors.muted }}>{hotVideos.length} video đang hiển thị</span>
             <div 
               onClick={handleSaveHotVideos}
@@ -2578,7 +2579,7 @@ export default function AdminContentPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 md:gap-4">
             {isLoadingHotVideos ? (
               <DataSkeleton variant="media" count={3} columns={3} style={{ gridColumn: '1 / -1' }} />
             ) : hotVideos.length === 0 ? (
