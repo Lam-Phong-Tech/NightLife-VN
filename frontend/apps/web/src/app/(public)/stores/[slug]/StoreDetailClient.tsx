@@ -1609,6 +1609,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const heroSwipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0 });
   const lightboxSwipeRef = useRef({ active: false, startX: 0, startY: 0 });
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
+  const [lightboxMode, setLightboxMode] = useState<"photo" | "video">("photo");
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
@@ -1680,25 +1681,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const displayName = readableName(store.name);
   const rawGallery = store.gallery?.filter((item) => item.url) ?? [];
+  const photoGallery = rawGallery.filter((item) => item.type === "IMAGE");
   const videoGallery = rawGallery.filter((item) => item.type === "VIDEO");
-  const gallery = [...videoGallery, ...rawGallery.filter((item) => item.type !== "VIDEO")];
-  const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
-  const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
+  const gallery = photoGallery;
+  const lightboxGallery = lightboxMode === "video" ? videoGallery : gallery;
+  const selectedPhotoIndex = selectedGalleryIndex < gallery.length ? selectedGalleryIndex : 0;
+  const heroImage = gallery[0] ?? null;
+  const selectedMedia = gallery[selectedPhotoIndex] ?? heroImage;
   const hasHeroVisual = Boolean(galleryImageUrl(selectedMedia, heroImage));
   const heroBackground = galleryBackground(selectedMedia, heroImage);
-  const selectedMediaUrl = selectedMedia
-    ? (resolveClientUrl(selectedMedia.url) ?? selectedMedia.url)
-    : "";
-  const selectedVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMediaUrl) : "";
-  const selectedVideoIndex =
-    selectedMedia?.type === "VIDEO"
-      ? selectedGalleryIndex
-      : gallery.findIndex((item) => item.type === "VIDEO");
-  const shouldShowHeroVideoPreview =
-    selectedMedia?.type === "VIDEO" &&
-    Boolean(selectedVideoUrl) &&
-    !selectedVideoUrl.includes("youtube.com/embed") &&
-    !selectedVideoUrl.includes("player.vimeo.com");
   const desktopGalleryTiles = gallery.slice(0, 5);
   const mobileGalleryTiles = gallery;
   const tourMedia = videoGallery;
@@ -1925,7 +1916,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
-  const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
+  const lightboxMedia = lightboxGallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxMediaUrl = lightboxMedia
     ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url)
     : "";
@@ -1985,6 +1976,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     event?.stopPropagation();
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   };
+  const showPreviousLightboxMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setSelectedGalleryIndex((index) => (index <= 0 ? lightboxGallery.length - 1 : index - 1));
+  };
+  const showNextLightboxMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setSelectedGalleryIndex((index) => (index >= lightboxGallery.length - 1 ? 0 : index + 1));
+  };
   const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
   };
@@ -2032,7 +2033,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   };
   const handleLightboxTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
-    if (!touch || gallery.length < 2) return;
+    if (!touch || lightboxGallery.length < 2) return;
 
     lightboxSwipeRef.current = {
       active: true,
@@ -2044,7 +2045,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     const swipe = lightboxSwipeRef.current;
     const touch = event.changedTouches[0];
     resetLightboxSwipe();
-    if (!swipe.active || !touch || gallery.length < 2) return;
+    if (!swipe.active || !touch || lightboxGallery.length < 2) return;
 
     const deltaX = touch.clientX - swipe.startX;
     const deltaY = touch.clientY - swipe.startY;
@@ -2053,9 +2054,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     }
 
     if (deltaX > 0) {
-      showPreviousMedia();
+      showPreviousLightboxMedia();
     } else {
-      showNextMedia();
+      showNextLightboxMedia();
     }
   };
   const applyFavoriteChange = async (nextValue: boolean) => {
@@ -2118,13 +2119,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     event?.preventDefault();
     event?.stopPropagation();
     if (!gallery.length) return;
+    setLightboxMode("photo");
     setSelectedGalleryIndex(((index % gallery.length) + gallery.length) % gallery.length);
     setIsLightboxOpen(true);
   };
-  const openSelectedVideo = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    const videoIndex = selectedMedia?.type === "VIDEO" ? selectedGalleryIndex : selectedVideoIndex;
-    if (videoIndex < 0) return;
-    openGallery(videoIndex, event);
+  const openVideoGallery = (index: number, event?: ReactMouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!videoGallery.length) return;
+    setLightboxMode("video");
+    setSelectedGalleryIndex(((index % videoGallery.length) + videoGallery.length) % videoGallery.length);
+    setIsLightboxOpen(true);
   };
   const trackBookingClick = (surface: string) =>
     trackStoreDetailClick(store, "booking", {
@@ -2293,18 +2298,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <span>{translateText("Chưa có ảnh", activeLanguage)}</span>
                 </div>
               ) : null}
-              {shouldShowHeroVideoPreview ? (
-                <video
-                  className="hero-video-preview"
-                  src={selectedVideoUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                  aria-hidden="true"
-                />
-              ) : null}
               <div className="hero-top">
                 <Link
                   className="round-action hero-back"
@@ -2349,18 +2342,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
-              {selectedMedia?.type === "VIDEO" ? (
-                <button
-                  className="hero-video-play"
-                  type="button"
-                  aria-label={translateText("Xem video", activeLanguage)}
-                  onMouseDown={preventHeroControlMouseDown}
-                  onClick={openSelectedVideo}
-                >
-                  <Play size={34} fill="currentColor" />
-                </button>
-              ) : null}
-
               <div className="hero-name">
                 <h1>{displayName}</h1>
                 <div>
@@ -2377,20 +2358,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <div className="mobile-gallery-head">
                   <span>{translateText("Thư viện ảnh", activeLanguage)}</span>
                   <small>
-                    {selectedGalleryIndex + 1}/{gallery.length}
+                    {selectedPhotoIndex + 1}/{gallery.length}
                   </small>
                 </div>
                 <div className="mobile-gallery-rail hscroll">
                   {mobileGalleryTiles.map((item, index) => (
                     <button
                       key={`mobile-${item.id}-${index}`}
-                      className={index === selectedGalleryIndex ? "active" : undefined}
+                      className={index === selectedPhotoIndex ? "active" : undefined}
                       type="button"
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
                       aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
                       onClick={(event) => openGallery(index, event)}
                     >
-                      {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
                     </button>
                   ))}
                 </div>
@@ -2446,13 +2426,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 {desktopGalleryTiles.map((item, index) => (
                   <button
                     key={`${item.id}-${index}`}
-                    className={index === selectedGalleryIndex ? "active" : undefined}
+                    className={index === selectedPhotoIndex ? "active" : undefined}
                     type="button"
                     style={{ backgroundImage: galleryBackground(item, heroImage) }}
                     aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
                     onClick={(event) => openGallery(index, event)}
                   >
-                    {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
                   </button>
                 ))}
               </div>
@@ -2468,12 +2447,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       type="button"
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={(event) =>
-                        openGallery(
-                          gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index,
-                          event,
-                        )
-                      }
+                      onClick={(event) => openVideoGallery(index, event)}
                     >
                       <Play size={18} fill="currentColor" />
                       <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
@@ -2599,12 +2573,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       type="button"
                       key={`${item.id}-${index}`}
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={(event) =>
-                        openGallery(
-                          gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index,
-                          event,
-                        )
-                      }
+                      onClick={(event) => openVideoGallery(index, event)}
                     >
                       <Play size={18} fill="currentColor" />
                       <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
@@ -2689,13 +2658,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               >
                 <X size={22} />
               </button>
-              {gallery.length > 1 ? (
+              {lightboxGallery.length > 1 ? (
                 <button
                   className="lightbox-nav previous"
                   type="button"
                   aria-label="Media trước"
                   onMouseDown={preventHeroControlMouseDown}
-                  onClick={showPreviousMedia}
+                  onClick={showPreviousLightboxMedia}
                 >
                   <ChevronLeft size={28} />
                 </button>
@@ -2717,19 +2686,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <img src={lightboxMediaUrl} alt={lightboxMedia.alt || displayName} />
                 )}
               </div>
-              {gallery.length > 1 ? (
+              {lightboxGallery.length > 1 ? (
                 <button
                   className="lightbox-nav next"
                   type="button"
                   aria-label="Media sau"
                   onMouseDown={preventHeroControlMouseDown}
-                  onClick={showNextMedia}
+                  onClick={showNextLightboxMedia}
                 >
                   <ChevronRight size={28} />
                 </button>
               ) : null}
               <div className="lightbox-caption">
-                {selectedGalleryIndex + 1}/{gallery.length}
+                {selectedGalleryIndex + 1}/{lightboxGallery.length}
                 {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
               </div>
             </div>,

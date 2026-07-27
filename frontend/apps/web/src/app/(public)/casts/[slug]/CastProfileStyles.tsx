@@ -647,6 +647,24 @@ export function CastProfileStyles() {
         height: 78px;
       }
 
+      .cast-desktop .cast-video-grid-section {
+        padding: 0;
+        margin-top: 26px;
+      }
+
+      .cast-desktop .cast-video-grid-section .cast-mobile-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow: visible;
+      }
+
+      .cast-desktop .cast-video-grid-section .cast-gallery-tile {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        flex-basis: auto;
+      }
+
       .cast-gallery-tile.is-placeholder,
       .cast-thumb.is-placeholder,
       .cast-lightbox-thumb.is-placeholder {

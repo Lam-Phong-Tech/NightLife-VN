@@ -137,9 +137,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
-  const gallery = profile.gallery.length ? profile.gallery : placeholderGallery;
-  const photoGallery = gallery.filter((media) => media.type === "IMAGE");
-  const videoGallery = gallery.filter((media) => media.type === "VIDEO");
+  const allMedia = profile.gallery.length ? profile.gallery : placeholderGallery;
+  const photoGallery = allMedia.filter((media) => media.type === "IMAGE");
+  const videoGallery = allMedia.filter((media) => media.type === "VIDEO");
+  const gallery = photoGallery.length ? photoGallery : placeholderGallery;
   const shouldRenderPhotoGallery = photoGallery.length > 0 || videoGallery.length === 0;
   const area = buildCastArea(profile);
   const storeHref = `/stores/${profile.store.slug}`;
@@ -153,7 +154,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     [profile],
   );
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isVideoLightboxOpen, setIsVideoLightboxOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const heroSwipeRef = useRef({
@@ -314,6 +317,27 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     });
   };
 
+  const selectVideoMedia = (index: number, action: CastGalleryAction = "select") => {
+    setActiveVideoIndex(index);
+    track("gallery", {
+      action,
+      mediaIndex: index,
+      mediaType: videoGallery[index]?.type,
+      mediaId: videoGallery[index]?.id,
+    });
+  };
+
+  const openVideoLightbox = (index = activeVideoIndex) => {
+    setActiveVideoIndex(index);
+    setIsVideoLightboxOpen(true);
+    track("gallery", {
+      action: "open",
+      mediaIndex: index,
+      mediaType: videoGallery[index]?.type,
+      mediaId: videoGallery[index]?.id,
+    });
+  };
+
   const showPreviousMedia = () => {
     selectMedia(activeMediaIndex <= 0 ? gallery.length - 1 : activeMediaIndex - 1, "previous");
   };
@@ -404,18 +428,17 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
           ) : null}
           {videoGallery.length ? (
             <CastGallery
-              gallery={gallery}
-              activeIndex={activeMediaIndex}
+              gallery={videoGallery}
+              activeIndex={activeVideoIndex}
               variant="mobile"
               language={activeLanguage}
-              isLightboxOpen={isLightboxOpen}
+              isLightboxOpen={isVideoLightboxOpen}
               mobileMediaType="VIDEO"
               mobileTitle={translateText("Video Cast", activeLanguage)}
               mobileMeta={`${videoGallery.length} video`}
-              renderLightbox={!shouldRenderPhotoGallery}
-              onSelect={selectMedia}
-              onOpenLightbox={openLightbox}
-              onCloseLightbox={() => setIsLightboxOpen(false)}
+              onSelect={selectVideoMedia}
+              onOpenLightbox={openVideoLightbox}
+              onCloseLightbox={() => setIsVideoLightboxOpen(false)}
             />
           ) : null}
           <CastInfo
@@ -480,6 +503,21 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 />
               </div>
             </div>
+            {videoGallery.length ? (
+              <CastGallery
+                gallery={videoGallery}
+                activeIndex={activeVideoIndex}
+                variant="mobile"
+                language={activeLanguage}
+                isLightboxOpen={isVideoLightboxOpen}
+                mobileMediaType="VIDEO"
+                mobileTitle={translateText("Video Cast", activeLanguage)}
+                mobileMeta={`${videoGallery.length} video`}
+                onSelect={selectVideoMedia}
+                onOpenLightbox={openVideoLightbox}
+                onCloseLightbox={() => setIsVideoLightboxOpen(false)}
+              />
+            ) : null}
             <CastRelatedCasts
               relatedCasts={relatedCasts}
               variant="desktop"
