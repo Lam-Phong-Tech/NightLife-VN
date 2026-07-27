@@ -690,7 +690,10 @@ export default function Page() {
       }
       userFeedback.success({
         title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
-        description: "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
+        description: translateText(
+          "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
+          activeLanguage,
+        ),
       });
       const confirmParams = new URLSearchParams({ bookingId: booking.id });
       if (!isMemberMode) {

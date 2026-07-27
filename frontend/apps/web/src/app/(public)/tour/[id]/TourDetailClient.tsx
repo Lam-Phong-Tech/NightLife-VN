@@ -639,7 +639,10 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
       }
       userFeedback.success({
         title: "Đặt tour thành công",
-        description: "Yêu cầu tour đã được ghi nhận, đang chuyển sang trang xác nhận.",
+        description: translateText(
+          "Yêu cầu tour đã được ghi nhận, đang chuyển sang trang xác nhận.",
+          activeLanguage,
+        ),
       });
       const confirmParams = new URLSearchParams({ bookingId: booking.id });
       if (!savedAsMemberBooking) {
