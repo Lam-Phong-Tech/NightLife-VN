@@ -787,6 +787,60 @@ export default function Page() {
           }
         }
 
+        :global(html.vy-light) .wallet-page {
+          background: var(--vy-bg);
+          color: var(--vy-text);
+        }
+
+        :global(html.vy-light) .wallet-header p,
+        :global(html.vy-light) .wallet-card p,
+        :global(html.vy-light) .meta-row span,
+        :global(html.vy-light) .wallet-message,
+        :global(html.vy-light) .empty-state p {
+          color: var(--vy-text-2);
+        }
+
+        :global(html.vy-light) .eyebrow,
+        :global(html.vy-light) .wallet-summary strong,
+        :global(html.vy-light) .status-panel strong {
+          color: var(--vy-gold-pale);
+        }
+
+        :global(html.vy-light) .wallet-summary,
+        :global(html.vy-light) .wallet-card,
+        :global(html.vy-light) .status-panel,
+        :global(html.vy-light) .wallet-message,
+        :global(html.vy-light) .empty-state {
+          border-color: var(--vy-border-gold-22);
+          background: var(--vy-surface);
+          box-shadow: var(--vy-shadow-card);
+        }
+
+        :global(html.vy-light) .wallet-card h2,
+        :global(html.vy-light) .wallet-summary span,
+        :global(html.vy-light) .empty-state h2 {
+          color: var(--vy-text);
+        }
+
+        :global(html.vy-light) .wallet-tabs button,
+        :global(html.vy-light) .code-row button,
+        :global(html.vy-light) .wallet-message button {
+          border-color: var(--vy-border);
+          background: var(--vy-surface-2);
+          color: var(--vy-text-2);
+        }
+
+        :global(html.vy-light) .wallet-tabs span,
+        :global(html.vy-light) .code-row code {
+          background: var(--vy-surface-2);
+          color: var(--vy-text);
+          border-color: var(--vy-border);
+        }
+
+        :global(html.vy-light) .value-row strong {
+          color: var(--vy-gold-pale);
+        }
+
         @media (max-width: 760px) {
           .wallet-page {
             padding: 22px 14px 18px;

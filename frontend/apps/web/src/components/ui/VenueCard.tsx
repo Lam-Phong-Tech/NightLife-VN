@@ -22,9 +22,9 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onClick, onFavClick
       <div style={{ height: variant === 'horizontal' ? 'auto' : '118px', width: variant === 'horizontal' ? '108px' : 'auto', position: 'relative', flex: 'none' }}>
         <PlaceholderMedia src={venue.img} alt={venue.name || 'Địa điểm'} label="Ảnh quán" style={{ width: '100%', height: '100%' }} />
         {venue.hasBadge && (
-          <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(12,12,15,.72)', color: 'var(--vy-gold-pale)', border: '1px solid var(--vy-border-gold-22)', fontSize: '10.5px', fontWeight: '700', borderRadius: '14px', padding: '3px 9px' }}>{venue.badgeText}</span>
+          <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'var(--vy-surface)', color: 'var(--vy-gold-pale)', border: '1px solid var(--vy-border-gold-22)', fontSize: '10.5px', fontWeight: '700', borderRadius: '14px', padding: '3px 9px', boxShadow: 'var(--vy-shadow-card)' }}>{venue.badgeText}</span>
         )}
-        <span onClick={(e) => { e.preventDefault(); if (onFavClick) { onFavClick(e); } else if (venue.fav) { venue.fav(e); } }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <span onClick={(e) => { e.preventDefault(); if (onFavClick) { onFavClick(e); } else if (venue.fav) { venue.fav(e); } }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--vy-favorite),var(--vy-favorite-strong))', border: '1px solid var(--vy-favorite-border)', boxShadow: '0 10px 24px -14px var(--vy-favorite-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Image src={venue.favIcon || 'https://img.icons8.com/ios/100/FFFFFF/like.png'} width={16} height={16} alt="Fav" />
         </span>
       </div>

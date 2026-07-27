@@ -65,8 +65,8 @@ export default async function LegalDetailPage({ params }: PageProps) {
     <main
       style={{
         minHeight: "auto",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
+        background: "var(--vy-bg)",
+        color: "var(--vy-text)",
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
@@ -81,13 +81,13 @@ export default async function LegalDetailPage({ params }: PageProps) {
       <article style={{ maxWidth: "860px", margin: "0 auto" }}>
         <nav
           aria-label="Breadcrumb"
-          style={{ marginBottom: "18px", color: "#8c8679", fontSize: "13px", fontWeight: 700 }}
+          style={{ marginBottom: "18px", color: "var(--vy-muted)", fontSize: "13px", fontWeight: 700 }}
         >
-          <Link href="/" style={{ color: "#8c8679", textDecoration: "none" }}>
+          <Link href="/" style={{ color: "var(--vy-muted)", textDecoration: "none" }}>
             Trang chủ
           </Link>
           <span aria-hidden="true"> / </span>
-          <Link href="/legal" style={{ color: "#d4b26a", textDecoration: "none" }}>
+          <Link href="/legal" style={{ color: "var(--vy-gold)", textDecoration: "none" }}>
             Pháp lý
           </Link>
         </nav>
@@ -96,7 +96,7 @@ export default async function LegalDetailPage({ params }: PageProps) {
           <p
             style={{
               margin: 0,
-              color: "#d4b26a",
+              color: "var(--vy-gold)",
               fontSize: "12px",
               fontWeight: 850,
               letterSpacing: "1.8px",
@@ -116,10 +116,10 @@ export default async function LegalDetailPage({ params }: PageProps) {
           >
             {section.title}
           </h1>
-          <p style={{ margin: "14px 0 0", color: "#c5c0b6", fontSize: "16px", lineHeight: 1.75 }}>
+          <p style={{ margin: "14px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.75 }}>
             {section.description}
           </p>
-          <div style={{ marginTop: "14px", color: "#8c8679", fontSize: "12.5px", fontWeight: 800 }}>
+          <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12.5px", fontWeight: 800 }}>
             Cập nhật: {formatDate(section.updatedAt)}
           </div>
         </header>
@@ -127,10 +127,10 @@ export default async function LegalDetailPage({ params }: PageProps) {
         <aside
           style={{
             marginTop: "24px",
-            border: "1px solid rgba(212,178,106,.3)",
+            border: "1px solid var(--vy-border-gold-32)",
             borderRadius: "8px",
-            background: "rgba(212,178,106,.08)",
-            color: "#efe4c9",
+            background: "var(--vy-gold-soft-bg)",
+            color: "var(--vy-text-2)",
             padding: "16px 18px",
             lineHeight: 1.65,
           }}
@@ -145,7 +145,7 @@ export default async function LegalDetailPage({ params }: PageProps) {
                 {index + 1}. {item.heading}
               </h2>
               <p
-                style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}
+                style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85 }}
               >
                 {item.body}
               </p>

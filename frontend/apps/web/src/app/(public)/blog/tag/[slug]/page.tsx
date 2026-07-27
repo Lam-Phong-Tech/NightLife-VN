@@ -78,16 +78,16 @@ export default async function BlogTagPage({ params, searchParams }: PageProps) {
   ]);
 
   return (
-    <main style={{ minHeight: "auto", background: "#0c0c0f", color: "#f3f0ea", padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)" }}>
+    <main style={{ minHeight: "auto", background: "var(--vy-bg)", color: "var(--vy-text)", padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <section style={{ maxWidth: "980px", margin: "0 auto" }}>
-        <Link href="/blog" style={{ color: "#d4b26a", textDecoration: "none", fontSize: "13px", fontWeight: 800 }}>
+        <Link href="/blog" style={{ color: "var(--vy-gold)", textDecoration: "none", fontSize: "13px", fontWeight: 800 }}>
           Blog
         </Link>
         <h1 style={{ margin: "12px 0 0", fontSize: "clamp(32px, 6vw, 56px)", lineHeight: 1.04, fontWeight: 950 }}>
           #{tag}
         </h1>
-        <p style={{ maxWidth: 680, margin: "14px 0 0", color: "#c5c0b6", lineHeight: 1.7 }}>
+        <p style={{ maxWidth: 680, margin: "14px 0 0", color: "var(--vy-text-2)", lineHeight: 1.7 }}>
           Các bài viết được gắn cùng tag để khách tìm nhanh theo nhu cầu đặt chỗ, khu vực hoặc ưu đãi.
         </p>
         <div style={{ display: "grid", gap: "14px", marginTop: "26px" }}>
@@ -97,16 +97,16 @@ export default async function BlogTagPage({ params, searchParams }: PageProps) {
               href={`/blog/${post.slug}`}
               style={{
                 display: "block",
-                border: "1px solid rgba(212,178,106,.22)",
+                border: "1px solid var(--vy-border-gold-22)",
                 borderRadius: "8px",
                 padding: "18px",
-                background: "rgba(255,255,255,.035)",
+                background: "var(--vy-surface)",
                 color: "inherit",
                 textDecoration: "none",
               }}
             >
               <strong style={{ display: "block", fontSize: "20px", lineHeight: 1.3 }}>{post.title}</strong>
-              <span style={{ display: "block", marginTop: "8px", color: "#c5c0b6", lineHeight: 1.6 }}>
+              <span style={{ display: "block", marginTop: "8px", color: "var(--vy-text-2)", lineHeight: 1.6 }}>
                 {post.description}
               </span>
             </Link>

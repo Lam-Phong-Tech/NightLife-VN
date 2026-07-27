@@ -1830,6 +1830,32 @@
   outline: none;
 }
 
+:global(html.vy-light) .dialogOverlay {
+  background: rgba(33, 30, 25, 0.24);
+}
+
+:global(html.vy-light) .dialogPanel {
+  border-color: var(--vy-border-gold-22);
+  background: var(--vy-surface);
+  color: var(--vy-text);
+  box-shadow: var(--vy-shadow-card);
+}
+
+:global(html.vy-light) .dialogPanel h2,
+:global(html.vy-light) .dialogField span {
+  color: var(--vy-gold-pale);
+}
+
+:global(html.vy-light) .dialogPanel p {
+  color: var(--vy-text-2);
+}
+
+:global(html.vy-light) .dialogTextArea {
+  border-color: var(--vy-border);
+  background: var(--vy-surface-2);
+  color: var(--vy-text);
+}
+
 .dialogInput {
   width: 100%;
   min-height: 44px;

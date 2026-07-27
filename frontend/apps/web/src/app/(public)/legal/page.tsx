@@ -35,8 +35,8 @@ export default async function LegalPage() {
     <main
       style={{
         minHeight: "auto",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
+        background: "var(--vy-bg)",
+        color: "var(--vy-text)",
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px) clamp(24px, 4vw, 34px)",
       }}
     >
@@ -51,7 +51,7 @@ export default async function LegalPage() {
         <p
           style={{
             margin: 0,
-            color: "#d4b26a",
+            color: "var(--vy-gold)",
             fontSize: "12px",
             fontWeight: 850,
             letterSpacing: "1.8px",
@@ -72,7 +72,7 @@ export default async function LegalPage() {
         >
           Pháp lý và chính sách vận hành
         </h1>
-        <p style={{ maxWidth: "740px", margin: "16px 0 0", color: "#c5c0b6", fontSize: "16px", lineHeight: 1.75 }}>
+        <p style={{ maxWidth: "740px", margin: "16px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.75 }}>
           {legalPlaceholderNotice}
         </p>
 
@@ -92,19 +92,19 @@ export default async function LegalPage() {
               style={{
                 color: "inherit",
                 textDecoration: "none",
-                border: "1px solid rgba(212,178,106,.22)",
+                border: "1px solid var(--vy-border-gold-22)",
                 borderRadius: "8px",
-                background: "rgba(255,255,255,.04)",
+                background: "var(--vy-surface)",
                 padding: "18px",
               }}
             >
               <h2 style={{ margin: 0, fontSize: "20px", lineHeight: 1.25, fontWeight: 900 }}>
                 {section.title}
               </h2>
-              <p style={{ margin: "10px 0 0", color: "#c5c0b6", fontSize: "14px", lineHeight: 1.65 }}>
+              <p style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "14px", lineHeight: 1.65 }}>
                 {section.description}
               </p>
-              <div style={{ marginTop: "14px", color: "#8c8679", fontSize: "12px", fontWeight: 800 }}>
+              <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12px", fontWeight: 800 }}>
                 Cập nhật: {formatDate(section.updatedAt)}
               </div>
             </Link>
@@ -114,10 +114,10 @@ export default async function LegalPage() {
         <section
           style={{
             marginTop: "30px",
-            border: "1px solid rgba(255,255,255,.1)",
+            border: "1px solid var(--vy-border)",
             borderRadius: "8px",
             padding: "clamp(18px, 4vw, 28px)",
-            background: "rgba(255,255,255,.035)",
+            background: "var(--vy-surface)",
           }}
         >
           <h2 style={{ margin: 0, fontSize: "24px", lineHeight: 1.25, fontWeight: 900 }}>
@@ -126,10 +126,10 @@ export default async function LegalPage() {
           <div style={{ display: "grid", gap: "18px", marginTop: "18px" }}>
             {legalSections.map((section) => (
               <section key={section.slug}>
-                <h3 style={{ margin: 0, color: "#f0dda8", fontSize: "17px", fontWeight: 900 }}>
+                <h3 style={{ margin: 0, color: "var(--vy-gold-pale)", fontSize: "17px", fontWeight: 900 }}>
                   {section.title}
                 </h3>
-                <p style={{ margin: "8px 0 0", color: "#d7d0c3", fontSize: "15px", lineHeight: 1.75 }}>
+                <p style={{ margin: "8px 0 0", color: "var(--vy-text-2)", fontSize: "15px", lineHeight: 1.75 }}>
                   {section.items[0]?.body}
                 </p>
               </section>

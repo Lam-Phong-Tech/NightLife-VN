@@ -204,7 +204,7 @@ export default function Page() {
                     borderRadius: "50%",
                     display: "grid",
                     placeItems: "center",
-                    background: "#141417",
+                    background: "var(--vy-surface)",
                     color: colors.goldPale,
                     border: "2px solid rgba(36,26,10,.18)",
                     flex: "none",

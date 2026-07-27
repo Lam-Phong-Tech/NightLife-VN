@@ -693,6 +693,23 @@ export default function Page() {
           padding: 40px 28px 34px;
         }
 
+        html.vy-light .campaign-page {
+          background: var(--vy-bg);
+          color: var(--vy-text);
+        }
+
+        html.vy-light .campaign-header-simple h1 {
+          color: var(--vy-text);
+        }
+
+        html.vy-light .campaign-header-simple p {
+          color: var(--vy-text-2);
+        }
+
+        html.vy-light .filter-sort-row {
+          border-bottom-color: var(--vy-border);
+        }
+
         .campaign-shell {
           width: min(1180px, 100%);
           margin: 0 auto;
