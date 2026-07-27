@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Search, Send } from 'lucide-react';
+import { Search, Send, ArrowLeft } from 'lucide-react';
 
 import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/session';
 import { recordSessionReplacedNotice } from '@/lib/auth/session-replaced-notice';
@@ -338,7 +338,7 @@ export function AdminSupportDashboard() {
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-100px)] min-h-[600px] rounded-xl overflow-hidden font-sans antialiased"
+      className="flex flex-col h-[calc(100vh-100px)] min-h-[600px] max-md:h-[calc(100dvh-70px)] max-md:min-h-0 max-md:rounded-none max-md:border-none rounded-xl overflow-hidden font-sans antialiased"
       style={{
         background: '#0c0c0f',
         color: '#f3f0ea',
@@ -351,7 +351,7 @@ export function AdminSupportDashboard() {
       <div className="flex flex-1 min-h-0">
         {/* Cột trái: Pending Tickets / Hội thoại */}
         <div
-          className="w-[320px] flex-none flex flex-col"
+          className={`w-[320px] max-md:w-full flex-none flex flex-col ${activeTicketId ? 'max-md:hidden' : 'max-md:flex'}`}
           style={{
             borderRight: '1px solid rgba(255,255,255,.06)',
             background: 'rgba(255,255,255,.012)',
@@ -492,7 +492,7 @@ export function AdminSupportDashboard() {
 
         {/* Cột phải: Active Chat Thread */}
         <div
-          className="flex-1 min-w-0 flex flex-col"
+          className={`flex-1 min-w-0 flex flex-col ${!activeTicketId ? 'max-md:hidden' : 'max-md:flex'}`}
           style={{
             background: 'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(212,178,106,.03), transparent)',
           }}
@@ -501,13 +501,22 @@ export function AdminSupportDashboard() {
             <>
               {/* Header của khung chat */}
               <div
-                className="flex-none flex items-center gap-3 py-3.5 px-5 z-10"
+                className="flex-none flex items-center gap-2.5 py-3 px-3.5 md:px-5 z-10"
                 style={{
                   borderBottom: '1px solid rgba(255,255,255,.06)',
                   background: 'rgba(12,12,15,.6)',
                   backdropFilter: 'blur(8px)',
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => setActiveTicketId(null)}
+                  className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-[#d4b26a] bg-white/5 border border-white/10 hover:bg-white/10 flex-none"
+                  aria-label="Quay lại danh sách hội thoại"
+                  title="Quay lại danh sách"
+                >
+                  <ArrowLeft size={18} />
+                </button>
                 <div
                   style={{
                     width: '38px',
@@ -629,10 +638,10 @@ export function AdminSupportDashboard() {
                 }}
               >
                 {/* Các câu hỏi gợi ý */}
-                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto pb-1 custom-scrollbar max-md:flex-nowrap">
                   <button
                     onClick={() => setInput('Admin đã xác nhận với quán — bàn của anh/chị đã được giữ ạ ✓')}
-                    className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150"
+                    className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150 whitespace-nowrap flex-none"
                     style={{
                       color: '#c5c0b6',
                       background: 'rgba(255,255,255,.04)',
@@ -651,7 +660,7 @@ export function AdminSupportDashboard() {
                   </button>
                   <button
                     onClick={() => setInput('Dạ muốn đổi giờ/số người, anh/chị vui lòng hủy & đặt lại. Em hỗ trợ tạo booking mới ngay ạ.')}
-                    className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150"
+                    className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150 whitespace-nowrap flex-none"
                     style={{
                       color: '#c5c0b6',
                       background: 'rgba(255,255,255,.04)',
