@@ -20,7 +20,13 @@ describe('store field validation', () => {
     "Bob's Burger",
     'A&B Cafe',
     'Bar 1900, Hà Nội.',
-  ])('accepts valid store name "%s"', (name) => {
+    ';,S',
+    'A',
+    '<b>Club</b>',
+    'Club {VIP}',
+    'Club @ Home',
+    '--',
+  ])('accepts non-empty store name "%s"', (name) => {
     expect(isValidStoreName(name)).toBe(true);
   });
 
@@ -28,12 +34,9 @@ describe('store field validation', () => {
     expect(normalizeStoreName('  Mộc  ')).toBe('Mộc');
   });
 
-  it.each(['', ' ', 'A', '<b>Club</b>', 'Club {VIP}', 'Club @ Home', '--'])(
-    'rejects invalid store name "%s"',
-    (name) => {
-      expect(isValidStoreName(name)).toBe(false);
-    },
-  );
+  it.each(['', ' '])('rejects empty store name "%s"', (name) => {
+    expect(isValidStoreName(name)).toBe(false);
+  });
 
   it.each([
     '',
@@ -70,9 +73,9 @@ describe('store field validation', () => {
     expect(dto.phone).toBe('+84901234567');
   });
 
-  it('rejects invalid name and phone on update payloads', async () => {
+  it('rejects empty name and invalid phone on update payloads', async () => {
     const dto = plainToInstance(UpdateAdminStoreDto, {
-      name: '<b>Club</b>',
+      name: '   ',
       phone: '0123456789',
     });
     const errors = await validate(dto);

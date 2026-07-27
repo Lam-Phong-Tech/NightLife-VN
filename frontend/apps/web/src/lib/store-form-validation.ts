@@ -1,6 +1,3 @@
-const storeNamePattern = /^[\p{L}\p{N} &'.,-]+$/u;
-const storeNameContentPattern = /[\p{L}\p{N}]/u;
-const storeNameBlockedCharacterPattern = /[<>{}]/;
 const storePhoneCharacterPattern = /^[0-9+\-\s().]+$/;
 const vietnamMobilePattern = /^0(?:3[2-9]|5[25689]|7[06-9]|8[1-689]|9\d)\d{7}$/;
 const vietnamLandlinePattern = /^02\d{9}$/;
@@ -14,22 +11,6 @@ export const validateStoreName = (value: string): string => {
 
   if (!normalizedName) {
     return 'Vui lòng nhập tên quán.';
-  }
-
-  if (normalizedName.length < 2) {
-    return 'Tên quán phải có ít nhất 2 ký tự.';
-  }
-
-  if (storeNameBlockedCharacterPattern.test(normalizedName)) {
-    return 'Tên quán không được chứa thẻ HTML hoặc các ký tự <, >, {, }.';
-  }
-
-  if (!storeNamePattern.test(normalizedName)) {
-    return "Tên quán chỉ được gồm chữ cái, chữ số, khoảng trắng và các ký tự & ' - . ,";
-  }
-
-  if (!storeNameContentPattern.test(normalizedName)) {
-    return 'Tên quán phải có ít nhất một chữ cái hoặc chữ số.';
   }
 
   return '';

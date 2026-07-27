@@ -15,7 +15,13 @@ describe('store name validation', () => {
     "Bob's Burger",
     'A&B Cafe',
     'Bar 1900, Hà Nội.',
-  ])('accepts valid store name "%s"', (name) => {
+    ';,S',
+    'A',
+    '<b>Club</b>',
+    'Club {VIP}',
+    'Club @ Home',
+    '--',
+  ])('accepts non-empty store name "%s"', (name) => {
     expect(validateStoreName(name)).toBe('');
   });
 
@@ -26,12 +32,7 @@ describe('store name validation', () => {
   it.each([
     ['', 'Vui lòng nhập tên quán.'],
     ['   ', 'Vui lòng nhập tên quán.'],
-    ['A', 'Tên quán phải có ít nhất 2 ký tự.'],
-    ['<b>Club</b>', 'Tên quán không được chứa thẻ HTML hoặc các ký tự <, >, {, }.'],
-    ['Club {VIP}', 'Tên quán không được chứa thẻ HTML hoặc các ký tự <, >, {, }.'],
-    ['Club @ Home', "Tên quán chỉ được gồm chữ cái, chữ số, khoảng trắng và các ký tự & ' - . ,"],
-    ['--', 'Tên quán phải có ít nhất một chữ cái hoặc chữ số.'],
-  ])('rejects invalid store name "%s"', (name, message) => {
+  ])('rejects empty store name "%s"', (name, message) => {
     expect(validateStoreName(name)).toBe(message);
   });
 });

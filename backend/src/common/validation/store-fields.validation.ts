@@ -1,8 +1,5 @@
 import { registerDecorator, type ValidationOptions } from 'class-validator';
 
-const storeNamePattern = /^[\p{L}\p{N} &'.,-]+$/u;
-const storeNameContentPattern = /[\p{L}\p{N}]/u;
-const storeNameBlockedCharacterPattern = /[<>{}]/;
 const storePhoneCharacterPattern = /^[0-9+\-\s().]+$/;
 const vietnamMobilePattern = /^0(?:3[2-9]|5[25689]|7[06-9]|8[1-689]|9\d)\d{7}$/;
 const vietnamLandlinePattern = /^02\d{9}$/;
@@ -16,12 +13,7 @@ export const isValidStoreName = (value: unknown) => {
   if (typeof value !== 'string') return false;
 
   const normalizedName = normalizeStoreName(value);
-  return (
-    normalizedName.length >= 2 &&
-    !storeNameBlockedCharacterPattern.test(normalizedName) &&
-    storeNamePattern.test(normalizedName) &&
-    storeNameContentPattern.test(normalizedName)
-  );
+  return normalizedName.length > 0;
 };
 
 export const isValidVietnamStorePhone = (value: unknown) => {
@@ -56,7 +48,7 @@ export function IsStoreName(validationOptions?: ValidationOptions) {
       validator: {
         validate: isValidStoreName,
         defaultMessage() {
-          return "Tên quán phải có ít nhất 2 ký tự và chỉ gồm chữ cái, chữ số, khoảng trắng, &, ', -, ., ,.";
+          return 'Vui lòng nhập tên quán.';
         },
       },
     });
