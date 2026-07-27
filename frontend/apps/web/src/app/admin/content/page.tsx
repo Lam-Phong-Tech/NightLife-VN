@@ -1972,42 +1972,41 @@ export default function AdminContentPage() {
           ) : blogs.map((blog) => (
             <div 
               key={blog.id} 
-              style={{ 
-                background: colors.surface1, border: `1px solid ${colors.borderSoft}`, 
-                borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px',
-              }}
+              className="p-3.5 md:p-4 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 bg-[#121118]"
             >
-              <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                {(blog.metadata as any)?.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={(blog.metadata as any).image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : null}
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: colors.text, margin: '0 0 6px 0' }}>{blog.title}</h3>
-                <div style={{ fontSize: '13px', color: colors.muted }}>
-                  {(blog.metadata as any)?.category || 'Không phân loại'} · {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div style={{ width: '64px', height: '48px', borderRadius: '8px', background: '#271932', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                  {(blog.metadata as any)?.image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={(blog.metadata as any).image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : null}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 className="text-xs md:text-sm font-bold text-[#f3f0ea] m-0 truncate" title={blog.title}>{blog.title}</h3>
+                  <div style={{ fontSize: '11.5px', color: colors.muted, marginTop: '2px' }}>
+                    {(blog.metadata as any)?.category || 'Không phân loại'} · {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', paddingRight: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div 
                     onClick={() => handleEditBlog(blog)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
                   >
-                    <Pencil size={15} /> <span style={{ fontWeight: 600 }}>Sửa</span>
+                    <Pencil size={14} /> <span style={{ fontWeight: 600 }}>Sửa</span>
                   </div>
                   <div 
                     onClick={() => window.open(`/blog/${blog.slug}?preview=1`, '_blank')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
                   >
-                    <Eye size={15} /> <span style={{ fontWeight: 600 }}>Xem</span>
+                    <Eye size={14} /> <span style={{ fontWeight: 600 }}>Xem</span>
                   </div>
                 </div>
                 <span style={{ 
                   border: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').border, 
                   color: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').color, 
-                  padding: '4px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, display: 'inline-block', minWidth: '80px', textAlign: 'center'
+                  padding: '3px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, display: 'inline-block', flex: 'none', textAlign: 'center'
                 }}>
                   {blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp'}
                 </span>
