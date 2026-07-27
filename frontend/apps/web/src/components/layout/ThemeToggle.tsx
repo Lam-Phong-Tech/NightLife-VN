@@ -41,6 +41,7 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
 
   return (
     <button
+      className="nl-site-action-control nl-site-theme-trigger"
       onClick={toggleTheme}
       title="Chuyển giao diện sáng/tối"
       aria-label="Chuyển giao diện sáng/tối"

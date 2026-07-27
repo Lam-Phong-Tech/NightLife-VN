@@ -597,6 +597,7 @@ function SupportChatButton({
   return (
     <button
       type="button"
+      className="nl-site-action-control nl-site-chat-trigger"
       data-support-chat-trigger="true"
       aria-haspopup="dialog"
       aria-expanded={isOpen}

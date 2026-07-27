@@ -231,6 +231,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
     <div ref={pickerRef} style={{ position: "relative", display: "inline-flex" }}>
       <button
         type="button"
+        className="nl-site-action-control nl-site-language-trigger"
         aria-haspopup={isMobile ? "dialog" : "menu"}
         aria-expanded={isOpen}
         aria-label={`${chooseLanguageLabel}: ${activeLanguage.label}`}

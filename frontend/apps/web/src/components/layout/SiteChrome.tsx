@@ -390,6 +390,7 @@ function NotificationBellButton({
   return (
     <button
       type="button"
+      className="nl-site-action-control nl-site-notification-trigger"
       data-notification-trigger="true"
       aria-haspopup="dialog"
       aria-expanded={isOpen}
@@ -2340,6 +2341,7 @@ export function SiteChrome({
               {!authUser ? (
                 <Link
                   href={memberLoginHref}
+                  className="nl-site-action-control nl-site-login-link"
                   aria-label="Đăng nhập"
                   style={{
                     minHeight: "36px",
@@ -2407,6 +2409,7 @@ export function SiteChrome({
               {!authUser ? (
                 <Link
                   href={memberLoginHref}
+                  className="nl-site-action-control nl-site-login-link"
                   style={{
                     minHeight: "40px",
                     padding: "0 18px",
@@ -2430,6 +2433,7 @@ export function SiteChrome({
               ) : (
                 <Link
                   href={resolveHref("/tai-khoan")}
+                  className="nl-site-action-control nl-site-user-link"
                   title="Xem thông tin tài khoản"
                   style={{
                     minHeight: "40px",
