@@ -495,26 +495,10 @@ export default function AdminPartnersPage() {
     : false;
 
   return (
-    <div style={{ display: "flex", height: "100%", minHeight: "calc(100vh - 80px)" }}>
-      <div
-        style={{
-          width: 360,
-          borderRight: `1px solid ${colors.borderSoft}`,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div style={{ padding: "24px 20px 16px" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 4,
-              background: colors.surface1,
-              borderRadius: 8,
-              padding: 4,
-            }}
-          >
+    <div className="flex flex-col md:flex-row min-h-[calc(100dvh-80px)] w-full max-w-full overflow-x-hidden">
+      <div className="w-full md:w-[360px] flex-none border-b md:border-b-0 md:border-r border-white/10 flex flex-col">
+        <div style={{ padding: "16px 16px 12px" }}>
+          <div className="grid grid-cols-2 gap-1.5 bg-[#121118] rounded-xl p-1.5 w-full">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
@@ -527,19 +511,15 @@ export default function AdminPartnersPage() {
                     setActionTone("info");
                     setActionMessage("");
                   }}
+                  className="w-full py-2 px-1.5 rounded-lg border-0 text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer transition-all min-w-0"
                   style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    borderRadius: 6,
-                    border: "none",
                     background: isActive ? colors.goldGrad : "transparent",
                     color: isActive ? colors.onGold : colors.muted,
                     fontWeight: isActive ? 700 : 500,
-                    fontSize: 13,
-                    cursor: "pointer",
                   }}
                 >
-                  {tab.label} {counts[tab.key] || ""}
+                  <span className="truncate">{tab.label}</span>
+                  <span className="flex-none">{counts[tab.key] || ""}</span>
                 </button>
               );
             })}
@@ -667,18 +647,10 @@ export default function AdminPartnersPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: colors.bg, overflowY: "auto" }}>
+      <div className="flex-1 min-w-0 flex flex-col bg-[#0c0c0f] overflow-y-auto max-w-full">
         {selectedRequest ? (
-          <div style={{ padding: 40, maxWidth: 960, width: "100%" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: 24,
-                marginBottom: 36,
-              }}
-            >
+          <div className="p-4 md:p-10 max-w-[960px] w-full">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 md:mb-9">
               <div>
                 <div
                   style={{
@@ -873,14 +845,7 @@ export default function AdminPartnersPage() {
               </Section>
             ) : null}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 28,
-                marginBottom: 30,
-              }}
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-7 mb-7">
               <InfoField label="Người liên hệ" value={selectedRequest.contactName} />
               <InfoField label="Số điện thoại" value={selectedRequest.contactPhone} highlight />
               <InfoField label="Email" value={selectedRequest.contactEmail} />
