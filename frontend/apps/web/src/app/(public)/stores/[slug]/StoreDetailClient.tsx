@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Heart,
   ImageOff,
   Loader2,
   Minus,
@@ -48,6 +47,7 @@ import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import type {
   PublicStoreDetail,
@@ -2314,13 +2314,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <ChevronLeft size={20} />
                 </Link>
                 <div className="hero-actions">
-                  <IconButton
+                  <FavoriteButton
                     label={translateText(isFavorite ? "Bỏ lưu quán" : "Lưu quán", activeLanguage)}
-                    className={`store-favorite-action${isFavorite ? " is-active" : ""}`}
+                    className="round-action store-favorite-action"
+                    isFavorite={isFavorite}
+                    size="detail"
                     onClick={toggleFavorite}
-                  >
-                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-                  </IconButton>
+                  />
                 </div>
               </div>
 

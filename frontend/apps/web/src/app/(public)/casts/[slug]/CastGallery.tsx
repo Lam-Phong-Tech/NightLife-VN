@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Heart, ImageOff, Play, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Play, Star, X } from "lucide-react";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { resolveClientUrl } from "@/lib/api/client";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
@@ -199,15 +200,14 @@ export function CastGallery({
           {copy.acceptingTonight}
         </span>
         {onToggleFavorite ? (
-          <button
-            type="button"
-            className={`cast-favorite-action${isFavorite ? " is-active" : ""}`}
+          <FavoriteButton
+            className="cast-favorite-action"
+            isFavorite={isFavorite}
+            label={favoriteLabel ?? copy.favorite}
+            size="detail"
             onClick={onToggleFavorite}
-            aria-label={favoriteLabel}
             title={favoriteLabel}
-          >
-            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-          </button>
+          />
         ) : null}
         {gallery.length > 1 ? (
           <div className="cast-desktop-media-nav" aria-label={copy.gallery}>

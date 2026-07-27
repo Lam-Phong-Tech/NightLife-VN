@@ -37,6 +37,7 @@ import {
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
 import {
   contentApi,
@@ -2075,9 +2076,10 @@ function VenueMiniCard({
         label="Ảnh quán"
         style={{ height: compact ? "112px" : "156px", position: "relative" }}
       >
-        <button
-          type="button"
-          aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+        <FavoriteButton
+          isFavorite={isFavorite}
+          label={isFavorite ? "Bo luu quan" : "Luu quan"}
+          size="compact"
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -2087,27 +2089,8 @@ function VenueMiniCard({
             position: "absolute",
             top: 10,
             right: 10,
-            width: 30,
-            minWidth: 30,
-            maxWidth: 30,
-            height: 30,
-            minHeight: 30,
-            maxHeight: 30,
-            aspectRatio: "1 / 1",
-            border: 0,
-            borderRadius: "50%",
-            background: "rgba(12,12,15,.7)",
-            color: isFavorite ? colors.rose : "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxSizing: "border-box",
-            padding: 0,
-            cursor: "pointer",
           }}
-        >
-          <Heart size={15} fill={isFavorite ? "currentColor" : "none"} />
-        </button>
+        />
       </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>

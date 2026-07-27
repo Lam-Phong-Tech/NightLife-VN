@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Clock3, Heart, ImageIcon, MapPin, Phone, Play, Tag, Users, WalletCards } from "lucide-react";
+import { Clock3, ImageIcon, MapPin, Phone, Play, Tag, Users, WalletCards } from "lucide-react";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import type { PublicStoreDetail, StoreGalleryItem } from "@/lib/api/store-detail";
 import { formatPriceTier } from "@/lib/price-tier";
 import { categoryLabels } from "./store-detail.helpers";
@@ -137,13 +138,12 @@ export function StoreDetailHeader({
             </div>
           </div>
           <div className="legacy-summary-actions">
-            <button
-              type="button"
-              aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+            <FavoriteButton
+              isFavorite={isFavorite}
+              label={isFavorite ? "Bo luu quan" : "Luu quan"}
+              size="detail"
               onClick={onToggleFavorite}
-            >
-              <Heart size={18} fill={isFavorite ? "#ff3d71" : "none"} color={isFavorite ? "#ff3d71" : "currentColor"} />
-            </button>
+            />
             {store.phone ? (
               <a href={`tel:${store.phone}`} aria-label="Gọi quán" onClick={onTrackCall}>
                 <Phone size={18} />

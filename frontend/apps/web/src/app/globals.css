@@ -44,7 +44,11 @@
   --vy-notification-panel-bg: #15131a;
   --vy-notification-row-bg: #15131a;
   --vy-notification-unread-bg: #241f15;
-  --vy-favorite: #d4b26a;
+  --vy-favorite: #ff4f8b;
+  --vy-favorite-strong: #ff2f78;
+  --vy-favorite-soft: rgba(255, 79, 139, 0.16);
+  --vy-favorite-border: rgba(255, 79, 139, 0.44);
+  --vy-favorite-glow: rgba(255, 79, 139, 0.3);
   --vy-gold-grad: linear-gradient(135deg, #fff7d7 0%, #f7d978 42%, #d5a23a 100%);
   --vy-on-gold: #241a0a;
   --vy-success: #7fd3a2;
@@ -87,6 +91,10 @@ html.vy-light {
   --vy-notification-row-bg: #fffaf2;
   --vy-notification-unread-bg: #f8edd7;
   --vy-favorite: #e11d48;
+  --vy-favorite-strong: #be123c;
+  --vy-favorite-soft: rgba(225, 29, 72, 0.13);
+  --vy-favorite-border: rgba(225, 29, 72, 0.38);
+  --vy-favorite-glow: rgba(225, 29, 72, 0.22);
   --vy-success: #1f8a5b;
   --vy-warn: #b07818;
   --vy-error: #c2455c;
@@ -95,6 +103,138 @@ html.vy-light {
   --vy-shadow: 0 20px 48px -28px rgba(80, 55, 18, 0.3);
   --vy-shadow-card: 0 14px 36px -28px rgba(80, 55, 18, 0.25);
   color-scheme: light;
+}
+
+.nl-favorite-button {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid var(--vy-favorite-border);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--vy-favorite);
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.12), transparent 56%),
+    rgba(12, 12, 15, 0.74);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 12px 30px -18px rgba(0, 0, 0, 0.82);
+  cursor: pointer;
+  appearance: none;
+  box-sizing: border-box;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.nl-favorite-button--compact {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+.nl-favorite-button--detail {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+}
+
+.nl-favorite-button.is-active {
+  color: #fff;
+  border-color: rgba(255, 79, 139, 0.68);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.28), transparent 54%),
+    linear-gradient(135deg, var(--vy-favorite), var(--vy-favorite-strong));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 0 0 5px var(--vy-favorite-soft),
+    0 14px 34px -16px var(--vy-favorite-glow);
+}
+
+.nl-favorite-button:where(:hover, :focus-visible) {
+  transform: translateY(-1px);
+  border-color: rgba(255, 79, 139, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 0 5px var(--vy-favorite-soft),
+    0 15px 32px -16px var(--vy-favorite-glow);
+  outline: none;
+}
+
+.nl-favorite-button:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.nl-favorite-button:disabled,
+.nl-favorite-button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.nl-favorite-button__icon {
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
+.nl-favorite-button.venue-heart,
+.nl-favorite-button.cast-card-favorite,
+.nl-favorite-button.cast-favorite-action,
+.nl-favorite-button.store-favorite-action {
+  color: var(--vy-favorite);
+  border-color: var(--vy-favorite-border);
+}
+
+.nl-favorite-button.venue-heart,
+.nl-favorite-button.cast-card-favorite {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+}
+
+.nl-favorite-button--detail.cast-icon-link,
+.nl-favorite-button--detail.round-action,
+.nl-favorite-button--detail.cast-favorite-action,
+.nl-favorite-button--detail.store-favorite-action {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+}
+
+.nl-favorite-button.venue-heart.is-active,
+.nl-favorite-button.cast-card-favorite.is-active,
+.nl-favorite-button.cast-favorite-action.is-active,
+.nl-favorite-button.store-favorite-action.is-active {
+  color: #fff;
+  border-color: rgba(255, 79, 139, 0.68);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.28), transparent 54%),
+    linear-gradient(135deg, var(--vy-favorite), var(--vy-favorite-strong));
+}
+
+html.vy-light .nl-favorite-button {
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.72), transparent 58%),
+    rgba(255, 250, 248, 0.86);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.74) inset,
+    0 10px 26px -20px rgba(190, 18, 60, 0.42);
+}
+
+html.vy-light .nl-favorite-button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #ff5d98, var(--vy-favorite-strong));
 }
 
 :root {

@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Heart,
   History,
   Languages,
   MapPin,
@@ -30,6 +29,7 @@ import {
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Pagination } from "@/components/ui/Pagination";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
@@ -1532,20 +1532,15 @@ function CastDiscoveryCard({
           </div>
         </div>
       </Link>
-      <span
-        className={`cast-card-favorite${isFavorite ? " is-active" : ""}`}
-        role="button"
-        tabIndex={0}
-        aria-pressed={isFavorite}
+      <FavoriteButton
+        as="span"
+        className="cast-card-favorite"
+        isFavorite={isFavorite}
+        label={favoriteLabel}
+        size="card"
         onClick={handleFavoriteClick}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
-        }}
-        aria-label={favoriteLabel}
         title={favoriteLabel}
-      >
-        <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-      </span>
+      />
     </article>
   );
 }

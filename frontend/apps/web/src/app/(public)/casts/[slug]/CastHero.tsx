@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { ChevronLeft, ChevronRight, Heart, ImageOff, MapPin, Play, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, MapPin, Play, Star } from "lucide-react";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
 import { isPlaceholderCastMedia, mediaPreviewBg } from "./cast-profile.helpers";
@@ -75,15 +76,14 @@ export function CastHero({
         <Link href="/danh-sach-cast" className="cast-icon-link cast-back-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
-        <button
-          type="button"
-          className={`cast-icon-link cast-favorite-action${isFavorite ? " is-active" : ""}`}
+        <FavoriteButton
+          className="cast-icon-link cast-favorite-action"
+          isFavorite={isFavorite}
+          label={favoriteLabel}
+          size="detail"
           onClick={onToggleFavorite}
-          aria-label={favoriteLabel}
           title={favoriteLabel}
-        >
-          <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-        </button>
+        />
       </div>
 
       {activeMedia.type === "VIDEO" ? (

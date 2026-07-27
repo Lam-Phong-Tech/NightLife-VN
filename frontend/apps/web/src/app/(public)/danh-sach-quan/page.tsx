@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Heart,
   History,
   LocateFixed,
   MapPin,
@@ -24,6 +23,7 @@ import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useLanguage } from "@/components/providers/LanguageProvider";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Pagination } from "@/components/ui/Pagination";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
@@ -1979,19 +1979,14 @@ function VenueResultCard({
           {venue.statusLabel}
         </span>
         <span className="venue-deal">{venue.dealLabel}</span>
-        <span
-          className={`venue-heart ${isFavorite ? "is-active" : ""}`}
-          role="button"
-          tabIndex={0}
-          aria-label={isFavorite ? copy.unsaveVenue : copy.saveVenue}
-          aria-pressed={isFavorite}
+        <FavoriteButton
+          as="span"
+          className="venue-heart"
+          isFavorite={isFavorite}
+          label={isFavorite ? copy.unsaveVenue : copy.saveVenue}
+          size="card"
           onClick={handleFavoriteClick}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
-          }}
-        >
-          <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-        </span>
+        />
       </div>
 
       <div className="venue-card-body">
