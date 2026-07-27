@@ -186,6 +186,7 @@ export default function Page() {
         <div className="nl-account-layout">
           <aside style={{ display: "grid", gap: 16 }}>
             <section
+              className="nl-account-profile-card"
               style={{
                 border: `1px solid ${colors.borderStrong}`,
                 borderRadius: 22,
@@ -198,6 +199,7 @@ export default function Page() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div
+                  className="nl-account-avatar"
                   style={{
                     width: 58,
                     height: 58,
@@ -244,12 +246,12 @@ export default function Page() {
                     {accountEmail}
                   </p>
                 </div>
-                <span style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
+                <span className="nl-account-tier" style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
                   {tier}
                 </span>
               </div>
 
-              <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
+              <div className="nl-account-points-panel" style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
                   <span>{translateText("Điểm thưởng", activeLanguage)}</span>
                   <span>{pointFormatter.format(rewardPoints)} {translateText("điểm", activeLanguage)}</span>
@@ -333,6 +335,32 @@ export default function Page() {
           </div>
         </div>
       </section>
+      <style>{`
+        html.vy-light .nl-account-profile-card {
+          background:
+            radial-gradient(circle at 82% 12%, rgba(212,178,106,.16), transparent 28%),
+            linear-gradient(135deg, #fffaf1, #f6ead2 58%, #ead19c) !important;
+          color: #241a0a !important;
+          box-shadow: 0 18px 42px -30px rgba(80,55,18,.34);
+        }
+
+        html.vy-light .nl-account-avatar {
+          background: #fff !important;
+          color: #9c742c !important;
+          border-color: rgba(150,116,52,.24) !important;
+        }
+
+        html.vy-light .nl-account-tier {
+          border: 1px solid rgba(150,116,52,.26);
+          background: #fff7e8 !important;
+          color: #7a551b !important;
+        }
+
+        html.vy-light .nl-account-points-panel {
+          background: rgba(255,255,255,.5) !important;
+          border: 1px solid rgba(150,116,52,.18);
+        }
+      `}</style>
     </main>
   );
 }

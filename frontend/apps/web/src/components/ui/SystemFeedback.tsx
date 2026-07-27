@@ -803,6 +803,67 @@ const feedbackStyles = `
     margin: 0 auto 18px;
   }
 
+  html.vy-light .nl-system-toast {
+    border-color: rgba(150,116,52,.2);
+    background: rgba(255,250,241,.98);
+    color: #241a0a;
+    box-shadow: 0 18px 42px -24px rgba(80,55,18,.34);
+  }
+
+  html.vy-light .nl-system-toast-copy p {
+    color: #6f6658;
+  }
+
+  html.vy-light .nl-system-toast-action {
+    border-color: rgba(150,116,52,.28);
+    background: #fff7e8;
+    color: #8f6a2a;
+  }
+
+  html.vy-light .nl-system-toast-close {
+    color: #8f8677;
+  }
+
+  html.vy-light .nl-system-modal-overlay,
+  html.vy-light .nl-system-sheet-overlay {
+    background: rgba(36,26,10,.42);
+    color: #241a0a;
+  }
+
+  html.vy-light .nl-system-modal,
+  html.vy-light .nl-system-sheet {
+    border-color: rgba(150,116,52,.22);
+    background: #fffaf1;
+    box-shadow: 0 26px 62px -28px rgba(80,55,18,.46);
+  }
+
+  html.vy-light .nl-system-modal h2,
+  html.vy-light .nl-system-sheet h2 {
+    color: #241a0a;
+  }
+
+  html.vy-light .nl-system-modal p,
+  html.vy-light .nl-system-modal-desc,
+  html.vy-light .nl-system-sheet p {
+    color: #6f6658;
+  }
+
+  html.vy-light .nl-system-secondary-button {
+    border-color: rgba(150,116,52,.24);
+    background: #fff;
+    color: #5f5546;
+  }
+
+  html.vy-light .nl-system-danger-button {
+    border-color: rgba(225,29,72,.28);
+    background: #fff1f4;
+    color: #be123c;
+  }
+
+  html.vy-light .nl-system-sheet-handle {
+    background: rgba(150,116,52,.24);
+  }
+
   .nl-spin {
     animation: nl-system-spin .9s linear infinite;
   }

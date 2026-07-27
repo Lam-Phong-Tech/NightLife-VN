@@ -2064,7 +2064,8 @@ function VenueMiniCard({
         <FavoriteButton
           isFavorite={isFavorite}
           label={isFavorite ? "Bo luu quan" : "Luu quan"}
-          size="compact"
+          className="venue-heart"
+          size="card"
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();

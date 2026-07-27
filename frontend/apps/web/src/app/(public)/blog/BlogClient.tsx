@@ -286,6 +286,7 @@ export function BlogClient({
             </span>
             <article style={{ padding: "clamp(22px, 4vw, 42px)" }}>
               <span
+                className="nl-blog-feature-badge"
                 style={{
                   display: "inline-flex",
                   borderRadius: "999px",
@@ -469,6 +470,13 @@ export function BlogClient({
           </div>
         ) : null}
       </section>
+      <style>{`
+        html.vy-light .nl-blog-feature-badge {
+          border: 1px solid rgba(150,116,52,.24);
+          background: #fff7e8 !important;
+          color: #7a551b !important;
+        }
+      `}</style>
     </main>
   );
 }

@@ -568,6 +568,13 @@ export function CastProfileStyles() {
         font-weight: 650;
       }
 
+      html.vy-light .cast-venue-status {
+        color: #1f8a5b;
+        background: rgba(31,138,91,.12);
+        border-color: rgba(31,138,91,.26);
+        font-weight: 800;
+      }
+
       .cast-venue-copy small {
         color: var(--vy-muted);
         font-size: 12px;
