@@ -2023,16 +2023,23 @@ textarea::placeholder {
     height: 100dvh !important;
     border-right: 1px solid rgba(212, 178, 106, 0.18) !important;
     box-shadow: 28px 0 70px -34px rgba(0, 0, 0, 0.95) !important;
-    transform: translateX(-105%);
-    transition: transform 0.24s ease !important;
+    transform: translateX(-105%) !important;
+    transition: transform 0.24s ease, visibility 0.24s ease !important;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .nl-admin-sidebar.is-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   .nl-admin-sidebar.is-closed {
+    transform: translateX(-105%) !important;
     width: min(82vw, 290px) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .nl-admin-sidebar-inner {
@@ -2052,19 +2059,21 @@ textarea::placeholder {
   }
 
   .nl-admin-sidebar-close {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     flex: none;
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(212, 178, 106, 0.28);
+    border: 1px solid rgba(212, 178, 106, 0.35);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.08);
     color: #d4b26a;
     cursor: pointer;
     padding: 0;
     touch-action: manipulation;
+    position: relative;
+    z-index: 100;
   }
 
   .nl-admin-main {

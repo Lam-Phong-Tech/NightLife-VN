@@ -707,20 +707,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="nl-admin-shell" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
       
       {/* ============ SIDEBAR ============ */}
-      {isMobileSidebar && sidebarOpen && (
+      {sidebarOpen && (
         <button
           aria-label="Đóng menu admin"
           className="nl-admin-sidebar-backdrop"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSidebarOpen(false);
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSidebarOpen(false);
-          }}
+          onClick={() => setSidebarOpen(false)}
           type="button"
         />
       )}
@@ -737,19 +728,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <button
                 aria-label="Đóng menu admin"
                 className="nl-admin-sidebar-close"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSidebarOpen(false);
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSidebarOpen(false);
-                }}
+                onClick={() => setSidebarOpen(false)}
                 type="button"
               >
-                <svg style={{ pointerEvents: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg style={{ pointerEvents: 'none' }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
