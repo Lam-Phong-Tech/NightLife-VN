@@ -7879,9 +7879,7 @@ export default function PartnerPage() {
                 }}
                 title={selectedBillStore?.name ?? undefined}
               >
-                {selectedBillStore
-                  ? `${selectedBillStore.name}${selectedBillStore.district ? ` - ${selectedBillStore.district}` : ''}`
-                  : <InlineLoading label="Đang tải quán được cấp quyền" />}
+                {selectedBillStore ? selectedBillStore.name : <InlineLoading label="Đang tải quán được cấp quyền" />}
               </div>
               <select
                 id="bill-store-select-hidden"
