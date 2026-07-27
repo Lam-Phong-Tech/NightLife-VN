@@ -2317,16 +2317,16 @@ const castSearchCss = `
 }
 
 html.vy-light .cast-card-favorite {
-  border-color: rgba(151, 112, 37, .42);
-  background: rgba(255, 248, 230, .76);
-  color: #7a5a24;
-  box-shadow: 0 10px 24px rgba(86, 62, 18, .18);
+  border-color: rgba(225, 29, 72, .38);
+  background: rgba(255, 250, 252, .92);
+  color: #e11d48;
+  box-shadow: 0 10px 24px rgba(190, 18, 60, .18);
 }
 
 html.vy-light .cast-card-favorite.is-active {
-  border-color: rgba(229, 49, 103, .42);
-  background: rgba(255, 232, 241, .88);
-  color: #e53167;
+  border-color: rgba(225, 29, 72, .46);
+  background: linear-gradient(135deg, #ff5d98, #be123c);
+  color: #fff;
 }
 
 .cast-card-favorite:focus-visible {

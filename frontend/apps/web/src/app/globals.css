@@ -224,6 +224,8 @@ html.vy-light {
 }
 
 html.vy-light .nl-favorite-button {
+  color: var(--vy-favorite);
+  border-color: rgba(225, 29, 72, 0.38);
   background:
     radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.72), transparent 58%),
     rgba(255, 250, 248, 0.86);
@@ -234,10 +236,14 @@ html.vy-light .nl-favorite-button {
 
 html.vy-light .nl-favorite-button.is-active {
   color: #fff;
+  border-color: rgba(225, 29, 72, 0.5);
   background: linear-gradient(135deg, #ff5d98, var(--vy-favorite-strong));
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart {
+html.vy-light .nl-favorite-button.venue-heart,
+html.vy-light .nl-favorite-button.cast-card-favorite,
+html.vy-light .nl-favorite-button.cast-favorite-action,
+html.vy-light .nl-favorite-button.store-favorite-action {
   color: var(--vy-favorite) !important;
   border-color: rgba(225, 29, 72, 0.38) !important;
   background:
@@ -248,7 +254,10 @@ html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart {
     0 12px 28px -18px rgba(190, 18, 60, 0.44) !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
+html.vy-light .nl-favorite-button.venue-heart.is-active,
+html.vy-light .nl-favorite-button.cast-card-favorite.is-active,
+html.vy-light .nl-favorite-button.cast-favorite-action.is-active,
+html.vy-light .nl-favorite-button.store-favorite-action.is-active {
   color: #fff !important;
   border-color: rgba(225, 29, 72, 0.46) !important;
   background: linear-gradient(135deg, #ff5d98, var(--vy-favorite-strong)) !important;
