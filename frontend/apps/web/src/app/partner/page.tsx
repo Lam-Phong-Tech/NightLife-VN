@@ -2730,20 +2730,11 @@ export default function PartnerPage() {
         if (!isMounted) return;
         setDashboard(dashboardData);
 
-        const isLite = dashboardData?.privacy?.customerDetailVisible === false;
-
         const promises = [
           apiClient<PartnerCoupon[]>('/partner/coupons').then((res) => { if (isMounted) setCoupons(res); }),
           apiClient<PartnerBill[]>('/partner/bills').then((res) => { if (isMounted) setBills(res); }),
+          apiClient<PartnerBooking[]>('/partner/bookings').then((res) => { if (isMounted) setBookings(res); }),
         ];
-
-        if (!isLite) {
-          promises.push(
-            apiClient<PartnerBooking[]>('/partner/bookings').then((res) => { if (isMounted) setBookings(res); })
-          );
-        } else {
-          setBookings([]);
-        }
 
         const results = await Promise.allSettled(promises);
         if (results.some((result) => result.status === 'rejected')) {
@@ -3366,6 +3357,15 @@ export default function PartnerPage() {
   const billBookingOptions = useMemo(
     () =>
       bookings.filter((booking) => {
+        const normalizedStatus = booking.status.trim().toUpperCase();
+        if (normalizedStatus === 'CANCELLED' || normalizedStatus === 'NO_SHOW') {
+          return false;
+        }
+
+        if (!partnerBookingConfirmedUsageAt(booking)) {
+          return false;
+        }
+
         const bookingHasBill =
           Boolean(booking.bill?.id || booking.couponIssue?.bill?.id) ||
           bills.some(
@@ -3423,6 +3423,7 @@ export default function PartnerPage() {
     !selectedBillBookingExistingBill &&
     Boolean(billNowMs) &&
     Boolean(selectedBillStore) &&
+    Boolean(selectedBillBooking) &&
     billAmount > 0 &&
     Boolean(billUsedAt) &&
     !isBillUsedAtInvalid &&
@@ -7986,9 +7987,9 @@ export default function PartnerPage() {
                 <ThemedListingSelect
                   value={billBookingId}
                   onChange={handleBillBookingChange}
-                  placeholder="Không liên kết booking"
+                  placeholder="Chọn booking đã xác nhận"
                   options={[
-                    { value: '', label: 'Không liên kết booking' },
+                    { value: '', label: 'Chọn booking đã xác nhận' },
                     ...billBookingOptions.map((booking) => ({
                       value: booking.id,
                       label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,

@@ -3689,16 +3689,6 @@ export class NightlifeDataService {
             id: true,
             name: true,
             slug: true,
-            openingHours: true,
-            bookingCancelCutoffMinutes: true,
-          },
-        },
-        cast: {
-          select: {
-            id: true,
-            slug: true,
-            stageName: true,
-            publicAlias: true,
           },
         },
         coupon: {
@@ -3750,10 +3740,6 @@ export class NightlifeDataService {
             rejectedAt: true,
           },
         },
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true } },
-        note: true,
-        createdAt: true,
       },
     });
   }
@@ -7385,6 +7371,12 @@ export class NightlifeDataService {
   }
 
   async submitPartnerBill(user: AuthenticatedUser, dto: CreateBillDto) {
+    if (!dto.bookingId && !dto.couponIssueId) {
+      throw new BadRequestException(
+        'Partner bill submission requires a linked booking or checked-in QR',
+      );
+    }
+
     const booking = dto.bookingId
       ? await this.prisma.booking.findFirst({
           where: {

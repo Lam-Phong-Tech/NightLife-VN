@@ -2261,7 +2261,11 @@ describe('NightlifeDataService', () => {
           deletedAt: null,
         }),
         select: expect.objectContaining({
-          guest: { select: { id: true, displayName: true } },
+          id: true,
+          status: true,
+          scheduledAt: true,
+          partySize: true,
+          store: { select: { id: true, name: true, slug: true } },
         }),
       }),
     );
@@ -7662,11 +7666,28 @@ describe('NightlifeDataService', () => {
     prisma.partnerAccount.findFirst.mockResolvedValue({
       id: 'partner-account-1',
     });
-    prisma.store.findFirst.mockResolvedValue({
-      id: 'store-1',
-      name: 'Neon Club',
-      slug: 'neon-club',
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      userId: null,
+      storeId: 'store-1',
+      guestId: 'guest-1',
+      couponId: null,
+      couponIssueId: null,
+      scheduledAt: new Date('2026-06-30T13:00:00.000Z'),
+      updatedAt: new Date('2026-06-30T14:00:00.000Z'),
+      discountSnapshot: null,
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+      },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+      coupon: null,
+      couponIssue: null,
+      qr: null,
     });
+    prisma.bill.findFirst.mockResolvedValue(null);
     prisma.bill.create.mockResolvedValue({
       id: 'bill-1',
       billNumber: 'BILL-20260701-ABC12345',
@@ -7681,7 +7702,7 @@ describe('NightlifeDataService', () => {
     await service.submitPartnerBill(
       { id: 'partner-1', role: 'PARTNER' },
       {
-        storeSlug: 'neon-club',
+        bookingId: 'booking-1',
         totalVnd: 1800000,
         usedAt: '2026-06-30T14:00:00.000Z',
       },
@@ -7696,6 +7717,8 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           storeId: 'store-1',
+          bookingId: 'booking-1',
+          guestId: 'guest-1',
           submitterType: 'PARTNER',
           submittedByUserId: null,
           submittedByPartnerAccountId: 'partner-account-1',
@@ -7751,6 +7774,7 @@ describe('NightlifeDataService', () => {
         { id: 'partner-1', role: 'PARTNER' },
         {
           storeSlug: 'other-club',
+          couponIssueId: 'issue-other-1',
           totalVnd: 1800000,
           usedAt: '2026-06-30T14:00:00.000Z',
         },
@@ -7762,6 +7786,21 @@ describe('NightlifeDataService', () => {
       'store-other',
       'bill.partner.view',
     );
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects partner bill submissions without a linked booking or checked-in QR', async () => {
+    await expect(
+      service.submitPartnerBill(
+        { id: 'partner-1', role: 'PARTNER' },
+        {
+          storeSlug: 'neon-club',
+          totalVnd: 1800000,
+          usedAt: '2026-06-30T14:00:00.000Z',
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
     expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
