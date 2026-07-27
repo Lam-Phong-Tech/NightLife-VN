@@ -2249,50 +2249,53 @@ export default function AdminContentPage() {
           {/* Cấu hình tên hiển thị của các tab */}
           <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea' }}>Cấu hình nhãn hiển thị của tab</div>
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#c5c0b6' }}>Nhãn Nhà hàng:</span>
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center flex-wrap">
+              <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                <span style={{ fontSize: '12px', color: '#c5c0b6', flex: 'none' }}>Nhãn Nhà hàng:</span>
                 <input 
                   value={restaurantLabel} 
                   onChange={e => setRestaurantLabel(e.target.value.slice(0, 24))} 
                   placeholder="Nhà hàng" 
-                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '140px' }} 
+                  className="w-40 sm:w-36"
+                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none' }} 
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#c5c0b6' }}>Nhãn Spa:</span>
+              <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                <span style={{ fontSize: '12px', color: '#c5c0b6', flex: 'none' }}>Nhãn Spa:</span>
                 <input 
                   value={spaLabel} 
                   onChange={e => setSpaLabel(e.target.value.slice(0, 24))} 
                   placeholder="Spa" 
-                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '140px' }} 
+                  className="w-40 sm:w-36"
+                  style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', color: '#f3f0ea', fontSize: '12px', outline: 'none' }} 
                 />
               </div>
               <button 
                 onClick={handleSaveTabLabels} 
                 disabled={isSavingLabels}
-                style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontWeight: 700, border: 'none', borderRadius: '8px', padding: '6px 16px', fontSize: '12px', cursor: isSavingLabels ? 'not-allowed' : 'pointer', opacity: isSavingLabels ? 0.7 : 1 }}
+                className="w-full sm:w-auto mt-1 sm:mt-0"
+                style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontWeight: 700, border: 'none', borderRadius: '8px', padding: '7px 16px', fontSize: '12px', cursor: isSavingLabels ? 'not-allowed' : 'pointer', opacity: isSavingLabels ? 0.7 : 1 }}
               >
                 {isSavingLabels ? 'Đang lưu...' : 'Lưu tên tab'}
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tất cả</span>
-              <span style={featuredCity === 'hn' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hn')}>Hà Nội</span>
-              <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')}>TP. Hồ Chí Minh</span>
+          <div className="flex items-center gap-2.5 flex-wrap mb-3.5">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0 custom-scrollbar" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px' }}>
+              <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')} className="whitespace-nowrap flex-none">Tất cả</span>
+              <span style={featuredCity === 'hn' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hn')} className="whitespace-nowrap flex-none">Hà Nội</span>
+              <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')} className="whitespace-nowrap flex-none">TP. Hồ Chí Minh</span>
             </div>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')}>
+            <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0 custom-scrollbar" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px' }}>
+              <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')} className="whitespace-nowrap flex-none">
                 {appearance?.titles?.find((t: any) => t.id === 't4_restaurant')?.label || 'Nhà hàng'}
               </span>
-              <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')}>
+              <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')} className="whitespace-nowrap flex-none">
                 {appearance?.titles?.find((t: any) => t.id === 't4_spa')?.label || 'Spa'}
               </span>
             </div>
-            <div style={{ flex: 1 }}></div>
+            <div className="max-sm:hidden" style={{ flex: 1 }}></div>
             <span style={{ fontSize: '11px', color: '#8c8679' }}>{featuredItems.length} quán đang hiển thị trên trang chủ</span>
           </div>
 
