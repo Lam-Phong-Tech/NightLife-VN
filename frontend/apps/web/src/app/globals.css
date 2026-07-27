@@ -3410,7 +3410,42 @@ html.vy-admin-light .nl-admin-avatar-badge {
   color: #ffffff !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active) {
+.nl-home-venue-card .nl-favorite-button.home-favorite-button {
+  color: #ff4f8b !important;
+  border-color: rgba(255, 79, 139, 0.42) !important;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.16), transparent 58%),
+    rgba(12, 12, 15, 0.7) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 12px 30px -18px rgba(0, 0, 0, 0.82) !important;
+}
+
+.nl-home-venue-card .nl-favorite-button.home-favorite-button .nl-favorite-button__icon {
+  color: currentColor !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+.nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active {
+  color: #ffffff !important;
+  border-color: rgba(255, 79, 139, 0.68) !important;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.28), transparent 54%),
+    linear-gradient(135deg, #ff5d98, #be123c) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 0 0 5px rgba(225, 29, 72, 0.13),
+    0 14px 34px -16px rgba(225, 29, 72, 0.32) !important;
+}
+
+.nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active .nl-favorite-button__icon {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+  fill: currentColor !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button:not(.is-active) {
   color: #e11d48 !important;
   border-color: rgba(225, 29, 72, 0.42) !important;
   background:
@@ -3421,13 +3456,13 @@ html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active
     0 12px 28px -18px rgba(190, 18, 60, 0.44) !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active):where(:hover, :focus-visible) {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button:not(.is-active):where(:hover, :focus-visible) {
   color: #be123c !important;
   border-color: rgba(225, 29, 72, 0.55) !important;
   background: rgba(255, 241, 245, 0.98) !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active {
   color: #fff !important;
   border-color: rgba(225, 29, 72, 0.5) !important;
   background:
@@ -3439,13 +3474,13 @@ html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
     0 14px 34px -16px rgba(225, 29, 72, 0.32) !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active) .nl-favorite-button__icon {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button:not(.is-active) .nl-favorite-button__icon {
   color: #e11d48 !important;
   stroke: currentColor !important;
   fill: none !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active .nl-favorite-button__icon {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active .nl-favorite-button__icon {
   color: #ffffff !important;
   stroke: currentColor !important;
   fill: currentColor !important;
