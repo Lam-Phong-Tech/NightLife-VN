@@ -86,7 +86,7 @@ describe("session security watcher", () => {
       );
     });
 
-    const description = feedbackMocks.showModal.mock.calls[0][0].description as string;
+    const description = feedbackMocks.showModal.mock.calls[0]?.[0]?.description as string;
     expect(description).toContain("Chrome trên Windows");
     expect(description).toContain("203.113.131.xxx");
     expect(description).toContain("đổi mật khẩu");
@@ -113,7 +113,7 @@ describe("session security watcher", () => {
       expect(feedbackMocks.showModal).toHaveBeenCalledTimes(1);
     });
 
-    const description = feedbackMocks.showModal.mock.calls[0][0].description as string;
+    const description = feedbackMocks.showModal.mock.calls[0]?.[0]?.description as string;
     expect(description).toContain("một thiết bị khác");
     expect(sessionMocks.clearAuthSessionForRole).toHaveBeenCalledWith("PARTNER");
   });

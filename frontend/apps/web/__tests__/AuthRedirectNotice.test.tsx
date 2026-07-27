@@ -59,7 +59,7 @@ describe("auth redirect notice", () => {
       );
     });
 
-    const description = feedbackMocks.showToast.mock.calls[0][0].description as string;
+    const description = feedbackMocks.showToast.mock.calls[0]?.[0]?.description as string;
     expect(description).toContain("đổi mật khẩu");
 
     expect(window.location.pathname).toBe("/admin");
