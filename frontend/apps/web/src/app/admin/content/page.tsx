@@ -2030,7 +2030,7 @@ export default function AdminContentPage() {
           </div>
 
           <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '12px' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3.5 mb-3">
               <span style={{ color: colors.text, fontSize: '13px', fontWeight: 800 }}>
                 Tour + Blog đang hiển thị: {homeGuideSelectedCount} / {HOME_GUIDE_LIMIT}
               </span>
@@ -2039,13 +2039,13 @@ export default function AdminContentPage() {
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
-              <Search size={15} color="#8c8679" />
+              <Search size={15} color="#8c8679" className="flex-none" />
               <input
                 id="tour-home-search-input"
                 value={searchTourQuery}
                 onChange={(event) => setSearchTourQuery(event.target.value)}
                 placeholder="Tìm tour hoặc blog để thêm lên trang chủ..."
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }}
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', minWidth: 0 }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
