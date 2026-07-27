@@ -3409,3 +3409,22 @@ html.vy-admin-light .nl-admin-avatar-badge {
   background: linear-gradient(135deg, #7c581a, #a37628 55%, #5b3f0f) !important;
   color: #ffffff !important;
 }
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart,
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:where(:hover, :focus-visible),
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
+  color: #ffffff !important;
+  border-color: rgba(225, 29, 72, 0.48) !important;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.26), transparent 54%),
+    linear-gradient(135deg, #ff5d98, #be123c) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.24) inset,
+    0 0 0 5px rgba(225, 29, 72, 0.13),
+    0 14px 34px -16px rgba(225, 29, 72, 0.32) !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart .nl-favorite-button__icon {
+  color: #ffffff !important;
+  fill: currentColor;
+}
