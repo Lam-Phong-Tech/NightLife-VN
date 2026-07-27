@@ -492,24 +492,9 @@ function comparePublicRankingItems(first: PublicRankingItem, second: PublicRanki
 
 async function listHomeStoreRankingItems(city: ReturnType<typeof regionToCityCode>) {
   const baseParams = { targetType: "STORE" as const, city, limit: 5 };
-  const responses = await Promise.allSettled([
-    rankingsApi.list(baseParams),
-    rankingsApi.list({ ...baseParams, scope: "recommend-home" }),
-    rankingsApi.list({ ...baseParams, scope: "featured_home" }),
-  ]);
-  const successfulResponses = responses
-    .filter((response): response is PromiseFulfilledResult<Awaited<ReturnType<typeof rankingsApi.list>>> => response.status === "fulfilled")
-    .map((response) => response.value);
+  const response = await rankingsApi.list(baseParams);
 
-  if (!successfulResponses.length) {
-    const failedResponse = responses.find((response) => response.status === "rejected") as PromiseRejectedResult | undefined;
-    throw failedResponse?.reason ?? new Error("Ranking API error");
-  }
-
-  return mergeFeaturedRankingItems(
-    successfulResponses.flatMap((response) => response.data),
-    5,
-  );
+  return response.data;
 }
 
 function backgroundFromUrl(value?: string | null) {
@@ -633,7 +618,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
 
 function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
   return {
-    rank: item.pinRank ?? item.rank,
+    rank: item.rank ?? item.pinRank,
     img: backgroundFromUrl(item.image),
     name: item.name,
     area: storeAreaText(item.area, item.cityCode, item.city),
