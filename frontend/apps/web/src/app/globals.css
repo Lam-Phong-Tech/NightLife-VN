@@ -3410,11 +3410,26 @@ html.vy-admin-light .nl-admin-avatar-badge {
   color: #ffffff !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart,
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:where(:hover, :focus-visible),
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active) {
+  color: #e11d48 !important;
+  border-color: rgba(225, 29, 72, 0.42) !important;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.9), transparent 58%),
+    rgba(255, 250, 252, 0.96) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.82) inset,
+    0 12px 28px -18px rgba(190, 18, 60, 0.44) !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active):where(:hover, :focus-visible) {
+  color: #be123c !important;
+  border-color: rgba(225, 29, 72, 0.55) !important;
+  background: rgba(255, 241, 245, 0.98) !important;
+}
+
 html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
-  color: #ffffff !important;
-  border-color: rgba(225, 29, 72, 0.48) !important;
+  color: #fff !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.26), transparent 54%),
     linear-gradient(135deg, #ff5d98, #be123c) !important;
@@ -3424,7 +3439,14 @@ html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
     0 14px 34px -16px rgba(225, 29, 72, 0.32) !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart .nl-favorite-button__icon {
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart:not(.is-active) .nl-favorite-button__icon {
+  color: #e11d48 !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active .nl-favorite-button__icon {
   color: #ffffff !important;
-  fill: currentColor;
+  stroke: currentColor !important;
+  fill: currentColor !important;
 }
