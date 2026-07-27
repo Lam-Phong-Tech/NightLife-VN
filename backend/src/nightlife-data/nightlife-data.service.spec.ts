@@ -1332,7 +1332,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('keeps admin pin rank and sponsored flag on public store rankings', async () => {
+  it('uses admin pin rank for ordering while normalizing public display rank', async () => {
     prisma.rankingConfig.findMany.mockResolvedValue([
       {
         targetId: 'store-five',
@@ -1374,11 +1374,113 @@ describe('NightlifeDataService', () => {
     expect(result.data).toEqual([
       expect.objectContaining({
         targetId: 'store-five',
-        rank: 5,
+        rank: 1,
         pinRank: 5,
         sponsored: true,
       }),
     ]);
+  });
+
+  it('normalizes duplicate admin pin ranks into a sequential public ranking', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'store-first',
+        cityCode: 'hcm',
+        category: 'BAR',
+        scope: 'global',
+        manualScore: 80,
+        pinRank: 1,
+        sponsored: true,
+        updatedAt: new Date('2026-07-21T00:00:00.000Z'),
+      },
+      {
+        targetId: 'store-second',
+        cityCode: 'hcm',
+        category: 'CLUB',
+        scope: 'global',
+        manualScore: 70,
+        pinRank: 1,
+        sponsored: false,
+        updatedAt: new Date('2026-07-20T00:00:00.000Z'),
+      },
+      {
+        targetId: 'store-third',
+        cityCode: 'hcm',
+        category: 'KARAOKE',
+        scope: 'global',
+        manualScore: 60,
+        pinRank: 3,
+        sponsored: false,
+        updatedAt: new Date('2026-07-19T00:00:00.000Z'),
+      },
+    ] as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-second',
+        name: 'Second Store',
+        slug: 'second-store',
+        category: 'CLUB',
+        city: 'Ho Chi Minh',
+        district: 'Quan 1',
+        phone: null,
+        area: {
+          id: 'area-hcm',
+          code: 'hcm-quan1',
+          name: 'Quan 1',
+          city: 'Ho Chi Minh',
+          district: 'Quan 1',
+        },
+        media: [],
+      },
+      {
+        id: 'store-third',
+        name: 'Third Store',
+        slug: 'third-store',
+        category: 'KARAOKE',
+        city: 'Ho Chi Minh',
+        district: 'Quan 3',
+        phone: null,
+        area: {
+          id: 'area-hcm-3',
+          code: 'hcm-quan3',
+          name: 'Quan 3',
+          city: 'Ho Chi Minh',
+          district: 'Quan 3',
+        },
+        media: [],
+      },
+      {
+        id: 'store-first',
+        name: 'First Store',
+        slug: 'first-store',
+        category: 'BAR',
+        city: 'Ho Chi Minh',
+        district: 'Quan 1',
+        phone: null,
+        area: {
+          id: 'area-hcm-1',
+          code: 'hcm-quan1',
+          name: 'Quan 1',
+          city: 'Ho Chi Minh',
+          district: 'Quan 1',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicRankings({
+      targetType: 'STORE',
+      city: 'hcm',
+      limit: '5',
+    });
+
+    expect(result.data.map((item) => item.targetId)).toEqual([
+      'store-first',
+      'store-second',
+      'store-third',
+    ]);
+    expect(result.data.map((item) => item.rank)).toEqual([1, 2, 3]);
+    expect(result.data.map((item) => item.pinRank)).toEqual([1, 1, 3]);
   });
 
   it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
