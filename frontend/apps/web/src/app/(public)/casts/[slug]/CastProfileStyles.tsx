@@ -755,7 +755,9 @@ export function CastProfileStyles() {
       }
 
       .cast-related-section.mobile .cast-related-copy strong {
-        color: #3a3022;
+        color: #f2e7d0;
+        font-weight: 800;
+        text-shadow: 0 1px 0 rgba(0,0,0,.24);
       }
 
       .cast-related-copy small,
@@ -767,7 +769,9 @@ export function CastProfileStyles() {
 
       .cast-related-section.mobile .cast-related-copy small,
       .cast-related-section.mobile .cast-related-copy em {
-        color: #746a5a;
+        color: #b9ad9a;
+        font-weight: 650;
+        line-height: 1.35;
       }
 
       .cast-booking-cta.mobile {
