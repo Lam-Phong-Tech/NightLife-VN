@@ -237,6 +237,35 @@ html.vy-light .nl-favorite-button.is-active {
   background: linear-gradient(135deg, #ff5d98, var(--vy-favorite-strong));
 }
 
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart {
+  color: var(--vy-favorite) !important;
+  border-color: rgba(225, 29, 72, 0.38) !important;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.82), transparent 58%),
+    rgba(255, 250, 252, 0.92) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.76) inset,
+    0 12px 28px -18px rgba(190, 18, 60, 0.44) !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.venue-heart.is-active {
+  color: #fff !important;
+  border-color: rgba(225, 29, 72, 0.46) !important;
+  background: linear-gradient(135deg, #ff5d98, var(--vy-favorite-strong)) !important;
+}
+
+html.vy-light .nl-site-brand-name {
+  background: linear-gradient(135deg, #d9a931 0%, #b47b16 58%, #8f5d0f 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  text-shadow: none !important;
+}
+
+html.vy-light .nl-site-brand-tagline {
+  color: #8f6a2a !important;
+  opacity: 0.95 !important;
+}
+
 :root {
   --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --background: oklch(1 0 0);

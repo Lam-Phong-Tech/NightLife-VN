@@ -2215,6 +2215,7 @@ export function SiteChrome({
           >
             <Link
               href={resolveHref("/")}
+              className="nl-site-brand"
               style={{
                 display: "inline-flex",
                 flexDirection: "column",
@@ -2238,6 +2239,7 @@ export function SiteChrome({
               ) : (
                 <>
                   <span
+                    className="nl-site-brand-name"
                     style={{
                       fontSize: isMobile ? "22px" : "26px",
                       fontWeight: 800,
@@ -2252,6 +2254,7 @@ export function SiteChrome({
                     {brand.name || "Vietyoru"}
                   </span>
                   <span
+                    className="nl-site-brand-tagline"
                     style={{
                       marginTop: "3px",
                       fontSize: isMobile ? "7px" : "8.5px",

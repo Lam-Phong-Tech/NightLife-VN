@@ -256,10 +256,10 @@ export default function Page() {
                   <span>{translateText("Điểm thưởng", activeLanguage)}</span>
                   <span>{pointFormatter.format(rewardPoints)} {translateText("điểm", activeLanguage)}</span>
                 </div>
-                <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
-                  <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
+                <div className="nl-account-points-track" style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
+                  <div className="nl-account-points-fill" style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
                 </div>
-                <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
+                <p className="nl-account-points-note" style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
                   {isLoadingPoints
                     ? <InlineLoading label={translateText("Đang cập nhật điểm thưởng", activeLanguage)} />
                     : pointSummaryError
@@ -359,6 +359,19 @@ export default function Page() {
         html.vy-light .nl-account-points-panel {
           background: rgba(255,255,255,.5) !important;
           border: 1px solid rgba(150,116,52,.18);
+        }
+
+        html.vy-light .nl-account-points-track {
+          background: rgba(150,116,52,.18) !important;
+        }
+
+        html.vy-light .nl-account-points-fill {
+          background: linear-gradient(90deg, #c89222, #f0cf69) !important;
+          box-shadow: none;
+        }
+
+        html.vy-light .nl-account-points-note {
+          color: #6f6658 !important;
         }
       `}</style>
     </main>
