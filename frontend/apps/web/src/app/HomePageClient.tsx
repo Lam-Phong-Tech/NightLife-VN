@@ -2289,11 +2289,11 @@ function RankingRow({ item }: { item: RankedItem }) {
       aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
       style={{
         display: "grid",
-        gridTemplateColumns: isPodium ? "68px minmax(0, 1fr) auto" : "64px minmax(0, 1fr) auto",
+        gridTemplateColumns: "64px minmax(0, 1fr) 30px",
         alignItems: "center",
-        gap: "16px",
-        minHeight: isPodium ? "102px" : "92px",
-        padding: isPodium ? "17px 16px" : "16px",
+        gap: "14px",
+        minHeight: "104px",
+        padding: "16px",
         borderRadius: homeCardRadius,
         background: rankingVisual.rowBackground,
         border: `1px solid ${rankingVisual.rowBorder}`,
@@ -2321,8 +2321,8 @@ function RankingRow({ item }: { item: RankedItem }) {
         alt={item.name ?? "Xếp hạng"}
         label=""
         style={{
-          width: isPodium ? 68 : 64,
-          height: isPodium ? 68 : 64,
+          width: 64,
+          height: 64,
           borderRadius: "50%",
           flex: "none",
           border: `1px solid ${isPodium ? rankingVisual.rowBorder : colors.line}`,
@@ -2373,7 +2373,20 @@ function RankingRow({ item }: { item: RankedItem }) {
             </span>
           ) : null}
         </div>
-        <div style={{ fontSize: isPodium ? "18px" : "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
+        <div
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            color: colors.text,
+            fontSize: isPodium ? "18px" : "17px",
+            fontWeight: 950,
+            lineHeight: 1.16,
+          }}
+        >
+          {item.name}
+        </div>
         <div
           style={{
             marginTop: "5px",
@@ -2382,6 +2395,9 @@ function RankingRow({ item }: { item: RankedItem }) {
             fontWeight: isPodium ? 760 : 650,
             lineHeight: 1.25,
             textShadow: isPodium ? "0 1px 8px rgba(0,0,0,.42)" : "none",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {item.area}
@@ -2899,9 +2915,9 @@ function RankingListColumn({
       style={{
         minWidth: 0,
         display: "grid",
-        alignContent: "start",
-        gap: "10px",
-        padding: "12px",
+        alignContent: "stretch",
+        gap: "12px",
+        padding: "14px",
         borderRadius: homeCardRadius,
         border: `1px solid ${colors.line}`,
         background: "linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015))",
@@ -2937,7 +2953,7 @@ function RankingListColumn({
       </div>
 
       {list.length ? (
-        <div style={{ display: "grid", gap: "10px", minWidth: 0 }}>
+        <div style={{ display: "grid", gap: "12px", minWidth: 0 }}>
           {list.map((item) => (
             <RankingRow key={`${title}-${item.rank}-${item.href ?? item.name}`} item={item} />
           ))}
@@ -2967,9 +2983,9 @@ function RankingSplitPanel({
       className="nl-home-ranking-split"
       style={{
         display: "grid",
-        gridTemplateColumns: stacked ? "1fr" : "repeat(2, minmax(0, 1fr))",
-        gap: stacked ? "12px" : "14px",
-        alignItems: "start",
+        gridTemplateColumns: stacked ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+        gap: stacked ? "12px" : "20px",
+        alignItems: "stretch",
       }}
     >
       <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} />

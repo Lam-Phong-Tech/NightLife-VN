@@ -811,7 +811,7 @@ export default function Page() {
         }
 
         .vyr-ranking-shell {
-          width: min(100%, 1180px);
+          width: min(100%, 1120px);
           margin: 0 auto;
           background: var(--vy-surface);
           border: 1px solid var(--vy-border);
@@ -1092,15 +1092,16 @@ export default function Page() {
 
         .vyr-rank-row {
           width: 100%;
-          min-height: 92px;
-          display: flex;
+          min-height: 96px;
+          display: grid;
+          grid-template-columns: 58px minmax(0, 1fr) minmax(220px, auto);
           align-items: center;
-          gap: 18px;
+          gap: 16px;
           border: 1px solid var(--vy-border);
           border-radius: 16px;
           background: var(--vy-surface-1);
           color: var(--vy-text);
-          padding: 15px 20px 15px 24px;
+          padding: 16px 20px;
           transition:
             background 160ms ease,
             border-color 160ms ease,
@@ -1139,7 +1140,6 @@ export default function Page() {
 
         .vyr-rank-copy {
           min-width: 0;
-          flex: 1;
           display: flex;
           flex-direction: column;
         }
@@ -1197,10 +1197,14 @@ export default function Page() {
 
         .vyr-rank-copy strong {
           margin-top: 6px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           color: var(--vy-text);
           font-size: 20px;
           line-height: 1.15;
           font-weight: 700;
+          overflow: hidden;
           overflow-wrap: anywhere;
         }
 
@@ -1209,6 +1213,9 @@ export default function Page() {
           color: var(--vy-muted);
           font-size: 13px;
           line-height: 1.3;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .vyr-rank-actions {
@@ -1216,7 +1223,7 @@ export default function Page() {
           align-items: center;
           justify-content: flex-end;
           gap: 8px;
-          flex: none;
+          min-width: 220px;
         }
 
         .vyr-rank-action {
@@ -1388,12 +1395,15 @@ export default function Page() {
 
         @media (max-width: 980px) {
           .vyr-rank-row {
+            grid-template-columns: 58px minmax(0, 1fr);
             align-items: flex-start;
           }
 
           .vyr-rank-actions {
-            flex-direction: column;
-            align-items: stretch;
+            grid-column: 2;
+            min-width: 0;
+            justify-content: flex-start;
+            flex-wrap: wrap;
           }
         }
 
