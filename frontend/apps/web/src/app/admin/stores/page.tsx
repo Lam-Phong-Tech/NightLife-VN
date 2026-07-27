@@ -1550,7 +1550,7 @@ function AdminStoresContent() {
                 </div>
               </div>
 
-              <div className="nl-admin-store-row-sub">
+              <div className="nl-admin-store-row-sub md:hidden">
                 <span className="md:hidden" style={{ color: '#c5c0b6', background: 'rgba(255,255,255,.05)', padding: '2px 8px', borderRadius: '6px' }}>{v.type || v.category || 'Quán'}</span>
                 <span className="max-md:inline-block"><span style={{ ...cityStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px' }}>{v.area}</span></span>
                 <span style={{ color: '#c5c0b6' }}>{v.casts} cast</span>
