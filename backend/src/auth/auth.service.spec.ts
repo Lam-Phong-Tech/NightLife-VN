@@ -131,6 +131,10 @@ describe('AuthService', () => {
           return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
         }
 
+        if (key === 'LINE_LIFF_ID') {
+          return '2010552841-AbCdEfGh';
+        }
+
         if (key === 'WEB_BASE_URL') {
           return 'https://demonightlight.test9.io.vn';
         }
@@ -336,7 +340,8 @@ describe('AuthService', () => {
         password: 'Str0ngPass!',
       },
       {
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Firefox/128.0',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Firefox/128.0',
         ipAddress: '118.70.12.34',
       },
     );
@@ -589,12 +594,16 @@ describe('AuthService', () => {
   it('exposes LINE login configuration readiness', () => {
     expect(service.lineLoginConfig()).toEqual({
       configured: false,
+      webOAuthConfigured: false,
+      liffId: null,
     });
 
     useLineConfig();
 
     expect(service.lineLoginConfig()).toEqual({
       configured: true,
+      webOAuthConfigured: true,
+      liffId: '2010552841-AbCdEfGh',
     });
   });
 
@@ -608,7 +617,7 @@ describe('AuthService', () => {
 
     service.redirectToLineLogin('/tai-khoan', response);
 
-    const redirectUrl = new URL(response.redirect.mock.calls[0][0]);
+    const redirectUrl = new URL(String(response.redirect.mock.calls[0][0]));
     expect(redirectUrl.origin).toBe('https://access.line.me');
     expect(redirectUrl.pathname).toBe('/oauth2/v2.1/authorize');
     expect(redirectUrl.searchParams.get('client_id')).toBe('2010552841');
@@ -616,7 +625,7 @@ describe('AuthService', () => {
       'https://demonightlight.test9.io.vn/api/backend/auth/line/callback',
     );
     expect(redirectUrl.searchParams.get('scope')).toBe('profile openid email');
-    expect(redirectUrl.searchParams.get('disable_auto_login')).toBe('true');
+    expect(redirectUrl.searchParams.has('disable_auto_login')).toBe(false);
     expect(response.cookie).toHaveBeenCalledWith(
       'line_oauth_redirect',
       '/tai-khoan',
@@ -627,6 +636,46 @@ describe('AuthService', () => {
         secure: true,
       }),
     );
+  });
+
+  it('logs in a LINE member from a LIFF ID token', async () => {
+    useLineConfig();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        aud: '2010552841',
+        sub: 'Ue611b37ac7eea14388f71e7eef27b835',
+        name: 'LINE Member',
+        email: 'line-member@example.com',
+      }),
+    });
+    const member = {
+      ...user,
+      id: 'line-member-1',
+      email: 'line-member@example.com',
+      displayName: 'LINE Member',
+      role: 'USER',
+      tier: 'FREE',
+      deletedAt: null,
+    };
+    usersService.findByEmail.mockResolvedValue(member as never);
+
+    const result = await service.loginLineMember(
+      { idToken: 'line-liff-id-token' },
+      { userAgent: 'Mobile Safari' },
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.line.me/oauth2/v2.1/verify',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    );
+    expect(usersService.findByEmail).toHaveBeenCalledWith(
+      'line-member@example.com',
+    );
+    expect(result.accessToken).toBe('jwt-token');
+    expect(usersService.createLineMember).not.toHaveBeenCalled();
   });
 
   it('creates a LINE member with a stable fallback email when LINE does not return email yet', async () => {
@@ -658,7 +707,7 @@ describe('AuthService', () => {
       deletedAt: null,
     };
     usersService.findByEmail.mockResolvedValue(null);
-    usersService.createLineMember.mockResolvedValue(member);
+    usersService.createLineMember.mockResolvedValue(member as never);
 
     const response = {
       cookie: jest.fn(),

@@ -35,6 +35,10 @@ export type GoogleLoginPayload = {
   accessToken?: string;
 };
 
+export type LineLoginPayload = {
+  idToken: string;
+};
+
 export type GoogleLoginConfig = {
   configured: boolean;
   clientId: string | null;
@@ -42,6 +46,8 @@ export type GoogleLoginConfig = {
 
 export type OAuthLoginConfig = {
   configured: boolean;
+  webOAuthConfigured?: boolean;
+  liffId?: string | null;
 };
 
 export type UpdateProfilePayload = {
@@ -224,6 +230,13 @@ export const loginGoogleMember = (payload: GoogleLoginPayload) => {
   });
 };
 
+export const loginLineMember = (payload: LineLoginPayload) => {
+  return apiClient<AuthResponse>("/auth/line/member", {
+    method: "POST",
+    data: payload,
+  });
+};
+
 export const getGoogleLoginConfig = () => {
   return apiClient<GoogleLoginConfig>("/auth/google/config");
 };
@@ -322,12 +335,8 @@ export const activatePortalAuthSession = async (
   if (session.replacedSession) {
     const url = new URL(redirectTo, window.location.origin);
     url.searchParams.set("auth_notice", "device-replaced");
-    url.searchParams.set(
-      "prev_device",
-      formatDeviceLabel(session.replacedSession.userAgent),
-    );
-    const lastSeen =
-      session.replacedSession.lastSeenAt ?? session.replacedSession.createdAt;
+    url.searchParams.set("prev_device", formatDeviceLabel(session.replacedSession.userAgent));
+    const lastSeen = session.replacedSession.lastSeenAt ?? session.replacedSession.createdAt;
     if (lastSeen) {
       url.searchParams.set("prev_seen", lastSeen);
     }

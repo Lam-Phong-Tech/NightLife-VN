@@ -33,8 +33,12 @@ import {
   VerifyPasswordResetCodeDto,
 } from './dto/password-reset.dto';
 import { RegisterDto, RequestRegistrationOtpDto } from './dto/register.dto';
-import { maskIpAddress, requiresSinglePrivilegedSession } from './session-policy';
+import {
+  maskIpAddress,
+  requiresSinglePrivilegedSession,
+} from './session-policy';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { LineAuthDto } from './dto/line-auth.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -330,13 +334,33 @@ export class AuthService {
   }
 
   lineLoginConfig() {
+    const channelId = this.configService.get<string>('LINE_CHANNEL_ID')?.trim();
+    const channelSecret = this.configService
+      .get<string>('LINE_CHANNEL_SECRET')
+      ?.trim();
+    const callbackUrl = this.configService
+      .get<string>('LINE_CALLBACK_URL')
+      ?.trim();
+    const liffId = (
+      this.configService.get<string>('LINE_LIFF_ID') ||
+      this.configService.get<string>('NEXT_PUBLIC_LINE_LIFF_ID') ||
+      ''
+    ).trim();
+    const webOAuthConfigured = Boolean(
+      channelId && channelSecret && callbackUrl,
+    );
+
     return {
-      configured: Boolean(
-        this.configService.get<string>('LINE_CHANNEL_ID')?.trim() &&
-        this.configService.get<string>('LINE_CHANNEL_SECRET')?.trim() &&
-        this.configService.get<string>('LINE_CALLBACK_URL')?.trim(),
-      ),
+      configured: Boolean(channelId && (webOAuthConfigured || liffId)),
+      webOAuthConfigured,
+      liffId: liffId || null,
     };
+  }
+
+  async loginLineMember(dto: LineAuthDto, sessionContext?: SessionContext) {
+    const lineAccount = await this.verifyLineIdToken(dto.idToken);
+
+    return this.authenticateLineMember(lineAccount, sessionContext);
   }
 
   redirectToLineLogin(redirect: string | undefined, response: Response) {
@@ -365,7 +389,6 @@ export class AuthService {
     authorizationUrl.searchParams.set('state', state);
     authorizationUrl.searchParams.set('scope', 'profile openid email');
     authorizationUrl.searchParams.set('nonce', nonce);
-    authorizationUrl.searchParams.set('disable_auto_login', 'true');
 
     return response.redirect(authorizationUrl.toString());
   }
@@ -421,11 +444,17 @@ export class AuthService {
       );
     }
 
-    const existingUser = await this.usersService.findByEmail(lineAccount.email);
+    let authResponse;
 
-    if (existingUser) {
-      if (existingUser.deletedAt || existingUser.status !== 'ACTIVE') {
-        this.clearLineOAuthCookies(response);
+    try {
+      authResponse = await this.authenticateLineMember(
+        lineAccount,
+        sessionContext,
+      );
+    } catch (error) {
+      this.clearLineOAuthCookies(response);
+
+      if (error instanceof UnauthorizedException) {
         return this.redirectLineLoginError(
           response,
           redirectPath,
@@ -433,8 +462,7 @@ export class AuthService {
         );
       }
 
-      if (existingUser.role !== 'USER') {
-        this.clearLineOAuthCookies(response);
+      if (error instanceof ForbiddenException) {
         return this.redirectLineLoginError(
           response,
           redirectPath,
@@ -442,20 +470,9 @@ export class AuthService {
         );
       }
 
-      const authResponse = await this.toAuthResponse(
-        existingUser,
-        sessionContext,
-      );
-      this.setAuthCookies(response, authResponse);
-      this.clearLineOAuthCookies(response);
-      return response.redirect(this.webRedirectUrl(redirectPath));
+      throw error;
     }
 
-    const user = await this.usersService.createLineMember({
-      email: lineAccount.email,
-      displayName: lineAccount.displayName,
-    });
-    const authResponse = await this.toAuthResponse(user, sessionContext);
     this.setAuthCookies(response, authResponse);
     this.clearLineOAuthCookies(response);
 
@@ -790,7 +807,9 @@ export class AuthService {
         replacedSession = {
           userAgent: latest.userAgent ?? null,
           ipAddress: maskIpAddress(latest.ipAddress),
-          lastSeenAt: latest.lastSeenAt ? latest.lastSeenAt.toISOString() : null,
+          lastSeenAt: latest.lastSeenAt
+            ? latest.lastSeenAt.toISOString()
+            : null,
           createdAt: latest.createdAt.toISOString(),
         };
       }
@@ -1003,6 +1022,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid LINE authorization code');
     }
 
+    return this.verifyLineIdToken(tokenResponse.id_token, expectedNonce);
+  }
+
+  private async verifyLineIdToken(idToken: string, expectedNonce?: string) {
+    const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
+
+    if (!channelId) {
+      throw new ServiceUnavailableException('LINE login is not configured');
+    }
+
     let idTokenInfo: LineIdTokenVerifyResponse;
 
     try {
@@ -1012,7 +1041,7 @@ export class AuthService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          id_token: tokenResponse.id_token,
+          id_token: idToken,
           client_id: channelId,
         }),
       });
@@ -1046,6 +1075,34 @@ export class AuthService {
         this.toLineFallbackEmail(idTokenInfo.sub),
       displayName: idTokenInfo.name?.trim() || undefined,
     };
+  }
+
+  private async authenticateLineMember(
+    lineAccount: LineAccount,
+    sessionContext?: SessionContext,
+  ) {
+    const existingUser = await this.usersService.findByEmail(lineAccount.email);
+
+    if (existingUser) {
+      if (existingUser.deletedAt || existingUser.status !== 'ACTIVE') {
+        throw new UnauthorizedException('LINE account is not active.');
+      }
+
+      if (existingUser.role !== 'USER') {
+        throw new ForbiddenException(
+          'This LINE account is not a member account.',
+        );
+      }
+
+      return this.toAuthResponse(existingUser, sessionContext);
+    }
+
+    const user = await this.usersService.createLineMember({
+      email: lineAccount.email,
+      displayName: lineAccount.displayName,
+    });
+
+    return this.toAuthResponse(user, sessionContext);
   }
 
   private toLineFallbackEmail(lineSubject: string) {

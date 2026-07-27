@@ -79,4 +79,18 @@ export class GoogleConfigResponseDto {
 export class LineConfigResponseDto {
   @ApiProperty({ example: true })
   configured: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the legacy browser OAuth fallback is configured.',
+  })
+  webOAuthConfigured: boolean;
+
+  @ApiProperty({
+    example: '2010552841-AbCdEfGh',
+    nullable: true,
+    required: false,
+    description: 'LINE LIFF ID used to open login through the LINE app.',
+  })
+  liffId: string | null;
 }

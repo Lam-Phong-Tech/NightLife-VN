@@ -49,6 +49,7 @@ Do not paste real secret values into Jira or Git. Confirm only present/missing.
 | `LINE_CHANNEL_ID` | If LINE login enabled | LINE auth config. |
 | `LINE_CHANNEL_SECRET` | If LINE login enabled | Secret value only in VPS `.env`. |
 | `LINE_CALLBACK_URL` | If LINE login enabled | Demo callback URL. |
+| `LINE_LIFF_ID` | If LINE app login enabled | LIFF app ID used to open LINE login in the LINE app on mobile. |
 | `TELEGRAM_BOT_TOKEN` | If Telegram enabled | Secret value only in VPS `.env`. |
 | `TELEGRAM_ADMIN_CHAT_ID` | If Telegram enabled | Admin notification target. |
 | `TELEGRAM_ADMIN_THREAD_ID` | Optional | Topic/thread target. |

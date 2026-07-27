@@ -44,6 +44,7 @@ import {
 } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { LineAuthDto } from './dto/line-auth.dto';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -178,6 +179,17 @@ export class AuthController {
     return this.authService.lineLoginConfig();
   }
 
+  @ApiOperation({ summary: 'Dang nhap LINE qua LIFF cho Member' })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @AuthRateLimit({
+    scope: 'line-login',
+    limit: 30,
+    windowMs: FIFTEEN_MINUTES_MS,
+  })
+  @Post('line/member')
+  loginLineMember(@Body() dto: LineAuthDto, @Req() request: Request) {
+    return this.authService.loginLineMember(dto, this.sessionContext(request));
+  }
   @ApiOperation({ summary: 'Bắt đầu luồng đăng nhập Line' })
   @AuthRateLimit({
     scope: 'line-login',
