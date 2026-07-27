@@ -2008,7 +2008,7 @@ textarea::placeholder {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .nl-admin-shell {
     height: 100dvh !important;
     min-width: 0 !important;

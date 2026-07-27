@@ -285,7 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [activeFilter, setActiveFilter] = useState<'all' | 'booking' | 'bill' | 'system'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 1023px)').matches : false,
   );
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -293,7 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [showNotifications, setShowNotifications] = useState(false);
   const [hideTopbarFilters, setHideTopbarFilters] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
-    typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
+    typeof window !== 'undefined' ? !window.matchMedia('(max-width: 1023px)').matches : true,
   );
 
   useEffect(() => {
@@ -637,7 +637,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [isMounted, currentUser]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleSidebarModeChange = (event: MediaQueryListEvent) => {
       setIsMobileSidebar(event.matches);
       if (event.matches) setSidebarOpen(false);
@@ -711,7 +711,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           aria-label="Đóng menu admin"
           className="nl-admin-sidebar-backdrop"
-          onClick={() => setSidebarOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSidebarOpen(false);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSidebarOpen(false);
+          }}
           type="button"
         />
       )}
@@ -728,10 +737,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <button
                 aria-label="Đóng menu admin"
                 className="nl-admin-sidebar-close"
-                onClick={() => setSidebarOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSidebarOpen(false);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSidebarOpen(false);
+                }}
                 type="button"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg style={{ pointerEvents: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
