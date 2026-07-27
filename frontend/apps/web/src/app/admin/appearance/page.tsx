@@ -723,24 +723,27 @@ export default function AppearancePage() {
           <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.45),transparent)' }}></div>
         </div>
 
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch', marginBottom: '28px' }}>
+        <div className="flex flex-col md:flex-row gap-3.5 md:gap-4 items-stretch mb-7">
           <div style={{ flex: 1.4, minWidth: 0, background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '16px', padding: '16px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '13px' }}>
-              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6' }}>Logo hiện tại</span>
-              {brandChanged && <span style={{ fontSize: '9px', fontWeight: 700, color: '#e0a44e', border: '1px solid rgba(224,164,78,.4)', borderRadius: '6px', padding: '2px 7px' }}>CHƯA ÁP DỤNG</span>}
-              <div style={{ flex: 1 }}></div>
-              <span onClick={() => {
-                if (brand.logoUrl) {
-                  window.open(resolveClientUrl(brand.logoUrl) || brand.logoUrl, '_blank');
-                } else {
-                  showToast('Chưa có file logo được tải lên');
-                }
-              }} style={{ fontSize: '11.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.13)', borderRadius: '9px', padding: '7px 13px', cursor: 'pointer' }}>
-                {brand.logoUrl ? 'Tải logo' : 'Tải .svg'}
-              </span>
-              <span onClick={() => setLogoOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '9px', padding: '7px 14px', cursor: 'pointer', boxShadow: '0 10px 20px -10px rgba(168,124,60,.6)' }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4.5l5 5L8 21H3v-5z"/><path d="M12.5 6.5l5 5"/></svg>Thay logo
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3.5">
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6' }}>Logo hiện tại</span>
+                {brandChanged && <span style={{ fontSize: '9px', fontWeight: 700, color: '#e0a44e', border: '1px solid rgba(224,164,78,.4)', borderRadius: '6px', padding: '2px 7px' }}>CHƯA ÁP DỤNG</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <span onClick={() => {
+                  if (brand.logoUrl) {
+                    window.open(resolveClientUrl(brand.logoUrl) || brand.logoUrl, '_blank');
+                  } else {
+                    showToast('Chưa có file logo được tải lên');
+                  }
+                }} style={{ fontSize: '11.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.13)', borderRadius: '9px', padding: '7px 13px', cursor: 'pointer' }}>
+                  {brand.logoUrl ? 'Tải logo' : 'Tải .svg'}
+                </span>
+                <span onClick={() => setLogoOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '9px', padding: '7px 14px', cursor: 'pointer', boxShadow: '0 10px 20px -10px rgba(168,124,60,.6)' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4.5l5 5L8 21H3v-5z"/><path d="M12.5 6.5l5 5"/></svg>Thay logo
+                </span>
+              </div>
             </div>
 
             <div style={{ border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', overflow: 'hidden' }}>
@@ -820,7 +823,7 @@ export default function AppearancePage() {
         </div>
 
         <div style={{ background: '#0e0d12', border: '1px solid rgba(255,255,255,.07)', borderRadius: '16px', padding: '17px 16px 13px', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
             {quick.map(t => {
               const color = getItemIconColor(t);
               const gridBg = t.featured
@@ -867,7 +870,7 @@ export default function AppearancePage() {
           <div style={{ fontSize: '9.5px', color: '#57534b', textAlign: 'center', marginTop: '10px', letterSpacing: '.6px', textTransform: 'uppercase' }}>Xem trước trên trang chủ</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 mb-7">
           {quick.map((r, i) => {
             const sv = saved.quick[i];
             const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color) || sv.featured !== r.featured;
@@ -940,7 +943,7 @@ export default function AppearancePage() {
           <div style={{ fontSize: '9.5px', color: '#57534b', textAlign: 'center', marginTop: '10px', letterSpacing: '.6px', textTransform: 'uppercase' }}>Xem trước thanh điều hướng · tab đầu đang chọn</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 mb-7">
           {nav.map((r, i) => {
             const sv = saved.nav[i];
             const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color);
@@ -978,27 +981,29 @@ export default function AppearancePage() {
         </div>
 
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 280px 78px', gap: '14px', padding: '12px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <div className="max-md:hidden grid grid-cols-[150px_1fr_280px_78px] gap-3.5 p-3 text-[10px] font-bold text-[#57534b] uppercase border-b border-white/[0.06] bg-white/[0.015]">
             <span>Khối</span><span>Hiển thị trên trang chủ</span><span>Sửa tiêu đề</span><span></span>
           </div>
           {titles.filter(t => t.id !== 't4_restaurant' && t.id !== 't4_spa').map((t) => {
             const sv = saved.titles.find(x => x.id === t.id);
             const changed = !sv || sv.label !== t.label;
             return (
-              <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 280px 78px', gap: '14px', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              <div key={t.id} className="grid md:grid-cols-[150px_1fr_280px_78px] gap-3 items-center p-3.5 border-b border-white/[0.04] text-xs md:text-sm max-md:flex max-md:flex-col max-md:align-stretch">
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>{t.key}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                   <span style={{ width: '3.5px', height: '20px', borderRadius: '2px', background: 'linear-gradient(180deg,#f0dda8,#b6924a)', flex: 'none' }}></span>
                   <span style={{ fontSize: '16.5px', fontWeight: 800, color: '#f3f0ea', letterSpacing: '-.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
                   {changed && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#e0a44e', border: '1px solid rgba(224,164,78,.4)', borderRadius: '6px', padding: '2px 6px' }}>CHƯA ÁP DỤNG</span>}
                 </div>
-                <input 
-                  value={t.label} 
-                  onChange={e => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: e.target.value.slice(0, 28) } : x))}
-                  maxLength={28} 
-                  style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '9px 12px', color: '#f3f0ea', fontSize: '13px', fontFamily: "'Inter', sans-serif", outline: 'none' }} 
-                />
-                <span onClick={() => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: sv?.label ?? t.label } : x))} style={{ fontSize: '11px', fontWeight: 600, color: '#8c8679', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', textAlign: 'center' }}>Hoàn tác</span>
+                <div className="flex items-center gap-2 w-full">
+                  <input 
+                    value={t.label} 
+                    onChange={e => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: e.target.value.slice(0, 28) } : x))}
+                    maxLength={28} 
+                    style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '9px 12px', color: '#f3f0ea', fontSize: '13px', fontFamily: "'Inter', sans-serif", outline: 'none' }} 
+                  />
+                  <span onClick={() => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: sv?.label ?? t.label } : x))} style={{ fontSize: '11px', fontWeight: 600, color: '#8c8679', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', textAlign: 'center', flex: 'none' }}>Hoàn tác</span>
+                </div>
               </div>
             );
           })}
@@ -1008,15 +1013,19 @@ export default function AppearancePage() {
       </div>
 
       {dirty && (
-        <div style={{ position: 'fixed', left: '274px', right: '24px', bottom: '16px', zIndex: 45, display: 'flex', alignItems: 'center', gap: '13px', background: 'rgba(19,18,24,.94)', border: '1px solid rgba(212,178,106,.32)', borderRadius: '15px', padding: '12px 16px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)', backdropFilter: 'blur(10px)' }}>
-          <span style={{ width: '9px', height: '9px', flex: 'none', borderRadius: '50%', background: '#e0a44e', boxShadow: '0 0 8px #e0a44e' }}></span>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea' }}>{changedCount} thay đổi chưa áp dụng</span>
-          <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Người dùng vẫn thấy bản cũ cho tới khi áp dụng</span>
-          <div style={{ flex: 1 }}></div>
-          <span onClick={handleUndoAll} style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.14)', borderRadius: '10px', padding: '9px 16px', cursor: 'pointer' }}>Hoàn tác tất cả</span>
-          <span onClick={saving ? undefined : handleSaveAll} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: saving ? '#c5c0b6' : 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '10px', padding: '9px 18px', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
-            {saving ? 'Đang lưu...' : 'Lưu & áp dụng'}
-          </span>
+        <div className="fixed left-4 right-4 md:left-[274px] md:right-6 bottom-4 z-40 flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 bg-[#131218]/95 border border-[#d4b26a]/30 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span style={{ width: '9px', height: '9px', flex: 'none', borderRadius: '50%', background: '#e0a44e', boxShadow: '0 0 8px #e0a44e' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea' }}>{changedCount} thay đổi chưa áp dụng</span>
+          </div>
+          <span style={{ fontSize: '11.5px', color: '#8c8679' }} className="max-sm:hidden">Người dùng vẫn thấy bản cũ cho tới khi áp dụng</span>
+          <div className="max-sm:hidden" style={{ flex: 1 }}></div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <span onClick={handleUndoAll} style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.14)', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer' }}>Hoàn tác</span>
+            <span onClick={saving ? undefined : handleSaveAll} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: saving ? '#c5c0b6' : 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '10px', padding: '8px 16px', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
+              {saving ? 'Đang lưu...' : 'Lưu & áp dụng'}
+            </span>
+          </div>
         </div>
       )}
 
