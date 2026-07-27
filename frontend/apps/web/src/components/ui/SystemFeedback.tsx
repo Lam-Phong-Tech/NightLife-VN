@@ -796,11 +796,62 @@ const feedbackStyles = `
   }
 
   .nl-system-sheet-handle {
-    width: 44px;
+    width: 38px;
     height: 4px;
-    border-radius: 4px;
-    background: rgba(255,255,255,.18);
-    margin: 0 auto 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.2);
+    margin: 0 auto 16px;
+  }
+
+  [data-theme="light"] .nl-system-modal-overlay,
+  [data-theme="light"] .nl-system-sheet-overlay {
+    background: rgba(8, 8, 11, 0.45);
+    color: var(--vy-text);
+  }
+
+  [data-theme="light"] .nl-system-modal,
+  [data-theme="light"] .nl-system-sheet {
+    background: var(--vy-surface);
+    border: 1px solid var(--vy-border);
+    color: var(--vy-text);
+    box-shadow: 0 24px 60px -20px rgba(80, 55, 18, 0.22);
+  }
+
+  [data-theme="light"] .nl-system-modal-icon {
+    border-color: var(--vy-border);
+    background: var(--vy-surface-2);
+  }
+
+  [data-theme="light"] .nl-system-modal h2,
+  [data-theme="light"] .nl-system-sheet h2 {
+    color: var(--vy-text);
+  }
+
+  [data-theme="light"] .nl-system-modal p,
+  [data-theme="light"] .nl-system-modal-desc,
+  [data-theme="light"] .nl-system-sheet p {
+    color: var(--vy-text-2);
+  }
+
+  [data-theme="light"] .nl-system-secondary-button {
+    border: 1px solid var(--vy-border);
+    background: var(--vy-surface-2);
+    color: var(--vy-text);
+  }
+
+  [data-theme="light"] .nl-system-toast {
+    background: var(--vy-surface);
+    border-color: var(--vy-border);
+    color: var(--vy-text);
+    box-shadow: 0 16px 32px -18px rgba(80, 55, 18, 0.25);
+  }
+
+  [data-theme="light"] .nl-system-toast-copy p {
+    color: var(--vy-text-2);
+  }
+
+  [data-theme="light"] .nl-system-toast-close {
+    color: var(--vy-muted);
   }
 
   .nl-spin {

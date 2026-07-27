@@ -249,15 +249,15 @@ export default function Page() {
                 </span>
               </div>
 
-              <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
+              <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(255, 255, 255, 0.36)", backdropFilter: "blur(4px)", border: "1px solid rgba(255, 255, 255, 0.42)", padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900, color: "#241a0a" }}>
                   <span>{translateText("Điểm thưởng", activeLanguage)}</span>
                   <span>{pointFormatter.format(rewardPoints)} {translateText("điểm", activeLanguage)}</span>
                 </div>
-                <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
-                  <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
+                <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.18)", overflow: "hidden" }}>
+                  <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "linear-gradient(90deg, #5c4315, #241a0a)" }} />
                 </div>
-                <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
+                <p style={{ marginTop: 8, fontSize: 11.5, color: "#241a0a", opacity: 0.9, fontWeight: 600 }}>
                   {isLoadingPoints
                     ? <InlineLoading label={translateText("Đang cập nhật điểm thưởng", activeLanguage)} />
                     : pointSummaryError

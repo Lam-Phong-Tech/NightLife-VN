@@ -559,13 +559,19 @@ export function CastProfileStyles() {
         align-items: center;
         gap: 5px;
         color: #7fd3a0;
-        background: rgba(12,12,15,.4);
-        border: 1px solid rgba(95,191,134,.4);
+        background: rgba(95,191,134,.14);
+        border: 1px solid rgba(95,191,134,.35);
         border-radius: 9px;
         padding: 4px 9px;
         font-size: 10.5px;
         font-style: normal;
         font-weight: 650;
+      }
+
+      [data-theme="light"] .cast-venue-status {
+        color: #1f8a5b;
+        background: rgba(31, 138, 91, 0.12);
+        border: 1px solid rgba(31, 138, 91, 0.32);
       }
 
       .cast-venue-copy small {
