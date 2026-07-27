@@ -492,9 +492,9 @@ export function AdminSupportDashboard() {
 
         {/* Cột phải: Active Chat Thread */}
         <div
-          className={`flex-1 min-w-0 flex flex-col ${!activeTicketId ? 'max-md:hidden' : 'max-md:flex'}`}
+          className={`flex-1 min-w-0 flex flex-col ${!activeTicketId ? 'max-md:hidden' : 'max-md:fixed max-md:inset-0 max-md:z-[100] max-md:h-[100dvh] max-md:w-full max-md:bg-[#0c0c0f]'}`}
           style={{
-            background: 'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(212,178,106,.03), transparent)',
+            background: 'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(212,178,106,.03), #0c0c0f)',
           }}
         >
           {activeTicketId ? (
@@ -504,8 +504,8 @@ export function AdminSupportDashboard() {
                 className="flex-none flex items-center gap-2.5 py-3 px-3.5 md:px-5 z-10"
                 style={{
                   borderBottom: '1px solid rgba(255,255,255,.06)',
-                  background: 'rgba(12,12,15,.6)',
-                  backdropFilter: 'blur(8px)',
+                  background: 'rgba(12,12,15,.95)',
+                  backdropFilter: 'blur(12px)',
                 }}
               >
                 <button
@@ -630,11 +630,11 @@ export function AdminSupportDashboard() {
 
               {/* Khu vực nhập tin nhắn */}
               <div
-                className="flex-none py-3 px-5"
+                className="flex-none py-3 px-3.5 md:px-5 pb-[calc(12px+env(safe-area-inset-bottom))]"
                 style={{
                   borderTop: '1px solid rgba(255,255,255,.06)',
-                  background: 'rgba(12,12,15,.6)',
-                  backdropFilter: 'blur(8px)',
+                  background: 'rgba(12,12,15,.95)',
+                  backdropFilter: 'blur(12px)',
                 }}
               >
                 {/* Các câu hỏi gợi ý */}
