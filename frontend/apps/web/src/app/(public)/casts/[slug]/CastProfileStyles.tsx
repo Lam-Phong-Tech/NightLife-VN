@@ -361,7 +361,7 @@ export function CastProfileStyles() {
       }
 
       .cast-mobile .cast-mobile-bio {
-        color: #6f6657;
+        color: #d8d0c2;
       }
 
       .cast-detail-list {
@@ -398,11 +398,11 @@ export function CastProfileStyles() {
       }
 
       .cast-mobile .cast-info-row span {
-        color: #8a806f;
+        color: #a99f91;
       }
 
       .cast-mobile .cast-info-row strong {
-        color: #3a3022;
+        color: #f1eadc;
         font-weight: 700;
       }
 
@@ -636,6 +636,15 @@ export function CastProfileStyles() {
         background-position: center !important;
         padding: 0;
         cursor: pointer;
+      }
+
+      .cast-video-grid-section {
+        margin-top: 18px;
+      }
+
+      .cast-video-grid-section .cast-gallery-tile {
+        flex-basis: 138px;
+        height: 78px;
       }
 
       .cast-gallery-tile.is-placeholder,

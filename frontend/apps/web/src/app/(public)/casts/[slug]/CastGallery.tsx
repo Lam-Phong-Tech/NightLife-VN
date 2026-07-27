@@ -15,6 +15,10 @@ type CastGalleryProps = {
   variant: "mobile" | "desktop";
   language: LanguageCode;
   isLightboxOpen: boolean;
+  mobileMediaType?: "IMAGE" | "VIDEO";
+  mobileTitle?: string;
+  mobileMeta?: string;
+  renderLightbox?: boolean;
   onSelect: (index: number, action?: CastGalleryAction) => void;
   onOpenLightbox: (index?: number) => void;
   onCloseLightbox: () => void;
@@ -34,6 +38,10 @@ export function CastGallery({
   variant,
   language,
   isLightboxOpen,
+  mobileMediaType,
+  mobileTitle,
+  mobileMeta,
+  renderLightbox = true,
   onSelect,
   onOpenLightbox,
   onCloseLightbox,
@@ -48,6 +56,9 @@ export function CastGallery({
   const fallbackImageUrl =
     gallery.find((item) => item.type === "IMAGE" && !isPlaceholderCastMedia(item))?.url ?? null;
   const copy = getCastProfileCopy(language);
+  const mobileItems = gallery
+    .map((media, index) => ({ media, index }))
+    .filter(({ media }) => !mobileMediaType || media.type === mobileMediaType);
 
   const showPrevious = useCallback(() => {
     onSelect(activeIndex <= 0 ? gallery.length - 1 : activeIndex - 1, "previous");
@@ -96,7 +107,7 @@ export function CastGallery({
   );
 
   const lightbox =
-    isLightboxOpen && activeMedia && portalTarget
+    renderLightbox && isLightboxOpen && activeMedia && portalTarget
       ? createPortal(
           <CastLightbox
             gallery={gallery}
@@ -119,16 +130,16 @@ export function CastGallery({
     return (
       <>
         <section
-          className="cast-section cast-gallery-grid-section"
+          className={`cast-section cast-gallery-grid-section${mobileMediaType === "VIDEO" ? " cast-video-grid-section" : ""}`}
           data-testid="cast-gallery-mobile"
         >
           <div className="cast-section-heading">
-            <h2>{copy.gallery}</h2>
+            <h2>{mobileTitle ?? copy.gallery}</h2>
             <span />
-            <small>{copy.galleryCount(gallery.length)}</small>
+            <small>{mobileMeta ?? copy.galleryCount(mobileItems.length)}</small>
           </div>
           <div className="cast-mobile-gallery-grid">
-            {gallery.map((media, index) => {
+            {mobileItems.map(({ media, index }) => {
               const isPlaceholder = isPlaceholderCastMedia(media);
 
               return (

@@ -138,6 +138,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const userFeedback = useUserActionFeedback();
   const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
   const gallery = profile.gallery.length ? profile.gallery : placeholderGallery;
+  const photoGallery = gallery.filter((media) => media.type === "IMAGE");
+  const videoGallery = gallery.filter((media) => media.type === "VIDEO");
+  const shouldRenderPhotoGallery = photoGallery.length > 0 || videoGallery.length === 0;
   const area = buildCastArea(profile);
   const storeHref = `/stores/${profile.store.slug}`;
   const bookingHref = buildBookingHref(profile, area);
@@ -381,19 +384,40 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onHeroPointerUp={handleHeroPointerUp}
             onHeroPointerCancel={resetHeroSwipe}
           />
-          <CastGallery
-            gallery={gallery}
-            activeIndex={activeMediaIndex}
-            variant="mobile"
-            language={activeLanguage}
-            isLightboxOpen={isLightboxOpen}
-            onSelect={selectMedia}
-            onOpenLightbox={openLightbox}
-            onCloseLightbox={() => setIsLightboxOpen(false)}
-            favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
-          />
+          {shouldRenderPhotoGallery ? (
+            <CastGallery
+              gallery={gallery}
+              activeIndex={activeMediaIndex}
+              variant="mobile"
+              language={activeLanguage}
+              isLightboxOpen={isLightboxOpen}
+              mobileMediaType="IMAGE"
+              mobileTitle={copy.gallery}
+              mobileMeta={copy.galleryCount(photoGallery.length)}
+              onSelect={selectMedia}
+              onOpenLightbox={openLightbox}
+              onCloseLightbox={() => setIsLightboxOpen(false)}
+              favoriteLabel={isFavorite ? copy.removeFavorite : copy.favorite}
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
+            />
+          ) : null}
+          {videoGallery.length ? (
+            <CastGallery
+              gallery={gallery}
+              activeIndex={activeMediaIndex}
+              variant="mobile"
+              language={activeLanguage}
+              isLightboxOpen={isLightboxOpen}
+              mobileMediaType="VIDEO"
+              mobileTitle={translateText("Video Cast", activeLanguage)}
+              mobileMeta={`${videoGallery.length} video`}
+              renderLightbox={!shouldRenderPhotoGallery}
+              onSelect={selectMedia}
+              onOpenLightbox={openLightbox}
+              onCloseLightbox={() => setIsLightboxOpen(false)}
+            />
+          ) : null}
           <CastInfo
             profile={profile}
             area={area}
