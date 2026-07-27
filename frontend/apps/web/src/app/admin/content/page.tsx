@@ -2095,7 +2095,7 @@ export default function AdminContentPage() {
           {isLoadingTours ? (
             <DataSkeleton variant="cards" count={3} columns={3} style={{ minHeight: 240 }} />
           ) : selectedHomeGuideItems.length ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '14px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 md:gap-4.5">
               {selectedHomeGuideItems.map((item, index) => {
                 const isTour = item.type === 'tour';
                 const id = getHomeGuideSourceId(item);
@@ -2324,7 +2324,7 @@ export default function AdminContentPage() {
 
           <div
             data-testid="admin-featured-card-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '18px' }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 md:gap-4.5"
           >
             {featuredItems.map((item, idx) => (
               <div
@@ -2420,7 +2420,7 @@ export default function AdminContentPage() {
 
           <div
             data-testid="admin-recommend-card-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '18px' }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 md:gap-4.5"
           >
             {recommendItems.map((item, idx) => (
               <div
