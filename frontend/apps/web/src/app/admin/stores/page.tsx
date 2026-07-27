@@ -1364,10 +1364,16 @@ function AdminStoresContent() {
   };
 
   const filteredStores = stores.filter((v: any) => {
-    if (filterCity === 'Hanoi' && v.area !== 'HN') return false;
-    if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM') return false;
+    if (filterCity === 'Hanoi' && v.area !== 'HN' && v.city !== 'Hanoi' && v.city !== 'Hà Nội') return false;
+    if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM' && v.city !== 'Ho Chi Minh City' && v.city !== 'TP. Hồ Chí Minh') return false;
     
-    if (filterCategory && v.category !== filterCategory) return false;
+    if (filterCategory) {
+      const storeCat = (v.category || v.type || '').toString().toUpperCase();
+      const targetCat = filterCategory.toString().toUpperCase();
+      if (storeCat !== targetCat && !storeCat.includes(targetCat) && !targetCat.includes(storeCat)) {
+        return false;
+      }
+    }
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
 
     if (filterStatus !== 'all') {
@@ -1389,7 +1395,7 @@ function AdminStoresContent() {
       
       {/* Top filters */}
       <div className="nl-admin-list-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '16px' }}>
-        <div className="nl-admin-inline-search" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '250px' }}>
+        <div className="nl-admin-inline-search" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '250px' }} className="nl-admin-inline-search max-md:w-full">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
           <input 
             type="text" 
@@ -1498,8 +1504,8 @@ function AdminStoresContent() {
         </div>
 
 
-        <div style={{ flex: 1 }}></div>
-        <span onClick={openNewDrawer} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
+        <div className="max-md:hidden" style={{ flex: 1 }}></div>
+        <span onClick={openNewDrawer} className="max-md:hidden" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           Thêm quán
         </span>
@@ -1507,7 +1513,7 @@ function AdminStoresContent() {
 
       {/* Table */}
       <div className="nl-admin-data-list" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '48px 1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+        <div className="nl-admin-table-head max-md:hidden" style={{ display: 'grid', gridTemplateColumns: '48px 1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>STT</span><span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
         </div>
 
@@ -1527,23 +1533,40 @@ function AdminStoresContent() {
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+              <span className="max-md:hidden" style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
+              
+              <div className="nl-admin-store-row-top" style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
                 {coverImage ? (
                   <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: `url(${resolveClientUrl(coverImage)}) center/cover no-repeat` }} />
                 ) : (
                   <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', color: '#241a0a' }}>{v.initials || v.name?.substring(0,2)?.toUpperCase()}</span>
                 )}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
-                  <div style={{ fontSize: '11px', color: '#57534b', marginTop: '1px' }}>{v.address}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ color: '#f3f0ea', fontWeight: 600, fontSize: '13.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
+                  <div className="max-md:hidden" style={{ fontSize: '11px', color: '#57534b', marginTop: '1px' }}>{v.address}</div>
+                </div>
+                <div className="md:hidden">
+                  <span style={stStyle as any}>{stMeta.label}</span>
                 </div>
               </div>
-              <span style={{ color: '#c5c0b6' }}>{v.type}</span>
-              <span><span style={{ ...cityStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px' }}>{v.area}</span></span>
-              <span style={{ color: '#c5c0b6' }}>{v.casts}</span>
-              <span><span style={stStyle as any}>{stMeta.label}</span></span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+
+              <div className="nl-admin-store-row-sub">
+                <span className="md:hidden" style={{ color: '#c5c0b6', background: 'rgba(255,255,255,.05)', padding: '2px 8px', borderRadius: '6px' }}>{v.type || v.category || 'Quán'}</span>
+                <span className="max-md:inline-block"><span style={{ ...cityStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px' }}>{v.area}</span></span>
+                <span style={{ color: '#c5c0b6' }}>{v.casts} cast</span>
+                <div className="md:hidden" style={{ flex: 1 }}></div>
+                <svg className="md:hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+              </div>
+
+              <div className="md:hidden" style={{ fontSize: '11px', color: '#8c8679', lineHeight: 1.4 }}>
+                {v.address}
+              </div>
+
+              <span className="max-md:hidden" style={{ color: '#c5c0b6' }}>{v.type}</span>
+              <span className="max-md:hidden"><span style={{ ...cityStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px' }}>{v.area}</span></span>
+              <span className="max-md:hidden" style={{ color: '#c5c0b6' }}>{v.casts}</span>
+              <span className="max-md:hidden"><span style={stStyle as any}>{stMeta.label}</span></span>
+              <svg className="max-md:hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
             </div>
           );
         })}
@@ -1558,6 +1581,22 @@ function AdminStoresContent() {
             itemLabel="quán"
           />
         )}
+      </div>
+
+      {/* Floating Action Button (FAB) on Mobile */}
+      <div 
+        onClick={openNewDrawer}
+        className="md:hidden fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl cursor-pointer"
+        style={{
+          background: 'linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a)',
+          color: '#241a0a',
+          boxShadow: '0 8px 24px -4px rgba(212,178,106,.5)'
+        }}
+        title="Thêm quán"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
       </div>
 
       {/* Drawer */}
