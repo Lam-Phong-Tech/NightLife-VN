@@ -35,6 +35,12 @@ describe('PublicCampaignsController', () => {
       where: {
         status: 'ACTIVE',
         targetStoreId: { not: null },
+        targetStore: {
+          is: {
+            status: 'ACTIVE',
+            deletedAt: null,
+          },
+        },
         AND: [
           { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
           { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },

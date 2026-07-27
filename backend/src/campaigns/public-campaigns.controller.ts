@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
-import { Prisma } from '@prisma/client';
+import { CampaignStatus, Prisma, StoreStatus } from '@prisma/client';
 
 @Controller('public/campaigns')
 export class PublicCampaignsController {
@@ -16,8 +16,14 @@ export class PublicCampaignsController {
     const now = new Date();
 
     const where: Prisma.CampaignWhereInput = {
-      status: 'ACTIVE',
+      status: CampaignStatus.ACTIVE,
       targetStoreId: { not: null }, // Only campaigns with a target store
+      targetStore: {
+        is: {
+          status: StoreStatus.ACTIVE,
+          deletedAt: null,
+        },
+      },
       AND: [
         { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
         { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
