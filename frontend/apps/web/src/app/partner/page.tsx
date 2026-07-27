@@ -462,6 +462,8 @@ type VietnamProvince = { code: number; name: string };
 type VietnamWard = { code: number; name: string };
 const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'bill', 'settings'] as const;
 type PanelKey = (typeof panelKeys)[number];
+const staffPanelKeys: PanelKey[] = ['scan', 'settings'];
+const isStaffPanelKey = (panel: PanelKey) => staffPanelKeys.includes(panel);
 type PartnerNotificationTone = 'gold' | 'success' | 'warning' | 'danger' | 'info';
 type PartnerNotification = {
   id: string;
@@ -1809,6 +1811,12 @@ export default function PartnerPage() {
   } catch {}
 
   const isStaffAccount = currentUser?.role === 'STAFF';
+  const visibleNavItems = useMemo(
+    () => (isStaffAccount ? navItems.filter((item) => isStaffPanelKey(item.key)) : navItems),
+    [isStaffAccount],
+  );
+  const visibleActivePanel: PanelKey = isStaffAccount && !isStaffPanelKey(activePanel) ? 'scan' : activePanel;
+  const accountScopeLabel = isStaffAccount ? 'Nhân viên đang hoạt động' : 'Đối tác đang hoạt động';
   const scanPermissionStore = stores.find((store) => store.id === scanStoreId) ?? stores[0] ?? null;
   const scanStorePermissions = scanPermissionStore?.permissions ?? [];
   const staffCanScanCoupons =
@@ -1872,10 +1880,10 @@ export default function PartnerPage() {
   }, [feedback]);
 
   useEffect(() => {
-    if (activePanel === 'settings' && settingsStoreId) {
+    if (!isStaffAccount && activePanel === 'settings' && settingsStoreId) {
       fetchStaffList(settingsStoreId);
     }
-  }, [activePanel, settingsStoreId, fetchStaffList]);
+  }, [activePanel, settingsStoreId, fetchStaffList, isStaffAccount]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2723,6 +2731,21 @@ export default function PartnerPage() {
             : 'Tài khoản Partner chưa được gán quán. Admin cần cấp quyền quán trước khi đăng thông tin.',
         );
 
+        if (isStaffAccount) {
+          setDashboard(null);
+          setCoupons([]);
+          setBills([]);
+          setBookings([]);
+          setListingReview(null);
+          setListingContentId(null);
+          setStatusMessage(
+            storeData.length
+              ? 'Tài khoản nhân viên chỉ hiển thị công cụ theo quyền được cấp tại quán.'
+              : 'Tài khoản nhân viên chưa được gán quán. Đối tác quản lý cần cấp quyền quán trước khi sử dụng.',
+          );
+          return;
+        }
+
         const dashboardData = await apiClient<PartnerLiteDashboard>(
           `/partner/dashboard-lite?period=${encodeURIComponent(period)}`
         ).catch(() => null);
@@ -2771,7 +2794,13 @@ export default function PartnerPage() {
     return () => {
       isMounted = false;
     };
-  }, [period]);
+  }, [period, isStaffAccount]);
+
+  useEffect(() => {
+    if (isStaffAccount && !isStaffPanelKey(activePanel)) {
+      setActivePanel('scan');
+    }
+  }, [activePanel, isStaffAccount]);
 
   useEffect(() => {
     return () => {
@@ -2786,13 +2815,16 @@ export default function PartnerPage() {
     if (!isPanelKey(requestedPanel)) {
       return;
     }
+    if (isStaffAccount && !isStaffPanelKey(requestedPanel)) {
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       setActivePanel(requestedPanel);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [requestedPanel]);
+  }, [requestedPanel, isStaffAccount]);
 
   useEffect(() => {
     const refreshBillClock = () => setBillNowMs(Date.now());
@@ -3203,6 +3235,11 @@ export default function PartnerPage() {
 
   const openPartnerNotification = (notification: PartnerNotification) => {
     markNotificationsRead([notification.id]);
+    if (isStaffAccount && !isStaffPanelKey(notification.panel)) {
+      setActivePanel('scan');
+      setIsNotificationOpen(false);
+      return;
+    }
     setActivePanel(notification.panel);
     if (notification.listingTab) {
       setListingTab(notification.listingTab === 'cast' ? 'cast' : 'store');
@@ -3672,6 +3709,10 @@ export default function PartnerPage() {
   }, [setSelectedProvinceCode, setSelectedWardCode]);
 
   useEffect(() => {
+    if (isStaffAccount) {
+      setIsListingLoading(false);
+      return;
+    }
     if (!listingStoreId) {
       return;
     }
@@ -3707,9 +3748,13 @@ export default function PartnerPage() {
       isMounted = false;
       window.clearTimeout(loadingTimer);
     };
-  }, [applyListingDraftResponse, listingStoreId]);
+  }, [applyListingDraftResponse, listingStoreId, isStaffAccount]);
 
   const refreshPartnerNotificationData = useCallback(() => {
+    if (isStaffAccount) {
+      return;
+    }
+
     const promises: Promise<any>[] = [
       apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
       apiClient<PartnerBill[]>('/partner/bills').then(setBills),
@@ -3727,7 +3772,7 @@ export default function PartnerPage() {
       );
     }
     void Promise.allSettled(promises);
-  }, [listingStoreId, applyListingDraftResponse]);
+  }, [listingStoreId, applyListingDraftResponse, isStaffAccount]);
 
   useEffect(() => {
     const handleMemberNotificationCreated = (event: Event) => {
@@ -8555,6 +8600,9 @@ export default function PartnerPage() {
   };
 
   const renderActivePanel = () => {
+    if (isStaffAccount && !isStaffPanelKey(activePanel)) {
+      return renderScanPanel();
+    }
     if (activePanel === 'scan') {
       return renderScanPanel();
     }
@@ -10415,9 +10463,9 @@ export default function PartnerPage() {
           </Link>
 
           <nav className="partner-nav" style={{ display: 'grid', gap: '4px' }}>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
-              const active = activePanel === item.key;
+              const active = visibleActivePanel === item.key;
               return (
                 <button
                   key={item.key}
@@ -10492,7 +10540,7 @@ export default function PartnerPage() {
                   color: colors.muted,
                 }}
               >
-                Đối tác đang hoạt động
+                {accountScopeLabel}
               </span>
             </span>
           </div>
@@ -10524,10 +10572,10 @@ export default function PartnerPage() {
                     color: colors.gold,
                   }}
                 >
-                  {panelTitles[activePanel].eyebrow}
+                  {panelTitles[visibleActivePanel].eyebrow}
                 </div>
                 <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>
-                  {panelTitles[activePanel].title}
+                  {panelTitles[visibleActivePanel].title}
                 </h1>
               </div>
 
@@ -10900,7 +10948,7 @@ export default function PartnerPage() {
                 color: colors.text,
               }}
             >
-              {panelTitles[activePanel].title}
+              {panelTitles[visibleActivePanel].title}
             </h1>
 
 
@@ -10915,9 +10963,9 @@ export default function PartnerPage() {
             display: 'none',
           }}
         >
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
-            const active = activePanel === item.key;
+            const active = visibleActivePanel === item.key;
             return (
               <button
                 key={item.key}
