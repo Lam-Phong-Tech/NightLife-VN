@@ -832,7 +832,7 @@ export default function Page() {
                 <div className={styles.venueName}>{targetLabel}</div>
                 <div className={styles.venueMeta}>
                   {!isServiceOnlyBooking && context.castName ? context.storeName : translateText("Lounge cao cấp", activeLanguage)}{" "}
-                  · {context.area ?? "NightLife"}
+                  · {context.area ? translateText(context.area, activeLanguage) : "NightLife"}
                 </div>
                 {context.couponIssueId || context.couponId ? (
                   <div className={styles.venueMeta}>

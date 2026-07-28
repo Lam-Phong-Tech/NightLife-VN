@@ -3591,9 +3591,9 @@ const entries: TranslationEntry[] = [
   {
     vi: "Tổng hợp",
     en: "All areas",
-    ja: "総合",
-    ko: "종합",
-    zh: "综合",
+    ja: "全エリア",
+    ko: "전 지역",
+    zh: "全部区域",
   },
   {
     vi: "Lọc cast theo nhu cầu",
@@ -7381,7 +7381,7 @@ function translateDelimitedText(
   value: string,
   language: Exclude<LanguageCode, "vi">,
 ) {
-  const delimiters = [" — ", " · "];
+  const delimiters = [" — ", " · ", ", "];
 
   for (const delimiter of delimiters) {
     if (!value.includes(delimiter)) continue;
