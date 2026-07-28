@@ -2496,7 +2496,7 @@ textarea::placeholder {
 html.vy-light .nl-media-fallback {
   background: linear-gradient(135deg, #f5efe1, #e6dcbf) !important;
 }
-html.vy-light .nl-media-fallback svg, html.vy-light .nl-media-fallback path {
+html.vy-light .nl-media-fallback :where(svg, path):not(.nl-favorite-button, .nl-favorite-button *) {
   color: #9c7630 !important;
   stroke: #9c7630 !important;
 }
@@ -3492,13 +3492,21 @@ html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button:not(.
   fill: none !important;
 }
 
-html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active .nl-favorite-button__icon {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button:not(.is-active) .nl-favorite-button__icon path {
+  color: #e11d48 !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active .nl-favorite-button__icon,
+html.vy-light .nl-home-venue-card button.nl-favorite-button.home-favorite-button[aria-pressed="true"] .nl-favorite-button__icon {
   color: #ffffff !important;
   stroke: currentColor !important;
   fill: currentColor !important;
 }
 
-html.vy-light .nl-home-venue-card button.nl-favorite-button.home-favorite-button[aria-pressed="true"] .nl-favorite-button__icon {
+html.vy-light .nl-home-venue-card .nl-favorite-button.home-favorite-button.is-active .nl-favorite-button__icon path,
+html.vy-light .nl-home-venue-card button.nl-favorite-button.home-favorite-button[aria-pressed="true"] .nl-favorite-button__icon path {
   color: #ffffff !important;
   stroke: currentColor !important;
   fill: currentColor !important;
