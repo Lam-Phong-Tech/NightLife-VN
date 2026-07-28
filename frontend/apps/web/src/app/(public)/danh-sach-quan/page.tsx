@@ -1329,6 +1329,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             </button>
           )) : null}
         </nav>
+        </section>
 
         <div className="venue-result-bar">
           <div>
@@ -1373,7 +1374,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             ) : null}
           </div>
         </div>
-        </section>
 
         {error ? <div className="venue-error">{translateText(error, activeLanguage)}</div> : null}
 
