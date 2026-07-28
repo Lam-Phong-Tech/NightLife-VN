@@ -264,6 +264,27 @@ const entries: TranslationEntry[] = [
     zh: "无法加载真实积分，请重试。",
   },
   {
+    vi: "Cần đăng nhập để lưu yêu thích",
+    en: "Login required to save favorites",
+    ja: "お気に入りを保存するにはログインが必要です",
+    ko: "즐겨찾기를 저장하려면 로그인이 필요합니다",
+    zh: "需要登录才能保存收藏",
+  },
+  {
+    vi: "Bạn vẫn có thể tiếp tục xem nội dung, nhưng cần đăng nhập hoặc đăng ký thành viên để tìm và lưu quán hoặc Cast yêu thích.",
+    en: "You can continue browsing, but you need to log in or register to find and save your favorite venues or casts.",
+    ja: "コンテンツの閲覧は続けられますが、お気に入りの店舗やキャストを検索・保存するにはログインまたは会員登録が必要です。",
+    ko: "콘텐츠를 계속 둘러볼 수 있지만, 좋아하는 매장이나 캐스트를 검색하고 저장하려면 로그인 또는 회원가입이 필요합니다.",
+    zh: "您可以继续浏览内容，但需要登录或注册会员才能查找并保存喜爱的店铺或演员。",
+  },
+  {
+    vi: "Đổi khu vực hoặc ngôn ngữ để xem thêm.",
+    en: "Change area or language to see more.",
+    ja: "エリアや言語を変更して他のキャストを探してください。",
+    ko: "지역이나 언어를 변경하여 더 많은 캐스트를 확인하세요.",
+    zh: "更改地区或语言以查看更多。",
+  },
+  {
     vi: "Tìm bài viết...",
     en: "Search articles...",
     ja: "記事を検索...",
@@ -7287,7 +7308,11 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
     )
     .replace(/\bPhường\s+(\d+)\b/gi, (_match, ward: string) =>
       translateWardLabel(ward, language),
-    );
+    )
+    .replace(/(?:,\s*|\b)Thành phố\s+/gi, (match) => {
+      const isComma = match.startsWith(",");
+      return isComma ? (language === "en" ? ", City " : ", ") : (language === "en" ? "City " : "");
+    });
 
   for (const entry of termTranslations) {
     const replacement = entry[language];
@@ -7444,7 +7469,7 @@ function translatePattern(
     const action = confirmNearBookingTitleMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
     return {
       en: action === "cast" ? "Confirm last-minute Cast booking" : "Confirm last-minute table booking",
-      ja: action === "cast" ? "直前のCast予約を確認" : "直前の席予約を確認",
+      ja: action === "cast" ? "直前のキャスト予約を確認" : "直前の席予約を確認",
       ko: action === "cast" ? "임박한 캐스트 예약 확인" : "임박한 테이블 예약 확인",
       zh: action === "cast" ? "确认临近时间预约 陪伴人员" : "确认临近时间订桌",
     }[language];
@@ -7455,7 +7480,7 @@ function translatePattern(
     const action = confirmBookingTitleMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
     return {
       en: action === "cast" ? "Confirm Cast booking" : "Confirm table booking",
-      ja: action === "cast" ? "Cast予約を確認" : "席予約を確認",
+      ja: action === "cast" ? "キャスト予約を確認" : "席予約を確認",
       ko: action === "cast" ? "캐스트 예약 확인" : "테이블 예약 확인",
       zh: action === "cast" ? "确认预约 陪伴人员" : "确认订桌",
     }[language];
@@ -7475,7 +7500,7 @@ function translatePattern(
           : `The table booking at ${time} on ${date} is very close to the start time. Do you still want to book this time?`,
       ja:
         action === "cast"
-          ? `${date} ${time}のCast予約は開始時間が近づいています。この時間で予約しますか？`
+          ? `${date} ${time}のキャスト予約は開始時間が近づいています。この時間で予約しますか？`
           : `${date} ${time}の席予約は開始時間が近づいています。この時間で予約しますか？`,
       ko:
         action === "cast"
@@ -7502,7 +7527,7 @@ function translatePattern(
           : `Do you want to send a table booking request for ${time} on ${date}?`,
       ja:
         action === "cast"
-          ? `${date} ${time}のCast予約リクエストを送信しますか？`
+          ? `${date} ${time}のキャスト予約リクエストを送信しますか？`
           : `${date} ${time}の席予約リクエストを送信しますか？`,
       ko:
         action === "cast"

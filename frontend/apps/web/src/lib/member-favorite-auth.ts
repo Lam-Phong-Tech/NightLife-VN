@@ -1,6 +1,7 @@
 "use client";
 
 import { getAuthUser } from "@/lib/auth/session";
+import { readStoredLanguage, translateText } from "@/lib/i18n/client-translations";
 
 const favoriteLoginPromptId = "nl-favorite-login-prompt";
 
@@ -29,6 +30,8 @@ export function redirectToLoginForFavorite() {
 
   closeFavoriteLoginPrompt();
 
+  const activeLanguage = readStoredLanguage();
+
   const backdrop = document.createElement("div");
   backdrop.id = favoriteLoginPromptId;
   backdrop.className = "nl-favorite-login-backdrop";
@@ -45,12 +48,14 @@ export function redirectToLoginForFavorite() {
 
   const title = document.createElement("h2");
   title.id = "nl-favorite-login-title";
-  title.textContent = "Cần đăng nhập để lưu yêu thích";
+  title.textContent = translateText("Cần đăng nhập để lưu yêu thích", activeLanguage);
 
   const description = document.createElement("p");
   description.id = "nl-favorite-login-description";
-  description.textContent =
-    "Bạn vẫn có thể tiếp tục xem nội dung, nhưng cần đăng nhập hoặc đăng ký thành viên để tim và lưu quán hoặc Cast yêu thích.";
+  description.textContent = translateText(
+    "Bạn vẫn có thể tiếp tục xem nội dung, nhưng cần đăng nhập hoặc đăng ký thành viên để tìm và lưu quán hoặc Cast yêu thích.",
+    activeLanguage,
+  );
 
   const actions = document.createElement("div");
   actions.className = "nl-favorite-login-actions";
@@ -58,13 +63,13 @@ export function redirectToLoginForFavorite() {
   const continueButton = document.createElement("button");
   continueButton.type = "button";
   continueButton.className = "nl-favorite-login-secondary";
-  continueButton.textContent = "Tiếp tục";
+  continueButton.textContent = translateText("Tiếp tục", activeLanguage);
   continueButton.addEventListener("click", closeFavoriteLoginPrompt);
 
   const loginLink = document.createElement("a");
   loginLink.className = "nl-favorite-login-primary";
   loginLink.href = favoriteLoginHref();
-  loginLink.textContent = "Đăng nhập / đăng ký";
+  loginLink.textContent = translateText("Đăng nhập / đăng ký", activeLanguage);
 
   actions.append(continueButton, loginLink);
   dialog.append(title, description, actions);

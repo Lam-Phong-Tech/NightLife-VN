@@ -818,7 +818,7 @@ export default function Page() {
                   {bookedStoreAddress ? (
                     <SummaryRow
                       label={translateText("Địa chỉ", activeLanguage)}
-                      value={bookedStoreAddress}
+                      value={translateText(bookedStoreAddress, activeLanguage)}
                     />
                   ) : null}
                 </>
