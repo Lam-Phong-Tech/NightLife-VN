@@ -1152,6 +1152,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       <style>{venueSearchCss}</style>
 
       <div className="venue-search-shell">
+        <section className="venue-search-hero" aria-label={copy.searchAria}>
         <header className="venue-search-header">
           <Link href="/" aria-label={translateText("Quay lại trang chủ", activeLanguage)} className="venue-search-back">
             <ArrowLeft size={17} />
@@ -1372,6 +1373,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             ) : null}
           </div>
         </div>
+        </section>
 
         {error ? <div className="venue-error">{translateText(error, activeLanguage)}</div> : null}
 
@@ -2062,6 +2064,10 @@ const venueSearchCss = `
     width: min(100%, 1180px);
     margin: 0 auto;
     padding: 28px 26px 34px;
+  }
+
+  .venue-search-hero {
+    position: relative;
   }
 
   .venue-search-header {
@@ -3449,6 +3455,41 @@ const venueSearchCss = `
     color: #241a0a;
   }
 
+  html.vy-light .venue-search-hero {
+    border: 1px solid rgba(150, 116, 52, .2);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(246, 238, 219, .88));
+    box-shadow: 0 24px 70px -42px rgba(84, 62, 25, .34);
+    padding: 26px;
+  }
+
+  html.vy-light .venue-search-input,
+  html.vy-light .venue-city-trigger,
+  html.vy-light .venue-chip {
+    border-color: rgba(150, 116, 52, .2);
+    background: rgba(255, 255, 255, .78);
+    color: #6f6658;
+    box-shadow: 0 18px 42px -32px rgba(68, 48, 18, .42);
+  }
+
+  html.vy-light .venue-search-input input,
+  html.vy-light .venue-city-current {
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-search-input input::placeholder {
+    color: #8d8272;
+  }
+
+  html.vy-light .venue-chip.is-active {
+    border-color: rgba(150, 116, 52, .46);
+    background: linear-gradient(135deg, #fff0b8 0%, #e4c06a 48%, #c99b3e 100%);
+    color: #211607;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .58),
+      0 16px 30px -22px rgba(120, 78, 14, .62);
+  }
+
   html.vy-light .venue-search-input.is-focused {
     border-color: rgba(150, 116, 52, .42);
     box-shadow: 0 18px 42px -34px rgba(68, 48, 18, .58);
@@ -3640,6 +3681,11 @@ const venueSearchCss = `
     .venue-search-shell {
       width: 100%;
       padding: 12px 14px 14px;
+    }
+
+    html.vy-light .venue-search-hero {
+      border-radius: 14px;
+      padding: 14px;
     }
 
     .venue-search-header {
