@@ -117,6 +117,12 @@ const normalizeSearchText = (value: string | null | undefined) =>
 const includesSearchText = (value: string | null | undefined, query: string) =>
   normalizeSearchText(value).includes(normalizeSearchText(query));
 
+const getAdminContentLocationLabel = (item: { targetArea?: string | null; targetCity?: string | null }) => {
+  const area = typeof item.targetArea === 'string' ? item.targetArea.trim() : '';
+  if (area && normalizeSearchText(area) !== 'tong hop' && area !== 'Tổng hợp') return area;
+  return item.targetCity || area || '';
+};
+
 const sortHomeBlogs = (items: CmsContentItem[]) =>
   [...items].sort((a, b) => getHomeBlogRank(a) - getHomeBlogRank(b) || a.createdAt.localeCompare(b.createdAt));
 
@@ -2343,7 +2349,7 @@ export default function AdminContentPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getAdminContentLocationLabel(item)} · {item.targetCategory}</div>
                   </div>
                   <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flex: 'none' }}>
                     <button type="button" aria-label={`Đưa ${item.targetName} lên`} onClick={() => handleMoveFeatured(idx, 'up')} disabled={idx === 0} style={{ width: '28px', height: '26px', borderRadius: '7px', border: 'none', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
@@ -2440,7 +2446,7 @@ export default function AdminContentPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 14px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getAdminContentLocationLabel(item)} · {item.targetCategory}</div>
                   </div>
                   <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flex: 'none' }}>
                     <button
