@@ -2,11 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
-import {
-  getLegalSection,
-  getPublishedLegalSections,
-  legalPlaceholderNotice,
-} from "@/lib/content/legal";
+import { getLegalSection, getPublishedLegalSections } from "@/lib/content/legal";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -93,21 +89,9 @@ export default async function LegalDetailPage({ params }: PageProps) {
         </nav>
 
         <header>
-          <p
-            style={{
-              margin: 0,
-              color: "var(--vy-gold)",
-              fontSize: "12px",
-              fontWeight: 850,
-              letterSpacing: "1.8px",
-              textTransform: "uppercase",
-            }}
-          >
-            Placeholder
-          </p>
           <h1
             style={{
-              margin: "8px 0 0",
+              margin: 0,
               fontSize: "clamp(34px, 6vw, 58px)",
               lineHeight: 1.04,
               fontWeight: 950,
@@ -116,27 +100,10 @@ export default async function LegalDetailPage({ params }: PageProps) {
           >
             {section.title}
           </h1>
-          <p style={{ margin: "14px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.75 }}>
-            {section.description}
-          </p>
           <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12.5px", fontWeight: 800 }}>
             Cập nhật: {formatDate(section.updatedAt)}
           </div>
         </header>
-
-        <aside
-          style={{
-            marginTop: "24px",
-            border: "1px solid var(--vy-border-gold-32)",
-            borderRadius: "8px",
-            background: "var(--vy-gold-soft-bg)",
-            color: "var(--vy-text-2)",
-            padding: "16px 18px",
-            lineHeight: 1.65,
-          }}
-        >
-          {legalPlaceholderNotice}
-        </aside>
 
         <div style={{ display: "grid", gap: "24px", marginTop: "28px" }}>
           {section.items.map((item, index) => (
