@@ -427,9 +427,9 @@ const parseOpeningHourSlot = (slot: string) => {
 
   const openTotal = openHour * 60 + openMinute;
   const closeTotal = closeHour * 60 + closeMinute;
-  if (closeTotal <= openTotal && !(openTotal === 0 && closeTotal === 0)) {
+  if (closeTotal === openTotal && !(openTotal === 0 && closeTotal === 0)) {
     return {
-      error: 'Giờ kết thúc phải lớn hơn giờ bắt đầu (không hỗ trợ qua đêm).',
+      error: 'Giờ mở và giờ đóng không được trùng nhau, trừ 00:00 - 00:00 cho mở cả ngày.',
       normalized: value,
       overnight: false,
     };
@@ -481,6 +481,7 @@ const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHou
         const start = result.openTotal!;
         let end = result.closeTotal!;
         if (start === 0 && end === 0) end = 1440;
+        else if (end < start) end += 1440;
         intervals.push({ start, end, index });
       }
       normalizedSlots.push(result.normalized);

@@ -469,7 +469,7 @@ const openingRangeFromSlot = (slot?: OpeningSlot | null) => {
 const openingLabelFromSlot = (slot: OpeningSlot | undefined, language: LanguageCode) => {
   if (!slot) return translateText("Chưa có giờ mở cửa", language);
   if (slot.closed) return slot.note || translateText("Tạm nghỉ", language);
-  if (slot.open && slot.close) return `${slot.open} - ${slot.close}`;
+  if (slot.open && slot.close) return `${slot.open} - ${slot.close}${slot.close < slot.open ? " (hôm sau)" : ""}`;
   return slot.note || translateText("Chưa có giờ mở cửa", language);
 };
 

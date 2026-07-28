@@ -135,15 +135,15 @@ describe("booking time slots", () => {
     expect(buildBookingTimeSlots(null, "2026-07-09", { fallback: "empty" })).toEqual([]);
   });
 
-  it("caps next-day booking slots at midnight for stores open past midnight", () => {
+  it("keeps next-day booking slots for stores open past midnight", () => {
     expect(
       buildBookingTimeSlots({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
       }),
-    ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00"]);
+    ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
   });
 
-  it("keeps only midnight in the evening group for overnight ranges", () => {
+  it("keeps early next-day slots in the evening group for overnight ranges", () => {
     expect(
       buildBookingTimeSlotGroups({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
@@ -153,7 +153,7 @@ describe("booking time slots", () => {
       {
         key: "evening",
         label: "Tối",
-        slots: ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00"],
+        slots: ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"],
       },
     ]);
   });

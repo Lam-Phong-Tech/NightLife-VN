@@ -30,7 +30,7 @@ export type BookingTimeSlotGroup = {
 const minutesPerDay = 24 * 60;
 const morningShiftStartMinutes = 8 * 60;
 const eveningShiftStartMinutes = 14 * 60;
-const maxEveningShiftSlotMinutes = minutesPerDay;
+const maxEveningShiftSlotMinutes = minutesPerDay + morningShiftStartMinutes;
 const bookingTimeSlotGroupLabels: Record<BookingTimeSlotPeriod, string> = {
   morning: "Sáng",
   evening: "Tối",

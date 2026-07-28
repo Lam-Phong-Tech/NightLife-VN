@@ -82,7 +82,7 @@ export const openingText = (slot?: StoreOpeningHour | null) => {
   }
 
   if (slot.open && slot.close) {
-    return `${slot.open} - ${slot.close}`;
+    return `${slot.open} - ${slot.close}${slot.close < slot.open ? " (hôm sau)" : ""}`;
   }
 
   return slot.note || "Chưa cập nhật";
