@@ -1634,6 +1634,78 @@ describe('NightlifeDataService', () => {
     expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
   });
 
+  it('allows homepage recommendation pins beyond the Top 5 ranking limit', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const rankingId = '22222222-2222-4222-8222-222222222222';
+    const now = new Date('2026-06-30T10:00:00.000Z');
+
+    prisma.store.findFirst.mockResolvedValue({ id: storeId });
+    prisma.rankingConfig.findFirst.mockResolvedValue(null);
+    prisma.rankingConfig.count.mockResolvedValue(5);
+    prisma.rankingConfig.create.mockResolvedValue({
+      id: rankingId,
+      targetType: 'STORE',
+      targetId: storeId,
+      areaId: null,
+      cityCode: 'all',
+      category: null,
+      scope: 'recommend-home',
+      manualScore: 0,
+      pinRank: 6,
+      sponsored: false,
+      reason: null,
+      status: 'ACTIVE',
+      startsAt: null,
+      endsAt: null,
+      createdAt: now,
+      updatedAt: now,
+      area: null,
+    });
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: storeId,
+        name: 'Any Active Store',
+        slug: 'any-active-store',
+        category: 'BAR',
+        status: 'ACTIVE',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        area: { name: 'Tay Ho', city: 'Ha Noi' },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.createAdminRankingConfig(
+      { id: 'admin-1', role: 'ADMIN' },
+      {
+        targetType: 'STORE',
+        targetId: storeId,
+        cityCode: 'all',
+        scope: 'recommend-home',
+        pinRank: 6,
+      },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: rankingId,
+        targetName: 'Any Active Store',
+        scope: 'recommend-home',
+        pinRank: 6,
+      }),
+    );
+    expect(prisma.rankingConfig.count).toHaveBeenCalledWith({
+      where: {
+        targetType: 'STORE',
+        cityCode: 'all',
+        category: null,
+        scope: 'recommend-home',
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    });
+  });
+
   it('logs minimal audit and notification fields when updating a ranking config', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';

@@ -80,7 +80,7 @@ export class CreateAdminRankingConfigDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(5, { message: 'Ranking chỉ hỗ trợ Top 1-5' })
+  @Max(8, { message: 'Vị trí ghim chỉ hỗ trợ tối đa 8 mục' })
   pinRank?: number | null;
 
   @IsOptional()
@@ -141,7 +141,7 @@ export class UpdateAdminRankingConfigDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(5, { message: 'Ranking chỉ hỗ trợ Top 1-5' })
+  @Max(8, { message: 'Vị trí ghim chỉ hỗ trợ tối đa 8 mục' })
   pinRank?: number | null;
 
   @IsOptional()

@@ -182,6 +182,8 @@ const DEFAULT_PUBLIC_LIMIT = 24;
 const DEFAULT_RANKING_LIMIT = 5;
 const MAX_RANKING_LIMIT = 5;
 const MAX_ACTIVE_RANKINGS_PER_GROUP = 5;
+const MAX_HOME_RECOMMENDATION_ITEMS = 8;
+const HOME_RECOMMENDATION_SCOPE = 'recommend-home';
 const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
@@ -1666,6 +1668,7 @@ export class NightlifeDataService {
     );
 
     await this.assertAdminRankingTargetExists(targetType, dto.targetId);
+    this.assertAdminRankingPinRankWithinScope(scope, pinRank);
     await this.assertNoPinnedRankingCollision({
       targetType,
       cityCode,
@@ -1812,6 +1815,7 @@ export class NightlifeDataService {
     if (dto.targetType !== undefined || dto.targetId !== undefined) {
       await this.assertAdminRankingTargetExists(targetType, targetId);
     }
+    this.assertAdminRankingPinRankWithinScope(scope, pinRank);
     await this.assertNoPinnedRankingCollision({
       targetType,
       cityCode,
@@ -16227,6 +16231,28 @@ export class NightlifeDataService {
     }
   }
 
+  private getAdminRankingGroupLimit(scope: string) {
+    return scope === HOME_RECOMMENDATION_SCOPE
+      ? MAX_HOME_RECOMMENDATION_ITEMS
+      : MAX_ACTIVE_RANKINGS_PER_GROUP;
+  }
+
+  private assertAdminRankingPinRankWithinScope(
+    scope: string,
+    pinRank: number | null,
+  ) {
+    if (pinRank === null || pinRank === undefined) {
+      return;
+    }
+
+    const maxItems = this.getAdminRankingGroupLimit(scope);
+    if (pinRank > maxItems) {
+      throw new BadRequestException(
+        `Ranking group supports pin ranks from 1 to ${maxItems}.`,
+      );
+    }
+  }
+
   private async assertRankingGroupCapacity(input: {
     targetType: RankingTargetType;
     cityCode: string;
@@ -16251,9 +16277,10 @@ export class NightlifeDataService {
       },
     });
 
-    if (activeCount >= MAX_ACTIVE_RANKINGS_PER_GROUP) {
+    const maxItems = this.getAdminRankingGroupLimit(input.scope);
+    if (activeCount >= maxItems) {
       throw new BadRequestException(
-        `Ranking group supports at most ${MAX_ACTIVE_RANKINGS_PER_GROUP} active items.`,
+        `Ranking group supports at most ${maxItems} active items.`,
       );
     }
   }
