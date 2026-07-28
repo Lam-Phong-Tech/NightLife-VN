@@ -285,6 +285,27 @@ const entries: TranslationEntry[] = [
     zh: "更改地区或语言以查看更多。",
   },
   {
+    vi: "Tiếp tục",
+    en: "Continue",
+    ja: "続行",
+    ko: "계속",
+    zh: "继续",
+  },
+  {
+    vi: "Đăng nhập / đăng ký",
+    en: "Log in / Register",
+    ja: "ログイン / 新規登録",
+    ko: "로그인 / 회원가입",
+    zh: "登录 / 注册",
+  },
+  {
+    vi: "Đang đóng",
+    en: "Closed",
+    ja: "営業時間外",
+    ko: "영업 종료",
+    zh: "已打烊",
+  },
+  {
     vi: "Tìm bài viết...",
     en: "Search articles...",
     ja: "記事を検索...",
@@ -8207,6 +8228,28 @@ function translatePattern(
       ja: `${price}〜`,
       ko: `${price}부터`,
       zh: `${price}起`,
+    }[language];
+  }
+
+  const tourStopsCountMatch = normalized.match(/^(\d+)\s*điểm$/i);
+  if (tourStopsCountMatch) {
+    const count = tourStopsCountMatch[1] ?? "";
+    return {
+      en: `${count} spots`,
+      ja: `${count}箇所`,
+      ko: `${count}곳`,
+      zh: `${count}个景点`,
+    }[language];
+  }
+
+  const tourStopsDungCountMatch = normalized.match(/^(\d+)\s*điểm dừng$/i);
+  if (tourStopsDungCountMatch) {
+    const count = tourStopsDungCountMatch[1] ?? "";
+    return {
+      en: `${count} stops`,
+      ja: `${count}箇所の立ち寄り先`,
+      ko: `${count}개 정류장`,
+      zh: `${count}个停靠点`,
     }[language];
   }
 
