@@ -306,6 +306,20 @@ const entries: TranslationEntry[] = [
     zh: "已打烊",
   },
   {
+    vi: "(hôm sau)",
+    en: "(next day)",
+    ja: "(翌日)",
+    ko: "(다음 날)",
+    zh: "(次日)",
+  },
+  {
+    vi: "hôm sau",
+    en: "next day",
+    ja: "翌日",
+    ko: "다음 날",
+    zh: "次日",
+  },
+  {
     vi: "Tìm bài viết...",
     en: "Search articles...",
     ja: "記事を検索...",
@@ -7333,6 +7347,16 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
     .replace(/(?:,\s*|\b)Thành phố\s+/gi, (match) => {
       const isComma = match.startsWith(",");
       return isComma ? (language === "en" ? ", City " : ", ") : (language === "en" ? "City " : "");
+    })
+    .replace(/\(?hôm sau\)?/gi, (match) => {
+      const isParenthesized = match.startsWith("(");
+      const translated = {
+        en: "next day",
+        ja: "翌日",
+        ko: "다음 날",
+        zh: "次日",
+      }[language];
+      return isParenthesized ? `(${translated})` : translated;
     });
 
   for (const entry of termTranslations) {
