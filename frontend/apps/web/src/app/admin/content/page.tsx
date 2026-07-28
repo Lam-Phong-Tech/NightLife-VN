@@ -123,6 +123,15 @@ const getAdminContentLocationLabel = (item: { targetArea?: string | null; target
   return item.targetCity || area || '';
 };
 
+const getAdminStoreOptionLocationLabel = (store: { area?: unknown; city?: string | null }) => {
+  const rawArea = typeof store.area === 'object' && store.area && 'name' in store.area
+    ? (store.area as { name?: unknown }).name
+    : store.area;
+  const area = typeof rawArea === 'string' ? rawArea.trim() : '';
+  if (area && normalizeSearchText(area) !== 'tong hop' && area !== 'Tổng hợp') return area;
+  return store.city || area || '';
+};
+
 const sortHomeBlogs = (items: CmsContentItem[]) =>
   [...items].sort((a, b) => getHomeBlogRank(a) - getHomeBlogRank(b) || a.createdAt.localeCompare(b.createdAt));
 
@@ -2319,7 +2328,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{getAdminStoreOptionLocationLabel(store)} · {store.category}</div>
                   </div>
                   <button type="button" onClick={() => handleAddFeatured(store)} style={{ flex: 'none', border: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</button>
                 </div>
@@ -2398,7 +2407,7 @@ export default function AdminContentPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
-                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{(typeof store.area === 'object' && store.area ? (store.area as { name: string }).name : store.area) || store.city} · {store.category}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{getAdminStoreOptionLocationLabel(store)} · {store.category}</div>
                   </div>
                   {recommendItems.find(r => r.targetId === store.id) ? (
                     <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã ghim</span>
