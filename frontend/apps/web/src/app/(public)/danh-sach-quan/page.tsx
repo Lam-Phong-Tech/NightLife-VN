@@ -407,6 +407,9 @@ const formatCategoryVenueSearchTitle = (category: string, cityLabel: string, lan
   if (language === "en") {
     return category === "RESTAURANT" ? `Restaurants in ${cityLabel}` : `${categoryLabel} in ${cityLabel}`;
   }
+  if (language === "ja") return `${cityLabel}の${categoryLabel}`;
+  if (language === "ko") return `${cityLabel} ${categoryLabel}`;
+  if (language === "zh") return `${cityLabel}${categoryLabel}`;
   return translateText(`${categoryLabel} tại ${cityLabel}`, language);
 };
 
@@ -417,7 +420,10 @@ const getCategoryVenueSubtitle = (category: string, language: LanguageCode) => {
   if (language === "en") {
     return category === "RESTAURANT" ? "RESTAURANTS" : "SPA & WELLNESS";
   }
-  return translateText(category === "RESTAURANT" ? "NHÀ HÀNG" : "SPA & WELLNESS", language);
+  if (language === "ja") return category === "RESTAURANT" ? "レストラン" : "スパ & ウェルネス";
+  if (language === "ko") return category === "RESTAURANT" ? "레스토랑" : "스파 & 웰니스";
+  if (language === "zh") return category === "RESTAURANT" ? "餐厅" : "水疗 & 养生";
+  return category === "RESTAURANT" ? "NHÀ HÀNG" : "SPA & WELLNESS";
 };
 
 const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
@@ -1148,7 +1154,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   };
 
   return (
-    <main className="venue-search-page">
+    <main className={`venue-search-page${fixedCategory ? " venue-search-page--category" : ""}`}>
       <style>{venueSearchCss}</style>
 
       <div className="venue-search-shell">
@@ -2068,6 +2074,16 @@ const venueSearchCss = `
 
   .venue-search-hero {
     position: relative;
+  }
+
+  .venue-search-page--category .venue-search-hero {
+    border: 1px solid var(--vy-border-gold-22);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 16% 0%, rgba(212, 178, 106, .12), transparent 34%),
+      linear-gradient(135deg, rgba(21, 19, 26, .96), rgba(13, 12, 17, .98));
+    box-shadow: 0 30px 70px -34px rgba(0, 0, 0, .7);
+    padding: 26px;
   }
 
   .venue-search-header {

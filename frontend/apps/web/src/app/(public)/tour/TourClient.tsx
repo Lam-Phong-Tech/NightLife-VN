@@ -179,21 +179,33 @@ const getTourDirectoryCopy = (language: LanguageCode) =>
 
 const formatTourCount = (count: number, language: LanguageCode) => {
   if (language === "en") return `${count} ${count === 1 ? "tour" : "tours"}`;
+  if (language === "ja") return `${count}ツアー`;
+  if (language === "ko") return `${count}개 투어`;
+  if (language === "zh") return `${count} 个行程`;
   return `${count} tour`;
 };
 
 const formatStopCount = (count: number, language: LanguageCode) => {
   if (language === "en") return `${count} ${count === 1 ? "stop" : "stops"}`;
+  if (language === "ja") return `${count}か所`;
+  if (language === "ko") return `${count}개 지점`;
+  if (language === "zh") return `${count} 个站点`;
   return `${count} điểm dừng`;
 };
 
 const formatDuration = (hours: number, language: LanguageCode) => {
   if (language === "en") return `${hours}h`;
+  if (language === "ja") return `${hours}時間`;
+  if (language === "ko") return `${hours}시간`;
+  if (language === "zh") return `${hours}小时`;
   return `${hours} giờ`;
 };
 
 const formatCastCount = (count: number, language: LanguageCode) => {
   if (language === "en") return `${count} Cast`;
+  if (language === "ja") return `${count}人のキャスト`;
+  if (language === "ko") return `${count}명 캐스트`;
+  if (language === "zh") return `${count} 位Cast`;
   return `${count} cast`;
 };
 
@@ -301,6 +313,7 @@ export function TourClient() {
       <style>{tourDirectoryCss}</style>
 
       <div className="tour-directory-shell">
+        <section className="tour-search-hero" aria-label={copy.searchAria}>
         <header className="tour-directory-header">
           <Link href="/" aria-label={copy.backHome} className="tour-directory-back">
             <ArrowLeft size={17} />
@@ -365,6 +378,7 @@ export function TourClient() {
           <button type="button" className="tour-find-button">
             {copy.searchButton}
           </button>
+        </section>
         </section>
 
         <div className="tour-result-bar">
@@ -523,6 +537,16 @@ const tourDirectoryCss = `
     width: min(100%, 1180px);
     margin: 0 auto;
     padding: 28px 26px 34px;
+  }
+
+  .tour-search-hero {
+    border: 1px solid var(--vy-border-gold-22);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 16% 0%, rgba(212, 178, 106, .12), transparent 34%),
+      linear-gradient(135deg, rgba(21, 19, 26, .96), rgba(13, 12, 17, .98));
+    box-shadow: 0 30px 70px -34px rgba(0, 0, 0, .7);
+    padding: 26px;
   }
 
   .tour-directory-header {
@@ -692,6 +716,12 @@ const tourDirectoryCss = `
   html.vy-light .tour-city-select,
   html.vy-light .tour-city-trigger {
     background: #fffaf2;
+  }
+
+  html.vy-light .tour-search-hero {
+    border-color: rgba(150, 116, 52, .2);
+    background: linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(246, 238, 219, .88));
+    box-shadow: 0 24px 70px -42px rgba(84, 62, 25, .34);
   }
 
   html.vy-light .tour-city-menu {
@@ -1069,6 +1099,11 @@ const tourDirectoryCss = `
     .tour-directory-shell {
       width: 100%;
       padding: 12px 14px 18px;
+    }
+
+    .tour-search-hero {
+      border-radius: 14px;
+      padding: 14px;
     }
 
     .tour-directory-header {
