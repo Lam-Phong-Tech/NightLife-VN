@@ -3586,6 +3586,39 @@ const venueSearchCss = `
     color: #7b591f;
   }
 
+  html.vy-light .venue-sort-select {
+    min-width: 132px;
+  }
+
+  html.vy-light .venue-sort-trigger {
+    min-height: 38px;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid rgba(150, 116, 52, .2);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .78);
+    color: #6f6658;
+    padding: 0 12px;
+    box-shadow: 0 18px 42px -32px rgba(68, 48, 18, .42);
+  }
+
+  html.vy-light .venue-sort-trigger:hover,
+  html.vy-light .venue-sort-trigger:focus-visible,
+  html.vy-light .venue-sort-select:focus-within .venue-sort-trigger {
+    border-color: rgba(150, 116, 52, .34);
+    background: rgba(255, 255, 255, .9);
+    outline: 0;
+  }
+
+  html.vy-light .venue-sort-trigger span {
+    color: #716756;
+  }
+
+  html.vy-light .venue-sort-trigger strong,
+  html.vy-light .venue-sort-trigger svg {
+    color: #9a732d;
+  }
+
   html.vy-light .venue-desktop-filter-popover {
     border-color: rgba(150, 116, 52, .28);
     background: #fffaf1;
