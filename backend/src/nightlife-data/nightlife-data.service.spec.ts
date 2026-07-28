@@ -1706,6 +1706,45 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('combines admin ranking store option city and search filters', async () => {
+    prisma.store.findMany.mockResolvedValue([]);
+
+    await service.listAdminRankingTargetOptions({
+      targetType: 'STORE',
+      city: 'hn',
+      category: 'restaurant',
+      q: 'n',
+      limit: 10,
+    });
+
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'ACTIVE',
+          category: 'RESTAURANT',
+          AND: [
+            expect.objectContaining({
+              OR: [
+                expect.objectContaining({
+                  city: { in: ['Hanoi', 'Hà Nội'] },
+                }),
+                expect.objectContaining({
+                  area: expect.objectContaining({ is: expect.any(Object) }),
+                }),
+              ],
+            }),
+            expect.objectContaining({
+              OR: [
+                expect.objectContaining({ name: expect.any(Object) }),
+                expect.objectContaining({ slug: expect.any(Object) }),
+              ],
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
   it('logs minimal audit and notification fields when updating a ranking config', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';

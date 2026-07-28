@@ -1473,35 +1473,37 @@ export class NightlifeDataService {
     const limit = Math.min(query.limit ?? 50, 100);
 
     if (targetType === 'STORE') {
+      const andFilters: import('@prisma/client').Prisma.StoreWhereInput[] = [];
+      if (cityCode) {
+        andFilters.push({
+          OR: [
+            {
+              city: {
+                in:
+                  cityCode === 'hcm'
+                    ? ['Ho Chi Minh City', 'Hồ Chí Minh']
+                    : cityCode === 'hn'
+                      ? ['Hanoi', 'Hà Nội']
+                      : [cityCode],
+              },
+            },
+            { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
+          ],
+        });
+      }
+      if (q) {
+        andFilters.push({
+          OR: [
+            { name: this.containsInsensitive(q) },
+            { slug: this.containsInsensitive(this.normalizeToken(q)) },
+          ],
+        });
+      }
       const stores = await this.prisma.store.findMany({
         where: {
           status: 'ACTIVE',
           ...(category ? { category } : {}),
-          ...(cityCode
-            ? {
-                OR: [
-                  {
-                    city: {
-                      in:
-                        cityCode === 'hcm'
-                          ? ['Ho Chi Minh City', 'Hồ Chí Minh']
-                          : cityCode === 'hn'
-                            ? ['Hanoi', 'Hà Nội']
-                            : [cityCode],
-                    },
-                  },
-                  { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
-                ],
-              }
-            : {}),
-          ...(q
-            ? {
-                OR: [
-                  { name: this.containsInsensitive(q) },
-                  { slug: this.containsInsensitive(this.normalizeToken(q)) },
-                ],
-              }
-            : {}),
+          ...(andFilters.length ? { AND: andFilters } : {}),
         },
         orderBy: [{ name: 'asc' }],
         take: limit,
