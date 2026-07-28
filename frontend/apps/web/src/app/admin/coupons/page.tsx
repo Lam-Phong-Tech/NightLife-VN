@@ -26,6 +26,7 @@ export default function AdminCouponsPage() {
   const [fName, setFName] = useState('');
   const [discountType, setDiscountType] = useState('pct');
   const [discountVal, setDiscountVal] = useState('10%');
+  const [discountCustom, setDiscountCustom] = useState('');
   const [scope, setScope] = useState('all');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [tiers, setTiers] = useState<string[]>(['Member', 'VIP']);
@@ -33,6 +34,9 @@ export default function AdminCouponsPage() {
   const [limit, setLimit] = useState('500 mã');
   const [limitCustom, setLimitCustom] = useState('');
   const [storesList, setStoresList] = useState<any[]>([]);
+  const [durationCustom, setDurationCustom] = useState('');
+  const [storeSearch, setStoreSearch] = useState('');
+  const [storesLoading, setStoresLoading] = useState(false);
 
   const showToastMsg = (msg: string) => {
     setToast(msg);
@@ -64,12 +68,42 @@ export default function AdminCouponsPage() {
   };
 
   useEffect(() => {
-    if (showCreate && storesList.length === 0) {
-      apiClient<any>('/admin/stores', { params: { limit: 1000 } }).then(res => {
-        if (res?.data) setStoresList(res.data);
-      });
+    if (!showCreate) {
+      return;
     }
-  }, [showCreate]);
+
+    const timer = window.setTimeout(() => {
+      setStoresLoading(true);
+      apiClient<any>('/admin/stores', {
+        params: {
+          limit: storeSearch.trim() ? 50 : 1000,
+          search: storeSearch.trim() || undefined,
+          searchField: storeSearch.trim() ? 'name' : undefined,
+        },
+      })
+        .then(res => {
+          if (Array.isArray(res)) setStoresList(res);
+          else if (res?.data) setStoresList(res.data);
+          else setStoresList([]);
+        })
+        .catch(() => setStoresList([]))
+        .finally(() => setStoresLoading(false));
+    }, 220);
+
+    return () => window.clearTimeout(timer);
+  }, [showCreate, storeSearch]);
+
+  const customDurationKey = 'custom';
+  const sanitizeDigits = (value: string, maxLength = 9) => value.replace(/[^\d]/g, '').slice(0, maxLength);
+  const presetDiscountValue = parseInt(discountVal.replace(/[^0-9]/g, ''), 10) || 0;
+  const customDiscountValue = discountCustom ? parseInt(discountCustom, 10) : 0;
+  const displayDiscountValue = discountCustom ? customDiscountValue : presetDiscountValue;
+  const discountPreview = discountType === 'pct'
+    ? `-${displayDiscountValue || 0}%`
+    : `-${(discountCustom ? displayDiscountValue : displayDiscountValue * 1000).toLocaleString('vi-VN')} ₫`;
+  const durationPreview = duration === customDurationKey
+    ? `${durationCustom || '?'} ngày`
+    : duration;
 
   const fetchCampaigns = async () => {
     try {
@@ -563,9 +597,9 @@ export default function AdminCouponsPage() {
               
               <div style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', overflow: 'hidden' }}>
                 <div style={{ flex: 1, padding: '13px 15px', minWidth: 0 }}>
-                  <div style={{ fontSize: '21px', fontWeight: 800, color: '#e3c27e' }}>{discountType === 'pct' ? '-' + discountVal : '-' + discountVal.replace('K', 'K ₫')}</div>
+                  <div style={{ fontSize: '21px', fontWeight: 800, color: '#e3c27e' }}>{discountPreview}</div>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fName || 'Tên ưu đãi...'}</div>
-                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{scope === 'all' ? 'Toàn hệ thống' : `${selectedStores.length} quán`} · HSD {duration}</div>
+                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{scope === 'all' ? 'Toàn hệ thống' : `${selectedStores.length} quán`} · HSD {durationPreview}</div>
                 </div>
                 <div style={{ width: 62, flex: 'none', borderLeft: '1.5px dashed rgba(212,178,106,.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#d4b26a' }}>
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
@@ -581,13 +615,17 @@ export default function AdminCouponsPage() {
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức giảm</div>
                 <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px', marginBottom: '10px' }}>
-                  <span onClick={() => { setDiscountType('pct'); setDiscountVal('10%'); }} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'pct' ? 600 : 400, color: discountType === 'pct' ? '#241a0a' : '#c5c0b6', background: discountType === 'pct' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm %</span>
-                  <span onClick={() => { setDiscountType('amt'); setDiscountVal('100K'); }} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'amt' ? 600 : 400, color: discountType === 'amt' ? '#241a0a' : '#c5c0b6', background: discountType === 'amt' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm tiền (₫)</span>
+                  <span onClick={() => { setDiscountType('pct'); setDiscountVal('10%'); setDiscountCustom(''); }} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'pct' ? 600 : 400, color: discountType === 'pct' ? '#241a0a' : '#c5c0b6', background: discountType === 'pct' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm %</span>
+                  <span onClick={() => { setDiscountType('amt'); setDiscountVal('100K'); setDiscountCustom(''); }} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'amt' ? 600 : 400, color: discountType === 'amt' ? '#241a0a' : '#c5c0b6', background: discountType === 'amt' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm tiền (₫)</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {(discountType === 'pct' ? ['5%', '10%', '15%', '20%', '30%', '50%'] : ['50K', '100K', '200K', '300K', '500K']).map(v => (
-                    <span key={v} onClick={() => setDiscountVal(v)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: discountVal === v ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: discountVal === v ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: discountVal === v ? '#f0dda8' : '#9b958a', fontWeight: discountVal === v ? 600 : 400 }}>{v}</span>
+                    <span key={v} onClick={() => { setDiscountVal(v); setDiscountCustom(''); }} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: !discountCustom && discountVal === v ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: !discountCustom && discountVal === v ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: !discountCustom && discountVal === v ? '#f0dda8' : '#9b958a', fontWeight: !discountCustom && discountVal === v ? 600 : 400 }}>{v}</span>
                   ))}
+                </div>
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <input value={discountCustom} onChange={e => setDiscountCustom(sanitizeDigits(e.target.value, discountType === 'pct' ? 3 : 9))} placeholder={discountType === 'pct' ? 'VD: 12' : 'VD: 75000'} inputMode="numeric" style={{ width: '150px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+                  <span style={{ fontSize: '12.5px', color: '#8c8679' }}>{discountType === 'pct' ? '% · nhập mức giảm tùy chỉnh' : '₫ · nhập số tiền tùy chỉnh'}</span>
                 </div>
               </div>
 
@@ -599,8 +637,11 @@ export default function AdminCouponsPage() {
                 </div>
                 {scope === 'select' && (
                   <>
-                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {storesList.slice(0, 5).map(v => {
+                    <div style={{ marginTop: '10px' }}>
+                      <input value={storeSearch} onChange={e => setStoreSearch(e.target.value)} placeholder="Tìm quán theo tên..." style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 13px', color: '#f3f0ea', fontSize: '13px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+                    </div>
+                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: 258, overflow: 'auto', paddingRight: '2px' }}>
+                      {storesList.map(v => {
                         const checked = selectedStores.includes(v.id);
                         return (
                           <div key={v.id} onClick={() => setSelectedStores(p => checked ? p.filter(id => id !== v.id) : [...p, v.id])} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 13px', background: checked ? 'rgba(212,178,106,.08)' : 'rgba(255,255,255,.02)', border: checked ? '1px solid rgba(212,178,106,.4)' : '1px solid rgba(255,255,255,.05)', borderRadius: '10px', cursor: 'pointer' }}>
@@ -612,6 +653,12 @@ export default function AdminCouponsPage() {
                           </div>
                         );
                       })}
+                      {!storesLoading && storesList.length === 0 && (
+                        <div style={{ padding: '11px 13px', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', color: '#8c8679', fontSize: '12.5px' }}>Không tìm thấy quán phù hợp</div>
+                      )}
+                      {storesLoading && (
+                        <div style={{ padding: '11px 13px', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', color: '#8c8679', fontSize: '12.5px' }}>Đang tải danh sách quán...</div>
+                      )}
                     </div>
                     <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '8px' }}>Đã chọn {selectedStores.length} quán</div>
                   </>
@@ -624,9 +671,16 @@ export default function AdminCouponsPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời hạn</div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {['7 ngày', '14 ngày', '30 ngày', '90 ngày'].map(d => (
-                    <span key={d} onClick={() => setDuration(d)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: duration === d ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: duration === d ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: duration === d ? '#f0dda8' : '#9b958a', fontWeight: duration === d ? 600 : 400 }}>{d}</span>
+                    <span key={d} onClick={() => { setDuration(d); setDurationCustom(''); }} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: duration === d ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: duration === d ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: duration === d ? '#f0dda8' : '#9b958a', fontWeight: duration === d ? 600 : 400 }}>{d}</span>
                   ))}
+                  <span onClick={() => setDuration(customDurationKey)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: duration === customDurationKey ? '1px solid rgba(212,178,106,.55)' : '1px solid rgba(255,255,255,.1)', background: duration === customDurationKey ? 'rgba(212,178,106,.14)' : 'rgba(255,255,255,.03)', color: duration === customDurationKey ? '#f0dda8' : '#9b958a', fontWeight: duration === customDurationKey ? 600 : 400 }}>Tự nhập...</span>
                 </div>
+                {duration === customDurationKey && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                    <input value={durationCustom} onChange={e => setDurationCustom(sanitizeDigits(e.target.value, 3))} placeholder="VD: 45" inputMode="numeric" style={{ width: '130px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+                    <span style={{ fontSize: '12.5px', color: '#8c8679' }}>ngày · từ 1 đến 365</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -638,34 +692,43 @@ export default function AdminCouponsPage() {
                 </div>
                 {limit === 'Tự nhập...' && (
                   <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    <input value={limitCustom} onChange={e => setLimitCustom(e.target.value.replace(/[^\\d]/g, '').slice(0, 7))} placeholder="VD: 250" inputMode="numeric" style={{ width: '130px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+                    <input value={limitCustom} onChange={e => setLimitCustom(sanitizeDigits(e.target.value, 7))} placeholder="VD: 250" inputMode="numeric" style={{ width: '130px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
                     <span style={{ fontSize: '12.5px', color: '#8c8679' }}>mã · nhập số lượng tuỳ ý</span>
                   </div>
                 )}
               </div>
 
               <span onClick={async () => {
+                const parsedDiscount = discountCustom ? customDiscountValue : presetDiscountValue;
+                const durationMap: Record<string, number> = { '7 ngày': 7, '14 ngày': 14, '30 ngày': 30, '90 ngày': 90 };
+                const parsedDuration = duration === customDurationKey ? parseInt(durationCustom, 10) : durationMap[duration];
                 if (!fName.trim() || (scope === 'select' && selectedStores.length === 0) || (limit === 'Tự nhập...' && !limitCustom)) {
                   showToastMsg('Nhập tên ưu đãi, quán áp dụng và số lượng mã');
                   return;
                 }
+                if (!parsedDiscount || parsedDiscount < 1 || (discountType === 'pct' && parsedDiscount > 100)) {
+                  showToastMsg(discountType === 'pct' ? 'Mức giảm % phải từ 1 đến 100' : 'Số tiền giảm phải lớn hơn 0');
+                  return;
+                }
+                if (!parsedDuration || parsedDuration < 1 || parsedDuration > 365) {
+                  showToastMsg('Thời hạn phải từ 1 đến 365 ngày');
+                  return;
+                }
                 try {
-                  const parsedDiscount = parseInt(discountVal.replace(/[^0-9]/g, ''), 10);
-                  const durationMap: Record<string, number> = { '7 ngày': 7, '14 ngày': 14, '30 ngày': 30, '90 ngày': 90 };
                   const limitMap: Record<string, number | undefined> = { '100 mã': 100, '500 mã': 500, '1.000 mã': 1000, 'Không giới hạn': undefined };
                   const usageLimit = limit === 'Tự nhập...' ? (limitCustom ? parseInt(limitCustom, 10) : undefined) : limitMap[limit];
                   const payload = {
                     name: fName,
                     discountType: discountType === 'pct' ? 'PERCENT' : 'FIXED_AMOUNT',
-                    discountValue: discountType === 'amt' ? parsedDiscount * 1000 : parsedDiscount,
+                    discountValue: discountType === 'amt' ? (discountCustom ? parsedDiscount : parsedDiscount * 1000) : parsedDiscount,
                     targetStores: scope === 'all' ? [] : selectedStores,
                     targetAudiences: [],
-                    durationDays: durationMap[duration] ?? 30,
+                    durationDays: parsedDuration,
                     usageLimit,
                   };
                   await apiClient('/admin/coupons', { method: 'POST', data: payload });
                   setShowCreate(false);
-                  setFName(''); setDiscountVal('10%'); setScope('all'); setSelectedStores([]); setDuration('30 ngày'); setLimit('500 mã'); setLimitCustom('');
+                  setFName(''); setDiscountVal('10%'); setDiscountCustom(''); setScope('all'); setSelectedStores([]); setStoreSearch(''); setDuration('30 ngày'); setDurationCustom(''); setLimit('500 mã'); setLimitCustom('');
                   fetchCampaigns();
                   showToastMsg('Tạo coupon thành công! QR sẵn sàng.');
                 } catch (err: any) {
