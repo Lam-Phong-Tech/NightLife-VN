@@ -20,6 +20,27 @@ import {
   isSupportedStoredTourCover,
 } from './tour-cover-url-validation';
 
+type TourCouponAudience = 'GUEST' | 'MEMBER' | 'VIP';
+
+type PublicTourStoreCoupon = {
+  id: string;
+  code: string;
+  name: string;
+  discountType: string;
+  discountValue: number;
+  maxDiscountVnd?: number | null;
+  minSpendVnd?: number | null;
+};
+
+const TOUR_TIER_COUPON_RULES: Record<
+  TourCouponAudience,
+  { code: string; label: string; discountValue: number }
+> = {
+  GUEST: { code: 'GUEST5', label: 'Guest Discount 5%', discountValue: 5 },
+  MEMBER: { code: 'MEMBER8', label: 'Member Discount 8%', discountValue: 8 },
+  VIP: { code: 'VIP10', label: 'VIP Discount 10%', discountValue: 10 },
+};
+
 @Injectable()
 export class TourService {
   constructor(private prisma: PrismaService) {}
@@ -93,7 +114,9 @@ export class TourService {
     }
   }
 
-  private publicTourStoreSelect(now: Date) {
+  private publicTourStoreSelect(now: Date, audience: TourCouponAudience) {
+    const tierCouponCode = TOUR_TIER_COUPON_RULES[audience].code;
+
     return {
       id: true,
       name: true,
@@ -136,9 +159,10 @@ export class TourService {
           deletedAt: null,
           startsAt: { lte: now },
           OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+          code: { contains: tierCouponCode, mode: 'insensitive' },
         },
         orderBy: { startsAt: 'desc' },
-        take: 2,
+        take: 1,
         select: {
           id: true,
           code: true,
@@ -186,7 +210,7 @@ export class TourService {
     } satisfies Prisma.StoreSelect;
   }
 
-  private publicTourInclude(now: Date) {
+  private publicTourInclude(now: Date, audience: TourCouponAudience) {
     return {
       stops: {
         where: {
@@ -198,16 +222,90 @@ export class TourService {
         orderBy: { order: 'asc' },
         include: {
           store: {
-            select: this.publicTourStoreSelect(now),
+            select: this.publicTourStoreSelect(now, audience),
           },
         },
       },
     } satisfies Prisma.TourInclude;
   }
 
-  async findPublicAll(params: { skip?: number; take?: number; city?: string }) {
-    const { skip = 0, take = 20, city } = params;
+  private resolveTourCouponAudience(
+    user?: AuthenticatedUser,
+  ): TourCouponAudience {
+    const tier = user?.tier?.toUpperCase();
+
+    if (tier === 'VIP' || tier === 'PREMIUM') {
+      return 'VIP';
+    }
+
+    if (tier === 'MEMBER' || tier === 'FREE' || tier === 'REGULAR') {
+      return 'MEMBER';
+    }
+
+    return 'GUEST';
+  }
+
+  private isTierCouponCode(code: string, audience: TourCouponAudience) {
+    const normalizedCode = code.toUpperCase();
+    return normalizedCode.includes(TOUR_TIER_COUPON_RULES[audience].code);
+  }
+
+  private resolveApplicableTourCoupon<T extends PublicTourStoreCoupon>(
+    coupons: T[],
+    audience: TourCouponAudience,
+  ) {
+    const coupon = coupons.find((item) =>
+      this.isTierCouponCode(item.code, audience),
+    );
+    if (!coupon) return null;
+
+    const rule = TOUR_TIER_COUPON_RULES[audience];
+    return {
+      ...coupon,
+      name: rule.label,
+      audience,
+      discountType: 'PERCENT',
+      discountValue: rule.discountValue,
+    };
+  }
+
+  private decoratePublicTour<
+    T extends { stops: Array<{ store: { coupons: PublicTourStoreCoupon[] } }> },
+  >(tour: T, user?: AuthenticatedUser) {
+    const audience = this.resolveTourCouponAudience(user);
+    const stops = tour.stops.map((stop) => {
+      const applicableCoupon = this.resolveApplicableTourCoupon(
+        stop.store.coupons,
+        audience,
+      );
+      return {
+        ...stop,
+        store: {
+          ...stop.store,
+          applicableCoupon,
+        },
+      };
+    });
+
+    return {
+      ...tour,
+      stops,
+      applicableCoupon:
+        stops.find((stop) => stop.store.applicableCoupon)?.store
+          .applicableCoupon ?? null,
+      couponAudience: audience,
+    };
+  }
+
+  async findPublicAll(params: {
+    skip?: number;
+    take?: number;
+    city?: string;
+    user?: AuthenticatedUser;
+  }) {
+    const { skip = 0, take = 20, city, user } = params;
     const now = new Date();
+    const audience = this.resolveTourCouponAudience(user);
     const where: Prisma.TourWhereInput = {
       status: 'ACTIVE',
       deletedAt: null,
@@ -223,35 +321,38 @@ export class TourService {
           { homeRank: { sort: 'asc', nulls: 'last' } },
           { createdAt: 'desc' },
         ],
-        include: this.publicTourInclude(now),
+        include: this.publicTourInclude(now, audience),
       }),
       this.prisma.tour.count({ where }),
     ]);
 
     return {
-      data: data.filter((tour) => tour.stops.length > 0),
+      data: data
+        .filter((tour) => tour.stops.length > 0)
+        .map((tour) => this.decoratePublicTour(tour, user)),
       total,
       page: Math.floor(skip / take) + 1,
       limit: take,
     };
   }
 
-  async findPublicOne(id: string) {
+  async findPublicOne(id: string, user?: AuthenticatedUser) {
     const now = new Date();
+    const audience = this.resolveTourCouponAudience(user);
     const tour = await this.prisma.tour.findFirst({
       where: {
         id,
         status: 'ACTIVE',
         deletedAt: null,
       },
-      include: this.publicTourInclude(now),
+      include: this.publicTourInclude(now, audience),
     });
 
     if (!tour || tour.stops.length === 0) {
       throw new NotFoundException(`Tour with ID ${id} not found`);
     }
 
-    return tour;
+    return this.decoratePublicTour(tour, user);
   }
 
   async findAll(params: {

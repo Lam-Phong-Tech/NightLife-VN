@@ -405,7 +405,7 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
   const copy = getTourDirectoryCopy(language);
   const stopCount = tour.stops.length;
   const castCount = countTourCasts(tour);
-  const deal = tour.stops.find((stop) => stop.store.coupons[0])?.store.coupons[0];
+  const deal = tour.applicableCoupon;
   const departureLabel = tour.departureTimes.slice(0, 2).join(", ") || copy.requestTime;
 
   return (

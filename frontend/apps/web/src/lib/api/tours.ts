@@ -22,6 +22,7 @@ export type TourStoreCoupon = {
   id: string;
   code: string;
   name: string;
+  audience?: "GUEST" | "MEMBER" | "VIP";
   description?: string | null;
   discountType: "PERCENT" | "FIXED_AMOUNT";
   discountValue: number;
@@ -56,6 +57,7 @@ export type TourStopStore = {
   area?: TourArea | null;
   media: TourStoreMedia[];
   coupons: TourStoreCoupon[];
+  applicableCoupon?: TourStoreCoupon | null;
   casts: TourStoreCast[];
 };
 
@@ -81,6 +83,8 @@ export type PublicTour = {
   departureTimes: string[];
   departureSchedule?: TourDepartureSchedule | null;
   stops: PublicTourStop[];
+  applicableCoupon?: TourStoreCoupon | null;
+  couponAudience?: "GUEST" | "MEMBER" | "VIP";
   createdAt?: string;
   updatedAt?: string;
 };

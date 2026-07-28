@@ -23,7 +23,7 @@ import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { bookingApi, rememberLastBooking, type CreateTourBookingPayload } from "@/lib/api/bookings";
 import { ApiError, getAuthToken, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
-import type { PublicTour, TourStopStore, TourStoreCast } from "@/lib/api/tours";
+import { tourApi, type PublicTour, type TourStopStore, type TourStoreCast } from "@/lib/api/tours";
 import { getAuthUser } from "@/lib/auth/session";
 import { buildBookingTimeSlots, buildScheduledAtFromBookingSlot } from "@/lib/booking-time-slots";
 import {
@@ -417,7 +417,8 @@ type TourUiCopyKey = keyof typeof tourUiCopy;
 
 const tourUiText = (key: TourUiCopyKey, language: LanguageCode) => tourUiCopy[key][language] ?? tourUiCopy[key].vi;
 
-export default function TourDetailClient({ tour }: TourDetailClientProps) {
+export default function TourDetailClient({ tour: initialTour }: TourDetailClientProps) {
+  const [tour, setTour] = useState(initialTour);
   const router = useRouter();
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
@@ -436,6 +437,26 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!getAuthToken()) return;
+
+    let cancelled = false;
+    tourApi
+      .get(initialTour.id)
+      .then((freshTour) => {
+        if (!cancelled) {
+          setTour(freshTour);
+        }
+      })
+      .catch(() => {
+        // Keep the server-rendered tour if the member-scoped refresh is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialTour.id]);
 
   const firstStop = tour.stops[0];
   const firstStore = firstStop?.store;
@@ -791,7 +812,7 @@ export default function TourDetailClient({ tour }: TourDetailClientProps) {
               <div className={styles.timeline}>
                 {tour.stops.map((stop) => {
                   const stopDescription = cleanRichText(stop.store.description);
-                  const couponName = cleanRichText(stop.store.coupons[0]?.name);
+                  const couponName = cleanRichText(stop.store.applicableCoupon?.name);
 
                   return (
                     <article key={stop.id} className={styles.stopCard}>
