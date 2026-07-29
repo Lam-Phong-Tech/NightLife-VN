@@ -14,7 +14,7 @@ import {
 } from "@/lib/api/auth";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
-import { nightlifeOrigins } from "@/lib/auth/hosts";
+import { getNightlifeHostKind, nightlifeOrigins } from "@/lib/auth/hosts";
 import { buildLineWebLoginUrl, normalizeLineLoginRedirect } from "@/lib/auth/line-login";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import {
@@ -548,7 +548,12 @@ export default function Page() {
       return;
     }
 
-    window.location.assign(buildLineWebLoginUrl(redirectTo));
+    const appOrigin =
+      getNightlifeHostKind(window.location.hostname) === "local"
+        ? window.location.origin
+        : nightlifeOrigins.public;
+
+    window.location.assign(buildLineWebLoginUrl(appOrigin, redirectTo));
   };
 
   return (

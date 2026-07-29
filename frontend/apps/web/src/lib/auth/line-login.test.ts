@@ -13,15 +13,20 @@ describe("LINE login redirect", () => {
     );
   });
 
-  it("builds the web OAuth URL in the current browser", () => {
-    expect(buildLineWebLoginUrl("/lich-su-dat-cho?tab=upcoming")).toBe(
-      "/api/backend/auth/line/start?redirect=%2Flich-su-dat-cho%3Ftab%3Dupcoming",
+  it("starts web OAuth on the public app origin so its cookie matches the callback host", () => {
+    expect(
+      buildLineWebLoginUrl(
+        "https://vietyoru.com",
+        "/lich-su-dat-cho?tab=upcoming",
+      ),
+    ).toBe(
+      "https://vietyoru.com/api/backend/auth/line/start?redirect=%2Flich-su-dat-cho%3Ftab%3Dupcoming",
     );
   });
 
   it("sanitizes unsafe redirects in the web OAuth URL", () => {
-    expect(buildLineWebLoginUrl("https://evil.example")).toBe(
-      "/api/backend/auth/line/start?redirect=%2Ftai-khoan",
+    expect(buildLineWebLoginUrl("https://vietyoru.com", "https://evil.example")).toBe(
+      "https://vietyoru.com/api/backend/auth/line/start?redirect=%2Ftai-khoan",
     );
   });
 
