@@ -163,9 +163,13 @@ describe("Appearance icon upload", () => {
     );
 
     await waitFor(() => {
-      expect(
-        document.head.querySelector<HTMLLinkElement>('link[rel="icon"]')?.getAttribute("href"),
-      ).toBe("/storage/appearance/favicon.svg");
+      const faviconLinks = document.head.querySelectorAll<HTMLLinkElement>(
+        'link[rel="icon"], link[rel="shortcut icon"]',
+      );
+      expect(faviconLinks).toHaveLength(1);
+      expect(faviconLinks[0]?.getAttribute("href")).toMatch(
+        /^\/site-favicon\?v=\d+$/,
+      );
     });
   });
 });

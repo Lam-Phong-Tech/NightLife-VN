@@ -419,7 +419,7 @@ export default function AppearancePage() {
       pendingAppearanceMediaRef.current.clear();
       setSavedState(currentStateStr);
       cacheAppearanceConfig(dataToSave);
-      applyAppearanceFavicon(dataToSave.brand.faviconUrl);
+      applyAppearanceFavicon();
       showToast('Đã lưu thành công và áp dụng giao diện');
     } catch (err) {
       console.error(err);

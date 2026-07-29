@@ -6,8 +6,8 @@ import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
-import { AppearanceFavicon } from "@/components/seo/AppearanceFavicon";
 import { jsonLdDocument, organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
+import { SITE_FAVICON_URL } from "@/lib/appearance-favicon";
 import { siteConfig } from "@/lib/site";
 import { headers } from "next/headers";
 import { getNightlifeHostKind } from "@/lib/auth/hosts";
@@ -21,8 +21,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    icon: [{ url: SITE_FAVICON_URL }],
   },
   manifest: "/site.webmanifest",
   openGraph: {
@@ -88,7 +87,6 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <AppearanceFavicon />
         <GoogleAnalytics />
         <ClientLanguageTranslator>
           <CurrencyProvider>
