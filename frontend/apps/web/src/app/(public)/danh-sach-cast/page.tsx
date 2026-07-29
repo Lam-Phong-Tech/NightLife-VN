@@ -49,11 +49,6 @@ import {
 } from "@/lib/member-favorites";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 
-type AgeRange = {
-  min: number;
-  max: number;
-};
-
 type Coordinates = {
   lat: number;
   lng: number;
@@ -82,7 +77,6 @@ type CastSearchCopy = {
   filterOther: string;
   hasDeals: string;
   language: string;
-  age: string;
   listAria: string;
   locating: string;
   openFilters: string;
@@ -152,10 +146,6 @@ const compactLanguageLabels: Record<string, string> = {
 
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
 const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
-const ageRangeMin = 20;
-const ageRangeMax = 40;
-const ageRangeStep = 1;
-const defaultAgeRange: AgeRange = { min: ageRangeMin, max: ageRangeMax };
 const castItemsPerPage = 8;
 
 const toRankingCity = (cityCode: string): RankingCity =>
@@ -179,7 +169,6 @@ const castCopyVi: CastSearchCopy = {
   filterOther: "Khác",
   hasDeals: "Có ưu đãi",
   language: "Ngôn ngữ",
-  age: "Độ tuổi",
   listAria: "Danh sách cast",
   locating: "Đang lấy vị trí",
   openFilters: "Mở bộ lọc",
@@ -211,7 +200,6 @@ const castCopyEn: CastSearchCopy = {
   filterOther: "More",
   hasDeals: "Has deals",
   language: "Language",
-  age: "Age",
   listAria: "Cast list",
   locating: "Finding location",
   openFilters: "Open filters",
@@ -270,7 +258,6 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
     filterOther: translateText(castCopyVi.filterOther, language),
     hasDeals: translateText(castCopyVi.hasDeals, language),
     language: translateText(castCopyVi.language, language),
-    age: translateText(castCopyVi.age, language),
     listAria: translateText(castCopyVi.listAria, language),
     locating: translateText(castCopyVi.locating, language),
     openFilters: translateText(castCopyVi.openFilters, language),
@@ -472,41 +459,6 @@ const castFavoriteFeedbackCopy = (
   return copy[language];
 };
 
-const isDefaultAgeRange = (range: AgeRange) =>
-  range.min === defaultAgeRange.min && range.max === defaultAgeRange.max;
-
-const normalizeAgeSearchText = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-
-const extractPublicCastAge = (cast: PublicCast) => {
-  const text = normalizeAgeSearchText(
-    cast.tags.filter(Boolean).join(" "),
-  );
-  const exactAge =
-    text.match(/(?:age|tuoi|do tuoi)\D*(\d{2})/)?.[1] ??
-    text.match(/\b(\d{2})\s*(?:tuoi|age)\b/)?.[1];
-
-  if (exactAge) {
-    const parsedAge = Number(exactAge);
-    return Number.isFinite(parsedAge) ? parsedAge : null;
-  }
-
-  if (/\b20s\b|do tuoi 20|tuoi 20/.test(text)) return 25;
-  if (/\b30s\b|do tuoi 30|tuoi 30/.test(text)) return 35;
-  if (/\b40s\b|do tuoi 40|tuoi 40/.test(text)) return 40;
-  return null;
-};
-
-const matchesAgeRange = (range: AgeRange, cast: PublicCast) => {
-  if (isDefaultAgeRange(range)) return true;
-  const age = extractPublicCastAge(cast);
-  if (age === null) return true;
-  return age >= range.min && age <= range.max;
-};
-
 const castAreaLabel = (cast: PublicCast, language: LanguageCode) =>
   [
     cast.store.area?.name ?? cast.store.district,
@@ -573,7 +525,6 @@ export default function Page() {
   const [category, setCategory] = useState("");
   const [language, setLanguage] = useState("");
   const [storeSlug, setStoreSlug] = useState("");
-  const [ageRange, setAgeRange] = useState<AgeRange>(defaultAgeRange);
   const [sort, setSort] = useState<DiscoverySort>("newest");
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingCasts, setTopRankingCasts] = useState<Array<{ slug: string; rank: number }>>([]);
@@ -797,7 +748,6 @@ export default function Page() {
   const visibleCasts = useMemo(() => {
     const filteredCasts = casts
       .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
-      .filter((cast) => matchesAgeRange(ageRange, cast))
       .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug));
     const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
       primary: [cast.name, cast.publicAlias, cast.stageName],
@@ -819,7 +769,7 @@ export default function Page() {
         (topRankingOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [ageRange, casts, query, storeSlug, topRankingOnly, topRankingOrder]);
+  }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const totalPages = Math.max(1, Math.ceil(visibleCasts.length / castItemsPerPage));
@@ -859,7 +809,6 @@ export default function Page() {
     category,
     language,
     storeSlug,
-    !isDefaultAgeRange(ageRange),
     topRankingOnly,
     sort !== "newest",
     hasActiveCoupon,
@@ -870,7 +819,6 @@ export default function Page() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    ageRange,
     area,
     category,
     city,
@@ -893,7 +841,6 @@ export default function Page() {
     setCategory("");
     setLanguage("");
     setStoreSlug("");
-    setAgeRange(defaultAgeRange);
     setTopRankingOnly(false);
     setHasActiveCoupon(false);
     setSort("newest");
@@ -1106,7 +1053,6 @@ export default function Page() {
                 <CastFilterPanel
                   area={area}
                   areaOptions={areaOptions}
-                  ageRange={ageRange}
                   category={category}
                   categoryOptions={localizedCategoryOptions}
                   city={city}
@@ -1129,7 +1075,6 @@ export default function Page() {
                   topRankingOnly={topRankingOnly}
                   variant="desktop"
                   onArea={setArea}
-                  onAgeRange={setAgeRange}
                   onCategory={setCategory}
                   onCity={handleCityChange}
                   onClose={() => setFilterOpen(false)}
@@ -1249,7 +1194,6 @@ export default function Page() {
         <CastFilterPanel
           area={area}
           areaOptions={areaOptions}
-          ageRange={ageRange}
           category={category}
           categoryOptions={localizedCategoryOptions}
           city={city}
@@ -1271,7 +1215,6 @@ export default function Page() {
           topRankingOnly={topRankingOnly}
           variant="mobile"
           onArea={setArea}
-          onAgeRange={setAgeRange}
           onCategory={setCategory}
           onCity={handleCityChange}
           onClose={() => setFilterOpen(false)}
@@ -1590,7 +1533,6 @@ function CastDiscoveryCard({
 function CastFilterPanel({
   area,
   areaOptions,
-  ageRange,
   category,
   categoryOptions,
   city,
@@ -1609,7 +1551,6 @@ function CastFilterPanel({
   topRankingOnly,
   variant,
   onArea,
-  onAgeRange,
   onCategory,
   onCity,
   onClose,
@@ -1622,7 +1563,6 @@ function CastFilterPanel({
 }: {
   area: string;
   areaOptions: Option[];
-  ageRange: AgeRange;
   category: string;
   categoryOptions: Option[];
   city: string;
@@ -1641,7 +1581,6 @@ function CastFilterPanel({
   topRankingOnly: boolean;
   variant: "desktop" | "mobile";
   onArea: (value: string) => void;
-  onAgeRange: (value: AgeRange) => void;
   onCategory: (value: string) => void;
   onCity: (value: string) => void;
   onClose: () => void;
@@ -1723,8 +1662,6 @@ function CastFilterPanel({
 
           <section className="cast-filter-column" aria-label={copy.filterOther}>
             <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
-            <AgeRangeFilter label={copy.age} value={ageRange} onChange={onAgeRange} />
-
             <div className="cast-toggle-row">
               <span>
                 <i />
@@ -1779,70 +1716,6 @@ function CastFilterPanel({
   );
 
   return createPortal(sheet, document.body);
-}
-
-function AgeRangeFilter({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: AgeRange;
-  onChange: (value: AgeRange) => void;
-}) {
-  const lowerPercent = ((value.min - ageRangeMin) / (ageRangeMax - ageRangeMin)) * 100;
-  const upperPercent = ((value.max - ageRangeMin) / (ageRangeMax - ageRangeMin)) * 100;
-  const valueLabel = `${value.min} - ${value.max >= ageRangeMax ? `${ageRangeMax}+` : value.max}`;
-
-  const updateMin = (nextValue: number) => {
-    onChange({
-      min: Math.min(Math.max(nextValue, ageRangeMin), value.max - ageRangeStep),
-      max: value.max,
-    });
-  };
-
-  const updateMax = (nextValue: number) => {
-    onChange({
-      min: value.min,
-      max: Math.max(Math.min(nextValue, ageRangeMax), value.min + ageRangeStep),
-    });
-  };
-
-  return (
-    <section className="cast-range-preview" aria-label={label}>
-      <div className="cast-range-head">
-        <span>{label}</span>
-        <b>{valueLabel}</b>
-      </div>
-      <div className="cast-range-slider">
-        <span className="cast-range-track" aria-hidden="true">
-          <span style={{ left: `${lowerPercent}%`, right: `${100 - upperPercent}%` }} />
-        </span>
-        <input
-          type="range"
-          min={ageRangeMin}
-          max={ageRangeMax - ageRangeStep}
-          step={ageRangeStep}
-          value={value.min}
-          aria-label={`${label} tối thiểu`}
-          onChange={(event) => updateMin(Number(event.target.value))}
-        />
-        <input
-          type="range"
-          min={ageRangeMin + ageRangeStep}
-          max={ageRangeMax}
-          step={ageRangeStep}
-          value={value.max}
-          aria-label={`${label} tối đa`}
-          onChange={(event) => updateMax(Number(event.target.value))}
-        />
-      </div>
-      <small>
-        <span>{ageRangeMin}</span>
-        <span>{ageRangeMax}+</span>
-      </small>
-    </section>
-  );
 }
 
 function FilterChipGroup({
