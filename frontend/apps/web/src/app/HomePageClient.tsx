@@ -2901,7 +2901,7 @@ function RankingListColumn({
       style={{
         minWidth: 0,
         display: "grid",
-        alignContent: "stretch",
+        alignContent: "start",
         gap: "12px",
         padding: "14px",
         borderRadius: homeCardRadius,
@@ -2939,7 +2939,7 @@ function RankingListColumn({
       </div>
 
       {list.length ? (
-        <div style={{ display: "grid", gap: "12px", minWidth: 0 }}>
+        <div style={{ display: "grid", alignSelf: "start", gap: "12px", minWidth: 0 }}>
           {list.map((item) => (
             <RankingRow key={`${title}-${item.rank}-${item.href ?? item.name}`} item={item} />
           ))}
