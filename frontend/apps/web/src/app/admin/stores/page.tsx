@@ -1467,7 +1467,6 @@ function AdminStoresContent() {
     }
     return true;
   });
-  const deletedStoreCount = stores.filter(isStoreDeleted).length;
   const paginatedStores = paginateAdminItems(filteredStores, currentPage);
 
   const toggleDeletedStores = () => {
@@ -1602,7 +1601,7 @@ function AdminStoresContent() {
           type="button"
           onClick={toggleDeletedStores}
           aria-pressed={showDeletedStores}
-          aria-label={showDeletedStores ? 'Quay lại danh sách quán' : `Mở thùng rác, có ${deletedStoreCount} quán đã xóa`}
+          aria-label={showDeletedStores ? 'Quay lại danh sách quán' : 'Mở thùng rác'}
           title={showDeletedStores ? 'Quay lại danh sách quán' : 'Xem các quán đã xóa'}
           style={{
             position: 'relative',
@@ -1628,11 +1627,6 @@ function AdminStoresContent() {
           }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
-          {deletedStoreCount > 0 && (
-            <span style={{ position: 'absolute', top: '-6px', right: '-6px', minWidth: '18px', height: '18px', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#c65068', border: '2px solid #0c0c0f', borderRadius: '999px', fontSize: '9px', fontWeight: 800, lineHeight: 1 }}>
-              {deletedStoreCount > 99 ? '99+' : deletedStoreCount}
-            </span>
-          )}
         </button>
         <span onClick={openNewDrawer} className="max-md:hidden" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
