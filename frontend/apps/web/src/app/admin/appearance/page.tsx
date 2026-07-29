@@ -366,7 +366,6 @@ export default function AppearancePage() {
 
   const saved = JSON.parse(savedState) as AppearanceState;
   const brandChanged = JSON.stringify(brand) !== JSON.stringify(saved.brand);
-  const brandInitial = (brand.name || 'V').trim().charAt(0).toUpperCase();
   const faviconSrc = brand.faviconUrl
     ? resolveClientUrl(brand.faviconUrl) || brand.faviconUrl
     : DEFAULT_FAVICON_URL;
@@ -881,7 +880,7 @@ export default function AppearancePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '0 0 12px' }}>
           <div>
             <div style={{ fontSize: '15.5px', fontWeight: 600, color: '#f3f0ea' }}>Logo & nhận diện</div>
-            <div style={{ fontSize: '8.5px', fontWeight: 600, letterSpacing: '1.6px', color: '#8c8679', textTransform: 'uppercase', marginTop: '2px' }}>Hiển thị trên web · app · favicon</div>
+            <div style={{ fontSize: '8.5px', fontWeight: 600, letterSpacing: '1.6px', color: '#8c8679', textTransform: 'uppercase', marginTop: '2px' }}>Hiển thị trên web · favicon</div>
           </div>
           <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.45),transparent)' }}></div>
         </div>
@@ -948,14 +947,6 @@ export default function AppearancePage() {
                   {renderFaviconArtwork(28)}
                 </div>
                 <div style={{ fontSize: '9px', color: '#57534b', marginTop: '5px' }}>Favicon 32px</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '11px', background: '#f4f0e6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '20px', color: '#241a0a' }}>{brandInitial}</div>
-                <div style={{ fontSize: '9px', color: '#57534b', marginTop: '5px' }}>Nền sáng</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '11px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '20px', color: '#241a0a' }}>{brandInitial}</div>
-                <div style={{ fontSize: '9px', color: '#57534b', marginTop: '5px' }}>App icon 180px</div>
               </div>
               <div style={{ minWidth: '170px', marginLeft: '4px', paddingLeft: '14px', borderLeft: '1px solid rgba(255,255,255,.08)' }}>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#c5c0b6' }}>Favicon trình duyệt</div>

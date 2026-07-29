@@ -113,6 +113,9 @@ describe("Appearance icon upload", () => {
       expect(apiClientMock).toHaveBeenCalledWith("/system-config/appearance");
     });
 
+    expect(screen.queryByText("Nền sáng")).not.toBeInTheDocument();
+    expect(screen.queryByText("App icon 180px")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: /Thay favicon/i }));
 
     const fileInput = screen.getByTestId(
