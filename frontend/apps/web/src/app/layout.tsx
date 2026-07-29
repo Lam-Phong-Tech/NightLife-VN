@@ -88,7 +88,7 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <GoogleAnalytics />
-        <ClientLanguageTranslator>
+        <ClientLanguageTranslator hostKind={hostKind}>
           <CurrencyProvider>
             <SocketProvider>
               <SiteChrome hostKind={hostKind}>{children}</SiteChrome>

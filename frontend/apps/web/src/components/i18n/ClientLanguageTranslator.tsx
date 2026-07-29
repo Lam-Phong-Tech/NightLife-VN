@@ -11,6 +11,7 @@ import {
   translateWithWhitespace,
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
+import type { NightlifeHostKind } from "@/lib/auth/hosts";
 
 const textSourceMap = new WeakMap<Text, string>();
 const translatedAttributes = ["placeholder", "aria-label", "title", "alt"] as const;
@@ -106,19 +107,38 @@ function applyTranslations(language: LanguageCode) {
 
   textNodes.forEach((node) => translateTextNode(node, language));
   document
-    .querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title], img[alt], input[readonly]")
+    .querySelectorAll<HTMLElement>(
+      "[placeholder], [aria-label], [title], img[alt], input[readonly]",
+    )
     .forEach((element) => translateElementAttributes(element, language));
 }
 
-function shouldSkipRoute(pathname: string) {
-  return pathname.startsWith("/admin") || pathname.startsWith("/partner");
+export function shouldSkipLanguageTranslation(
+  pathname: string,
+  hostKind: NightlifeHostKind,
+  hostname = "",
+) {
+  const normalizedHostname = hostname.trim().toLowerCase().replace(/\.$/, "");
+  const isPortalHost =
+    hostKind === "admin" ||
+    hostKind === "partner" ||
+    normalizedHostname.startsWith("admin.") ||
+    normalizedHostname.startsWith("partner.");
+
+  return isPortalHost || pathname.startsWith("/admin") || pathname.startsWith("/partner");
 }
 
-export function ClientLanguageTranslator({ children }: { children: React.ReactNode }) {
+export function ClientLanguageTranslator({
+  children,
+  hostKind,
+}: {
+  children: React.ReactNode;
+  hostKind: NightlifeHostKind;
+}) {
   const pathname = usePathname() || "/";
 
   useLayoutEffect(() => {
-    if (shouldSkipRoute(pathname)) {
+    if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
 
@@ -164,7 +184,7 @@ export function ClientLanguageTranslator({ children }: { children: React.ReactNo
       observer.disconnect();
       window.removeEventListener(languageChangedEvent, onLanguageChange);
     };
-  }, [pathname]);
+  }, [hostKind, pathname]);
 
   return (
     <div data-vietyoru-translator="true" style={{ display: "contents" }}>
