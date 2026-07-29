@@ -339,10 +339,7 @@ const noticeToneStyle: Record<NoticeTone, { background: string; border: string; 
 };
 
 const revealTargetSelector = [
-  ".nl-page-content > *",
   ".nl-page-content main > *",
-  ".nl-page-content section",
-  ".nl-page-content article",
   ".nl-page-content [data-scroll-reveal]",
 ].join(",");
 
@@ -2092,7 +2089,7 @@ export function SiteChrome({
         });
       },
       {
-        rootMargin: "0px 0px 28% 0px",
+        rootMargin: "0px 0px 12% 0px",
         threshold: 0.01,
       },
     );
@@ -2102,7 +2099,7 @@ export function SiteChrome({
 
       element.classList.add("nl-scroll-reveal");
       element.dataset.revealDir = "down";
-      element.style.setProperty("--nl-reveal-delay", `${Math.min(observed.size % 7, 6) * 38}ms`);
+      element.style.setProperty("--nl-reveal-delay", `${(observed.size % 3) * 18}ms`);
       observed.add(element);
 
       const rect = element.getBoundingClientRect();
@@ -2131,21 +2128,16 @@ export function SiteChrome({
     updateScrollDirection();
     scan();
 
-    const mutationObserver = new MutationObserver(scheduleScan);
-    mutationObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
     window.addEventListener("scroll", updateScrollDirection, { passive: true });
+    window.addEventListener("resize", scheduleScan, { passive: true });
 
     return () => {
       root.classList.remove("nl-scroll-effects-ready");
       delete root.dataset.scrollDirection;
       if (scanTimer) window.clearTimeout(scanTimer);
-      mutationObserver.disconnect();
       observer?.disconnect();
       window.removeEventListener("scroll", updateScrollDirection);
+      window.removeEventListener("resize", scheduleScan);
       observed.forEach((element) => {
         element.classList.remove("nl-scroll-reveal", "is-revealed");
         element.style.removeProperty("--nl-reveal-delay");

@@ -992,23 +992,19 @@ html.nl-brand-intro-seen .nl-brand-intro {
 .nl-scroll-reveal {
   opacity: 1;
   transform: translate3d(0, 0, 0);
-  filter: blur(0);
   transition:
-    opacity var(--vy-motion-duration) ease,
-    transform var(--vy-motion-duration) var(--vy-motion-ease),
-    filter var(--vy-motion-duration) var(--vy-motion-ease);
-  will-change: opacity, transform, filter;
+    opacity 260ms ease-out,
+    transform 260ms var(--vy-motion-ease);
 }
 
 html.nl-scroll-effects-ready .nl-scroll-reveal:not(.is-revealed) {
   opacity: 0;
-  transform: translate3d(0, 24px, 0);
-  filter: blur(8px);
+  transform: translate3d(0, 12px, 0);
   transition-delay: 0ms;
 }
 
 html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-dir="up"]:not(.is-revealed) {
-  transform: translate3d(0, -24px, 0);
+  transform: translate3d(0, -12px, 0);
 }
 
 html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-instant="true"] {
@@ -1018,7 +1014,6 @@ html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-instant="true"] {
 html.nl-scroll-effects-ready .nl-scroll-reveal.is-revealed {
   opacity: 1;
   transform: translate3d(0, 0, 0);
-  filter: blur(0);
   transition-delay: var(--nl-reveal-delay, 0ms);
 }
 
