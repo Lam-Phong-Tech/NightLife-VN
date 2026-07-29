@@ -19750,6 +19750,17 @@ export class NightlifeDataService {
     return code.split('-')[0] || undefined;
   }
 
+  private adminStoreAreaLabel(city?: string | null, areaCode?: string | null) {
+    const cityCode =
+      (areaCode ? this.cityCodeFromAreaCode(areaCode) : undefined) ??
+      this.normalizeCityCode(city);
+
+    if (cityCode === 'hn') return 'HN';
+    if (cityCode === 'hcm') return 'HCM';
+
+    return city || 'Tất cả';
+  }
+
   private normalizeCategory(
     value?: string | null,
     options: { strict?: boolean } = {},
@@ -22519,16 +22530,7 @@ export class NightlifeDataService {
         ward:
           store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
         type: typeLabel,
-        area:
-          store.city === 'Ho Chi Minh City' ||
-          store.city === 'Hồ Chí Minh' ||
-          store.city === 'Há»“ ChÃ­ Minh'
-            ? 'HCM'
-            : store.city === 'Hanoi' ||
-                store.city === 'Hà Nội' ||
-                store.city === 'Ha Noi'
-              ? 'HN'
-              : store.city || 'Tất cả',
+        area: this.adminStoreAreaLabel(store.city, store.area?.code),
         commission: '15%',
         casts: Array.isArray(store.casts) ? store.casts.length : 0,
         status: store.deletedAt ? 'DELETED' : store.status,
@@ -23772,16 +23774,7 @@ export class NightlifeDataService {
       address: store.address || '',
       ward: store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
       type: typeLabel,
-      area:
-        store.city === 'Ho Chi Minh City' ||
-        store.city === 'Hồ Chí Minh' ||
-        store.city === 'HCM'
-          ? 'HCM'
-          : store.city === 'Hanoi' ||
-              store.city === 'Hà Nội' ||
-              store.city === 'Ha Noi'
-            ? 'HN'
-            : store.city || 'Tất cả',
+      area: this.adminStoreAreaLabel(store.city, store.area?.code),
       commission: '15%',
       casts: Array.isArray(store.casts) ? store.casts.length : 0,
       status: store.deletedAt ? 'DELETED' : store.status,

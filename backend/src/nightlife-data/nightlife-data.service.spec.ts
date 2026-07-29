@@ -809,6 +809,40 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('normalizes a partner-registered Hanoi city label in the admin store list', async () => {
+    prisma.store.findMany.mockResolvedValueOnce([
+      {
+        id: 'partner-store-hanoi',
+        name: 'Partner Hanoi Club',
+        category: 'CLUB',
+        city: 'Thành phố Hà Nội',
+        address: '123 Linh Lang, Thành phố Hà Nội',
+        status: 'ACTIVE',
+        deletedAt: null,
+        partnerAccountId: 'partner-account-1',
+        partnerAccount: null,
+        area: null,
+        media: [],
+        casts: [],
+      },
+    ] as never);
+    prisma.store.count.mockResolvedValueOnce(1);
+
+    await expect(
+      service.listAdminStores({ page: 1, limit: 10 }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            id: 'partner-store-hanoi',
+            city: 'Thành phố Hà Nội',
+            area: 'HN',
+          }),
+        ],
+      }),
+    );
+  });
+
   it('can restrict admin store search to store names', async () => {
     prisma.store.findMany.mockResolvedValueOnce([]);
     prisma.store.count.mockResolvedValueOnce(0);
