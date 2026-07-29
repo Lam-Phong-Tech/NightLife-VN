@@ -5839,11 +5839,11 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "@ 后面的部分不能超过 253 个字符。",
   },
   {
-    vi: "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.",
-    en: "The part after @ must be a valid domain, for example gmail.com.",
-    ja: "@より後は gmail.com など有効なドメインにしてください。",
-    ko: "@ 뒤에는 gmail.com 같은 유효한 도메인을 입력해 주세요.",
-    zh: "@ 后面必须是有效域名，例如 gmail.com。",
+    vi: "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ company.com.",
+    en: "The part after @ must be a valid domain, for example company.com.",
+    ja: "@より後は company.com など有効なドメインにしてください。",
+    ko: "@ 뒤에는 company.com 같은 유효한 도메인을 입력해 주세요.",
+    zh: "@ 后面必须是有效域名，例如 company.com。",
   },
   {
     vi: "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.",

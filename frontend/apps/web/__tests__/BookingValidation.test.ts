@@ -48,17 +48,17 @@ describe("booking validation", () => {
       "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.",
     );
     expect(validateBookingEmail("guest@gmail")).toBe(
-      "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.",
+      "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ company.com.",
     );
   });
 
-  it("only accepts booking emails from gmail.com before submit", () => {
-    const gmailOnlyMessage = "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.";
-
-    expect(validateBookingEmail("guest@gmai.com")).toBe(gmailOnlyMessage);
-    expect(validateBookingEmail("guest@gmeo.com")).toBe(gmailOnlyMessage);
-    expect(validateBookingEmail("guest@gmail.con")).toBe(gmailOnlyMessage);
-    expect(validateBookingEmail("guest@yahoo.com")).toBe(gmailOnlyMessage);
+  it("accepts booking emails from valid domains before submit", () => {
+    expect(validateBookingEmail("guest@gmai.com")).toBe("");
+    expect(validateBookingEmail("guest@gmeo.com")).toBe("");
+    expect(validateBookingEmail("guest@gmail.con")).toBe("");
+    expect(validateBookingEmail("guest@yahoo.com")).toBe("");
+    expect(validateBookingEmail("guest@ghhd.com")).toBe("");
+    expect(validateBookingEmail("guest@company.vn")).toBe("");
     expect(validateBookingEmail("guest@gmail.com")).toBe("");
   });
 

@@ -8,8 +8,7 @@ const emailLocalPartPattern = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+
 const emailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const emailTopLevelDomainPattern = /^[a-z]{2,63}$/i;
 const invalidEmailFormatMessage = "Email chưa đúng định dạng.";
-const invalidEmailDomainMessage = "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.";
-const gmailOnlyMessage = "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.";
+const invalidEmailDomainMessage = "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ company.com.";
 const emailLocalPartTooLongMessage = `Phần trước dấu @ không được vượt quá ${emailValidationLimits.maxEmailLocalLength} ký tự.`;
 const emailDomainTooLongMessage = `Phần sau dấu @ không được vượt quá ${emailValidationLimits.maxEmailDomainLength} ký tự.`;
 const emailDomainLabelTooLongMessage =
@@ -75,10 +74,6 @@ export function validateEmailAddress(value: string) {
     !emailTopLevelDomainPattern.test(topLevelDomain)
   ) {
     return invalidEmailDomainMessage;
-  }
-
-  if (domainPart !== "gmail.com") {
-    return gmailOnlyMessage;
   }
 
   return "";
