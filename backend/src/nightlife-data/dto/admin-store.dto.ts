@@ -34,22 +34,30 @@ const adminOpeningTimeRangePattern =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-const isValidAdminOpeningSlot = (slot: string) => {
+const parseAdminOpeningSlot = (slot: string) => {
   const match = slot.trim().match(adminOpeningTimeRangePattern);
-  if (!match) return false;
+  if (!match) return null;
 
   const openHour = Number(match[1]);
   const openMinute = Number(match[2]);
   const closeHour = Number(match[3]);
   const closeMinute = Number(match[4]);
 
-  if (openHour > 23 || closeHour > 23 || openMinute > 59 || closeMinute > 59) {
-    return false;
+  if (
+    openHour > 23 ||
+    openMinute > 59 ||
+    closeHour > 24 ||
+    closeMinute > 59 ||
+    (closeHour === 24 && closeMinute !== 0)
+  ) {
+    return null;
   }
 
   const openTotal = openHour * 60 + openMinute;
   const closeTotal = closeHour * 60 + closeMinute;
-  return openTotal !== closeTotal;
+  if (closeTotal <= openTotal) return null;
+
+  return { start: openTotal, end: closeTotal };
 };
 
 const isValidAdminOpeningHours = (value: unknown) => {
@@ -65,7 +73,18 @@ const isValidAdminOpeningHours = (value: unknown) => {
 
     const slots = entry.hours.split(',').map((slot) => slot.trim());
     if (slots.length === 0 || slots.some((slot) => !slot)) return false;
-    return slots.every(isValidAdminOpeningSlot);
+    const intervals = slots.map(parseAdminOpeningSlot);
+    if (intervals.some((interval) => !interval)) return false;
+
+    return intervals.every((interval, index) =>
+      intervals.slice(index + 1).every((candidate) => {
+        if (!interval || !candidate) return false;
+        return (
+          Math.max(interval.start, candidate.start) >=
+          Math.min(interval.end, candidate.end)
+        );
+      }),
+    );
   });
 };
 

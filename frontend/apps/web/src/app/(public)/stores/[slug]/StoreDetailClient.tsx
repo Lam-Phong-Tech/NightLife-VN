@@ -60,6 +60,8 @@ import { getAuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
+  formatBookingTimeSlotLabel,
+  formatBusinessOpeningHours,
   normalizeStoreOpeningHours,
   pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
@@ -1036,7 +1038,12 @@ function HoursList({
               ? `${translateText("Hôm nay", activeLanguage)} · ${translateText(label, activeLanguage)}`
               : translateText(label, activeLanguage)}
           </span>
-          <strong>{translateText(openingText(openingHours?.[key]), activeLanguage)}</strong>
+          <strong>
+            {translateText(
+              formatBusinessOpeningHours(openingHours, key, "hôm sau"),
+              activeLanguage,
+            )}
+          </strong>
         </div>
       ))}
     </div>
@@ -1113,6 +1120,7 @@ function BookingCard({
   maxDate,
   selectedTime,
   timeOptions,
+  timeOptionLabels,
   disabledTimeOptions,
   guestCount,
   guestName,
@@ -1140,6 +1148,7 @@ function BookingCard({
   maxDate: string;
   selectedTime: string;
   timeOptions: string[];
+  timeOptionLabels: Record<string, string>;
   disabledTimeOptions: string[];
   guestCount: number;
   guestName: string;
@@ -1320,6 +1329,7 @@ function BookingCard({
             dateValue={selectedDateIso}
             timeValue={selectedTime}
             timeOptions={timeOptions}
+            timeOptionLabels={timeOptionLabels}
             disabledTimeOptions={disabledTimeOptions}
             minDate={minDate}
             maxDate={maxDate}
@@ -1707,7 +1717,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   );
   const openingSummary = rawOpeningSummary(store);
   const rawTodayOpening = normalizedOpeningHours?.[today]
-    ? openingText(normalizedOpeningHours[today])
+    ? formatBusinessOpeningHours(normalizedOpeningHours, today, "hôm sau")
     : (openingSummaryForDay(openingSummary, today) ?? openingText(normalizedOpeningHours?.[today]));
   const todayOpening = translateText(rawTodayOpening, activeLanguage);
   const openNow = isStoreOpenAt(normalizedOpeningHours, openingSummary, statusNow);
@@ -1821,6 +1831,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
   );
+  const bookingTimeOptionLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        bookingTimeOptions.map((time) => [
+          time,
+          formatBookingTimeSlotLabel(
+            time,
+            selectedDate.iso,
+            normalizedOpeningHours ?? store.openingHours,
+          ),
+        ]),
+      ),
+    [bookingTimeOptions, normalizedOpeningHours, selectedDate.iso, store.openingHours],
+  );
   const disabledBookingTimeOptions = useMemo(
     () =>
       pastBookingTimeSlots(
@@ -1864,6 +1888,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     selectedTime,
     normalizedOpeningHours ?? store.openingHours,
   );
+  const selectedTimeLabel = bookingTimeOptionLabels[selectedTime] ?? selectedTime;
   const bookingFieldErrors = useMemo(
     () =>
       buildBookingFieldErrors({
@@ -2260,8 +2285,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         ? `Xác nhận ${actionLabel} sát giờ`
         : `Xác nhận ${actionLabel}`,
       description: nearStart
-        ? `Lịch ${selectedTime} ngày ${selectedDate.iso} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTime} ngày ${selectedDate.iso}?`,
+        ? `Lịch ${selectedTimeLabel} của ca ngày ${selectedDate.iso} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTimeLabel} của ca ngày ${selectedDate.iso}?`,
       confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createDesktopBooking(payload, normalizedEmail, actionLabel),
@@ -2509,6 +2534,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
+              timeOptionLabels={bookingTimeOptionLabels}
               disabledTimeOptions={disabledBookingTimeOptions}
               guestCount={guestCount}
               guestName={guestName}

@@ -25,6 +25,7 @@ import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlotGroups,
   buildScheduledAtFromBookingSlot,
+  formatBookingTimeSlotLabel,
   pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
@@ -483,6 +484,16 @@ export default function Page() {
     () => bookingTimeOptionGroups.flatMap((group) => group.slots),
     [bookingTimeOptionGroups],
   );
+  const bookingTimeOptionLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        bookingTimeOptions.map((time) => [
+          time,
+          formatBookingTimeSlotLabel(time, bookingDate, storeOpeningHours),
+        ]),
+      ),
+    [bookingDate, bookingTimeOptions, storeOpeningHours],
+  );
   const disabledBookingTimeOptions = useMemo(
     () => pastBookingTimeSlots(bookingTimeOptions, bookingDate, storeOpeningHours, bookingNow),
     [bookingDate, bookingNow, bookingTimeOptions, storeOpeningHours],
@@ -786,13 +797,14 @@ export default function Page() {
     const actionLabel = bookingCastSlug ? "đặt cast" : "đặt bàn";
     const nearStart = isNearStartTime(scheduledAt);
 
+    const bookingTimeLabel = bookingTimeOptionLabels[bookingTime] ?? bookingTime;
     userFeedback.confirmAction({
       title: nearStart
         ? `Xác nhận ${actionLabel} sát giờ`
         : `Xác nhận ${actionLabel}`,
       description: nearStart
-        ? `Lịch ${bookingTime} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${bookingTime} ngày ${bookingDate}?`,
+        ? `Lịch ${bookingTimeLabel} của ca ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${bookingTimeLabel} của ca ngày ${bookingDate}?`,
       confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createBooking(payload, normalizedEmail, actionLabel),
@@ -973,6 +985,7 @@ export default function Page() {
                 }
                 timeValue={bookingTime}
                 timeOptions={bookingTimeOptions}
+                timeOptionLabels={bookingTimeOptionLabels}
                 disabledTimeOptions={disabledBookingTimeOptions}
                 minDate={getTodayDate()}
                 maxDate={getMaxBookingDate()}

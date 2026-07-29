@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bookingTimeSlotDate,
   buildBookingTimeSlotGroups,
   buildBookingTimeSlots,
+  formatBookingTimeSlotLabel,
+  formatBusinessOpeningHours,
   normalizeStoreOpeningHours,
 } from "@/lib/booking-time-slots";
 
@@ -135,7 +138,7 @@ describe("booking time slots", () => {
     expect(buildBookingTimeSlots(null, "2026-07-09", { fallback: "empty" })).toEqual([]);
   });
 
-  it("keeps next-day booking slots for stores open past midnight", () => {
+  it("keeps every hourly slot before an overnight closing boundary", () => {
     expect(
       buildBookingTimeSlots({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
@@ -143,7 +146,7 @@ describe("booking time slots", () => {
     ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
   });
 
-  it("keeps early next-day slots in the evening group for overnight ranges", () => {
+  it("keeps after-midnight slots in the evening group for overnight ranges", () => {
     expect(
       buildBookingTimeSlotGroups({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
@@ -156,5 +159,63 @@ describe("booking time slots", () => {
         slots: ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"],
       },
     ]);
+  });
+
+  it("joins an end-of-day range to the next calendar day's early range", () => {
+    const openingHours = {
+      monday: { hours: "19:00 - 24:00" },
+      tuesday: { hours: "00:00 - 02:00, 19:00 - 24:00" },
+      wednesday: { hours: "00:00 - 02:00" },
+    };
+
+    expect(buildBookingTimeSlots(openingHours, "2026-07-06", { fallback: "empty" }))
+      .toEqual(["19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
+    expect(buildBookingTimeSlots(openingHours, "2026-07-07", { fallback: "empty" }))
+      .toEqual(["19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
+  });
+
+  it("does not reuse the early continuation as a slot of the next business day", () => {
+    const openingHours = {
+      monday: { hours: "19:00 - 24:00" },
+      tuesday: { hours: "00:00 - 02:00" },
+    };
+
+    expect(buildBookingTimeSlots(openingHours, "2026-07-07", { fallback: "empty" })).toEqual([]);
+  });
+
+  it("labels after-midnight slots with the next calendar date", () => {
+    const openingHours = {
+      monday: { hours: "19:00 - 24:00" },
+      tuesday: { hours: "00:00 - 02:00" },
+    };
+
+    expect(bookingTimeSlotDate("2026-07-27", "00:00", openingHours)).toBe("2026-07-28");
+    expect(formatBookingTimeSlotLabel("00:00", "2026-07-27", openingHours))
+      .toBe("00:00 (28/7)");
+    expect(formatBookingTimeSlotLabel("19:00", "2026-07-27", openingHours)).toBe("19:00");
+    expect(bookingTimeSlotDate("2026-07-27", "01:00", openingHours)).toBe("2026-07-28");
+  });
+
+  it("includes the year when an overnight slot crosses into a new year", () => {
+    const openingHours = {
+      thursday: { hours: "19:00 - 24:00" },
+      friday: { hours: "00:00 - 02:00" },
+    };
+
+    expect(formatBookingTimeSlotLabel("00:00", "2026-12-31", openingHours))
+      .toBe("00:00 (1/1/2027)");
+  });
+
+  it("formats split calendar ranges as one customer-facing overnight range", () => {
+    const openingHours = {
+      monday: { hours: "19:00 - 24:00" },
+      tuesday: { hours: "00:00 - 02:00, 19:00 - 24:00" },
+      wednesday: { hours: "00:00 - 02:00" },
+    };
+
+    expect(formatBusinessOpeningHours(openingHours, "monday"))
+      .toBe("19:00 - 02:00 (hôm sau)");
+    expect(formatBusinessOpeningHours(openingHours, "tuesday"))
+      .toBe("19:00 - 02:00 (hôm sau)");
   });
 });

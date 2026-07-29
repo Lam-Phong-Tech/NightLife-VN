@@ -30,7 +30,7 @@ export type BookingTimeSlotGroup = {
 const minutesPerDay = 24 * 60;
 const morningShiftStartMinutes = 8 * 60;
 const eveningShiftStartMinutes = 14 * 60;
-const maxEveningShiftSlotMinutes = minutesPerDay + morningShiftStartMinutes;
+const maxEveningShiftSlotMinutes = minutesPerDay * 2 - 1;
 const bookingTimeSlotGroupLabels: Record<BookingTimeSlotPeriod, string> = {
   morning: "Sáng",
   evening: "Tối",
@@ -213,6 +213,21 @@ const dayKeyFromIsoDate = (dateIso: string) => {
   return weekdayKeys[day] ?? "monday";
 };
 
+const offsetIsoDate = (dateIso: string, days: number) => {
+  const match = dateIso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return dateIso;
+
+  const date = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days, 12),
+  );
+
+  return [
+    String(date.getUTCFullYear()).padStart(4, "0"),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+};
+
 const rangesFromOpeningSlot = (slot?: StoreOpeningHour | null): OpeningTimeRange[] => {
   if (!slot || slot.closed) return [];
 
@@ -225,7 +240,7 @@ const rangesFromOpeningSlot = (slot?: StoreOpeningHour | null): OpeningTimeRange
   return parseTimeRanges(slot.note);
 };
 
-const openingRangesForDate = (
+const calendarOpeningRangesForDate = (
   openingHours: OpeningHoursInput,
   dateIso: string,
 ): OpeningRanges | null => {
@@ -246,6 +261,61 @@ const openingRangesForDate = (
 
   return null;
 };
+
+const hasLateEndOfDayRange = (opening: OpeningRanges | null) =>
+  opening?.status === "open" &&
+  opening.ranges.some(
+    (range) => range.openMinutes > 0 && range.closeMinutes === minutesPerDay,
+  );
+
+const businessOpeningRangesForDate = (
+  openingHours: OpeningHoursInput,
+  dateIso: string,
+): OpeningRanges | null => {
+  const current = calendarOpeningRangesForDate(openingHours, dateIso);
+  if (!current || current.status === "closed") return current;
+
+  const previous = calendarOpeningRangesForDate(openingHours, offsetIsoDate(dateIso, -1));
+  const next = calendarOpeningRangesForDate(openingHours, offsetIsoDate(dateIso, 1));
+  const earlyRangeBelongsToPreviousDay = hasLateEndOfDayRange(previous);
+  const nextEarlyRanges =
+    next?.status === "open"
+      ? next.ranges.filter(
+          (range) => range.openMinutes === 0 && range.closeMinutes > range.openMinutes,
+        )
+      : [];
+  let nextEarlyRangeIndex = 0;
+
+  const ranges = current.ranges.flatMap((range) => {
+    if (
+      earlyRangeBelongsToPreviousDay &&
+      range.openMinutes === 0 &&
+      range.closeMinutes > range.openMinutes
+    ) {
+      return [];
+    }
+
+    if (
+      range.openMinutes > 0 &&
+      range.closeMinutes === minutesPerDay &&
+      nextEarlyRangeIndex < nextEarlyRanges.length
+    ) {
+      const continuation = nextEarlyRanges[nextEarlyRangeIndex++];
+      if (continuation) {
+        return [{ openMinutes: range.openMinutes, closeMinutes: continuation.closeMinutes }];
+      }
+    }
+
+    return [range];
+  });
+
+  return ranges.length ? { status: "open", ranges } : { status: "closed" };
+};
+
+const openingRangesForDate = (
+  openingHours: OpeningHoursInput,
+  dateIso: string,
+): OpeningRanges | null => businessOpeningRangesForDate(openingHours, dateIso);
 
 const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
   const crossesMidnight = range.closeMinutes <= range.openMinutes;
@@ -355,21 +425,16 @@ export const buildBookingTimeSlots = (
   options: BuildBookingTimeSlotsOptions = {},
 ) => buildBookingTimeSlotGroups(openingHours, dateIso, options).flatMap((group) => group.slots);
 
-export const buildScheduledAtFromBookingSlot = (
+export const bookingTimeSlotDate = (
   dateIso: string,
   time: string,
   openingHours?: OpeningHoursInput,
 ) => {
   const slotMinutes = parseTimeToMinutes(time);
-  const [hours = "21", minutes = "00"] = time.split(":");
-  const scheduledAt = new Date(
-    `${dateIso}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`,
-  );
-
-  if (slotMinutes === null) return scheduledAt.toISOString();
+  if (slotMinutes === null) return dateIso;
 
   const opening = openingRangesForDate(openingHours, dateIso);
-  const belongsToNextDayOvernightSlot =
+  const belongsToNextDay =
     opening?.status === "open" &&
     opening.ranges.some(
       (range) =>
@@ -378,9 +443,77 @@ export const buildScheduledAtFromBookingSlot = (
         isSlotInRange(slotMinutes, range),
     );
 
-  if (belongsToNextDayOvernightSlot) {
-    scheduledAt.setDate(scheduledAt.getDate() + 1);
-  }
+  return belongsToNextDay ? offsetIsoDate(dateIso, 1) : dateIso;
+};
+
+export const formatBookingTimeSlotLabel = (
+  time: string,
+  dateIso: string,
+  openingHours?: OpeningHoursInput,
+) => {
+  const slotDateIso = bookingTimeSlotDate(dateIso, time, openingHours);
+  if (slotDateIso === dateIso) return time;
+
+  const selectedYear = dateIso.slice(0, 4);
+  const [year = "", month = "", day = ""] = slotDateIso.split("-");
+  const dateLabel =
+    year === selectedYear
+      ? `${Number(day)}/${Number(month)}`
+      : `${Number(day)}/${Number(month)}/${year}`;
+
+  return `${time} (${dateLabel})`;
+};
+
+const sampleDateByWeekday: Record<WeekdayKey, string> = {
+  sunday: "2026-07-05",
+  monday: "2026-07-06",
+  tuesday: "2026-07-07",
+  wednesday: "2026-07-08",
+  thursday: "2026-07-09",
+  friday: "2026-07-10",
+  saturday: "2026-07-11",
+};
+
+export const formatBusinessOpeningHours = (
+  openingHours: OpeningHoursInput,
+  weekday: string,
+  nextDayLabel = "hôm sau",
+) => {
+  const normalizedWeekday = normalizeWeekdayKey(weekday);
+  if (!normalizedWeekday) return "Chưa cập nhật";
+
+  const opening = businessOpeningRangesForDate(
+    openingHours,
+    sampleDateByWeekday[normalizedWeekday],
+  );
+  if (!opening) return "Chưa cập nhật";
+  if (opening.status === "closed") return "Nghỉ";
+
+  return opening.ranges
+    .map((range) => {
+      const crossesMidnight = range.closeMinutes <= range.openMinutes;
+      const text = `${formatSlot(range.openMinutes)} - ${formatSlot(range.closeMinutes, {
+        preserveEndOfDay: true,
+      })}`;
+
+      return crossesMidnight ? `${text} (${nextDayLabel})` : text;
+    })
+    .join(", ");
+};
+
+export const buildScheduledAtFromBookingSlot = (
+  dateIso: string,
+  time: string,
+  openingHours?: OpeningHoursInput,
+) => {
+  const slotMinutes = parseTimeToMinutes(time);
+  const [hours = "21", minutes = "00"] = time.split(":");
+  const slotDateIso = bookingTimeSlotDate(dateIso, time, openingHours);
+  const scheduledAt = new Date(
+    `${slotDateIso}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`,
+  );
+
+  if (slotMinutes === null) return scheduledAt.toISOString();
 
   return scheduledAt.toISOString();
 };

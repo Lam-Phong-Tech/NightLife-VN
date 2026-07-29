@@ -37,6 +37,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
+  formatBookingTimeSlotLabel,
   type OpeningHoursInput,
 } from "@/lib/booking-time-slots";
 import {
@@ -597,6 +598,16 @@ export default function Page() {
       fallback: "empty",
     });
   }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
+  const rescheduleTimeOptionLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        rescheduleTimeOptions.map((time) => [
+          time,
+          formatBookingTimeSlotLabel(time, rescheduleDate, rescheduleOpeningHours),
+        ]),
+      ),
+    [rescheduleDate, rescheduleOpeningHours, rescheduleTimeOptions],
+  );
   const pendingRescheduleStoreSlug = pendingRescheduleBooking?.store?.slug ?? "";
   const pendingRescheduleStoreHasOpeningHours = hasOpeningHours(rescheduleOpeningHours);
 
@@ -1152,6 +1163,7 @@ export default function Page() {
               dateValue={rescheduleDate}
               timeValue={rescheduleTime}
               timeOptions={rescheduleTimeOptions}
+              timeOptionLabels={rescheduleTimeOptionLabels}
               minDate={getTodayDate()}
               maxDate={getMaxBookingDate()}
               loadingTimes={isRescheduleHoursLoading}

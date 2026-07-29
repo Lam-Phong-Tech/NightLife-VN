@@ -242,7 +242,7 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, index) => {
   return `${hour}:00`;
 }).concat(['24:00']);
 
-function CustomTimeSelect({ value, onChange, placeholder, hasError }: { value: string; onChange: (val: string) => void; placeholder: string; hasError?: boolean }) {
+function CustomTimeSelect({ value, onChange, placeholder, hasError, options = TIME_OPTIONS }: { value: string; onChange: (val: string) => void; placeholder: string; hasError?: boolean; options?: string[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -300,7 +300,7 @@ function CustomTimeSelect({ value, onChange, placeholder, hasError }: { value: s
           flexDirection: 'column',
           padding: '4px'
         }}>
-          {TIME_OPTIONS.map(time => (
+          {options.map(time => (
             <div
               key={time}
               onClick={() => {
@@ -345,11 +345,66 @@ const cloneDefaultHours = () =>
     {},
   );
 
+const padHour = (value: number) => value.toString().padStart(2, '0');
+
 const normalizeDayKey = (value?: string | null) => {
   const token = normalizeLocationName(value).replace(/\bthu\b/g, '').trim();
   if (token === 'cn' || token === 'chu nhat') return 'CN';
+  const englishDays: Record<string, string> = {
+    monday: 'Thứ 2', mon: 'Thứ 2', tuesday: 'Thứ 3', tue: 'Thứ 3',
+    wednesday: 'Thứ 4', wed: 'Thứ 4', thursday: 'Thứ 5',
+    friday: 'Thứ 6', fri: 'Thứ 6', saturday: 'Thứ 7', sat: 'Thứ 7',
+    sunday: 'CN', sun: 'CN',
+  };
+  if (englishDays[token]) return englishDays[token];
   const number = token.match(/\d/)?.[0];
   return number ? DAYS.find((day) => day.includes(number)) || '' : '';
+};
+
+const appendOpeningHourSlot = (hours: Record<string, OpeningHourDay>, day: string, slot: string) => {
+  const existing = String(hours[day]?.hours || '').split(',').map((item) => item.trim()).filter(Boolean);
+  if (!existing.includes(slot)) existing.push(slot);
+  hours[day] = { isOff: false, hours: existing.join(', ') };
+};
+
+const splitLegacyOvernightHours = (source: Record<string, OpeningHourDay>) => {
+  const result = DAYS.reduce<Record<string, OpeningHourDay>>((acc, day) => {
+    acc[day] = { isOff: Boolean(source[day]?.isOff), hours: '' };
+    return acc;
+  }, {});
+
+  DAYS.forEach((day, dayIndex) => {
+    const state = source[day] || { isOff: false, hours: '' };
+    if (state.isOff) return;
+
+    String(state.hours || '').split(',').map((slot) => slot.trim()).filter(Boolean).forEach((slot) => {
+      const match = slot.match(timeRangePattern);
+      if (!match) {
+        appendOpeningHourSlot(result, day, slot);
+        return;
+      }
+
+      const openTotal = Number(match[1]) * 60 + Number(match[2]);
+      const closeTotal = Number(match[3]) * 60 + Number(match[4]);
+      const normalizedOpen = `${padHour(Number(match[1]))}:${match[2]}`;
+      const normalizedClose = `${padHour(Number(match[3]))}:${match[4]}`;
+
+      if (openTotal === 0 && closeTotal === 0) {
+        appendOpeningHourSlot(result, day, '00:00 - 24:00');
+      } else if (closeTotal < openTotal) {
+        appendOpeningHourSlot(result, day, `${normalizedOpen} - 24:00`);
+        const nextDay = DAYS[(dayIndex + 1) % DAYS.length] || DAYS[0]!;
+        appendOpeningHourSlot(result, nextDay, `00:00 - ${normalizedClose}`);
+      } else {
+        appendOpeningHourSlot(result, day, `${normalizedOpen} - ${normalizedClose}`);
+      }
+    });
+  });
+
+  DAYS.forEach((day) => {
+    if (!result[day]?.isOff && !result[day]?.hours) result[day] = { isOff: true, hours: '' };
+  });
+  return result;
 };
 
 const normalizeOpeningHoursForForm = (value: unknown): Record<string, OpeningHourDay> => {
@@ -375,12 +430,20 @@ const normalizeOpeningHoursForForm = (value: unknown): Record<string, OpeningHou
       : [];
   items.forEach(applyItem);
 
-  DAYS.forEach((day) => {
-    const direct = record[day];
+  Object.entries(record).forEach(([rawDay, direct]) => {
+    const day = normalizeDayKey(rawDay);
+    if (!day) return;
     if (direct && typeof direct === 'object' && !Array.isArray(direct)) {
+      const entry = direct as Record<string, unknown>;
+      const isOff = entry.isOff === true || entry.closed === true;
+      const hours = typeof entry.hours === 'string' ? entry.hours : '';
+      const open = typeof entry.open === 'string' ? entry.open : '';
+      const close = typeof entry.close === 'string' ? entry.close : '';
       normalized[day] = {
-        isOff: Boolean(direct.isOff),
-        hours: direct.isOff ? '' : String(direct.hours || DEFAULT_OPENING_SLOT).trim(),
+        isOff,
+        hours: isOff
+          ? ''
+          : String(hours || (open && close ? `${open} - ${close}` : DEFAULT_OPENING_SLOT)).trim(),
       };
     }
   });
@@ -396,10 +459,8 @@ const normalizeOpeningHoursForForm = (value: unknown): Record<string, OpeningHou
     });
   }
 
-  return normalized;
+  return splitLegacyOvernightHours(normalized);
 };
-
-const padHour = (value: number) => value.toString().padStart(2, '0');
 
 const parseOpeningHourSlot = (slot: string) => {
   const value = slot.trim();
@@ -427,9 +488,9 @@ const parseOpeningHourSlot = (slot: string) => {
 
   const openTotal = openHour * 60 + openMinute;
   const closeTotal = closeHour * 60 + closeMinute;
-  if (closeTotal === openTotal && !(openTotal === 0 && closeTotal === 0)) {
+  if (closeTotal <= openTotal) {
     return {
-      error: 'Giờ mở và giờ đóng không được trùng nhau, trừ 00:00 - 00:00 cho mở cả ngày.',
+      error: 'Giờ kết thúc phải lớn hơn giờ bắt đầu; ca qua đêm cần tách tại 24:00.',
       normalized: value,
       overnight: false,
     };
@@ -438,7 +499,7 @@ const parseOpeningHourSlot = (slot: string) => {
   return {
     error: '',
     normalized: `${padHour(openHour)}:${match[2]} - ${padHour(closeHour)}:${match[4]}`,
-    overnight: closeTotal < openTotal,
+    overnight: false,
     openTotal,
     closeTotal,
   };
@@ -451,6 +512,11 @@ const splitOpeningHourSlot = (slot: string) => {
     open: `${padHour(Number(match[1]))}:${match[2]}`,
     close: `${padHour(Number(match[3]))}:${match[4]}`,
   };
+};
+
+const timeOptionMinutes = (value: string) => {
+  const [hour = 0, minute = 0] = value.split(':').map(Number);
+  return hour * 60 + minute;
 };
 
 const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHourValidation => {
@@ -1880,7 +1946,10 @@ function AdminStoresContent() {
                   const setSlotTime = (idx: number, key: 'open' | 'close', val: string) => {
                     const parts = splitOpeningHourSlot(slots[idx] || '');
                     const openTime = key === 'open' ? val : (parts.open || '19:00');
-                    const closeTime = key === 'close' ? val : (parts.close || '24:00');
+                    let closeTime = key === 'close' ? val : (parts.close || '24:00');
+                    if (key === 'open' && timeOptionMinutes(closeTime) <= timeOptionMinutes(openTime)) {
+                      closeTime = '24:00';
+                    }
                     setSlotVal(idx, openTime && closeTime ? `${openTime} - ${closeTime}` : '');
                   };
                   const addSlot = () => {
@@ -1897,10 +1966,16 @@ function AdminStoresContent() {
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
                         {!isOff && slots.map((sl: string, idx: number) => {
 
-                          const slotMeta = parseOpeningHourSlot(sl);
                           const slotError = openingHourPreviewErrors[day]?.[idx];
-                          const overnight = !slotError && slotMeta.overnight;
                           const slotParts = splitOpeningHourSlot(sl);
+                          const openMinutes = timeOptionMinutes(slotParts.open || '00:00');
+                          const closeMinutes = timeOptionMinutes(slotParts.close || '24:00');
+                          const openOptions = TIME_OPTIONS.filter(
+                            (time) => time !== '24:00' && timeOptionMinutes(time) < closeMinutes,
+                          );
+                          const closeOptions = TIME_OPTIONS.filter(
+                            (time) => timeOptionMinutes(time) > openMinutes,
+                          );
                           return (
                             <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 8px' }}>
                               <CustomTimeSelect 
@@ -1908,6 +1983,7 @@ function AdminStoresContent() {
                                 onChange={val => setSlotTime(idx, 'open', val)} 
                                 placeholder="Mở lúc" 
                                 hasError={!!slotError} 
+                                options={openOptions}
                               />
                               <span style={{ color: '#6e6a60', fontSize: '12px', fontWeight: 700 }}>–</span>
                               <CustomTimeSelect 
@@ -1915,6 +1991,7 @@ function AdminStoresContent() {
                                 onChange={val => setSlotTime(idx, 'close', val)} 
                                 placeholder="Đóng lúc" 
                                 hasError={!!slotError} 
+                                options={closeOptions}
                               />
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                             </span>
@@ -1939,7 +2016,7 @@ function AdminStoresContent() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-                <span>Một ngày có thể có nhiều khung giờ, không được trùng lặp. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>. Có thể chọn 00:00 - 00:00 để mở cả ngày (24h).</span>
+                <span>Một ngày có thể có nhiều khung giờ, không được trùng lặp. Ca qua đêm cần tách tại 24:00, ví dụ Thứ 2: 19:00 - 24:00 và Thứ 3: 00:00 - 02:00. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>. Dùng 00:00 - 24:00 để mở cả ngày.</span>
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Ảnh bìa (Tối đa 15MB)</div>

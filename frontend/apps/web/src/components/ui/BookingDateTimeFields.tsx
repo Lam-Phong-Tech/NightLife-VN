@@ -56,6 +56,7 @@ type BookingDateTimeFieldsProps = {
   dateValue: string;
   timeValue: string;
   timeOptions: string[];
+  timeOptionLabels?: Record<string, string>;
   disabledTimeOptions?: string[];
   timeOptionGroups?: BookingTimeSlotGroup[];
   minDate: string;
@@ -134,6 +135,7 @@ export function BookingDateTimeFields({
   dateValue,
   timeValue,
   timeOptions,
+  timeOptionLabels = {},
   disabledTimeOptions = [],
   timeOptionGroups,
   minDate,
@@ -192,7 +194,7 @@ export function BookingDateTimeFields({
   const activeTimeOptions = hasTimeOptionGroups ? activeGroup?.slots ?? [] : timeOptions;
   const options = activeTimeOptions.map((time) => ({
     value: time,
-    label: time,
+    label: timeOptionLabels[time] ?? time,
     disabled: disabledTimeOptionSet.has(time),
   }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
