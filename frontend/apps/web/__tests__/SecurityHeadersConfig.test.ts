@@ -21,6 +21,11 @@ describe("security headers configuration", () => {
     const policy = createContentSecurityPolicy(true);
 
     expect(policy).toContain("https://accounts.google.com");
+    expect(policy).toContain("https://static.line-scdn.net");
+    expect(policy).toContain("https://api.line.me");
+    expect(policy).toContain("https://liff.line.me");
+    expect(policy).toContain("https://liffsdk.line-scdn.net");
+    expect(policy).toContain("https://uts-front.line-apps.com");
     expect(policy).toContain("https://maps.google.com");
     expect(policy).toContain("https://www.google.com");
     expect(policy).toContain("https://www.youtube.com");

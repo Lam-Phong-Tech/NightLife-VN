@@ -15,6 +15,7 @@ import {
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { nightlifeOrigins } from "@/lib/auth/hosts";
+import { buildLineLiffUrl, normalizeLineLoginRedirect } from "@/lib/auth/line-login";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import {
   isLanguageCode,
@@ -212,19 +213,16 @@ export default function Page() {
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
   const [isLineConfigured, setIsLineConfigured] = useState(false);
+  const [lineLiffId, setLineLiffId] = useState("");
   const [queryMessage] = useState(getInitialQueryMessage);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
 
-    const redirect = new URLSearchParams(window.location.search).get("redirect");
-
-    if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) {
-      return "/tai-khoan";
-    }
-
-    return redirect;
+    return normalizeLineLoginRedirect(
+      new URLSearchParams(window.location.search).get("redirect"),
+    );
   }, []);
 
   useEffect(() => {
@@ -420,6 +418,7 @@ export default function Page() {
         }
 
         setIsLineConfigured(config.configured);
+        setLineLiffId(config.liffId || "");
       })
       .catch(() => {
         if (!mounted) {
@@ -427,6 +426,7 @@ export default function Page() {
         }
 
         setIsLineConfigured(false);
+        setLineLiffId("");
       })
       .finally(() => {
         if (mounted) {
@@ -552,7 +552,9 @@ export default function Page() {
     }
 
     const params = new URLSearchParams({ redirect: redirectTo });
-    window.location.href = `/line-login?${params.toString()}`;
+    window.location.href = lineLiffId
+      ? buildLineLiffUrl(lineLiffId, redirectTo)
+      : `/line-login?${params.toString()}`;
   };
 
   return (

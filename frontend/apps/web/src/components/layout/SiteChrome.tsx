@@ -87,6 +87,7 @@ const hiddenChromePaths = [
   "/dat-lai-mat-khau",
   "/dang-nhap-doi-tac",
   "/dang-ky-doi-tac",
+  "/line-login",
   "/partner",
   "/admin",
 ];
@@ -1647,6 +1648,7 @@ export function SiteChrome({
   const customerRouteMotionEnabled =
     hostKind !== "admin" &&
     hostKind !== "partner" &&
+    pathname !== "/line-login" &&
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/partner");
   const enableScrollReveal = pathname === "/";
