@@ -2,7 +2,7 @@ export const MAX_STORE_IMAGE_SIZE_BYTES = 15 * 1024 * 1024;
 export const MAX_TOUR_COVER_IMAGE_SIZE_BYTES = 15 * 1024 * 1024;
 export const MAX_ADMIN_VIDEO_SIZE_BYTES = 25 * 1024 * 1024;
 export const MAX_APPEARANCE_ICON_SIZE_BYTES = 30 * 1024;
-export const MAX_APPEARANCE_LOGO_SIZE_BYTES = 200 * 1024;
+export const MAX_APPEARANCE_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
 export const STORE_IMAGE_ACCEPT =
   'image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif';
@@ -160,6 +160,6 @@ export const getAppearanceImageValidationError = (
     : getSizeValidationError(
         file,
         MAX_APPEARANCE_LOGO_SIZE_BYTES,
-        '200KB',
+        '5MB',
       );
 };

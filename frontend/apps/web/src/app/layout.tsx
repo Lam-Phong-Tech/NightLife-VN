@@ -6,6 +6,7 @@ import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
+import { AppearanceFavicon } from "@/components/seo/AppearanceFavicon";
 import { jsonLdDocument, organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 import { headers } from "next/headers";
@@ -87,6 +88,7 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        <AppearanceFavicon />
         <GoogleAnalytics />
         <ClientLanguageTranslator>
           <CurrencyProvider>

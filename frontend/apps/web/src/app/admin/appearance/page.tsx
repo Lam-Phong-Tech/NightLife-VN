@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
-import { normalizeAppearanceConfig } from '@/lib/api/appearance';
+import {
+  cacheAppearanceConfig,
+  normalizeAppearanceConfig,
+} from '@/lib/api/appearance';
 import {
   APPEARANCE_IMAGE_ACCEPT,
   getAppearanceImageValidationError,
@@ -11,6 +14,10 @@ import {
   deleteUploadedMediaBatch,
   type UploadedMedia,
 } from '@/lib/api/media';
+import {
+  applyAppearanceFavicon,
+  DEFAULT_FAVICON_URL,
+} from '@/lib/appearance-favicon';
 
 const ICONS: Record<string, string> = {
   pin: '<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
@@ -51,7 +58,7 @@ type AppearanceState = {
   quick: AppearanceIconItem[];
   nav: AppearanceIconItem[];
   titles: { id: string; key: string; label: string }[];
-  brand: { name: string; tagline: string; logoUrl?: string };
+  brand: { name: string; tagline: string; logoUrl?: string; faviconUrl?: string };
 };
 
 const DEFAULT_ICON_COLOR = '#d4b26a';
@@ -84,7 +91,12 @@ const DEFAULT_STATE: AppearanceState = {
     { id: 't5', key: 'Khối video', label: 'Video Hot' },
     { id: 't6', key: 'Khối cẩm nang', label: 'Tour · Blog · Guide' }
   ],
-  brand: { name: 'Vietyoru', tagline: 'VIETNAM NIGHTLIFE GUIDE', logoUrl: '' }
+  brand: {
+    name: 'Vietyoru',
+    tagline: 'VIETNAM NIGHTLIFE GUIDE',
+    logoUrl: '',
+    faviconUrl: '',
+  }
 };
 type AppearanceConfigResponse = {
   data?: Partial<AppearanceState> | null;
@@ -300,11 +312,14 @@ export default function AppearancePage() {
   
   const [drawer, setDrawer] = useState<{group: 'quick' | 'nav', id: string} | null>(null);
   const [logoOpen, setLogoOpen] = useState(false);
+  const [faviconOpen, setFaviconOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const iconUploadInputRef = useRef<HTMLInputElement>(null);
   const logoUploadInputRef = useRef<HTMLInputElement>(null);
+  const faviconUploadInputRef = useRef<HTMLInputElement>(null);
   const pendingAppearanceMediaRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -352,6 +367,16 @@ export default function AppearancePage() {
   const saved = JSON.parse(savedState) as AppearanceState;
   const brandChanged = JSON.stringify(brand) !== JSON.stringify(saved.brand);
   const brandInitial = (brand.name || 'V').trim().charAt(0).toUpperCase();
+  const faviconSrc = brand.faviconUrl
+    ? resolveClientUrl(brand.faviconUrl) || brand.faviconUrl
+    : DEFAULT_FAVICON_URL;
+  const renderFaviconArtwork = (size: number) => (
+    <img
+      src={faviconSrc}
+      alt=""
+      style={{ width: `${size}px`, height: `${size}px`, objectFit: 'contain', display: 'block' }}
+    />
+  );
 
   const currentStateStr = JSON.stringify({ quick, nav, titles, brand });
   const dirty = currentStateStr !== savedState;
@@ -382,6 +407,7 @@ export default function AppearancePage() {
       });
       const usedMediaUrls = new Set([
         dataToSave.brand.logoUrl,
+        dataToSave.brand.faviconUrl,
         ...dataToSave.quick.map((item) => item.icon),
         ...dataToSave.nav.map((item) => item.icon),
       ]);
@@ -393,6 +419,8 @@ export default function AppearancePage() {
       await deleteUploadedMediaBatch(unusedMediaIds);
       pendingAppearanceMediaRef.current.clear();
       setSavedState(currentStateStr);
+      cacheAppearanceConfig(dataToSave);
+      applyAppearanceFavicon(dataToSave.brand.faviconUrl);
       showToast('Đã lưu thành công và áp dụng giao diện');
     } catch (err) {
       console.error(err);
@@ -432,6 +460,39 @@ export default function AppearancePage() {
     } finally {
       setUploadingLogo(false);
       if (logoUploadInputRef.current) logoUploadInputRef.current.value = '';
+    }
+  };
+
+  const uploadFaviconFile = async (file?: File) => {
+    if (!file) return;
+
+    const validationError = getAppearanceImageValidationError(file, 'icon');
+    if (validationError) {
+      showToast(validationError);
+      return;
+    }
+
+    try {
+      setUploadingFavicon(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'APPEARANCE_ICON');
+      form.append('access', 'PUBLIC');
+      const res = await apiFormDataClient<UploadedMedia>('/storage/upload', form);
+      if (!res?.url || !res.id) {
+        showToast('Không lấy được URL favicon sau khi tải lên.');
+        return;
+      }
+      const uploadedUrl = res.url;
+      pendingAppearanceMediaRef.current.set(res.id, uploadedUrl);
+      setBrand((current) => ({ ...current, faviconUrl: uploadedUrl }));
+      showToast('Tải favicon thành công. Bấm Lưu thay đổi để áp dụng trên tab trình duyệt.');
+    } catch (err) {
+      console.error(err);
+      showToast(err instanceof Error ? err.message : 'Tải favicon thất bại.');
+    } finally {
+      setUploadingFavicon(false);
+      if (faviconUploadInputRef.current) faviconUploadInputRef.current.value = '';
     }
   };
 
@@ -696,14 +757,116 @@ export default function AppearancePage() {
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
                 <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingLogo ? 'Đang tải logo...' : 'Kéo thả file .svg / .png vào đây'}</div>
-                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · &lt; 200 KB</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · &lt; 5 MB</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-              <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}>Hệ thống tự sinh các cỡ: topbar 28px, mobile 22px, favicon 32px, app icon 180px. Logo tải lên nên là bản sáng để nổi trên nền tối.</span>
+              <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}>Logo được dùng cho topbar 28px và mobile 22px. Favicon được quản lý bằng file vuông riêng để không phải cắt logo ngang và làm mất chi tiết. Logo tải lên nên là bản sáng để nổi trên nền tối.</span>
             </div>
             <span onClick={() => setLogoOpen(false)} style={{ display: 'block', textAlign: 'center', fontSize: '14px', fontWeight: 700, padding: '13px', borderRadius: '12px', cursor: 'pointer', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', boxShadow: '0 14px 28px -12px rgba(168,124,60,.55)' }}>Xong</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFaviconDrawer = () => {
+    if (!faviconOpen) return null;
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 73 }}>
+        <div
+          onClick={() => setFaviconOpen(false)}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}
+        />
+        <div style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '430px', maxWidth: '94vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+          <div style={{ padding: '17px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#131218', zIndex: 2 }}>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3f0ea' }}>Thay favicon</div>
+              <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1.5px', color: '#8c8679', textTransform: 'uppercase', marginTop: '2px' }}>Biểu tượng trên tab trình duyệt</div>
+            </div>
+            <button
+              type="button"
+              aria-label="Đóng phần thay favicon"
+              onClick={() => setFaviconOpen(false)}
+              style={{ width: '34px', height: '34px', border: 0, borderRadius: '10px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+
+          <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '9px' }}>Xem trước kích thước thật</div>
+              <div style={{ background: '#0e0d12', border: '1px solid rgba(255,255,255,.08)', borderRadius: '13px', padding: '16px 18px', display: 'flex', alignItems: 'end', gap: '22px' }}>
+                {[16, 32, 48].map((size) => (
+                  <div key={size} style={{ textAlign: 'center' }}>
+                    <div
+                      data-testid={`appearance-favicon-preview-${size}`}
+                      style={{ width: `${Math.max(38, size + 16)}px`, height: `${Math.max(38, size + 16)}px`, borderRadius: '10px', background: '#17151c', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {renderFaviconArtwork(size)}
+                    </div>
+                    <div style={{ fontSize: '9px', color: '#716c63', marginTop: '6px' }}>{size}×{size}</div>
+                  </div>
+                ))}
+                <div style={{ flex: 1 }} />
+                {brand.faviconUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setBrand((current) => ({ ...current, faviconUrl: '' }))}
+                    style={{ border: '1px solid rgba(239,68,68,.3)', borderRadius: '8px', padding: '6px 9px', background: 'rgba(239,68,68,.06)', color: '#f87171', fontSize: '10.5px', cursor: 'pointer' }}
+                  >
+                    Dùng mặc định
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '9px' }}>Tải favicon riêng</div>
+              <input
+                ref={faviconUploadInputRef}
+                data-testid="appearance-favicon-file-input"
+                type="file"
+                accept={APPEARANCE_IMAGE_ACCEPT}
+                style={{ display: 'none' }}
+                onChange={(event) => uploadFaviconFile(event.target.files?.[0])}
+              />
+              <div
+                data-testid="appearance-favicon-dropzone"
+                onClick={() => !uploadingFavicon && faviconUploadInputRef.current?.click()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'copy';
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!uploadingFavicon) uploadFaviconFile(event.dataTransfer.files?.[0]);
+                }}
+                style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '24px 18px', textAlign: 'center', cursor: uploadingFavicon ? 'wait' : 'pointer', opacity: uploadingFavicon ? .65 : 1 }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '7px' }}>{uploadingFavicon ? 'Đang tải favicon...' : 'Kéo thả file .svg / .png vào đây'}</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '4px' }}>hoặc bấm để chọn từ máy · tối đa 30 KB</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}>
+                <b style={{ color: '#f0dda8' }}>Chuẩn favicon:</b> dùng ảnh vuông 1:1, ít chi tiết và có vùng an toàn quanh biểu tượng. Ưu tiên SVG có viewBox vuông; nếu dùng PNG, nên xuất tối thiểu 64×64px để nét trên màn hình mật độ cao. Trình duyệt thường hiển thị favicon ở 16–32px.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFaviconOpen(false)}
+              style={{ border: 0, textAlign: 'center', fontSize: '14px', fontWeight: 700, padding: '13px', borderRadius: '12px', cursor: 'pointer', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', boxShadow: '0 14px 28px -12px rgba(168,124,60,.55)' }}
+            >
+              Xong
+            </button>
           </div>
         </div>
       </div>
@@ -779,10 +942,10 @@ export default function AppearancePage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+              <div data-testid="appearance-favicon-card" style={{ textAlign: 'center' }}>
                 <div style={{ width: '46px', height: '46px', borderRadius: '11px', background: '#17151c', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '20px' }}>
-                  <span style={{ background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{brandInitial}</span>
+                  {renderFaviconArtwork(28)}
                 </div>
                 <div style={{ fontSize: '9px', color: '#57534b', marginTop: '5px' }}>Favicon 32px</div>
               </div>
@@ -793,6 +956,18 @@ export default function AppearancePage() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ width: '46px', height: '46px', borderRadius: '11px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '20px', color: '#241a0a' }}>{brandInitial}</div>
                 <div style={{ fontSize: '9px', color: '#57534b', marginTop: '5px' }}>App icon 180px</div>
+              </div>
+              <div style={{ minWidth: '170px', marginLeft: '4px', paddingLeft: '14px', borderLeft: '1px solid rgba(255,255,255,.08)' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#c5c0b6' }}>Favicon trình duyệt</div>
+                <div style={{ fontSize: '9.5px', color: '#716c63', marginTop: '2px' }}>{brand.faviconUrl ? 'Đang dùng file riêng' : 'Đang dùng biểu tượng mặc định'}</div>
+                <button
+                  type="button"
+                  onClick={() => setFaviconOpen(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', border: '1px solid rgba(212,178,106,.35)', borderRadius: '8px', padding: '6px 10px', background: 'rgba(212,178,106,.08)', color: '#e3c27e', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4.5l5 5L8 21H3v-5z"/><path d="M12.5 6.5l5 5"/></svg>
+                  Thay favicon
+                </button>
               </div>
             </div>
           </div>
@@ -805,8 +980,8 @@ export default function AppearancePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>SVG</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Định dạng:</b> SVG (vector) ưu tiên — sắc nét mọi màn hình, nhẹ. Fallback PNG-24 nền trong suốt. Tránh JPG (dính nền trắng).</span></div>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>PX</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Kích thước:</b> PNG xuất @2x ≥ 480×120px (logo ngang ~4:1). Hiển thị thật: cao 28px desktop · 22px mobile — tránh chi tiết quá nhỏ.</span></div>
-              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>ICO</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Favicon:</b> kèm bản vuông 32×32px (.png/.ico) + 180×180px cho iOS.</span></div>
-              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>KB</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Dung lượng:</b> &lt; 200 KB (SVG thường &lt; 20 KB).</span></div>
+              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>FAV</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Favicon:</b> tải riêng bản vuông SVG hoặc PNG; nên kiểm tra ở 16px và 32px trước khi áp dụng.</span></div>
+              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>MB</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Dung lượng:</b> &lt; 5 MB (SVG thường &lt; 20 KB).</span></div>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>HEX</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Màu:</b> dùng bản sáng (trắng / vàng #D4B26A) vì nền hệ thống tối #0C0C0F.</span></div>
             </div>
           </div>
@@ -1031,6 +1206,7 @@ export default function AppearancePage() {
 
       {renderIconDrawer()}
       {renderLogoDrawer()}
+      {renderFaviconDrawer()}
 
       {toast && (
         <div style={{ position: 'fixed', bottom: '22px', left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: '#1c1a22', border: '1px solid rgba(212,178,106,.4)', color: '#f0dda8', fontSize: '13px', fontWeight: 600, padding: '12px 20px', borderRadius: '12px', boxShadow: '0 16px 36px -12px rgba(0,0,0,.8)', whiteSpace: 'nowrap' }}>

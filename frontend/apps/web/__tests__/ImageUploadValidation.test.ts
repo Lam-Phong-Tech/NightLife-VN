@@ -8,6 +8,7 @@ import {
   getTourCoverImageValidationError,
   MAX_TOUR_COVER_IMAGE_SIZE_BYTES,
   MAX_STORE_IMAGE_SIZE_BYTES,
+  MAX_APPEARANCE_LOGO_SIZE_BYTES,
 } from '../src/lib/media/image-upload-validation';
 
 const mediaFile = (name: string, type: string, size = 1) =>
@@ -138,5 +139,26 @@ describe('other admin media validation', () => {
         'logo',
       ),
     ).toBeNull();
+    expect(MAX_APPEARANCE_LOGO_SIZE_BYTES).toBe(5 * 1024 * 1024);
+    expect(
+      getAppearanceImageValidationError(
+        mediaFile(
+          'logo.png',
+          'image/png',
+          MAX_APPEARANCE_LOGO_SIZE_BYTES,
+        ),
+        'logo',
+      ),
+    ).toBeNull();
+    expect(
+      getAppearanceImageValidationError(
+        {
+          name: 'logo.png',
+          type: 'image/png',
+          size: MAX_APPEARANCE_LOGO_SIZE_BYTES + 1,
+        } as File,
+        'logo',
+      ),
+    ).toContain('5MB');
   });
 });

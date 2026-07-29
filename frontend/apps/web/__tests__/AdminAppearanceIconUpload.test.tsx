@@ -26,6 +26,9 @@ describe("Appearance icon upload", () => {
 
   afterEach(() => {
     cleanup();
+    document.head
+      .querySelectorAll('link[data-appearance-favicon="true"]')
+      .forEach((link) => link.remove());
   });
 
   it("keeps the default icon color separate from the featured frame", async () => {
@@ -96,5 +99,70 @@ describe("Appearance icon upload", () => {
     });
     expect(savedIcon?.color).toBeUndefined();
     expect(savedIcon?.featured).toBeFalsy();
+  });
+
+  it("uploads, saves, and applies a dedicated favicon", async () => {
+    apiFormDataClientMock.mockResolvedValueOnce({
+      id: "appearance-favicon-1",
+      url: "/storage/appearance/favicon.svg",
+    });
+
+    render(<AppearancePage />);
+
+    await waitFor(() => {
+      expect(apiClientMock).toHaveBeenCalledWith("/system-config/appearance");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Thay favicon/i }));
+
+    const fileInput = screen.getByTestId(
+      "appearance-favicon-file-input",
+    ) as HTMLInputElement;
+    const favicon = new File(
+      ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"></svg>'],
+      "favicon.svg",
+      { type: "image/svg+xml" },
+    );
+    fireEvent.change(fileInput, { target: { files: [favicon] } });
+
+    await waitFor(() => {
+      expect(apiFormDataClientMock).toHaveBeenCalledWith(
+        "/storage/upload",
+        expect.any(FormData),
+      );
+    });
+
+    const uploadForm = apiFormDataClientMock.mock.calls[0]?.[1] as FormData;
+    expect(uploadForm.get("purpose")).toBe("APPEARANCE_ICON");
+    expect(uploadForm.get("access")).toBe("PUBLIC");
+
+    const preview = screen.getByTestId("appearance-favicon-preview-32");
+    expect(preview.querySelector("img")).toHaveAttribute(
+      "src",
+      "/storage/appearance/favicon.svg",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Xong" }));
+    fireEvent.click(await screen.findByText("Lưu & áp dụng"));
+
+    await waitFor(() => {
+      expect(apiClientMock).toHaveBeenCalledWith(
+        "/admin/system-config/appearance",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    });
+
+    const saveCall = apiClientMock.mock.calls.find(
+      ([url]) => url === "/admin/system-config/appearance",
+    );
+    expect(saveCall?.[1]?.data?.value?.brand?.faviconUrl).toBe(
+      "/storage/appearance/favicon.svg",
+    );
+
+    await waitFor(() => {
+      expect(
+        document.head.querySelector<HTMLLinkElement>('link[rel="icon"]')?.getAttribute("href"),
+      ).toBe("/storage/appearance/favicon.svg");
+    });
   });
 });
