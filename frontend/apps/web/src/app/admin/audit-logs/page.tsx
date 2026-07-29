@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronLeft, ChevronRight, X, Eye, Shield, Activity, User, Monitor, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Eye, User, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import { getAuditLogs, AuditLogRec } from '@/lib/api/audit-logs';
-import { getAuthUser } from '@/lib/auth/session';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { TableLoadingRows } from '@/components/ui/DataLoading';
+import { FriendlyAuditChanges, getFriendlyAuditDetail } from './AuditLogFriendlyDetail';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -74,17 +74,35 @@ function CustomDropdown({ value, options, onChange, placeholder = 'Chọn...' }:
   );
 }
 
-interface DiffItem {
-  field: string;
-  label: string;
-  before: string;
-  after: string;
-}
-
 const actionNames: Record<string, string> = {
-  'ranking.config.create': 'Tạo thiết lập xếp hạng',
-  'ranking.config.update': 'Cập nhật thiết lập xếp hạng',
-  'ranking.config.delete': 'Xóa thiết lập xếp hạng',
+  'ranking.config.create': 'Thêm vào bảng xếp hạng',
+  'ranking.config.update': 'Cập nhật xếp hạng',
+  'ranking.config.delete': 'Gỡ khỏi bảng xếp hạng',
+  'store.create': 'Thêm quán',
+  'store.update': 'Cập nhật thông tin quán',
+  'store.partner.link': 'Liên kết tài khoản đối tác',
+  'store.partner.unlink': 'Gỡ tài khoản đối tác',
+  'store.soft_delete': 'Xóa quán',
+  'store.hard_delete': 'Xóa vĩnh viễn quán',
+  'store.restore': 'Khôi phục quán',
+  'cast.create': 'Thêm nhân viên',
+  'cast.update': 'Cập nhật nhân viên',
+  'cast.soft_delete': 'Xóa nhân viên',
+  'cast.hard_delete': 'Xóa vĩnh viễn nhân viên',
+  'coupon.create': 'Tạo mã ưu đãi',
+  'coupon.update': 'Cập nhật mã ưu đãi',
+  'coupon.delete': 'Xóa mã ưu đãi',
+  'content.create': 'Tạo nội dung',
+  'content.update': 'Cập nhật nội dung',
+  'content.delete': 'Xóa nội dung',
+  'appearance.update': 'Cập nhật giao diện',
+  'system_config.update': 'Cập nhật cấu hình hệ thống',
+  'user.create': 'Tạo tài khoản',
+  'user.update': 'Cập nhật tài khoản',
+  'user.password.update': 'Đổi mật khẩu tài khoản',
+  'user.soft_delete': 'Vô hiệu hóa tài khoản',
+  'user.restore': 'Khôi phục tài khoản',
+  'user.hard_delete': 'Xóa vĩnh viễn tài khoản',
   'PROFILE_VIEW_RECORDED': 'Ghi nhận lượt xem hồ sơ',
   'BOOKING_RESCHEDULE_REJECTED': 'Từ chối đổi lịch hẹn',
   'BOOKING_RESCHEDULE_APPROVED': 'Duyệt đổi lịch hẹn',
@@ -118,102 +136,6 @@ const actionNames: Record<string, string> = {
   'tour.delete': 'Xóa tour',
 };
 
-function getJsonDiff(before: any, after: any): DiffItem[] {
-  if (!before && !after) return [];
-  const b = before || {};
-  const a = after || {};
-  const allKeys = Array.from(new Set([...Object.keys(b), ...Object.keys(a)]));
-  const diffs: DiffItem[] = [];
-
-  const fieldLabels: Record<string, string> = {
-    status: 'Trạng thái',
-    totalVnd: 'Tổng tiền',
-    subtotalVnd: 'Tạm tính',
-    paidVnd: 'Thực trả',
-    discountVnd: 'Giảm giá',
-    taxVnd: 'Thuế VAT',
-    serviceChargeVnd: 'Phí dịch vụ',
-    commissionAmountVnd: 'Tiền hoa hồng',
-    pointsEarned: 'Điểm tích lũy',
-    rejectReason: 'Lý do từ chối',
-    rejectedById: 'Người từ chối (ID)',
-    reviewedById: 'Người duyệt (ID)',
-    verifiedById: 'Người xác thực (ID)',
-    reviewedAt: 'Thời gian duyệt',
-    verifiedAt: 'Thời gian xác thực',
-    rejectedAt: 'Thời gian từ chối',
-    startsAt: 'Thời gian bắt đầu',
-    endsAt: 'Thời gian kết thúc',
-    name: 'Tên',
-    displayName: 'Tên hiển thị',
-    email: 'Email',
-    phone: 'Số điện thoại',
-    role: 'Vai trò',
-    tier: 'Hạng thành viên',
-    bookingDate: 'Ngày đặt lịch',
-    bookingTime: 'Giờ đặt lịch',
-    customerName: 'Tên khách hàng',
-    customerPhone: 'SĐT khách hàng',
-    adultsCount: 'Số khách',
-    notes: 'Ghi chú',
-    rating: 'Đánh giá',
-    comment: 'Bình luận',
-    address: 'Địa chỉ',
-    description: 'Mô tả',
-    isActive: 'Trạng thái hoạt động',
-  };
-
-  const statusTranslations: Record<string, string> = {
-    SUBMITTED: 'Chờ duyệt',
-    VERIFIED: 'Đã xác thực',
-    REJECTED: 'Đã từ chối',
-    PENDING_PM_BA: 'Chờ PM/BA duyệt',
-    ACTIVE: 'Hoạt động',
-    INACTIVE: 'Ngừng hoạt động',
-    USED: 'Đã sử dụng',
-    UNUSED: 'Chưa sử dụng',
-    EXPIRED: 'Đã hết hạn',
-    CANCELLED: 'Đã hủy',
-    PENDING: 'Chờ xử lý',
-  };
-
-  const formatValue = (key: string, val: any) => {
-    if (val === null || val === undefined) return 'Trống';
-    if (typeof val === 'boolean') return val ? 'Bật' : 'Tắt';
-    if (key.endsWith('Vnd') && typeof val === 'number') {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-    }
-    if (key === 'status' && typeof val === 'string' && statusTranslations[val]) {
-      return statusTranslations[val];
-    }
-    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
-      return dayjs(val).format('DD/MM/YYYY HH:mm:ss');
-    }
-    if (typeof val === 'object') {
-      return JSON.stringify(val);
-    }
-    return String(val);
-  };
-
-  for (const key of allKeys) {
-    if (['id', 'createdAt', 'updatedAt'].includes(key)) continue;
-
-    const valB = b[key];
-    const valA = a[key];
-
-    if (JSON.stringify(valB) !== JSON.stringify(valA)) {
-      diffs.push({
-        field: key,
-        label: fieldLabels[key] || key,
-        before: formatValue(key, valB),
-        after: formatValue(key, valA),
-      });
-    }
-  }
-
-  return diffs;
-}
-
 export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogRec[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,7 +149,7 @@ export default function AdminAuditLogsPage() {
 
   // Detail Modal
   const [selectedLog, setSelectedLog] = useState<AuditLogRec | null>(null);
-  const [showRawJson, setShowRawJson] = useState(false);
+  const selectedDetail = selectedLog ? getFriendlyAuditDetail(selectedLog) : null;
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -261,6 +183,10 @@ export default function AdminAuditLogsPage() {
     { id: 'Bill', label: 'Bill (Hóa đơn)' },
     { id: 'QR', label: 'QR Ưu đãi' },
     { id: 'User', label: 'Người dùng/Admin' },
+    { id: 'Coupon', label: 'Mã ưu đãi' },
+    { id: 'Content', label: 'Nội dung' },
+    { id: 'Appearance', label: 'Giao diện' },
+    { id: 'SystemConfig', label: 'Cấu hình hệ thống' },
     { id: 'Campaign', label: 'Campaign (Ưu đãi)' },
     { id: 'Category', label: 'Danh mục' },
     { id: 'Tour', label: 'Tour' }
@@ -332,7 +258,7 @@ export default function AdminAuditLogsPage() {
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ fontSize: '13px', color: colors.text, fontWeight: 500 }}>{actionNames[log.action] || log.action}</div>
                     <div style={{ fontSize: '11.5px', color: colors.text2, marginTop: '2px', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {log.changeSummary || `Mã đối tượng: ${log.entityDisplayCode || log.targetId}`}
+                      {getFriendlyAuditDetail(log).summary}
                     </div>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
@@ -347,7 +273,7 @@ export default function AdminAuditLogsPage() {
                     )}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <span onClick={() => { setSelectedLog(log); setShowRawJson(false); }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: colors.muted, cursor: 'pointer' }} title="Xem chi tiết">
+                    <span onClick={() => setSelectedLog(log)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: colors.muted, cursor: 'pointer' }} title="Xem chi tiết">
                       <Eye size={14} />
                     </span>
                   </td>
@@ -381,7 +307,7 @@ export default function AdminAuditLogsPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: colors.gold, textTransform: 'uppercase', letterSpacing: '1px' }}>Chi tiết Audit Log</div>
-                <div style={{ fontSize: '17px', fontWeight: 700, color: colors.text, marginTop: '4px' }}>{actionNames[selectedLog.action] || selectedLog.action}</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: colors.text, marginTop: '4px' }}>{selectedDetail?.title}</div>
               </div>
               <span onClick={() => setSelectedLog(null)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, cursor: 'pointer' }}>
                 <X size={18} />
@@ -415,80 +341,14 @@ export default function AdminAuditLogsPage() {
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: colors.text, marginBottom: '8px' }}>Tóm tắt thao tác</div>
                 <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', padding: '12px 16px', borderRadius: '10px', fontSize: '13px', color: '#e3c27e', lineHeight: 1.5 }}>
-                  {selectedLog.changeSummary || 'Không có mô tả chi tiết'}
+                  {selectedDetail?.summary}
                   <div style={{ marginTop: '6px', fontSize: '11.5px', color: colors.muted }}>
-                    Đối tượng: <b style={{ color: colors.text2 }}>{selectedLog.targetType}</b> {selectedLog.entityDisplayCode ? `(${selectedLog.entityDisplayCode})` : `(${selectedLog.targetId})`}
+                    Đối tượng: <b style={{ color: colors.text2 }}>{selectedDetail?.targetDescription}</b>
                   </div>
                 </div>
               </div>
 
-              {(selectedLog.beforeJson || selectedLog.afterJson) && (() => {
-                const diffs = getJsonDiff(selectedLog.beforeJson, selectedLog.afterJson);
-                return (
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: colors.text }}>Dữ liệu thay đổi</div>
-                      <button 
-                        onClick={() => setShowRawJson(!showRawJson)} 
-                        style={{ background: 'rgba(212,178,106,.1)', border: '1px solid rgba(212,178,106,.2)', color: colors.gold, fontSize: '11.5px', cursor: 'pointer', padding: '5px 10px', borderRadius: '6px', transition: 'all 0.2s' }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,178,106,.18)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(212,178,106,.1)'}
-                      >
-                        {showRawJson ? 'Hiển thị so sánh thân thiện' : 'Xem JSON gốc'}
-                      </button>
-                    </div>
-
-                    {showRawJson ? (
-                      <div>
-                        {selectedLog.beforeJson && (
-                          <div style={{ marginBottom: '16px' }}>
-                            <div style={{ fontSize: '11px', color: colors.red, fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase' }}>Trước khi đổi (Before)</div>
-                            <pre style={{ background: '#1e1d24', padding: '14px', borderRadius: '10px', fontSize: '12px', color: '#d4d4d4', overflowX: 'auto', border: '1px solid rgba(255,255,255,.05)' }}>
-                              {JSON.stringify(selectedLog.beforeJson, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                        {selectedLog.afterJson && (
-                          <div>
-                            <div style={{ fontSize: '11px', color: colors.green, fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase' }}>Sau khi đổi (After)</div>
-                            <pre style={{ background: '#1e1d24', padding: '14px', borderRadius: '10px', fontSize: '12px', color: '#d4d4d4', overflowX: 'auto', border: '1px solid rgba(255,255,255,.05)' }}>
-                              {JSON.stringify(selectedLog.afterJson, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ background: 'rgba(255,255,255,.01)', border: '1px solid rgba(255,255,255,.04)', borderRadius: '12px', overflow: 'hidden' }}>
-                        {diffs.length === 0 ? (
-                          <div style={{ padding: '16px', textAlign: 'center', color: colors.muted, fontSize: '12.5px' }}>Không phát hiện thay đổi cụ thể ở các trường dữ liệu.</div>
-                        ) : (
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
-                            <thead>
-                              <tr style={{ background: 'rgba(255,255,255,.02)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-                                <th style={{ padding: '10px 12px', fontWeight: 600, color: colors.muted, width: '35%' }}>Trường thông tin</th>
-                                <th style={{ padding: '10px 12px', fontWeight: 600, color: colors.red }}>Trước khi đổi</th>
-                                <th style={{ padding: '10px 12px', fontWeight: 600, color: colors.green }}>Sau khi đổi</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {diffs.map((d, index) => (
-                                <tr key={index} style={{ borderBottom: index < diffs.length - 1 ? '1px solid rgba(255,255,255,.03)' : 'none' }}>
-                                  <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 500 }}>
-                                    <div style={{ fontWeight: 600 }}>{d.label}</div>
-                                    <div style={{ fontSize: '10.5px', color: colors.muted, marginTop: '2px' }}>{d.field}</div>
-                                  </td>
-                                  <td style={{ padding: '10px 12px', color: colors.text2, wordBreak: 'break-all' }}>{d.before}</td>
-                                  <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 500, wordBreak: 'break-all' }}>{d.after}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              <FriendlyAuditChanges key={selectedLog.id} log={selectedLog} />
             </div>
 
             <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.01)' }}>

@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -15,6 +16,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedUser } from '../access/access.service';
+
+type RequestWithUser = {
+  user: AuthenticatedUser;
+};
 
 @ApiTags('admin-users')
 @Controller('admin/users')
@@ -77,6 +83,7 @@ export class AdminUsersController {
   @ApiOperation({ summary: 'Tạo tài khoản mới' })
   @Post()
   createUser(
+    @Req() request: RequestWithUser,
     @Body()
     dto: {
       email: string;
@@ -86,46 +93,54 @@ export class AdminUsersController {
       storeId?: string;
     },
   ) {
-    return this.usersService.createUser({
-      email: dto.email,
-      password: dto.password || '12345678aA@',
-      displayName: dto.displayName,
-      role: dto.role,
-      storeId: dto.storeId,
-    });
+    return this.usersService.createUser(
+      {
+        email: dto.email,
+        password: dto.password || '12345678aA@',
+        displayName: dto.displayName,
+        role: dto.role,
+        storeId: dto.storeId,
+      },
+      request.user,
+    );
   }
 
   @ApiOperation({ summary: 'Cập nhật tài khoản' })
   @Patch(':id')
   updateUser(
+    @Req() request: RequestWithUser,
     @Param('id') id: string,
     @Body()
     dto: { displayName: string; email: string; storeId?: string | null },
   ) {
-    return this.usersService.updateProfile(id, dto);
+    return this.usersService.updateProfile(id, dto, request.user);
   }
 
   @ApiOperation({ summary: 'Đổi mật khẩu' })
   @Patch(':id/password')
-  updatePassword(@Param('id') id: string, @Body() dto: { password: string }) {
-    return this.usersService.updatePassword(id, dto.password);
+  updatePassword(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: { password: string },
+  ) {
+    return this.usersService.updatePassword(id, dto.password, request.user);
   }
 
   @ApiOperation({ summary: 'Vô hiệu hóa tài khoản' })
   @Delete(':id')
-  disableUser(@Param('id') id: string) {
-    return this.usersService.softDeleteUser(id);
+  disableUser(@Req() request: RequestWithUser, @Param('id') id: string) {
+    return this.usersService.softDeleteUser(id, request.user);
   }
 
   @ApiOperation({ summary: 'Khôi phục tài khoản' })
   @Post(':id/restore')
-  restoreUser(@Param('id') id: string) {
-    return this.usersService.restoreUser(id);
+  restoreUser(@Req() request: RequestWithUser, @Param('id') id: string) {
+    return this.usersService.restoreUser(id, request.user);
   }
 
   @ApiOperation({ summary: 'Xóa vĩnh viễn tài khoản' })
   @Delete(':id/hard')
-  hardDeleteUser(@Param('id') id: string) {
-    return this.usersService.hardDeleteUser(id);
+  hardDeleteUser(@Req() request: RequestWithUser, @Param('id') id: string) {
+    return this.usersService.hardDeleteUser(id, request.user);
   }
 }

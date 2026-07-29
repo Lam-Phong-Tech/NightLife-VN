@@ -10,6 +10,8 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../common/password.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { AuthenticatedUser } from '../access/access.service';
+import { buildAdminAuditLog } from '../audit-logs/admin-audit';
 
 type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
 
@@ -17,6 +19,22 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 const normalizeDisplayName = (value?: string | null) =>
   value?.trim().replace(/\s+/g, ' ') || undefined;
+
+const userAuditSnapshot = (user: {
+  email: string;
+  displayName?: string | null;
+  phone?: string | null;
+  role: string;
+  tier: UserTier;
+  status: string;
+}) => ({
+  email: user.email,
+  displayName: user.displayName ?? null,
+  phone: user.phone ?? null,
+  role: user.role,
+  tier: user.tier,
+  status: user.status,
+});
 
 @Injectable()
 export class UsersService {
@@ -53,6 +71,7 @@ export class UsersService {
       phone?: string | null;
       storeId?: string | null;
     },
+    auditActor?: AuthenticatedUser,
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
@@ -191,16 +210,58 @@ export class UsersService {
         }
       }
 
+      if (auditActor) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.update',
+            targetType: 'User',
+            targetId: updatedUser.id,
+            entityDisplayCode: updatedUser.email,
+            before: userAuditSnapshot(currentUser),
+            after: userAuditSnapshot(updatedUser),
+            changeSummary: `Đã cập nhật tài khoản "${updatedUser.email}"`,
+          }),
+        });
+      }
+
       return updatedUser;
     });
   }
 
-  async updatePassword(id: string, password: string) {
-    return this.prisma.user.update({
-      where: { id },
-      data: {
-        passwordHash: await this.passwordService.hash(password),
-      },
+  async updatePassword(
+    id: string,
+    password: string,
+    auditActor?: AuthenticatedUser,
+  ) {
+    const target = auditActor ? await this.findByIdOrThrow(id) : null;
+    const passwordHash = await this.passwordService.hash(password);
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id },
+        data: { passwordHash },
+      });
+
+      if (auditActor && target) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.password.update',
+            targetType: 'User',
+            targetId: user.id,
+            entityDisplayCode: user.email,
+            before: { password: 'Đã ẩn' },
+            after: { password: 'Đã thay đổi' },
+            changedFields: ['password'],
+            changeSummary: `Đã đổi mật khẩu tài khoản "${target.email}"`,
+          }),
+        });
+      }
+
+      return user;
     });
   }
 
@@ -218,15 +279,18 @@ export class UsersService {
     return this.updatePassword(userId, dto.newPassword);
   }
 
-  async createUser(input: {
-    email: string;
-    password: string;
-    displayName?: string;
-    phone?: string;
-    role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
-    tier?: UserTierInput;
-    storeId?: string;
-  }) {
+  async createUser(
+    input: {
+      email: string;
+      password: string;
+      displayName?: string;
+      phone?: string;
+      role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
+      tier?: UserTierInput;
+      storeId?: string;
+    },
+    auditActor?: AuthenticatedUser,
+  ) {
     const email = input.email.trim().toLowerCase();
     if (!EMAIL_REGEX.test(email)) {
       throw new BadRequestException('Email không đúng định dạng');
@@ -287,6 +351,21 @@ export class UsersService {
             },
           });
         }
+      }
+
+      if (auditActor) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.create',
+            targetType: 'User',
+            targetId: user.id,
+            entityDisplayCode: user.email,
+            after: userAuditSnapshot(user),
+            changeSummary: `Đã tạo tài khoản "${user.email}"`,
+          }),
+        });
       }
 
       return user;
@@ -436,25 +515,83 @@ export class UsersService {
     });
   }
 
-  async softDeleteUser(targetUserId: string) {
-    await this.findByIdOrThrow(targetUserId);
-    return this.prisma.user.update({
-      where: { id: targetUserId },
-      data: { deletedAt: new Date(), status: 'DELETED' },
+  async softDeleteUser(targetUserId: string, auditActor?: AuthenticatedUser) {
+    const existing = await this.findByIdOrThrow(targetUserId);
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { deletedAt: new Date(), status: 'DELETED' },
+      });
+
+      if (auditActor) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.soft_delete',
+            targetType: 'User',
+            targetId: user.id,
+            entityDisplayCode: user.email,
+            before: userAuditSnapshot(existing),
+            after: userAuditSnapshot(user),
+            changeSummary: `Đã vô hiệu hóa tài khoản "${user.email}"`,
+          }),
+        });
+      }
+
+      return user;
     });
   }
 
-  async restoreUser(targetUserId: string) {
-    await this.findByIdOrThrow(targetUserId);
-    return this.prisma.user.update({
-      where: { id: targetUserId },
-      data: { deletedAt: null, status: 'ACTIVE' },
+  async restoreUser(targetUserId: string, auditActor?: AuthenticatedUser) {
+    const existing = await this.findByIdOrThrow(targetUserId);
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { deletedAt: null, status: 'ACTIVE' },
+      });
+
+      if (auditActor) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.restore',
+            targetType: 'User',
+            targetId: user.id,
+            entityDisplayCode: user.email,
+            before: userAuditSnapshot(existing),
+            after: userAuditSnapshot(user),
+            changeSummary: `Đã khôi phục tài khoản "${user.email}"`,
+          }),
+        });
+      }
+
+      return user;
     });
   }
 
-  async hardDeleteUser(targetUserId: string) {
-    return this.prisma.user.delete({
-      where: { id: targetUserId },
+  async hardDeleteUser(targetUserId: string, auditActor?: AuthenticatedUser) {
+    const existing = await this.findByIdOrThrow(targetUserId);
+    return this.prisma.$transaction(async (tx) => {
+      if (auditActor) {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: auditActor,
+            module: 'User',
+            action: 'user.hard_delete',
+            targetType: 'User',
+            targetId: existing.id,
+            entityDisplayCode: existing.email,
+            before: userAuditSnapshot(existing),
+            changeSummary: `Đã xóa vĩnh viễn tài khoản "${existing.email}"`,
+          }),
+        });
+      }
+
+      return tx.user.delete({
+        where: { id: targetUserId },
+      });
     });
   }
 

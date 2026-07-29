@@ -6,8 +6,12 @@ describe('AuditLogsService', () => {
   const findMany = jest.fn();
   const count = jest.fn();
   const findFirst = jest.fn();
+  const findManyStores = jest.fn();
+  const findManyCasts = jest.fn();
   const prisma = {
     auditLog: { findMany, count, findFirst },
+    store: { findMany: findManyStores },
+    cast: { findMany: findManyCasts },
   };
   let service: AuditLogsService;
 
@@ -36,11 +40,44 @@ describe('AuditLogsService', () => {
       OR: [
         { actorType: { equals: 'ADMIN', mode: 'insensitive' } },
         { actorRole: { in: adminRoles } },
-        { actor: { is: { role: { in: adminRoles } } } },
+        expect.objectContaining({
+          AND: expect.arrayContaining([
+            { actorType: null },
+            { actorRole: null },
+            expect.objectContaining({ action: expect.any(Object) }),
+          ]),
+        }),
+        {
+          AND: [
+            { action: 'BOOKING_CANCELLED' },
+            {
+              metadata: {
+                path: ['actorType'],
+                equals: 'ADMIN',
+              },
+            },
+          ],
+        },
       ],
     };
     const where = {
-      AND: [scope, { module: 'Store', result: 'SUCCESS' }],
+      AND: [
+        scope,
+        {
+          OR: [
+            { module: { equals: 'Store', mode: 'insensitive' } },
+            {
+              AND: [
+                { module: null },
+                {
+                  targetType: { equals: 'Store', mode: 'insensitive' },
+                },
+              ],
+            },
+          ],
+          result: 'SUCCESS',
+        },
+      ],
     };
 
     expect(findMany).toHaveBeenCalledWith(
@@ -85,6 +122,51 @@ describe('AuditLogsService', () => {
       expect.objectContaining({
         actorName: 'Quản trị viên',
         actorRole: UserRole.ADMIN,
+      }),
+    );
+  });
+
+  it('adds friendly target names to existing ranking snapshots', async () => {
+    findMany.mockResolvedValue([
+      {
+        id: 'ranking-log-id',
+        action: 'ranking.config.update',
+        actorName: 'admin@example.com',
+        actorRole: UserRole.ADMIN,
+        actor: null,
+        beforeJson: {
+          targetType: 'STORE',
+          targetId: 'store-id',
+          pinRank: 4,
+        },
+        afterJson: {
+          targetType: 'STORE',
+          targetId: 'store-id',
+          pinRank: 2,
+        },
+      },
+    ]);
+    count.mockResolvedValue(1);
+    findManyStores.mockResolvedValue([
+      { id: 'store-id', name: 'Lighthouse Club' },
+    ]);
+
+    const result = await service.getAuditLogs({ page: 1, limit: 20 });
+
+    expect(findManyStores).toHaveBeenCalledWith({
+      where: { id: { in: ['store-id'] } },
+      select: { id: true, name: true },
+    });
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        beforeJson: expect.objectContaining({
+          targetName: 'Lighthouse Club',
+          pinRank: 4,
+        }),
+        afterJson: expect.objectContaining({
+          targetName: 'Lighthouse Club',
+          pinRank: 2,
+        }),
       }),
     );
   });

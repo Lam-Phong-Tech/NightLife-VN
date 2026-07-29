@@ -12,6 +12,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NightlifeDataService } from './nightlife-data.service';
 
 describe('NightlifeDataService', () => {
+  const adminActor = {
+    id: 'admin-1',
+    email: 'admin@example.com',
+    role: 'ADMIN',
+  };
   const prisma = {
     $transaction: jest.fn(),
     user: {
@@ -726,7 +731,7 @@ describe('NightlifeDataService', () => {
       areaId: 'area-ninhbinh-general',
     });
 
-    const result = await service.createAdminStore({
+    const result = await service.createAdminStore(adminActor, {
       name: 'Meo Meo',
       category: 'CLUB',
       city: 'Tinh Ninh Binh',
@@ -1616,9 +1621,7 @@ describe('NightlifeDataService', () => {
         },
       ),
     ).rejects.toThrow(
-      new BadRequestException(
-        'Ranking group supports at most 5 active items.',
-      ),
+      new BadRequestException('Ranking group supports at most 5 active items.'),
     );
 
     expect(prisma.rankingConfig.count).toHaveBeenCalledWith({
@@ -4625,7 +4628,9 @@ describe('NightlifeDataService', () => {
     );
     expect(prisma.content.upsert).not.toHaveBeenCalled();
     expect(prisma.partnerRequest.create).not.toHaveBeenCalled();
-    expect(adminNotificationService.notifyPartnerRequest).not.toHaveBeenCalled();
+    expect(
+      adminNotificationService.notifyPartnerRequest,
+    ).not.toHaveBeenCalled();
     expect(prisma.media.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: [draftMediaId] } },
@@ -5024,7 +5029,7 @@ describe('NightlifeDataService', () => {
     prisma.media.findMany.mockResolvedValueOnce([{ id: storeMediaId }]);
     prisma.store.update.mockResolvedValueOnce({ id: storeId });
 
-    await service.updateAdminStore(storeId, {
+    await service.updateAdminStore(adminActor, storeId, {
       mediaIds: [storeMediaId, castMediaId],
     });
 
@@ -5095,7 +5100,7 @@ describe('NightlifeDataService', () => {
       { id: albumMediaId, type: 'IMAGE' },
     ]);
 
-    await service.updateAdminCast(castId, {
+    await service.updateAdminCast(adminActor, castId, {
       mediaIds: [avatarMediaId, albumMediaId],
     });
 
@@ -5155,7 +5160,7 @@ describe('NightlifeDataService', () => {
       { id: validMediaId, type: 'IMAGE' },
     ]);
 
-    await service.updateAdminCast(castId, {
+    await service.updateAdminCast(adminActor, castId, {
       mediaIds: ['legacy-preview-id', validMediaId],
     });
 
@@ -5213,7 +5218,7 @@ describe('NightlifeDataService', () => {
       .mockResolvedValueOnce({ id: sourceCastId })
       .mockResolvedValueOnce({ id: draftCastId });
 
-    await service.updateAdminCast(draftCastId, {
+    await service.updateAdminCast(adminActor, draftCastId, {
       status: 'ACTIVE',
       mediaIds: ['legacy-preview-id', validMediaId],
     });

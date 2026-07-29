@@ -45,6 +45,10 @@ import { EmailNotificationService } from '../notifications/email-notification.se
 import { SocketGateway } from '../notifications/socket.gateway';
 import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  adminAuditActorFields,
+  buildAdminAuditLog,
+} from '../audit-logs/admin-audit';
 import { buildAdminDashboardReport } from './admin-dashboard-report';
 import {
   AdminRankingQueryDto,
@@ -484,6 +488,78 @@ type MutableRevenueReportDayNode = RevenueReportMoneyTotals & {
 };
 
 type NightlifePrismaClient = PrismaService | Prisma.TransactionClient;
+
+const pickAdminAuditSnapshot = (
+  value: object,
+  fields: readonly string[],
+): Record<string, unknown> => {
+  const record = value as Record<string, unknown>;
+  return Object.fromEntries(
+    fields
+      .filter((field) => record[field] !== undefined)
+      .map((field) => [field, record[field]]),
+  );
+};
+
+const STORE_AUDIT_FIELDS = [
+  'name',
+  'slug',
+  'category',
+  'city',
+  'address',
+  'mapUrl',
+  'phone',
+  'description',
+  'tags',
+  'openingHours',
+  'pricingInfo',
+  'status',
+  'areaId',
+  'partnerAccountId',
+] as const;
+
+const CAST_AUDIT_FIELDS = [
+  'stageName',
+  'slug',
+  'storeId',
+  'bio',
+  'birthMonth',
+  'zodiacSign',
+  'heightCm',
+  'measurements',
+  'languages',
+  'hobbies',
+  'tags',
+  'youtubeLinks',
+  'isPublic',
+  'status',
+] as const;
+
+const CONTENT_AUDIT_FIELDS = [
+  'title',
+  'slug',
+  'type',
+  'status',
+  'storeId',
+  'excerpt',
+  'body',
+  'metadata',
+  'publishedAt',
+] as const;
+
+const ADMIN_COUPON_AUDIT_FIELDS = [
+  'code',
+  'name',
+  'discountType',
+  'discountValue',
+  'targetStores',
+  'targetAudiences',
+  'startsAt',
+  'endsAt',
+  'usageLimit',
+  'usedCount',
+  'status',
+] as const;
 
 type PartnerRequestCmsRecord = {
   id: string;
@@ -1015,12 +1091,13 @@ export class NightlifeDataService {
       castId: null,
       status: 'READY',
       AND: [
-        ...(Array.isArray(extra.AND) ? extra.AND : extra.AND ? [extra.AND] : []),
+        ...(Array.isArray(extra.AND)
+          ? extra.AND
+          : extra.AND
+            ? [extra.AND]
+            : []),
         {
-          OR: [
-            { purpose: null },
-            { purpose: { notIn: CAST_MEDIA_PURPOSES } },
-          ],
+          OR: [{ purpose: null }, { purpose: { notIn: CAST_MEDIA_PURPOSES } }],
         },
       ],
     };
@@ -1180,36 +1257,48 @@ export class NightlifeDataService {
 
     await this.assertContentSlugAvailable(slug);
 
-    const content = await this.prisma.content.create({
-      data: {
-        authorId: user.id,
-        storeId: dto.storeId ?? null,
-        title,
-        slug,
-        type,
-        status,
-        excerpt: this.cleanNullableText(dto.excerpt),
-        body: this.cleanNullableText(dto.body),
-        metadata: this.toPrismaJson(dto.metadata),
-        publishedAt,
-      },
-      select: this.contentSelect(),
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const content = await tx.content.create({
+        data: {
+          authorId: user.id,
+          storeId: dto.storeId ?? null,
+          title,
+          slug,
+          type,
+          status,
+          excerpt: this.cleanNullableText(dto.excerpt),
+          body: this.cleanNullableText(dto.body),
+          metadata: this.toPrismaJson(dto.metadata),
+          publishedAt,
+        },
+        select: this.contentSelect(),
+      });
 
-    return this.mapContent(content);
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Content',
+          action: 'content.create',
+          targetType: 'Content',
+          targetId: content.id,
+          entityDisplayCode: content.title,
+          after: pickAdminAuditSnapshot(content, CONTENT_AUDIT_FIELDS),
+          changeSummary: `Đã tạo nội dung "${content.title}"`,
+        }),
+      });
+
+      return this.mapContent(content);
+    });
   }
 
-  async updateAdminContent(contentId: string, dto: UpdateAdminContentDto) {
+  async updateAdminContent(
+    user: AuthenticatedUser,
+    contentId: string,
+    dto: UpdateAdminContentDto,
+  ) {
     const existing = await this.prisma.content.findFirst({
       where: { id: contentId, deletedAt: null },
-      select: {
-        id: true,
-        slug: true,
-        type: true,
-        status: true,
-        publishedAt: true,
-        metadata: true,
-      },
+      select: this.contentSelect(),
     });
 
     if (!existing) {
@@ -1237,7 +1326,8 @@ export class NightlifeDataService {
       dto.type !== undefined
         ? this.resolveContentType(dto.type, { strict: true })
         : existing.type;
-    const targetStatus = nextStatus !== undefined ? nextStatus : existing.status;
+    const targetStatus =
+      nextStatus !== undefined ? nextStatus : existing.status;
     if (nextType === 'BANNER' && targetStatus === 'PUBLISHED') {
       const targetPosition =
         dto.metadata !== undefined
@@ -1267,55 +1357,89 @@ export class NightlifeDataService {
       }
     }
 
-    const content = await this.prisma.content.update({
-      where: { id: contentId },
-      data: {
-        ...(dto.type !== undefined
-          ? { type: this.resolveContentType(dto.type, { strict: true }) }
-          : {}),
-        ...(dto.title !== undefined
-          ? { title: this.cleanRequiredText(dto.title, 'title') }
-          : {}),
-        ...(nextSlug ? { slug: nextSlug } : {}),
-        ...(nextStatus ? { status: nextStatus } : {}),
-        ...(dto.excerpt !== undefined
-          ? { excerpt: this.cleanNullableText(dto.excerpt) }
-          : {}),
-        ...(dto.body !== undefined
-          ? { body: this.cleanNullableText(dto.body) }
-          : {}),
-        ...(dto.metadata !== undefined
-          ? { metadata: this.toPrismaJson(dto.metadata) }
-          : {}),
-        ...(dto.storeId !== undefined ? { storeId: dto.storeId ?? null } : {}),
-        ...(publishedAt !== undefined ? { publishedAt } : {}),
-      },
-      select: this.contentSelect(),
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const content = await tx.content.update({
+        where: { id: contentId },
+        data: {
+          ...(dto.type !== undefined
+            ? { type: this.resolveContentType(dto.type, { strict: true }) }
+            : {}),
+          ...(dto.title !== undefined
+            ? { title: this.cleanRequiredText(dto.title, 'title') }
+            : {}),
+          ...(nextSlug ? { slug: nextSlug } : {}),
+          ...(nextStatus ? { status: nextStatus } : {}),
+          ...(dto.excerpt !== undefined
+            ? { excerpt: this.cleanNullableText(dto.excerpt) }
+            : {}),
+          ...(dto.body !== undefined
+            ? { body: this.cleanNullableText(dto.body) }
+            : {}),
+          ...(dto.metadata !== undefined
+            ? { metadata: this.toPrismaJson(dto.metadata) }
+            : {}),
+          ...(dto.storeId !== undefined
+            ? { storeId: dto.storeId ?? null }
+            : {}),
+          ...(publishedAt !== undefined ? { publishedAt } : {}),
+        },
+        select: this.contentSelect(),
+      });
 
-    return this.mapContent(content);
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Content',
+          action: 'content.update',
+          targetType: 'Content',
+          targetId: content.id,
+          entityDisplayCode: content.title,
+          before: pickAdminAuditSnapshot(existing, CONTENT_AUDIT_FIELDS),
+          after: pickAdminAuditSnapshot(content, CONTENT_AUDIT_FIELDS),
+          changeSummary: `Đã cập nhật nội dung "${content.title}"`,
+        }),
+      });
+
+      return this.mapContent(content);
+    });
   }
 
-  async deleteAdminContent(contentId: string) {
+  async deleteAdminContent(user: AuthenticatedUser, contentId: string) {
     const existing = await this.prisma.content.findFirst({
       where: { id: contentId, deletedAt: null },
-      select: { id: true },
+      select: this.contentSelect(),
     });
 
     if (!existing) {
       throw new NotFoundException('Content not found');
     }
 
-    const content = await this.prisma.content.update({
-      where: { id: contentId },
-      data: {
-        status: 'DELETED',
-        deletedAt: new Date(),
-      },
-      select: this.contentSelect(),
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const content = await tx.content.update({
+        where: { id: contentId },
+        data: {
+          status: 'DELETED',
+          deletedAt: new Date(),
+        },
+        select: this.contentSelect(),
+      });
 
-    return this.mapContent(content);
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Content',
+          action: 'content.delete',
+          targetType: 'Content',
+          targetId: content.id,
+          entityDisplayCode: content.title,
+          before: pickAdminAuditSnapshot(existing, CONTENT_AUDIT_FIELDS),
+          after: pickAdminAuditSnapshot(content, CONTENT_AUDIT_FIELDS),
+          changeSummary: `Đã xóa nội dung "${content.title}"`,
+        }),
+      });
+
+      return this.mapContent(content);
+    });
   }
 
   async listPublicAreas(query: PublicDiscoveryQueryDto = {}) {
@@ -1432,7 +1556,17 @@ export class NightlifeDataService {
       cityCode === 'hn'
         ? ['hn', '01', 'hanoi', 'ha-noi', 'ha noi', 'Hà Nội', 'Hanoi']
         : cityCode === 'hcm'
-          ? ['hcm', '79', 'tphcm', 'tp-hcm', 'tp hcm', 'ho-chi-minh', 'saigon', 'Hồ Chí Minh', 'Ho Chi Minh']
+          ? [
+              'hcm',
+              '79',
+              'tphcm',
+              'tp-hcm',
+              'tp hcm',
+              'ho-chi-minh',
+              'saigon',
+              'Hồ Chí Minh',
+              'Ho Chi Minh',
+            ]
           : cityCode === 'all'
             ? ['all']
             : cityCode
@@ -1708,10 +1842,7 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: user.id,
-          actorType: 'ADMIN',
-          actorName: user.email ?? 'Unknown',
-          actorRole: 'ADMIN',
+          ...adminAuditActorFields(user),
           module: 'Ranking',
           changeSummary: `Created ranking config for ${targetType}`,
           result: 'SUCCESS',
@@ -1861,10 +1992,7 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: user.id,
-          actorType: 'ADMIN',
-          actorName: user.email ?? 'Unknown',
-          actorRole: 'ADMIN',
+          ...adminAuditActorFields(user),
           module: 'Ranking',
           changeSummary: `Updated ranking config for ${current.targetType}`,
           result: 'SUCCESS',
@@ -1944,10 +2072,7 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: user.id,
-          actorType: 'ADMIN',
-          actorName: user.email ?? 'Unknown',
-          actorRole: 'ADMIN',
+          ...adminAuditActorFields(user),
           module: 'Ranking',
           changeSummary: `Deleted ranking config for ${current.targetType}`,
           result: 'SUCCESS',
@@ -3367,7 +3492,8 @@ export class NightlifeDataService {
         : this.partnerListingDraftPayloadFromContent(draft, store);
     const livePayload = this.normalizePartnerListingDraft({}, store);
     const liveCastProfiles = livePayload.castProfiles.filter(
-      (profile) => profile.status !== 'DRAFT' && profile.status !== 'PENDING_REVIEW',
+      (profile) =>
+        profile.status !== 'DRAFT' && profile.status !== 'PENDING_REVIEW',
     );
     const castProfiles = this.changedPartnerListingCastProfiles(
       payload.castProfiles,
@@ -3375,7 +3501,9 @@ export class NightlifeDataService {
     );
 
     if (!castProfiles.length) {
-      throw new BadRequestException('Không có thay đổi cast mới cần gửi duyệt.');
+      throw new BadRequestException(
+        'Không có thay đổi cast mới cần gửi duyệt.',
+      );
     }
 
     const submittedAt = new Date();
@@ -4578,6 +4706,7 @@ export class NightlifeDataService {
 
       await this.createBookingChangeAudit({
         actorId: user.id,
+        actor: user,
         action: 'BOOKING_RESCHEDULE_REJECTED',
         before: changeRequest,
         after: rejected,
@@ -4626,6 +4755,7 @@ export class NightlifeDataService {
 
     await this.createBookingChangeAudit({
       actorId: user.id,
+      actor: user,
       action: 'BOOKING_RESCHEDULE_APPROVED',
       before: changeRequest,
       after: approved,
@@ -4692,39 +4822,39 @@ export class NightlifeDataService {
       'booking.policy.update',
     );
 
-    const updated = await this.prisma.store.update({
-      where: { id: store.id },
-      data: { bookingCancelCutoffMinutes: cutoff },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        bookingCancelCutoffMinutes: true,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.store.update({
+        where: { id: store.id },
+        data: { bookingCancelCutoffMinutes: cutoff },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          bookingCancelCutoffMinutes: true,
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: user.id,
-        action: 'BOOKING_POLICY_UPDATED',
-        targetType: 'Store',
-        targetId: store.id,
-        beforeJson: {
-          id: store.id,
-          bookingCancelCutoffMinutes: store.bookingCancelCutoffMinutes,
-        },
-        afterJson: {
-          id: updated.id,
-          bookingCancelCutoffMinutes: updated.bookingCancelCutoffMinutes,
-        },
-        metadata: {
-          actorType: this.bookingActorTypeFor(user),
-          cutoffMinutes: cutoff,
-        },
-      },
-    });
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Store',
+          action: 'BOOKING_POLICY_UPDATED',
+          targetType: 'Store',
+          targetId: store.id,
+          entityDisplayCode: store.name,
+          before: {
+            bookingCancelCutoffMinutes: store.bookingCancelCutoffMinutes,
+          },
+          after: {
+            bookingCancelCutoffMinutes: updated.bookingCancelCutoffMinutes,
+          },
+          changeSummary: `Đã cập nhật chính sách đặt lịch của quán "${store.name}"`,
+          metadata: { cutoffMinutes: cutoff },
+        }),
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async listMemberBookingMessages(user: AuthenticatedUser, bookingId: string) {
@@ -4940,6 +5070,7 @@ export class NightlifeDataService {
       booking,
       actorId: user.id,
       actorType: this.bookingActorTypeFor(user),
+      actor: user,
       reason: dto.reason,
       enforceCutoff: false,
     });
@@ -4949,6 +5080,7 @@ export class NightlifeDataService {
     booking: BookingCancelTarget;
     actorId?: string | null;
     actorType: BookingStatusActorType;
+    actor?: AuthenticatedUser;
     reason?: string | null;
     enforceCutoff?: boolean;
   }) {
@@ -4969,6 +5101,7 @@ export class NightlifeDataService {
       nextStatus: 'CANCELLED',
       actorId: input.actorId,
       actorType: input.actorType,
+      actor: input.actor,
       action: 'BOOKING_CANCELLED',
       reason,
       now,
@@ -4987,6 +5120,7 @@ export class NightlifeDataService {
     tourBookingId: string;
     actorId?: string | null;
     actorType: BookingStatusActorType;
+    actor?: AuthenticatedUser;
     reason?: string | null;
   }) {
     const now = new Date();
@@ -5038,9 +5172,13 @@ export class NightlifeDataService {
       });
       await prisma.auditLog.create({
         data: {
-          actorId: input.actorId ?? undefined,
-          actorRole: input.actorType,
-          module: 'TOUR_BOOKING',
+          ...(input.actor
+            ? adminAuditActorFields(input.actor)
+            : {
+                actorId: input.actorId ?? undefined,
+                actorRole: input.actorType,
+              }),
+          module: 'Booking',
           action: 'TOUR_BOOKING_CANCELLED',
           targetType: 'TourBooking',
           targetId: input.tourBookingId,
@@ -7063,6 +7201,7 @@ export class NightlifeDataService {
         coupon: { storeId: updated.coupon.store?.id ?? null },
       },
       actorId: user.id,
+      actor: user,
       beforeJson: {
         id: issue.id,
         status: issue.status,
@@ -7146,6 +7285,7 @@ export class NightlifeDataService {
         coupon: { storeId: updated.coupon.store?.id ?? null },
       },
       actorId: user.id,
+      actor: user,
       beforeJson: {
         id: issue.id,
         status: issue.status,
@@ -7805,18 +7945,18 @@ export class NightlifeDataService {
     );
 
     return records.map((request) =>
-      this.mapPartnerRequestRecord(
-        request,
-        listingPayloads.get(request.id),
-      ),
+      this.mapPartnerRequestRecord(request, listingPayloads.get(request.id)),
     );
   }
 
   async reviewPartnerRequest(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     requestId: string,
     dto: ReviewPartnerRequestDto,
   ) {
+    const user: AuthenticatedUser =
+      typeof admin === 'string' ? { id: admin, role: 'ADMIN' } : admin;
+    const adminId = user.id;
     const reason = this.cleanRequiredText(dto.reason, 'reason');
     const lookup = this.cleanRequiredText(requestId, 'requestId');
     const now = new Date();
@@ -8033,10 +8173,18 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: adminId,
+          ...adminAuditActorFields(user),
+          module: 'Store',
           action: reviewAction,
           targetType: 'PARTNER_REQUEST',
           targetId: request.id,
+          entityDisplayCode: request.store.name,
+          changedFields: ['status', 'reviewReason', 'publicState'],
+          changeSummary: dto.approve
+            ? `Đã duyệt yêu cầu đối tác cho quán "${request.store.name}"`
+            : `Đã từ chối yêu cầu đối tác cho quán "${request.store.name}"`,
+          reason,
+          result: 'SUCCESS',
           metadata: this.toPrismaJson(
             this.buildMinimalSensitiveMetadata({
               actorId: adminId,
@@ -8136,12 +8284,15 @@ export class NightlifeDataService {
     });
 
     if (reviewed.partnerUserId) {
-      this.socketGateway?.notifyMemberNotificationCreated(reviewed.partnerUserId, {
-        id: reviewed.id,
-        templateKey: 'partner.listing.reviewed.v1',
-        category: 'system',
-        createdAt: now.toISOString(),
-      });
+      this.socketGateway?.notifyMemberNotificationCreated(
+        reviewed.partnerUserId,
+        {
+          id: reviewed.id,
+          templateKey: 'partner.listing.reviewed.v1',
+          category: 'system',
+          createdAt: now.toISOString(),
+        },
+      );
     }
 
     return this.mapPartnerRequestRecord(reviewed);
@@ -8758,11 +8909,19 @@ export class NightlifeDataService {
     };
   }
 
+  private adminAuditActor(admin: string | AuthenticatedUser) {
+    return typeof admin === 'string'
+      ? ({ id: admin, role: 'ADMIN' } satisfies AuthenticatedUser)
+      : admin;
+  }
+
   async reviewSensitiveBill(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     billId: string,
     dto: ReviewBillDto,
   ) {
+    const actor = this.adminAuditActor(admin);
+    const adminId = actor.id;
     const bill = await this.findSensitiveBillForReview(billId);
 
     if (bill.status === 'VERIFIED') {
@@ -8944,10 +9103,22 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: adminId,
+          ...adminAuditActorFields(actor),
+          module: 'Bill',
           action: reviewAction,
           targetType: 'Bill',
           targetId: billId,
+          entityDisplayCode: bill.billNumber ?? billId,
+          changedFields: [
+            'status',
+            'reviewedAt',
+            ...(dto.approve ? ['verifiedAt'] : ['rejectReason']),
+          ],
+          changeSummary: dto.approve
+            ? `Đã duyệt hóa đơn "${bill.billNumber ?? billId}"`
+            : `Đã từ chối hóa đơn "${bill.billNumber ?? billId}"`,
+          reason: dto.rejectReason ?? pmBaReason ?? null,
+          result: 'SUCCESS',
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
           afterJson: this.buildBillReviewAuditSnapshot(reviewedBill),
           metadata: this.toPrismaJson(
@@ -9058,18 +9229,18 @@ export class NightlifeDataService {
   }
 
   async reverseSensitiveBill(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     billId: string,
     dto: ReverseBillDto = {},
   ) {
-    return this.applySensitiveBillReversal(adminId, billId, dto, {
+    return this.applySensitiveBillReversal(admin, billId, dto, {
       action: 'bill.reversal',
       defaultReason: 'Bill reversed by admin reconciliation',
     });
   }
 
   async autoReverseSensitiveBills(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     dto: AutoReverseBillsDto = {},
   ) {
     const limit = Math.min(Math.max(dto.limit ?? 10, 1), 25);
@@ -9161,7 +9332,7 @@ export class NightlifeDataService {
     if (execute) {
       for (const candidate of candidates) {
         await this.applySensitiveBillReversal(
-          adminId,
+          admin,
           candidate.billId,
           {
             reason,
@@ -9187,10 +9358,11 @@ export class NightlifeDataService {
   }
 
   async autoBillFraudReversal(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     billId: string,
     dto: AutoBillFraudReversalDto = {},
   ) {
+    const actor = this.adminAuditActor(admin);
     const bill = await this.prisma.bill.findFirst({
       where: { id: billId, deletedAt: null },
       select: {
@@ -9250,7 +9422,7 @@ export class NightlifeDataService {
     }
 
     const reversedBill = await this.applySensitiveBillReversal(
-      adminId,
+      actor,
       billId,
       { reason },
       {
@@ -9261,10 +9433,15 @@ export class NightlifeDataService {
 
     await this.prisma.auditLog.create({
       data: {
-        actorId: adminId,
+        ...adminAuditActorFields(actor),
+        module: 'Bill',
         action: 'bill.fraud.auto_reversal',
         targetType: 'Bill',
         targetId: billId,
+        entityDisplayCode: bill.billNumber ?? billId,
+        changeSummary: `Đã tự động hoàn trả hóa đơn "${bill.billNumber ?? billId}" do nghi vấn gian lận`,
+        reason,
+        result: 'SUCCESS',
         metadata: this.toPrismaJson({
           reason,
           riskLevel,
@@ -9414,15 +9591,19 @@ export class NightlifeDataService {
     };
   }
 
-  async voidSensitiveBill(adminId: string, billId: string, dto: VoidBillDto) {
-    return this.applySensitiveBillReversal(adminId, billId, dto, {
+  async voidSensitiveBill(
+    admin: string | AuthenticatedUser,
+    billId: string,
+    dto: VoidBillDto,
+  ) {
+    return this.applySensitiveBillReversal(admin, billId, dto, {
       action: 'bill.review.void',
       defaultReason: 'Bill voided/refunded by admin',
     });
   }
 
   private async applySensitiveBillReversal(
-    adminId: string,
+    admin: string | AuthenticatedUser,
     billId: string,
     dto: { reason?: string; refundReference?: string } = {},
     options: {
@@ -9430,6 +9611,8 @@ export class NightlifeDataService {
       defaultReason: string;
     },
   ) {
+    const actor = this.adminAuditActor(admin);
+    const adminId = actor.id;
     const bill = await this.prisma.bill.findFirst({
       where: { id: billId, deletedAt: null },
       select: {
@@ -9532,10 +9715,19 @@ export class NightlifeDataService {
 
       await tx.auditLog.create({
         data: {
-          actorId: adminId,
+          ...adminAuditActorFields(actor),
+          module: 'Bill',
           action: options.action,
           targetType: 'Bill',
           targetId: billId,
+          entityDisplayCode: bill.billNumber ?? billId,
+          changedFields: ['status', 'commissionAmountVnd', 'pointsEarned'],
+          changeSummary:
+            options.action === 'bill.review.void'
+              ? `Đã hủy hóa đơn "${bill.billNumber ?? billId}"`
+              : `Đã hoàn trả hóa đơn "${bill.billNumber ?? billId}"`,
+          reason,
+          result: 'SUCCESS',
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
           afterJson: this.buildBillReviewAuditSnapshot(reversedBill),
           metadata: this.toPrismaJson({
@@ -13371,6 +13563,7 @@ export class NightlifeDataService {
 
   private async createBookingChangeAudit(input: {
     actorId?: string | null;
+    actor?: AuthenticatedUser;
     action: string;
     before: BookingChangeRequestRecord | null;
     after: BookingChangeRequestRecord;
@@ -13383,10 +13576,21 @@ export class NightlifeDataService {
 
     await this.prisma.auditLog.create({
       data: {
-        actorId: input.actorId ?? undefined,
+        ...(input.actor
+          ? adminAuditActorFields(input.actor)
+          : { actorId: input.actorId ?? undefined }),
+        module: 'Booking',
         action: input.action,
         targetType: 'BookingChangeRequest',
         targetId: input.after.id,
+        changedFields: ['status', 'reviewedAt', 'adminNote'],
+        changeSummary:
+          input.action === 'BOOKING_RESCHEDULE_APPROVED'
+            ? 'Đã duyệt yêu cầu đổi lịch đặt'
+            : input.action === 'BOOKING_RESCHEDULE_REJECTED'
+              ? 'Đã từ chối yêu cầu đổi lịch đặt'
+              : 'Đã tạo yêu cầu đổi lịch đặt',
+        result: 'SUCCESS',
         beforeJson: this.toPrismaJson(beforeJson),
         afterJson: this.toPrismaJson(afterJson),
         metadata: {
@@ -14563,6 +14767,7 @@ export class NightlifeDataService {
     nextStatus: BookingStatus;
     actorId?: string | null;
     actorType: BookingStatusActorType;
+    actor?: AuthenticatedUser;
     action: string;
     reason?: string | null;
     now?: Date;
@@ -14580,10 +14785,18 @@ export class NightlifeDataService {
 
     await this.prisma.auditLog.create({
       data: {
-        actorId: input.actorId ?? undefined,
+        ...(input.actor
+          ? adminAuditActorFields(input.actor)
+          : { actorId: input.actorId ?? undefined }),
+        module: 'Booking',
         action: input.action,
         targetType: 'Booking',
         targetId: input.booking.id,
+        entityDisplayCode: this.bookingCodeFor(input.booking),
+        changedFields: ['status'],
+        changeSummary: `Đã đổi trạng thái lịch đặt từ ${input.booking.status} sang ${result.status}`,
+        reason: input.reason ?? null,
+        result: 'SUCCESS',
         beforeJson: this.buildBookingCancelAuditSnapshot(input.booking),
         afterJson: this.buildBookingCancelAuditSnapshot(result),
         metadata: {
@@ -16327,7 +16540,17 @@ export class NightlifeDataService {
       cityCode === 'hn'
         ? ['hn', '01', 'hanoi', 'ha-noi', 'ha noi', 'Hà Nội', 'Hanoi']
         : cityCode === 'hcm'
-          ? ['hcm', '79', 'tphcm', 'tp-hcm', 'tp hcm', 'ho-chi-minh', 'saigon', 'Hồ Chí Minh', 'Ho Chi Minh']
+          ? [
+              'hcm',
+              '79',
+              'tphcm',
+              'tp-hcm',
+              'tp hcm',
+              'ho-chi-minh',
+              'saigon',
+              'Hồ Chí Minh',
+              'Ho Chi Minh',
+            ]
           : [cityCode];
 
     return {
@@ -16596,7 +16819,11 @@ export class NightlifeDataService {
   }
 
   private resolveCastAvatarImage(
-    media: Array<{ url: string; type?: string | null; purpose?: string | null }>,
+    media: Array<{
+      url: string;
+      type?: string | null;
+      purpose?: string | null;
+    }>,
   ) {
     return this.resolveRankingCastImage(
       media.filter((item) => !item.type || item.type === 'IMAGE'),
@@ -16607,8 +16834,7 @@ export class NightlifeDataService {
     now: Date,
     options: { includeDefaultTierCoupons?: boolean } = {},
   ): Prisma.CouponWhereInput {
-    const includeDefaultTierCoupons =
-      options.includeDefaultTierCoupons ?? true;
+    const includeDefaultTierCoupons = options.includeDefaultTierCoupons ?? true;
     const defaultTierCouponExclusion: Prisma.CouponWhereInput[] =
       includeDefaultTierCoupons
         ? []
@@ -16997,7 +17223,7 @@ export class NightlifeDataService {
     for (const item of items) {
       record[item.day] = {
         isOff: Boolean(item.isOff),
-        hours: item.isOff ? '' : this.cleanNullableText(item.hours) ?? '',
+        hours: item.isOff ? '' : (this.cleanNullableText(item.hours) ?? ''),
       };
     }
 
@@ -17039,7 +17265,10 @@ export class NightlifeDataService {
     }
   }
 
-  private uniqueMediaUrls(values: Array<string | null | undefined>, limit = 20) {
+  private uniqueMediaUrls(
+    values: Array<string | null | undefined>,
+    limit = 20,
+  ) {
     const seen = new Set<string>();
     const urls: string[] = [];
 
@@ -17266,10 +17495,7 @@ export class NightlifeDataService {
       .map((item) => item.url);
   }
 
-  private partnerListingCastMediaPurpose(
-    mediaUrls: string[],
-    index: number,
-  ) {
+  private partnerListingCastMediaPurpose(mediaUrls: string[], index: number) {
     const url = mediaUrls[index];
     if (this.partnerRequestMediaType(url) === 'VIDEO') {
       return 'CAST_VIDEO';
@@ -17404,9 +17630,7 @@ export class NightlifeDataService {
     return {
       id: text(profile.id) ?? text(storeProfile?.id) ?? undefined,
       stageName:
-        text(profile.stageName) ??
-        text(storeProfile?.stageName) ??
-        'Cast',
+        text(profile.stageName) ?? text(storeProfile?.stageName) ?? 'Cast',
       storeName:
         text(profile.storeName) ?? text(storeProfile?.storeName) ?? undefined,
       bio: text(profile.bio) ?? text(storeProfile?.bio) ?? '',
@@ -17414,9 +17638,7 @@ export class NightlifeDataService {
       languages: languages.length ? languages : (storeProfile?.languages ?? []),
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
       zodiacSign:
-        text(profile.zodiacSign) ??
-        text(storeProfile?.zodiacSign) ??
-        undefined,
+        text(profile.zodiacSign) ?? text(storeProfile?.zodiacSign) ?? undefined,
       heightCm: profile.heightCm ?? storeProfile?.heightCm,
       measurements:
         text(profile.measurements) ??
@@ -17483,22 +17705,15 @@ export class NightlifeDataService {
       birthMonth: profile.birthMonth ?? null,
       zodiacSign: this.cleanPartnerListingText(profile.zodiacSign) ?? null,
       heightCm: profile.heightCm ?? null,
-      measurements:
-        this.cleanPartnerListingText(profile.measurements) ?? null,
+      measurements: this.cleanPartnerListingText(profile.measurements) ?? null,
       hobbies: this.partnerListingCastStringArray(profile.hobbies, 12),
-      youtubeLinks: this.partnerListingCastStringArray(
-        profile.youtubeLinks,
-        8,
-      ),
+      youtubeLinks: this.partnerListingCastStringArray(profile.youtubeLinks, 8),
       hourlyRateVnd: profile.hourlyRateVnd ?? null,
       mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
     };
   }
 
-  private partnerListingCastStringArray(
-    values?: string[] | null,
-    limit = 12,
-  ) {
+  private partnerListingCastStringArray(values?: string[] | null, limit = 12) {
     return this.cleanPartnerListingStringArray(values, limit);
   }
 
@@ -17545,9 +17760,7 @@ export class NightlifeDataService {
           changed.push({
             ...profile,
             id:
-              profileId ??
-              this.cleanNullableText(liveProfile?.id) ??
-              undefined,
+              profileId ?? this.cleanNullableText(liveProfile?.id) ?? undefined,
           });
         }
 
@@ -17817,12 +18030,14 @@ export class NightlifeDataService {
       return new Map<string, PartnerListingDraftPayload>();
     }
 
-    const contentDelegate = (client as NightlifePrismaClient & {
-      content?: {
-        findMany?: typeof client.content.findMany;
-        findFirst?: typeof client.content.findFirst;
-      };
-    }).content;
+    const contentDelegate = (
+      client as NightlifePrismaClient & {
+        content?: {
+          findMany?: typeof client.content.findMany;
+          findFirst?: typeof client.content.findFirst;
+        };
+      }
+    ).content;
 
     if (
       typeof contentDelegate?.findMany !== 'function' &&
@@ -18093,7 +18308,10 @@ export class NightlifeDataService {
         select: { id: true, status: true, isPublic: true, slug: true },
       });
 
-      if (sourceCast?.status === 'DRAFT' || sourceCast?.status === 'PENDING_REVIEW') {
+      if (
+        sourceCast?.status === 'DRAFT' ||
+        sourceCast?.status === 'PENDING_REVIEW'
+      ) {
         return sourceCast;
       }
 
@@ -18527,8 +18745,7 @@ export class NightlifeDataService {
     listingPayload?: PartnerListingDraftPayload,
   ) {
     const businessName = listingPayload?.storeName ?? request.businessName;
-    const businessType =
-      listingPayload?.businessType ?? request.businessType;
+    const businessType = listingPayload?.businessType ?? request.businessType;
     const area = listingPayload?.area ?? request.area;
     const storeDescription =
       listingPayload?.description ?? request.storeDescription;
@@ -18536,8 +18753,7 @@ export class NightlifeDataService {
     const storeCity = listingPayload?.storeCity ?? request.storeCity;
     const storeDistrict =
       listingPayload?.storeDistrict ?? request.storeDistrict;
-    const openingHours =
-      listingPayload?.openingHours ?? request.openingHours;
+    const openingHours = listingPayload?.openingHours ?? request.openingHours;
     const menuSummary = listingPayload?.menuSummary ?? request.menuSummary;
     const mediaUrls = listingPayload?.mediaUrls?.length
       ? listingPayload.mediaUrls
@@ -19117,8 +19333,7 @@ export class NightlifeDataService {
     return (
       (questionMarks >= 3 &&
         questionMarks / Math.max(text.length, 1) >= 0.08) ||
-      (questionMarks >= 2 &&
-        questionMarks / Math.max(text.length, 1) >= 0.5)
+      (questionMarks >= 2 && questionMarks / Math.max(text.length, 1) >= 0.5)
     );
   }
 
@@ -19131,10 +19346,7 @@ export class NightlifeDataService {
     return text;
   }
 
-  private cleanPartnerListingStringArray(
-    values?: string[] | null,
-    limit = 12,
-  ) {
+  private cleanPartnerListingStringArray(values?: string[] | null, limit = 12) {
     return this.cleanStringArray(values, limit).filter(
       (value) => !this.hasQuestionMarkEncodingCorruption(value),
     );
@@ -20805,6 +21017,7 @@ export class NightlifeDataService {
       coupon?: { storeId?: string | null } | null;
     };
     actorId?: string | null;
+    actor?: AuthenticatedUser;
     metadata?: Record<string, unknown>;
     beforeJson?: Record<string, unknown>;
     afterJson?: Record<string, unknown>;
@@ -20814,10 +21027,25 @@ export class NightlifeDataService {
     const occurredAt = new Date();
     await prisma.auditLog.create({
       data: {
-        actorId: input.actorId ?? undefined,
+        ...(input.actor
+          ? adminAuditActorFields(input.actor)
+          : { actorId: input.actorId ?? undefined }),
+        module: 'Coupon',
         action: input.action,
         targetType: 'CouponIssue',
         targetId: input.issue.id,
+        entityDisplayCode: input.issue.code ?? input.issue.id,
+        changedFields:
+          input.action === 'COUPON_QR_TOKEN_ROTATED'
+            ? ['qrPayloadHash']
+            : ['status', 'revokedAt'],
+        changeSummary:
+          input.action === 'COUPON_QR_TOKEN_ROTATED'
+            ? `Đã tạo lại mã QR ưu đãi "${input.issue.code ?? input.issue.id}"`
+            : input.action === 'COUPON_QR_TOKEN_REVOKED'
+              ? `Đã thu hồi mã QR ưu đãi "${input.issue.code ?? input.issue.id}"`
+              : null,
+        result: 'SUCCESS',
         beforeJson: this.toPrismaJson(input.beforeJson),
         afterJson: this.toPrismaJson(input.afterJson),
         metadata: this.toPrismaJson(
@@ -21417,6 +21645,7 @@ export class NightlifeDataService {
             nextStatus: status,
             actorId: adminUser.id,
             actorType: this.bookingActorTypeFor(adminUser),
+            actor: adminUser,
             action: 'BOOKING_STATUS_CHANGED',
             reason: 'Booking status updated by admin',
           });
@@ -22481,19 +22710,14 @@ export class NightlifeDataService {
 
     const pendingEditSourceIds = new Set(
       items
-        .filter(
-          (cast) =>
-            cast.status === 'PENDING_REVIEW' &&
-            !cast.isPublic,
-        )
+        .filter((cast) => cast.status === 'PENDING_REVIEW' && !cast.isPublic)
         .map((cast) => this.partnerListingCastEditSourceId(cast))
         .filter((id): id is string => Boolean(id)),
     );
     const visibleItems = items.filter(
       (cast) =>
         !(
-          pendingEditSourceIds.has(cast.id) &&
-          cast.status !== 'PENDING_REVIEW'
+          pendingEditSourceIds.has(cast.id) && cast.status !== 'PENDING_REVIEW'
         ),
     );
 
@@ -22506,6 +22730,7 @@ export class NightlifeDataService {
   }
 
   async createAdminCast(
+    user: AuthenticatedUser,
     dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
   ) {
     const mediaIds = await this.resolveAdminCastMediaIds(dto.mediaIds);
@@ -22516,39 +22741,57 @@ export class NightlifeDataService {
       counter++;
     }
 
-    const newCast = await this.prisma.cast.create({
-      data: {
-        stageName: dto.stageName,
-        slug,
-        storeId: dto.storeId,
-        bio: dto.bio,
-        publicBio: dto.bio,
-        birthMonth: dto.birthMonth,
-        zodiacSign: dto.zodiacSign,
-        heightCm: dto.heightCm,
-        measurements: dto.measurements,
-        languages: dto.languages || [],
-        hobbies: dto.hobbies || [],
-        tags: dto.tags || [],
-        youtubeLinks: dto.youtubeLinks || [],
-        isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
-        status: dto.status || 'DRAFT',
-        ...(mediaIds.length > 0
-          ? {
-              media: {
-                connect: mediaIds.map((id) => ({ id })),
-              },
-            }
-          : {}),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const newCast = await tx.cast.create({
+        data: {
+          stageName: dto.stageName,
+          slug,
+          storeId: dto.storeId,
+          bio: dto.bio,
+          publicBio: dto.bio,
+          birthMonth: dto.birthMonth,
+          zodiacSign: dto.zodiacSign,
+          heightCm: dto.heightCm,
+          measurements: dto.measurements,
+          languages: dto.languages || [],
+          hobbies: dto.hobbies || [],
+          tags: dto.tags || [],
+          youtubeLinks: dto.youtubeLinks || [],
+          isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
+          status: dto.status || 'DRAFT',
+          ...(mediaIds.length > 0
+            ? {
+                media: {
+                  connect: mediaIds.map((id) => ({ id })),
+                },
+              }
+            : {}),
+        },
+      });
+
+      await this.syncAdminCastMediaPurposes(newCast.id, mediaIds, tx);
+
+      if (newCast.status !== 'DRAFT') {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Cast',
+            action: 'cast.create',
+            targetType: 'Cast',
+            targetId: newCast.id,
+            entityDisplayCode: newCast.stageName,
+            after: pickAdminAuditSnapshot(newCast, CAST_AUDIT_FIELDS),
+            changeSummary: `Đã thêm nhân viên "${newCast.stageName}"`,
+          }),
+        });
+      }
+
+      return newCast;
     });
-
-    await this.syncAdminCastMediaPurposes(newCast.id, mediaIds);
-
-    return newCast;
   }
 
   async updateAdminCast(
+    user: AuthenticatedUser,
     id: string,
     dto: import('./dto/admin-cast.dto').UpdateAdminCastDto,
   ) {
@@ -22575,7 +22818,6 @@ export class NightlifeDataService {
             storeId: existing.storeId,
             deletedAt: null,
           },
-          select: { id: true },
         });
 
         if (!targetCast) {
@@ -22664,6 +22906,20 @@ export class NightlifeDataService {
           tx,
         );
 
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Cast',
+            action: 'cast.update',
+            targetType: 'Cast',
+            targetId: updatedTarget.id,
+            entityDisplayCode: updatedTarget.stageName,
+            before: pickAdminAuditSnapshot(targetCast, CAST_AUDIT_FIELDS),
+            after: pickAdminAuditSnapshot(updatedTarget, CAST_AUDIT_FIELDS),
+            changeSummary: `Đã duyệt và cập nhật nhân viên "${updatedTarget.stageName}"`,
+          }),
+        });
+
         return updatedTarget;
       });
     }
@@ -22686,31 +22942,57 @@ export class NightlifeDataService {
         ? await this.resolveAdminCastMediaIds(dto.mediaIds)
         : undefined;
 
-    const updated = await this.prisma.cast.update({
-      where: { id },
-      data: {
-        ...(dto.stageName && { stageName: dto.stageName }),
-        ...(slug && { slug }),
-        ...(dto.storeId && { storeId: dto.storeId }),
-        ...(dto.bio !== undefined && { bio: dto.bio, publicBio: dto.bio }),
-        ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
-        ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),
-        ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
-        ...(dto.measurements !== undefined && {
-          measurements: dto.measurements,
-        }),
-        ...(dto.languages && { languages: dto.languages }),
-        ...(dto.hobbies && { hobbies: dto.hobbies }),
-        ...(dto.tags && { tags: dto.tags }),
-        ...(dto.youtubeLinks && { youtubeLinks: dto.youtubeLinks }),
-        ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
-        ...(dto.status && { status: dto.status }),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.cast.update({
+        where: { id },
+        data: {
+          ...(dto.stageName && { stageName: dto.stageName }),
+          ...(slug && { slug }),
+          ...(dto.storeId && { storeId: dto.storeId }),
+          ...(dto.bio !== undefined && { bio: dto.bio, publicBio: dto.bio }),
+          ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
+          ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),
+          ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
+          ...(dto.measurements !== undefined && {
+            measurements: dto.measurements,
+          }),
+          ...(dto.languages && { languages: dto.languages }),
+          ...(dto.hobbies && { hobbies: dto.hobbies }),
+          ...(dto.tags && { tags: dto.tags }),
+          ...(dto.youtubeLinks && { youtubeLinks: dto.youtubeLinks }),
+          ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
+          ...(dto.status && { status: dto.status }),
+        },
+      });
+
+      await this.replaceAdminCastMedia(updated.id, mediaIds, tx);
+
+      const wasDraft = existing.status === 'DRAFT';
+      const isStillDraft = updated.status === 'DRAFT';
+      if (!wasDraft || !isStillDraft) {
+        const action = wasDraft ? 'cast.create' : 'cast.update';
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Cast',
+            action,
+            targetType: 'Cast',
+            targetId: updated.id,
+            entityDisplayCode: updated.stageName,
+            before: wasDraft
+              ? null
+              : pickAdminAuditSnapshot(existing, CAST_AUDIT_FIELDS),
+            after: pickAdminAuditSnapshot(updated, CAST_AUDIT_FIELDS),
+            changeSummary:
+              action === 'cast.create'
+                ? `Đã thêm nhân viên "${updated.stageName}"`
+                : `Đã cập nhật nhân viên "${updated.stageName}"`,
+          }),
+        });
+      }
+
+      return updated;
     });
-
-    await this.replaceAdminCastMedia(updated.id, mediaIds);
-
-    return updated;
   }
 
   private async replaceAdminCastMedia(
@@ -22825,17 +23107,44 @@ export class NightlifeDataService {
     const existing = await this.prisma.cast.findUniqueOrThrow({
       where: { id },
     });
-    if (hard) {
-      if (user.role !== 'SUPER_ADMIN') {
-        throw new Error('Only Super Admin can hard delete casts');
-      }
-      return this.prisma.cast.delete({ where: { id } });
-    } else {
-      return this.prisma.cast.update({
-        where: { id },
-        data: { deletedAt: new Date() },
-      });
+    if (hard && user.role !== 'SUPER_ADMIN') {
+      throw new Error('Only Super Admin can hard delete casts');
     }
+
+    return this.prisma.$transaction(async (tx) => {
+      const result = hard
+        ? await tx.cast.delete({ where: { id } })
+        : await tx.cast.update({
+            where: { id },
+            data: {
+              status: 'DELETED',
+              deletedAt: new Date(),
+              isPublic: false,
+            },
+          });
+
+      if (existing.status !== 'DRAFT') {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Cast',
+            action: hard ? 'cast.hard_delete' : 'cast.soft_delete',
+            targetType: 'Cast',
+            targetId: existing.id,
+            entityDisplayCode: existing.stageName,
+            before: pickAdminAuditSnapshot(existing, CAST_AUDIT_FIELDS),
+            after: hard
+              ? null
+              : pickAdminAuditSnapshot(result, CAST_AUDIT_FIELDS),
+            changeSummary: hard
+              ? `Đã xóa vĩnh viễn nhân viên "${existing.stageName}"`
+              : `Đã xóa nhân viên "${existing.stageName}"`,
+          }),
+        });
+      }
+
+      return result;
+    });
   }
   private generateSlug(name: string): string {
     return name
@@ -22904,6 +23213,7 @@ export class NightlifeDataService {
   }
 
   async createAdminStore(
+    user: AuthenticatedUser,
     dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
   ) {
     let slug = this.generateSlug(dto.name);
@@ -22929,33 +23239,52 @@ export class NightlifeDataService {
           ).map((media) => media.id)
         : [];
 
-    const newStore = await this.prisma.store.create({
-      data: {
-        name: dto.name,
-        slug,
-        category: dto.category,
-        city: dto.city,
-        address: storeAddress,
-        mapUrl: dto.mapUrl,
-        phone: dto.phone,
-        description: dto.description,
-        tags: dto.tags || [],
-        openingHours: dto.openingHours,
-        pricingInfo: dto.pricingInfo,
-        status: dto.status || 'ACTIVE',
-        areaId,
-        ...(scopedStoreMediaIds.length > 0
-          ? {
-              media: {
-                connect: scopedStoreMediaIds.map((id) => ({ id })),
-              },
-            }
-          : {}),
-      },
+    const newStore = await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.create({
+        data: {
+          name: dto.name,
+          slug,
+          category: dto.category,
+          city: dto.city,
+          address: storeAddress,
+          mapUrl: dto.mapUrl,
+          phone: dto.phone,
+          description: dto.description,
+          tags: dto.tags || [],
+          openingHours: dto.openingHours,
+          pricingInfo: dto.pricingInfo,
+          status: dto.status || 'ACTIVE',
+          areaId,
+          ...(scopedStoreMediaIds.length > 0
+            ? {
+                media: {
+                  connect: scopedStoreMediaIds.map((id) => ({ id })),
+                },
+              }
+            : {}),
+        },
+      });
+
+      if (store.status !== 'DRAFT') {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Store',
+            action: 'store.create',
+            targetType: 'Store',
+            targetId: store.id,
+            entityDisplayCode: store.name,
+            after: pickAdminAuditSnapshot(store, STORE_AUDIT_FIELDS),
+            changeSummary: `Đã thêm quán "${store.name}"`,
+          }),
+        });
+      }
+
+      return store;
     });
 
     if (dto.partnerAccountId !== undefined) {
-      return this.linkAdminStorePartnerAccount(newStore.id, {
+      return this.linkAdminStorePartnerAccount(user, newStore.id, {
         partnerAccountId: dto.partnerAccountId,
       });
     }
@@ -22964,6 +23293,7 @@ export class NightlifeDataService {
   }
 
   async updateAdminStore(
+    user: AuthenticatedUser,
     id: string,
     dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
@@ -23005,38 +23335,68 @@ export class NightlifeDataService {
           ).map((media) => media.id)
         : undefined;
 
-    const updated = await this.prisma.store.update({
-      where: { id },
-      data: {
-        ...(dto.name && { name: dto.name }),
-        ...(slug && { slug }),
-        ...(dto.category && { category: dto.category }),
-        ...(dto.city && { city: dto.city }),
-        ...(storeAddress && { address: storeAddress }),
-        ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
-        ...(dto.phone !== undefined && { phone: dto.phone }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.tags !== undefined && { tags: dto.tags }),
-        ...(dto.openingHours !== undefined && {
-          openingHours: dto.openingHours,
-        }),
-        ...(dto.pricingInfo !== undefined && {
-          pricingInfo: dto.pricingInfo,
-        }),
-        ...(dto.status && { status: dto.status }),
-        ...(areaId && { areaId }),
-        ...(scopedStoreMediaIds
-          ? {
-              media: {
-                set: scopedStoreMediaIds.map((mid) => ({ id: mid })),
-              },
-            }
-          : {}),
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.update({
+        where: { id },
+        data: {
+          ...(dto.name && { name: dto.name }),
+          ...(slug && { slug }),
+          ...(dto.category && { category: dto.category }),
+          ...(dto.city && { city: dto.city }),
+          ...(storeAddress && { address: storeAddress }),
+          ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
+          ...(dto.phone !== undefined && { phone: dto.phone }),
+          ...(dto.description !== undefined && {
+            description: dto.description,
+          }),
+          ...(dto.tags !== undefined && { tags: dto.tags }),
+          ...(dto.openingHours !== undefined && {
+            openingHours: dto.openingHours,
+          }),
+          ...(dto.pricingInfo !== undefined && {
+            pricingInfo: dto.pricingInfo,
+          }),
+          ...(dto.status && { status: dto.status }),
+          ...(areaId && { areaId }),
+          ...(scopedStoreMediaIds
+            ? {
+                media: {
+                  set: scopedStoreMediaIds.map((mid) => ({ id: mid })),
+                },
+              }
+            : {}),
+        },
+      });
+
+      const wasDraft = existing.status === 'DRAFT';
+      const isStillDraft = store.status === 'DRAFT';
+      if (!wasDraft || !isStillDraft) {
+        const action = wasDraft ? 'store.create' : 'store.update';
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Store',
+            action,
+            targetType: 'Store',
+            targetId: store.id,
+            entityDisplayCode: store.name,
+            before: wasDraft
+              ? null
+              : pickAdminAuditSnapshot(existing, STORE_AUDIT_FIELDS),
+            after: pickAdminAuditSnapshot(store, STORE_AUDIT_FIELDS),
+            changeSummary:
+              action === 'store.create'
+                ? `Đã thêm quán "${store.name}"`
+                : `Đã cập nhật thông tin quán "${store.name}"`,
+          }),
+        });
+      }
+
+      return store;
     });
 
     if (dto.partnerAccountId !== undefined) {
-      return this.linkAdminStorePartnerAccount(id, {
+      return this.linkAdminStorePartnerAccount(user, id, {
         partnerAccountId: dto.partnerAccountId,
       });
     }
@@ -23045,6 +23405,7 @@ export class NightlifeDataService {
   }
 
   async linkAdminStorePartnerAccount(
+    user: AuthenticatedUser,
     id: string,
     dto: import('./dto/admin-store.dto').LinkAdminStorePartnerAccountDto,
   ) {
@@ -23055,6 +23416,7 @@ export class NightlifeDataService {
         where: { id },
         select: {
           id: true,
+          name: true,
           partnerAccountId: true,
           deletedAt: true,
         },
@@ -23094,7 +23456,29 @@ export class NightlifeDataService {
         );
       }
 
-      return this.findAdminStoreForResponse(tx, id);
+      const result = await this.findAdminStoreForResponse(tx, id);
+      if (store.partnerAccountId !== partnerAccountId) {
+        const action = partnerAccountId
+          ? 'store.partner.link'
+          : 'store.partner.unlink';
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Store',
+            action,
+            targetType: 'Store',
+            targetId: store.id,
+            entityDisplayCode: store.name,
+            before: { partnerAccountId: store.partnerAccountId },
+            after: { partnerAccountId },
+            changeSummary: partnerAccountId
+              ? `Đã liên kết tài khoản đối tác với quán "${store.name}"`
+              : `Đã gỡ tài khoản đối tác khỏi quán "${store.name}"`,
+          }),
+        });
+      }
+
+      return result;
     });
   }
 
@@ -23102,7 +23486,23 @@ export class NightlifeDataService {
     return this.prisma.$transaction(async (tx) => {
       const store = await tx.store.findUnique({
         where: { id },
-        select: { id: true, partnerAccountId: true },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          partnerAccountId: true,
+          slug: true,
+          category: true,
+          city: true,
+          address: true,
+          mapUrl: true,
+          phone: true,
+          description: true,
+          tags: true,
+          openingHours: true,
+          pricingInfo: true,
+          areaId: true,
+        },
       });
 
       if (!store) {
@@ -23159,10 +23559,25 @@ export class NightlifeDataService {
           where: { id },
         });
 
+        if (store.status !== 'DRAFT') {
+          await tx.auditLog.create({
+            data: buildAdminAuditLog({
+              actor: user,
+              module: 'Store',
+              action: 'store.hard_delete',
+              targetType: 'Store',
+              targetId: store.id,
+              entityDisplayCode: store.name,
+              before: pickAdminAuditSnapshot(store, STORE_AUDIT_FIELDS),
+              changeSummary: `Đã xóa vĩnh viễn quán "${store.name}"`,
+            }),
+          });
+        }
+
         return { message: 'Store hard deleted successfully' };
       }
 
-      await tx.store.update({
+      const deletedStore = await tx.store.update({
         where: { id },
         data: {
           status: 'DELETED',
@@ -23179,22 +23594,37 @@ export class NightlifeDataService {
         );
       }
 
+      if (store.status !== 'DRAFT') {
+        await tx.auditLog.create({
+          data: buildAdminAuditLog({
+            actor: user,
+            module: 'Store',
+            action: 'store.soft_delete',
+            targetType: 'Store',
+            targetId: store.id,
+            entityDisplayCode: store.name,
+            before: pickAdminAuditSnapshot(store, STORE_AUDIT_FIELDS),
+            after: pickAdminAuditSnapshot(deletedStore, STORE_AUDIT_FIELDS),
+            changeSummary: `Đã xóa quán "${store.name}"`,
+          }),
+        });
+      }
+
       return this.findAdminStoreForResponse(tx, id);
     });
   }
 
-  async restoreAdminStore(id: string) {
+  async restoreAdminStore(user: AuthenticatedUser, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const store = await tx.store.findUnique({
         where: { id },
-        select: { id: true, partnerAccountId: true },
       });
 
       if (!store) {
         throw new NotFoundException('Store not found');
       }
 
-      await tx.store.update({
+      const restoredStore = await tx.store.update({
         where: { id },
         data: {
           status: 'ACTIVE',
@@ -23205,6 +23635,20 @@ export class NightlifeDataService {
       if (store.partnerAccountId) {
         await this.syncStorePartnerAccess(tx, id, store.partnerAccountId, true);
       }
+
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Store',
+          action: 'store.restore',
+          targetType: 'Store',
+          targetId: store.id,
+          entityDisplayCode: store.name,
+          before: pickAdminAuditSnapshot(store, STORE_AUDIT_FIELDS),
+          after: pickAdminAuditSnapshot(restoredStore, STORE_AUDIT_FIELDS),
+          changeSummary: `Đã khôi phục quán "${store.name}"`,
+        }),
+      });
 
       return this.findAdminStoreForResponse(tx, id);
     });
@@ -24423,6 +24867,7 @@ export class NightlifeDataService {
   // ── Admin Coupon (独立 QR flow) ──────────────────────────────────
 
   async createAdminCoupon(
+    user: AuthenticatedUser,
     dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
     const { randomUUID, createHash } = await import('crypto');
@@ -24444,20 +24889,37 @@ export class NightlifeDataService {
     const endsAt = new Date(now);
     endsAt.setDate(endsAt.getDate() + dto.durationDays);
 
-    const adminCoupon = await this.prisma.adminCoupon.create({
-      data: {
-        code,
-        qrPayloadHash,
-        name: dto.name.trim(),
-        discountType: dto.discountType as any,
-        discountValue: dto.discountValue,
-        targetStores: dto.targetStores ?? [],
-        targetAudiences: dto.targetAudiences,
-        startsAt: now,
-        endsAt,
-        usageLimit: dto.usageLimit ?? null,
-        status: 'ACTIVE',
-      },
+    const adminCoupon = await this.prisma.$transaction(async (tx) => {
+      const coupon = await tx.adminCoupon.create({
+        data: {
+          code,
+          qrPayloadHash,
+          name: dto.name.trim(),
+          discountType: dto.discountType as any,
+          discountValue: dto.discountValue,
+          targetStores: dto.targetStores ?? [],
+          targetAudiences: dto.targetAudiences,
+          startsAt: now,
+          endsAt,
+          usageLimit: dto.usageLimit ?? null,
+          status: 'ACTIVE',
+        },
+      });
+
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Coupon',
+          action: 'coupon.create',
+          targetType: 'AdminCoupon',
+          targetId: coupon.id,
+          entityDisplayCode: coupon.name,
+          after: pickAdminAuditSnapshot(coupon, ADMIN_COUPON_AUDIT_FIELDS),
+          changeSummary: `Đã tạo mã ưu đãi "${coupon.name}"`,
+        }),
+      });
+
+      return coupon;
     });
 
     return {
@@ -24528,6 +24990,7 @@ export class NightlifeDataService {
   }
 
   async updateAdminCoupon(
+    user: AuthenticatedUser,
     id: string,
     dto: import('./dto/update-admin-coupon.dto').UpdateAdminCouponDto,
   ) {
@@ -24557,9 +25020,27 @@ export class NightlifeDataService {
     if (dto.endsAt !== undefined)
       updateData.endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
 
-    const updated = await this.prisma.adminCoupon.update({
-      where: { id },
-      data: updateData,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.adminCoupon.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Coupon',
+          action: 'coupon.update',
+          targetType: 'AdminCoupon',
+          targetId: result.id,
+          entityDisplayCode: result.name,
+          before: pickAdminAuditSnapshot(coupon, ADMIN_COUPON_AUDIT_FIELDS),
+          after: pickAdminAuditSnapshot(result, ADMIN_COUPON_AUDIT_FIELDS),
+          changeSummary: `Đã cập nhật mã ưu đãi "${result.name}"`,
+        }),
+      });
+
+      return result;
     });
 
     return {
@@ -24579,7 +25060,7 @@ export class NightlifeDataService {
     };
   }
 
-  async deleteAdminCoupon(id: string) {
+  async deleteAdminCoupon(user: AuthenticatedUser, id: string) {
     const coupon = await this.prisma.adminCoupon.findFirst({
       where: { id, deletedAt: null },
     });
@@ -24587,12 +25068,31 @@ export class NightlifeDataService {
       throw new NotFoundException('Admin coupon not found');
     }
 
-    await this.prisma.adminCoupon.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: 'DELETED',
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const deletedCoupon = await tx.adminCoupon.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: 'DELETED',
+        },
+      });
+
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor: user,
+          module: 'Coupon',
+          action: 'coupon.delete',
+          targetType: 'AdminCoupon',
+          targetId: coupon.id,
+          entityDisplayCode: coupon.name,
+          before: pickAdminAuditSnapshot(coupon, ADMIN_COUPON_AUDIT_FIELDS),
+          after: pickAdminAuditSnapshot(
+            deletedCoupon,
+            ADMIN_COUPON_AUDIT_FIELDS,
+          ),
+          changeSummary: `Đã xóa mã ưu đãi "${coupon.name}"`,
+        }),
+      });
     });
 
     return { success: true };

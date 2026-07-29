@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Campaign, CampaignStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../access/access.service';
+import { adminAuditActorFields } from '../audit-logs/admin-audit';
 
 @Injectable()
 export class CampaignsService {
@@ -23,15 +24,6 @@ export class CampaignsService {
     return Object.entries(data)
       .filter(([, value]) => value !== undefined)
       .map(([key]) => (key === 'targetStore' ? 'targetStoreId' : key));
-  }
-
-  private auditActorFields(actor: AuthenticatedUser) {
-    return {
-      actorId: actor.id,
-      actorType: 'ADMIN',
-      actorName: actor.email ?? 'Unknown',
-      actorRole: actor.role ?? 'ADMIN',
-    };
   }
 
   async pauseEndedCampaigns(now = new Date()) {
@@ -131,7 +123,7 @@ export class CampaignsService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Campaign',
           action: 'campaign.create',
           targetType: 'Campaign',
@@ -177,7 +169,7 @@ export class CampaignsService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Campaign',
           action: 'campaign.update',
           targetType: 'Campaign',
@@ -209,7 +201,7 @@ export class CampaignsService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Campaign',
           action: 'campaign.delete',
           targetType: 'Campaign',

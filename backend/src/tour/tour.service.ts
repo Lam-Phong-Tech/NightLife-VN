@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Tour } from '@prisma/client';
 import { AuthenticatedUser } from '../access/access.service';
+import { adminAuditActorFields } from '../audit-logs/admin-audit';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import {
@@ -74,15 +75,6 @@ export class TourService {
     return Object.entries(dto)
       .filter(([, value]) => value !== undefined)
       .map(([key]) => key);
-  }
-
-  private auditActorFields(actor: AuthenticatedUser) {
-    return {
-      actorId: actor.id,
-      actorType: 'ADMIN',
-      actorName: actor.email ?? 'Unknown',
-      actorRole: actor.role ?? 'ADMIN',
-    };
   }
 
   private async validateTourCoverUrl(coverUrl: string | undefined) {
@@ -509,7 +501,7 @@ export class TourService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Tour',
           action: 'tour.create',
           targetType: 'Tour',
@@ -622,7 +614,7 @@ export class TourService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Tour',
           action: 'tour.update',
           targetType: 'Tour',
@@ -665,7 +657,7 @@ export class TourService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Tour',
           action: 'tour.delete',
           targetType: 'Tour',

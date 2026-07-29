@@ -355,18 +355,29 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/contents/:contentId')
   updateAdminContent(
+    @Req() request: RequestWithUser,
     @Param('contentId') contentId: string,
     @Body() dto: UpdateAdminContentDto,
   ) {
-    return this.nightlifeDataService.updateAdminContent(contentId, dto);
+    return this.nightlifeDataService.updateAdminContent(
+      request.user,
+      contentId,
+      dto,
+    );
   }
 
   @AdminContentMutationContract('delete')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('admin/contents/:contentId')
-  deleteAdminContent(@Param('contentId') contentId: string) {
-    return this.nightlifeDataService.deleteAdminContent(contentId);
+  deleteAdminContent(
+    @Req() request: RequestWithUser,
+    @Param('contentId') contentId: string,
+  ) {
+    return this.nightlifeDataService.deleteAdminContent(
+      request.user,
+      contentId,
+    );
   }
 
   @PublicStoresContract()
@@ -1300,7 +1311,7 @@ export class NightlifeDataController {
     @Body() dto: ReviewPartnerRequestDto,
   ) {
     return this.nightlifeDataService.reviewPartnerRequest(
-      request.user.id,
+      request.user,
       requestId,
       dto,
     );
@@ -1462,7 +1473,7 @@ export class NightlifeDataController {
     @Body() dto: AutoReverseBillsDto,
   ) {
     return this.nightlifeDataService.autoReverseSensitiveBills(
-      request.user.id,
+      request.user,
       dto,
     );
   }
@@ -1497,15 +1508,11 @@ export class NightlifeDataController {
     @Param('billId') billId: string,
     @Body() dto: ConfirmNegativeCommissionDto,
   ) {
-    return this.nightlifeDataService.reviewSensitiveBill(
-      request.user.id,
-      billId,
-      {
-        approve: true,
-        confirmNegativeCommission: true,
-        pmBaReason: dto.reason,
-      },
-    );
+    return this.nightlifeDataService.reviewSensitiveBill(request.user, billId, {
+      approve: true,
+      confirmNegativeCommission: true,
+      pmBaReason: dto.reason,
+    });
   }
 
   @ApiOperation({
@@ -1521,7 +1528,7 @@ export class NightlifeDataController {
     @Body() dto: VoidBillDto,
   ) {
     return this.nightlifeDataService.voidSensitiveBill(
-      request.user.id,
+      request.user,
       billId,
       dto,
     );
@@ -1538,7 +1545,7 @@ export class NightlifeDataController {
     @Body() dto: ReviewBillDto,
   ) {
     return this.nightlifeDataService.reviewSensitiveBill(
-      request.user.id,
+      request.user,
       billId,
       dto,
     );
@@ -1557,7 +1564,7 @@ export class NightlifeDataController {
     @Body() dto: ReverseBillDto,
   ) {
     return this.nightlifeDataService.reverseSensitiveBill(
-      request.user.id,
+      request.user,
       billId,
       dto,
     );
@@ -1573,7 +1580,7 @@ export class NightlifeDataController {
     @Body() dto: AutoBillFraudReversalDto,
   ) {
     return this.nightlifeDataService.autoBillFraudReversal(
-      request.user.id,
+      request.user,
       billId,
       dto,
     );
@@ -1636,9 +1643,10 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/coupons')
   createAdminCoupon(
+    @Req() request: RequestWithUser,
     @Body() dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
-    return this.nightlifeDataService.createAdminCoupon(dto);
+    return this.nightlifeDataService.createAdminCoupon(request.user, dto);
   }
 
   @ApiOperation({
@@ -1648,10 +1656,11 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/coupons/:id')
   updateAdminCoupon(
+    @Req() request: RequestWithUser,
     @Param('id') id: string,
     @Body() dto: import('./dto/update-admin-coupon.dto').UpdateAdminCouponDto,
   ) {
-    return this.nightlifeDataService.updateAdminCoupon(id, dto);
+    return this.nightlifeDataService.updateAdminCoupon(request.user, id, dto);
   }
 
   @ApiOperation({
@@ -1660,8 +1669,8 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('admin/coupons/:id')
-  deleteAdminCoupon(@Param('id') id: string) {
-    return this.nightlifeDataService.deleteAdminCoupon(id);
+  deleteAdminCoupon(@Req() request: RequestWithUser, @Param('id') id: string) {
+    return this.nightlifeDataService.deleteAdminCoupon(request.user, id);
   }
 
   @ApiOperation({
@@ -1689,9 +1698,10 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/global-coupons')
   createAdminGlobalCoupon(
+    @Req() request: RequestWithUser,
     @Body() dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
-    return this.nightlifeDataService.createAdminCoupon(dto);
+    return this.nightlifeDataService.createAdminCoupon(request.user, dto);
   }
 
   @Roles('ADMIN')
@@ -1763,9 +1773,10 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/stores')
   createAdminStore(
+    @Req() request: RequestWithUser,
     @Body() dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
   ) {
-    return this.nightlifeDataService.createAdminStore(dto);
+    return this.nightlifeDataService.createAdminStore(request.user, dto);
   }
 
   @ApiOperation({ summary: 'Admin action: Update an existing store' })
@@ -1773,10 +1784,11 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/stores/:id')
   updateAdminStore(
+    @Req() request: RequestWithUser,
     @Param('id') id: string,
     @Body() dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
-    return this.nightlifeDataService.updateAdminStore(id, dto);
+    return this.nightlifeDataService.updateAdminStore(request.user, id, dto);
   }
 
   @ApiOperation({
@@ -1786,11 +1798,16 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/stores/:id/partner-account')
   linkAdminStorePartnerAccount(
+    @Req() request: RequestWithUser,
     @Param('id') id: string,
     @Body()
     dto: import('./dto/admin-store.dto').LinkAdminStorePartnerAccountDto,
   ) {
-    return this.nightlifeDataService.linkAdminStorePartnerAccount(id, dto);
+    return this.nightlifeDataService.linkAdminStorePartnerAccount(
+      request.user,
+      id,
+      dto,
+    );
   }
 
   @ApiOperation({ summary: 'Admin action: Delete a store (soft or hard)' })
@@ -1813,8 +1830,8 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/stores/:id/restore')
-  restoreAdminStore(@Param('id') id: string) {
-    return this.nightlifeDataService.restoreAdminStore(id);
+  restoreAdminStore(@Req() request: RequestWithUser, @Param('id') id: string) {
+    return this.nightlifeDataService.restoreAdminStore(request.user, id);
   }
 
   // ==========================================
@@ -1851,17 +1868,22 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/casts')
   createAdminCast(
+    @Req() request: RequestWithUser,
     @Body() dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
   ) {
-    return this.nightlifeDataService.createAdminCast(dto);
+    return this.nightlifeDataService.createAdminCast(request.user, dto);
   }
 
   @ApiOperation({ summary: 'Admin action: Update an existing cast' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/casts/:id')
-  updateAdminCast(@Param('id') id: string, @Body() dto: any) {
-    return this.nightlifeDataService.updateAdminCast(id, dto);
+  updateAdminCast(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.nightlifeDataService.updateAdminCast(request.user, id, dto);
   }
 
   @Roles('ADMIN')

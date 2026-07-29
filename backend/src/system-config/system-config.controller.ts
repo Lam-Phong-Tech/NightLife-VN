@@ -34,7 +34,7 @@ export class SystemConfigController {
     const result = await this.configService.setConfig(
       'appearance',
       data,
-      req.user.id,
+      req.user,
     );
     return { data: result.value };
   }
@@ -61,7 +61,7 @@ export class SystemConfigController {
     const result = await this.configService.setConfig(
       'VPS_MAX_STORAGE_GB',
       data,
-      req.user.id,
+      req.user,
     );
     return { data: result.value };
   }

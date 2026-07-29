@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedUser } from '../access/access.service';
+import { buildAdminAuditLog } from '../audit-logs/admin-audit';
 
 @Injectable()
 export class SystemConfigService {
@@ -12,18 +14,42 @@ export class SystemConfigService {
     return config?.value ?? defaultVal;
   }
 
-  async setConfig(key: string, value: any, userId?: string) {
-    return this.prisma.systemConfig.upsert({
-      where: { key },
-      update: {
-        value,
-        updatedBy: userId,
-      },
-      create: {
-        key,
-        value,
-        updatedBy: userId,
-      },
+  async setConfig(key: string, value: any, actor: AuthenticatedUser) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.systemConfig.findUnique({
+        where: { key },
+      });
+      const config = await tx.systemConfig.upsert({
+        where: { key },
+        update: {
+          value,
+          updatedBy: actor.id,
+        },
+        create: {
+          key,
+          value,
+          updatedBy: actor.id,
+        },
+      });
+
+      const isAppearance = key === 'appearance';
+      await tx.auditLog.create({
+        data: buildAdminAuditLog({
+          actor,
+          module: isAppearance ? 'Appearance' : 'SystemConfig',
+          action: isAppearance ? 'appearance.update' : 'system_config.update',
+          targetType: 'SystemConfig',
+          targetId: key,
+          entityDisplayCode: key,
+          before: { value: existing?.value ?? null },
+          after: { value: config.value },
+          changeSummary: isAppearance
+            ? 'Đã cập nhật giao diện hệ thống'
+            : `Đã cập nhật cấu hình "${key}"`,
+        }),
+      });
+
+      return config;
     });
   }
 

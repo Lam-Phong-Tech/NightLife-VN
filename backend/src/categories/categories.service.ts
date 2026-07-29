@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Category, Prisma } from '@prisma/client';
 import { AuthenticatedUser } from '../access/access.service';
+import { adminAuditActorFields } from '../audit-logs/admin-audit';
 
 @Injectable()
 export class CategoriesService {
@@ -13,15 +14,6 @@ export class CategoriesService {
       slug: category.slug,
       type: category.type,
     } as Prisma.InputJsonValue;
-  }
-
-  private auditActorFields(actor: AuthenticatedUser) {
-    return {
-      actorId: actor.id,
-      actorType: 'ADMIN',
-      actorName: actor.email ?? 'Unknown',
-      actorRole: actor.role ?? 'ADMIN',
-    };
   }
 
   async findAll(type?: string) {
@@ -46,7 +38,7 @@ export class CategoriesService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Category',
           action: 'category.create',
           targetType: 'Category',
@@ -81,7 +73,7 @@ export class CategoriesService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Category',
           action: 'category.update',
           targetType: 'Category',
@@ -114,7 +106,7 @@ export class CategoriesService {
 
       await tx.auditLog.create({
         data: {
-          ...this.auditActorFields(actor),
+          ...adminAuditActorFields(actor),
           module: 'Category',
           action: 'category.delete',
           targetType: 'Category',
