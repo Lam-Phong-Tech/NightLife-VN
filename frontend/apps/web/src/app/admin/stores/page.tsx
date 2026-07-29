@@ -40,6 +40,15 @@ const getStatusMeta = (status: string) => {
   return { label: status, style: 'muted' };
 };
 
+type StoreDeletionState = {
+  isDeleted?: boolean;
+  deletedAt?: string | Date | null;
+  status?: string | null;
+};
+
+const isStoreDeleted = (store?: StoreDeletionState | null) =>
+  Boolean(store?.isDeleted || store?.deletedAt || store?.status === 'DELETED');
+
 const normalizeLocationName = (value?: string | null) =>
   (value ?? '')
     .normalize('NFD')
@@ -599,6 +608,7 @@ function AdminStoresContent() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showDeletedStores, setShowDeletedStores] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -722,7 +732,7 @@ function AdminStoresContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterCity, filterCategory, filterStatus]);
+  }, [search, filterCity, filterCategory, filterStatus, showDeletedStores]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1350,7 +1360,7 @@ function AdminStoresContent() {
   };
 
   const selectedStore = venueSel ? stores.find((item: any) => item.id === venueSel) : null;
-  const isSelectedDeleted = Boolean(selectedStore?.isDeleted || selectedStore?.deletedAt || selectedStore?.status === 'DELETED');
+  const isSelectedDeleted = isStoreDeleted(selectedStore);
   const linkedPartnerAccount = partnerAccountId
     ? partnerAccounts.find((item: any) => item.id === partnerAccountId) || selectedStore?.partnerAccount
     : null;
@@ -1431,6 +1441,8 @@ function AdminStoresContent() {
   };
 
   const filteredStores = stores.filter((v: any) => {
+    if (isStoreDeleted(v) !== showDeletedStores) return false;
+
     if (filterCity === 'Hanoi' && v.area !== 'HN' && v.city !== 'Hanoi' && v.city !== 'Hà Nội') return false;
     if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM' && v.city !== 'Ho Chi Minh City' && v.city !== 'TP. Hồ Chí Minh') return false;
     
@@ -1443,7 +1455,7 @@ function AdminStoresContent() {
     }
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
 
-    if (filterStatus !== 'all') {
+    if (!showDeletedStores && filterStatus !== 'all') {
       const getNormalizedStatus = (s: string) => {
         if (!s) return 'ACTIVE';
         if (s === 'ACTIVE' || s === 'active' || s === 'Đang hoạt động') return 'ACTIVE';
@@ -1455,7 +1467,14 @@ function AdminStoresContent() {
     }
     return true;
   });
+  const deletedStoreCount = stores.filter(isStoreDeleted).length;
   const paginatedStores = paginateAdminItems(filteredStores, currentPage);
+
+  const toggleDeletedStores = () => {
+    setShowDeletedStores((current) => !current);
+    setFilterStatus('all');
+    setStatusDropdownOpen(false);
+  };
 
   return (
     <div className="nl-admin-page" data-screen-label="Admin · Venues" style={{ padding: '22px 26px 44px', minHeight: '100vh', background: '#0c0c0f' }}>
@@ -1474,6 +1493,7 @@ function AdminStoresContent() {
         </div>
 
         {/* Status Filter Dropdown */}
+        {!showDeletedStores ? (
         <div ref={statusDropdownRef} style={{ position: 'relative' }}>
           <div 
             onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
@@ -1569,9 +1589,51 @@ function AdminStoresContent() {
             </div>
           )}
         </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.28)', borderRadius: '10px', padding: '9px 13px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+            Quán đã xóa
+          </div>
+        )}
 
 
         <div className="max-md:hidden" style={{ flex: 1 }}></div>
+        <button
+          type="button"
+          onClick={toggleDeletedStores}
+          aria-pressed={showDeletedStores}
+          aria-label={showDeletedStores ? 'Quay lại danh sách quán' : `Mở thùng rác, có ${deletedStoreCount} quán đã xóa`}
+          title={showDeletedStores ? 'Quay lại danh sách quán' : 'Xem các quán đã xóa'}
+          style={{
+            position: 'relative',
+            width: '38px',
+            height: '38px',
+            flex: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: showDeletedStores ? '#241a0a' : '#e88b99',
+            background: showDeletedStores ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(224,105,122,.08)',
+            border: showDeletedStores ? '1px solid rgba(240,221,168,.65)' : '1px solid rgba(224,105,122,.3)',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            boxShadow: showDeletedStores ? '0 8px 22px -12px rgba(212,178,106,.8)' : 'none',
+            transition: 'background .2s, color .2s, border-color .2s, transform .2s',
+          }}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+          {deletedStoreCount > 0 && (
+            <span style={{ position: 'absolute', top: '-6px', right: '-6px', minWidth: '18px', height: '18px', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#c65068', border: '2px solid #0c0c0f', borderRadius: '999px', fontSize: '9px', fontWeight: 800, lineHeight: 1 }}>
+              {deletedStoreCount > 99 ? '99+' : deletedStoreCount}
+            </span>
+          )}
+        </button>
         <span onClick={openNewDrawer} className="max-md:hidden" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           Thêm quán
@@ -1585,7 +1647,7 @@ function AdminStoresContent() {
         </div>
 
         {paginatedStores.map((v: any, idx: number) => {
-          const stMeta = getStatusMeta(v.status);
+          const stMeta = getStatusMeta(isStoreDeleted(v) ? 'DELETED' : v.status);
           const stStyle = getPillStyle(stMeta.style);
           const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : (v.area === 'HCM' ? 'pink' : 'gold'));
           const rowNumber = (currentPage - 1) * adminPageSize + idx + 1;
@@ -1638,7 +1700,9 @@ function AdminStoresContent() {
           );
         })}
         {filteredStores.length === 0 && (
-          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không tìm thấy quán nào.</div>
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>
+            {showDeletedStores ? 'Thùng rác chưa có quán nào.' : 'Không tìm thấy quán nào.'}
+          </div>
         )}
         {filteredStores.length > 0 && (
           <AdminPagination
