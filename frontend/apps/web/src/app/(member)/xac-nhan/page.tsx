@@ -42,6 +42,42 @@ const formatDateTime = (value: string | undefined, language: LanguageCode) => {
 const bookingQrFileName = (booking: BookingRecord) =>
   `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
 
+const downloadQrBlob = (blob: Blob, fileName: string) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 250);
+};
+
+const shareQrImageIfSupported = async (blob: Blob, fileName: string, title: string) => {
+  if (!("File" in window) || !navigator.share) return false;
+
+  const file = new File([blob], fileName, { type: blob.type || "image/png" });
+  const shareData: ShareData = {
+    files: [file],
+    title,
+    text: title,
+  };
+  const canShareFiles =
+    typeof navigator.canShare === "function" ? navigator.canShare(shareData) : false;
+
+  if (!canShareFiles) return false;
+
+  try {
+    await navigator.share(shareData);
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return true;
+    }
+    return false;
+  }
+};
+
 const couponIssueQrPayload = (booking: BookingRecord) => {
   const issue = booking.couponIssue;
   if (!issue) return "";
@@ -738,6 +774,7 @@ export default function Page() {
     }
 
     const fileName = bookingQrFileName(booking);
+    const shareTitle = `${translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`;
 
     try {
       const response = await fetch(qrImageUrl);
@@ -746,22 +783,31 @@ export default function Page() {
       }
 
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 250);
+      const shared = await shareQrImageIfSupported(blob, fileName, shareTitle);
+      if (!shared) {
+        downloadQrBlob(blob, fileName);
+      }
     } catch {
-      const link = document.createElement("a");
-      link.href = qrImageUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (qrImageUrl.startsWith("data:")) {
+        try {
+          downloadQrBlob(await (await fetch(qrImageUrl)).blob(), fileName);
+          return;
+        } catch {
+          feedback.showToast({
+            tone: "error",
+            title: translateText("Không lưu được ảnh QR", activeLanguage),
+            description: translateText("Vui lòng thử lại sau hoặc chụp màn hình mã QR.", activeLanguage),
+            durationMs: 4200,
+          });
+          return;
+        }
+      }
+      feedback.showToast({
+        tone: "error",
+        title: translateText("Không lưu được ảnh QR", activeLanguage),
+        description: translateText("Vui lòng thử lại sau hoặc chụp màn hình mã QR.", activeLanguage),
+        durationMs: 4200,
+      });
     }
   };
 
