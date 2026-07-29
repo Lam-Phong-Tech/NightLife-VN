@@ -88,7 +88,7 @@ export default function LineLoginPage() {
   }, []);
   const fallbackHref = useMemo(() => {
     const params = new URLSearchParams({ redirect: redirectTo });
-    return `/line-email-consent?${params.toString()}`;
+    return `/api/backend/auth/line/start?${params.toString()}`;
   }, [redirectTo]);
 
   useEffect(() => {

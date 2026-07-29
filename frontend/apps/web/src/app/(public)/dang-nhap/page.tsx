@@ -212,7 +212,6 @@ export default function Page() {
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
   const [isLineConfigured, setIsLineConfigured] = useState(false);
-  const [lineLiffId, setLineLiffId] = useState("");
   const [queryMessage] = useState(getInitialQueryMessage);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
@@ -421,7 +420,6 @@ export default function Page() {
         }
 
         setIsLineConfigured(config.configured);
-        setLineLiffId(config.liffId || "");
       })
       .catch(() => {
         if (!mounted) {
@@ -429,7 +427,6 @@ export default function Page() {
         }
 
         setIsLineConfigured(false);
-        setLineLiffId("");
       })
       .finally(() => {
         if (mounted) {
@@ -555,9 +552,7 @@ export default function Page() {
     }
 
     const params = new URLSearchParams({ redirect: redirectTo });
-    window.location.href = lineLiffId
-      ? `/line-login?${params.toString()}`
-      : `/line-email-consent?${params.toString()}`;
+    window.location.href = `/line-login?${params.toString()}`;
   };
 
   return (
