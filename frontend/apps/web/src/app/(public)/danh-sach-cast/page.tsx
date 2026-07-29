@@ -292,6 +292,57 @@ const stripCastVietnameseMarks = (value: string) =>
     .replace(/\bQuan\b/g, "District")
     .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
 
+const normalizeCastFilterOptionLabel = (value: string) =>
+  stripCastVietnameseMarks(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const generalAreaLabels = new Set([
+  "tong hop",
+  "general",
+  "all",
+  "tat ca",
+  "vietnam",
+  "viet nam",
+]);
+
+const getCastAreaOptionLabel = (area: PublicArea, language: LanguageCode) =>
+  language === "en"
+    ? stripCastVietnameseMarks(area.name)
+    : translateText(area.name, language);
+
+const buildCastAreaOptions = (
+  areas: PublicArea[],
+  language: LanguageCode,
+  allLabel: string,
+): Option[] => {
+  const seen = new Set<string>();
+  const options: Option[] = [{ value: "", label: allLabel }];
+
+  areas.forEach((area) => {
+    if (!area.code || !area.name) return;
+
+    const label = getCastAreaOptionLabel(area, language);
+    const normalizedSourceLabel = normalizeCastFilterOptionLabel(area.name);
+    const normalizedLabel = normalizeCastFilterOptionLabel(label);
+
+    if (
+      !normalizedLabel ||
+      generalAreaLabels.has(normalizedSourceLabel) ||
+      generalAreaLabels.has(normalizedLabel) ||
+      seen.has(normalizedLabel)
+    ) {
+      return;
+    }
+
+    seen.add(normalizedLabel);
+    options.push({ value: area.code, label });
+  });
+
+  return options;
+};
+
 const localizeCastOption = (
   option: Option,
   language: LanguageCode,
@@ -735,16 +786,7 @@ export default function Page() {
   }, [casts, copy.all]);
 
   const areaOptions = useMemo<Option[]>(
-    () => [
-      { value: "", label: copy.all },
-      ...areas.map((item) => ({
-        value: item.code,
-        label:
-          activeLanguage === "en"
-            ? stripCastVietnameseMarks(item.name)
-            : translateText(item.name, activeLanguage),
-      })),
-    ],
+    () => buildCastAreaOptions(areas, activeLanguage, copy.all),
     [activeLanguage, areas, copy.all],
   );
 

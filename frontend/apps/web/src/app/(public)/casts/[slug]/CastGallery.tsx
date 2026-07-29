@@ -60,6 +60,13 @@ export function CastGallery({
   const mobileItems = gallery
     .map((media, index) => ({ media, index }))
     .filter(({ media }) => !mobileMediaType || media.type === mobileMediaType);
+  const desktopThumbnailStart = Math.min(
+    Math.max(activeIndex - 4, 0),
+    Math.max(gallery.length - 5, 0),
+  );
+  const desktopThumbnailItems = gallery
+    .slice(desktopThumbnailStart, desktopThumbnailStart + 5)
+    .map((media, index) => ({ media, index: desktopThumbnailStart + index }));
 
   const showPrevious = useCallback(() => {
     onSelect(activeIndex <= 0 ? gallery.length - 1 : activeIndex - 1, "previous");
@@ -244,7 +251,7 @@ export function CastGallery({
       </div>
 
       <div className="cast-desktop-thumbs">
-        {gallery.slice(0, 5).map((media, index) => {
+        {desktopThumbnailItems.map(({ media, index }) => {
           const isPlaceholder = isPlaceholderCastMedia(media);
 
           return (
