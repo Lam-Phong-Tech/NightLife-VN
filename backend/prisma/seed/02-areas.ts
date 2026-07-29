@@ -58,7 +58,20 @@ const DETAIL_AREAS = [
     district: 'Cầu Giấy',
     ward: 'Dịch Vọng Hậu',
   },
-
+  {
+    code: 'hn-badinh',
+    name: 'Ba Đình',
+    city: 'Hà Nội',
+    district: 'Ba Đình',
+    ward: 'Kim Mã',
+  },
+  {
+    code: 'hn-mydinh',
+    name: 'Mỹ Đình',
+    city: 'Hà Nội',
+    district: 'Nam Từ Liêm',
+    ward: 'Mỹ Đình 1',
+  },
 ];
 
 const AREAS = [...GENERAL_AREAS, ...DETAIL_AREAS];

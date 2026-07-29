@@ -6158,6 +6158,13 @@ const termEntries: TranslationEntry[] = [
     zh: "纸桥",
   },
   {
+    vi: "Mỹ Đình",
+    en: "My Dinh",
+    ja: "ミーディン",
+    ko: "미딘",
+    zh: "美亭",
+  },
+  {
     vi: "Quận 1",
     en: "District 1",
     ja: "1区",

@@ -145,6 +145,8 @@ const sortLabels: Record<DiscoverySort, string> = {
 const areaLabels: Record<string, string> = {
   "Hoan Kiem": "Hoàn Kiếm",
   "Tay Ho": "Tây Hồ",
+  "Ba Dinh": "Ba Đình",
+  "My Dinh": "Mỹ Đình",
   "Quan 1": "Quận 1",
   "Quan 3": "Quận 3",
   "Quan 7": "Quận 7",
@@ -154,6 +156,9 @@ const fallbackAreaOptionsByCity: Record<string, FilterOption[]> = {
   hn: [
     { value: "hn-hoan-kiem", label: "Hoàn Kiếm" },
     { value: "hn-tay-ho", label: "Tây Hồ" },
+    { value: "hn-cau-giay", label: "Cầu Giấy" },
+    { value: "hn-badinh", label: "Ba Đình" },
+    { value: "hn-mydinh", label: "Mỹ Đình" },
   ],
   hcm: [
     { value: "hcm-q1", label: "Quận 1" },
@@ -922,12 +927,19 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       return options;
     }, []);
 
-    const fallbackOptions = getFallbackAreaOptions(city).map((option) => ({
-      ...option,
-      label: translateText(option.label, activeLanguage),
-    }));
+    const fallbackOptions = getFallbackAreaOptions(city).reduce<FilterOption[]>((options, option) => {
+      const dedupeKey = normalizeAreaKey(option.label);
+      if (!dedupeKey || seenAreaLabels.has(dedupeKey)) return options;
 
-    return [{ value: "", label: copy.all }, ...(dynamicOptions.length ? dynamicOptions : fallbackOptions)];
+      seenAreaLabels.add(dedupeKey);
+      options.push({
+        ...option,
+        label: translateText(option.label, activeLanguage),
+      });
+      return options;
+    }, []);
+
+    return [{ value: "", label: copy.all }, ...dynamicOptions, ...fallbackOptions];
   }, [activeLanguage, areas, city, copy.all]);
 
   const canRequestBrowserLocation = () => {
