@@ -1,10 +1,26 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
+
+const ADMIN_AUDIT_ROLES: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.OPERATOR,
+];
 
 @Injectable()
 export class AuditLogsService {
   constructor(private prisma: PrismaService) {}
+
+  private adminAuditScope(): Prisma.AuditLogWhereInput {
+    return {
+      OR: [
+        { actorType: { equals: 'ADMIN', mode: 'insensitive' } },
+        { actorRole: { in: ADMIN_AUDIT_ROLES } },
+        { actor: { is: { role: { in: ADMIN_AUDIT_ROLES } } } },
+      ],
+    };
+  }
 
   async getAuditLogs(params: {
     page: number;
@@ -17,9 +33,14 @@ export class AuditLogsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.AuditLogWhereInput = {
-      ...(module ? { module } : {}),
-      ...(action ? { action } : {}),
-      ...(result ? { result } : {}),
+      AND: [
+        this.adminAuditScope(),
+        {
+          ...(module ? { module } : {}),
+          ...(action ? { action } : {}),
+          ...(result ? { result } : {}),
+        },
+      ],
     };
 
     const [items, total] = await Promise.all([
@@ -64,8 +85,10 @@ export class AuditLogsService {
   }
 
   async getAuditLogById(id: string) {
-    const log = await this.prisma.auditLog.findUnique({
-      where: { id },
+    const log = await this.prisma.auditLog.findFirst({
+      where: {
+        AND: [{ id }, this.adminAuditScope()],
+      },
       include: {
         actor: {
           select: {
