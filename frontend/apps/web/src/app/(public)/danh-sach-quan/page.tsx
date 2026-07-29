@@ -28,7 +28,10 @@ import { Pagination } from "@/components/ui/Pagination";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } from "@/lib/member-favorites";
-import { normalizeStoreOpeningHours } from "@/lib/booking-time-slots";
+import {
+  formatBusinessOpeningHours,
+  normalizeStoreOpeningHours,
+} from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
@@ -468,20 +471,16 @@ const openingRangesFromText = (value?: string | null): OpeningRange[] => {
     .filter((range): range is OpeningRange => Boolean(range));
 };
 
-const openingRangeFromSlot = (slot?: OpeningSlot | null) => {
-  if (!slot || slot.closed) return null;
+const openingRangesFromSlot = (slot?: OpeningSlot | null) => {
+  if (!slot || slot.closed) return [];
 
   const openMinutes = parseClockMinutes(slot.open);
   const closeMinutes = parseClockMinutes(slot.close);
+  if (openMinutes !== null && closeMinutes !== null) {
+    return [{ openMinutes, closeMinutes }];
+  }
 
-  return openMinutes !== null && closeMinutes !== null ? { openMinutes, closeMinutes } : null;
-};
-
-const openingLabelFromSlot = (slot: OpeningSlot | undefined, language: LanguageCode) => {
-  if (!slot) return translateText("Chưa có giờ mở cửa", language);
-  if (slot.closed) return slot.note || translateText("Tạm nghỉ", language);
-  if (slot.open && slot.close) return `${slot.open} - ${slot.close}${slot.close < slot.open ? " (hôm sau)" : ""}`;
-  return slot.note || translateText("Chưa có giờ mở cửa", language);
+  return openingRangesFromText(slot.note);
 };
 
 const rawOpeningSummary = (store: PublicStore) => {
@@ -498,7 +497,7 @@ const isMinuteInOpeningRange = (currentMinutes: number, range: OpeningRange) => 
     : currentMinutes >= range.openMinutes && currentMinutes < range.closeMinutes;
 };
 
-const openingStatus = (store: PublicStore, language: LanguageCode, now = new Date()) => {
+export const openingStatus = (store: PublicStore, language: LanguageCode, now = new Date()) => {
   const currentDayIndex = now.getDay();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const previousDayKey = weekdayKeys[(currentDayIndex + 6) % weekdayKeys.length] ?? "monday";
@@ -507,26 +506,61 @@ const openingStatus = (store: PublicStore, language: LanguageCode, now = new Dat
   const openingSummary = rawOpeningSummary(store);
   const previousSlot = openingHours?.[previousDayKey];
   const todaySlot = openingHours?.[todayKey];
-  const previousRange = openingRangeFromSlot(previousSlot);
+  const previousRanges = openingRangesFromSlot(previousSlot);
+  const todayRanges = openingRangesFromSlot(todaySlot);
+  const openingLabelForDay = (weekday: string) =>
+    translateText(
+      formatBusinessOpeningHours(
+        openingHours,
+        weekday,
+        translateText("hôm sau", language),
+      ),
+      language,
+    );
 
   if (
-    previousRange &&
-    previousRange.closeMinutes <= previousRange.openMinutes &&
-    currentMinutes < previousRange.closeMinutes
+    previousRanges.some(
+      (range) =>
+        range.closeMinutes <= range.openMinutes &&
+        currentMinutes < range.closeMinutes,
+    )
   ) {
     return {
-      label: openingLabelFromSlot(previousSlot, language),
+      label: openingLabelForDay(previousDayKey),
       isOpen: true,
       tone: "open" as const,
     };
   }
 
-  const todayRange = openingRangeFromSlot(todaySlot);
-  if (todayRange) {
-    const isOpen = isMinuteInOpeningRange(currentMinutes, todayRange);
+  const previousDayEndsAtMidnight = previousRanges.some(
+    (range) => range.openMinutes > 0 && range.closeMinutes === minutesPerDay,
+  );
+  const isOpenInEarlyContinuation =
+    previousDayEndsAtMidnight &&
+    todayRanges.some(
+      (range) =>
+        range.openMinutes === 0 &&
+        range.closeMinutes > range.openMinutes &&
+        isMinuteInOpeningRange(currentMinutes, range),
+    );
+
+  if (isOpenInEarlyContinuation) {
+    return {
+      label: openingLabelForDay(previousDayKey),
+      isOpen: true,
+      tone: "open" as const,
+    };
+  }
+
+  if (todayRanges.length || todaySlot?.closed) {
+    const isOpen = todayRanges.some((range) =>
+      range.closeMinutes <= range.openMinutes
+        ? currentMinutes >= range.openMinutes
+        : isMinuteInOpeningRange(currentMinutes, range),
+    );
 
     return {
-      label: openingLabelFromSlot(todaySlot, language),
+      label: openingLabelForDay(todayKey),
       isOpen,
       tone: isOpen ? ("open" as const) : ("closed" as const),
     };
@@ -544,7 +578,7 @@ const openingStatus = (store: PublicStore, language: LanguageCode, now = new Dat
   }
 
   return {
-    label: openingLabelFromSlot(todaySlot, language),
+    label: openingLabelForDay(todayKey),
     isOpen: false,
     tone: "closed" as const,
   };
