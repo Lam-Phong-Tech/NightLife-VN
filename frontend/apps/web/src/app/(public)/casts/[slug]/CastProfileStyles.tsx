@@ -1297,9 +1297,14 @@ export function CastProfileStyles() {
         pointer-events: auto;
         box-shadow: 0 14px 30px -18px rgba(0,0,0,.9);
         backdrop-filter: blur(8px);
+        transition: none;
+        animation: none;
+        will-change: auto;
       }
 
+      .cast-desktop-media-nav button:active,
       .cast-desktop-media-nav button:where(:hover, :focus-visible) {
+        transform: translateY(-50%) !important;
         background: rgba(212,178,106,.22);
         border-color: rgba(212,178,106,.45);
       }

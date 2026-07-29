@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, ImageOff, Play, Star, X } from "lucide-react";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
@@ -68,6 +68,10 @@ export function CastGallery({
   const showNext = useCallback(() => {
     onSelect(activeIndex >= gallery.length - 1 ? 0 : activeIndex + 1, "next");
   }, [activeIndex, gallery.length, onSelect]);
+
+  const keepDesktopNavButtonStable = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -218,6 +222,7 @@ export function CastGallery({
                 event.stopPropagation();
                 showPrevious();
               }}
+              onMouseDown={keepDesktopNavButtonStable}
               aria-label={copy.photoPrevious}
             >
               <ChevronLeft size={24} strokeWidth={2.2} />
@@ -229,6 +234,7 @@ export function CastGallery({
                 event.stopPropagation();
                 showNext();
               }}
+              onMouseDown={keepDesktopNavButtonStable}
               aria-label={copy.photoNext}
             >
               <ChevronRight size={24} strokeWidth={2.2} />
