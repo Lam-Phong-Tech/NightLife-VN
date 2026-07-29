@@ -15,7 +15,7 @@ import {
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { nightlifeOrigins } from "@/lib/auth/hosts";
-import { buildLineLiffUrl, normalizeLineLoginRedirect } from "@/lib/auth/line-login";
+import { buildLineWebLoginUrl, normalizeLineLoginRedirect } from "@/lib/auth/line-login";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import {
   isLanguageCode,
@@ -212,8 +212,7 @@ export default function Page() {
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
-  const [isLineConfigured, setIsLineConfigured] = useState(false);
-  const [lineLiffId, setLineLiffId] = useState("");
+  const [isLineWebOAuthConfigured, setIsLineWebOAuthConfigured] = useState(false);
   const [queryMessage] = useState(getInitialQueryMessage);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
@@ -417,16 +416,14 @@ export default function Page() {
           return;
         }
 
-        setIsLineConfigured(config.configured);
-        setLineLiffId(config.liffId || "");
+        setIsLineWebOAuthConfigured(Boolean(config.webOAuthConfigured));
       })
       .catch(() => {
         if (!mounted) {
           return;
         }
 
-        setIsLineConfigured(false);
-        setLineLiffId("");
+        setIsLineWebOAuthConfigured(false);
       })
       .finally(() => {
         if (mounted) {
@@ -543,7 +540,7 @@ export default function Page() {
       return;
     }
 
-    if (!isLineConfigured) {
+    if (!isLineWebOAuthConfigured) {
       setMessageTone("error");
       setMessage(
         "Thiếu cấu hình LINE_CHANNEL_ID, LINE_CHANNEL_SECRET hoặc LINE_CALLBACK_URL trên backend.",
@@ -551,10 +548,7 @@ export default function Page() {
       return;
     }
 
-    const params = new URLSearchParams({ redirect: redirectTo });
-    window.location.href = lineLiffId
-      ? buildLineLiffUrl(lineLiffId, redirectTo)
-      : `/line-login?${params.toString()}`;
+    window.location.assign(buildLineWebLoginUrl(redirectTo));
   };
 
   return (

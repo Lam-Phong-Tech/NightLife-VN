@@ -13,3 +13,11 @@ export function buildLineLiffUrl(liffId: string, redirectTo: string) {
   url.searchParams.set("redirect", normalizeLineLoginRedirect(redirectTo));
   return url.toString();
 }
+
+export function buildLineWebLoginUrl(redirectTo: string) {
+  const params = new URLSearchParams({
+    redirect: normalizeLineLoginRedirect(redirectTo),
+  });
+
+  return `/api/backend/auth/line/start?${params.toString()}`;
+}
