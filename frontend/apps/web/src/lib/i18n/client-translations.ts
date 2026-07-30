@@ -334,6 +334,20 @@ const entries: TranslationEntry[] = [
     zh: "演员视频",
   },
   {
+    vi: "Khác",
+    en: "More",
+    ja: "その他",
+    ko: "기타",
+    zh: "其他",
+  },
+  {
+    vi: "KHÁC",
+    en: "MORE",
+    ja: "その他",
+    ko: "기타",
+    zh: "其他",
+  },
+  {
     vi: "Tìm bài viết...",
     en: "Search articles...",
     ja: "記事を検索...",
