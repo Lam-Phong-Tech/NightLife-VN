@@ -2160,6 +2160,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setSelectedGalleryIndex(((index % videoGallery.length) + videoGallery.length) % videoGallery.length);
     setIsLightboxOpen(true);
   };
+  const openHeroGallery = (event: ReactMouseEvent<HTMLElement>) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("a, button")) return;
+    if (!gallery.length) return;
+
+    openGallery(selectedPhotoIndex);
+  };
   const trackBookingClick = (surface: string) =>
     trackStoreDetailClick(store, "booking", {
       surface,
@@ -2320,6 +2327,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onPointerDown={handleHeroPointerDown}
               onPointerUp={handleHeroPointerUp}
               onPointerCancel={resetHeroSwipe}
+              onClick={openHeroGallery}
             >
               {!hasHeroVisual ? (
                 <div className="hero-empty-placeholder" aria-hidden="true">
@@ -2833,6 +2841,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background-size: cover;
           background-position: center;
           box-shadow: 0 24px 50px -28px rgba(0, 0, 0, .78);
+          cursor: zoom-in;
         }
 
         .hero-video-preview {
