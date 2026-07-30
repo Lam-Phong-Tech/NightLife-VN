@@ -658,7 +658,7 @@ describe('RBAC matrix (e2e)', () => {
       .expect(200);
 
     expect(nightlifeDataService.autoBillFraudReversal).toHaveBeenCalledWith(
-      'admin-1',
+      { id: 'admin-1', role: 'ADMIN' },
       'bill-1',
       { dryRun: true, reason: 'Duplicate bill signal' },
     );

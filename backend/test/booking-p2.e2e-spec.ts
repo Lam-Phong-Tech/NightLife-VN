@@ -46,6 +46,7 @@ describe('Booking P2 workflows API (e2e)', () => {
   let app: INestApplication;
 
   const prisma = {
+    $transaction: jest.fn(),
     booking: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -108,6 +109,7 @@ describe('Booking P2 workflows API (e2e)', () => {
     accessService.canUpdateStorePolicy.mockResolvedValue(true);
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
+    prisma.$transaction.mockImplementation((callback) => callback(prisma));
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [NightlifeDataController],
