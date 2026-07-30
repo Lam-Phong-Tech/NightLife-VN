@@ -78,6 +78,19 @@ const openQrImageUrl = (url: string) => {
   link.remove();
 };
 
+const downloadQrFromServer = (payload: string, fileName: string) => {
+  const params = new URLSearchParams({
+    data: payload,
+    filename: fileName,
+  });
+  const link = document.createElement("a");
+  link.href = `/api/qr-download?${params.toString()}`;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
 const shareQrImageIfSupported = async (blob: Blob, fileName: string, title: string) => {
   if (!("File" in window) || !navigator.share) return false;
 
@@ -809,6 +822,24 @@ export default function Page() {
       });
     };
     const shareTitle = `${translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`;
+    const qrPayload = bookingQrPayload(booking);
+
+    if (isAndroid && qrPayload) {
+      try {
+        downloadQrFromServer(qrPayload, fileName);
+        feedback.showToast({
+          tone: "success",
+          title: translateText("Đang tải ảnh QR", activeLanguage),
+          description: translateText("Ảnh QR sẽ được lưu vào thư mục tải xuống của thiết bị.", activeLanguage),
+          durationMs: 3600,
+        });
+        return;
+      } catch {
+        openQrImageUrl(qrImageUrl);
+        showAndroidFallbackToast();
+        return;
+      }
+    }
 
     try {
       const response = await fetch(qrImageUrl);

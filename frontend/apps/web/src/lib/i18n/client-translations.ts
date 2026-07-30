@@ -2672,6 +2672,20 @@ const entries: TranslationEntry[] = [
     zh: "你可以在刚打开的页面保存或分享二维码图片。",
   },
   {
+    vi: "Đang tải ảnh QR",
+    en: "Downloading QR image",
+    ja: "QR画像をダウンロード中",
+    ko: "QR 이미지를 다운로드 중입니다",
+    zh: "正在下载二维码图片",
+  },
+  {
+    vi: "Ảnh QR sẽ được lưu vào thư mục tải xuống của thiết bị.",
+    en: "The QR image will be saved to your device downloads.",
+    ja: "QR画像は端末のダウンロードフォルダに保存されます。",
+    ko: "QR 이미지는 기기의 다운로드 폴더에 저장됩니다.",
+    zh: "二维码图片将保存到设备的下载文件夹。",
+  },
+  {
     vi: "Xem đặt chỗ của tôi",
     en: "View my reservations",
     ja: "予約一覧を見る",
