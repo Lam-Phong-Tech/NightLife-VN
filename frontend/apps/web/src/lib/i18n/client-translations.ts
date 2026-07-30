@@ -4037,6 +4037,20 @@ const entries: TranslationEntry[] = [
     zh: "请再次检查密码。",
   },
   {
+    vi: "Mật khẩu cũ không chính xác",
+    en: "Current password is incorrect",
+    ja: "現在のパスワードが正しくありません",
+    ko: "현재 비밀번호가 올바르지 않습니다",
+    zh: "当前密码不正确",
+  },
+  {
+    vi: "Mật khẩu cũ không chính xác.",
+    en: "Current password is incorrect.",
+    ja: "現在のパスワードが正しくありません。",
+    ko: "현재 비밀번호가 올바르지 않습니다.",
+    zh: "当前密码不正确。",
+  },
+  {
     vi: "Đang đổi...",
     en: "Changing...",
     ja: "変更中...",

@@ -129,8 +129,7 @@ const exactMessageTranslations: Record<string, string> = {
   "coupon issue is not available for bill reconciliation":
     "Mã ưu đãi này chưa thể đối soát hóa đơn.",
   "coupon issue has expired": "Mã ưu đãi đã hết hạn.",
-  "coupon issue has already been used":
-    "Mã ưu đãi này đã được sử dụng rồi, không thể quét lại.",
+  "coupon issue has already been used": "Mã ưu đãi này đã được sử dụng rồi, không thể quét lại.",
   "coupon issue is not usable": "Mã ưu đãi không còn sử dụng được.",
   "coupon not found": "Không tìm thấy ưu đãi.",
   "couponid must match couponissue.couponid": "Mã coupon không khớp với mã ưu đãi đã lưu.",
@@ -138,7 +137,8 @@ const exactMessageTranslations: Record<string, string> = {
   "couponissueid must match the booking couponissueid": "Mã ưu đãi đã lưu không khớp với booking.",
   "displayname and phone are required": "Vui lòng nhập họ tên và số điện thoại.",
   "displayname and email are required": "Vui lòng nhập họ tên và email.",
-  "displayname must contain letters and spaces only": "Họ tên chỉ được nhập chữ cái và khoảng trắng.",
+  "displayname must contain letters and spaces only":
+    "Họ tên chỉ được nhập chữ cái và khoảng trắng.",
   "file is required": "Vui lòng chọn file để tải lên.",
   "email is already registered": "Email này đã được đăng ký.",
   "google account is not active": "Tài khoản Google chưa hoạt động hoặc đã bị khóa.",
@@ -152,7 +152,8 @@ const exactMessageTranslations: Record<string, string> = {
   "invalid google access token": "Phiên đăng nhập Google không hợp lệ.",
   "invalid google credential": "Thông tin đăng nhập Google không hợp lệ.",
   "invalid or expired password reset code": "Mã xác nhận không đúng hoặc đã hết hạn.",
-  "invalid or expired password reset session": "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu mã mới.",
+  "invalid or expired password reset session":
+    "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu mã mới.",
   "invalid line authorization code": "Mã xác thực LINE không hợp lệ.",
   "invalid line id token": "Phiên đăng nhập LINE không hợp lệ.",
   "line login is not configured": "Đăng nhập LINE chưa được cấu hình.",
@@ -171,7 +172,9 @@ const exactMessageTranslations: Record<string, string> = {
   "phone is required": "Vui lòng nhập số điện thoại.",
   "phone must be a valid phone number": "Số điện thoại chưa đúng định dạng.",
   "password confirmation does not match": "Mật khẩu nhập lại chưa khớp.",
-  "password reset email is not configured": "Chưa cấu hình gửi email đặt lại mật khẩu. Vui lòng liên hệ Admin.",
+  "mật khẩu cũ không chính xác": "Mật khẩu cũ không chính xác",
+  "password reset email is not configured":
+    "Chưa cấu hình gửi email đặt lại mật khẩu. Vui lòng liên hệ Admin.",
   "possible duplicate bill submission": "Bill này có dấu hiệu bị gửi trùng. Vui lòng kiểm tra lại.",
   "ranking config not found": "Không tìm thấy cấu hình xếp hạng.",
   "ranking target not found": "Không tìm thấy mục xếp hạng.",
@@ -477,7 +480,9 @@ export const getAuthToken = () => {
 };
 
 export const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
-  let url = endpoint.startsWith("http") ? endpoint : `${getBaseUrl()}/${endpoint.replace(/^\//, "")}`;
+  let url = endpoint.startsWith("http")
+    ? endpoint
+    : `${getBaseUrl()}/${endpoint.replace(/^\//, "")}`;
 
   if (params) {
     const cleanParams = Object.fromEntries(
