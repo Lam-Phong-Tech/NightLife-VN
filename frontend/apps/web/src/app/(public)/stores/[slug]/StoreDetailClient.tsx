@@ -2352,7 +2352,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     onMouseDown={preventHeroControlMouseDown}
                     onClick={showPreviousMedia}
                   >
-                    <ChevronLeft size={30} />
+                    <ChevronLeft size={24} strokeWidth={2.2} />
                   </button>
                   <button
                     className="hero-media-nav next"
@@ -2362,7 +2362,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     onMouseDown={preventHeroControlMouseDown}
                     onClick={showNextMedia}
                   >
-                    <ChevronRight size={30} />
+                    <ChevronRight size={24} strokeWidth={2.2} />
                   </button>
                 </>
               ) : null}
@@ -2737,12 +2737,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
           --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
-          --store-hero-control-bg: transparent;
-          --store-hero-control-bg-strong: transparent;
-          --store-hero-control-border: transparent;
-          --store-hero-control-icon: #f7cf5c;
-          --store-hero-control-shadow: none;
-          --store-hero-control-icon-shadow: none;
+          --store-hero-control-bg: rgba(17, 17, 20, .6);
+          --store-hero-control-bg-strong: rgba(17, 17, 20, .72);
+          --store-hero-control-border: rgba(255, 255, 255, .16);
+          --store-hero-control-icon: #f6ecda;
+          --store-hero-control-shadow: 0 14px 30px -18px rgba(0, 0, 0, .9);
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .3));
           min-height: auto;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -2751,12 +2751,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         html.vy-light .store-detail-page {
-          --store-hero-control-bg: transparent;
-          --store-hero-control-bg-strong: transparent;
-          --store-hero-control-border: transparent;
-          --store-hero-control-icon: #d4a72f;
-          --store-hero-control-shadow: none;
-          --store-hero-control-icon-shadow: none;
+          --store-hero-control-bg: rgba(255, 250, 252, .92);
+          --store-hero-control-bg-strong: rgba(255, 250, 252, .96);
+          --store-hero-control-border: rgba(225, 29, 72, .38);
+          --store-hero-control-icon: var(--vy-favorite);
+          --store-hero-control-shadow: 0 12px 28px -18px rgba(190, 18, 60, .44);
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(80, 35, 18, .16));
         }
 
         .nl-page-content:has(.store-detail-page) {
@@ -2938,20 +2938,28 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .store-favorite-action {
+          width: 42px;
+          min-width: 42px;
+          height: 42px;
+          min-height: 42px;
+          border: 1px solid rgba(255, 255, 255, .14);
+          background: var(--store-hero-control-bg-strong);
           color: var(--store-hero-control-icon);
+          box-shadow: 0 12px 28px -18px rgba(0, 0, 0, .9);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
         }
 
         .store-favorite-action.is-active {
-          background: var(--store-hero-control-bg-strong);
-          border-color: transparent;
-          color: #ff3d71;
+          color: #fff;
+          border-color: rgba(255, 79, 139, .68);
         }
 
         .hero-media-nav {
           top: 50%;
-          width: 46px;
-          height: 64px;
-          border: 0;
+          width: 44px;
+          height: 44px;
+          border: 1px solid var(--store-hero-control-border);
           border-radius: 999px;
           background: var(--store-hero-control-bg);
           color: var(--store-hero-control-icon);
@@ -2963,6 +2971,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           will-change: auto;
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           text-shadow: none;
           filter: none !important;
           -webkit-tap-highlight-color: transparent;
@@ -2979,6 +2989,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-media-nav:active,
         .hero-media-nav:where(:hover, :focus-visible) {
+          background: rgba(212, 178, 106, .22);
+          border-color: rgba(212, 178, 106, .45);
           filter: none !important;
           transform: translateY(-50%) !important;
         }
@@ -4882,7 +4894,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .hero-media-nav {
             width: 42px;
-            height: 60px;
+            height: 42px;
             background: var(--store-hero-control-bg);
             color: var(--store-hero-control-icon);
           }
