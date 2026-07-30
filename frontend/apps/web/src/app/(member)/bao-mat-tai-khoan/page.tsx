@@ -733,7 +733,7 @@ function PasswordField({
   return (
     <label style={{ display: "grid", gap: 7 }}>
       <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 900 }}>{label}</span>
-      <span style={{ position: "relative", display: "block" }}>
+      <span style={{ position: "relative", display: "block", height: 48 }}>
         <input
           value={value}
           type={showPassword ? "text" : "password"}
@@ -749,9 +749,8 @@ function PasswordField({
           title={toggleLabel}
           style={{
             position: "absolute",
-            top: "50%",
-            right: 12,
-            transform: "translateY(-50%)",
+            top: 7,
+            right: 9,
             width: 34,
             height: 34,
             border: 0,
@@ -760,6 +759,10 @@ function PasswordField({
             color: colors.goldPale,
             display: "grid",
             placeItems: "center",
+            lineHeight: 0,
+            padding: 0,
+            outline: "none",
+            WebkitTapHighlightColor: "transparent",
             cursor: "pointer",
           }}
         >
@@ -776,12 +779,12 @@ function PasswordField({
 function fieldStyle(hasError: boolean, hasTrailingAction = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 48,
+    height: 48,
     border: `1px solid ${hasError ? "rgba(255,107,139,.55)" : colors.border}`,
     borderRadius: 14,
     background: "rgba(255,255,255,.055)",
     color: colors.text,
-    padding: hasTrailingAction ? "0 52px 0 14px" : "0 14px",
+    padding: hasTrailingAction ? "0 50px 0 14px" : "0 14px",
     fontSize: 14,
     fontWeight: 750,
     outline: "none",
