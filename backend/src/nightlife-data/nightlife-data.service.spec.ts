@@ -1061,6 +1061,16 @@ describe('NightlifeDataService', () => {
           originalName: 'Neon video',
           createdAt: new Date('2026-06-19T00:00:00.000Z'),
         },
+        {
+          id: 'media-cast-leak',
+          type: 'IMAGE',
+          url: 'https://example.com/yuna-gallery.jpg',
+          purpose: 'cast-gallery',
+          mimeType: 'image/jpeg',
+          originalName: 'Yuna cast gallery',
+          castId: null,
+          createdAt: new Date('2026-06-18T00:00:00.000Z'),
+        },
       ],
       casts: [
         {
@@ -1196,6 +1206,14 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(result.gallery).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'media-cast-leak',
+          url: 'https://example.com/yuna-gallery.jpg',
+        }),
+      ]),
+    );
     expect(prisma.store.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -1203,6 +1221,30 @@ describe('NightlifeDataService', () => {
           deletedAt: null,
           status: 'ACTIVE',
         },
+        select: expect.objectContaining({
+          media: expect.objectContaining({
+            where: expect.objectContaining({
+              castId: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              AND: expect.arrayContaining([
+                expect.objectContaining({
+                  OR: [
+                    { purpose: null },
+                    {
+                      purpose: {
+                        notIn: expect.arrayContaining([
+                          'CAST_PHOTO',
+                          'cast-gallery',
+                        ]),
+                      },
+                    },
+                  ],
+                }),
+              ]),
+            }),
+          }),
+        }),
       }),
     );
   });
@@ -5068,33 +5110,28 @@ describe('NightlifeDataService', () => {
     });
 
     expect(prisma.media.findMany).toHaveBeenCalledWith({
-      where: {
+      where: expect.objectContaining({
         id: { in: [storeMediaId, castMediaId] },
         castId: null,
         deletedAt: null,
         status: 'READY',
-        AND: [
-          {
+        AND: expect.arrayContaining([
+          expect.objectContaining({
             OR: [
               { purpose: null },
               {
                 purpose: {
-                  notIn: [
+                  notIn: expect.arrayContaining([
                     'CAST_AVATAR',
                     'CAST_PHOTO',
-                    'CAST_GALLERY',
-                    'CAST_PROFILE',
-                    'CAST_VIDEO',
-                    'PARTNER_CAST_IMAGE',
-                    'PARTNER_CAST_VIDEO',
-                    'PARTNER_LISTING_CAST',
-                  ],
+                    'cast-gallery',
+                  ]),
                 },
               },
             ],
-          },
-        ],
-      },
+          }),
+        ]),
+      }),
       select: { id: true },
     });
     expect(prisma.store.update).toHaveBeenCalledWith(

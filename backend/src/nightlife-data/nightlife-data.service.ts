@@ -1068,6 +1068,12 @@ type CouponSummary = {
 };
 
 const CAST_MEDIA_PURPOSES = [
+  'avatar',
+  'cast-avatar',
+  'cast-photo',
+  'cast-profile',
+  'cast-gallery',
+  'intro-video',
   'CAST_AVATAR',
   'CAST_PHOTO',
   'CAST_GALLERY',
@@ -1077,6 +1083,9 @@ const CAST_MEDIA_PURPOSES = [
   'PARTNER_CAST_VIDEO',
   'PARTNER_LISTING_CAST',
 ];
+const CAST_MEDIA_PURPOSE_KEYS = new Set(
+  CAST_MEDIA_PURPOSES.map((purpose) => purpose.toLowerCase()),
+);
 
 @Injectable()
 export class NightlifeDataService {
@@ -1101,6 +1110,22 @@ export class NightlifeDataService {
         },
       ],
     };
+  }
+
+  private isStoreGalleryMedia(media: {
+    castId?: string | null;
+    purpose?: string | null;
+  }) {
+    if (media.castId) {
+      return false;
+    }
+
+    const purpose = media.purpose?.trim();
+    if (!purpose) {
+      return true;
+    }
+
+    return !CAST_MEDIA_PURPOSE_KEYS.has(purpose.toLowerCase());
   }
 
   constructor(
@@ -2330,13 +2355,10 @@ export class NightlifeDataService {
           },
         },
         media: {
-          where: {
-            deletedAt: null,
-            castId: null,
+          where: this.storeMediaWhere({
             access: 'PUBLIC',
-            status: 'READY',
             type: { in: ['IMAGE', 'VIDEO'] },
-          },
+          }),
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
@@ -2439,13 +2461,10 @@ export class NightlifeDataService {
           },
         },
         media: {
-          where: {
-            deletedAt: null,
-            castId: null,
+          where: this.storeMediaWhere({
             access: 'PUBLIC',
-            status: 'READY',
             type: 'IMAGE',
-          },
+          }),
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: {
@@ -2456,26 +2475,28 @@ export class NightlifeDataService {
       },
     });
 
-    const gallery = store.media.map((media) => {
-      const metadata = this.asRecord(media.metadata);
-      const thumbnailUrl =
-        [metadata?.thumbnailUrl, metadata?.posterUrl, metadata?.previewUrl]
-          .filter(
-            (value): value is string =>
-              typeof value === 'string' && value.trim().length > 0,
-          )
-          .map((value) => value.trim())[0] ?? null;
+    const gallery = store.media
+      .filter((media) => this.isStoreGalleryMedia(media))
+      .map((media) => {
+        const metadata = this.asRecord(media.metadata);
+        const thumbnailUrl =
+          [metadata?.thumbnailUrl, metadata?.posterUrl, metadata?.previewUrl]
+            .filter(
+              (value): value is string =>
+                typeof value === 'string' && value.trim().length > 0,
+            )
+            .map((value) => value.trim())[0] ?? null;
 
-      return {
-        id: media.id,
-        type: media.type,
-        url: media.url,
-        thumbnailUrl,
-        purpose: media.purpose,
-        mimeType: media.mimeType,
-        alt: media.originalName || store.name,
-      };
-    });
+        return {
+          id: media.id,
+          type: media.type,
+          url: media.url,
+          thumbnailUrl,
+          purpose: media.purpose,
+          mimeType: media.mimeType,
+          alt: media.originalName || store.name,
+        };
+      });
     const activeCoupons = store.coupons.map((coupon) => ({
       id: coupon.id,
       code: coupon.code,
