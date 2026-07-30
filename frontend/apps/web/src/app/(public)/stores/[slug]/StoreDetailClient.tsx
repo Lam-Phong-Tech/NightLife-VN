@@ -2283,6 +2283,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       displayName,
       email: normalizedEmail,
       scheduledAt,
+      locale: activeLanguage,
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
       ...(activeCouponId ? { couponId: activeCouponId } : {}),

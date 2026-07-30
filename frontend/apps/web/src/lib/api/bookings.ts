@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 
+export type BookingLocale = "vi" | "en" | "ja" | "ko" | "zh";
+
 export type BookingStatus = "REQUESTED" | "CONFIRMED" | "CHECKED_IN" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 export type BookingStatusGroup = "Mới" | "Hoàn tất" | "Đã hủy";
@@ -20,6 +22,7 @@ export type BookingRecord = {
   tourBookingId?: string;
   storeId?: string;
   castId?: string | null;
+  locale?: BookingLocale | null;
   status: BookingStatus;
   scheduledAt: string;
   partySize: number;
@@ -220,6 +223,7 @@ export type CreateBookingPayload = {
   email: string;
   phone?: string;
   scheduledAt: string;
+  locale?: BookingLocale;
   partySize: number;
   note?: string;
 };
@@ -229,6 +233,7 @@ export type CreateTourBookingPayload = {
   email: string;
   phone?: string;
   scheduledAt: string;
+  locale?: BookingLocale;
   partySize: number;
   note?: string;
   castSelections?: Array<{

@@ -790,6 +790,7 @@ export default function Page() {
       displayName,
       email: normalizedEmail,
       scheduledAt,
+      locale: activeLanguage,
       partySize,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };

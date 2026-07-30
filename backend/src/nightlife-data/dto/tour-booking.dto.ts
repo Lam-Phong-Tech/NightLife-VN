@@ -5,6 +5,7 @@ import {
   IsArray,
   IsBoolean,
   IsEmail,
+  IsIn,
   IsISO8601,
   IsInt,
   IsNotEmpty,
@@ -18,6 +19,10 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import {
+  supportedBookingLocales,
+  type BookingLocale,
+} from './create-booking.dto';
 
 const trimString = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -68,6 +73,17 @@ export class CreateTourBookingDto {
   @ApiProperty({ example: '2026-07-17T13:00:00.000Z' })
   @IsISO8601()
   scheduledAt!: string;
+
+  @ApiPropertyOptional({
+    example: 'ja',
+    enum: supportedBookingLocales,
+    description:
+      'Locale selected by the customer when creating the tour booking.',
+  })
+  @Transform(trimOptionalString)
+  @IsOptional()
+  @IsIn(supportedBookingLocales)
+  locale?: BookingLocale;
 
   @ApiProperty({ minimum: 1, maximum: 50, example: 4 })
   @Type(() => Number)

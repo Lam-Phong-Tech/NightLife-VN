@@ -1,0 +1,5 @@
+ALTER TABLE "bookings"
+ADD COLUMN "locale" VARCHAR(8) NOT NULL DEFAULT 'ja';
+
+ALTER TABLE "tour_bookings"
+ADD COLUMN "locale" VARCHAR(8) NOT NULL DEFAULT 'ja';

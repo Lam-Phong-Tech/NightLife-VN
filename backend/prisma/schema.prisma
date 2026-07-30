@@ -653,6 +653,7 @@ model Booking {
   media                  Media[]
   qr                     BookingQr?
   status                 BookingStatus          @default(REQUESTED)
+  locale                 String                 @default("ja") @db.VarChar(8)
   scheduledAt            DateTime               @map("scheduled_at")
   partySize              Int                    @default(1) @map("party_size")
   note                   String?
@@ -1439,6 +1440,7 @@ model TourBooking {
   userId                String?              @map("user_id") @db.Uuid
   guestId               String               @map("guest_id") @db.Uuid
   status                TourBookingStatus    @default(REQUESTED)
+  locale                String               @default("ja") @db.VarChar(8)
   scheduledAt           DateTime             @map("scheduled_at")
   partySize             Int                  @default(1) @map("party_size")
   durationHoursSnapshot Int                  @map("duration_hours_snapshot")

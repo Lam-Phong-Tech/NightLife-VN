@@ -100,7 +100,11 @@ import {
   UpdateCommissionOverrideDto,
 } from './dto/commission-override.dto';
 import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
-import { CreateBookingDto } from './dto/create-booking.dto';
+import {
+  CreateBookingDto,
+  supportedBookingLocales,
+  type BookingLocale,
+} from './dto/create-booking.dto';
 import {
   ConfirmTourBookingCheckInDto,
   CreateTourBookingDto,
@@ -243,6 +247,7 @@ type BookingNotificationRecord = {
   bookingCode?: string | null;
   storeId?: string | null;
   status: string;
+  locale?: string | null;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
   subtotalVnd?: number | null;
@@ -682,6 +687,8 @@ type PartnerListingDraftPayload = {
 
 const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
+const defaultBookingLocale: BookingLocale = 'ja';
+const supportedBookingLocaleSet = new Set<string>(supportedBookingLocales);
 const PARTNER_LISTING_DRAFT_KIND = 'PARTNER_LISTING_DRAFT';
 const PARTNER_LISTING_CAST_STATUSES = new Set<CastStatus>([
   'DRAFT',
@@ -12194,6 +12201,7 @@ export class NightlifeDataService {
     context?: CouponClaimContext;
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
+    const locale = this.normalizeBookingLocale(input.dto.locale);
     this.assertScheduledAtWithinStoreBookingSlots(
       input.target.store.openingHours,
       scheduledAt,
@@ -12328,6 +12336,7 @@ export class NightlifeDataService {
           couponId: couponLink.couponId,
           couponIssueId: bookingCouponIssueId,
           status: 'REQUESTED',
+          locale,
           scheduledAt,
           partySize: input.dto.partySize,
           note: input.note,
@@ -12379,6 +12388,7 @@ export class NightlifeDataService {
     context?: CouponClaimContext;
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
+    const locale = this.normalizeBookingLocale(input.dto.locale);
     const tour = await this.prisma.tour.findFirst({
       where: {
         id: input.tourId,
@@ -12499,6 +12509,7 @@ export class NightlifeDataService {
           userId: input.userId,
           guestId: input.guestId,
           status: 'REQUESTED',
+          locale,
           scheduledAt,
           partySize: input.dto.partySize,
           durationHoursSnapshot: tour.durationHours,
@@ -12540,6 +12551,7 @@ export class NightlifeDataService {
           email: input.dto.email,
           phone: input.dto.phone,
           scheduledAt: input.dto.scheduledAt,
+          locale,
           partySize: input.dto.partySize,
           note: input.note,
         };
@@ -12581,6 +12593,7 @@ export class NightlifeDataService {
             tourStopId: stop.id,
             tourStopOrder: stop.order,
             status: 'REQUESTED',
+            locale,
             scheduledAt,
             partySize: input.dto.partySize,
             note: input.note,
@@ -13755,16 +13768,22 @@ export class NightlifeDataService {
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
     const amountLabel = this.bookingAmountLabel(booking);
+    const locale = this.normalizeBookingLocale(booking.locale);
     const payload = {
       bookingId: booking.id,
       bookingCode,
       status: booking.status,
+      locale,
       scheduledAt: this.toAuditIso(booking.scheduledAt),
       partySize: booking.partySize ?? null,
       storeName: booking.store?.name ?? null,
       storeSlug: booking.store?.slug ?? null,
       castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
       guestName: booking.guest?.displayName ?? null,
+      amountVnd:
+        typeof booking.totalVnd === 'number' && booking.totalVnd > 0
+          ? booking.totalVnd
+          : null,
       amountLabel,
       couponCode: booking.coupon?.code ?? null,
       couponIssueCode: booking.couponIssue?.code ?? null,
@@ -13804,11 +13823,16 @@ export class NightlifeDataService {
         bookingId: booking.id,
         bookingCode,
         status: booking.status,
+        locale,
         storeName: booking.store?.name,
         storeSlug: booking.store?.slug,
         castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
         scheduledAt: booking.scheduledAt,
         partySize: booking.partySize,
+        amountVnd:
+          typeof booking.totalVnd === 'number' && booking.totalVnd > 0
+            ? booking.totalVnd
+            : null,
         amountLabel,
         note: booking.note,
         qrPayload,
@@ -14196,6 +14220,14 @@ export class NightlifeDataService {
     return null;
   }
 
+  private normalizeBookingLocale(locale?: string | null): BookingLocale {
+    const normalized =
+      typeof locale === 'string' ? locale.trim().toLowerCase() : '';
+    return supportedBookingLocaleSet.has(normalized)
+      ? (normalized as BookingLocale)
+      : defaultBookingLocale;
+  }
+
   private groupBugEvents(
     events: BugTrendEvent[],
     keyFn: (event: BugTrendEvent) => string,
@@ -14270,6 +14302,7 @@ export class NightlifeDataService {
       storeId: true,
       castId: true,
       status: true,
+      locale: true,
       scheduledAt: true,
       partySize: true,
       subtotalVnd: true,

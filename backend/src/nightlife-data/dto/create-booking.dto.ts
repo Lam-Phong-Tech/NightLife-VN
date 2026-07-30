@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type, type TransformFnParams } from 'class-transformer';
 import {
   IsEmail,
+  IsIn,
   IsInt,
   IsISO8601,
   IsNotEmpty,
@@ -58,6 +59,10 @@ const IsGmailAddress = (validationOptions?: ValidationOptions) =>
     },
     validationOptions,
   );
+
+export const supportedBookingLocales = ['vi', 'en', 'ja', 'ko', 'zh'] as const;
+
+export type BookingLocale = (typeof supportedBookingLocales)[number];
 
 export class CreateBookingDto {
   @ApiPropertyOptional({
@@ -161,6 +166,17 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsISO8601()
   scheduledAt: string;
+
+  @ApiPropertyOptional({
+    example: 'ja',
+    enum: supportedBookingLocales,
+    description:
+      'Locale selected by the customer when creating the booking. Used for customer email templates.',
+  })
+  @Transform(trimOptionalString)
+  @IsOptional()
+  @IsIn(supportedBookingLocales)
+  locale?: BookingLocale;
 
   @ApiProperty({ example: 4, minimum: 1, maximum: 50 })
   @Type(() => Number)

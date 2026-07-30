@@ -735,6 +735,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
       displayName,
       email: normalizedEmail,
       scheduledAt,
+      locale: activeLanguage,
       partySize,
       ...(trimmedNote ? { note: trimmedNote } : {}),
       ...(castSelections.length ? { castSelections } : {}),
