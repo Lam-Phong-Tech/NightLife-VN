@@ -58,6 +58,8 @@ const emptyPasswordForm: PasswordForm = {
   confirmPassword: "",
 };
 
+type PasswordVisibility = Record<keyof PasswordForm, boolean>;
+
 const displayNamePattern = /^[\p{L}\s]+$/u;
 
 function formFromUser(user: AuthUser | null): ProfileForm {
@@ -134,7 +136,11 @@ export default function Page() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [showPasswords, setShowPasswords] = useState(false);
+  const [passwordVisibility, setPasswordVisibility] = useState<PasswordVisibility>({
+    oldPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -174,6 +180,10 @@ export default function Page() {
   const updatePasswordField = (field: keyof PasswordForm, value: string) => {
     setPasswordMessage("");
     setPasswordForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const togglePasswordVisibility = (field: keyof PasswordForm) => {
+    setPasswordVisibility((current) => ({ ...current, [field]: !current[field] }));
   };
 
   const resetProfileForm = () => {
@@ -485,7 +495,12 @@ export default function Page() {
                   onChange={(value) => updatePasswordField("oldPassword", value)}
                   error={hasPasswordInput ? passwordErrors.oldPassword : undefined}
                   autoComplete="current-password"
-                  showPassword={showPasswords}
+                  showPassword={passwordVisibility.oldPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("oldPassword")}
+                  toggleLabel={translateText(
+                    passwordVisibility.oldPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu",
+                    activeLanguage,
+                  )}
                 />
                 <PasswordField
                   label={translateText("Mật khẩu mới", activeLanguage)}
@@ -493,7 +508,12 @@ export default function Page() {
                   onChange={(value) => updatePasswordField("newPassword", value)}
                   error={hasPasswordInput ? passwordErrors.newPassword : undefined}
                   autoComplete="new-password"
-                  showPassword={showPasswords}
+                  showPassword={passwordVisibility.newPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("newPassword")}
+                  toggleLabel={translateText(
+                    passwordVisibility.newPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu",
+                    activeLanguage,
+                  )}
                 />
                 <PasswordField
                   label={translateText("Xác nhận mật khẩu mới", activeLanguage)}
@@ -501,31 +521,13 @@ export default function Page() {
                   onChange={(value) => updatePasswordField("confirmPassword", value)}
                   error={hasPasswordInput ? passwordErrors.confirmPassword : undefined}
                   autoComplete="new-password"
-                  showPassword={showPasswords}
+                  showPassword={passwordVisibility.confirmPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("confirmPassword")}
+                  toggleLabel={translateText(
+                    passwordVisibility.confirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu",
+                    activeLanguage,
+                  )}
                 />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords((current) => !current)}
-                  style={{
-                    justifySelf: "start",
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,.04)",
-                    color: colors.goldPale,
-                    minHeight: 38,
-                    padding: "0 13px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
-                >
-                  {showPasswords ? <EyeOff size={15} /> : <Eye size={15} />}
-                  {translateText(showPasswords ? "Ẩn mật khẩu" : "Hiện mật khẩu", activeLanguage)}
-                </button>
 
                 {passwordMessage ? (
                   <FormMessage
@@ -716,6 +718,8 @@ function PasswordField({
   error,
   autoComplete,
   showPassword,
+  onToggleVisibility,
+  toggleLabel,
 }: {
   label: string;
   value: string;
@@ -723,18 +727,45 @@ function PasswordField({
   error?: string;
   autoComplete?: string;
   showPassword: boolean;
+  onToggleVisibility: () => void;
+  toggleLabel: string;
 }) {
   return (
     <label style={{ display: "grid", gap: 7 }}>
       <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 900 }}>{label}</span>
-      <input
-        value={value}
-        type={showPassword ? "text" : "password"}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={label}
-        autoComplete={autoComplete}
-        style={fieldStyle(Boolean(error))}
-      />
+      <span style={{ position: "relative", display: "block" }}>
+        <input
+          value={value}
+          type={showPassword ? "text" : "password"}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={label}
+          autoComplete={autoComplete}
+          style={fieldStyle(Boolean(error), true)}
+        />
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          style={{
+            position: "absolute",
+            top: "50%",
+            right: 12,
+            transform: "translateY(-50%)",
+            width: 34,
+            height: 34,
+            border: 0,
+            borderRadius: 10,
+            background: "transparent",
+            color: colors.goldPale,
+            display: "grid",
+            placeItems: "center",
+            cursor: "pointer",
+          }}
+        >
+          {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+        </button>
+      </span>
       {error ? (
         <small style={{ color: colors.danger, fontSize: 12, fontWeight: 800 }}>{error}</small>
       ) : null}
@@ -742,7 +773,7 @@ function PasswordField({
   );
 }
 
-function fieldStyle(hasError: boolean): React.CSSProperties {
+function fieldStyle(hasError: boolean, hasTrailingAction = false): React.CSSProperties {
   return {
     width: "100%",
     minHeight: 48,
@@ -750,7 +781,7 @@ function fieldStyle(hasError: boolean): React.CSSProperties {
     borderRadius: 14,
     background: "rgba(255,255,255,.055)",
     color: colors.text,
-    padding: "0 14px",
+    padding: hasTrailingAction ? "0 52px 0 14px" : "0 14px",
     fontSize: 14,
     fontWeight: 750,
     outline: "none",
