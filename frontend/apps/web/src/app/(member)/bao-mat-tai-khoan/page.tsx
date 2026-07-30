@@ -9,6 +9,8 @@ import {
 import { changeMemberPassword, updateMemberProfile } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -72,57 +74,59 @@ function normalizeForm(form: ProfileForm): ProfileForm {
   };
 }
 
-function validateProfileForm(form: ProfileForm) {
+function validateProfileForm(form: ProfileForm, language: LanguageCode) {
   const errors: Partial<Record<keyof ProfileForm, string>> = {};
   const normalized = normalizeForm(form);
 
   if (!normalized.displayName) {
-    errors.displayName = "Vui lòng nhập họ tên.";
+    errors.displayName = translateText("Vui lòng nhập họ tên.", language);
   } else if (normalized.displayName.length < 2) {
-    errors.displayName = "Họ tên cần tối thiểu 2 ký tự.";
+    errors.displayName = translateText("Họ tên cần tối thiểu 2 ký tự.", language);
   } else if (normalized.displayName.length > 80) {
-    errors.displayName = "Họ tên không được vượt quá 80 ký tự.";
+    errors.displayName = translateText("Họ tên không được vượt quá 80 ký tự.", language);
   } else if (!displayNamePattern.test(normalized.displayName)) {
-    errors.displayName = "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
+    errors.displayName = translateText("Họ tên chỉ được nhập chữ cái và khoảng trắng.", language);
   }
 
   const emailError = validateEmailAddress(normalized.email);
-  if (emailError) errors.email = emailError;
+  if (emailError) errors.email = translateText(emailError, language);
 
   return errors;
 }
 
-function validatePasswordForm(form: PasswordForm) {
+function validatePasswordForm(form: PasswordForm, language: LanguageCode) {
   const errors: Partial<Record<keyof PasswordForm, string>> = {};
   const oldPassword = form.oldPassword.trim();
   const newPassword = form.newPassword.trim();
   const confirmPassword = form.confirmPassword.trim();
 
-  if (!oldPassword) errors.oldPassword = "Vui lòng nhập mật khẩu hiện tại.";
+  if (!oldPassword)
+    errors.oldPassword = translateText("Vui lòng nhập mật khẩu hiện tại.", language);
   if (!newPassword) {
-    errors.newPassword = "Vui lòng nhập mật khẩu mới.";
+    errors.newPassword = translateText("Vui lòng nhập mật khẩu mới.", language);
   } else if (newPassword.length < 8) {
-    errors.newPassword = "Mật khẩu mới cần tối thiểu 8 ký tự.";
+    errors.newPassword = translateText("Mật khẩu mới cần tối thiểu 8 ký tự.", language);
   } else if (newPassword.length > 72) {
-    errors.newPassword = "Mật khẩu mới không được vượt quá 72 ký tự.";
+    errors.newPassword = translateText("Mật khẩu mới không được vượt quá 72 ký tự.", language);
   }
 
   if (!confirmPassword) {
-    errors.confirmPassword = "Vui lòng xác nhận mật khẩu mới.";
+    errors.confirmPassword = translateText("Vui lòng xác nhận mật khẩu mới.", language);
   } else if (newPassword && confirmPassword !== newPassword) {
-    errors.confirmPassword = "Mật khẩu xác nhận chưa khớp.";
+    errors.confirmPassword = translateText("Mật khẩu xác nhận chưa khớp.", language);
   }
 
   return errors;
 }
 
-function loginMethodLabel(method: AuthLoginMethod) {
+function loginMethodLabel(method: AuthLoginMethod, language: LanguageCode) {
   if (method === "GOOGLE") return "Google";
   if (method === "LINE") return "LINE";
-  return "Email và mật khẩu";
+  return translateText("Email và mật khẩu", language);
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileForm>(() => formFromUser(null));
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPasswordForm);
@@ -145,14 +149,20 @@ export default function Page() {
   const loginMethod = authUser?.loginMethod ?? "PASSWORD";
   const canChangePassword = loginMethod === "PASSWORD";
   const normalizedProfileForm = useMemo(() => normalizeForm(profileForm), [profileForm]);
-  const profileErrors = useMemo(() => validateProfileForm(profileForm), [profileForm]);
+  const profileErrors = useMemo(
+    () => validateProfileForm(profileForm, activeLanguage),
+    [activeLanguage, profileForm],
+  );
   const hasProfileErrors = Object.values(profileErrors).some(Boolean);
   const initialProfileForm = useMemo(() => normalizeForm(formFromUser(authUser)), [authUser]);
   const hasProfileChanges =
     normalizedProfileForm.displayName !== initialProfileForm.displayName ||
     normalizedProfileForm.email !== initialProfileForm.email;
 
-  const passwordErrors = useMemo(() => validatePasswordForm(passwordForm), [passwordForm]);
+  const passwordErrors = useMemo(
+    () => validatePasswordForm(passwordForm, activeLanguage),
+    [activeLanguage, passwordForm],
+  );
   const hasPasswordInput = Object.values(passwordForm).some((value) => value.trim());
   const hasPasswordErrors = Object.values(passwordErrors).some(Boolean);
 
@@ -177,7 +187,8 @@ export default function Page() {
 
     if (hasProfileErrors) {
       setProfileMessage(
-        Object.values(profileErrors).find(Boolean) ?? "Vui lòng kiểm tra lại thông tin.",
+        Object.values(profileErrors).find(Boolean) ??
+          translateText("Vui lòng kiểm tra lại thông tin.", activeLanguage),
       );
       return;
     }
@@ -201,7 +212,9 @@ export default function Page() {
       });
 
       if (!updatedUser) {
-        setProfileMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        setProfileMessage(
+          translateText("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", activeLanguage),
+        );
         return;
       }
 
@@ -212,10 +225,13 @@ export default function Page() {
         loginMethod: updatedProfile.loginMethod ?? updatedUser.loginMethod,
       });
       setProfileForm(formFromUser(updatedUser));
-      setProfileMessage("Đã lưu thông tin tài khoản.");
+      setProfileMessage(translateText("Đã lưu thông tin tài khoản.", activeLanguage));
     } catch (error) {
       setProfileMessage(
-        error instanceof ApiError ? error.message : "Không lưu được thông tin. Vui lòng thử lại.",
+        translateText(
+          error instanceof ApiError ? error.message : "Không lưu được thông tin. Vui lòng thử lại.",
+          activeLanguage,
+        ),
       );
     } finally {
       setIsSavingProfile(false);
@@ -228,7 +244,8 @@ export default function Page() {
 
     if (hasPasswordErrors) {
       setPasswordMessage(
-        Object.values(passwordErrors).find(Boolean) ?? "Vui lòng kiểm tra lại mật khẩu.",
+        Object.values(passwordErrors).find(Boolean) ??
+          translateText("Vui lòng kiểm tra lại mật khẩu.", activeLanguage),
       );
       return;
     }
@@ -242,18 +259,24 @@ export default function Page() {
         newPassword: passwordForm.newPassword.trim(),
       });
       setPasswordForm(emptyPasswordForm);
-      setPasswordMessage("Đã đổi mật khẩu tài khoản.");
+      setPasswordMessage(translateText("Đã đổi mật khẩu tài khoản.", activeLanguage));
     } catch (error) {
       setPasswordMessage(
-        error instanceof ApiError ? error.message : "Không đổi được mật khẩu. Vui lòng thử lại.",
+        translateText(
+          error instanceof ApiError ? error.message : "Không đổi được mật khẩu. Vui lòng thử lại.",
+          activeLanguage,
+        ),
       );
     } finally {
       setIsChangingPassword(false);
     }
   };
 
-  const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Chưa đăng nhập";
-  const email = authUser?.email || "Chưa có email";
+  const name =
+    authUser?.displayName ||
+    authUser?.email?.split("@")[0] ||
+    translateText("Chưa đăng nhập", activeLanguage);
+  const email = authUser?.email || translateText("Chưa có email", activeLanguage);
   const tier = authUser?.tier || "FREE";
   const status = authUser?.status || "ACTIVE";
   const role = authUser?.role || "USER";
@@ -275,7 +298,7 @@ export default function Page() {
           }}
         >
           <ArrowLeft size={16} />
-          Quay lại tài khoản
+          {translateText("Quay lại tài khoản", activeLanguage)}
         </Link>
 
         <div className="nl-security-layout">
@@ -314,7 +337,7 @@ export default function Page() {
                     fontWeight: 900,
                   }}
                 >
-                  Bảo mật tài khoản
+                  {translateText("Bảo mật tài khoản", activeLanguage)}
                 </p>
                 <h1
                   style={{
@@ -341,15 +364,19 @@ export default function Page() {
             </div>
 
             <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
-              <InfoRow icon={<Mail size={16} />} label="Email đăng nhập" value={email} />
+              <InfoRow
+                icon={<Mail size={16} />}
+                label={translateText("Email đăng nhập", activeLanguage)}
+                value={email}
+              />
               <InfoRow
                 icon={<KeyRound size={16} />}
-                label="Phương thức đăng nhập"
-                value={loginMethodLabel(loginMethod)}
+                label={translateText("Phương thức đăng nhập", activeLanguage)}
+                value={loginMethodLabel(loginMethod, activeLanguage)}
               />
               <InfoRow
                 icon={<ShieldCheck size={16} />}
-                label="Quyền truy cập"
+                label={translateText("Quyền truy cập", activeLanguage)}
                 value={`${role} · ${tier} · ${status}`}
               />
             </div>
@@ -369,34 +396,42 @@ export default function Page() {
             >
               <div>
                 <h2 style={{ margin: 0, fontSize: 20, lineHeight: 1.15, fontWeight: 950 }}>
-                  Thông tin tài khoản
+                  {translateText("Thông tin tài khoản", activeLanguage)}
                 </h2>
                 <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
-                  Cập nhật họ tên và email dùng cho tài khoản hội viên.
+                  {translateText(
+                    "Cập nhật họ tên và email dùng cho tài khoản hội viên.",
+                    activeLanguage,
+                  )}
                 </p>
               </div>
 
               <ProfileField
-                label="Họ tên"
+                label={translateText("Họ tên", activeLanguage)}
                 value={profileForm.displayName}
                 onChange={(value) => updateProfileField("displayName", value)}
-                placeholder="Vui lòng nhập họ tên"
+                placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
                 error={profileErrors.displayName}
                 autoComplete="name"
               />
 
               <ProfileField
-                label="Email"
+                label={translateText("Email", activeLanguage)}
                 value={profileForm.email}
                 onChange={(value) => updateProfileField("email", value)}
-                placeholder="Vui lòng nhập email"
+                placeholder={translateText("Vui lòng nhập email", activeLanguage)}
                 error={profileErrors.email}
                 autoComplete="email"
                 inputMode="email"
               />
 
               {profileMessage ? (
-                <FormMessage message={profileMessage} successText="Đã lưu" />
+                <FormMessage
+                  message={profileMessage}
+                  isSuccess={
+                    profileMessage === translateText("Đã lưu thông tin tài khoản.", activeLanguage)
+                  }
+                />
               ) : null}
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -407,7 +442,7 @@ export default function Page() {
                     hasProfileErrors || !hasProfileChanges || isSavingProfile,
                   )}
                 >
-                  {isSavingProfile ? "Đang lưu..." : "Lưu thay đổi"}
+                  {translateText(isSavingProfile ? "Đang lưu..." : "Lưu thay đổi", activeLanguage)}
                 </button>
                 <button
                   type="button"
@@ -415,7 +450,7 @@ export default function Page() {
                   disabled={!hasProfileChanges}
                   style={secondaryButtonStyle(!hasProfileChanges)}
                 >
-                  Hủy chỉnh sửa
+                  {translateText("Hủy chỉnh sửa", activeLanguage)}
                 </button>
               </div>
             </form>
@@ -434,15 +469,18 @@ export default function Page() {
               >
                 <div>
                   <h2 style={{ margin: 0, fontSize: 20, lineHeight: 1.15, fontWeight: 950 }}>
-                    Đổi mật khẩu
+                    {translateText("Đổi mật khẩu", activeLanguage)}
                   </h2>
                   <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
-                    Dùng cho tài khoản đăng nhập bằng email và mật khẩu.
+                    {translateText(
+                      "Dùng cho tài khoản đăng nhập bằng email và mật khẩu.",
+                      activeLanguage,
+                    )}
                   </p>
                 </div>
 
                 <PasswordField
-                  label="Mật khẩu hiện tại"
+                  label={translateText("Mật khẩu hiện tại", activeLanguage)}
                   value={passwordForm.oldPassword}
                   onChange={(value) => updatePasswordField("oldPassword", value)}
                   error={hasPasswordInput ? passwordErrors.oldPassword : undefined}
@@ -450,7 +488,7 @@ export default function Page() {
                   showPassword={showPasswords}
                 />
                 <PasswordField
-                  label="Mật khẩu mới"
+                  label={translateText("Mật khẩu mới", activeLanguage)}
                   value={passwordForm.newPassword}
                   onChange={(value) => updatePasswordField("newPassword", value)}
                   error={hasPasswordInput ? passwordErrors.newPassword : undefined}
@@ -458,7 +496,7 @@ export default function Page() {
                   showPassword={showPasswords}
                 />
                 <PasswordField
-                  label="Xác nhận mật khẩu mới"
+                  label={translateText("Xác nhận mật khẩu mới", activeLanguage)}
                   value={passwordForm.confirmPassword}
                   onChange={(value) => updatePasswordField("confirmPassword", value)}
                   error={hasPasswordInput ? passwordErrors.confirmPassword : undefined}
@@ -486,11 +524,17 @@ export default function Page() {
                   }}
                 >
                   {showPasswords ? <EyeOff size={15} /> : <Eye size={15} />}
-                  {showPasswords ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  {translateText(showPasswords ? "Ẩn mật khẩu" : "Hiện mật khẩu", activeLanguage)}
                 </button>
 
                 {passwordMessage ? (
-                  <FormMessage message={passwordMessage} successText="Đã đổi" />
+                  <FormMessage
+                    message={passwordMessage}
+                    isSuccess={
+                      passwordMessage ===
+                      translateText("Đã đổi mật khẩu tài khoản.", activeLanguage)
+                    }
+                  />
                 ) : null}
 
                 <button
@@ -500,7 +544,10 @@ export default function Page() {
                     !hasPasswordInput || hasPasswordErrors || isChangingPassword,
                   )}
                 >
-                  {isChangingPassword ? "Đang đổi..." : "Đổi mật khẩu"}
+                  {translateText(
+                    isChangingPassword ? "Đang đổi..." : "Đổi mật khẩu",
+                    activeLanguage,
+                  )}
                 </button>
               </form>
             ) : (
@@ -532,7 +579,8 @@ export default function Page() {
                 </span>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 18, lineHeight: 1.2, fontWeight: 950 }}>
-                    Đăng nhập qua {loginMethodLabel(loginMethod)}
+                    {translateText("Đăng nhập qua", activeLanguage)}{" "}
+                    {loginMethodLabel(loginMethod, activeLanguage)}
                   </h2>
                   <p
                     style={{
@@ -542,8 +590,9 @@ export default function Page() {
                       lineHeight: 1.55,
                     }}
                   >
-                    Tài khoản này xác thực qua {loginMethodLabel(loginMethod)}, nên không có mục đổi
-                    mật khẩu tại Vietyoru.
+                    {translateText("Tài khoản này xác thực qua", activeLanguage)}{" "}
+                    {loginMethodLabel(loginMethod, activeLanguage)}
+                    {translateText(", nên không có mục đổi mật khẩu tại Vietyoru.", activeLanguage)}
                   </p>
                 </div>
               </div>
@@ -708,8 +757,7 @@ function fieldStyle(hasError: boolean): React.CSSProperties {
   };
 }
 
-function FormMessage({ message, successText }: { message: string; successText: string }) {
-  const isSuccess = message.includes(successText);
+function FormMessage({ message, isSuccess }: { message: string; isSuccess: boolean }) {
   return (
     <div
       style={{

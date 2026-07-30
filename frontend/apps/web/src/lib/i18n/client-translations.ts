@@ -1300,6 +1300,20 @@ const entries: TranslationEntry[] = [
     zh: "登录邮箱",
   },
   {
+    vi: "Phương thức đăng nhập",
+    en: "Sign-in method",
+    ja: "ログイン方法",
+    ko: "로그인 방식",
+    zh: "登录方式",
+  },
+  {
+    vi: "Email và mật khẩu",
+    en: "Email and password",
+    ja: "メールとパスワード",
+    ko: "이메일과 비밀번호",
+    zh: "邮箱和密码",
+  },
+  {
     vi: "Số điện thoại",
     en: "Phone number",
     ja: "電話番号",
@@ -1319,6 +1333,20 @@ const entries: TranslationEntry[] = [
     ja: "個人情報",
     ko: "개인정보",
     zh: "个人信息",
+  },
+  {
+    vi: "Thông tin tài khoản",
+    en: "Account information",
+    ja: "アカウント情報",
+    ko: "계정 정보",
+    zh: "账号信息",
+  },
+  {
+    vi: "Cập nhật họ tên và email dùng cho tài khoản hội viên.",
+    en: "Update the name and email used for the member account.",
+    ja: "会員アカウントで使用する氏名とメールを更新します。",
+    ko: "회원 계정에 사용할 이름과 이메일을 업데이트합니다.",
+    zh: "更新会员账号使用的姓名和邮箱。",
   },
   {
     vi: "Cập nhật họ tên, email và số điện thoại dùng cho lịch đặt.",
@@ -1361,6 +1389,34 @@ const entries: TranslationEntry[] = [
     ja: "保存中...",
     ko: "저장 중...",
     zh: "正在保存...",
+  },
+  {
+    vi: "Đã lưu",
+    en: "Saved",
+    ja: "保存済み",
+    ko: "저장됨",
+    zh: "已保存",
+  },
+  {
+    vi: "Đã lưu thông tin tài khoản.",
+    en: "Account information saved.",
+    ja: "アカウント情報を保存しました。",
+    ko: "계정 정보가 저장되었습니다.",
+    zh: "账号信息已保存。",
+  },
+  {
+    vi: "Không lưu được thông tin. Vui lòng thử lại.",
+    en: "Could not save the information. Please try again.",
+    ja: "情報を保存できませんでした。もう一度お試しください。",
+    ko: "정보를 저장할 수 없습니다. 다시 시도해 주세요.",
+    zh: "无法保存信息。请重试。",
+  },
+  {
+    vi: "Vui lòng kiểm tra lại thông tin.",
+    en: "Please check the information again.",
+    ja: "情報をもう一度確認してください。",
+    ko: "정보를 다시 확인해 주세요.",
+    zh: "请再次检查信息。",
   },
   {
     vi: "Hủy chỉnh sửa",
@@ -2931,6 +2987,34 @@ const entries: TranslationEntry[] = [
     zh: "未登录",
   },
   {
+    vi: "Chưa có email",
+    en: "No email yet",
+    ja: "メール未設定",
+    ko: "이메일 없음",
+    zh: "暂无邮箱",
+  },
+  {
+    vi: "Đăng nhập qua",
+    en: "Signed in with",
+    ja: "ログイン方法",
+    ko: "로그인 방식",
+    zh: "登录方式",
+  },
+  {
+    vi: "Tài khoản này xác thực qua",
+    en: "This account is authenticated via",
+    ja: "このアカウントは次の方法で認証されています:",
+    ko: "이 계정은 다음 방식으로 인증됩니다:",
+    zh: "此账号通过以下方式验证:",
+  },
+  {
+    vi: ", nên không có mục đổi mật khẩu tại Vietyoru.",
+    en: ", so password changes are not available in Vietyoru.",
+    ja: " のため、Vietyoruではパスワード変更は利用できません。",
+    ko: "이므로 Vietyoru에서 비밀번호 변경을 사용할 수 없습니다.",
+    zh: "，因此无法在 Vietyoru 更改密码。",
+  },
+  {
     vi: "Những mục bạn bấm tim sẽ nằm ở đây để mở lại nhanh.",
     en: "Items you heart will appear here for quick access.",
     ja: "ハートを押した項目はここに保存され、すぐ開けます。",
@@ -3881,6 +3965,104 @@ const entries: TranslationEntry[] = [
     ja: "新しいパスワード",
     ko: "새 비밀번호",
     zh: "新密码",
+  },
+  {
+    vi: "Mật khẩu hiện tại",
+    en: "Current password",
+    ja: "現在のパスワード",
+    ko: "현재 비밀번호",
+    zh: "当前密码",
+  },
+  {
+    vi: "Xác nhận mật khẩu mới",
+    en: "Confirm new password",
+    ja: "新しいパスワードの確認",
+    ko: "새 비밀번호 확인",
+    zh: "确认新密码",
+  },
+  {
+    vi: "Dùng cho tài khoản đăng nhập bằng email và mật khẩu.",
+    en: "For accounts that sign in with email and password.",
+    ja: "メールアドレスとパスワードでログインするアカウント用です。",
+    ko: "이메일과 비밀번호로 로그인하는 계정에 사용됩니다.",
+    zh: "适用于使用邮箱和密码登录的账号。",
+  },
+  {
+    vi: "Vui lòng nhập mật khẩu hiện tại.",
+    en: "Please enter your current password.",
+    ja: "現在のパスワードを入力してください。",
+    ko: "현재 비밀번호를 입력해 주세요.",
+    zh: "请输入当前密码。",
+  },
+  {
+    vi: "Vui lòng nhập mật khẩu mới.",
+    en: "Please enter a new password.",
+    ja: "新しいパスワードを入力してください。",
+    ko: "새 비밀번호를 입력해 주세요.",
+    zh: "请输入新密码。",
+  },
+  {
+    vi: "Mật khẩu mới cần tối thiểu 8 ký tự.",
+    en: "The new password must be at least 8 characters.",
+    ja: "新しいパスワードは8文字以上にしてください。",
+    ko: "새 비밀번호는 최소 8자 이상이어야 합니다.",
+    zh: "新密码至少需要 8 个字符。",
+  },
+  {
+    vi: "Mật khẩu mới không được vượt quá 72 ký tự.",
+    en: "The new password must not exceed 72 characters.",
+    ja: "新しいパスワードは72文字以内にしてください。",
+    ko: "새 비밀번호는 72자를 초과할 수 없습니다.",
+    zh: "新密码不能超过 72 个字符。",
+  },
+  {
+    vi: "Vui lòng xác nhận mật khẩu mới.",
+    en: "Please confirm the new password.",
+    ja: "新しいパスワードを確認してください。",
+    ko: "새 비밀번호를 확인해 주세요.",
+    zh: "请确认新密码。",
+  },
+  {
+    vi: "Mật khẩu xác nhận chưa khớp.",
+    en: "The confirmation password does not match.",
+    ja: "確認用パスワードが一致しません。",
+    ko: "확인 비밀번호가 일치하지 않습니다.",
+    zh: "确认密码不匹配。",
+  },
+  {
+    vi: "Vui lòng kiểm tra lại mật khẩu.",
+    en: "Please check the password again.",
+    ja: "パスワードをもう一度確認してください。",
+    ko: "비밀번호를 다시 확인해 주세요.",
+    zh: "请再次检查密码。",
+  },
+  {
+    vi: "Đang đổi...",
+    en: "Changing...",
+    ja: "変更中...",
+    ko: "변경 중...",
+    zh: "正在更改...",
+  },
+  {
+    vi: "Đã đổi",
+    en: "Changed",
+    ja: "変更済み",
+    ko: "변경됨",
+    zh: "已更改",
+  },
+  {
+    vi: "Đã đổi mật khẩu tài khoản.",
+    en: "Account password changed.",
+    ja: "アカウントのパスワードを変更しました。",
+    ko: "계정 비밀번호가 변경되었습니다.",
+    zh: "账号密码已更改。",
+  },
+  {
+    vi: "Không đổi được mật khẩu. Vui lòng thử lại.",
+    en: "Could not change the password. Please try again.",
+    ja: "パスワードを変更できませんでした。もう一度お試しください。",
+    ko: "비밀번호를 변경할 수 없습니다. 다시 시도해 주세요.",
+    zh: "无法更改密码。请重试。",
   },
   {
     vi: "Vui lòng nhập mật khẩu mới",
@@ -5776,6 +5958,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "姓名至少需要 2 个字符。",
   },
   {
+    vi: "Họ tên cần tối thiểu 2 ký tự.",
+    en: "Full name must be at least 2 characters.",
+    ja: "氏名は2文字以上必要です。",
+    ko: "이름은 최소 2자 이상이어야 합니다.",
+    zh: "姓名至少需要 2 个字符。",
+  },
+  {
     vi: "Họ tên không được vượt quá 80 ký tự.",
     en: "Full name must not exceed 80 characters.",
     ja: "氏名は80文字以内で入力してください。",
@@ -7376,12 +7565,10 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
     .replace(/\b(?:Quận|District)\s+(\d+)\b/gi, (_match, district: string) =>
       translateDistrictLabel(district, language),
     )
-    .replace(/\bPhường\s+(\d+)\b/gi, (_match, ward: string) =>
-      translateWardLabel(ward, language),
-    )
+    .replace(/\bPhường\s+(\d+)\b/gi, (_match, ward: string) => translateWardLabel(ward, language))
     .replace(/(?:,\s*|\b)Thành phố\s+/gi, (match) => {
       const isComma = match.startsWith(",");
-      return isComma ? (language === "en" ? ", City " : ", ") : (language === "en" ? "City " : "");
+      return isComma ? (language === "en" ? ", City " : ", ") : language === "en" ? "City " : "";
     })
     .replace(/\(?hôm sau\)?/gi, (match) => {
       const isParenthesized = match.startsWith("(");
@@ -7399,7 +7586,10 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
     if (!replacement) continue;
     const pattern = buildTermPattern(entry.vi);
     if (/^[A-Z]{2,3}$/i.test(entry.vi)) {
-      output = output.replace(pattern, (_match: string, prefix: string) => `${prefix}${replacement}`);
+      output = output.replace(
+        pattern,
+        (_match: string, prefix: string) => `${prefix}${replacement}`,
+      );
     } else {
       output = output.replace(pattern, replacement);
     }
@@ -7412,10 +7602,7 @@ function lowercaseFirst(value: string) {
   return value.length > 0 ? `${value[0]?.toLocaleLowerCase() ?? ""}${value.slice(1)}` : value;
 }
 
-function translateDelimitedText(
-  value: string,
-  language: Exclude<LanguageCode, "vi">,
-) {
+function translateDelimitedText(value: string, language: Exclude<LanguageCode, "vi">) {
   const delimiters = [" — ", " · ", ", "];
 
   for (const delimiter of delimiters) {
@@ -7431,10 +7618,7 @@ function translateDelimitedText(
   return null;
 }
 
-function translateDistrictLabel(
-  district: string,
-  language: Exclude<LanguageCode, "vi">,
-) {
+function translateDistrictLabel(district: string, language: Exclude<LanguageCode, "vi">) {
   return {
     en: `District ${district}`,
     ja: `${district}区`,
@@ -7452,10 +7636,7 @@ function translateWardLabel(ward: string, language: Exclude<LanguageCode, "vi">)
   }[language];
 }
 
-function translatePattern(
-  value: string,
-  language: Exclude<LanguageCode, "vi">,
-): string | null {
+function translatePattern(value: string, language: Exclude<LanguageCode, "vi">): string | null {
   const normalized = normalizeText(value);
 
   const districtMatch = normalized.match(/^(?:Quận|District)\s+(\d+)$/i);
@@ -7510,7 +7691,9 @@ function translatePattern(
     }[language];
   }
 
-  const dateWindowMatch = normalized.match(/^Ngày đặt bàn chỉ được chọn từ hôm nay đến\s+(\d+)\s+ngày tới\.$/i);
+  const dateWindowMatch = normalized.match(
+    /^Ngày đặt bàn chỉ được chọn từ hôm nay đến\s+(\d+)\s+ngày tới\.$/i,
+  );
   if (dateWindowMatch) {
     const count = dateWindowMatch[1] ?? "";
     return {
@@ -7544,11 +7727,16 @@ function translatePattern(
     }[language];
   }
 
-  const confirmNearBookingTitleMatch = normalized.match(/^Xác nhận\s+(đặt bàn|đặt cast)\s+sát giờ$/i);
+  const confirmNearBookingTitleMatch = normalized.match(
+    /^Xác nhận\s+(đặt bàn|đặt cast)\s+sát giờ$/i,
+  );
   if (confirmNearBookingTitleMatch) {
     const action = confirmNearBookingTitleMatch[1]?.toLowerCase() === "đặt cast" ? "cast" : "table";
     return {
-      en: action === "cast" ? "Confirm last-minute Cast booking" : "Confirm last-minute table booking",
+      en:
+        action === "cast"
+          ? "Confirm last-minute Cast booking"
+          : "Confirm last-minute table booking",
       ja: action === "cast" ? "直前のキャスト予約を確認" : "直前の席予約を確認",
       ko: action === "cast" ? "임박한 캐스트 예약 확인" : "임박한 테이블 예약 확인",
       zh: action === "cast" ? "确认临近时间预约 陪伴人员" : "确认临近时间订桌",
@@ -7892,7 +8080,9 @@ function translatePattern(
     }[language];
   }
 
-  const bookingGenericUpdateMatch = normalized.match(/^Lịch đặt tại\s+(.+?)\s+vừa có cập nhật mới\.$/i);
+  const bookingGenericUpdateMatch = normalized.match(
+    /^Lịch đặt tại\s+(.+?)\s+vừa có cập nhật mới\.$/i,
+  );
   if (bookingGenericUpdateMatch) {
     const target = translateText(bookingGenericUpdateMatch[1] ?? "", language);
     return {
@@ -8346,7 +8536,9 @@ function translatePattern(
     }[language];
   }
 
-  const addFavConfirmMatch = normalized.match(/^Thêm\s+(.+?)\s+vào danh sách yêu thích của bạn\.$/i);
+  const addFavConfirmMatch = normalized.match(
+    /^Thêm\s+(.+?)\s+vào danh sách yêu thích của bạn\.$/i,
+  );
   if (addFavConfirmMatch) {
     const target = translateText(addFavConfirmMatch[1] ?? "", language);
     return {
@@ -8357,7 +8549,9 @@ function translatePattern(
     }[language];
   }
 
-  const removeFavConfirmMatch = normalized.match(/^Gỡ\s+(.+?)\s+khỏi danh sách yêu thích của bạn\.$/i);
+  const removeFavConfirmMatch = normalized.match(
+    /^Gỡ\s+(.+?)\s+khỏi danh sách yêu thích của bạn\.$/i,
+  );
   if (removeFavConfirmMatch) {
     const target = translateText(removeFavConfirmMatch[1] ?? "", language);
     return {
@@ -8391,7 +8585,7 @@ function translatePattern(
   }
 
   const pointsAddedTierMatch = normalized.match(
-    /^Điểm được cộng sau khi Admin duyệt hóa đơn\.\s*Hạng khách hiện tại:\s*(.+?)\.?$/i
+    /^Điểm được cộng sau khi Admin duyệt hóa đơn\.\s*Hạng khách hiện tại:\s*(.+?)\.?$/i,
   );
   if (pointsAddedTierMatch) {
     const tierName = pointsAddedTierMatch[1]?.trim() ?? "";
@@ -8404,7 +8598,7 @@ function translatePattern(
   }
 
   const actionStatusMatch = normalized.match(
-    /^(Đặt cast|Đặt bàn|Đặt tour|Đặt chỗ|Hủy booking|Đổi lịch|Gửi hóa đơn|Đọc hóa đơn|Sao chép mã|Đổi mật khẩu)\s+(thành công|thất bại)$/i
+    /^(Đặt cast|Đặt bàn|Đặt tour|Đặt chỗ|Hủy booking|Đổi lịch|Gửi hóa đơn|Đọc hóa đơn|Sao chép mã|Đổi mật khẩu)\s+(thành công|thất bại)$/i,
   );
   if (actionStatusMatch) {
     const rawAction = actionStatusMatch[1] ?? "";
