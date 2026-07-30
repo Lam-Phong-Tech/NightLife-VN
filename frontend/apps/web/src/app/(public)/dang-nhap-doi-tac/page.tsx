@@ -113,7 +113,10 @@ function LoginContent({
     return new URLSearchParams(window.location.search).get("redirect") || "/partner";
   }, []);
 
-  const submit = async () => {
+  const submit = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     setMessage("");
 
@@ -346,7 +349,7 @@ function LoginContent({
             />
           </div>
 
-          <div style={{ display: "grid", gap: "13px" }}>
+          <form onSubmit={submit} style={{ display: "grid", gap: "13px" }}>
             <label
               style={{
                 display: "grid",
@@ -429,13 +432,20 @@ function LoginContent({
                   type="button"
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   aria-pressed={showPassword}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => setShowPassword((current) => !current)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowPassword((current) => !current);
+                  }}
                   style={{
                     position: "absolute",
                     right: "7px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
+                    top: "5px",
+                    transform: "none",
                     width: "34px",
                     height: "34px",
                     border: 0,
@@ -447,6 +457,8 @@ function LoginContent({
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
+                    lineHeight: 0,
+                    padding: 0,
                     transition: "background 0.2s, color 0.2s",
                   }}
                 >
@@ -454,39 +466,38 @@ function LoginContent({
                 </button>
               </span>
             </label>
-          </div>
 
-          {message ? (
-            <div style={{ marginTop: "12px", color: colors.neonPink, fontSize: "12px" }}>
-              {message}
-            </div>
-          ) : null}
+            {message ? (
+              <div style={{ marginTop: "12px", color: colors.neonPink, fontSize: "12px" }}>
+                {message}
+              </div>
+            ) : null}
 
-          <button
-            type="button"
-            onClick={submit}
-            disabled={isSubmitting}
-            style={{
-              width: "100%",
-              minHeight: "44px",
-              marginTop: "16px",
-              border: 0,
-              borderRadius: "11px",
-              background: colors.goldGrad,
-              color: colors.onGold,
-              fontSize: "14px",
-              fontWeight: 800,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              cursor: isSubmitting ? "wait" : "pointer",
-              opacity: isSubmitting ? 0.72 : 1,
-            }}
-          >
-            <LogIn size={16} />
-            {isSubmitting ? "Đang xác thực..." : "Vào cổng đối tác"}
-          </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                minHeight: "44px",
+                marginTop: "16px",
+                border: 0,
+                borderRadius: "11px",
+                background: colors.goldGrad,
+                color: colors.onGold,
+                fontSize: "14px",
+                fontWeight: 800,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                cursor: isSubmitting ? "wait" : "pointer",
+                opacity: isSubmitting ? 0.72 : 1,
+              }}
+            >
+              <LogIn size={16} />
+              {isSubmitting ? "Đang xác thực..." : "Vào cổng đối tác"}
+            </button>
+          </form>
 
           <div
             style={{
