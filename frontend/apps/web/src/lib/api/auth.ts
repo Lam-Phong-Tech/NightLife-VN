@@ -76,6 +76,11 @@ export type ResetPasswordPayload = {
   confirmPassword: string;
 };
 
+export type ChangePasswordPayload = {
+  oldPassword: string;
+  newPassword: string;
+};
+
 export type PasswordResetRequestResponse = {
   message: string;
   expiresInMinutes: number;
@@ -159,6 +164,7 @@ const createDemoToken = (account: DemoAccount) => {
     email: account.email,
     role: account.role,
     tier: account.tier,
+    loginMethod: "PASSWORD",
   };
   const encodedPayload =
     typeof window !== "undefined"
@@ -182,7 +188,7 @@ const getDemoSession = (role: AuthRole, payload: LoginPayload): AuthResponse | n
 
   return {
     accessToken: createDemoToken(account),
-    user: account,
+    user: { ...account, loginMethod: "PASSWORD" },
   };
 };
 
@@ -262,6 +268,13 @@ export const requestRegistrationOtp = (payload: RequestRegistrationOtpPayload) =
 export const updateMemberProfile = (payload: UpdateProfilePayload) => {
   return apiClient<AuthResponse["user"]>("/auth/me", {
     method: "PATCH",
+    data: payload,
+  });
+};
+
+export const changeMemberPassword = (payload: ChangePasswordPayload) => {
+  return apiClient<{ success: boolean }>("/users/change-password", {
+    method: "POST",
     data: payload,
   });
 };

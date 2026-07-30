@@ -449,16 +449,19 @@ export class UsersService {
     return user;
   }
 
-  toPublicUser(user: {
-    id: string;
-    email: string;
-    displayName: string | null;
-    phone: string | null;
-    role: string;
-    tier: string;
-    status: string;
-    createdAt: Date;
-  }) {
+  toPublicUser(
+    user: {
+      id: string;
+      email: string;
+      displayName: string | null;
+      phone: string | null;
+      role: string;
+      tier: string;
+      status: string;
+      createdAt: Date;
+    },
+    loginMethod?: 'PASSWORD' | 'GOOGLE' | 'LINE',
+  ) {
     return {
       id: user.id,
       email: user.email,
@@ -467,6 +470,7 @@ export class UsersService {
       role: user.role,
       tier: user.tier,
       status: user.status,
+      ...(loginMethod ? { loginMethod } : {}),
       createdAt: user.createdAt,
     };
   }

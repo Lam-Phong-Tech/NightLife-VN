@@ -291,6 +291,7 @@ describe('AuthService', () => {
         email: user.email,
         role: user.role,
         tier: user.tier,
+        loginMethod: 'PASSWORD',
       },
       { jwtid: expect.any(String) },
     );

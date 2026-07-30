@@ -22,6 +22,13 @@ export class PublicUserDto {
   @ApiProperty({ example: 'ACTIVE' })
   status: string;
 
+  @ApiProperty({
+    example: 'PASSWORD',
+    enum: ['PASSWORD', 'GOOGLE', 'LINE'],
+    required: false,
+  })
+  loginMethod?: string;
+
   @ApiProperty()
   createdAt: Date;
 }

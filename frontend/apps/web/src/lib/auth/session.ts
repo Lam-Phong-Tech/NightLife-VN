@@ -1,6 +1,7 @@
 import { getNightlifeHostKind, type AuthPortal } from "./hosts";
 
 export type AuthRole = "USER" | "PARTNER" | "OPERATOR" | "ADMIN" | "SUPER_ADMIN" | "STAFF";
+export type AuthLoginMethod = "PASSWORD" | "GOOGLE" | "LINE";
 
 export type AuthUser = {
   id: string;
@@ -10,6 +11,7 @@ export type AuthUser = {
   role: AuthRole;
   tier?: string;
   status?: string;
+  loginMethod?: AuthLoginMethod;
 };
 
 export type ReplacedSessionInfo = {
@@ -98,6 +100,7 @@ const readTokenPayload = (token: string) => {
       exp?: unknown;
       role?: unknown;
       sub?: unknown;
+      loginMethod?: unknown;
     };
   } catch {
     return null;
@@ -386,6 +389,7 @@ export const getAuthUser = (): AuthUser | null => {
   }
 
   const tokenUserId = readTokenPayload(token)?.sub;
+  const tokenLoginMethod = readTokenPayload(token)?.loginMethod;
   if (typeof tokenUserId !== "string" || !tokenUserId.trim()) {
     clearAuthSession();
     return null;
@@ -396,5 +400,11 @@ export const getAuthUser = (): AuthUser | null => {
     email: cookies[emailCookie],
     displayName: cookies[nameCookie] ?? cookies[emailCookie],
     role: (cookies[roleCookie] as AuthRole) || "USER",
+    loginMethod:
+      tokenLoginMethod === "GOOGLE" ||
+      tokenLoginMethod === "LINE" ||
+      tokenLoginMethod === "PASSWORD"
+        ? tokenLoginMethod
+        : undefined,
   };
 };

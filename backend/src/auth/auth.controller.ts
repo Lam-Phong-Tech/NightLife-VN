@@ -288,8 +288,13 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Req() request: Request & { user: { id: string } }) {
-    return this.authService.me(request.user.id);
+  me(
+    @Req()
+    request: Request & {
+      user: { id: string; loginMethod?: 'PASSWORD' | 'GOOGLE' | 'LINE' };
+    },
+  ) {
+    return this.authService.me(request.user.id, request.user.loginMethod);
   }
 
   @ApiOperation({ summary: 'Cập nhật thông tin tài khoản hiện tại' })

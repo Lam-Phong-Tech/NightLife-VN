@@ -132,6 +132,8 @@ type AuthCookiePayload = {
   };
 };
 
+type LoginMethod = 'PASSWORD' | 'GOOGLE' | 'LINE';
+
 const lineStateCookie = 'line_oauth_state';
 const lineNonceCookie = 'line_oauth_nonce';
 const lineRedirectCookie = 'line_oauth_redirect';
@@ -246,7 +248,7 @@ export class AuthService {
       displayName: dto.displayName,
     });
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'PASSWORD');
   }
 
   async login(dto: LoginDto, sessionContext?: SessionContext) {
@@ -255,7 +257,7 @@ export class AuthService {
       dto.password.trim(),
     );
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'PASSWORD');
   }
 
   async loginAs(
@@ -274,7 +276,7 @@ export class AuthService {
       throw new ForbiddenException(`This account is not a ${role} account`);
     }
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'PASSWORD');
   }
 
   async loginForPortal(
@@ -293,7 +295,7 @@ export class AuthService {
       );
     }
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'PASSWORD');
   }
 
   async loginGoogleMember(dto: GoogleAuthDto, sessionContext?: SessionContext) {
@@ -313,7 +315,7 @@ export class AuthService {
         );
       }
 
-      return this.toAuthResponse(existingUser, sessionContext);
+      return this.toAuthResponse(existingUser, sessionContext, 'GOOGLE');
     }
 
     const user = await this.usersService.createGoogleMember({
@@ -321,7 +323,7 @@ export class AuthService {
       displayName: googleAccount.displayName,
     });
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'GOOGLE');
   }
 
   googleLoginConfig() {
@@ -479,10 +481,10 @@ export class AuthService {
     return response.redirect(this.webRedirectUrl(redirectPath));
   }
 
-  async me(userId: string) {
+  async me(userId: string, loginMethod?: LoginMethod) {
     const user = await this.usersService.findByIdOrThrow(userId);
 
-    return this.usersService.toPublicUser(user);
+    return this.usersService.toPublicUser(user, loginMethod);
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -720,6 +722,7 @@ export class AuthService {
       createdAt: Date;
     },
     sessionContext?: SessionContext,
+    loginMethod: LoginMethod = 'PASSWORD',
   ) {
     const jti = randomUUID();
     const expiresAt = this.resolveJwtExpiresAt();
@@ -824,10 +827,11 @@ export class AuthService {
           email: user.email,
           role: user.role,
           tier: user.tier,
+          loginMethod,
         },
         { jwtid: jti },
       ),
-      user: this.usersService.toPublicUser(user),
+      user: this.usersService.toPublicUser(user, loginMethod),
       ...(replacedSession ? { replacedSession } : {}),
     };
   }
@@ -1094,7 +1098,7 @@ export class AuthService {
         );
       }
 
-      return this.toAuthResponse(existingUser, sessionContext);
+      return this.toAuthResponse(existingUser, sessionContext, 'LINE');
     }
 
     const user = await this.usersService.createLineMember({
@@ -1102,7 +1106,7 @@ export class AuthService {
       displayName: lineAccount.displayName,
     });
 
-    return this.toAuthResponse(user, sessionContext);
+    return this.toAuthResponse(user, sessionContext, 'LINE');
   }
 
   private toLineFallbackEmail(lineSubject: string) {

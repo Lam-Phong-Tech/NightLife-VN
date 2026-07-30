@@ -16,6 +16,7 @@ type JwtPayload = {
   email: string;
   role: string;
   tier?: string;
+  loginMethod?: 'PASSWORD' | 'GOOGLE' | 'LINE';
   jti?: string;
   exp?: number;
 };
@@ -106,6 +107,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       tier: user.tier,
       status: user.status,
+      loginMethod: payload.loginMethod,
       jti: payload.jti,
       exp: payload.exp,
     };
