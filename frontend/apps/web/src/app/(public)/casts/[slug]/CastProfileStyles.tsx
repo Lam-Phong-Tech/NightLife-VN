@@ -1282,7 +1282,7 @@ export function CastProfileStyles() {
       .cast-desktop-media-nav button {
         position: absolute;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translate3d(0, -50%, 0) !important;
         width: 44px;
         height: 44px;
         border: 1px solid rgba(255,255,255,.16);
@@ -1300,11 +1300,14 @@ export function CastProfileStyles() {
         transition: none;
         animation: none;
         will-change: auto;
+        line-height: 0;
+        contain: layout paint;
+        backface-visibility: hidden;
       }
 
       .cast-desktop-media-nav button:active,
       .cast-desktop-media-nav button:where(:hover, :focus-visible) {
-        transform: translateY(-50%) !important;
+        transform: translate3d(0, -50%, 0) !important;
         background: rgba(212,178,106,.22);
         border-color: rgba(212,178,106,.45);
       }

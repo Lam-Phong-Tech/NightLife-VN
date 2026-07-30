@@ -2965,7 +2965,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--store-hero-control-icon);
           display: grid;
           place-items: center;
-          transform: translateY(-50%);
+          transform: translate3d(0, -50%, 0) !important;
           transition: none;
           animation: none;
           will-change: auto;
@@ -2977,6 +2977,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           filter: none !important;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
+          line-height: 0;
+          contain: layout paint;
+          backface-visibility: hidden;
         }
 
         .hero-media-nav.previous {
@@ -2992,7 +2995,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background: rgba(212, 178, 106, .22);
           border-color: rgba(212, 178, 106, .45);
           filter: none !important;
-          transform: translateY(-50%) !important;
+          transform: translate3d(0, -50%, 0) !important;
         }
 
         .hero-video-play {
