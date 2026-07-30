@@ -2013,6 +2013,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   };
   const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    event.stopPropagation();
+  };
+  const preventHeroControlPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
   };
   const handleHeroPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType !== "touch" || gallery.length < 2) return;
@@ -2343,12 +2347,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
 
               {gallery.length > 1 ? (
-                <>
+                <div className="hero-media-nav-layer" aria-label="Store media navigation">
                   <button
                     className="hero-media-nav previous"
                     type="button"
                     aria-label="Media trước"
                     data-testid="store-hero-media-previous"
+                    onPointerDown={preventHeroControlPointer}
+                    onPointerUp={preventHeroControlPointer}
+                    onPointerCancel={preventHeroControlPointer}
                     onMouseDown={preventHeroControlMouseDown}
                     onClick={showPreviousMedia}
                   >
@@ -2359,12 +2366,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     aria-label="Media sau"
                     data-testid="store-hero-media-next"
+                    onPointerDown={preventHeroControlPointer}
+                    onPointerUp={preventHeroControlPointer}
+                    onPointerCancel={preventHeroControlPointer}
                     onMouseDown={preventHeroControlMouseDown}
                     onClick={showNextMedia}
                   >
                     <ChevronRight size={24} strokeWidth={2.2} />
                   </button>
-                </>
+                </div>
               ) : null}
 
               <div className="hero-name">
@@ -2857,6 +2867,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-top,
         .hero-name,
+        .hero-media-nav-layer,
         .hero-media-nav,
         .hero-video-play {
           position: absolute;
@@ -2955,6 +2966,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border-color: rgba(255, 79, 139, .68);
         }
 
+        .hero-media-nav-layer {
+          inset: 0;
+          pointer-events: none;
+          contain: layout paint;
+        }
+
         .hero-media-nav {
           top: 50%;
           width: 44px;
@@ -2977,6 +2994,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           filter: none !important;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
+          pointer-events: auto;
           line-height: 0;
           contain: layout paint;
           backface-visibility: hidden;
