@@ -42,6 +42,9 @@ const formatDateTime = (value: string | undefined, language: LanguageCode) => {
 const bookingQrFileName = (booking: BookingRecord) =>
   `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
 
+const isAndroidBrowser = () =>
+  typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+
 const downloadQrBlob = (blob: Blob, fileName: string) => {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -51,6 +54,28 @@ const downloadQrBlob = (blob: Blob, fileName: string) => {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 250);
+};
+
+const openQrBlob = (blob: Blob) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+};
+
+const openQrImageUrl = (url: string) => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 };
 
 const shareQrImageIfSupported = async (blob: Blob, fileName: string, title: string) => {
@@ -774,6 +799,15 @@ export default function Page() {
     }
 
     const fileName = bookingQrFileName(booking);
+    const isAndroid = isAndroidBrowser();
+    const showAndroidFallbackToast = () => {
+      feedback.showToast({
+        tone: "success",
+        title: translateText("Đã mở ảnh QR", activeLanguage),
+        description: translateText("Bạn có thể lưu hoặc chia sẻ ảnh QR từ màn hình vừa mở.", activeLanguage),
+        durationMs: 4200,
+      });
+    };
     const shareTitle = `${translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`;
 
     try {
@@ -785,12 +819,26 @@ export default function Page() {
       const blob = await response.blob();
       const shared = await shareQrImageIfSupported(blob, fileName, shareTitle);
       if (!shared) {
+        if (isAndroid) {
+          openQrBlob(blob);
+          showAndroidFallbackToast();
+          return;
+        }
         downloadQrBlob(blob, fileName);
       }
     } catch {
       if (qrImageUrl.startsWith("data:")) {
         try {
-          downloadQrBlob(await (await fetch(qrImageUrl)).blob(), fileName);
+          const blob = await (await fetch(qrImageUrl)).blob();
+          const shared = await shareQrImageIfSupported(blob, fileName, shareTitle);
+          if (!shared) {
+            if (isAndroid) {
+              openQrBlob(blob);
+              showAndroidFallbackToast();
+              return;
+            }
+            downloadQrBlob(blob, fileName);
+          }
           return;
         } catch {
           feedback.showToast({
@@ -801,6 +849,11 @@ export default function Page() {
           });
           return;
         }
+      }
+      if (isAndroid) {
+        openQrImageUrl(qrImageUrl);
+        showAndroidFallbackToast();
+        return;
       }
       feedback.showToast({
         tone: "error",

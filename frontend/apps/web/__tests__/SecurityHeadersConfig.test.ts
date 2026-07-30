@@ -26,6 +26,7 @@ describe("security headers configuration", () => {
     expect(policy).toContain("https://liff.line.me");
     expect(policy).toContain("https://liffsdk.line-scdn.net");
     expect(policy).toContain("https://uts-front.line-apps.com");
+    expect(policy).toContain("https://api.qrserver.com");
     expect(policy).toContain("https://maps.google.com");
     expect(policy).toContain("https://www.google.com");
     expect(policy).toContain("https://www.youtube.com");

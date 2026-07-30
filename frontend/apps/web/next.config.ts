@@ -48,6 +48,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "https://*.googletagmanager.com",
     "https://open.er-api.com",
     "https://provinces.open-api.vn",
+    "https://api.qrserver.com",
     "https://demonightlight.test9.io.vn",
     "https://*.demonightlight.test9.io.vn",
     "https://demonightlight.test9io.vn",

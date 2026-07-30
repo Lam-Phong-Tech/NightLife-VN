@@ -2658,6 +2658,20 @@ const entries: TranslationEntry[] = [
     zh: "保存二维码图片",
   },
   {
+    vi: "Đã mở ảnh QR",
+    en: "QR image opened",
+    ja: "QR画像を開きました",
+    ko: "QR 이미지를 열었습니다",
+    zh: "已打开二维码图片",
+  },
+  {
+    vi: "Bạn có thể lưu hoặc chia sẻ ảnh QR từ màn hình vừa mở.",
+    en: "You can save or share the QR image from the screen that just opened.",
+    ja: "開いた画面からQR画像を保存または共有できます。",
+    ko: "방금 열린 화면에서 QR 이미지를 저장하거나 공유할 수 있습니다.",
+    zh: "你可以在刚打开的页面保存或分享二维码图片。",
+  },
+  {
     vi: "Xem đặt chỗ của tôi",
     en: "View my reservations",
     ja: "予約一覧を見る",
