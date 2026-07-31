@@ -70,9 +70,34 @@ const INIT_USER: CapRow[] = [
   ['Lấy (claim) mã ưu đãi mới', 'canClaimMemberCoupon', 0, 0, 0, 0, 1],
 ];
 
-const Toggle = ({ on, onClick }: { on: boolean, onClick: () => void }) => (
-  <div onClick={onClick} style={{ width: 28, height: 16, borderRadius: 8, background: on ? 'rgba(212,178,106,.8)' : 'rgba(255,255,255,.1)', position: 'relative', cursor: 'pointer', margin: '0 auto', transition: 'all 0.2s' }}>
-    <div style={{ width: 12, height: 12, borderRadius: '50%', background: on ? '#241a0a' : '#8c8679', position: 'absolute', top: 2, left: on ? 14 : 2, transition: 'all 0.2s' }} />
+const Toggle = ({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) => (
+  <div
+    onClick={disabled ? undefined : onClick}
+    title={disabled ? 'Không thể thay đổi cấu hình cho role này' : undefined}
+    style={{
+      width: 28,
+      height: 16,
+      borderRadius: 8,
+      background: on ? (disabled ? 'rgba(212,178,106,.35)' : 'rgba(212,178,106,.8)') : (disabled ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.1)'),
+      position: 'relative',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.45 : 1,
+      margin: '0 auto',
+      transition: 'all 0.2s',
+    }}
+  >
+    <div
+      style={{
+        width: 12,
+        height: 12,
+        borderRadius: '50%',
+        background: on ? (disabled ? '#4a3e28' : '#241a0a') : '#5c5850',
+        position: 'absolute',
+        top: 2,
+        left: on ? 14 : 2,
+        transition: 'all 0.2s',
+      }}
+    />
   </div>
 );
 
@@ -112,7 +137,8 @@ export default function AdminPermissionsPage() {
   const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
     if (
       (colIdx === 2 && !isSuperAdmin) ||
-      (colIdx === 3 && !canManageOperatorPermissions)
+      (colIdx === 3 && !canManageOperatorPermissions) ||
+      colIdx === 6
     ) {
       return;
     }
@@ -150,7 +176,7 @@ export default function AdminPermissionsPage() {
         {canManageOperatorPermissions && <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />}
         <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
         <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
-        <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} />
+        <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} disabled={true} />
       </div>
     );
   };
