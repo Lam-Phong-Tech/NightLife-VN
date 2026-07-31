@@ -3521,23 +3521,33 @@ html.vy-light .nl-site-actions .nl-site-action-control:where(:hover, :focus-visi
   background: #fff7e8 !important;
   color: #7a551b !important;
 }
-/* Google Translate Web Element is a fallback engine; Vietyoru keeps its own picker UI. */
-.vietyoru-google-translate-element {
-  position: fixed !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-  clip: rect(0 0 0 0) !important;
-  clip-path: inset(50%) !important;
-  white-space: nowrap !important;
+/* Google Translate UI Suppression: Hides top banner bar and tooltips while keeping auto-translation active */
+.vietyoru-google-translate-element,
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe[class*="goog-te-banner"],
+#goog-gt-tt,
+.goog-te-balloon-frame,
+div.goog-te-spinner-pos,
+.goog-te-gadget,
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
   pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
 }
 
-.goog-te-banner-frame.skiptranslate,
-iframe.goog-te-banner-frame {
-  display: none !important;
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 body {
-  top: 0 !important;
+  top: 0px !important;
+  margin-top: 0px !important;
+  position: static !important;
 }
