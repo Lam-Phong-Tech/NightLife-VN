@@ -2085,7 +2085,7 @@ function VenueMiniCard({
         />
       </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
+        <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
           {item.area} · {item.catLabel}
         </div>
@@ -2366,6 +2366,9 @@ function RankingRow({ item }: { item: RankedItem }) {
           ) : null}
         </div>
         <div
+          className="notranslate"
+          translate="no"
+          data-no-translate="true"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -2438,7 +2441,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
         </span>
       </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
+        <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
         <div className="notranslate" translate="no" data-no-translate="true" style={{ marginTop: "6px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>{item.priceLabel}</div>
       </div>

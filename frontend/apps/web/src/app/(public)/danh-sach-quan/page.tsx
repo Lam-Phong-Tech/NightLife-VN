@@ -1624,7 +1624,7 @@ function VenueSearchSuggestions({
                 style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
               />
               <span>
-                <b>{highlightMatch(venue.name, query)}</b>
+                <b className="notranslate" translate="no" data-no-translate="true">{highlightMatch(venue.name, query)}</b>
                 <small>
                   {venue.categoryLabel} · {venue.areaLabel} · {venue.cityLabel}
                 </small>
@@ -2033,7 +2033,7 @@ function VenueResultCard({
       <div className="venue-card-body">
         <div className="venue-card-main">
           <div className="venue-name-row">
-            <h2>{venue.name}</h2>
+            <h2 className="notranslate" translate="no" data-no-translate="true">{venue.name}</h2>
           </div>
           <p className="venue-meta">
             {venue.categoryLabel} · {venue.areaLabel}

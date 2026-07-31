@@ -79,7 +79,7 @@ export function StoreDetailHeader({
         <span>/</span>
         <span>{store.area?.name ?? store.district ?? store.city}</span>
         <span>/</span>
-        <strong>{displayName}</strong>
+        <strong className="notranslate" translate="no" data-no-translate="true">{displayName}</strong>
       </nav>
 
       <div className="legacy-gallery" aria-label="Gallery của quán">
@@ -124,7 +124,7 @@ export function StoreDetailHeader({
         <div className="legacy-summary-main">
           <div className="store-logo">{getInitials(store.name) || "NL"}</div>
           <div className="legacy-summary-copy">
-            <h1>{displayName}</h1>
+            <h1 className="notranslate" translate="no" data-no-translate="true">{displayName}</h1>
             <div className="legacy-summary-meta">
               <span className="summary-price">{startingPrice}</span>
               <span>
