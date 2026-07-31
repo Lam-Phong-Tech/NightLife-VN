@@ -24,6 +24,12 @@ export class PartnerListingCastDto {
   @MaxLength(64)
   id?: string;
 
+  @ApiPropertyOptional({ example: 'draft-cast-4cf6d1cf' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  clientKey?: string;
+
   @ApiProperty({ example: 'Yuki' })
   @IsNotEmpty()
   @IsString()

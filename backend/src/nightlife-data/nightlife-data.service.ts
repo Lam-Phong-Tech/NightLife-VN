@@ -18054,6 +18054,7 @@ export class NightlifeDataService {
 
       profilesById.set(profileId, {
         id: profileId,
+        clientKey: profileId,
         stageName:
           this.cleanPartnerListingText(cast.stageName) ??
           this.cleanPartnerListingText(cast.publicAlias) ??
@@ -18093,11 +18094,16 @@ export class NightlifeDataService {
     }
 
     const storeProfileIndexesById = new Map<string, number>();
+    const storeProfileIndexesByClientKey = new Map<string, number>();
     const storeProfileIndexesByName = new Map<string, number>();
     storeProfiles.forEach((profile, index) => {
       const id = this.cleanNullableText(profile.id);
       if (id && !storeProfileIndexesById.has(id)) {
         storeProfileIndexesById.set(id, index);
+      }
+      const clientKey = this.cleanNullableText(profile.clientKey);
+      if (clientKey && !storeProfileIndexesByClientKey.has(clientKey)) {
+        storeProfileIndexesByClientKey.set(clientKey, index);
       }
       const key = this.normalizeToken(profile.stageName);
       if (key && !storeProfileIndexesByName.has(key)) {
@@ -18108,9 +18114,20 @@ export class NightlifeDataService {
     const usedStoreIndexes = new Set<number>();
     const merged = draftProfiles.map((profile) => {
       const profileId = this.cleanNullableText(profile.id);
+      const clientKey = this.cleanNullableText(profile.clientKey);
+      const hasStableClientKey = Boolean(
+        clientKey && !clientKey.startsWith('legacy-cast-'),
+      );
       const matchedIndex =
         (profileId ? storeProfileIndexesById.get(profileId) : undefined) ??
-        storeProfileIndexesByName.get(this.normalizeToken(profile.stageName));
+        (hasStableClientKey && clientKey
+          ? storeProfileIndexesByClientKey.get(clientKey)
+          : undefined) ??
+        (!profileId && !hasStableClientKey
+          ? storeProfileIndexesByName.get(
+              this.normalizeToken(profile.stageName),
+            )
+          : undefined);
       const storeProfile =
         matchedIndex !== undefined ? storeProfiles[matchedIndex] : undefined;
 
@@ -18142,9 +18159,21 @@ export class NightlifeDataService {
     const hobbies = list(profile.hobbies, 12);
     const youtubeLinks = list(profile.youtubeLinks, 8);
     const mediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
+    const profileClientKey = text(profile.clientKey);
+    const stableProfileClientKey =
+      profileClientKey && !profileClientKey.startsWith('legacy-cast-')
+        ? profileClientKey
+        : undefined;
 
     return {
       id: text(profile.id) ?? text(storeProfile?.id) ?? undefined,
+      clientKey:
+        stableProfileClientKey ??
+        text(storeProfile?.clientKey) ??
+        profileClientKey ??
+        text(profile.id) ??
+        text(storeProfile?.id) ??
+        undefined,
       stageName:
         text(profile.stageName) ?? text(storeProfile?.stageName) ?? 'Cast',
       storeName:
@@ -18214,6 +18243,7 @@ export class NightlifeDataService {
 
   private partnerListingCastReviewPayload(profile: PartnerListingCastDto) {
     return {
+      clientKey: this.cleanPartnerListingText(profile.clientKey) ?? null,
       stageName: this.cleanPartnerListingText(profile.stageName) ?? '',
       bio: this.cleanPartnerListingText(profile.bio) ?? null,
       tags: this.partnerListingCastStringArray(profile.tags, 12),
@@ -18226,6 +18256,8 @@ export class NightlifeDataService {
       youtubeLinks: this.partnerListingCastStringArray(profile.youtubeLinks, 8),
       hourlyRateVnd: profile.hourlyRateVnd ?? null,
       mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
+      isPublic: profile.isPublic ?? true,
+      status: profile.status ?? 'ACTIVE',
     };
   }
 
@@ -19961,6 +19993,9 @@ export class NightlifeDataService {
     return castProfiles
       .map((profile) => {
         const id = this.cleanNullableText(profile.id);
+        const clientKey = this.cleanPartnerListingText(
+          (profile as PartnerListingCastDto).clientKey,
+        );
         const stageName = this.cleanPartnerListingText(profile.stageName) ?? '';
         const hourlyRateVnd =
           typeof profile.hourlyRateVnd === 'number' &&
@@ -19984,6 +20019,7 @@ export class NightlifeDataService {
 
         return {
           id: id && this.isUuid(id) ? id : undefined,
+          clientKey,
           stageName,
           storeName: this.cleanPartnerListingText(profile.storeName),
           bio: this.cleanPartnerListingText(profile.bio),

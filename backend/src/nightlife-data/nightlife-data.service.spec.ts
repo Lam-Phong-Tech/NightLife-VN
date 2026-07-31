@@ -4687,6 +4687,67 @@ describe('NightlifeDataService', () => {
     ).toThrow('Each cast can have one avatar and up to 10 album images.');
   });
 
+  it('keeps draft cast status attached to its stable client key when store casts are reordered', () => {
+    const mergeCastProfiles = (
+      service as unknown as {
+        mergePartnerListingCastProfiles(
+          draftProfiles: Array<Record<string, unknown>>,
+          storeProfiles: Array<Record<string, unknown>>,
+        ): Array<Record<string, unknown>>;
+      }
+    ).mergePartnerListingCastProfiles.bind(service);
+
+    const merged = mergeCastProfiles(
+      [
+        {
+          clientKey: 'draft-nguyen',
+          stageName: 'Nguyen',
+          status: 'DRAFT',
+          isPublic: false,
+        },
+        {
+          clientKey: 'cast-hiep',
+          stageName: 'Hiep',
+          status: 'ACTIVE',
+          isPublic: true,
+        },
+      ],
+      [
+        {
+          id: 'cast-hiep',
+          clientKey: 'cast-hiep',
+          stageName: 'Hiep',
+          status: 'ACTIVE',
+          isPublic: true,
+        },
+        {
+          id: 'cast-nguyen',
+          clientKey: 'draft-nguyen',
+          stageName: 'Nguyen',
+          status: 'ACTIVE',
+          isPublic: true,
+        },
+      ],
+    );
+
+    expect(merged).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          clientKey: 'draft-nguyen',
+          stageName: 'Nguyen',
+          status: 'DRAFT',
+          isPublic: false,
+        }),
+        expect.objectContaining({
+          clientKey: 'cast-hiep',
+          stageName: 'Hiep',
+          status: 'ACTIVE',
+          isPublic: true,
+        }),
+      ]),
+    );
+  });
+
   it('submits only changed partner listing casts without creating a store review request', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';

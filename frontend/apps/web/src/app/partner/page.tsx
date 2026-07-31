@@ -231,6 +231,7 @@ type PartnerListingMenuGroup = {
 
 type PartnerListingCast = {
   id?: string;
+  clientKey?: string;
   stageName: string;
   storeName?: string | null;
   bio?: string | null;
@@ -1046,6 +1047,13 @@ const castAvatarUrl = (cast: PartnerListingCast) => {
 };
 
 const PARTNER_CAST_ALBUM_MAX_IMAGES = 10;
+
+const createCastClientKey = () =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `draft-cast-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const castProfileKey = (cast?: PartnerListingCast) => cast?.clientKey || cast?.id || '';
 
 const buildListingMenuSummary = (
   menuGroups: PartnerListingMenuGroup[],
@@ -3705,9 +3713,13 @@ export default function PartnerPage() {
         galleryUrls: normalizeListingUrlList(d.galleryUrls),
         videoUrls: normalizeListingUrlList(d.videoUrls),
         pricingItems: d.pricingItems ?? [],
-        castProfiles: (d.castProfiles ?? []).map((cast: any) => ({
+        castProfiles: (d.castProfiles ?? []).map((cast: any, index: number) => ({
           ...cast,
           id: safeListingText(cast.id),
+          clientKey:
+            safeListingText(cast.clientKey) ||
+            safeListingText(cast.id) ||
+            `legacy-cast-${safeListingText(cast.stageName)}-${index}`,
           stageName: safeListingText(cast.stageName),
           storeName: safeListingText(cast.storeName),
           bio: safeListingText(cast.bio),
@@ -4395,6 +4407,7 @@ export default function PartnerPage() {
       ...current,
       castProfiles: [
         {
+          clientKey: createCastClientKey(),
           stageName: '',
           bio: '',
           tags: [],
@@ -4502,7 +4515,7 @@ export default function PartnerPage() {
   const listingPayload = (options?: {
     castStatus?: string;
     castIsPublic?: boolean;
-    castProfileIndex?: number;
+    castProfileKey?: string;
   }) => {
     const draftPayload = { ...listingDraft };
     delete (draftPayload as Partial<PartnerListingDraft>).wardName;
@@ -4545,23 +4558,20 @@ export default function PartnerPage() {
       pricingItems,
       menuGroups,
       castProfiles: listingDraft.castProfiles
-        .map((item, index) => ({ item, index }))
-        .filter(({ item }) => item.stageName.trim())
-        .map(({ item, index }) => {
+        .filter((item) => item.stageName.trim())
+        .map((item) => {
           const castPayload = { ...item };
+          const targetCastStatus = options?.castStatus;
+          const targetCastProfileKey = options?.castProfileKey;
           const shouldApplyCastState =
-            options?.castStatus &&
-            (options.castProfileIndex === undefined || options.castProfileIndex === index);
+            Boolean(targetCastStatus && targetCastProfileKey) &&
+            castProfileKey(item) === targetCastProfileKey;
           delete castPayload.storeName;
           if (shouldApplyCastState && typeof options?.castIsPublic === 'boolean') {
             castPayload.isPublic = options.castIsPublic;
-          } else {
-            delete castPayload.isPublic;
           }
-          if (shouldApplyCastState) {
-            castPayload.status = options.castStatus;
-          } else {
-            delete castPayload.status;
+          if (shouldApplyCastState && targetCastStatus) {
+            castPayload.status = targetCastStatus;
           }
           return {
             ...castPayload,
@@ -4653,12 +4663,12 @@ export default function PartnerPage() {
     return { label: 'Bản nháp', tone: 'neutral' as const };
   };
 
-  const markEnteredCastProfiles = (status: string, isPublic: boolean, targetIndex?: number) => {
+  const markEnteredCastProfile = (status: string, isPublic: boolean, targetKey: string) => {
     setListingDraft((current) => ({
       ...current,
-      castProfiles: current.castProfiles.map((cast, index) =>
+      castProfiles: current.castProfiles.map((cast) =>
         cast.stageName.trim() &&
-        (targetIndex === undefined || targetIndex === index)
+        castProfileKey(cast) === targetKey
           ? { ...cast, status, isPublic }
           : cast,
       ),
@@ -5673,22 +5683,26 @@ export default function PartnerPage() {
     setListingNotice('Đang lưu bản nháp...');
     try {
       const isSavingCastDraft = listingTab === 'cast';
-      const castProfileIndex = isSavingCastDraft ? activeCastProfileIndex ?? undefined : undefined;
+      const castProfileKeyToSave =
+        isSavingCastDraft && activeCastProfileIndex !== null
+          ? castProfileKey(listingDraft.castProfiles[activeCastProfileIndex])
+          : '';
       const response = await apiClient<PartnerListingDraftResponse>(
         `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
         {
           method: 'PUT',
           data: listingPayload(
             isSavingCastDraft
-              ? { castStatus: 'DRAFT', castIsPublic: false, castProfileIndex }
+              ? {
+                  castStatus: 'DRAFT',
+                  castIsPublic: false,
+                  castProfileKey: castProfileKeyToSave,
+                }
               : undefined,
           ),
         },
       );
       applyListingDraftResponse(response);
-      if (isSavingCastDraft) {
-        markEnteredCastProfiles('DRAFT', false, castProfileIndex);
-      }
       const message = isSavingCastDraft
         ? 'Đã lưu nháp cast. Bảng cast đã cập nhật trạng thái Lưu nháp.'
         : 'Đã lưu bản nháp đăng thông tin.';
@@ -5789,11 +5803,14 @@ export default function PartnerPage() {
     setIsSubmittingListing(true);
     setListingNotice('Đang gửi cast cho Admin duyệt...');
     try {
-      const castProfileIndex = activeCastProfileIndex ?? undefined;
+      const castProfileKeyToSubmit =
+        activeCastProfileIndex === null
+          ? ''
+          : castProfileKey(listingDraft.castProfiles[activeCastProfileIndex]);
       const payload = listingPayload({
         castStatus: 'PENDING_REVIEW',
         castIsPublic: false,
-        castProfileIndex,
+        castProfileKey: castProfileKeyToSubmit,
       });
       const response = await apiClient<{
         id: string;
@@ -5832,7 +5849,9 @@ export default function PartnerPage() {
         tone: 'gold',
         icon: FileText,
       });
-      markEnteredCastProfiles('PENDING_REVIEW', false, castProfileIndex);
+      if (castProfileKeyToSubmit) {
+        markEnteredCastProfile('PENDING_REVIEW', false, castProfileKeyToSubmit);
+      }
       setListingNotice('Đã gửi cast cho Admin duyệt. Cast sẽ hiển thị sau khi được duyệt.');
       listingActionToast(
         'success',
