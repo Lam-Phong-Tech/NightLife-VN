@@ -2047,7 +2047,7 @@ function VenueResultCard({
               <span key={`${venue.id}-${tag}`}>{tag}</span>
             ))}
           </div>
-          <div className="venue-price">{venue.priceLabel}</div>
+          <div className="venue-price notranslate" translate="no" data-no-translate="true">{venue.priceLabel}</div>
           <div className="venue-distance">
             <MapPin size={12} />
             {venue.distanceLabel} · {venue.areaLabel} · {venue.cityLabel}

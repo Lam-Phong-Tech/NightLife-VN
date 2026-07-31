@@ -46,7 +46,7 @@ export function StoreDetailBookingPanel({
     <aside className="booking-panel">
       <div className="booking-title">
         <span>Đặt chỗ từ</span>
-        <strong>{formatPriceTier(startingFromVnd)}</strong>
+        <strong className="notranslate" translate="no" data-no-translate="true">{formatPriceTier(startingFromVnd)}</strong>
       </div>
       <label>Chọn ngày</label>
       <div className="slot-row">
@@ -204,7 +204,7 @@ export function StoreDetailMobileCta({
     <div className="mobile-cta">
       <div className="mobile-cta-summary">
         <span>Đặt bàn từ</span>
-        <strong>{formatPriceTier(startingFromVnd)}</strong>
+        <strong className="notranslate" translate="no" data-no-translate="true">{formatPriceTier(startingFromVnd)}</strong>
       </div>
       <div className="mobile-cta-actions">
         <Link

@@ -967,9 +967,13 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                 </small>
               </span>
               <b>
-                {typeof item.amountVnd === "number" && item.amountVnd > 0
-                  ? formatMoney(item.amountVnd)
-                  : item.displayPrice || formatPriceTier(item.amountVnd)}
+                {typeof item.amountVnd === "number" && item.amountVnd > 0 ? (
+                  formatMoney(item.amountVnd)
+                ) : (
+                  <span className="notranslate" translate="no" data-no-translate="true">
+                    {item.displayPrice || formatPriceTier(item.amountVnd)}
+                  </span>
+                )}
                 {item.unit === "hour" ? translateText("/giờ", activeLanguage) : ""}
               </b>
             </div>
@@ -2428,7 +2432,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
               <i />
               <div>
-                <strong>{priceText}</strong>
+                <strong className="notranslate" translate="no" data-no-translate="true">{priceText}</strong>
                 <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
               <i />
@@ -2535,7 +2539,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <span>{translateText("Giờ mở cửa", activeLanguage)}</span>
               </div>
               <div>
-                <strong>{priceText}</strong>
+                <strong className="notranslate" translate="no" data-no-translate="true">{priceText}</strong>
                 <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
               {!isServiceOnlyBooking ? (
