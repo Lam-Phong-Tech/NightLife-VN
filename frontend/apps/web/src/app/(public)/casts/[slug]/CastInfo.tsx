@@ -95,10 +95,10 @@ export function CastInfo({
       </div>
 
       <div className="cast-desktop-name-block">
-        <h1>{profile.name}</h1>
+        <h1 className="notranslate" translate="no" data-no-translate="true">{profile.name}</h1>
         <p>
           {profile.heightCm ? `${profile.heightCm} cm · ` : ""}
-          {area || copy.areaUpdating} · {profile.store.name}
+          {area || copy.areaUpdating} · <span className="notranslate" translate="no" data-no-translate="true">{profile.store.name}</span>
         </p>
       </div>
 

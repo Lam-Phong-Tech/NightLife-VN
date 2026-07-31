@@ -25,7 +25,7 @@ export const CastCard: React.FC<CastCardProps> = ({ cast, onClick, onFavClick, h
         </span>
       </PlaceholderMedia>
       <div style={{ padding: '12px' }}>
-        <div style={{ fontWeight: '600', fontSize: '14px' }}>{cast.name} · {cast.age}</div>
+        <div style={{ fontWeight: '600', fontSize: '14px' }}><span className="notranslate" translate="no" data-no-translate="true">{cast.name}</span> · {cast.age}</div>
         <div style={{ fontSize: '11.5px', color: 'var(--vy-muted)', marginTop: '3px' }}>{cast.desc}</div>
         <div style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--vy-warn)' }}>★ {cast.rating}</div>
       </div>

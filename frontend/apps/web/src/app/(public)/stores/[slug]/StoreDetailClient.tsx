@@ -888,7 +888,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
                 backgroundImage: avatarUrl ? imageBackground(avatarUrl) : emptyMediaBackground,
               }}
             />
-            <strong>{cast.publicAlias || cast.stageName}</strong>
+            <strong className="notranslate" translate="no" data-no-translate="true">{cast.publicAlias || cast.stageName}</strong>
             <small>
               <Star size={11} fill="currentColor" />
               {formatNationalities(cast.languages, activeLanguage) ||

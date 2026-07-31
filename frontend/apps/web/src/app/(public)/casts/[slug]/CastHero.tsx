@@ -126,13 +126,13 @@ export function CastHero({
         </div>
 
         <div className="cast-title-row">
-          <h1>{profile.name}</h1>
+          <h1 className="notranslate" translate="no" data-no-translate="true">{profile.name}</h1>
           {summary ? <span>{summary}</span> : null}
         </div>
 
         <Link href={storeHref} className="cast-hero-store">
           <MapPin size={13} strokeWidth={1.8} />
-          <strong>{profile.store.name}</strong>
+          <strong className="notranslate" translate="no" data-no-translate="true">{profile.store.name}</strong>
           {area ? <span>· {area}</span> : null}
         </Link>
       </div>

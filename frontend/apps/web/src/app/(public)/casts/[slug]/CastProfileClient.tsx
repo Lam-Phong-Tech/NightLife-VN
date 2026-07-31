@@ -481,7 +481,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                   <span>/</span>
                   <Link href="/danh-sach-cast">Cast</Link>
                   <span>/</span>
-                  <strong>{profile.name}</strong>
+                  <strong className="notranslate" translate="no" data-no-translate="true">{profile.name}</strong>
                 </nav>
                 <CastInfo
                   profile={profile}

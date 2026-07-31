@@ -1355,9 +1355,9 @@ function SearchSuggestions({
                   className="cast-suggestion-avatar"
                 />
                 <span>
-                  <b>{highlightMatch(cast.name, query)}</b>
+                  <b className="notranslate" translate="no" data-no-translate="true">{highlightMatch(cast.name, query)}</b>
                   <small>
-                    {cast.store.name}
+                    <span className="notranslate" translate="no" data-no-translate="true">{cast.store.name}</span>
                     {meta ? ` · ${meta}` : ""}
                   </small>
                 </span>
@@ -1455,12 +1455,12 @@ function CastDiscoveryCard({
             </span>
           ) : null}
           <span className="cast-card-name">
-            <b>{cast.name}</b>
+            <b className="notranslate" translate="no" data-no-translate="true">{cast.name}</b>
             <small>{categoryLabel}</small>
           </span>
           <span className="cast-card-place">
             <MapPin size={12} />
-            <b>{cast.store.name}</b>
+            <b className="notranslate" translate="no" data-no-translate="true">{cast.store.name}</b>
             {areaLabel ? <small>· {areaLabel}</small> : null}
           </span>
         </PlaceholderMedia>
