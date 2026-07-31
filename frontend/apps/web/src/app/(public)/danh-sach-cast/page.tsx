@@ -98,21 +98,23 @@ const cityOptions: Option[] = [
 
 const categoryOptions: Option[] = [
   { value: "", label: "Tất cả" },
-  { value: "GIRLS_BAR", label: "Girls Bar" },
-  { value: "LOUNGE", label: "Lounge" },
-  { value: "CLUB", label: "Club" },
-  { value: "BAR", label: "Bar" },
-  { value: "KARAOKE", label: "Karaoke / KTV" },
-  { value: "MASSAGE_SPA", label: "Massage / Spa" },
-  { value: "RESTAURANT", label: "Nhà hàng" },
-  { value: "CASINO", label: "Casino" },
+  { value: "LOUNGE", label: "ラウンジ (Lounge)" },
+  { value: "KYABAKURA", label: "キャバクラ (Kyabakura)" },
+  { value: "GIRLS_BAR", label: "ガールズバー (Girls Bar)" },
+  { value: "SNACK", label: "スナック (Snack)" },
+  { value: "BAR", label: "バー (Bar)" },
+  { value: "CLUB", label: "クラブ (Club)" },
+  { value: "KARAOKE", label: "カラオケ (Karaoke)" },
+  { value: "MASSAGE_SPA", label: "マッサージ (Massage)" },
+  { value: "RESTAURANT", label: "レストラン (Restaurant)" },
 ];
 
 const languageOptions: Option[] = [
   { value: "", label: "Tất cả" },
-  { value: "ja", label: "日本語" },
-  { value: "en", label: "English" },
-  { value: "vi", label: "Tiếng Việt" },
+  { value: "ja", label: "Tiếng Nhật Bản" },
+  { value: "ko", label: "Tiếng Hàn Quốc" },
+  { value: "zh", label: "Tiếng Trung Quốc" },
+  { value: "en", label: "Tiếng Anh" },
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
@@ -122,14 +124,15 @@ const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
 ];
 
 const categoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls Bar",
-  KARAOKE: "Karaoke / KTV",
-  MASSAGE_SPA: "Massage / Spa",
-  RESTAURANT: "Nhà hàng",
-  CASINO: "Casino",
+  BAR: "バー (Bar)",
+  CLUB: "クラブ (Club)",
+  LOUNGE: "ラウンジ (Lounge)",
+  KYABAKURA: "キャバクラ (Kyabakura)",
+  GIRLS_BAR: "ガールズバー (Girls Bar)",
+  SNACK: "スナック (Snack)",
+  KARAOKE: "カラオケ (Karaoke)",
+  MASSAGE_SPA: "マッサージ (Massage)",
+  RESTAURANT: "レストラン (Restaurant)",
 };
 
 const cityLabels: Record<string, string> = {
@@ -142,6 +145,7 @@ const compactLanguageLabels: Record<string, string> = {
   ja: "日本語",
   en: "EN",
   ko: "KR",
+  zh: "CN",
 };
 
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
@@ -228,11 +232,19 @@ const englishCastCategoryLabels: Record<string, string> = {
   BAR: "Bar",
   CLUB: "Club",
   LOUNGE: "Lounge",
+  KYABAKURA: "Kyabakura",
   GIRLS_BAR: "Girls Bar",
-  KARAOKE: "Karaoke / KTV",
-  MASSAGE_SPA: "Massage / Spa",
+  SNACK: "Snack",
+  KARAOKE: "Karaoke",
+  MASSAGE_SPA: "Massage",
   RESTAURANT: "Restaurant",
-  CASINO: "Casino",
+};
+
+const castLanguageLabels: Record<string, string> = {
+  ja: "Tiếng Nhật Bản",
+  ko: "Tiếng Hàn Quốc",
+  zh: "Tiếng Trung Quốc",
+  en: "Tiếng Anh",
 };
 
 const getCastCopy = (language: LanguageCode): CastSearchCopy => {
@@ -357,7 +369,7 @@ const getCastSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
 const getCastCategoryLabel = (category: string, language: LanguageCode) =>
   language === "en"
     ? (englishCastCategoryLabels[category] ?? category)
-    : translateText(categoryLabels[category] ?? category, language);
+    : (categoryLabels[category] ?? category);
 
 const formatCastActiveFilters = (count: number, language: LanguageCode) =>
   language === "en"
@@ -792,8 +804,12 @@ export default function Page() {
     [activeLanguage, copy.all],
   );
   const localizedLanguageOptions = useMemo(
-    () => languageOptions.map((option) => localizeCastOption(option, activeLanguage, copy)),
-    [activeLanguage, copy],
+    () =>
+      languageOptions.map((option) => ({
+        value: option.value,
+        label: option.value ? (castLanguageLabels[option.value] ?? option.label) : copy.all,
+      })),
+    [copy.all],
   );
   const effectiveSortOptions = useMemo(
     () =>
@@ -1660,7 +1676,7 @@ function CastFilterPanel({
             />
           </section>
 
-          <section className="cast-filter-column" aria-label={copy.filterOther}>
+          <section className="cast-filter-column cast-filter-column--other" aria-label={copy.filterOther}>
             <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
             <div className="cast-toggle-row">
               <span>
@@ -2722,7 +2738,7 @@ html.vy-light .cast-card-favorite.is-active {
 }
 
 .cast-filter-sheet--desktop .cast-filter-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(250px, 0.92fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
 }
 
@@ -2731,6 +2747,15 @@ html.vy-light .cast-card-favorite.is-active {
   align-content: start;
   gap: 14px;
   min-width: 0;
+}
+
+.cast-filter-sheet--desktop .cast-filter-column--other {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cast-filter-sheet--desktop .cast-filter-column--other .cast-filter-column-title {
+  grid-column: 1 / -1;
 }
 
 .cast-filter-column-title {
@@ -3270,9 +3295,9 @@ html.vy-light .cast-sheet-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cast-filter-sheet--desktop .cast-filter-column:last-child {
+  .cast-filter-sheet--desktop .cast-filter-column--other {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
