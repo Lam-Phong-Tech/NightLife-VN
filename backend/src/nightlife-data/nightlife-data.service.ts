@@ -13924,8 +13924,8 @@ export class NightlifeDataService {
   private bookingDiscountEmailLabel(booking: BookingNotificationRecord) {
     const snapshot = this.asRecord(booking.discountSnapshot);
     const discountType =
-      this.cleanText(snapshot?.discountType) ||
-      this.cleanText(snapshot?.type) ||
+      this.cleanText(this.recordString(snapshot, 'discountType')) ||
+      this.cleanText(this.recordString(snapshot, 'type')) ||
       booking.coupon?.discountType;
     const discountValue =
       this.toNumber(snapshot?.discountPercent) ??
@@ -13938,7 +13938,7 @@ export class NightlifeDataService {
     }
 
     const code =
-      this.cleanText(snapshot?.code) ||
+      this.cleanText(this.recordString(snapshot, 'code')) ||
       this.cleanText(booking.coupon?.code) ||
       this.cleanText(booking.couponIssue?.code);
     const valueLabel =
@@ -13947,6 +13947,14 @@ export class NightlifeDataService {
         : `${discountValue}%`;
 
     return [code, valueLabel].filter(Boolean).join(' · ');
+  }
+
+  private recordString(
+    record: Record<string, unknown> | null | undefined,
+    key: string,
+  ): string | null {
+    const value = record?.[key];
+    return typeof value === 'string' ? value : null;
   }
 
   private formatVnd(value: number) {
