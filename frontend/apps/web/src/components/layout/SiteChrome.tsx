@@ -55,6 +55,10 @@ import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 import { AuthRedirectNotice } from "@/components/auth/AuthRedirectNotice";
 import { SessionSecurityWatcher } from "@/components/auth/SessionSecurityWatcher";
+import {
+  promptMemberLogin,
+  type MemberLoginPromptIntent,
+} from "@/lib/member-favorite-auth";
 import { LanguagePicker } from "./LanguagePicker";
 import { HybridPreloader } from "./HybridPreloader";
 import { SupportChatWidget } from "./SupportChatWidget";
@@ -149,6 +153,11 @@ const bottomNav = [
   { href: "/lich-su-dat-cho", label: "Lịch đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
+
+const mobileMemberLoginPromptByHref: Record<string, MemberLoginPromptIntent> = {
+  "/lich-su-dat-cho": "booking-history",
+  "/tai-khoan": "account",
+};
 
 type BottomNavItem = {
   href: string;
@@ -2526,10 +2535,16 @@ export function SiteChrome({
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
             const activeColor = item.color || colors.gold;
+            const loginPromptIntent = mobileMemberLoginPromptByHref[item.href];
             return (
               <Link
                 key={item.href}
                 href={resolveHref(item.href, activeLanguage)}
+                onClick={(event) => {
+                  if (authUser || !loginPromptIntent) return;
+                  event.preventDefault();
+                  promptMemberLogin({ intent: loginPromptIntent, redirectTo: item.href });
+                }}
                 style={{
                   color: active ? activeColor : "#6f6b62",
                   display: "flex",
