@@ -166,12 +166,23 @@ function isUserFeedbackRoute() {
   if (typeof window === "undefined") return false;
   const hostname = window.location.hostname.toLowerCase();
   const pathname = window.location.pathname;
-  return (
-    !pathname.startsWith("/admin") &&
-    !pathname.startsWith("/partner") &&
-    !hostname.startsWith("admin.") &&
-    !hostname.startsWith("partner.")
-  );
+
+  const isAuthOrPortalPath =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/partner") ||
+    pathname === "/dang-nhap" ||
+    pathname === "/dang-nhap-doi-tac" ||
+    pathname === "/dang-ky-doi-tac" ||
+    pathname === "/quen-mat-khau" ||
+    pathname === "/dat-lai-mat-khau" ||
+    pathname === "/xac-nhan";
+
+  const isPortalHost =
+    hostname.startsWith("admin.") ||
+    hostname.startsWith("partner.") ||
+    hostname.startsWith("auth.");
+
+  return !isAuthOrPortalPath && !isPortalHost;
 }
 
 function translateFeedbackText(value: string | undefined, language: LanguageCode, enabled: boolean) {
@@ -457,9 +468,17 @@ function FeedbackModal({
     "Đã hiểu";
 
   return (
-    <div className="nl-system-modal-overlay" role="presentation" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
+    <div
+      className={`nl-system-modal-overlay ${!shouldTranslate ? "notranslate" : ""}`}
+      translate={!shouldTranslate ? "no" : undefined}
+      data-no-translate={!shouldTranslate ? "true" : undefined}
+      role="presentation"
+      onMouseDown={(event) => event.currentTarget === event.target && onClose()}
+    >
       <section
-        className="nl-system-modal"
+        className={`nl-system-modal ${!shouldTranslate ? "notranslate" : ""}`}
+        translate={!shouldTranslate ? "no" : undefined}
+        data-no-translate={!shouldTranslate ? "true" : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby="nl-system-modal-title"
