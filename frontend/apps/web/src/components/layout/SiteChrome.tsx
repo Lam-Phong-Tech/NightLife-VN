@@ -34,6 +34,7 @@ import {
 } from "@/lib/api/appearance";
 import { siteConfig } from "@/lib/site";
 import { resolveClientUrl } from "@/lib/api/client";
+import { localizeHref } from "@/lib/i18n/locales";
 import {
   defaultLanguageCode,
   languageChangedEvent,
