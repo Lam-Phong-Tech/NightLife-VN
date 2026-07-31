@@ -1705,7 +1705,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const selectedMedia = gallery[selectedPhotoIndex] ?? heroImage;
   const hasHeroVisual = Boolean(galleryImageUrl(selectedMedia, heroImage));
   const heroBackground = galleryBackground(selectedMedia, heroImage);
-  const desktopGalleryTiles = gallery.slice(0, 5);
+  const desktopGalleryTileStart = Math.min(
+    Math.max(selectedPhotoIndex - 4, 0),
+    Math.max(gallery.length - 5, 0),
+  );
+  const desktopGalleryTiles = gallery
+    .slice(desktopGalleryTileStart, desktopGalleryTileStart + 5)
+    .map((item, index) => ({ item, index: desktopGalleryTileStart + index }));
   const mobileGalleryTiles = gallery;
   const tourMedia = videoGallery;
 
@@ -2488,7 +2494,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             {desktopGalleryTiles.length ? (
               <div className="thumb-grid">
-                {desktopGalleryTiles.map((item, index) => (
+                {desktopGalleryTiles.map(({ item, index }) => (
                   <button
                     key={`${item.id}-${index}`}
                     className={index === selectedPhotoIndex ? "active" : undefined}
