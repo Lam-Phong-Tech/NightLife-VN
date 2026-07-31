@@ -87,29 +87,46 @@ const hiddenChromePaths = [
   "/dat-lai-mat-khau",
   "/dang-nhap-doi-tac",
   "/dang-ky-doi-tac",
+  "/xac-nhan",
   "/line-login",
   "/partner",
   "/admin",
 ];
 
-const resolveHref = (href: string) => {
-  if (typeof window === "undefined") return href;
-  if (href.startsWith("http://") || href.startsWith("https://")) return href;
+const resolveHref = (href: string, language?: LanguageCode) => {
+  if (
+    !href ||
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("#") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:")
+  ) {
+    return href;
+  }
 
-  const hostKind = getNightlifeHostKind(window.location.hostname);
-  if (hostKind === "auth") {
-    if (href.startsWith("/")) {
-      const path = href.split("?")[0];
-      const isLoginPath =
-        path === "/dang-nhap" ||
-        path === "/dang-nhap-doi-tac" ||
-        path === "/admin/dang-nhap";
-      if (!isLoginPath) {
-        return `${nightlifeOrigins.public}${href}`;
+  let targetHref = href;
+  if (typeof window !== "undefined") {
+    const hostKind = getNightlifeHostKind(window.location.hostname);
+    if (hostKind === "auth") {
+      if (href.startsWith("/")) {
+        const path = href.split("?")[0];
+        const isLoginPath =
+          path === "/dang-nhap" ||
+          path === "/dang-nhap-doi-tac" ||
+          path === "/admin/dang-nhap";
+        if (!isLoginPath) {
+          targetHref = `${nightlifeOrigins.public}${href}`;
+          return targetHref;
+        }
       }
     }
   }
-  return href;
+
+  if (language) {
+    return localizeHref(targetHref, language);
+  }
+  return targetHref;
 };
 
 const navLinks = [
@@ -2209,7 +2226,7 @@ export function SiteChrome({
             }}
           >
             <Link
-              href={resolveHref("/")}
+              href={resolveHref("/", activeLanguage)}
               className="nl-site-brand"
               style={{
                 display: "inline-flex",
@@ -2280,14 +2297,14 @@ export function SiteChrome({
                 {desktopNavLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={resolveHref(link.href)}
+                    href={resolveHref(link.href, activeLanguage)}
                     style={{
                       color: isActive(pathname, link.href) ? colors.goldPale : colors.text2,
                       textDecoration: "none",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {link.label}
+                    {translateText(link.label, activeLanguage)}
                   </Link>
                 ))}
               </nav>
@@ -2511,7 +2528,7 @@ export function SiteChrome({
             return (
               <Link
                 key={item.href}
-                href={resolveHref(item.href)}
+                href={resolveHref(item.href, activeLanguage)}
                 style={{
                   color: active ? activeColor : "#6f6b62",
                   display: "flex",
