@@ -1308,6 +1308,8 @@ function CategoryGrid({
   desktop?: boolean;
   items?: HomeCategoryItem[];
 }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <div
       style={{
@@ -1319,6 +1321,8 @@ function CategoryGrid({
       {items.map((item) => {
         const Icon = item.icon;
         const accentColor = item.color || (item.featured ? colors.goldSoft : colors.gold);
+        const translatedLabel = translateText(item.label, activeLanguage);
+
         return (
           <Link key={item.label} href={item.href} className="nl-home-category-link" style={{ color: colors.text, textAlign: "center" }}>
             <span
@@ -1357,12 +1361,9 @@ function CategoryGrid({
               )}
             </span>
             <div
-              className="notranslate"
-              translate="no"
-              data-no-translate="true"
               style={{ marginTop: "8px", color: colors.text, fontSize: desktop ? "13px" : "12px" }}
             >
-              {item.label}
+              {translatedLabel}
             </div>
           </Link>
         );
