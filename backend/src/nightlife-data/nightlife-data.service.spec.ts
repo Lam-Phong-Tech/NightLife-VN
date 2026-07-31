@@ -2116,16 +2116,12 @@ describe('NightlifeDataService', () => {
     const findManyArgs = prisma.cast.findMany.mock.calls[0]?.[0] as {
       select?: { media?: { where?: Record<string, unknown> } };
     };
-    expect(findManyArgs.select?.media?.where).toEqual(
-      expect.objectContaining({
-        deletedAt: null,
-        castId: null,
-        access: 'PUBLIC',
-        status: 'READY',
-        type: 'IMAGE',
-        AND: expect.any(Array),
-      }),
-    );
+    expect(findManyArgs.select?.media?.where).toEqual({
+      deletedAt: null,
+      access: 'PUBLIC',
+      status: 'READY',
+      type: 'IMAGE',
+    });
   });
 
   it('gets public cast detail by slug without exposing private fields', async () => {

@@ -1137,6 +1137,18 @@ export class NightlifeDataService {
     };
   }
 
+  private publicCastMediaWhere(
+    extra: Prisma.MediaWhereInput = {},
+  ): Prisma.MediaWhereInput {
+    return {
+      ...extra,
+      deletedAt: null,
+      access: 'PUBLIC',
+      status: 'READY',
+      type: 'IMAGE',
+    };
+  }
+
   private isStoreGalleryMedia(media: {
     castId?: string | null;
     purpose?: string | null;
@@ -2683,11 +2695,7 @@ export class NightlifeDataService {
             },
           },
           media: {
-            where: this.storeMediaWhere({
-              access: 'PUBLIC',
-              status: 'READY',
-              type: 'IMAGE',
-            }),
+            where: this.publicCastMediaWhere(),
             orderBy: { createdAt: 'desc' },
             take: 8,
             select: {
