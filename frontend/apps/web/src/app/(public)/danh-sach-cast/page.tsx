@@ -681,7 +681,7 @@ export default function Page() {
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (filterPanelRef.current?.contains(target)) return;
-      if (target.closest(".cast-filter-chip, .cast-input-filter")) return;
+      if (target.closest(".cast-input-filter")) return;
       setFilterOpen(false);
     };
 
@@ -987,12 +987,16 @@ export default function Page() {
               <button
                 type="button"
                 aria-label={copy.openFilters}
+                aria-haspopup="dialog"
                 aria-expanded={isFilterOpen}
-                aria-controls="cast-filter-panel-mobile"
-                className="cast-input-filter"
+                aria-controls={
+                  isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"
+                }
+                className={`cast-input-filter ${isFilterOpen ? "is-active" : ""}`}
                 onClick={() => setFilterOpen((current) => !current)}
               >
                 <SlidersHorizontal size={16} />
+                {activeFilterCount ? <b>{activeFilterCount}</b> : null}
               </button>
             </label>
 
@@ -1098,19 +1102,6 @@ export default function Page() {
                 {option.label}
               </button>
             ))}
-            <button
-              type="button"
-              className={`cast-chip cast-filter-chip ${activeFilterCount ? "is-active" : ""}`}
-              aria-expanded={isFilterOpen}
-              aria-controls={
-                isDesktopViewport ? "cast-filter-panel-desktop" : "cast-filter-panel-mobile"
-              }
-              onClick={() => setFilterOpen((current) => !current)}
-            >
-              <SlidersHorizontal size={14} />
-              {copy.filterTitle}
-              {activeFilterCount ? <b>{activeFilterCount}</b> : null}
-            </button>
           </nav>
         </section>
 
@@ -1865,7 +1856,38 @@ const castSearchCss = `
 }
 
 .cast-input-filter {
-  display: none;
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--vy-border-gold-32);
+  border-radius: 10px;
+  background: var(--vy-surface-2);
+  color: var(--vy-gold);
+}
+
+.cast-input-filter:hover,
+.cast-input-filter:focus-visible,
+.cast-input-filter.is-active {
+  border-color: var(--vy-border-gold-40);
+  background: var(--vy-gold-soft-bg);
+  color: var(--vy-gold-pale);
+  outline: 0;
+}
+
+.cast-input-filter b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border: 2px solid var(--vy-bg);
+  border-radius: 9px;
+  background: #d4b26a;
+  color: #241a0a;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .cast-dropdown {
@@ -2007,17 +2029,6 @@ const castSearchCss = `
   border-color: transparent;
   background: linear-gradient(135deg, #f0dda8, #d4b26a);
   color: var(--vy-on-gold);
-}
-
-.cast-filter-chip b {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  background: #241a0a;
-  color: var(--vy-gold-pale);
-  font-size: 10px;
 }
 
 .cast-live-dot {
@@ -3060,7 +3071,6 @@ html.vy-light .cast-suggestions {
 }
 
 html.vy-light .cast-chip.is-active,
-html.vy-light .cast-filter-chip[aria-expanded="true"],
 html.vy-light .cast-sheet-group button.is-active {
   border-color: rgba(150, 116, 52, 0.46);
   background: linear-gradient(135deg, #fff0b8 0%, #e4c06a 48%, #c99b3e 100%);
@@ -3073,12 +3083,6 @@ html.vy-light .cast-sheet-group button.is-active {
 html.vy-light .cast-chip.is-active .cast-live-dot {
   background: #d22d72;
   box-shadow: 0 0 8px rgba(210, 45, 114, 0.78);
-}
-
-html.vy-light .cast-filter-chip.is-active b,
-html.vy-light .cast-filter-chip[aria-expanded="true"] b {
-  background: #241a0a;
-  color: #f7e5a7;
 }
 
 html.vy-light .cast-search-input input,
@@ -3129,8 +3133,23 @@ html.vy-light .cast-round-icon {
 }
 
 html.vy-light .cast-input-filter {
+  border-color: rgba(150, 116, 52, 0.28);
   background: rgba(212, 178, 106, 0.16);
   color: #8f6a2a;
+}
+
+html.vy-light .cast-input-filter:hover,
+html.vy-light .cast-input-filter:focus-visible,
+html.vy-light .cast-input-filter.is-active {
+  border-color: rgba(150, 116, 52, 0.42);
+  background: rgba(255, 248, 229, 0.96);
+  color: #7b591f;
+}
+
+html.vy-light .cast-input-filter b {
+  border-color: var(--vy-bg);
+  background: #d4b26a;
+  color: #241a0a;
 }
 
 html.vy-light .cast-round-icon svg,
@@ -3155,11 +3174,6 @@ html.vy-light .cast-dropdown-option:hover,
 html.vy-light .cast-dropdown-option:focus-visible {
   background: rgba(212, 178, 106, 0.16);
   color: #241a0a;
-}
-
-html.vy-light .cast-filter-chip b {
-  background: rgba(150, 116, 52, 0.14);
-  color: #7b5a18;
 }
 
 html.vy-light .cast-card {
@@ -3348,7 +3362,15 @@ html.vy-light .cast-sheet-actions {
     width: 30px;
     height: 30px;
     border-radius: 50%;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     color: var(--vy-muted);
+  }
+
+  .cast-input-filter b {
+    top: -4px;
+    right: -4px;
   }
 
   .cast-city-select,
