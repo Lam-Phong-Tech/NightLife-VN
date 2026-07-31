@@ -31,6 +31,12 @@ import { useLanguage } from "@/components/providers/LanguageProvider";
 import { Pagination } from "@/components/ui/Pagination";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { translateText } from "@/lib/i18n/client-translations";
+import {
+  getFilterAreaLabel,
+  getFilterCategoryLabel,
+  getFilterCityLabel,
+  getFilterLanguageLabel,
+} from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -121,23 +127,6 @@ const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
   { value: "nearest", label: "Gần nhất" },
 ];
 
-const categoryLabels: Record<string, string> = {
-  BAR: "バー (Bar)",
-  CLUB: "クラブ (Club)",
-  LOUNGE: "ラウンジ (Lounge)",
-  KYABAKURA: "キャバクラ (Kyabakura)",
-  GIRLS_BAR: "ガールズバー (Girls Bar)",
-  SNACK: "スナック (Snack)",
-  KARAOKE: "カラオケ (Karaoke)",
-  MASSAGE_SPA: "マッサージ (Massage)",
-  RESTAURANT: "レストラン (Restaurant)",
-};
-
-const cityLabels: Record<string, string> = {
-  hn: "Hà Nội",
-  hcm: "TP.HCM",
-};
-
 const compactLanguageLabels: Record<string, string> = {
   vi: "VI",
   ja: "日本語",
@@ -215,34 +204,10 @@ const castCopyEn: CastSearchCopy = {
   topRanking: "Top ranking",
 };
 
-const englishCastCityLabels: Record<string, string> = {
-  hn: "Hanoi",
-  hcm: "Ho Chi Minh City",
-};
-
 const englishCastSortLabels: Record<DiscoverySort, string> = {
   newest: "Newest",
   priority: "Popular",
   nearest: "Nearest",
-};
-
-const englishCastCategoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  KYABAKURA: "Kyabakura",
-  GIRLS_BAR: "Girls Bar",
-  SNACK: "Snack",
-  KARAOKE: "Karaoke",
-  MASSAGE_SPA: "Massage",
-  RESTAURANT: "Restaurant",
-};
-
-const castLanguageLabels: Record<string, string> = {
-  ja: "Tiếng Nhật Bản",
-  ko: "Tiếng Hàn Quốc",
-  zh: "Tiếng Trung Quốc",
-  en: "Tiếng Anh",
 };
 
 const getCastCopy = (language: LanguageCode): CastSearchCopy => {
@@ -304,10 +269,11 @@ const generalAreaLabels = new Set([
   "viet nam",
 ]);
 
-const getCastAreaOptionLabel = (area: PublicArea, language: LanguageCode) =>
-  language === "en"
-    ? stripCastVietnameseMarks(area.name)
-    : translateText(area.name, language);
+const getCastAreaOptionLabel = (area: PublicArea, language: LanguageCode) => {
+  const localizedArea = getFilterAreaLabel(area.name, language);
+  if (localizedArea !== area.name) return localizedArea;
+  return language === "en" ? stripCastVietnameseMarks(area.name) : translateText(area.name, language);
+};
 
 const buildCastAreaOptions = (
   areas: PublicArea[],
@@ -346,17 +312,12 @@ const localizeCastOption = (
   copy: CastSearchCopy,
 ): Option => {
   if (!option.value) return { ...option, label: copy.all };
-  const englishLabel = englishCastCityLabels[option.value];
-  if (language === "en" && englishLabel) {
-    return { ...option, label: englishLabel };
-  }
-  return { ...option, label: translateText(option.label, language) };
+  return { ...option, label: getFilterCityLabel(option.value, language) };
 };
 
 const getCastCityLabel = (cityCode: string, language: LanguageCode) => {
-  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Việt Nam", language);
-  if (language === "en") return englishCastCityLabels[cityCode] ?? cityCode;
-  return translateText(cityLabels[cityCode] ?? cityCode, language);
+  if (!cityCode) return getFilterCityLabel("vietnam", language);
+  return getFilterCityLabel(cityCode, language);
 };
 
 const getCastSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
@@ -365,9 +326,7 @@ const getCastSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
     : translateText(sortOptions.find((item) => item.value === sort)?.label ?? sort, language);
 
 const getCastCategoryLabel = (category: string, language: LanguageCode) =>
-  language === "en"
-    ? (englishCastCategoryLabels[category] ?? category)
-    : (categoryLabels[category] ?? category);
+  getFilterCategoryLabel(category, language);
 
 const formatCastActiveFilters = (count: number, language: LanguageCode) =>
   language === "en"
@@ -805,9 +764,9 @@ export default function Page() {
     () =>
       languageOptions.map((option) => ({
         value: option.value,
-        label: option.value ? (castLanguageLabels[option.value] ?? option.label) : copy.all,
+        label: option.value ? getFilterLanguageLabel(option.value, activeLanguage) : copy.all,
       })),
-    [copy.all],
+    [activeLanguage, copy.all],
   );
   const effectiveSortOptions = useMemo(
     () =>

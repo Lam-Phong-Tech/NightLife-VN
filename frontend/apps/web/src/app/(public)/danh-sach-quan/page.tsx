@@ -22,6 +22,11 @@ import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import { translateText } from "@/lib/i18n/client-translations";
+import {
+  getFilterAreaLabel,
+  getFilterCategoryLabel,
+  getFilterCityLabel,
+} from "@/lib/i18n/filter-taxonomy";
 import { useLanguage } from "@/components/providers/LanguageProvider";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Pagination } from "@/components/ui/Pagination";
@@ -136,30 +141,10 @@ const categoryLabels: Record<string, string> = {
   CASINO: "Casino",
 };
 
-const cityLabels: Record<string, string> = {
-  hn: "Hà Nội",
-  hcm: "TP.HCM",
-};
-
 const sortLabels: Record<DiscoverySort, string> = {
   priority: "Phổ biến",
   nearest: "Gần nhất",
   newest: "Mới nhất",
-};
-
-const areaLabels: Record<string, string> = {
-  "Ba Dinh": "Ba Đình",
-  "Tay Ho": "Tây Hồ",
-  "Cau Giay": "Cầu Giấy",
-  "Nam Tu Liem": "Nam Từ Liêm",
-  "Hoan Kiem": "Hoàn Kiếm",
-  "Hai Ba Trung": "Hai Bà Trưng",
-  "Quan 1": "Quận 1",
-  "Quan 3": "Quận 3",
-  "Quan 7": "Quận 7",
-  "Thao Dien": "Thảo Điền",
-  "Binh Thanh": "Bình Thạnh",
-  "Phu Nhuan": "Phú Nhuận",
 };
 
 const fallbackAreaOptionsByCity: Record<string, FilterOption[]> = {
@@ -297,36 +282,11 @@ const venueCopyEn: VenueSearchCopy = {
   venuePhoto: "Photo of",
 };
 
-const englishCityLabels: Record<string, string> = {
-  hn: "Hanoi",
-  hcm: "Ho Chi Minh City",
-};
-
 const englishSortLabels: Record<DiscoverySort, string> = {
   priority: "Popular",
   nearest: "Nearest",
   newest: "Newest",
 };
-
-const englishCategoryLabels: Record<string, string> = {
-  LOUNGE: "ラウンジ (Lounge)",
-  KYABAKURA: "キャバクラ (Kyabakura)",
-  GIRLS_BAR: "ガールズバー (Girls Bar)",
-  SNACK: "スナック (Snack)",
-  BAR: "バー (Bar)",
-  CLUB: "クラブ (Club)",
-  KARAOKE: "カラオケ (Karaoke)",
-  MASSAGE_SPA: "マッサージ (Massage)",
-  RESTAURANT: "レストラン (Restaurant)",
-  CASINO: "Casino",
-};
-
-const stripVietnameseMarks = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\bQuan\b/g, "District")
-    .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
 
 const normalizeAreaKey = (value?: string | null) =>
   (value ?? "")
@@ -373,22 +333,18 @@ const getVenueCopy = (language: LanguageCode): VenueSearchCopy => {
 };
 
 const getLocalizedCityLabel = (cityCode: string, language: LanguageCode) => {
-  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Việt Nam", language);
-  if (language === "en") return englishCityLabels[cityCode] ?? cityCode;
-  return translateText(cityLabels[cityCode] ?? cityCode, language);
+  return getFilterCityLabel(cityCode || "vietnam", language);
 };
 
 const getLocalizedSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
   language === "en" ? englishSortLabels[sort] : translateText(sortLabels[sort], language);
 
-const getLocalizedCategoryLabel = (category: string, language: LanguageCode) => {
-  return (language === "en" ? englishCategoryLabels[category] : categoryLabels[category]) ?? category;
-};
+const getLocalizedCategoryLabel = (category: string, language: LanguageCode) =>
+  getFilterCategoryLabel(category, language);
 
 const getLocalizedAreaLabel = (areaName: string, language: LanguageCode) => {
-  const base = areaLabels[areaName] ?? areaName;
-  if (language === "en") return stripVietnameseMarks(areaName);
-  return translateText(base, language);
+  const localizedArea = getFilterAreaLabel(areaName, language);
+  return localizedArea === areaName ? translateText(areaName, language) : localizedArea;
 };
 
 const highlightMatch = (text: string, query: string) => {
@@ -996,7 +952,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       seenAreaLabels.add(dedupeKey);
       options.push({
         ...option,
-        label: translateText(option.label, activeLanguage),
+        label: getLocalizedAreaLabel(option.label, activeLanguage),
       });
       return options;
     }, []);
