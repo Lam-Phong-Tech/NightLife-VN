@@ -1,5 +1,5 @@
 -- Cast media uploaded before review must never remain publicly accessible as store media.
-UPDATE "Media"
+UPDATE "media_files"
 SET
   "access" = 'PROTECTED',
   "url" = REPLACE("url", '/storage/public/', '/storage/files/')
