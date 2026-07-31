@@ -899,6 +899,31 @@ const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
   return localDate.toISOString().slice(0, 16);
 };
 
+type StatusPillTone = 'neutral' | 'gold' | 'success' | 'danger';
+
+const billStatusTone = (status?: string | null): StatusPillTone => {
+  switch (status?.toUpperCase()) {
+    case 'VERIFIED':
+    case 'APPROVED':
+    case 'PAID':
+      return 'success';
+    case 'REJECTED':
+    case 'DECLINED':
+      return 'danger';
+    case 'SUBMITTED':
+    case 'PENDING':
+    case 'PENDING_REVIEW':
+    case 'PENDING_PM_BA':
+    case 'REVIEWING':
+      return 'gold';
+    case 'DRAFT':
+    case 'VOIDED':
+    case 'CANCELLED':
+    default:
+      return 'neutral';
+  }
+};
+
 const translateBillStatus = (status?: string | null) => {
   if (!status) return '';
   switch (status.toUpperCase()) {
@@ -1485,7 +1510,7 @@ function StatusPill({
   className,
 }: {
   children: React.ReactNode;
-  tone?: 'neutral' | 'gold' | 'success' | 'danger';
+  tone?: StatusPillTone;
   className?: string;
 }) {
   const toneStyle = {
@@ -4611,7 +4636,7 @@ export default function PartnerPage() {
     }
 
     if (status === 'DRAFT') {
-      return { label: 'Lưu nháp', tone: 'gold' as const };
+      return { label: 'Lưu nháp', tone: 'neutral' as const };
     }
 
     if (status === 'ACTIVE' && cast.isPublic !== false) {
@@ -4622,7 +4647,7 @@ export default function PartnerPage() {
       return { label: 'Đã nhập', tone: 'success' as const };
     }
 
-    return { label: 'Bản nháp', tone: 'gold' as const };
+    return { label: 'Bản nháp', tone: 'neutral' as const };
   };
 
   const markEnteredCastProfiles = (status: string, isPublic: boolean, targetIndex?: number) => {
@@ -6588,7 +6613,7 @@ export default function PartnerPage() {
                     <td
                       style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}
                     >
-                      <StatusPill tone="gold">{row.status}</StatusPill>
+                      <StatusPill tone={billStatusTone(row.status)}>{translateBillStatus(row.status)}</StatusPill>
                     </td>
                   </tr>
                 ))
@@ -6618,7 +6643,7 @@ export default function PartnerPage() {
               <article key={`${row.code}-${index}`} className="partner-settlement-mobile-card">
                 <div className="partner-settlement-mobile-head">
                   <span className="partner-settlement-mobile-index">#{index + 1}</span>
-                  <StatusPill tone="gold">{row.status}</StatusPill>
+                  <StatusPill tone={billStatusTone(row.status)}>{translateBillStatus(row.status)}</StatusPill>
                 </div>
                 <strong className="partner-settlement-mobile-code">{row.code}</strong>
                 <div className="partner-settlement-mobile-service">{row.service}</div>
@@ -7806,7 +7831,7 @@ export default function PartnerPage() {
                             {bill.booking ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
-                            <StatusPill tone={bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                            <StatusPill tone={billStatusTone(bill.status)}>
                               {translateBillStatus(bill.status)}
                             </StatusPill>
                           </td>
@@ -7840,7 +7865,7 @@ export default function PartnerPage() {
                   const bookingText = bill.booking
                     ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}`
                     : 'Không liên kết booking';
-                  const statusTone = bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold';
+                  const statusTone = billStatusTone(bill.status);
 
                   return (
                     <button
@@ -7883,7 +7908,7 @@ export default function PartnerPage() {
             action={
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {selectedBill && (
-                  <StatusPill tone={selectedBill.status === 'VERIFIED' || selectedBill.status === 'PAID' ? 'success' : selectedBill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                  <StatusPill tone={billStatusTone(selectedBill.status)}>
                     {translateBillStatus(selectedBill.status)}
                   </StatusPill>
                 )}
@@ -7903,7 +7928,7 @@ export default function PartnerPage() {
             {selectedBill && (
               <FormField label="Trạng thái hóa đơn">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <StatusPill tone={selectedBill.status === 'VERIFIED' || selectedBill.status === 'PAID' ? 'success' : selectedBill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                  <StatusPill tone={billStatusTone(selectedBill.status)}>
                     {translateBillStatus(selectedBill.status)}
                   </StatusPill>
                   {selectedBill.rejectReason && (
