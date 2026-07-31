@@ -809,12 +809,14 @@ function SectionTitle({
   kicker,
   kickerTone = "label",
   meta,
+  metaHref,
   id,
 }: {
   title: string;
   kicker?: string;
   kickerTone?: "label" | "address";
   meta?: string;
+  metaHref?: string;
   id?: string;
 }) {
   const activeLanguage = useActiveLanguage();
@@ -834,7 +836,15 @@ function SectionTitle({
         ) : null}
       </div>
       <i aria-hidden="true" />
-      {localizedMeta ? <small>{localizedMeta}</small> : null}
+      {localizedMeta ? (
+        metaHref ? (
+          <Link className="section-title-link" href={metaHref}>
+            <small>{localizedMeta}</small>
+          </Link>
+        ) : (
+          <small>{localizedMeta}</small>
+        )
+      ) : null}
     </div>
   );
 }
@@ -1582,7 +1592,7 @@ function RelatedStores({
 
   return (
     <section className="related-section">
-      <SectionTitle title="Quán tương tự" meta="Xem thêm" />
+      <SectionTitle title="Quán tương tự" meta="Xem thêm" metaHref="/danh-sach-quan" />
       <div className="related-grid">
         {stores.slice(0, 4).map((related) => (
           <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
@@ -3403,6 +3413,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-bottom: 4px;
           color: #9b958a;
           font-size: 12px;
+        }
+
+        .section-title-link {
+          text-decoration: none;
+        }
+
+        .section-title-link:hover small {
+          color: var(--vy-gold-pale);
         }
 
         .tour-grid {
