@@ -3521,24 +3521,31 @@ html.vy-light .nl-site-actions .nl-site-action-control:where(:hover, :focus-visi
   background: #fff7e8 !important;
   color: #7a551b !important;
 }
-/* Google Translate UI Suppression: Hides top banner bar and tooltips while keeping auto-translation active */
+/* Google Translate UI Suppression: Completely hides top banner bar and popups */
 .vietyoru-google-translate-element,
 .goog-te-banner-frame,
 .goog-te-banner-frame.skiptranslate,
 iframe.goog-te-banner-frame,
 iframe[class*="goog-te-banner"],
+iframe[id*=":"],
 #goog-gt-tt,
 .goog-te-balloon-frame,
 div.goog-te-spinner-pos,
 .goog-te-gadget,
 .goog-tooltip,
-.goog-tooltip:hover {
+.goog-tooltip:hover,
+.skiptranslate,
+#google_translate_element {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
   height: 0 !important;
   width: 0 !important;
+  max-height: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
 }
 
 .goog-text-highlight {
@@ -3546,7 +3553,7 @@ div.goog-te-spinner-pos,
   box-shadow: none !important;
 }
 
-body {
+html, body {
   top: 0px !important;
   margin-top: 0px !important;
   position: static !important;

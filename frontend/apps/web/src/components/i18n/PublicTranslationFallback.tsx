@@ -81,57 +81,29 @@ export function PublicTranslationFallback({
     syncGoogleTranslateCookie(activeLanguage);
     rewriteLocalizedLinks(activeLanguage);
 
-    const linkObserver = new MutationObserver(() => rewriteLocalizedLinks(activeLanguage));
+    const cleanupBanners = () => {
+      // Remove any injected Google Translate banner iframes or elements from DOM
+      document
+        .querySelectorAll(
+          ".goog-te-banner-frame, iframe[class*='goog-te-banner'], iframe[id*=':'], #goog-gt-tt, .goog-te-balloon-frame",
+        )
+        .forEach((el) => el.remove());
+      if (document.body.style.top) {
+        document.body.style.top = "0px";
+      }
+    };
+
+    cleanupBanners();
+    const linkObserver = new MutationObserver(() => {
+      rewriteLocalizedLinks(activeLanguage);
+      cleanupBanners();
+    });
     linkObserver.observe(document.body, { childList: true, subtree: true });
 
-    if (activeLanguage === "vi") {
-      delete document.documentElement.dataset.googleTranslateFallback;
-      return () => linkObserver.disconnect();
-    }
-
-    const googleWindow = window as GoogleTranslateWindow;
-    googleWindow[googleTranslateCallbackName] = () =>
-      initializeGoogleTranslate(activeLanguage);
-
-    const loadTimer = window.setTimeout(() => {
-      if (googleWindow.google?.translate?.TranslateElement) {
-        initializeGoogleTranslate(activeLanguage);
-        return;
-      }
-
-      if (document.getElementById(googleTranslateScriptId)) return;
-
-      const script = document.createElement("script");
-      script.id = googleTranslateScriptId;
-      script.src = `https://translate.google.com/translate_a/element.js?cb=${googleTranslateCallbackName}`;
-      script.async = true;
-      script.onerror = () => {
-        document.documentElement.dataset.googleTranslateFallback = "unavailable";
-      };
-      document.head.appendChild(script);
-    }, 240);
-
     return () => {
-      window.clearTimeout(loadTimer);
       linkObserver.disconnect();
     };
   }, [activeLanguage, hostKind, pathname]);
 
-  if (
-    hostKind === "admin" ||
-    hostKind === "partner" ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/partner")
-  ) {
-    return null;
-  }
-
-  return (
-    <div
-      id={googleTranslateElementId}
-      aria-hidden="true"
-      className="vietyoru-google-translate-element"
-      data-no-translate="true"
-    />
-  );
+  return null;
 }

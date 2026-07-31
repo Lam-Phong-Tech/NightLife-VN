@@ -8819,15 +8819,8 @@ function writeGoogleTranslateCookieValue(value: string, maxAge: number) {
 }
 
 export function syncGoogleTranslateCookie(language: LanguageCode) {
-  if (language === "vi") {
-    writeGoogleTranslateCookieValue("", 0);
-    return;
-  }
-
-  writeGoogleTranslateCookieValue(
-    `/vi/${googleTranslateLanguageCode[language]}`,
-    31536000,
-  );
+  // Always clear legacy googtrans cookie to prevent Chrome browser translation bar from popping up
+  writeGoogleTranslateCookieValue("", 0);
 }
 
 const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v1.";

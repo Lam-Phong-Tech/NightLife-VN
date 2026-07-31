@@ -105,16 +105,11 @@ describe("localized public routes", () => {
 });
 
 describe("Google Translate fallback cookie", () => {
-  it("writes googtrans for non-Vietnamese routes and clears it for Vietnamese", () => {
+  it("clears googtrans cookie to prevent Chrome browser top translation bar from popping up", () => {
     syncGoogleTranslateCookie("en");
-    expect(decodeURIComponent(document.cookie)).toContain("googtrans=/vi/en");
+    expect(decodeURIComponent(document.cookie)).not.toContain("googtrans=/vi/en");
 
     syncGoogleTranslateCookie("vi");
     expect(decodeURIComponent(document.cookie)).not.toContain("googtrans=/vi/en");
-  });
-
-  it("uses Google's Simplified Chinese language code for the zh slug", () => {
-    syncGoogleTranslateCookie("zh");
-    expect(decodeURIComponent(document.cookie)).toContain("googtrans=/vi/zh-CN");
   });
 });
