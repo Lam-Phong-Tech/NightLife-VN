@@ -339,7 +339,7 @@ function CastLightbox({
       onTouchCancel={() => setTouchStart(null)}
     >
       <div className="cast-lightbox-topbar">
-        <span>
+        <span aria-live="polite" aria-atomic="true">
           {String(index + 1).padStart(2, "0")} <em>/ {count}</em>
         </span>
         <button

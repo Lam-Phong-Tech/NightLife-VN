@@ -414,7 +414,8 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
               activeIndex={activeMediaIndex}
               variant="mobile"
               language={activeLanguage}
-              isLightboxOpen={isLightboxOpen}
+              isLightboxOpen={false}
+              renderLightbox={false}
               mobileMediaType="IMAGE"
               mobileTitle={copy.gallery}
               mobileMeta={copy.galleryCount(photoGallery.length)}

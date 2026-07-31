@@ -1491,6 +1491,41 @@ export function CastProfileStyles() {
         right: 14px;
       }
 
+      html.vy-light .cast-lightbox {
+        background: #f7f1e5;
+        color: #241a0f;
+      }
+
+      html.vy-light .cast-lightbox-topbar span {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid rgba(151,112,37,.34);
+        border-radius: 8px;
+        background: rgba(255,252,244,.94);
+        box-shadow: 0 2px 8px rgba(86,61,24,.1);
+        color: #4a3924;
+      }
+
+      html.vy-light .cast-lightbox-topbar em {
+        color: #806c4a;
+      }
+
+      html.vy-light .cast-lightbox-close,
+      html.vy-light .cast-lightbox-nav {
+        border-color: rgba(151,112,37,.46);
+        background: rgba(255,252,244,.96);
+        color: #5b431c;
+        box-shadow: 0 3px 12px rgba(86,61,24,.16);
+      }
+
+      html.vy-light .cast-lightbox-close:where(:hover, :focus-visible),
+      html.vy-light .cast-lightbox-nav:where(:hover, :focus-visible) {
+        background: #fff8e7;
+        color: #2f210f;
+      }
+
       .cast-lightbox-media {
         min-height: 0;
         display: grid;
@@ -1670,6 +1705,10 @@ export function CastProfileStyles() {
           height: 42px;
           background: rgba(18,18,22,.78);
           backdrop-filter: blur(8px);
+        }
+
+        html.vy-light .cast-lightbox-close {
+          background: rgba(255,252,244,.96);
         }
 
         .cast-lightbox-media {

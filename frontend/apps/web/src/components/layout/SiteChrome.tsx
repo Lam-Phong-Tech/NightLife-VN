@@ -2551,6 +2551,9 @@ export function SiteChrome({
                   event.preventDefault();
                   promptMemberLogin({ intent: loginPromptIntent, redirectTo: item.href });
                 }}
+                aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : undefined}
+                className={`nl-mobile-bottom-nav-link${active ? " is-active" : ""}`}
                 style={{
                   color: active ? activeColor : "#6f6b62",
                   display: "flex",
@@ -2562,9 +2565,15 @@ export function SiteChrome({
                   borderRadius: "14px",
                   background: active
                     ? item.color
-                      ? `color-mix(in srgb, ${item.color} 18%, transparent)`
-                      : "rgba(212,178,106,.1)"
+                      ? `color-mix(in srgb, ${item.color} 24%, transparent)`
+                      : "rgba(212,178,106,.22)"
                     : "transparent",
+                  border: active
+                    ? item.color
+                      ? `1px solid color-mix(in srgb, ${item.color} 48%, transparent)`
+                      : "1px solid rgba(212,178,106,.42)"
+                    : "1px solid transparent",
+                  boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,.12)" : "none",
                   textDecoration: "none",
                   fontSize: "9.5px",
                   fontWeight: active ? 700 : 500,
