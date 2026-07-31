@@ -2781,7 +2781,7 @@ describe('NightlifeDataService', () => {
           bookingCode: expect.stringMatching(/^BK-/),
           qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-'),
           qrImageUrl: expect.stringContaining('api.qrserver.com'),
-          amountLabel: 'Miễn phí - không thu cọc',
+          amountLabel: '予約無料 - デポジット不要',
         }),
       }),
     });
@@ -2856,6 +2856,7 @@ describe('NightlifeDataService', () => {
         bookingId: 'booking-guest-discount',
         templateKey: 'customer.booking.qr_email.v1',
         payload: expect.objectContaining({
+          amountLabel: 'Free reservation - no deposit required',
           discountLabel: 'GUEST5 · 5%',
         }),
       }),
@@ -2864,6 +2865,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         to: 'guest@example.com',
         bookingId: 'booking-guest-discount',
+        amountLabel: 'Free reservation - no deposit required',
         discountLabel: 'GUEST5 · 5%',
       }),
     );

@@ -695,6 +695,13 @@ const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
 const defaultBookingLocale: BookingLocale = 'ja';
 const supportedBookingLocaleSet = new Set<string>(supportedBookingLocales);
+const bookingFreeAmountLabels: Record<BookingLocale, string> = {
+  vi: 'Miễn phí - không thu cọc',
+  en: 'Free reservation - no deposit required',
+  ja: '予約無料 - デポジット不要',
+  ko: '무료 예약 - 보증금 없음',
+  zh: '免费预订 - 无需押金',
+};
 const PARTNER_LISTING_DRAFT_KIND = 'PARTNER_LISTING_DRAFT';
 const PARTNER_LISTING_CAST_STATUSES = new Set<CastStatus>([
   'DRAFT',
@@ -13773,9 +13780,9 @@ export class NightlifeDataService {
     const qrPayload = this.bookingQrPayload(booking);
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
-    const amountLabel = this.bookingAmountLabel(booking);
-    const discountLabel = this.bookingDiscountEmailLabel(booking);
     const locale = this.normalizeBookingLocale(booking.locale);
+    const amountLabel = this.bookingAmountLabel(booking, locale);
+    const discountLabel = this.bookingDiscountEmailLabel(booking);
     const payload = {
       bookingId: booking.id,
       bookingCode,
@@ -13913,12 +13920,15 @@ export class NightlifeDataService {
     });
   }
 
-  private bookingAmountLabel(booking: BookingNotificationRecord) {
+  private bookingAmountLabel(
+    booking: BookingNotificationRecord,
+    locale: BookingLocale,
+  ) {
     if (typeof booking.totalVnd === 'number' && booking.totalVnd > 0) {
       return this.formatVnd(booking.totalVnd);
     }
 
-    return 'Miễn phí - không thu cọc';
+    return bookingFreeAmountLabels[locale];
   }
 
   private bookingDiscountEmailLabel(booking: BookingNotificationRecord) {
