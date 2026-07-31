@@ -1622,7 +1622,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const userFeedback = useUserActionFeedback();
   const heroSwipeRef = useRef({ pointerId: null as number | null, startX: 0, startY: 0 });
   const lightboxSwipeRef = useRef({ active: false, startX: 0, startY: 0 });
-  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [lightboxMode, setLightboxMode] = useState<"photo" | "video">("photo");
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -1699,7 +1700,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const videoGallery = rawGallery.filter((item) => item.type === "VIDEO");
   const gallery = photoGallery;
   const lightboxGallery = lightboxMode === "video" ? videoGallery : gallery;
-  const selectedPhotoIndex = selectedGalleryIndex < gallery.length ? selectedGalleryIndex : 0;
+  const lightboxIndex = lightboxMode === "video" ? selectedVideoIndex : selectedPhotoIndex;
   const heroImage = gallery[0] ?? null;
   const selectedMedia = gallery[selectedPhotoIndex] ?? heroImage;
   const hasHeroVisual = Boolean(galleryImageUrl(selectedMedia, heroImage));
@@ -1707,6 +1708,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const desktopGalleryTiles = gallery.slice(0, 5);
   const mobileGalleryTiles = gallery;
   const tourMedia = videoGallery;
+
+  useEffect(() => {
+    setSelectedPhotoIndex((index) => Math.min(index, Math.max(gallery.length - 1, 0)));
+  }, [gallery.length]);
+
+  useEffect(() => {
+    setSelectedVideoIndex((index) => Math.min(index, Math.max(videoGallery.length - 1, 0)));
+  }, [videoGallery.length]);
   const location = localizedStoreParts(
     [store.area?.name, store.district, store.city],
     activeLanguage,
@@ -1945,7 +1954,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
-  const lightboxMedia = lightboxGallery[selectedGalleryIndex] ?? selectedMedia;
+  const lightboxMedia = lightboxGallery[lightboxIndex] ?? selectedMedia;
   const lightboxMediaUrl = lightboxMedia
     ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url)
     : "";
@@ -1998,22 +2007,30 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const showPreviousMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
-    setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
+    setSelectedPhotoIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   };
   const showNextMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
-    setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+    setSelectedPhotoIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   };
   const showPreviousLightboxMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
-    setSelectedGalleryIndex((index) => (index <= 0 ? lightboxGallery.length - 1 : index - 1));
+    if (lightboxMode === "video") {
+      setSelectedVideoIndex((index) => (index <= 0 ? videoGallery.length - 1 : index - 1));
+      return;
+    }
+    setSelectedPhotoIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   };
   const showNextLightboxMedia = (event?: ReactMouseEvent<HTMLButtonElement>) => {
     event?.preventDefault();
     event?.stopPropagation();
-    setSelectedGalleryIndex((index) => (index >= lightboxGallery.length - 1 ? 0 : index + 1));
+    if (lightboxMode === "video") {
+      setSelectedVideoIndex((index) => (index >= videoGallery.length - 1 ? 0 : index + 1));
+      return;
+    }
+    setSelectedPhotoIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   };
   const preventHeroControlMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -2153,7 +2170,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     event?.stopPropagation();
     if (!gallery.length) return;
     setLightboxMode("photo");
-    setSelectedGalleryIndex(((index % gallery.length) + gallery.length) % gallery.length);
+    setSelectedPhotoIndex(((index % gallery.length) + gallery.length) % gallery.length);
     setIsLightboxOpen(true);
   };
   const openVideoGallery = (index: number, event?: ReactMouseEvent<HTMLButtonElement>) => {
@@ -2161,7 +2178,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     event?.stopPropagation();
     if (!videoGallery.length) return;
     setLightboxMode("video");
-    setSelectedGalleryIndex(((index % videoGallery.length) + videoGallery.length) % videoGallery.length);
+    setSelectedVideoIndex(((index % videoGallery.length) + videoGallery.length) % videoGallery.length);
     setIsLightboxOpen(true);
   };
   const openHeroGallery = (event: ReactMouseEvent<HTMLElement>) => {
@@ -2747,7 +2764,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </button>
               ) : null}
               <div className="lightbox-caption">
-                {selectedGalleryIndex + 1}/{lightboxGallery.length}
+                {lightboxIndex + 1}/{lightboxGallery.length}
                 {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
               </div>
             </div>,

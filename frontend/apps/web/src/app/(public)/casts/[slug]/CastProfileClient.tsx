@@ -164,6 +164,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     startX: 0,
     startY: 0,
   });
+
+  useEffect(() => {
+    setActiveMediaIndex((index) => Math.min(index, Math.max(gallery.length - 1, 0)));
+  }, [gallery.length]);
+
+  useEffect(() => {
+    setActiveVideoIndex((index) => Math.min(index, Math.max(videoGallery.length - 1, 0)));
+  }, [videoGallery.length]);
+
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
   const favoriteFeedbackCopy = castFavoriteFeedbackCopy(activeLanguage, profile.name);
   const favoriteSnapshot = useMemo(
