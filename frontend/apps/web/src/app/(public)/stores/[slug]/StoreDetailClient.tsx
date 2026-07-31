@@ -1595,7 +1595,7 @@ function RelatedStores({
               }}
             />
             <span className="related-copy">
-              <strong>{readableName(related.name)}</strong>
+              <strong className="notranslate" translate="no" data-no-translate="true">{readableName(related.name)}</strong>
               <small>{translateText(recommendationLabel(related), activeLanguage)}</small>
               <em>
                 {localizedStoreParts(
@@ -2321,7 +2321,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           <span>/</span>
           <Link href="/danh-sach-quan">{translateText("Tìm quán", activeLanguage)}</Link>
           <span>/</span>
-          <strong>{displayName}</strong>
+          <strong className="notranslate" translate="no" data-no-translate="true">{displayName}</strong>
         </nav>
 
         <div className="detail-layout">
@@ -2391,7 +2391,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               ) : null}
 
               <div className="hero-name">
-                <h1>{displayName}</h1>
+                <h1 className="notranslate" translate="no" data-no-translate="true">{displayName}</h1>
                 <div>
                   <span>{[categoryLabel, location].filter(Boolean).join(" · ")}</span>
                 </div>
@@ -2524,7 +2524,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           <div className="info-column">
             <div className="desktop-title">
               <div>
-                <h1>{displayName}</h1>
+                <h1 className="notranslate" translate="no" data-no-translate="true">{displayName}</h1>
                 <p>{[categoryLabel, location].filter(Boolean).join(" · ")}</p>
               </div>
               <b className={openNow ? "open-pill" : "closed-pill"}>
