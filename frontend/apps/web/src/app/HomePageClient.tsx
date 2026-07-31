@@ -1356,7 +1356,12 @@ function CategoryGrid({
                 <Icon size={desktop ? 26 : 22} />
               )}
             </span>
-            <div style={{ marginTop: "8px", color: colors.text, fontSize: desktop ? "13px" : "12px" }}>
+            <div
+              className="notranslate"
+              translate="no"
+              data-no-translate="true"
+              style={{ marginTop: "8px", color: colors.text, fontSize: desktop ? "13px" : "12px" }}
+            >
               {item.label}
             </div>
           </Link>
@@ -1854,7 +1859,7 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
 function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
-      <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{title}</h2>
+      <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{title}</h2>
       {action ? <Link href="/danh-sach-quan" style={{ color: colors.muted, fontSize: "12px" }}>{action}</Link> : null}
     </div>
   );
@@ -2667,7 +2672,9 @@ function TabSwitch({
 }) {
   return (
     <div
-      className="nl-home-tab-switch"
+      className="nl-home-tab-switch notranslate"
+      translate="no"
+      data-no-translate="true"
       style={{
         ...homeControlFrameStyle,
         display: "grid",
@@ -2876,7 +2883,7 @@ function RankingSectionHeader({
       }}
     >
       <div style={{ minWidth: 0, flex: "none" }}>
-        <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
+        <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
       </div>
 
       <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
@@ -3593,7 +3600,7 @@ export default function HomePageClient() {
 
             <section data-testid="home-mobile-featured" style={{ marginTop: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.featured}</h2>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{homeSectionTitles.featured}</h2>
               </div>
               <ServiceFilterControls
                 activeTab={activeSvcTab}
@@ -3642,7 +3649,7 @@ export default function HomePageClient() {
 
             <section data-testid="home-mobile-video" style={{ marginTop: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
@@ -3751,7 +3758,7 @@ export default function HomePageClient() {
 
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>
                   {homeSectionTitles.featured}
                 </h2>
               </div>
@@ -3802,7 +3809,7 @@ export default function HomePageClient() {
 
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "14px" }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
