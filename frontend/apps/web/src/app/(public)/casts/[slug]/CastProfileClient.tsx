@@ -173,6 +173,17 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     setActiveVideoIndex((index) => Math.min(index, Math.max(videoGallery.length - 1, 0)));
   }, [videoGallery.length]);
 
+  useEffect(() => {
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("translate", "no");
+      titleElement.setAttribute("data-no-translate", "true");
+      titleElement.classList.add("notranslate");
+    }
+    const tagline = translateText("NightLife VN", activeLanguage);
+    document.title = `${profile.name} · ${profile.store.name} | ${tagline}`;
+  }, [profile.name, profile.store.name, activeLanguage]);
+
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
   const favoriteFeedbackCopy = castFavoriteFeedbackCopy(activeLanguage, profile.name);
   const favoriteSnapshot = useMemo(

@@ -1757,6 +1757,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     cityLabel: favoriteCityLabel,
     image: heroFavoriteImage,
   };
+  useEffect(() => {
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("translate", "no");
+      titleElement.setAttribute("data-no-translate", "true");
+      titleElement.classList.add("notranslate");
+    }
+    const tagline = translateText("NightLife VN", activeLanguage);
+    document.title = `${displayName} | ${tagline}`;
+  }, [displayName, activeLanguage]);
+
   const favoriteFeedbackCopy = storeFavoriteFeedbackCopy(activeLanguage, displayName);
   const featureChips = [
     categoryLabel,

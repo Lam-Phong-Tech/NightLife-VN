@@ -131,9 +131,19 @@ function normalizeForComparison(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function lockTitleFromTranslation() {
+  const titleElement = document.querySelector("title");
+  if (titleElement) {
+    titleElement.setAttribute("translate", "no");
+    titleElement.setAttribute("data-no-translate", "true");
+    titleElement.classList.add("notranslate");
+  }
+}
+
 function applyTranslations(language: LanguageCode) {
   document.documentElement.lang = languageHtmlLang[language];
   document.documentElement.dataset.vietyoruLanguage = language;
+  lockTitleFromTranslation();
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];

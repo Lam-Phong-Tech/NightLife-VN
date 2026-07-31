@@ -53,7 +53,17 @@ function initializeGoogleTranslate(language: LanguageCode) {
     googleTranslateLanguageCode[language];
 }
 
+function lockTitleFromTranslation() {
+  const titleElement = document.querySelector("title");
+  if (titleElement) {
+    titleElement.setAttribute("translate", "no");
+    titleElement.setAttribute("data-no-translate", "true");
+    titleElement.classList.add("notranslate");
+  }
+}
+
 function rewriteLocalizedLinks(language: LanguageCode) {
+  lockTitleFromTranslation();
   document.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((anchor) => {
     const rawHref = anchor.getAttribute("href");
     if (!rawHref) return;
