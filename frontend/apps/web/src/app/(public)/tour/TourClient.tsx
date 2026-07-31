@@ -444,7 +444,9 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
         <div className="tour-card-main">
           <div className="tour-name-row">
             <Link href={`/tour/${tour.id}`}>{tour.title}</Link>
-            <span>{priceTierLabel(tour.priceTier)}</span>
+            <span className="notranslate" translate="no" data-no-translate="true">
+              {priceTierLabel(tour.priceTier)}
+            </span>
           </div>
 
           {tour.subtitle ? <p className="tour-subtitle">{tour.subtitle}</p> : null}

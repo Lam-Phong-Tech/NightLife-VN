@@ -798,7 +798,9 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                   <span>{tx("durationLabel")}</span>
                 </div>
                 <div className={styles.heroStat}>
-                  <strong>{priceTierLabel(tour.priceTier)}</strong>
+                  <strong className="notranslate" translate="no" data-no-translate="true">
+                    {priceTierLabel(tour.priceTier)}
+                  </strong>
                   <span>{tx("costTier")}</span>
                 </div>
               </div>
@@ -908,7 +910,13 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                 <h2>{tx("bookThisTour")}</h2>
                 <p>{targetLabel ? `${tx("bookingPoint")}: ${targetLabel}` : tx("invalidTour")}</p>
               </div>
-              <div className={styles.priceTier}>{priceTierLabel(tour.priceTier)}</div>
+              <div
+                className={`${styles.priceTier} notranslate`}
+                translate="no"
+                data-no-translate="true"
+              >
+                {priceTierLabel(tour.priceTier)}
+              </div>
             </div>
 
             <form
