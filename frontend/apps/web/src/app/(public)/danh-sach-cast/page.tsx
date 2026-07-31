@@ -105,8 +105,6 @@ const categoryOptions: Option[] = [
   { value: "BAR", label: "バー (Bar)" },
   { value: "CLUB", label: "クラブ (Club)" },
   { value: "KARAOKE", label: "カラオケ (Karaoke)" },
-  { value: "MASSAGE_SPA", label: "マッサージ (Massage)" },
-  { value: "RESTAURANT", label: "レストラン (Restaurant)" },
 ];
 
 const languageOptions: Option[] = [
