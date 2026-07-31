@@ -18141,7 +18141,7 @@ export class NightlifeDataService {
     const languages = list(profile.languages, 8);
     const hobbies = list(profile.hobbies, 12);
     const youtubeLinks = list(profile.youtubeLinks, 8);
-    const mediaUrls = this.cleanStringArray(profile.mediaUrls, 8);
+    const mediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
 
     return {
       id: text(profile.id) ?? text(storeProfile?.id) ?? undefined,
@@ -18225,7 +18225,7 @@ export class NightlifeDataService {
       hobbies: this.partnerListingCastStringArray(profile.hobbies, 12),
       youtubeLinks: this.partnerListingCastStringArray(profile.youtubeLinks, 8),
       hourlyRateVnd: profile.hourlyRateVnd ?? null,
-      mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+      mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
     };
   }
 
@@ -19913,6 +19913,34 @@ export class NightlifeDataService {
     );
   }
 
+  private cleanPartnerListingCastMediaUrls(values?: string[] | null) {
+    const mediaUrls = this.cleanStringArray(values, 20);
+    if (mediaUrls.length > 19) {
+      throw new BadRequestException(
+        'Each cast can have at most 19 uploaded media items.',
+      );
+    }
+
+    const imageCount = mediaUrls.filter(
+      (url) => this.partnerRequestMediaType(url) === 'IMAGE',
+    ).length;
+    const videoCount = mediaUrls.length - imageCount;
+
+    if (imageCount > 11) {
+      throw new BadRequestException(
+        'Each cast can have one avatar and up to 10 album images.',
+      );
+    }
+
+    if (videoCount > 8) {
+      throw new BadRequestException(
+        'Each cast can have up to 8 uploaded videos.',
+      );
+    }
+
+    return mediaUrls;
+  }
+
   private normalizePartnerCastStatus(value?: string | null) {
     const status = this.cleanNullableText(value)?.toUpperCase() as
       | CastStatus
@@ -19971,7 +19999,7 @@ export class NightlifeDataService {
             8,
           ),
           hourlyRateVnd,
-          mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+          mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
           isPublic:
             typeof profile.isPublic === 'boolean'
               ? profile.isPublic

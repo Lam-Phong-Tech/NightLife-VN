@@ -4667,6 +4667,26 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('limits each cast to one avatar and ten album images', () => {
+    const cleanCastMediaUrls = (
+      service as unknown as {
+        cleanPartnerListingCastMediaUrls(values: string[]): string[];
+      }
+    ).cleanPartnerListingCastMediaUrls.bind(service);
+    const elevenImages = Array.from(
+      { length: 11 },
+      (_, index) => `https://cdn.example.com/cast-${index + 1}.jpg`,
+    );
+
+    expect(cleanCastMediaUrls(elevenImages)).toEqual(elevenImages);
+    expect(() =>
+      cleanCastMediaUrls([
+        ...elevenImages,
+        'https://cdn.example.com/cast-12.jpg',
+      ]),
+    ).toThrow('Each cast can have one avatar and up to 10 album images.');
+  });
+
   it('submits only changed partner listing casts without creating a store review request', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';

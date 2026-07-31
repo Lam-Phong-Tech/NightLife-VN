@@ -323,6 +323,17 @@ const translateSingleApiMessage = (message: string, status?: number, fallback?: 
   if (maxLengthMatch)
     return `${fieldLabel(maxLengthMatch[1] ?? "")} không được vượt quá ${maxLengthMatch[2]} ký tự.`;
 
+  const arrayMaxSizeMatch = key.match(
+    /^([a-zA-Z][\w.]*) must contain no more than (\d+) elements$/,
+  );
+  if (arrayMaxSizeMatch) {
+    const field = arrayMaxSizeMatch[1] ?? "";
+    const label = /^castProfiles\.\d+\.mediaUrls$/i.test(field)
+      ? "Ảnh và video của cast"
+      : fieldLabel(field);
+    return `${label} không được vượt quá ${arrayMaxSizeMatch[2]} mục.`;
+  }
+
   const minNumberMatch = key.match(/^([a-zA-Z][\w.]*) must not be less than (\d+)$/);
   if (minNumberMatch)
     return `${fieldLabel(minNumberMatch[1] ?? "")} phải từ ${minNumberMatch[2]} trở lên.`;

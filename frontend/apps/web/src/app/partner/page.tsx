@@ -1045,6 +1045,8 @@ const castAvatarUrl = (cast: PartnerListingCast) => {
   );
 };
 
+const PARTNER_CAST_ALBUM_MAX_IMAGES = 10;
+
 const buildListingMenuSummary = (
   menuGroups: PartnerListingMenuGroup[],
   pricingItems: PartnerListingPricing[],
@@ -4671,9 +4673,20 @@ export default function PartnerPage() {
       purpose: string;
       successLabel: string;
       onUploaded: (urls: string[]) => void;
+      remainingSlots?: number;
     },
   ) => {
     if (!files.length) return;
+
+    if (
+      typeof options.remainingSlots === 'number' &&
+      (options.remainingSlots < 1 || files.length > options.remainingSlots)
+    ) {
+      setListingNotice(
+        `Album ảnh cast chỉ được thêm tối đa ${PARTNER_CAST_ALBUM_MAX_IMAGES} ảnh.`,
+      );
+      return;
+    }
 
     const storeId = listingStoreId || activePartnerStore?.id;
     if (!storeId) {
@@ -4829,9 +4842,12 @@ export default function PartnerPage() {
     onUploaded: (urls: string[]) => void;
     minHeight?: number | string;
     aspectRatio?: string;
+    remainingSlots?: number;
   }) => {
     const isBusy = listingUploadKey === options.key;
-    const isDisabled = Boolean(listingUploadKey);
+    const isAtCapacity =
+      typeof options.remainingSlots === 'number' && options.remainingSlots < 1;
+    const isDisabled = Boolean(listingUploadKey) || isAtCapacity;
 
     return (
       <label
@@ -4850,13 +4866,19 @@ export default function PartnerPage() {
           gap: '8px',
           fontWeight: 900,
           fontSize: '12px',
-          cursor: isDisabled ? 'wait' : 'pointer',
+          cursor: isBusy ? 'wait' : isAtCapacity ? 'not-allowed' : 'pointer',
           opacity: isDisabled && !isBusy ? 0.56 : 1,
           textAlign: 'center',
         }}
       >
         {options.kind === 'image' ? <ImagePlus size={20} /> : <Upload size={20} />}
-        <span>{isBusy ? options.loadingLabel : options.label}</span>
+        <span>
+          {isBusy
+            ? options.loadingLabel
+            : isAtCapacity
+              ? `Đã đủ ${PARTNER_CAST_ALBUM_MAX_IMAGES} ảnh`
+              : options.label}
+        </span>
         <input
           type="file"
           accept={
@@ -5478,6 +5500,7 @@ export default function PartnerPage() {
                 purpose: 'PARTNER_CAST_IMAGE',
                 successLabel: 'ảnh cast',
                 aspectRatio: '3 / 4',
+                remainingSlots: PARTNER_CAST_ALBUM_MAX_IMAGES - albumEntries.length,
                 onUploaded: (urls) => appendCastMediaUrls(index, urls),
               })}
             </div>
@@ -6900,7 +6923,7 @@ export default function PartnerPage() {
                             className="partner-cast-avatar"
                             style={{
                               background: avatarUrl
-                                ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
+                                ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url("${listingMediaUrl(avatarUrl)}") center/cover`
                                 : colors.surface3,
                             }}
                           >
@@ -6958,7 +6981,7 @@ export default function PartnerPage() {
                       className="partner-cast-avatar"
                       style={{
                         background: avatarUrl
-                          ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
+                          ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url("${listingMediaUrl(avatarUrl)}") center/cover`
                           : colors.surface3,
                       }}
                     >

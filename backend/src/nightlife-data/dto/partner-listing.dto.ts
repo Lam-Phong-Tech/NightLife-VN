@@ -114,10 +114,14 @@ export class PartnerListingCastDto {
   @IsEnum(CastStatus)
   status?: CastStatus;
 
-  @ApiPropertyOptional({ example: ['https://cdn.example.com/casts/yuki.jpg'] })
+  @ApiPropertyOptional({
+    example: ['https://cdn.example.com/casts/yuki.jpg'],
+    description:
+      'One avatar, up to 10 album images, and up to 8 uploaded videos.',
+  })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(8)
+  @ArrayMaxSize(19)
   @IsUrl({ require_tld: false }, { each: true })
   mediaUrls?: string[];
 }
