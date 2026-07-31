@@ -34,7 +34,7 @@ import {
 } from "@/lib/api/appearance";
 import { siteConfig } from "@/lib/site";
 import { resolveClientUrl } from "@/lib/api/client";
-import { localizeHref } from "@/lib/i18n/locales";
+import { localizeHref, stripLanguagePrefix } from "@/lib/i18n/locales";
 import {
   defaultLanguageCode,
   languageChangedEvent,
@@ -372,8 +372,13 @@ const revealTargetSelector = [
 ].join(",");
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname.startsWith(href);
+  const currentPath =
+    stripLanguagePrefix(pathname.split(/[?#]/, 1)[0] || "/").replace(/\/+$/, "") || "/";
+  const targetPath =
+    stripLanguagePrefix(href.split(/[?#]/, 1)[0] || "/").replace(/\/+$/, "") || "/";
+
+  if (targetPath === "/") return currentPath === "/";
+  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 }
 
 function isRevealTarget(element: HTMLElement) {
@@ -2310,19 +2315,30 @@ export function SiteChrome({
                   fontWeight: 500,
                 }}
               >
-                {desktopNavLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={resolveHref(link.href, activeLanguage)}
-                    style={{
-                      color: isActive(pathname, link.href) ? colors.goldPale : colors.text2,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {translateText(link.label, activeLanguage)}
-                  </Link>
-                ))}
+                {desktopNavLinks.map((link) => {
+                  const active = isActive(pathname, link.href);
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={resolveHref(link.href, activeLanguage)}
+                      aria-current={active ? "page" : undefined}
+                      data-active={active ? "true" : undefined}
+                      style={{
+                        color: active ? colors.goldPale : colors.text2,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        padding: "7px 6px 5px",
+                        borderBottom: active ? `2px solid ${colors.gold}` : "2px solid transparent",
+                        background: active ? "rgba(212,178,106,.12)" : "transparent",
+                        borderRadius: "6px 6px 0 0",
+                        fontWeight: active ? 700 : 500,
+                      }}
+                    >
+                      {translateText(link.label, activeLanguage)}
+                    </Link>
+                  );
+                })}
               </nav>
             ) : null}
           </div>
