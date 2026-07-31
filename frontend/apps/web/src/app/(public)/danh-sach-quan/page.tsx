@@ -3959,7 +3959,7 @@ const venueSearchCss = `
     }
 
     .venue-pagination {
-      justify-content: flex-start;
+      justify-content: center;
       gap: 8px;
       margin-top: 14px;
       overflow-x: auto;
