@@ -234,10 +234,18 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
       };
 
   return (
-    <div ref={pickerRef} style={{ position: "relative", display: "inline-flex" }}>
+    <div
+      ref={pickerRef}
+      className="notranslate"
+      translate="no"
+      data-no-translate="true"
+      style={{ position: "relative", display: "inline-flex" }}
+    >
       <button
         type="button"
-        className="nl-site-action-control nl-site-language-trigger"
+        className="nl-site-action-control nl-site-language-trigger notranslate"
+        translate="no"
+        data-no-translate="true"
         aria-haspopup={isMobile ? "dialog" : "menu"}
         aria-expanded={isOpen}
         aria-label={`${chooseLanguageLabel}: ${activeLanguage.label}`}
@@ -251,14 +259,26 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         style={triggerStyle}
       >
         <Globe size={isMobile ? 14 : 16} strokeWidth={1.8} style={{ flex: "none" }} />
-        <span style={{ display: "inline-flex", alignItems: "center", height: "1em" }}>
+        <span
+          className="notranslate"
+          translate="no"
+          data-no-translate="true"
+          style={{ display: "inline-flex", alignItems: "center", height: "1em" }}
+        >
           {activeLanguage.badge}
         </span>
         {!isMobile ? <ChevronDown size={13} strokeWidth={2.2} style={{ flex: "none" }} /> : null}
       </button>
 
       {!isMobile && isOpen ? (
-        <div role="menu" aria-label={selectLanguageLabel} style={dropdownStyle}>
+        <div
+          role="menu"
+          aria-label={selectLanguageLabel}
+          className="notranslate"
+          translate="no"
+          data-no-translate="true"
+          style={dropdownStyle}
+        >
           {languages.map((language) => {
             const isActive = language.code === activeCode;
 
@@ -287,6 +307,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
               >
                 <span
                   aria-hidden="true"
+                  className="notranslate"
+                  translate="no"
                   data-no-translate="true"
                   style={{
                     width: "32px",
@@ -308,8 +330,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span
-                    data-no-translate="true"
+                    className="notranslate"
                     translate="no"
+                    data-no-translate="true"
                     style={{
                       display: "block",
                       color: colors.text,
@@ -321,8 +344,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                     {language.label}
                   </span>
                   <span
-                    data-no-translate="true"
+                    className="notranslate"
                     translate="no"
+                    data-no-translate="true"
                     style={{
                       display: "block",
                       color: colors.muted,
@@ -344,7 +368,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
 
       {isMobile && isOpen && typeof document !== "undefined" ? createPortal(
         <div
-          className="nl-language-picker-overlay"
+          className="nl-language-picker-overlay notranslate"
+          translate="no"
+          data-no-translate="true"
           role="presentation"
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) closePicker();
@@ -365,6 +391,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="language-picker-title"
+            className="notranslate"
+            translate="no"
+            data-no-translate="true"
             style={modalStyle}
           >
             {isMobile ? (
@@ -494,6 +523,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                   >
                     <span
                       aria-hidden="true"
+                      className="notranslate"
+                      translate="no"
                       data-no-translate="true"
                       style={{
                         width: isMobile ? "40px" : "42px",
@@ -524,8 +555,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                         }}
                       >
                         <span
-                          data-no-translate="true"
+                          className="notranslate"
                           translate="no"
+                          data-no-translate="true"
                           style={{
                             color: colors.text,
                             fontSize: isMobile ? "15px" : "15.5px",
@@ -553,8 +585,9 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                         ) : null}
                       </span>
                       <span
-                        data-no-translate="true"
+                        className="notranslate"
                         translate="no"
+                        data-no-translate="true"
                         style={{
                           display: "block",
                           color: colors.muted,
