@@ -654,6 +654,28 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canViewPartnerStore')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Get('partner/notifications')
+  listPartnerNotifications(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listPartnerNotifications(request.user);
+  }
+
+  @ActionPolicy('canViewPartnerStore')
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('partner/notifications/read')
+  markPartnerNotificationsRead(
+    @Req() request: RequestWithUser,
+    @Body() body: { notificationIds?: unknown },
+  ) {
+    return this.nightlifeDataService.markPartnerNotificationsRead(
+      request.user,
+      body.notificationIds,
+    );
+  }
+
   @PartnerCouponsContract()
   @ActionPolicy('canViewPartnerCoupon')
   @Roles('PARTNER', 'STAFF', 'ADMIN')

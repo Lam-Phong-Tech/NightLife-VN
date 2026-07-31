@@ -475,7 +475,7 @@ type PartnerNotification = {
   panel: PanelKey;
   listingTab?: ListingTabKey;
   tone: PartnerNotificationTone;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   unread: boolean;
 };
 type PartnerNotificationEvent = Omit<PartnerNotification, 'unread'>;
@@ -496,7 +496,6 @@ type NormalizedScanPayload = {
 };
 
 const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
-const partnerNotificationReadKey = 'nightlife:partner-notification-read-ids';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
@@ -840,22 +839,6 @@ const readOfflineScanQueue = (): OfflineScanQueueItem[] => {
       window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(queue));
     }
     return queue;
-  } catch {
-    return [];
-  }
-};
-
-const readPartnerNotificationIds = (): string[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const rawValue = window.localStorage.getItem(partnerNotificationReadKey);
-    const parsed = rawValue ? JSON.parse(rawValue) : [];
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string').slice(-80)
-      : [];
   } catch {
     return [];
   }
@@ -1396,9 +1379,9 @@ const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'scan', label: 'Quét mã QR', icon: QrCode },
   { key: 'overview', label: 'Tổng quan', icon: Home },
   { key: 'settlement', label: 'Đối soát', icon: FileClock },
-  { key: 'listing', label: 'Đăng thông tin', icon: Camera },
-  { key: 'bill', label: 'Gửi hóa đơn', icon: ReceiptText },
-  { key: 'settings', label: 'Cài đặt tài khoản', icon: Settings },
+  { key: 'listing', label: 'Đăng tin', icon: Camera },
+  { key: 'bill', label: 'Hóa đơn', icon: ReceiptText },
+  { key: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
 const periodItems: { key: PeriodKey; label: string }[] = [
@@ -1410,7 +1393,7 @@ const periodItems: { key: PeriodKey; label: string }[] = [
 const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
   overview: { eyebrow: 'PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
   scan: { eyebrow: 'SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
-  settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
+  settlement: { eyebrow: 'LỊCH SỬ SỬ DỤNG', title: 'Đối soát coupon' },
   listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
   bill: { eyebrow: 'PARTNER BILL', title: 'Gửi hóa đơn cho chủ quán' },
   settings: { eyebrow: 'PARTNER SETTINGS', title: 'Cài đặt tài khoản' },
@@ -1810,9 +1793,8 @@ export default function PartnerPage() {
   >('idle');
   const [cameraMessage, setCameraMessage] = useState('');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() =>
-    readPartnerNotificationIds(),
-  );
+  const [partnerNotifications, setPartnerNotifications] = useState<PartnerNotification[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [partnerNotificationEvents, setPartnerNotificationEvents] = useState<PartnerNotificationEvent[]>([]);
 
   const rawFeedback = useContext(SystemFeedbackContext);
@@ -2265,6 +2247,15 @@ export default function PartnerPage() {
     });
 
     if (!matchedWard) {
+      setListingDraft((current) =>
+        current.ward
+          ? { ...current, ward: '', wardName: '' }
+          : current,
+      );
+      setListingErrors((current) => ({
+        ...current,
+        ward: 'Phường/xã hiện tại không thuộc tỉnh/thành đã chọn. Vui lòng chọn lại.',
+      }));
       return;
     }
 
@@ -2782,6 +2773,7 @@ export default function PartnerPage() {
           apiClient<PartnerCoupon[]>('/partner/coupons').then((res) => { if (isMounted) setCoupons(res); }),
           apiClient<PartnerBill[]>('/partner/bills').then((res) => { if (isMounted) setBills(res); }),
           apiClient<PartnerBooking[]>('/partner/bookings').then((res) => { if (isMounted) setBookings(res); }),
+          apiClient<PartnerNotification[]>('/partner/notifications').then((res) => { if (isMounted) setPartnerNotifications(res); }),
         ];
 
         const results = await Promise.allSettled(promises);
@@ -2891,11 +2883,16 @@ export default function PartnerPage() {
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
   const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
+  const pendingSettlementBillCount = bills.filter((bill) =>
+    ['SUBMITTED', 'PENDING', 'PENDING_REVIEW', 'REVIEWING', 'PENDING_PM_BA'].includes(
+      bill.status.toUpperCase(),
+    ),
+  ).length;
   const bookingMetricCount = dashboard?.bookingCount ?? bookings.length;
   const profileViewMetricCount = dashboard?.profileViewCount ?? 0;
   const customerArrivalMetricCount = dashboard?.customerArrivalCount ?? usedCouponCount;
   const customerArrivalSourceLabel =
-    dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Bill approved' : 'QR used';
+    dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Hóa đơn đã duyệt' : 'QR đã sử dụng';
   const scopedStoreCount = dashboard?.storeCount ?? stores.length;
   const completedBookings = dashboard ? bookingMetricCount : bookings.length;
   const scannedCustomerLabel = scanIssue?.customer?.label ?? 'Khách đã ẩn';
@@ -2954,26 +2951,23 @@ export default function PartnerPage() {
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
   const listingErrorCount = Object.keys(listingErrors).length;
 
-  const persistReadNotifications = useCallback(
-    (ids: string[]) => {
-      const nextIds = Array.from(new Set(ids)).slice(-80);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(partnerNotificationReadKey, JSON.stringify(nextIds));
-      }
-      return nextIds;
-    },
-    [],
-  );
+  const refreshPartnerNotifications = useCallback(async () => {
+    const notifications = await apiClient<PartnerNotification[]>('/partner/notifications');
+    setPartnerNotifications(notifications);
+  }, []);
 
-  const markNotificationsRead = useCallback(
-    (ids: string[]) => {
-      if (!ids.length) {
-        return;
-      }
-      setReadNotificationIds((current) => persistReadNotifications([...current, ...ids]));
-    },
-    [persistReadNotifications],
-  );
+  const markNotificationsRead = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+
+    await apiClient('/partner/notifications/read', {
+      data: { notificationIds: ids },
+    });
+    setPartnerNotifications((current) =>
+      current.map((notification) =>
+        ids.includes(notification.id) ? { ...notification, unread: false } : notification,
+      ),
+    );
+  }, []);
 
   const pushPartnerNotificationEvent = useCallback((notification: PartnerNotificationEvent) => {
     setPartnerNotificationEvents((current) => [
@@ -2982,9 +2976,11 @@ export default function PartnerPage() {
     ].slice(0, 4));
   }, []);
 
-
-
-  const partnerNotifications = useMemo<PartnerNotification[]>(() => {
+  /*
+   * Notifications are sourced from the partner API. Keeping this feed out of
+   * local storage makes the unread state consistent across partner devices.
+   */
+  const legacyPartnerNotifications = useMemo<PartnerNotification[]>(() => {
     const readIds = new Set(readNotificationIds);
     const notifications: PartnerNotificationEvent[] = [...partnerNotificationEvents];
     const nowMs = billNowMs;
@@ -3259,7 +3255,9 @@ export default function PartnerPage() {
   const unreadNotificationCount = partnerNotifications.filter((notification) => notification.unread).length;
 
   const openPartnerNotification = (notification: PartnerNotification) => {
-    markNotificationsRead([notification.id]);
+    void markNotificationsRead([notification.id]).catch(() => {
+      feedback.showToast({ title: 'Không thể cập nhật thông báo', tone: 'error' });
+    });
     if (isStaffAccount && !isStaffPanelKey(notification.panel)) {
       setActivePanel('scan');
       setIsNotificationOpen(false);
@@ -3273,7 +3271,9 @@ export default function PartnerPage() {
   };
 
   const markAllNotificationsRead = () => {
-    markNotificationsRead(partnerNotifications.map((notification) => notification.id));
+    void markNotificationsRead(partnerNotifications.map((notification) => notification.id)).catch(() => {
+      feedback.showToast({ title: 'Không thể cập nhật thông báo', tone: 'error' });
+    });
   };
 
   const settlementRows = bills.map((bill) => {
@@ -3646,15 +3646,15 @@ export default function PartnerPage() {
       },
       {
         label: 'Đối soát chờ',
-        value: String(bills.length),
+        value: String(pendingSettlementBillCount),
         sub: totalDiscount ? `Giảm giá ${moneyVnd(totalDiscount)}` : 'Chưa có bill mới',
-        trend: 'Có usage log',
+        trend: 'Chờ Admin xử lý',
         icon: FileClock,
       },
     ],
     [
       activeCoupons,
-      bills.length,
+      pendingSettlementBillCount,
       bookingMetricCount,
       completedBookings,
       customerArrivalMetricCount,
@@ -3789,6 +3789,7 @@ export default function PartnerPage() {
       apiClient<PartnerCoupon[]>('/partner/coupons').then(setCoupons),
       apiClient<PartnerBill[]>('/partner/bills').then(setBills),
       apiClient<PartnerBooking[]>('/partner/bookings').then(setBookings),
+      refreshPartnerNotifications(),
     ];
     if (listingStoreId) {
       promises.push(
@@ -3802,7 +3803,7 @@ export default function PartnerPage() {
       );
     }
     void Promise.allSettled(promises);
-  }, [listingStoreId, applyListingDraftResponse, isStaffAccount]);
+  }, [listingStoreId, applyListingDraftResponse, isStaffAccount, refreshPartnerNotifications]);
 
   useEffect(() => {
     const handleMemberNotificationCreated = (event: Event) => {
@@ -5911,7 +5912,7 @@ export default function PartnerPage() {
             action={
               <StatusPill tone="gold">
                 <TrendingUp size={13} />
-                Live scope
+                Dữ liệu hiện tại
               </StatusPill>
             }
           />
@@ -6002,7 +6003,7 @@ export default function PartnerPage() {
               ))
             ) : (
               <div style={{ ...softCardStyle, padding: '16px', color: colors.text2, fontSize: '13px', lineHeight: 1.6 }}>
-                Chưa có bill hoặc coupon usage log trong phạm vi quán của partner.
+                Chưa có hóa đơn hoặc lượt sử dụng coupon trong phạm vi quán.
               </div>
             )}
           </div>
@@ -6021,9 +6022,9 @@ export default function PartnerPage() {
           lineHeight: 1.6,
         }}
       >
-        Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Bảng đối soát không hiển thị hồ sơ khách chi tiết, chỉ giữ mã giao dịch và usage log phục vụ xác nhận coupon.
+        Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Bảng đối soát không hiển thị hồ sơ khách chi tiết, chỉ giữ mã giao dịch và lịch sử sử dụng để xác nhận coupon.
         <br />
-        {dashboard?.privacy?.note ?? statusMessage} Source: {dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Bill approved' : 'QR used'}. Stores: {stores.length}.
+        {dashboard?.privacy?.note ?? statusMessage} Nguồn dữ liệu: {customerArrivalSourceLabel}. Phạm vi: {stores.length} quán.
       </div>
     </>
   );
@@ -6441,7 +6442,7 @@ export default function PartnerPage() {
               moneyVnd(totalDiscount),
               'Theo bill trong scope',
             ],
-            ['Bill chờ soát', String(bills.length), 'Không lộ dữ liệu khách chi tiết'],
+            ['Bill chờ soát', String(pendingSettlementBillCount), 'Đang chờ Admin xử lý'],
           ].map(([label, value, sub]) => (
             <div key={label} style={{ ...softCardStyle, padding: '15px' }}>
               <div style={{ color: colors.muted, fontSize: '12px', fontWeight: 700 }}>{label}</div>
@@ -6464,7 +6465,7 @@ export default function PartnerPage() {
       <PanelCard>
         <SectionHeading
           eyebrow="SETTLEMENT TABLE"
-          title="Bảng usage log"
+          title="Lịch sử sử dụng"
           action={
             <StatusPill tone="gold">
               <CalendarDays size={13} />
@@ -6646,8 +6647,8 @@ export default function PartnerPage() {
                     }}
                   >
                     {settlementRows.length
-                      ? 'Không có usage log phù hợp với bộ lọc đang chọn.'
-                      : 'Chưa có usage log trong phạm vi quán của partner.'}
+                      ? 'Không có lịch sử sử dụng phù hợp với bộ lọc đang chọn.'
+                      : 'Chưa có lịch sử sử dụng trong phạm vi quán.'}
                   </td>
                 </tr>
               )}
@@ -6683,8 +6684,8 @@ export default function PartnerPage() {
           ) : (
             <div className="partner-settlement-mobile-empty">
               {settlementRows.length
-                ? 'Không có usage log phù hợp với bộ lọc đang chọn.'
-                : 'Chưa có usage log trong phạm vi quán của partner.'}
+                ? 'Không có lịch sử sử dụng phù hợp với bộ lọc đang chọn.'
+                : 'Chưa có lịch sử sử dụng trong phạm vi quán.'}
             </div>
           )}
         </div>
@@ -10806,7 +10807,15 @@ export default function PartnerPage() {
                 <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '8px' }}>
                   {partnerNotifications.length ? (
                     partnerNotifications.map((notification) => {
-                      const Icon = notification.icon;
+                      const Icon =
+                        notification.icon ??
+                        (notification.panel === 'settlement'
+                          ? FileClock
+                          : notification.panel === 'listing'
+                            ? FileText
+                            : notification.panel === 'bill'
+                              ? ReceiptText
+                              : Bell);
                       const accent =
                         notification.tone === 'danger'
                           ? colors.danger

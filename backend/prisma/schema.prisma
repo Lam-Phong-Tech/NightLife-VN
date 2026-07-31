@@ -325,6 +325,7 @@ model User {
   media                         Media[]                @relation("MediaOwner")
   contents                      Content[]
   notifications                 NotificationLog[]
+  partnerNotificationReads      PartnerNotificationRead[]
   submittedPartnerRequests      PartnerRequest[]       @relation("PartnerRequestPartnerUser")
   reviewedPartnerRequests       PartnerRequest[]       @relation("PartnerRequestReviewer")
   bookingChangeRequests         BookingChangeRequest[] @relation("BookingChangeRequester")
@@ -1050,6 +1051,18 @@ model NotificationLog {
   @@index([billId])
   @@index([status])
   @@map("notification_logs")
+}
+
+model PartnerNotificationRead {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  notificationKey String   @map("notification_key")
+  readAt          DateTime @default(now()) @map("read_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationKey])
+  @@index([userId, readAt])
+  @@map("partner_notification_reads")
 }
 
 model PartnerRequest {

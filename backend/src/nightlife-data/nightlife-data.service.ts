@@ -3361,6 +3361,7 @@ export class NightlifeDataService {
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
     const payload = this.normalizePartnerListingDraft(dto, store);
+    await this.assertPartnerListingWardMatchesCity(payload);
     const draft = await this.upsertPartnerListingDraftContent(
       user,
       store,
@@ -3382,6 +3383,7 @@ export class NightlifeDataService {
     const storeOnlyDto: Partial<PartnerListingDraftDto> = { ...dto };
     delete storeOnlyDto.castProfiles;
     const payload = this.normalizePartnerListingDraft(storeOnlyDto, store);
+    await this.assertPartnerListingWardMatchesCity(payload);
     const livePayload = this.normalizePartnerListingDraft({}, store);
     const hasStoreChanges = this.hasPartnerListingStoreChanges(
       payload,
@@ -3837,6 +3839,142 @@ export class NightlifeDataService {
         note: 'Partner dashboard returns aggregate metrics only.',
       },
     };
+  }
+
+  async listPartnerNotifications(user: AuthenticatedUser) {
+    const storeIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'store.partner.view',
+    );
+
+    if (storeIds && !storeIds.length) {
+      return [];
+    }
+
+    const storeScope = storeIds ? { in: storeIds } : undefined;
+    const notifications = await this.prisma.notificationLog.findMany({
+      where: {
+        channel: 'IN_APP',
+        templateKey: 'audit.bill.review.v1',
+        ...(storeScope ? { storeId: storeScope } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        createdAt: true,
+        payload: true,
+        bill: {
+          select: {
+            billNumber: true,
+            status: true,
+            discountVnd: true,
+          },
+        },
+      },
+    });
+    const notificationKeys = notifications.map(
+      (notification) => `bill-review:${notification.id}`,
+    );
+    const readRows = notificationKeys.length
+      ? await this.prisma.partnerNotificationRead.findMany({
+          where: {
+            userId: user.id,
+            notificationKey: { in: notificationKeys },
+          },
+          select: { notificationKey: true },
+        })
+      : [];
+    const readKeys = new Set(readRows.map((row) => row.notificationKey));
+
+    return notifications.map((notification) => {
+      const key = `bill-review:${notification.id}`;
+      const payload = this.asRecord(notification.payload);
+      const status = String(
+        payload?.nextStatus ?? notification.bill?.status ?? '',
+      ).toUpperCase();
+      const approved = status === 'VERIFIED';
+      const rejected = status === 'REJECTED';
+      const billNumber = notification.bill?.billNumber ?? 'Hóa đơn';
+      const discountVnd = notification.bill?.discountVnd ?? 0;
+
+      return {
+        id: key,
+        category: 'Đối soát',
+        title: approved
+          ? 'Hóa đơn đã được duyệt'
+          : rejected
+            ? 'Hóa đơn bị từ chối'
+            : 'Hóa đơn cần xác nhận thêm',
+        message: approved
+          ? `${billNumber} đã được Admin duyệt.`
+          : rejected
+            ? `${billNumber} đã bị Admin từ chối.`
+            : `${billNumber} đang chờ xác nhận bổ sung.`,
+        meta:
+          discountVnd > 0
+            ? `Giảm giá ${discountVnd.toLocaleString('vi-VN')}đ`
+            : billNumber,
+        actionLabel: 'Xem đối soát',
+        panel: 'settlement',
+        tone: approved ? 'success' : rejected ? 'danger' : 'warning',
+        createdAt: notification.createdAt.toISOString(),
+        unread: !readKeys.has(key),
+      };
+    });
+  }
+
+  async markPartnerNotificationsRead(
+    user: AuthenticatedUser,
+    notificationIds: unknown,
+  ) {
+    const ids = Array.isArray(notificationIds)
+      ? Array.from(
+          new Set(
+            notificationIds
+              .filter((value): value is string => typeof value === 'string')
+              .map((value) => value.trim())
+              .filter((value) => value.startsWith('bill-review:')),
+          ),
+        ).slice(0, 50)
+      : [];
+
+    if (!ids.length) {
+      return { updatedCount: 0 };
+    }
+
+    const storeIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'store.partner.view',
+    );
+    if (storeIds && !storeIds.length) {
+      return { updatedCount: 0 };
+    }
+
+    const logIds = ids.map((id) => id.slice('bill-review:'.length));
+    const ownedLogs = await this.prisma.notificationLog.findMany({
+      where: {
+        id: { in: logIds },
+        channel: 'IN_APP',
+        templateKey: 'audit.bill.review.v1',
+        ...(storeIds ? { storeId: { in: storeIds } } : {}),
+      },
+      select: { id: true },
+    });
+    const notificationKeys = ownedLogs.map((log) => `bill-review:${log.id}`);
+    if (!notificationKeys.length) {
+      return { updatedCount: 0 };
+    }
+
+    const result = await this.prisma.partnerNotificationRead.createMany({
+      data: notificationKeys.map((notificationKey) => ({
+        userId: user.id,
+        notificationKey,
+      })),
+      skipDuplicates: true,
+    });
+
+    return { updatedCount: result.count };
   }
 
   async listPartnerCoupons(user: AuthenticatedUser) {
@@ -18167,6 +18305,51 @@ export class NightlifeDataService {
       youtubeLinks: castProfile.youtubeLinks ?? [],
       hourlyRateVnd: castProfile.hourlyRateVnd ?? null,
     };
+  }
+
+  private async assertPartnerListingWardMatchesCity(payload: {
+    ward?: string | null;
+    storeCity?: string | null;
+  }) {
+    const ward = this.cleanPartnerListingText(payload.ward);
+    const city = this.cleanPartnerListingText(payload.storeCity);
+    if (!ward || !city) {
+      return;
+    }
+
+    const cityNames = vietnamAreaCityLookupNames(city);
+    const areaRepository = this.prisma.area;
+    if (!areaRepository?.findFirst) {
+      return;
+    }
+
+    const matchingArea = await areaRepository.findFirst({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        ward: { equals: ward, mode: 'insensitive' },
+        city: { in: cityNames },
+      },
+      select: { id: true },
+    });
+    if (matchingArea) {
+      return;
+    }
+
+    const conflictingArea = await areaRepository.findFirst({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        ward: { equals: ward, mode: 'insensitive' },
+        city: { notIn: cityNames },
+      },
+      select: { city: true },
+    });
+    if (conflictingArea) {
+      throw new BadRequestException(
+        `Ward ${ward} does not belong to the selected city`,
+      );
+    }
   }
 
   private normalizePartnerListingDraft(
