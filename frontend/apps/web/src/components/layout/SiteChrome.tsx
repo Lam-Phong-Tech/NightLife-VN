@@ -1394,8 +1394,10 @@ function SiteFooter({
           <meta itemProp="url" content={siteConfig.url} />
           <meta itemProp="description" content={copy.description} />
           <Link
-            href={resolveHref("/")}
-            className="u-url url"
+            href={resolveHref("/", language)}
+            className="u-url url notranslate"
+            translate="no"
+            data-no-translate="true"
             itemProp="url"
             style={{
               display: "inline-flex",
@@ -1521,8 +1523,10 @@ function SiteFooter({
           <meta itemProp="url" content={siteConfig.url} />
           <meta itemProp="description" content={copy.description} />
           <Link
-            href={resolveHref("/")}
-            className="u-url url"
+            href={resolveHref("/", language)}
+            className="u-url url notranslate"
+            translate="no"
+            data-no-translate="true"
             itemProp="url"
             style={{
               display: "inline-flex",
@@ -2237,7 +2241,9 @@ export function SiteChrome({
           >
             <Link
               href={resolveHref("/", activeLanguage)}
-              className="nl-site-brand"
+              className="nl-site-brand notranslate"
+              translate="no"
+              data-no-translate="true"
               style={{
                 display: "inline-flex",
                 flexDirection: "column",
