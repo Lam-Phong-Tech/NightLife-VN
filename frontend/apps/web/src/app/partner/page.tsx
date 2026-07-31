@@ -40,7 +40,7 @@ import {
 import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useContext } from 'react';
-import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { ApiError, apiClient, apiFormDataClient, getAuthToken, resolveClientUrl } from '@/lib/api/client';
 import { logoutBrowserProfile } from '@/lib/api/auth';
 import { billApi } from '@/lib/api/bills';
 import {
@@ -4709,7 +4709,12 @@ export default function PartnerPage() {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', options.purpose);
-        form.append('access', 'PUBLIC');
+        form.append(
+          'access',
+          options.purpose === 'PARTNER_CAST_IMAGE' || options.purpose === 'PARTNER_CAST_VIDEO'
+            ? 'PROTECTED'
+            : 'PUBLIC',
+        );
         form.append('storeId', storeId);
 
         const response = await apiFormDataClient<StorageUploadResponse>('/storage/upload', form);
@@ -4786,7 +4791,19 @@ export default function PartnerPage() {
 
   const listingMediaUrl = (url: unknown) => {
     const trimmed = safeListingText(url).trim();
-    return resolveClientUrl(trimmed) || trimmed;
+    const resolved = resolveClientUrl(trimmed) || trimmed;
+    const protectedUrl = resolved.replace('/storage/public/', '/storage/files/');
+    if (!protectedUrl.includes('/storage/files/')) {
+      return resolved;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      return protectedUrl;
+    }
+
+    const separator = protectedUrl.includes('?') ? '&' : '?';
+    return `${protectedUrl}${separator}token=${encodeURIComponent(token)}`;
   };
 
   const getListingYoutubeId = (url: unknown) => {

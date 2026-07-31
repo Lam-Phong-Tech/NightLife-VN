@@ -1709,13 +1709,11 @@ export class NightlifeDataService {
             },
           },
           media: {
-            where: {
-              deletedAt: null,
-              castId: null,
+            where: this.storeMediaWhere({
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
-            },
+            }),
             orderBy: { createdAt: 'desc' },
             take: 8,
             select: { url: true, purpose: true },
@@ -2215,13 +2213,11 @@ export class NightlifeDataService {
             },
           },
           media: {
-            where: {
-              deletedAt: null,
-              castId: null,
+            where: this.storeMediaWhere({
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
-            },
+            }),
             orderBy: { createdAt: 'desc' },
             take: 8,
             select: {
@@ -2687,12 +2683,11 @@ export class NightlifeDataService {
             },
           },
           media: {
-            where: {
-              deletedAt: null,
+            where: this.storeMediaWhere({
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
-            },
+            }),
             orderBy: { createdAt: 'desc' },
             take: 8,
             select: {
@@ -3019,13 +3014,11 @@ export class NightlifeDataService {
             city: true,
             district: true,
             media: {
-              where: {
-                deletedAt: null,
-                castId: null,
+              where: this.storeMediaWhere({
                 access: 'PUBLIC',
                 status: 'READY',
                 type: 'IMAGE',
-              },
+              }),
               orderBy: { createdAt: 'desc' },
               take: 8,
               select: {
@@ -3572,16 +3565,47 @@ export class NightlifeDataService {
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
+          const purpose = this.partnerListingCastMediaPurpose(
+            castMediaUrls,
+            mediaIndex,
+          );
+          const uploadedDraftMedia = await tx.media.findFirst({
+            where: {
+              ownerId: user.id,
+              storeId: store.id,
+              castId: null,
+              url: { in: [url, this.protectedMediaUrl(url)] },
+              purpose: {
+                in: ['PARTNER_CAST_IMAGE', 'PARTNER_CAST_VIDEO'],
+              },
+              deletedAt: null,
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          });
+
+          if (uploadedDraftMedia) {
+            await tx.media.update({
+              where: { id: uploadedDraftMedia.id },
+              data: {
+                castId: cast.id,
+                storeId: null,
+                purpose,
+                status: 'HIDDEN',
+                access: 'PROTECTED',
+              },
+            });
+            draftMediaIds.push(uploadedDraftMedia.id);
+            continue;
+          }
+
           const media = await this.createPartnerRequestMedia(
             {
               requestId,
               url,
               index: mediaIndex,
               castId: cast.id,
-              purpose: this.partnerListingCastMediaPurpose(
-                castMediaUrls,
-                mediaIndex,
-              ),
+              purpose,
             },
             tx,
           );
@@ -8296,6 +8320,21 @@ export class NightlifeDataService {
             where: { id: { in: request.draftMediaIds } },
             data: { status: 'READY', access: 'PUBLIC' },
           });
+          const promotedMedia = await tx.media.findMany({
+            where: { id: { in: request.draftMediaIds } },
+            select: { id: true, url: true },
+          });
+          await Promise.all(
+            promotedMedia.map((media) => {
+              const publicUrl = this.publicMediaUrl(media.url);
+              return publicUrl === media.url
+                ? Promise.resolve()
+                : tx.media.update({
+                    where: { id: media.id },
+                    data: { url: publicUrl },
+                  });
+            }),
+          );
         }
         if (request.draftContentIds.length) {
           await tx.content.updateMany({
@@ -16940,13 +16979,11 @@ export class NightlifeDataService {
           },
         },
         media: {
-          where: {
-            deletedAt: null,
-            castId: null,
+          where: this.storeMediaWhere({
             access: 'PUBLIC',
             status: 'READY',
             type: 'IMAGE',
-          },
+          }),
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: {
@@ -17118,7 +17155,11 @@ export class NightlifeDataService {
   }
 
   private resolveStoreCoverImage(
-    media: Array<{ url: string; purpose?: string | null }>,
+    media: Array<{
+      url: string;
+      purpose?: string | null;
+      castId?: string | null;
+    }>,
   ) {
     const coverPurposes = new Set([
       'store-hero',
@@ -17127,11 +17168,20 @@ export class NightlifeDataService {
       'store-cover',
       'PARTNER_LISTING_STORE',
     ]);
-    const cover = media.find((item) =>
+    const storeMedia = media.filter((item) => this.isStoreGalleryMedia(item));
+    const cover = storeMedia.find((item) =>
       coverPurposes.has(String(item.purpose ?? '').trim()),
     );
 
-    return cover?.url ?? media[0]?.url ?? null;
+    return cover?.url ?? storeMedia[0]?.url ?? null;
+  }
+
+  private publicMediaUrl(url: string) {
+    return url.replace('/storage/files/', '/storage/public/');
+  }
+
+  private protectedMediaUrl(url: string) {
+    return url.replace('/storage/public/', '/storage/files/');
   }
 
   private resolveRankingCastImage(media: RankingImageMedia[]) {
@@ -24389,12 +24439,11 @@ export class NightlifeDataService {
             },
           },
           media: {
-            where: {
-              deletedAt: null,
+            where: this.storeMediaWhere({
               access: 'PUBLIC',
               status: 'READY',
               type: 'IMAGE',
-            },
+            }),
             orderBy: { createdAt: 'desc' },
             take: 6,
             select: {
@@ -24562,12 +24611,11 @@ export class NightlifeDataService {
           },
         },
         media: {
-          where: {
-            deletedAt: null,
+          where: this.storeMediaWhere({
             access: 'PUBLIC',
             status: 'READY',
             type: 'IMAGE',
-          },
+          }),
           orderBy: { createdAt: 'desc' },
           take: 6,
           select: {
@@ -24720,12 +24768,11 @@ export class NightlifeDataService {
           },
         },
         media: {
-          where: {
-            deletedAt: null,
+          where: this.storeMediaWhere({
             access: 'PUBLIC',
             status: 'READY',
             type: 'IMAGE',
-          },
+          }),
           orderBy: { createdAt: 'desc' },
           take: 4,
           select: {

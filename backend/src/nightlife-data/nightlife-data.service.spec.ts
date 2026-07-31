@@ -103,6 +103,7 @@ describe('NightlifeDataService', () => {
     },
     media: {
       create: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -271,6 +272,7 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.media.findFirst.mockResolvedValue(null);
     prisma.rankingConfig.count.mockResolvedValue(0);
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
     accessService.ensureStoreAccess.mockResolvedValue(undefined);
@@ -2114,12 +2116,16 @@ describe('NightlifeDataService', () => {
     const findManyArgs = prisma.cast.findMany.mock.calls[0]?.[0] as {
       select?: { media?: { where?: Record<string, unknown> } };
     };
-    expect(findManyArgs.select?.media?.where).toEqual({
-      deletedAt: null,
-      access: 'PUBLIC',
-      status: 'READY',
-      type: 'IMAGE',
-    });
+    expect(findManyArgs.select?.media?.where).toEqual(
+      expect.objectContaining({
+        deletedAt: null,
+        castId: null,
+        access: 'PUBLIC',
+        status: 'READY',
+        type: 'IMAGE',
+        AND: expect.any(Array),
+      }),
+    );
   });
 
   it('gets public cast detail by slug without exposing private fields', async () => {
@@ -11261,7 +11267,10 @@ describe('NightlifeDataService', () => {
             city: 'Hanoi',
             district: 'Tay Ho',
           },
-          media: [{ url: 'image1.jpg', purpose: 'STORE_COVER' }],
+          media: [
+            { url: 'cast-draft.jpg', purpose: 'PARTNER_CAST_IMAGE' },
+            { url: 'image1.jpg', purpose: 'STORE_COVER' },
+          ],
           coupons: [],
         },
         {
@@ -11314,8 +11323,19 @@ describe('NightlifeDataService', () => {
 
       expect(result).toHaveLength(3);
       expect(result[0].id).toBe('store-1');
+      expect(result[0].thumbnailUrl).toBe('image1.jpg');
       expect(result[1].id).toBe('store-3');
       expect(result[2].id).toBe('store-2');
+
+      const pinnedStoreQuery = prisma.store.findMany.mock.calls[0]?.[0] as {
+        select?: { media?: { where?: Record<string, unknown> } };
+      };
+      expect(pinnedStoreQuery.select?.media?.where).toEqual(
+        expect.objectContaining({
+          castId: null,
+          AND: expect.any(Array),
+        }),
+      );
 
       expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
