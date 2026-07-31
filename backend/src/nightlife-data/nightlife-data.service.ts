@@ -779,10 +779,15 @@ const CATEGORY_ALIASES: Record<string, StoreCategory> = {
   bar: 'BAR',
   club: 'CLUB',
   lounge: 'LOUNGE',
+  kyabakura: 'KYABAKURA' as StoreCategory,
+  cabakura: 'KYABAKURA' as StoreCategory,
+  'girls-club': 'KYABAKURA' as StoreCategory,
   'girls-bar': 'GIRLS_BAR',
   girlsbar: 'GIRLS_BAR',
   hostess: 'GIRLS_BAR',
   'hostess-bar': 'GIRLS_BAR',
+  snack: 'SNACK' as StoreCategory,
+  snacks: 'SNACK' as StoreCategory,
   karaoke: 'KARAOKE',
   'karaoke-ktv': 'KARAOKE',
   ktv: 'KARAOKE',
@@ -19893,7 +19898,7 @@ export class NightlifeDataService {
 
     if (!category && options.strict) {
       throw new BadRequestException(
-        'category must be one of BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO',
+        'category must be one of BAR, CLUB, LOUNGE, KYABAKURA, GIRLS_BAR, SNACK, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO',
       );
     }
 
@@ -19905,7 +19910,9 @@ export class NightlifeDataService {
       'BAR',
       'CLUB',
       'LOUNGE',
+      'KYABAKURA',
       'GIRLS_BAR',
+      'SNACK',
       'KARAOKE',
       'MASSAGE_SPA',
       'RESTAURANT',

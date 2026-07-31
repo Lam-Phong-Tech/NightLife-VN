@@ -7211,13 +7211,15 @@ export default function PartnerPage() {
                 placeholder="-- Chọn loại hình --"
                 hasError={Boolean(listingErrors.storeCategory)}
                 options={[
-                  { value: 'CLUB', label: 'Club' },
-                  { value: 'LOUNGE', label: 'Lounge' },
-                  { value: 'BAR', label: 'Bar' },
-                  { value: 'GIRLS_BAR', label: 'Girls Bar' },
-                  { value: 'KARAOKE', label: 'Karaoke' },
-                  { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
-                  { value: 'RESTAURANT', label: 'Nhà hàng' },
+                  { value: 'LOUNGE', label: 'ラウンジ (Lounge)' },
+                  { value: 'KYABAKURA', label: 'キャバクラ (Kyabakura)' },
+                  { value: 'GIRLS_BAR', label: 'ガールズバー (Girls Bar)' },
+                  { value: 'SNACK', label: 'スナック (Snack)' },
+                  { value: 'BAR', label: 'バー (Bar)' },
+                  { value: 'CLUB', label: 'クラブ (Club)' },
+                  { value: 'KARAOKE', label: 'カラオケ (Karaoke)' },
+                  { value: 'MASSAGE_SPA', label: 'マッサージ (Massage)' },
+                  { value: 'RESTAURANT', label: 'レストラン (Restaurant)' },
                 ]}
               />
               {listingErrorText('storeCategory')}

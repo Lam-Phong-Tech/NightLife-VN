@@ -124,13 +124,15 @@ const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
 ];
 
 const categoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls bar",
-  KARAOKE: "Karaoke",
-  MASSAGE_SPA: "Spa",
-  RESTAURANT: "Nhà hàng",
+  LOUNGE: "ラウンジ (Lounge)",
+  KYABAKURA: "キャバクラ (Kyabakura)",
+  GIRLS_BAR: "ガールズバー (Girls Bar)",
+  SNACK: "スナック (Snack)",
+  BAR: "バー (Bar)",
+  CLUB: "クラブ (Club)",
+  KARAOKE: "カラオケ (Karaoke)",
+  MASSAGE_SPA: "マッサージ (Massage)",
+  RESTAURANT: "レストラン (Restaurant)",
   CASINO: "Casino",
 };
 
@@ -146,27 +148,36 @@ const sortLabels: Record<DiscoverySort, string> = {
 };
 
 const areaLabels: Record<string, string> = {
-  "Hoan Kiem": "Hoàn Kiếm",
-  "Tay Ho": "Tây Hồ",
   "Ba Dinh": "Ba Đình",
-  "My Dinh": "Mỹ Đình",
+  "Tay Ho": "Tây Hồ",
+  "Cau Giay": "Cầu Giấy",
+  "Nam Tu Liem": "Nam Từ Liêm",
+  "Hoan Kiem": "Hoàn Kiếm",
+  "Hai Ba Trung": "Hai Bà Trưng",
   "Quan 1": "Quận 1",
   "Quan 3": "Quận 3",
   "Quan 7": "Quận 7",
+  "Thao Dien": "Thảo Điền",
+  "Binh Thanh": "Bình Thạnh",
+  "Phu Nhuan": "Phú Nhuận",
 };
 
 const fallbackAreaOptionsByCity: Record<string, FilterOption[]> = {
   hn: [
-    { value: "hn-hoan-kiem", label: "Hoàn Kiếm" },
-    { value: "hn-tay-ho", label: "Tây Hồ" },
-    { value: "hn-cau-giay", label: "Cầu Giấy" },
-    { value: "hn-badinh", label: "Ba Đình" },
-    { value: "hn-mydinh", label: "Mỹ Đình" },
+    { value: "Ba Đình", label: "Ba Đình" },
+    { value: "Tây Hồ", label: "Tây Hồ" },
+    { value: "Cầu Giấy", label: "Cầu Giấy" },
+    { value: "Nam Từ Liêm", label: "Nam Từ Liêm" },
+    { value: "Hoàn Kiếm", label: "Hoàn Kiếm" },
+    { value: "Hai Bà Trưng", label: "Hai Bà Trưng" },
   ],
   hcm: [
-    { value: "hcm-q1", label: "Quận 1" },
-    { value: "hcm-q3", label: "Quận 3" },
-    { value: "hcm-q7", label: "Quận 7" },
+    { value: "Quận 1", label: "Quận 1" },
+    { value: "Quận 3", label: "Quận 3" },
+    { value: "Quận 7", label: "Quận 7" },
+    { value: "Thảo Điền", label: "Thảo Điền" },
+    { value: "Bình Thạnh", label: "Bình Thạnh" },
+    { value: "Phú Nhuận", label: "Phú Nhuận" },
   ],
 };
 
@@ -179,7 +190,9 @@ const categoryTags: Record<string, string[]> = {
   BAR: ["Live music", "Rooftop", "Whisky bar"],
   CLUB: ["Đặt bàn VIP", "Sân khấu DJ", "Mở đến 02:00"],
   LOUNGE: ["Hỗ trợ tiếng Nhật", "Phòng riêng", "Cocktail"],
+  KYABAKURA: ["Japanese style", "VIP sofa", "Host club"],
   GIRLS_BAR: ["Host lounge", "VIP sofa", "Cocktail"],
+  SNACK: ["Casual bar", "Karaoke", "Japanese style"],
   KARAOKE: ["Phòng riêng", "Âm thanh hay", "Combo nhóm"],
   MASSAGE_SPA: ["Thư giãn", "Mở muộn", "Gói đôi"],
   RESTAURANT: ["Izakaya", "Phòng riêng", "Ăn khuya"],
@@ -296,13 +309,15 @@ const englishSortLabels: Record<DiscoverySort, string> = {
 };
 
 const englishCategoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls bar",
-  KARAOKE: "Karaoke",
-  MASSAGE_SPA: "Spa",
-  RESTAURANT: "Restaurant",
+  LOUNGE: "ラウンジ (Lounge)",
+  KYABAKURA: "キャバクラ (Kyabakura)",
+  GIRLS_BAR: "ガールズバー (Girls Bar)",
+  SNACK: "スナック (Snack)",
+  BAR: "バー (Bar)",
+  CLUB: "クラブ (Club)",
+  KARAOKE: "カラオケ (Karaoke)",
+  MASSAGE_SPA: "マッサージ (Massage)",
+  RESTAURANT: "レストラン (Restaurant)",
   CASINO: "Casino",
 };
 
@@ -321,6 +336,19 @@ const normalizeAreaKey = (value?: string | null) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+const allowedAreaKeysByCity = Object.fromEntries(
+  Object.entries(fallbackAreaOptionsByCity).map(([cityCode, options]) => [
+    cityCode,
+    new Set(options.map((option) => normalizeAreaKey(option.label))),
+  ]),
+) as Record<string, Set<string>>;
+
+const isAllowedAreaForCity = (cityCode: string, areaName?: string | null) => {
+  const allowedKeys = allowedAreaKeysByCity[cityCode];
+  if (!allowedKeys) return true;
+  return allowedKeys.has(normalizeAreaKey(areaName));
+};
 
 const isGenericArea = (area: PublicArea) => {
   const code = normalizeAreaKey(area.code);
@@ -354,8 +382,7 @@ const getLocalizedSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
   language === "en" ? englishSortLabels[sort] : translateText(sortLabels[sort], language);
 
 const getLocalizedCategoryLabel = (category: string, language: LanguageCode) => {
-  if (language === "en") return englishCategoryLabels[category] ?? category;
-  return translateText(categoryLabels[category] ?? category, language);
+  return (language === "en" ? englishCategoryLabels[category] : categoryLabels[category]) ?? category;
 };
 
 const getLocalizedAreaLabel = (areaName: string, language: LanguageCode) => {
@@ -950,6 +977,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       const value = item.code || item.name || item.district || item.city;
       const dedupeKey = normalizeAreaKey(labelSource);
 
+      if (!isAllowedAreaForCity(city, labelSource)) return options;
       if (!value || !dedupeKey || seenAreaLabels.has(dedupeKey)) return options;
       seenAreaLabels.add(dedupeKey);
 
@@ -1060,6 +1088,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const categoryChips = useMemo(
     () => [
       { label: getLocalizedCategoryLabel("LOUNGE", activeLanguage), value: "LOUNGE" },
+      { label: getLocalizedCategoryLabel("KYABAKURA", activeLanguage), value: "KYABAKURA" },
+      { label: getLocalizedCategoryLabel("GIRLS_BAR", activeLanguage), value: "GIRLS_BAR" },
+      { label: getLocalizedCategoryLabel("SNACK", activeLanguage), value: "SNACK" },
       { label: getLocalizedCategoryLabel("BAR", activeLanguage), value: "BAR" },
       { label: getLocalizedCategoryLabel("CLUB", activeLanguage), value: "CLUB" },
       { label: getLocalizedCategoryLabel("KARAOKE", activeLanguage), value: "KARAOKE" },

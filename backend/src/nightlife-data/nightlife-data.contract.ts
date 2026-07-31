@@ -1160,7 +1160,7 @@ export function PublicRankingsContract() {
       name: 'category',
       required: false,
       description:
-        'P0 category: BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Lowercase aliases such as girls_bar and massage_spa are accepted.',
+        'P0 category: BAR, CLUB, LOUNGE, KYABAKURA, GIRLS_BAR, SNACK, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Lowercase aliases such as girls_bar and massage_spa are accepted.',
       example: 'club',
     }),
     ApiQuery({
@@ -2492,7 +2492,7 @@ function publicDiscoveryQueries(
       name: 'category',
       required: false,
       description:
-        'P0 category: BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Alias massage-spa maps to MASSAGE_SPA.',
+        'P0 category: BAR, CLUB, LOUNGE, KYABAKURA, GIRLS_BAR, SNACK, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Alias massage-spa maps to MASSAGE_SPA.',
       example: 'GIRLS_BAR',
     }),
     ApiQuery({
