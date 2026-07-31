@@ -513,7 +513,7 @@ function RankingRow({
             </span>
           ) : null}
         </span>
-        <strong>{item.name}</strong>
+        <strong className="notranslate" translate="no" data-no-translate="true">{item.name}</strong>
         <small>
           {areaLine}
           <span aria-hidden="true"> · </span>
@@ -724,7 +724,7 @@ export default function Page() {
         {callNotice ? (
           <div className="vyr-call-notice" role="status" aria-live="polite">
             <span>
-              {callCopy.phoneNumber} {callNotice.name}: <strong>{callNotice.phone}</strong>
+              {callCopy.phoneNumber} <span className="notranslate" translate="no" data-no-translate="true">{callNotice.name}</span>: <strong>{callNotice.phone}</strong>
             </span>
             <button type="button" onClick={() => setCallNotice(null)}>
               {translateText("Đóng", activeLanguage)}
