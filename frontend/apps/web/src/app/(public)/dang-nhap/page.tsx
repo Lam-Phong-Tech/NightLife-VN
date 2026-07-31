@@ -558,7 +558,9 @@ export default function Page() {
 
   return (
     <main
-      className="nl-auth-page nl-login-page"
+      className="nl-auth-page nl-login-page notranslate"
+      translate="no"
+      data-no-translate="true"
       style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}
     >
       <LoginPageSessionRedirect requestedPortal="member" />

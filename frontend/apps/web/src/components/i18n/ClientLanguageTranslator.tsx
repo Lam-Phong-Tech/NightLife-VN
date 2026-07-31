@@ -161,10 +161,22 @@ export function shouldSkipLanguageTranslation(
   const isPortalHost =
     hostKind === "admin" ||
     hostKind === "partner" ||
+    hostKind === "auth" ||
     normalizedHostname.startsWith("admin.") ||
-    normalizedHostname.startsWith("partner.");
+    normalizedHostname.startsWith("partner.") ||
+    normalizedHostname.startsWith("auth.");
 
-  return isPortalHost || pathname.startsWith("/admin") || pathname.startsWith("/partner");
+  const isAuthOrPortalPath =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/partner") ||
+    pathname === "/dang-nhap" ||
+    pathname === "/dang-nhap-doi-tac" ||
+    pathname === "/dang-ky-doi-tac" ||
+    pathname === "/quen-mat-khau" ||
+    pathname === "/dat-lai-mat-khau" ||
+    pathname === "/xac-nhan";
+
+  return isPortalHost || isAuthOrPortalPath;
 }
 
 export function ClientLanguageTranslator({

@@ -138,7 +138,8 @@ function LoginContent({
 
   return (
     <main
-      className="nl-auth-page nl-partner-login-page"
+      className="nl-auth-page nl-partner-login-page notranslate"
+      translate="no"
       data-no-translate="true"
       style={{
         minHeight: "100vh",
