@@ -280,7 +280,13 @@ type BookingNotificationRecord = {
     stageName: string;
     publicAlias?: string | null;
   } | null;
-  coupon?: { id: string; code: string; name: string } | null;
+  coupon?: {
+    id: string;
+    code: string;
+    name: string;
+    discountType?: string | null;
+    discountValue?: number | null;
+  } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
 };
 
@@ -13768,6 +13774,7 @@ export class NightlifeDataService {
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
     const amountLabel = this.bookingAmountLabel(booking);
+    const discountLabel = this.bookingDiscountEmailLabel(booking);
     const locale = this.normalizeBookingLocale(booking.locale);
     const payload = {
       bookingId: booking.id,
@@ -13785,6 +13792,7 @@ export class NightlifeDataService {
           ? booking.totalVnd
           : null,
       amountLabel,
+      discountLabel,
       couponCode: booking.coupon?.code ?? null,
       couponIssueCode: booking.couponIssue?.code ?? null,
       qrPayload,
@@ -13834,6 +13842,7 @@ export class NightlifeDataService {
             ? booking.totalVnd
             : null,
         amountLabel,
+        discountLabel,
         note: booking.note,
         qrPayload,
         qrImageUrl,
@@ -13910,6 +13919,34 @@ export class NightlifeDataService {
     }
 
     return 'Miễn phí - không thu cọc';
+  }
+
+  private bookingDiscountEmailLabel(booking: BookingNotificationRecord) {
+    const snapshot = this.asRecord(booking.discountSnapshot);
+    const discountType =
+      this.cleanText(snapshot?.discountType) ||
+      this.cleanText(snapshot?.type) ||
+      booking.coupon?.discountType;
+    const discountValue =
+      this.toNumber(snapshot?.discountPercent) ??
+      this.toNumber(snapshot?.discountValue) ??
+      this.toNumber(snapshot?.value) ??
+      booking.coupon?.discountValue;
+
+    if (typeof discountValue !== 'number' || discountValue <= 0) {
+      return null;
+    }
+
+    const code =
+      this.cleanText(snapshot?.code) ||
+      this.cleanText(booking.coupon?.code) ||
+      this.cleanText(booking.couponIssue?.code);
+    const valueLabel =
+      discountType === 'FIXED_AMOUNT'
+        ? this.formatVnd(discountValue)
+        : `${discountValue}%`;
+
+    return [code, valueLabel].filter(Boolean).join(' · ');
   }
 
   private formatVnd(value: number) {

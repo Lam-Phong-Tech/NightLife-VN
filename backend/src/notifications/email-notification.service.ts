@@ -16,6 +16,7 @@ export type BookingQrEmailInput = {
   partySize?: number | null;
   amountVnd?: number | null;
   amountLabel?: string | null;
+  discountLabel?: string | null;
   note?: string | null;
   qrPayload: string;
   qrImageUrl: string;
@@ -55,6 +56,7 @@ type BookingEmailTemplate = {
     scheduledAt: string;
     partySize: string;
     amount: string;
+    discount: string;
     paymentMethod: string;
     deliveryInfo: string;
     status: string;
@@ -96,6 +98,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       scheduledAt: 'Thời gian',
       partySize: 'Số khách',
       amount: 'Chi phí',
+      discount: 'Ưu đãi',
       paymentMethod: 'Phương thức thanh toán',
       deliveryInfo: 'Thông tin nhận mã',
       status: 'Trạng thái',
@@ -142,6 +145,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       scheduledAt: 'Date and time',
       partySize: 'Guests',
       amount: 'Amount',
+      discount: 'Discount',
       paymentMethod: 'Payment method',
       deliveryInfo: 'Delivery information',
       status: 'Status',
@@ -187,6 +191,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       scheduledAt: 'ご来店日時',
       partySize: '人数',
       amount: '料金',
+      discount: '割引',
       paymentMethod: 'お支払い方法',
       deliveryInfo: 'QRコードのご案内',
       status: '予約状況',
@@ -232,6 +237,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       scheduledAt: '방문 일시',
       partySize: '인원',
       amount: '금액',
+      discount: '할인',
       paymentMethod: '결제 방법',
       deliveryInfo: '수령 정보',
       status: '상태',
@@ -277,6 +283,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       scheduledAt: '到店时间',
       partySize: '人数',
       amount: '费用',
+      discount: '优惠',
       paymentMethod: '支付方式',
       deliveryInfo: '接收信息',
       status: '预约状态',
@@ -498,6 +505,11 @@ export class EmailNotificationService {
           : String(input.partySize),
       ],
       [template.labels.amount, this.formatBookingAmount(input, template)],
+      ...(input.discountLabel
+        ? ([[template.labels.discount, input.discountLabel]] as Array<
+            [string, string]
+          >)
+        : []),
       [template.labels.paymentMethod, template.defaults.paymentMethod],
       [template.labels.deliveryInfo, template.defaults.deliveryInfo],
       [template.labels.status, this.statusLabel(input.status, template)],

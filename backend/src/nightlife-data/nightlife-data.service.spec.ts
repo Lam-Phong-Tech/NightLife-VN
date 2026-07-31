@@ -2812,6 +2812,63 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('includes applied booking discount in guest QR email notifications', async () => {
+    await (service as any).notifyGuestBookingQrEmail({
+      id: 'booking-guest-discount',
+      bookingCode: 'BK-GUEST5',
+      status: 'REQUESTED',
+      locale: 'en',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 4,
+      subtotalVnd: null,
+      discountVnd: null,
+      totalVnd: null,
+      note: null,
+      discountSnapshot: {
+        couponId: 'coupon-guest5',
+        couponIssueId: 'issue-guest5',
+        discountType: 'PERCENT',
+        discountValue: 5,
+        discountPercent: 5,
+      },
+      storeId: 'store-1',
+      store: { id: 'store-1', name: 'Golden Voice KTV', slug: 'golden-voice' },
+      cast: null,
+      user: null,
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: null,
+        email: 'guest@example.com',
+      },
+      coupon: {
+        id: 'coupon-guest5',
+        code: 'GUEST5',
+        name: 'Guest Discount 5%',
+        discountType: 'PERCENT',
+        discountValue: 5,
+      },
+      couponIssue: { id: 'issue-guest5', code: 'GUEST-123', status: 'ISSUED' },
+    });
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        bookingId: 'booking-guest-discount',
+        templateKey: 'customer.booking.qr_email.v1',
+        payload: expect.objectContaining({
+          discountLabel: 'GUEST5 · 5%',
+        }),
+      }),
+    });
+    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'guest@example.com',
+        bookingId: 'booking-guest-discount',
+        discountLabel: 'GUEST5 · 5%',
+      }),
+    );
+  });
+
   it('creates service-only bookings without cast or default coupon links', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.cast.findFirst.mockResolvedValue({
