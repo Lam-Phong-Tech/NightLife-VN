@@ -1752,6 +1752,7 @@ export default function PartnerPage() {
   const [activeCastLanguageInputIndex, setActiveCastLanguageInputIndex] = useState<number | null>(null);
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
+  const castTableRef = useRef<HTMLDivElement | null>(null);
   const [castListPage, setCastListPage] = useState(1);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
   const [activeMenuGroupIndex, setActiveMenuGroupIndex] = useState<number>(0);
@@ -4469,6 +4470,7 @@ export default function PartnerPage() {
             );
           }
           removeCastProfile(index);
+          returnToCastTable();
           setListingNotice(isSavedCast ? 'Đã xóa mềm cast.' : 'Đã xóa cast khỏi bản nháp.');
           feedback.showToast({
             tone: 'success',
@@ -4510,6 +4512,14 @@ export default function PartnerPage() {
 
     setActiveCastProfileIndex(null);
     setIsAddingCastProfile(false);
+  };
+
+  const returnToCastTable = () => {
+    setActiveCastProfileIndex(null);
+    setIsAddingCastProfile(false);
+    window.setTimeout(() => {
+      castTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   };
 
   const listingPayload = (options?: {
@@ -5683,6 +5693,7 @@ export default function PartnerPage() {
     setListingNotice('Đang lưu bản nháp...');
     try {
       const isSavingCastDraft = listingTab === 'cast';
+      const isAddingCast = isSavingCastDraft && isAddingCastProfile;
       const castProfileKeyToSave =
         isSavingCastDraft && activeCastProfileIndex !== null
           ? castProfileKey(listingDraft.castProfiles[activeCastProfileIndex])
@@ -5704,14 +5715,23 @@ export default function PartnerPage() {
       );
       applyListingDraftResponse(response);
       const message = isSavingCastDraft
-        ? 'Đã lưu nháp cast. Bảng cast đã cập nhật trạng thái Lưu nháp.'
+        ? isAddingCast
+          ? 'Đã thêm cast vào bản nháp.'
+          : 'Đã lưu thay đổi cast.'
         : 'Đã lưu bản nháp đăng thông tin.';
       setListingNotice(message);
       listingActionToast(
         'success',
-        isSavingCastDraft ? 'Đã lưu nháp cast' : 'Đã lưu bản nháp',
+        isSavingCastDraft
+          ? isAddingCast
+            ? 'Đã thêm cast thành công'
+            : 'Đã lưu thay đổi cast'
+          : 'Đã lưu bản nháp',
         message,
       );
+      if (isSavingCastDraft) {
+        returnToCastTable();
+      }
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Không lưu được bản nháp.';
       setListingNotice(message);
@@ -5858,15 +5878,7 @@ export default function PartnerPage() {
         'Gửi duyệt cast thành công',
         'Cast đã được gửi về Admin và đang nằm trong danh sách Chờ duyệt.',
       );
-      feedback.showModal({
-        tone: 'success',
-        title: 'Gửi duyệt cast thành công',
-        description: 'Yêu cầu thay đổi cast đã được gửi thành công và đang chờ Admin phê duyệt.',
-        primaryLabel: 'Đóng',
-        onPrimary: () => {
-          feedback.closeModal();
-        },
-      });
+      returnToCastTable();
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Không gửi duyệt được cast.';
       setListingNotice(message);
@@ -6898,7 +6910,7 @@ export default function PartnerPage() {
       ) : null;
 
     return (
-    <div style={{ display: 'grid', gap: '14px' }}>
+    <div ref={castTableRef} style={{ display: 'grid', gap: '14px', scrollMarginTop: '96px' }}>
       <div className="partner-cast-toolbar">
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <StatusPill tone="gold">Tất cả {listingDraft.castProfiles.length}</StatusPill>
