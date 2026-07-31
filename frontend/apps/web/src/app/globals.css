@@ -3521,7 +3521,7 @@ html.vy-light .nl-site-actions .nl-site-action-control:where(:hover, :focus-visi
   background: #fff7e8 !important;
   color: #7a551b !important;
 }
-/* Google Translate UI Suppression: Completely hides top banner bar and popups */
+/* Google Translate UI Suppression: Completely hides top banner bar, spinners, and 1s popup icons */
 .vietyoru-google-translate-element,
 .goog-te-banner-frame,
 .goog-te-banner-frame.skiptranslate,
@@ -3531,11 +3531,17 @@ iframe[id*=":"],
 #goog-gt-tt,
 .goog-te-balloon-frame,
 div.goog-te-spinner-pos,
+.goog-te-spinner,
 .goog-te-gadget,
+.goog-te-gadget-simple,
+.goog-te-gadget-icon,
 .goog-tooltip,
 .goog-tooltip:hover,
 .skiptranslate,
-#google_translate_element {
+#google_translate_element,
+[class*="VIpgJd"],
+div[id^="goog-gt-"],
+span[id^="goog-gt-"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -3546,6 +3552,7 @@ div.goog-te-spinner-pos,
   position: absolute !important;
   top: -9999px !important;
   left: -9999px !important;
+  clip: rect(0 0 0 0) !important;
 }
 
 .goog-text-highlight {

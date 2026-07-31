@@ -24,6 +24,48 @@ type TranslationEntry = {
 
 const entries: TranslationEntry[] = [
   {
+    vi: "SỰ KIỆN SINH NHẬT",
+    en: "BIRTHDAY EVENT",
+    ja: "バースデーイベント",
+    ko: "생일 이벤트",
+    zh: "生日活动",
+  },
+  {
+    vi: "Sự kiện sinh nhật",
+    en: "Birthday event",
+    ja: "バースデーイベント",
+    ko: "생일 이벤트",
+    zh: "生日活动",
+  },
+  {
+    vi: "Thưởng thức Cocktail Hoàng Gia",
+    en: "Enjoy Royal Cocktails",
+    ja: "ロイヤルカクテルを楽しむ",
+    ko: "로열 칵테일 즐기기",
+    zh: "享用皇家鸡尾酒",
+  },
+  {
+    vi: "Thưởng thức Cocktail Hoàng Gia khi tham gia Sự kiện sinh nhật",
+    en: "Enjoy Royal Cocktails when joining the Birthday event",
+    ja: "バースデーイベント参加でロイヤルカクテルを楽しむ",
+    ko: "생일 이벤트 참여 시 로열 칵테일 즐기기",
+    zh: "参加生日活动享用皇家鸡尾酒",
+  },
+  {
+    vi: "Sự kiện âm nhạc EDM lớn nhất năm",
+    en: "The biggest EDM music event of the year",
+    ja: "今年最大のEDM音楽イベント",
+    ko: "올해 최대 EDM 음악 이벤트",
+    zh: "年度最大 EDM 音乐活动",
+  },
+  {
+    vi: "Sự kiện âm nhạc EDM lớn nhất năm sẽ diễn ra từ ngày 7",
+    en: "The biggest EDM music event of the year will take place from the 7th",
+    ja: "今年最大のEDM音楽イベントが7日から開催される",
+    ko: "올해 최대 EDM 음악 이벤트가 7일부터 진행됩니다",
+    zh: "年度最大 EDM 音乐活动将于 7 日起举行",
+  },
+  {
     vi: "điểm",
     en: "pts",
     ja: "pt",
