@@ -8830,6 +8830,65 @@ export function syncGoogleTranslateCookie(language: LanguageCode) {
   );
 }
 
+const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v1.";
+const dynamicMemoryCache = new Map<string, Partial<Record<LanguageCode, string>>>();
+let isDynamicCacheHydrated = false;
+
+function hydrateDynamicCache() {
+  if (isDynamicCacheHydrated || typeof window === "undefined") return;
+  isDynamicCacheHydrated = true;
+
+  try {
+    const supportedLangs: LanguageCode[] = ["en", "ja", "ko", "zh"];
+    for (const lang of supportedLangs) {
+      const raw = window.localStorage.getItem(`${DYNAMIC_CACHE_PREFIX}${lang}`);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      for (const [sourceKey, translatedVal] of Object.entries(parsed)) {
+        let entry = dynamicMemoryCache.get(sourceKey);
+        if (!entry) {
+          entry = {};
+          dynamicMemoryCache.set(sourceKey, entry);
+        }
+        entry[lang] = translatedVal;
+      }
+    }
+  } catch {
+    // Private mode or quota / access restriction
+  }
+}
+
+let pendingSaveTimer: number | null = null;
+const pendingSaveLanguages = new Set<LanguageCode>();
+
+function schedulePersistDynamicCache(language: LanguageCode) {
+  if (typeof window === "undefined") return;
+  pendingSaveLanguages.add(language);
+
+  if (pendingSaveTimer !== null) return;
+
+  pendingSaveTimer = window.setTimeout(() => {
+    pendingSaveTimer = null;
+    try {
+      for (const lang of pendingSaveLanguages) {
+        const langData: Record<string, string> = {};
+        for (const [sourceKey, map] of dynamicMemoryCache.entries()) {
+          if (map[lang]) {
+            langData[sourceKey] = map[lang]!;
+          }
+        }
+        window.localStorage.setItem(
+          `${DYNAMIC_CACHE_PREFIX}${lang}`,
+          JSON.stringify(langData),
+        );
+      }
+      pendingSaveLanguages.clear();
+    } catch {
+      // Storage quota exceeded or disabled
+    }
+  }, 1000);
+}
+
 export function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -8843,8 +8902,34 @@ export function translateText(value: string, language: LanguageCode): string {
   const source = getVietnameseSource(value);
   if (language === "vi") return source;
 
-  const translated = translations.get(normalizeText(source))?.[language];
-  return translated ?? translatePattern(source, language) ?? source;
+  const normalized = normalizeText(source);
+  if (!normalized) return source;
+
+  // 1. Check static translation entries (RAM)
+  const staticMatch = translations.get(normalized)?.[language];
+  if (staticMatch) return staticMatch;
+
+  // 2. Check LocalStorage / Memory dynamic cache
+  hydrateDynamicCache();
+  const cachedMatch = dynamicMemoryCache.get(normalized)?.[language];
+  if (cachedMatch) return cachedMatch;
+
+  // 3. Pattern / Regex translation
+  const patternMatch = translatePattern(source, language);
+  const result = patternMatch ?? source;
+
+  // 4. Persist newly translated strings to LocalStorage cache
+  if (result !== source) {
+    let entry = dynamicMemoryCache.get(normalized);
+    if (!entry) {
+      entry = {};
+      dynamicMemoryCache.set(normalized, entry);
+    }
+    entry[language] = result;
+    schedulePersistDynamicCache(language);
+  }
+
+  return result;
 }
 
 export function translateWithWhitespace(value: string, language: LanguageCode) {

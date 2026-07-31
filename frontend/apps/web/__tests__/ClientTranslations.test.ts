@@ -12,7 +12,7 @@ describe("client translations", () => {
     );
     expect(translateText("Neon Club · HN", "ko")).toBe("네온 클럽 · 하노이");
     expect(translateText("Xem 11 cast", "ja")).toBe("11人のキャストを見る");
-    expect(translateText("11 cast", "zh")).toBe("11 位 Cast");
+    expect(translateText("11 cast", "zh")).toBe("11 位陪伴人员");
     expect(translateText("Sắp xếp: Mới nhất", "en")).toBe("Sort: Newest");
     expect(translateText("2 bộ lọc đang bật", "ko")).toBe(
       "필터 2개 적용 중",
@@ -29,7 +29,7 @@ describe("client translations", () => {
     expect(translateText("Karaoke / KTV", "ko")).toBe("노래방 / KTV");
     expect(translateText("Massage / Spa", "ja")).toBe("マッサージ / スパ");
     expect(translateText("Bộ lọc", "ja")).toBe("フィルター");
-    expect(translateText("Gợi ý cast", "zh")).toBe("推荐 Cast");
+    expect(translateText("Gợi ý cast", "zh")).toBe("推荐 陪伴人员");
     expect(translateText("Chưa có cast phù hợp", "en")).toBe("No matching Cast");
     expect(translateText("nhân viên a", "ja")).toBe("スタッフA");
     expect(translateText("quán A", "en")).toBe("Venue A");
@@ -237,5 +237,17 @@ describe("client translations", () => {
         "ja",
       ),
     ).toBe("同じタグの記事から、予約目的、エリア、特典に合わせてすばやく探せます。");
+  });
+
+  it("persists and retrieves dynamic translations from LocalStorage cache", () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.clear();
+    }
+    const result1 = translateText("Sự kiện âm nhạc EDM lớn nhất năm", "ko");
+    expect(result1).toContain("EDM");
+
+    // Second call retrieves from memory/localStorage cache instantly
+    const result2 = translateText("Sự kiện âm nhạc EDM lớn nhất năm", "ko");
+    expect(result2).toBe(result1);
   });
 });

@@ -182,27 +182,38 @@ export function ClientLanguageTranslator({
     }
 
     let language = readStoredLanguage();
-    let timers: number[] = [];
     let frame = 0;
+    let isScheduled = false;
+    let backupTimer: number | null = null;
 
     const scheduleApply = () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      if (isScheduled) return;
+      isScheduled = true;
+
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
-      applyTranslations(language);
-      frame = window.requestAnimationFrame(() => applyTranslations(language));
-      timers = [120, 480].map((delay) =>
-        window.setTimeout(() => applyTranslations(language), delay),
-      );
+      frame = window.requestAnimationFrame(() => {
+        applyTranslations(language);
+        isScheduled = false;
+      });
+
+      if (backupTimer === null) {
+        backupTimer = window.setTimeout(() => {
+          backupTimer = null;
+          applyTranslations(language);
+        }, 200);
+      }
     };
 
     const onLanguageChange = (event: Event) => {
       const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }>).detail?.language;
       language = nextLanguage ?? readStoredLanguage();
+      applyTranslations(language);
       scheduleApply();
     };
 
+    applyTranslations(language);
     scheduleApply();
     window.addEventListener(languageChangedEvent, onLanguageChange);
 
@@ -216,7 +227,9 @@ export function ClientLanguageTranslator({
     });
 
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      if (backupTimer !== null) {
+        window.clearTimeout(backupTimer);
+      }
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
