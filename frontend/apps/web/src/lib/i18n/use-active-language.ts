@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { languageChangedEvent, readStoredLanguage, type LanguageCode } from "./client-translations";
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  languageChangedEvent,
+  readStoredLanguage,
+  storeLanguagePreference,
+  type LanguageCode,
+} from "./client-translations";
 
 export type { LanguageCode };
 
@@ -13,7 +25,39 @@ export const intlLocaleByLanguage: Record<LanguageCode, string> = {
   zh: "zh-CN",
 };
 
+const RoutedLanguageContext = createContext<LanguageCode | null>(null);
+
+export function RoutedLanguageProvider({
+  children,
+  initialLanguage,
+}: {
+  children: ReactNode;
+  initialLanguage: LanguageCode;
+}) {
+  const [language, setLanguage] = useState<LanguageCode>(initialLanguage);
+
+  useEffect(() => {
+    storeLanguagePreference(initialLanguage);
+    setLanguage(initialLanguage);
+
+    const syncLanguage = (event: Event) => {
+      const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }>).detail?.language;
+      if (nextLanguage) setLanguage(nextLanguage);
+    };
+
+    window.addEventListener(languageChangedEvent, syncLanguage);
+    return () => window.removeEventListener(languageChangedEvent, syncLanguage);
+  }, [initialLanguage]);
+
+  return createElement(
+    RoutedLanguageContext.Provider,
+    { value: language },
+    children,
+  );
+}
+
 export function useActiveLanguage() {
+  const routedLanguage = useContext(RoutedLanguageContext);
   const [language, setLanguage] = useState<LanguageCode>(() => readStoredLanguage());
 
   useEffect(() => {
@@ -28,5 +72,5 @@ export function useActiveLanguage() {
     return () => window.removeEventListener(languageChangedEvent, syncLanguage);
   }, []);
 
-  return language;
+  return routedLanguage ?? language;
 }

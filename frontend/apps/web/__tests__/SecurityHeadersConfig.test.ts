@@ -29,6 +29,10 @@ describe("security headers configuration", () => {
     expect(policy).toContain("https://api.qrserver.com");
     expect(policy).toContain("https://maps.google.com");
     expect(policy).toContain("https://www.google.com");
+    expect(policy).toContain("https://translate.google.com");
+    expect(policy).toContain("https://translate.googleapis.com");
+    expect(policy).toContain("https://translate-pa.googleapis.com");
+    expect(policy).toContain("https://www.gstatic.com");
     expect(policy).toContain("https://www.youtube.com");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("upgrade-insecure-requests");

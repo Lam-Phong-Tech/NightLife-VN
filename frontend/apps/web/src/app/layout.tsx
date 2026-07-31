@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
+import { PublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
@@ -11,6 +12,10 @@ import { SITE_FAVICON_URL } from "@/lib/appearance-favicon";
 import { siteConfig } from "@/lib/site";
 import { headers } from "next/headers";
 import { getNightlifeHostKind } from "@/lib/auth/hosts";
+import {
+  isLanguageCode,
+  languageHtmlLang,
+} from "@/lib/i18n/locales";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -46,11 +51,12 @@ export default async function RootLayout({
   const headersList = await headers();
   const hostHeader = headersList.get("host") || "";
   const hostKind = getNightlifeHostKind(hostHeader);
+  const requestedLocale = headersList.get("x-vietyoru-locale");
+  const documentLanguage = isLanguageCode(requestedLocale) ? requestedLocale : "vi";
 
   return (
-    <html lang="vi" className="notranslate" suppressHydrationWarning>
+    <html lang={languageHtmlLang[documentLanguage]} suppressHydrationWarning>
       <head>
-        <meta name="google" content="notranslate" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -89,6 +95,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <GoogleAnalytics />
         <ClientLanguageTranslator hostKind={hostKind}>
+          <PublicTranslationFallback hostKind={hostKind} />
           <CurrencyProvider>
             <SocketProvider>
               <SiteChrome hostKind={hostKind}>{children}</SiteChrome>

@@ -33,6 +33,10 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "'unsafe-inline'",
     "https://accounts.google.com",
     "https://static.line-scdn.net",
+    "https://translate.google.com",
+    "https://translate.googleapis.com",
+    "https://translate-pa.googleapis.com",
+    "https://www.gstatic.com",
     "https://www.googletagmanager.com",
   ];
   const connectSources = [
@@ -46,6 +50,9 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://*.googletagmanager.com",
+    "https://translate.google.com",
+    "https://translate.googleapis.com",
+    "https://translate-pa.googleapis.com",
     "https://open.er-api.com",
     "https://provinces.open-api.vn",
     "https://api.qrserver.com",
@@ -59,6 +66,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "https://www.vietoru.com",
     "wss:",
   ];
+  const imageSources = ["'self'", "data:", "blob:", "https:"];
 
   if (configuredApiOrigin && !connectSources.includes(configuredApiOrigin)) {
     connectSources.push(configuredApiOrigin);
@@ -66,6 +74,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
 
   if (!isProduction) {
     scriptSources.push("'unsafe-eval'");
+    imageSources.push("http://translate.google.com");
     connectSources.push(
       "http://localhost:*",
       "http://127.0.0.1:*",
@@ -86,18 +95,19 @@ export function createContentSecurityPolicy(isProduction: boolean) {
       "https://accounts.google.com",
       "https://maps.google.com",
       "https://www.google.com",
+      "https://translate.google.com",
       "https://www.youtube.com",
       "https://www.youtube-nocookie.com",
       "https://player.vimeo.com",
       "https://www.tiktok.com",
     ].join(" "),
-    "img-src 'self' data: blob: https:",
+    `img-src ${imageSources.join(" ")}`,
     `manifest-src 'self' ${trustedPortalOrigins.join(" ")}`,
     "media-src 'self' blob: https:",
     "object-src 'none'",
     `script-src ${scriptSources.join(" ")}`,
     "script-src-attr 'none'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com",
     "worker-src 'self' blob:",
   ];
 

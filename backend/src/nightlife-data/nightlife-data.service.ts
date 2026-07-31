@@ -7005,6 +7005,120 @@ export class NightlifeDataService {
     return result;
   }
 
+  @Cron('*/5 * * * *')
+  async completeStaleCheckedInBookingsEveryFiveMinutes() {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - BILL_SUBMISSION_DEADLINE_MS);
+    const candidates = await this.prisma.booking.findMany({
+      where: {
+        status: 'CHECKED_IN',
+        deletedAt: null,
+        bill: { is: null },
+        OR: [
+          { qr: { is: { usedAt: { lte: cutoff } } } },
+          { couponIssue: { is: { usedAt: { lte: cutoff } } } },
+          { tourCheckIn: { is: { checkedInAt: { lte: cutoff } } } },
+        ],
+      },
+      select: {
+        ...this.bookingNotificationSelect(),
+        tourCheckIn: { select: { checkedInAt: true } },
+      },
+    });
+
+    let count = 0;
+    for (const booking of candidates) {
+      const checkedInAt =
+        booking.qr?.usedAt ??
+        booking.couponIssue?.usedAt ??
+        booking.tourCheckIn?.checkedInAt ??
+        null;
+      if (!checkedInAt || checkedInAt.getTime() > cutoff.getTime()) {
+        continue;
+      }
+
+      const completed = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: 'CHECKED_IN',
+            deletedAt: null,
+            bill: { is: null },
+          },
+          data: { status: 'COMPLETED' },
+        });
+        if (updated.count !== 1) {
+          return false;
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorType: 'SYSTEM',
+            actorRole: 'SYSTEM',
+            module: 'Booking',
+            action: 'BOOKING_STATUS_CHANGED',
+            targetType: 'Booking',
+            targetId: booking.id,
+            entityDisplayCode: this.bookingCodeFor(booking),
+            changedFields: ['status'],
+            changeSummary: `Đã tự động đổi trạng thái lịch đặt từ CHECKED_IN sang COMPLETED sau ${BILL_SUBMISSION_DEADLINE_DAYS} ngày không có hóa đơn`,
+            reason: `No bill was submitted within ${BILL_SUBMISSION_DEADLINE_DAYS} days of QR check-in`,
+            result: 'SUCCESS',
+            beforeJson: this.buildBookingCancelAuditSnapshot(booking),
+            afterJson: this.buildBookingCancelAuditSnapshot({
+              ...booking,
+              status: 'COMPLETED',
+            }),
+            metadata: this.toPrismaJson({
+              actorType: 'SYSTEM',
+              previousStatus: 'CHECKED_IN',
+              nextStatus: 'COMPLETED',
+              checkedInAt: checkedInAt.toISOString(),
+              deadlineAt: new Date(
+                checkedInAt.getTime() + BILL_SUBMISSION_DEADLINE_MS,
+              ).toISOString(),
+              completedAt: now.toISOString(),
+              reason: 'BILL_SUBMISSION_DEADLINE_EXPIRED',
+            }),
+          },
+        });
+        return true;
+      });
+
+      if (!completed) {
+        continue;
+      }
+
+      count += 1;
+      const completedBooking = {
+        ...booking,
+        status: 'COMPLETED' as const,
+      };
+      await this.notifyBookingCustomerStatusChange(completedBooking, {
+        actorType: 'SYSTEM',
+        reason: `Quá ${BILL_SUBMISSION_DEADLINE_DAYS} ngày kể từ khi check-in mà không gửi hóa đơn`,
+      }).catch((error) => {
+        this.logger.warn(
+          `Failed to queue completion notification for booking ${booking.id}: ${this.errorMessage(error)}`,
+        );
+      });
+      if (completedBooking.user?.id) {
+        this.socketGateway?.notifyBookingStatusUpdate(
+          completedBooking.user.id,
+          completedBooking,
+        );
+      }
+    }
+
+    if (count > 0) {
+      this.logger.log(
+        `Completed ${count} checked-in booking(s) after the ${BILL_SUBMISSION_DEADLINE_DAYS}-day bill submission deadline.`,
+      );
+    }
+
+    return { count };
+  }
+
   async listMemberCouponIssues(userId: string) {
     await this.expireIssuedCouponIssues({ userId });
 
@@ -7405,6 +7519,12 @@ export class NightlifeDataService {
       );
     }
 
+    if (booking?.status === 'COMPLETED') {
+      throw new UnprocessableEntityException(
+        'Completed booking cannot submit a bill',
+      );
+    }
+
     if (booking?.id) {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
@@ -7606,6 +7726,12 @@ export class NightlifeDataService {
     if (booking?.status === 'CANCELLED') {
       throw new UnprocessableEntityException(
         'Cancelled booking cannot submit a bill',
+      );
+    }
+
+    if (booking?.status === 'COMPLETED') {
+      throw new UnprocessableEntityException(
+        'Completed booking cannot submit a bill',
       );
     }
 
@@ -9048,6 +9174,7 @@ export class NightlifeDataService {
           )
         : null;
 
+    let completedBookingId: string | null = null;
     const result = await this.prisma.$transaction(async (tx) => {
       let reviewedBill;
       try {
@@ -9110,6 +9237,56 @@ export class NightlifeDataService {
       if (loyaltyAward) {
         await this.recordBillLoyaltyLedger(tx, loyaltyAward);
         await this.refreshUserLoyaltyTier(tx, loyaltyAward.userId, now);
+      }
+
+      if (
+        reviewedBill.status === 'VERIFIED' &&
+        reviewedBill.booking?.id &&
+        reviewedBill.booking.status === 'CHECKED_IN'
+      ) {
+        const completedBooking = await tx.booking.updateMany({
+          where: {
+            id: reviewedBill.booking.id,
+            status: 'CHECKED_IN',
+            deletedAt: null,
+          },
+          data: { status: 'COMPLETED' },
+        });
+
+        if (completedBooking.count === 1) {
+          completedBookingId = reviewedBill.booking.id;
+          await tx.auditLog.create({
+            data: {
+              ...adminAuditActorFields(actor),
+              module: 'Booking',
+              action: 'BOOKING_STATUS_CHANGED',
+              targetType: 'Booking',
+              targetId: reviewedBill.booking.id,
+              changedFields: ['status'],
+              changeSummary:
+                'Đã đổi trạng thái lịch đặt từ CHECKED_IN sang COMPLETED sau khi Admin duyệt hóa đơn',
+              reason: 'Linked bill verified by admin',
+              result: 'SUCCESS',
+              beforeJson: this.toPrismaJson({
+                id: reviewedBill.booking.id,
+                status: 'CHECKED_IN',
+              }),
+              afterJson: this.toPrismaJson({
+                id: reviewedBill.booking.id,
+                status: 'COMPLETED',
+              }),
+              metadata: this.toPrismaJson({
+                actorType: this.bookingActorTypeFor(actor),
+                actorId: adminId,
+                billId: reviewedBill.id,
+                previousStatus: 'CHECKED_IN',
+                nextStatus: 'COMPLETED',
+                changedAt: now.toISOString(),
+                reason: 'BILL_VERIFIED',
+              }),
+            },
+          });
+        }
       }
 
       let adminCouponIssueId: string | null = null;
@@ -9259,7 +9436,36 @@ export class NightlifeDataService {
       return reviewedBill;
     });
 
-    const resultWithRevenueAliases = this.withBillRevenueAliases(result);
+    if (completedBookingId) {
+      const completedBooking = await this.prisma.booking.findUnique({
+        where: { id: completedBookingId },
+        select: this.bookingNotificationSelect(),
+      });
+      if (completedBooking?.status === 'COMPLETED') {
+        await this.notifyBookingCustomerStatusChange(completedBooking, {
+          actorType: this.bookingActorTypeFor(actor),
+          reason: 'Hóa đơn đã được Admin xác nhận',
+        });
+        if (completedBooking.user?.id) {
+          this.socketGateway?.notifyBookingStatusUpdate(
+            completedBooking.user.id,
+            completedBooking,
+          );
+        }
+      }
+    }
+
+    const resultWithRevenueAliases = this.withBillRevenueAliases(
+      completedBookingId && result.booking?.id === completedBookingId
+        ? {
+            ...result,
+            booking: {
+              ...result.booking,
+              status: 'COMPLETED',
+            },
+          }
+        : result,
+    );
 
     if (result.status === 'VERIFIED' || result.status === 'REJECTED') {
       await this.adminNotificationService?.notifyBillReviewed(

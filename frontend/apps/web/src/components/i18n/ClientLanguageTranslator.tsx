@@ -16,8 +16,30 @@ import type { NightlifeHostKind } from "@/lib/auth/hosts";
 const textSourceMap = new WeakMap<Text, string>();
 const translatedAttributes = ["placeholder", "aria-label", "title", "alt"] as const;
 const valueSourceKey = "data-vietyoru-i18n-value";
+const manualTranslationMarker = "data-vietyoru-i18n-translated";
 const skippedElementSelector =
   "script, style, noscript, code, pre, textarea, svg, [data-no-translate='true']";
+
+function looksLikeSelectedLanguage(value: string, language: LanguageCode) {
+  if (language === "ja") return /[\u3040-\u30ff\u3400-\u9fff]/u.test(value);
+  if (language === "ko") return /[\uac00-\ud7af]/u.test(value);
+  if (language === "zh") return /[\u3400-\u9fff]/u.test(value);
+  return false;
+}
+
+function protectManualTranslation(element: HTMLElement, protectedByI18n: boolean) {
+  if (protectedByI18n) {
+    element.setAttribute(manualTranslationMarker, "true");
+    element.classList.add("notranslate");
+    element.setAttribute("translate", "no");
+    return;
+  }
+
+  if (element.getAttribute(manualTranslationMarker) !== "true") return;
+  element.removeAttribute(manualTranslationMarker);
+  element.classList.remove("notranslate");
+  element.removeAttribute("translate");
+}
 
 function shouldSkipTextNode(node: Text) {
   const parent = node.parentElement;
@@ -28,6 +50,8 @@ function shouldSkipTextNode(node: Text) {
 function translateTextNode(node: Text, language: LanguageCode) {
   if (shouldSkipTextNode(node)) return;
 
+  const parent = node.parentElement;
+  if (!parent) return;
   const rawValue = node.nodeValue ?? "";
   if (!rawValue.trim()) return;
 
@@ -42,6 +66,12 @@ function translateTextNode(node: Text, language: LanguageCode) {
   }
 
   const translated = translateWithWhitespace(source, language);
+  const protectedByI18n =
+    language !== "vi" &&
+    (normalizeForComparison(translated) !== normalizeForComparison(source) ||
+      looksLikeSelectedLanguage(rawValue, language));
+
+  protectManualTranslation(parent, protectedByI18n);
 
   if (translated !== source || textSourceMap.has(node)) {
     textSourceMap.set(node, getVietnameseSource(source));
@@ -54,6 +84,7 @@ function translateTextNode(node: Text, language: LanguageCode) {
 function translateElementAttributes(element: HTMLElement, language: LanguageCode) {
   if (element.closest("[data-no-translate='true']")) return;
 
+  let translatedByI18n = false;
   for (const attribute of translatedAttributes) {
     const currentValue = element.getAttribute(attribute);
     if (!currentValue?.trim()) continue;
@@ -61,6 +92,7 @@ function translateElementAttributes(element: HTMLElement, language: LanguageCode
     const sourceKey = `data-vietyoru-i18n-${attribute}`;
     const sourceValue = element.getAttribute(sourceKey) ?? currentValue;
     const translated = translateText(sourceValue, language);
+    translatedByI18n ||= translated !== sourceValue;
 
     if (translated !== sourceValue || element.hasAttribute(sourceKey)) {
       element.setAttribute(sourceKey, sourceValue);
@@ -82,6 +114,7 @@ function translateElementAttributes(element: HTMLElement, language: LanguageCode
     }
 
     const translated = translateText(sourceValue, language);
+    translatedByI18n ||= translated !== sourceValue;
 
     if (translated !== sourceValue || element.hasAttribute(valueSourceKey)) {
       element.setAttribute(valueSourceKey, getVietnameseSource(sourceValue));
@@ -90,6 +123,12 @@ function translateElementAttributes(element: HTMLElement, language: LanguageCode
       }
     }
   }
+
+  protectManualTranslation(element, language !== "vi" && translatedByI18n);
+}
+
+function normalizeForComparison(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function applyTranslations(language: LanguageCode) {

@@ -1,19 +1,21 @@
 import { cookies } from "next/headers";
+import {
+  defaultLanguageCode,
+  isLanguageCode,
+  type LanguageCode,
+} from "./locales";
 
-export type ServerLanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
+export type ServerLanguageCode = LanguageCode;
 
-export const defaultServerLanguageCode: ServerLanguageCode = "ja";
+export const defaultServerLanguageCode: ServerLanguageCode = defaultLanguageCode;
 
 const languageCookieNames = ["vietyoru_shared_language", "vietyoru_language"];
-const languageCodes: ServerLanguageCode[] = ["vi", "en", "ja", "ko", "zh"];
 
 export function normalizeServerLanguageCode(value: string | null | undefined): ServerLanguageCode | null {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return null;
 
-  return languageCodes.includes(normalized as ServerLanguageCode)
-    ? (normalized as ServerLanguageCode)
-    : null;
+  return isLanguageCode(normalized) ? normalized : null;
 }
 
 export async function getServerSelectedLanguage(

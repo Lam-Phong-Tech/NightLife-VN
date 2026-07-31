@@ -9,9 +9,11 @@ import {
   languageHtmlLang,
   readStoredLanguage,
   storeLanguagePreference,
+  syncGoogleTranslateCookie,
   translateText,
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
+import { localizeHref } from "@/lib/i18n/locales";
 
 type LanguageOption = {
   code: LanguageCode;
@@ -63,7 +65,11 @@ function getLanguage(code: LanguageCode) {
 
 function storeLanguage(language: LanguageOption) {
   storeLanguagePreference(language.code);
-  window.setTimeout(() => window.location.reload(), 0);
+  syncGoogleTranslateCookie(language.code);
+
+  const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const localizedHref = localizeHref(currentHref, language.code);
+  window.setTimeout(() => window.location.assign(localizedHref), 0);
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {

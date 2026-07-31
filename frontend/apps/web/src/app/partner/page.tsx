@@ -3395,7 +3395,11 @@ export default function PartnerPage() {
     () =>
       bookings.filter((booking) => {
         const normalizedStatus = booking.status.trim().toUpperCase();
-        if (normalizedStatus === 'CANCELLED' || normalizedStatus === 'NO_SHOW') {
+        if (
+          normalizedStatus === 'CANCELLED' ||
+          normalizedStatus === 'NO_SHOW' ||
+          normalizedStatus === 'COMPLETED'
+        ) {
           return false;
         }
 
@@ -3461,6 +3465,7 @@ export default function PartnerPage() {
     Boolean(billNowMs) &&
     Boolean(selectedBillStore) &&
     Boolean(selectedBillBooking) &&
+    selectedBillBooking?.status.trim().toUpperCase() !== 'COMPLETED' &&
     billAmount > 0 &&
     Boolean(billUsedAt) &&
     !isBillUsedAtInvalid &&

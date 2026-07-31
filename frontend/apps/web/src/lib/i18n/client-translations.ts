@@ -1,22 +1,20 @@
 "use client";
 
-export type LanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
+import {
+  defaultLanguageCode,
+  getPathLanguage,
+  googleTranslateLanguageCode,
+  isLanguageCode as isSupportedLanguageCode,
+  languageHtmlLang,
+  type LanguageCode,
+} from "./locales";
 
-export const defaultLanguageCode: LanguageCode = "ja";
+export { defaultLanguageCode, languageHtmlLang, type LanguageCode };
 export const languageStorageKey = "vietyoru.language";
 export const languageCookieName = "vietyoru_language";
 export const languageChangedEvent = "vietyoru:language-change";
 const sharedLanguageCookieName = "vietyoru_shared_language";
-
-export const languageHtmlLang: Record<LanguageCode, string> = {
-  vi: "vi",
-  en: "en",
-  ja: "ja",
-  ko: "ko",
-  zh: "zh",
-};
-
-const languageCodes: LanguageCode[] = ["vi", "en", "ja", "ko", "zh"];
+const googleTranslateCookieName = "googtrans";
 
 type TranslationSet = Record<Exclude<LanguageCode, "vi">, string>;
 
@@ -8666,7 +8664,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">):
 }
 
 export function isLanguageCode(value: string | null): value is LanguageCode {
-  return languageCodes.includes(value as LanguageCode);
+  return isSupportedLanguageCode(value);
 }
 
 function readCookieLanguage(cookieName: string): LanguageCode | null {
@@ -8757,6 +8755,9 @@ function readUrlLanguage(): LanguageCode | null {
   if (typeof window === "undefined") return null;
 
   try {
+    const pathLanguage = getPathLanguage(window.location.pathname);
+    if (pathLanguage) return pathLanguage;
+
     const urlLanguage = new URLSearchParams(window.location.search).get("lang");
     return isLanguageCode(urlLanguage) ? urlLanguage : null;
   } catch {
@@ -8800,6 +8801,33 @@ export function storeLanguagePreference(language: LanguageCode) {
   writeLocalStorageLanguage(language);
   writeLanguageCookie(language);
   document.documentElement.lang = languageHtmlLang[language];
+}
+
+function writeGoogleTranslateCookieValue(value: string, maxAge: number) {
+  if (typeof document === "undefined") return;
+
+  // Google Translate Web Element reads this legacy cookie in its raw
+  // `/source/target` form.
+  const cookieValue = `${googleTranslateCookieName}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  document.cookie = cookieValue;
+
+  if (typeof window === "undefined") return;
+  const sharedDomain = getSharedLanguageCookieDomain(window.location.hostname);
+  if (sharedDomain) {
+    document.cookie = `${cookieValue}; domain=.${sharedDomain}`;
+  }
+}
+
+export function syncGoogleTranslateCookie(language: LanguageCode) {
+  if (language === "vi") {
+    writeGoogleTranslateCookieValue("", 0);
+    return;
+  }
+
+  writeGoogleTranslateCookieValue(
+    `/vi/${googleTranslateLanguageCode[language]}`,
+    31536000,
+  );
 }
 
 export function normalizeText(value: string) {

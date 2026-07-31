@@ -374,8 +374,10 @@ describe('NightlifeDataService', () => {
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.count.mockResolvedValue(0);
     prisma.booking.count.mockResolvedValue(0);
+    prisma.booking.findMany.mockResolvedValue([]);
     prisma.tourBookingCheckIn.count.mockResolvedValue(0);
     prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.booking.updateMany.mockResolvedValue({ count: 0 });
     prisma.bookingQr.count.mockResolvedValue(0);
     prisma.tourBooking.findMany.mockResolvedValue([]);
     prisma.bill.count.mockResolvedValue(0);
@@ -6995,6 +6997,94 @@ describe('NightlifeDataService', () => {
     logSpy.mockRestore();
   });
 
+  it('completes checked-in bookings after 10 days without a submitted bill', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-11T10:00:00.000Z'));
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        id: 'booking-stale-1',
+        bookingCode: 'BK-STALE01',
+        tourBookingId: null,
+        storeId: 'store-1',
+        castId: null,
+        status: 'CHECKED_IN',
+        scheduledAt: new Date('2026-07-01T09:00:00.000Z'),
+        partySize: 2,
+        subtotalVnd: 0,
+        discountVnd: 0,
+        totalVnd: 0,
+        discountSnapshot: null,
+        note: null,
+        cancelledAt: null,
+        createdAt: new Date('2026-06-30T10:00:00.000Z'),
+        store: {
+          id: 'store-1',
+          name: 'Neon Club',
+          slug: 'neon-club',
+          address: null,
+          openingHours: null,
+          bookingCancelCutoffMinutes: 60,
+          media: [],
+        },
+        cast: null,
+        user: null,
+        guest: null,
+        coupon: null,
+        couponIssue: null,
+        qr: {
+          id: 'qr-1',
+          code: 'QR-1',
+          status: 'USED',
+          usedAt: new Date('2026-07-01T10:00:00.000Z'),
+          expiresAt: new Date('2026-07-02T10:00:00.000Z'),
+        },
+        tourCheckIn: null,
+      },
+    ] as never);
+    prisma.booking.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      service.completeStaleCheckedInBookingsEveryFiveMinutes(),
+    ).resolves.toEqual({ count: 1 });
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'CHECKED_IN',
+          deletedAt: null,
+          bill: { is: null },
+        }),
+      }),
+    );
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-stale-1',
+        status: 'CHECKED_IN',
+        deletedAt: null,
+        bill: { is: null },
+      },
+      data: { status: 'COMPLETED' },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'SYSTEM',
+        action: 'BOOKING_STATUS_CHANGED',
+        targetType: 'Booking',
+        targetId: 'booking-stale-1',
+        metadata: expect.objectContaining({
+          previousStatus: 'CHECKED_IN',
+          nextStatus: 'COMPLETED',
+          checkedInAt: '2026-07-01T10:00:00.000Z',
+          reason: 'BILL_SUBMISSION_DEADLINE_EXPIRED',
+        }),
+      }),
+    });
+    expect(logSpy).toHaveBeenCalledWith(
+      'Completed 1 checked-in booking(s) after the 10-day bill submission deadline.',
+    );
+    logSpy.mockRestore();
+  });
+
   it('lists admin coupon issues by store, coupon, and status', async () => {
     prisma.couponIssue.findMany.mockResolvedValue([
       {
@@ -7386,6 +7476,41 @@ describe('NightlifeDataService', () => {
       ),
     ).rejects.toThrow(UnprocessableEntityException);
 
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects bill submission for a completed member booking', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-completed-1',
+      status: 'COMPLETED',
+      userId: 'member-1',
+      storeId: 'store-1',
+      guestId: null,
+      couponId: null,
+      couponIssueId: null,
+      scheduledAt: new Date('2026-07-01T09:00:00.000Z'),
+      updatedAt: new Date('2026-07-11T10:00:00.000Z'),
+      qr: {
+        usedAt: new Date('2026-07-01T10:00:00.000Z'),
+      },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: null,
+      coupon: null,
+      couponIssue: null,
+    });
+
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
+          bookingId: 'booking-completed-1',
+          totalVnd: 1800000,
+          usedAt: '2026-07-01T10:00:00.000Z',
+        },
+      ),
+    ).rejects.toThrow('Completed booking cannot submit a bill');
+
+    expect(prisma.bill.findFirst).not.toHaveBeenCalled();
     expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
@@ -9245,6 +9370,125 @@ describe('NightlifeDataService', () => {
           pointsReversed: 18,
         }),
       }),
+    });
+  });
+
+  it('completes a checked-in booking when admin verifies its bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-checkin-1',
+      billNumber: 'BILL-CHECKIN-1',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+      booking: {
+        id: 'booking-checkin-1',
+        status: 'CHECKED_IN',
+        scheduledAt: new Date('2026-07-01T09:00:00.000Z'),
+      },
+      user: null,
+      guest: null,
+    });
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-checkin-1',
+      billNumber: 'BILL-CHECKIN-1',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-02T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-02T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+      booking: {
+        id: 'booking-checkin-1',
+        status: 'CHECKED_IN',
+        scheduledAt: new Date('2026-07-01T09:00:00.000Z'),
+      },
+      user: null,
+      guest: null,
+    });
+    prisma.booking.updateMany.mockResolvedValueOnce({ count: 1 });
+    prisma.booking.findUnique.mockResolvedValue({
+      id: 'booking-checkin-1',
+      bookingCode: 'BK-CHECKIN1',
+      tourBookingId: null,
+      storeId: 'store-1',
+      castId: null,
+      status: 'COMPLETED',
+      scheduledAt: new Date('2026-07-01T09:00:00.000Z'),
+      partySize: 2,
+      subtotalVnd: 0,
+      discountVnd: 0,
+      totalVnd: 0,
+      discountSnapshot: null,
+      note: null,
+      cancelledAt: null,
+      createdAt: new Date('2026-06-30T10:00:00.000Z'),
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        address: null,
+        openingHours: null,
+        bookingCancelCutoffMinutes: 60,
+        media: [],
+      },
+      cast: null,
+      user: null,
+      guest: null,
+      coupon: null,
+      couponIssue: null,
+      qr: null,
+    } as never);
+
+    const result = await service.reviewSensitiveBill(
+      'admin-1',
+      'bill-checkin-1',
+      { approve: true },
+    );
+
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-checkin-1',
+        status: 'CHECKED_IN',
+        deletedAt: null,
+      },
+      data: { status: 'COMPLETED' },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'BOOKING_STATUS_CHANGED',
+        targetType: 'Booking',
+        targetId: 'booking-checkin-1',
+        metadata: expect.objectContaining({
+          billId: 'bill-checkin-1',
+          previousStatus: 'CHECKED_IN',
+          nextStatus: 'COMPLETED',
+          reason: 'BILL_VERIFIED',
+        }),
+      }),
+    });
+    expect(result).toMatchObject({
+      id: 'bill-checkin-1',
+      status: 'VERIFIED',
+      booking: {
+        id: 'booking-checkin-1',
+        status: 'COMPLETED',
+      },
     });
   });
 

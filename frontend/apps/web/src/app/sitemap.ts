@@ -12,6 +12,11 @@ import {
 } from "@/lib/api/discovery";
 import { getPublishedLegalSections } from "@/lib/content/legal";
 import { absoluteSiteUrl } from "@/lib/site";
+import {
+  languageAlternates,
+  languageCodes,
+  localizePathname,
+} from "@/lib/i18n/locales";
 
 const staticRoutes: Array<{
   path: string;
@@ -64,6 +69,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: route.changeFrequency,
       priority: route.priority,
     })),
+    ...staticRoutes.flatMap((route) =>
+      languageCodes.map((language) => ({
+        url: absoluteSiteUrl(localizePathname(route.path, language)),
+        lastModified: now,
+        changeFrequency: route.changeFrequency,
+        priority: route.priority,
+        alternates: {
+          languages: Object.fromEntries(
+            Object.entries(languageAlternates(route.path)).map(([locale, path]) => [
+              locale,
+              absoluteSiteUrl(path),
+            ]),
+          ),
+        },
+      })),
+    ),
     ...stores.map((store) => ({
       url: absoluteSiteUrl(`/stores/${store.slug}`),
       lastModified: now,

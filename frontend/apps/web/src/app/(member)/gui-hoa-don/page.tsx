@@ -882,6 +882,7 @@ const validateBillForm = ({
   hasBookedStores,
   hasStore,
   hasConfirmedUsageSource,
+  isCompletedBooking,
   hasExistingBill,
   amountInput,
   amount,
@@ -896,6 +897,7 @@ const validateBillForm = ({
   hasBookedStores: boolean;
   hasStore: boolean;
   hasConfirmedUsageSource: boolean;
+  isCompletedBooking: boolean;
   hasExistingBill: boolean;
   amountInput: string;
   amount: number;
@@ -920,6 +922,10 @@ const validateBillForm = ({
 
   if (!hasConfirmedUsageSource) {
     return "Vui lòng liên kết đặt chỗ hoặc mã ưu đãi đã được quản trị viên hoặc đối tác xác nhận.";
+  }
+
+  if (isCompletedBooking) {
+    return "Booking đã hoàn tất nên không thể gửi hóa đơn nữa.";
   }
 
   if (hasExistingBill) {
@@ -1447,6 +1453,8 @@ export default function Page() {
         hasBookedStores: stores.length > 0,
         hasStore: Boolean(bookingId || storeSlug),
         hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue),
+        isCompletedBooking:
+          selectedBooking?.status.trim().toUpperCase() === "COMPLETED",
         hasExistingBill: Boolean(selectedExistingBill),
         amountInput,
         amount,

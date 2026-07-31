@@ -9,6 +9,11 @@ import {
   portalOrigin,
   type AuthPortal,
 } from "@/lib/auth/hosts";
+import {
+  getPathLanguage,
+  localizedPublicRootPaths,
+  stripLanguagePrefix,
+} from "@/lib/i18n/locales";
 
 type JwtPayload = {
   role?: unknown;
@@ -147,13 +152,24 @@ function redirectPartnerRegistration(request: NextRequest) {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const requestedPathname = request.nextUrl.pathname;
+  const requestedLanguage = getPathLanguage(requestedPathname);
+  const pathname = stripLanguagePrefix(requestedPathname);
   const hostKind = getNightlifeHostKind(getRequestHostname(request));
   const memberPaths = ["/tai-khoan", "/bao-mat-tai-khoan", "/da-luu", "/gui-hoa-don", "/vi-uu-dai"];
   const isMemberPath = memberPaths.some((p) => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith("/partner");
   const isAdminLoginPath = pathname === "/admin/dang-nhap";
   const isAdminPath = pathname.startsWith("/admin") && !isAdminLoginPath;
+
+  if (
+    requestedLanguage &&
+    (pathname.startsWith("/admin") || pathname.startsWith("/partner"))
+  ) {
+    const unprefixedUrl = request.nextUrl.clone();
+    unprefixedUrl.pathname = pathname;
+    return NextResponse.redirect(unprefixedUrl);
+  }
 
   if (hostKind === "auth") {
     if (pathname === "/chuyen-tiep") {
@@ -262,7 +278,26 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", nightlifeOrigins.public));
   }
 
-  return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-vietyoru-locale", requestedLanguage ?? "vi");
+  requestHeaders.set("x-vietyoru-pathname", requestedPathname);
+
+  if (requestedLanguage && !localizedPublicRootPaths.has(pathname)) {
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = pathname;
+    rewriteUrl.searchParams.set("lang", requestedLanguage);
+    return NextResponse.rewrite(rewriteUrl, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {
