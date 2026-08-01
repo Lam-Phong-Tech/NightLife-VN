@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
-import { absoluteSiteUrl } from "@/lib/site";
+import { buildCastMetadata } from "@/lib/seo/cast-metadata";
 import CastProfileClient from "./CastProfileClient";
 import { buildCastStructuredData } from "./cast-profile.schema";
 
@@ -42,32 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   try {
     const cast = await getCastDetail(resolveCastSlug(slug));
-    const canonicalPath = cast.seo.canonicalPath || `/casts/${cast.slug}`;
-    const images = cast.seo.ogImage ? [{ url: cast.seo.ogImage }] : undefined;
-
-    return {
-      title: { absolute: cast.seo.title },
-      description: cast.seo.description,
-      alternates: {
-        canonical: canonicalPath,
-        languages: {
-          vi: canonicalPath,
-          "x-default": canonicalPath,
-        },
-      },
-      openGraph: {
-        title: cast.seo.title,
-        description: cast.seo.description,
-        url: absoluteSiteUrl(canonicalPath),
-        images,
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: cast.seo.title,
-        description: cast.seo.description,
-        images: cast.seo.ogImage ? [cast.seo.ogImage] : undefined,
-      },
-    };
+    return buildCastMetadata(cast);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return {

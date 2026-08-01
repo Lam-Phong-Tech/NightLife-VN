@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getStoreDetail } from "@/lib/api/store-detail";
-import { absoluteSiteUrl } from "@/lib/site";
+import { buildStoreMetadata } from "@/lib/seo/store-metadata";
 import StoreDetailClient from "./StoreDetailClient";
 import { buildStoreStructuredData } from "./store-detail.schema";
 
@@ -39,32 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   try {
     const store = await getStoreDetail(resolveStoreSlug(slug));
-    const canonicalPath = store.seo.canonicalPath || `/stores/${store.slug}`;
-    const images = store.seo.ogImage ? [{ url: store.seo.ogImage }] : undefined;
-
-    return {
-      title: { absolute: store.seo.title },
-      description: store.seo.description,
-      alternates: {
-        canonical: canonicalPath,
-        languages: {
-          vi: canonicalPath,
-          "x-default": canonicalPath,
-        },
-      },
-      openGraph: {
-        title: store.seo.title,
-        description: store.seo.description,
-        url: absoluteSiteUrl(canonicalPath),
-        images,
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: store.seo.title,
-        description: store.seo.description,
-        images: store.seo.ogImage ? [store.seo.ogImage] : undefined,
-      },
-    };
+    return buildStoreMetadata(store);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return {

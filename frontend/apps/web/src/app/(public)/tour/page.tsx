@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
+import { TOUR_PAGE_METADATA } from "@/lib/seo/tour-listing-metadata";
 import { TourClient } from "./TourClient";
 
-export const metadata: Metadata = {
-  title: "Danh sách tour nightlife",
-  description:
-    "Danh sách tour nightlife thật theo dữ liệu quán, ưu đãi và khu vực đang hoạt động trên Vietyoru.",
-  alternates: {
-    canonical: "/tour",
-  },
-};
+export const metadata: Metadata = TOUR_PAGE_METADATA;
 
 export default function TourPage() {
   const structuredData = jsonLdGraph([
