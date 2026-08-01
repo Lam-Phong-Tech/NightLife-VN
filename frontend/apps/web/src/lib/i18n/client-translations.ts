@@ -6226,7 +6226,7 @@ for (const entry of [...entries, ...dynamicPhraseEntries]) {
 
 const termEntries: TranslationEntry[] = [
   {
-    vi: "Ho Chi Minh City",
+    vi: "TP. Hồ Chí Minh",
     en: "Ho Chi Minh City",
     ja: "ホーチミン市",
     ko: "호찌민시",
