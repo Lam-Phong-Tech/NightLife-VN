@@ -26,7 +26,6 @@ export default function robots(): MetadataRoute.Robots {
           "/line-email-consent",
           "/chuyen-tiep",
           "/maintenance",
-          "/trang-thai-he-thong",
           "/blog-chi-tiet",
           "/member",
         ],
