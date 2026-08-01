@@ -1,0 +1,812 @@
+[
+  {
+    "step": "Admin Login",
+    "url": "https://admin.demonightlight.test9.io.vn/admin",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/admin/dang-nhap?portal=admin&redirect=%2Fadmin 408 Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565587461
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565587461
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/admin/dang-nhap?portal=admin&redirect=%2Fadmin - Loading the script 'https://demonightlight.test9.io.vn/shared.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565588007
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:1995 Event",
+        "source": "console-api",
+        "timestamp": 1785565588007
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/admin/dang-nhap?portal=admin&redirect=%2Fadmin - Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565591147
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565591147
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565597734
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565597734
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565597734
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565597734
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/site-favicon - Failed to load resource: the server responded with a status of 404 ()",
+        "source": "network",
+        "timestamp": 1785565597812
+      }
+    ]
+  },
+  {
+    "step": "Member Auth Flow",
+    "url": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Ftai-khoan",
+    "title": "Đăng nhập | Vietyoru",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565600675
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565600675
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565600845
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565600947
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dang-ky - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=utA3JtjnWr8MCq_w') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565604479
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565604479
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dang-ky - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?_rsc=utA3JtjnWr8MCq_w') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565604480
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565604480
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Ftai-khoan - Loading the script 'https://demonightlight.test9.io.vn/shared.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565606020
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:1995 Event",
+        "source": "console-api",
+        "timestamp": 1785565606020
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Ftai-khoan - Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565606292
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565606293
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Ftai-khoan - Access to fetch at 'https://demonightlight.test9.io.vn/quen-mat-khau' (redirected from 'https://auth.demonightlight.test9.io.vn/quen-mat-khau?_rsc=yx9nm_ixmkc4_Jj5') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565606508
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/quen-mat-khau - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565606508
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Ftai-khoan - Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565610099
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565610099
+      }
+    ]
+  },
+  {
+    "step": "Booking & Store Flow",
+    "url": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Flich-su-dat-cho",
+    "title": "Đăng nhập | Vietyoru",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565615819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565615819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565615819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565615819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:46253 Uncaught Error: Minified React error #418; visit https://react.dev… for full errors and additional helpful warnings.",
+        "source": "javascript",
+        "timestamp": 1785565615872
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/ - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?_rsc=5CB68i4pnAekjehf') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565615872
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565615872
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/ - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=5CB68i4pnAekjehf') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565616260
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565616260
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565620383
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565620383
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565620425
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565620438
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/uu-dai - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=89Cz4R9A10onEW-E') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565624253
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565624253
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/uu-dai - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?_rsc=89Cz4R9A10onEW-E') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565625759
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565625759
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565628794
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565628794
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565628866
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565628866
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:46253 Uncaught Error: Minified React error #418; visit https://react.dev… for full errors and additional helpful warnings.",
+        "source": "javascript",
+        "timestamp": 1785565632299
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/tour - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=6cShhJYEYfsObuWu') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565632303
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565632303
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/tour - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?_rsc=6cShhJYEYfsObuWu') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565632306
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565632306
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565646468
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565646468
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565646495
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565646495
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:46253 Uncaught Error: Minified React error #418; visit https://react.dev… for full errors and additional helpful warnings.",
+        "source": "javascript",
+        "timestamp": 1785565649888
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4&_rsc=KvQgFhuCBRRA1mcs') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565649889
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4 - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565649889
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26category%3DCLUB%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26category%3DCLUB%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4&_rsc=KvQgFhuCBRRA1mcs') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565649889
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Fdat-cho%3Fmode%3Dmember%26storeSlug%3Dneon-club%26storeName%3DNeon%2BClub%26category%3DCLUB%26area%3DT%25C3%25A2y%2BH%25E1%25BB%2593%26date%3D2026-08-01%26time%3D21%253A00%26guests%3D4 - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565649889
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=KvQgFhuCBRRA1mcs') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565650129
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565650129
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?_rsc=KvQgFhuCBRRA1mcs') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565650129
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565650129
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565662304
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565662304
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565662305
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565662305
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/lich-su-dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Flich-su-dat-cho' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?redirect=%2Flich-su-dat-cho&_rsc=A3AD2ZZd14PWLm-W') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Flich-su-dat-cho - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/_next/static/chunks/3u9avglhs8qot.js 0:94459 \"Failed to fetch RSC payload for https://demonightlight.test9.io.vn/dang-nhap?redirect=%2Flich-su-dat-cho. Falling back to browser navigation.\" TypeError: Failed to fetch\n    at T (https://demonightlight.test9.io.vn/_next/static/chunks/3u9avglhs8qot.js:1:95358)\n    at async m (https://demonightlight.test9.io.vn/_next/static/chunks/3u9avglhs8qot.js:1:93494)\n    at async m (https://demonightlight.test9.io.vn/_next/static/chunks/3u9avglhs8qot.js:1:115283)",
+        "source": "console-api",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/lich-su-dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan' (redirected from 'https://demonightlight.test9.io.vn/tai-khoan?_rsc=a7-Kj7s6TANsJ-W_') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/lich-su-dat-cho - Access to fetch at 'https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja' (redirected from 'https://demonightlight.test9.io.vn/dang-nhap?lang=ja&_rsc=a7-Kj7s6TANsJ-W_') from origin 'https://demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: Redirect is not allowed for a preflight request.",
+        "source": "javascript",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/?portal=member&redirect=%2Ftai-khoan&lang=ja - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Flich-su-dat-cho - Loading the script 'https://demonightlight.test9.io.vn/shared.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:1995 Event",
+        "source": "console-api",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Flich-su-dat-cho - Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=member&redirect=%2Flich-su-dat-cho - Access to fetch at 'https://demonightlight.test9.io.vn/quen-mat-khau' (redirected from 'https://auth.demonightlight.test9.io.vn/quen-mat-khau?_rsc=yx9nm_ixmkc4_Jj5') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565665543
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/quen-mat-khau - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565665544
+      }
+    ]
+  },
+  {
+    "step": "Partner Portal Flow",
+    "url": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=partner",
+    "title": "Đăng nhập | Vietyoru",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=partner - Loading the script 'https://demonightlight.test9.io.vn/shared.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565666939
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/_next/static/chunks/42-skr4r1257z.js 0:1995 Event",
+        "source": "console-api",
+        "timestamp": 1785565666939
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=partner - Access to fetch at 'https://demonightlight.test9.io.vn/quen-mat-khau' (redirected from 'https://auth.demonightlight.test9.io.vn/quen-mat-khau?_rsc=yx9nm_ixmkc4_Jj5') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565670210
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/quen-mat-khau - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565670210
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://auth.demonightlight.test9.io.vn/dang-nhap?portal=partner - Access to manifest at 'https://demonightlight.test9.io.vn/site.webmanifest' (redirected from 'https://auth.demonightlight.test9.io.vn/site.webmanifest') from origin 'https://auth.demonightlight.test9.io.vn' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        "source": "javascript",
+        "timestamp": 1785565670210
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://demonightlight.test9.io.vn/site.webmanifest - Failed to load resource: net::ERR_FAILED",
+        "source": "network",
+        "timestamp": 1785565670210
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_dashboard",
+    "url": "https://admin.demonightlight.test9.io.vn/admin",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565674819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565674819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565674819
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565674819
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_stores",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/stores",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565676313
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565676313
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565676313
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565676313
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_casts",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/casts",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565680721
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565680721
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565680721
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565680723
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_bills",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/bills",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565686103
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565686103
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565686103
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565686103
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_rankings",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/rankings",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565691981
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565691981
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565692012
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565692055
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_campaigns",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/campaigns",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565723880
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565723880
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565723880
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565723880
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_tours",
+    "url": "https://admin.demonightlight.test9.io.vn/admin/tours",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565735146
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565735146
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565735230
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565735230
+      }
+    ]
+  },
+  {
+    "step": "Admin Page: admin_storage",
+    "url": "https://admin.demonightlight.test9.io.vn/admin",
+    "title": "Vietyoru | Vietnam Nightlife Guide",
+    "console_errors": [
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react@18.3.1/umd/react.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565740241
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1457 Loading the script 'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://accounts.google.com https://static.line-scdn.net https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://www.googletagmanager.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+        "source": "security",
+        "timestamp": 1785565740241
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1524:12 \"[dc] failed to load React or boot:\" Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js\n    at s.onerror (https://admin.demonightlight.test9.io.vn/support.js:1457:32)",
+        "source": "console-api",
+        "timestamp": 1785565740275
+      },
+      {
+        "level": "SEVERE",
+        "message": "https://admin.demonightlight.test9.io.vn/support.js 1456:31 Uncaught Error: failed to load https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "source": "javascript",
+        "timestamp": 1785565740275
+      }
+    ]
+  }
+]
