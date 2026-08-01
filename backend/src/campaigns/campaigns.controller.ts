@@ -19,7 +19,8 @@ import { AuthenticatedUser } from '../access/access.service';
 import { Prisma, CampaignStatus, DiscountType, UserRole } from '@prisma/client';
 import {
   IsString,
-  IsNumber,
+  IsInt,
+  Min,
   IsOptional,
   IsEnum,
   IsDateString,
@@ -33,7 +34,8 @@ export class CreateCampaignDto {
   @IsEnum(DiscountType)
   discountType: DiscountType;
 
-  @IsNumber()
+  @IsInt()
+  @Min(0)
   discountValue: number;
 
   @IsOptional()

@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { CampaignStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CampaignsService } from './campaigns.service';
@@ -35,6 +36,28 @@ describe('CampaignsService', () => {
       },
       data: { status: CampaignStatus.PAUSED },
     });
+  });
+
+  it('runs campaign expiry cleanup every scheduled minute', async () => {
+    prisma.campaign.updateMany.mockResolvedValueOnce({ count: 2 } as never);
+
+    await expect(service.pauseEndedCampaignsOnSchedule()).resolves.toBe(2);
+
+    expect(prisma.campaign.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects percentage discounts above 100%', async () => {
+    await expect(
+      service.create(
+        {
+          name: 'Invalid percent campaign',
+          discountType: 'PERCENT',
+          discountValue: 101,
+          status: CampaignStatus.DRAFT,
+        },
+        { id: 'admin-1', role: 'ADMIN' } as never,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('syncs ended campaigns before returning admin lists', async () => {

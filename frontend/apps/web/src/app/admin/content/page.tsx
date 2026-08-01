@@ -1135,16 +1135,25 @@ export default function AdminContentPage() {
       feedback.showToast({ title: 'Vui lòng nhập tên chương trình', tone: 'error' });
       return;
     }
+
+    const discountValue = Number(campaignDiscountValue.replace(/\D/g, ''));
+    if (
+      campaignDiscountType === 'percent' &&
+      (!Number.isInteger(discountValue) || discountValue < 0 || discountValue > 100)
+    ) {
+      feedback.showToast({ title: 'Mức giảm phần trăm phải từ 0% đến 100%', tone: 'error' });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       const data = {
         name: campaignName,
         discountType: campaignDiscountType === 'percent' ? 'PERCENT' : 'FIXED_AMOUNT',
-        discountValue: parseInt(campaignDiscountValue.replace(/\D/g, '')),
+        discountValue,
         status: campaignStatus === 'Hoạt động' ? 'ACTIVE' : campaignStatus === 'Tạm dừng' ? 'PAUSED' : 'DRAFT',
         startsAt: campaignDates?.[0] ? campaignDates[0].toISOString() : null,
-        endsAt: campaignDates?.[1] ? campaignDates[1].toISOString() : null,
+        endsAt: campaignDates?.[1] ? campaignDates[1].endOf('day').toISOString() : null,
         targetStoreId: campaignLinkedStore?.id || null,
       };
 
@@ -3247,17 +3256,22 @@ export default function AdminContentPage() {
                           : ''
                     }
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
+                      const rawValue = e.target.value.replace(/\D/g, '');
+                      const value = rawValue && campaignDiscountType === 'percent'
+                        ? Math.min(100, Number(rawValue)).toString()
+                        : rawValue;
                       setCampaignDiscountValue(
-                        val
+                        value
                           ? campaignDiscountType === 'percent'
-                            ? `${val}%`
-                            : `${Number(val).toLocaleString('vi-VN')}đ`
+                            ? `${value}%`
+                            : `${Number(value).toLocaleString('vi-VN')}đ`
                           : ''
                       );
                     }}
                     placeholder={campaignDiscountType === 'percent' ? "Hoặc nhập % giảm..." : "Hoặc nhập số tiền giảm..."}
                     inputMode="numeric"
+                    min={campaignDiscountType === 'percent' ? 0 : undefined}
+                    max={campaignDiscountType === 'percent' ? 100 : undefined}
                     style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, outline: 'none' }}
                   />
                   <span style={{ fontSize: '15px', fontWeight: 700, color: '#c5c0b6', width: '40px', textAlign: 'center' }}>
@@ -3314,6 +3328,15 @@ export default function AdminContentPage() {
                       style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '0 15px' }}
                     />
                   </ConfigProvider>
+                  {campaignDates && (
+                    <button
+                      type="button"
+                      onClick={() => setCampaignDates(null)}
+                      style={{ border: '1px solid rgba(212,178,106,.45)', borderRadius: '9px', background: 'rgba(212,178,106,.1)', color: '#f0dda8', padding: '9px 11px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Luôn áp dụng
+                    </button>
+                  )}
                   <span style={{ fontSize: '11px', color: '#57534b' }}>Để trống cả hai = Luôn áp dụng</span>
                 </div>
               </div>

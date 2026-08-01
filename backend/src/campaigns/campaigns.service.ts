@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Campaign, CampaignStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../access/access.service';
@@ -6,7 +7,22 @@ import { adminAuditActorFields } from '../audit-logs/admin-audit';
 
 @Injectable()
 export class CampaignsService {
+  private readonly logger = new Logger(CampaignsService.name);
+
   constructor(private prisma: PrismaService) {}
+
+  private assertValidDiscount(
+    discountType: Campaign['discountType'],
+    discountValue: number,
+  ) {
+    if (!Number.isInteger(discountValue) || discountValue < 0) {
+      throw new BadRequestException('Giá trị giảm phải là số nguyên không âm.');
+    }
+
+    if (discountType === 'PERCENT' && discountValue > 100) {
+      throw new BadRequestException('Mức giảm theo phần trăm không được vượt quá 100%.');
+    }
+  }
 
   private campaignAuditSnapshot(campaign: Campaign) {
     return {
@@ -36,6 +52,15 @@ export class CampaignsService {
     });
 
     return result.count;
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async pauseEndedCampaignsOnSchedule() {
+    const count = await this.pauseEndedCampaigns();
+    if (count > 0) {
+      this.logger.log(`Paused ${count} campaign(s) whose end time has passed.`);
+    }
+    return count;
   }
 
   async findAll(params: {
@@ -118,6 +143,8 @@ export class CampaignsService {
   }
 
   async create(data: Prisma.CampaignCreateInput, actor: AuthenticatedUser) {
+    this.assertValidDiscount(data.discountType, data.discountValue);
+
     return this.prisma.$transaction(async (tx) => {
       const created = await tx.campaign.create({
         data,
@@ -162,6 +189,16 @@ export class CampaignsService {
     if (!existing) {
       throw new NotFoundException(`Campaign with ID ${id} not found`);
     }
+
+    const discountType =
+      typeof data.discountType === 'string'
+        ? data.discountType
+        : existing.discountType;
+    const discountValue =
+      typeof data.discountValue === 'number'
+        ? data.discountValue
+        : existing.discountValue;
+    this.assertValidDiscount(discountType, discountValue);
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.campaign.update({
