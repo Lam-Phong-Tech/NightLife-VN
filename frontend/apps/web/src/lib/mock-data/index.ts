@@ -123,6 +123,5 @@ export const homeCategories = [
   { name: 'Ưu đãi', icon: '/SVG/uu daI.svg', href: '/uu-dai' },
   { name: 'Tour', icon: '/SVG/tim quan.svg', href: '/tour' },
   { name: 'Nhà hàng', icon: '/icons/nha-hang.svg', href: '/nha-hang' },
-  { name: 'Spa', icon: '/SVG/spa.svg', href: '/spa' },
-  { name: 'Hướng dẫn', icon: 'https://img.icons8.com/fluency/96/book.png', href: '/huong-dan' }
+  { name: 'Spa', icon: '/SVG/spa.svg', href: '/spa' }
 ];
