@@ -8935,9 +8935,14 @@ export function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+const vietnameseSourceAliases: Record<string, string> = {
+  Hanoi: "Hà Nội",
+  "Ho Chi Minh City": "TP. Hồ Chí Minh",
+};
+
 export function getVietnameseSource(value: string) {
   const normalized = normalizeText(value);
-  return reverseTranslations.get(normalized) ?? value;
+  return vietnameseSourceAliases[normalized] ?? reverseTranslations.get(normalized) ?? value;
 }
 
 export function translateText(value: string, language: LanguageCode): string {

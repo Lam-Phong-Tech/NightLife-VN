@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { translateText } from "@/lib/i18n/client-translations";
 
 describe("client translations", () => {
+  it("normalizes English city names when Vietnamese is active", () => {
+    expect(translateText("Hanoi", "vi")).toBe("Hà Nội");
+    expect(translateText("Ho Chi Minh City", "vi")).toBe("TP. Hồ Chí Minh");
+  });
+
   it("translates dynamic discovery terms and counters", () => {
     expect(translateText("Club Lumière · Tây Hồ", "ja")).toBe(
       "クラブ・リュミエール · タイホー",
