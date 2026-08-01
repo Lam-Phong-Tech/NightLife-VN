@@ -6233,7 +6233,7 @@ const termEntries: TranslationEntry[] = [
     zh: "胡志明市",
   },
   {
-    vi: "Hanoi",
+    vi: "Hà Nội",
     en: "Hanoi",
     ja: "ハノイ",
     ko: "하노이",
