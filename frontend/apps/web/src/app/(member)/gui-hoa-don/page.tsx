@@ -1712,7 +1712,7 @@ export default function Page() {
                   <div className="nl-receipt-ticket">
                     <div className="nl-receipt-header">
                       <span className="nl-receipt-title">{t("Đơn hàng đang liên kết")}</span>
-                      <strong className="nl-receipt-store">{bookingTitle(selectedBooking)}</strong>
+                      <strong className="nl-receipt-store notranslate" translate="no" data-no-translate="true">{bookingTitle(selectedBooking)}</strong>
                     </div>
                     <div className="nl-receipt-body">
                       <div className="nl-receipt-row">

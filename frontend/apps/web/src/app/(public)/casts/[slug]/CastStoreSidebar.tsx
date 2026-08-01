@@ -25,7 +25,7 @@ export function CastStoreSidebar({
     <aside className="cast-store-sidebar" data-testid="cast-store-sidebar">
       <h2>Quán đang làm</h2>
       <p>
-        <strong style={{ color: "#1f1d29" }}>{profile.store.name}</strong>
+        <strong className="notranslate" translate="no" data-no-translate="true" style={{ color: "#1f1d29" }}>{profile.store.name}</strong>
         <br />
         {area || "Chưa cập nhật khu vực"}
       </p>
@@ -69,7 +69,7 @@ export function CastStoreSidebar({
                   }}
                 />
                 <span>
-                  <strong>{cast.publicAlias ?? cast.name ?? cast.stageName}</strong>
+                  <strong className="notranslate" translate="no" data-no-translate="true">{cast.publicAlias ?? cast.name ?? cast.stageName}</strong>
                   <small>{recommendationLabel(cast)}</small>
                   <span>{cast.languages.slice(0, 2).map(labelLanguage).join(" - ")}</span>
                 </span>

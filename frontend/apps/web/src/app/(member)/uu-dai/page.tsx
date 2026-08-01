@@ -392,7 +392,7 @@ function CampaignDealCard({
         {isVip && <div className="coupon-title-block">{campaignName}</div>}
         
         <div className="coupon-store-info">
-          {storeName}
+          <span className="notranslate" translate="no" data-no-translate="true">{storeName}</span>
           {storeDistrict && ` · ${storeDistrict}`}
           {campaign.endsAt && ` · ${copy.validUntil} ${formatShortDate(campaign.endsAt, language)}`}
         </div>
@@ -598,7 +598,7 @@ export default function Page() {
                 onClick={() => setSelectedStoreId(store.id)}
                 type="button"
               >
-                {readableName(store.name)}
+                <span className="notranslate" translate="no" data-no-translate="true">{readableName(store.name)}</span>
               </button>
             ))}
           </div>

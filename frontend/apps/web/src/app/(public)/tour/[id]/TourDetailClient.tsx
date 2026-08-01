@@ -831,7 +831,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                           <span>{t(categoryLabels[stop.store.category] ?? stop.store.category)}</span>
                           <span>{stop.store.area?.name || stop.store.district || formatCity(tour)}</span>
                         </div>
-                        <h3 className={styles.stopTitle}>{stop.store.name}</h3>
+                        <h3 className={`${styles.stopTitle} notranslate`} translate="no" data-no-translate="true">{stop.store.name}</h3>
                         {stopDescription ? <p className={styles.stopText}>{stopDescription}</p> : null}
                         {couponName ? (
                           <span className={styles.couponPill}>
@@ -892,8 +892,8 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                           }
                         />
                         <span className={styles.castCopy}>
-                          <span className={styles.castName}>{castName(cast)}</span>
-                          <span className={styles.castMeta}>{cast.storeName}</span>
+                          <span className={`${styles.castName} notranslate`} translate="no" data-no-translate="true">{castName(cast)}</span>
+                          <span className={`${styles.castMeta} notranslate`} translate="no" data-no-translate="true">{cast.storeName}</span>
                         </span>
                         {isSelected ? <Check size={17} color="var(--vy-gold)" /> : null}
                       </button>

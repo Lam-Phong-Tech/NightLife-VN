@@ -17,7 +17,7 @@ export const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick, onTakeC
         <PlaceholderMedia src={coupon.img} alt={coupon.title || 'Coupon'} label="" style={{ width: '48px', height: '48px', borderRadius: '11px', flex: 'none' }} />
         <div style={{ flex: '1' }}>
           <div style={{ fontWeight: '700', fontSize: '13.5px' }}>{coupon.title}</div>
-          <div style={{ fontSize: '11px', color: 'var(--vy-muted)', marginTop: '2px' }}>{coupon.place}</div>
+          <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: '11px', color: 'var(--vy-muted)', marginTop: '2px' }}>{coupon.place}</div>
         </div>
         <span onClick={(e) => { e.preventDefault(); if (onTakeClick) { onTakeClick(e); } else if (coupon.take) { coupon.take(); } }} style={{ fontSize: '12px', color: 'var(--vy-gold)', fontWeight: '600' }}>{coupon.btnLabel} ›</span>
       </Link>
@@ -34,7 +34,7 @@ export const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick, onTakeC
       </PlaceholderMedia>
       <div style={{ padding: '14px' }}>
         <div style={{ fontWeight: '700', fontSize: '15px' }}>{coupon.title}</div>
-        <div style={{ fontSize: '12.5px', color: 'var(--vy-muted)', marginTop: '4px' }}>{coupon.place}</div>
+        <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: '12.5px', color: 'var(--vy-muted)', marginTop: '4px' }}>{coupon.place}</div>
         <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '11.5px', color: 'var(--vy-pink)', background: 'var(--vy-surface-2)', borderRadius: '10px', padding: '4px 9px', fontWeight: '600' }}>
             {coupon.expiry}

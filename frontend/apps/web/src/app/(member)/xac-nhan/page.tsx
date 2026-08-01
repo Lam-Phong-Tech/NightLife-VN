@@ -939,12 +939,12 @@ export default function Page() {
               />
               {booking.tour ? (
                 <>
-                  <SummaryRow label={tourCopy.tourLabel} value={title} />
+                  <SummaryRow label={tourCopy.tourLabel} value={<span className="notranslate" translate="no" data-no-translate="true">{title}</span>} />
                   <TourVenueSummary booking={booking} language={activeLanguage} />
                 </>
               ) : (
                 <>
-                  <SummaryRow label={translateText("Quán", activeLanguage)} value={title} />
+                  <SummaryRow label={translateText("Quán", activeLanguage)} value={<span className="notranslate" translate="no" data-no-translate="true">{title}</span>} />
                   {bookedStoreAddress ? (
                     <SummaryRow
                       label={translateText("Địa chỉ", activeLanguage)}
@@ -1084,11 +1084,11 @@ function TourVenueSummary({ booking, language }: { booking: BookingRecord; langu
           <div key={`${stop.storeId}-${stop.order}`} className={styles.tourVenueItem}>
             <span className={styles.tourVenueIndex}>{stop.order || index + 1}</span>
             <span className={styles.tourVenueCopy}>
-              <strong>{stop.storeName}</strong>
+              <strong className="notranslate" translate="no" data-no-translate="true">{stop.storeName}</strong>
               <span className={styles.tourVenueCasts}>
                 {stop.casts.length ? (
                   stop.casts.map((cast) => (
-                    <span key={cast.id} className={styles.tourCastChip}>
+                    <span key={cast.id} className={`${styles.tourCastChip} notranslate`} translate="no" data-no-translate="true">
                       {cast.name}
                     </span>
                   ))

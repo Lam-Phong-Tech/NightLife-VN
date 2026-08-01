@@ -481,7 +481,7 @@ function SavedCard({
       <Link href={href} className="saved-link">
         <span className="saved-photo" style={{ backgroundImage: image ? `url("${image}")` : undefined }} />
         <span className="saved-copy">
-          <strong>{title}</strong>
+          <strong className="notranslate" translate="no" data-no-translate="true">{title}</strong>
           <small>{meta || savedFallback}</small>
           <em>
             <Star size={13} fill="currentColor" />

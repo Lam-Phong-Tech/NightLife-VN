@@ -18,7 +18,7 @@ const translatedAttributes = ["placeholder", "aria-label", "title", "alt"] as co
 const valueSourceKey = "data-vietyoru-i18n-value";
 const manualTranslationMarker = "data-vietyoru-i18n-translated";
 const skippedElementSelector =
-  "script, style, noscript, code, pre, textarea, svg, [data-no-translate='true']";
+  "script, style, noscript, code, pre, textarea, svg, [data-no-translate='true'], [translate='no'], .notranslate";
 
 function looksLikeSelectedLanguage(value: string, language: LanguageCode) {
   if (language === "ja") return /[\u3040-\u30ff\u3400-\u9fff]/u.test(value);
@@ -82,7 +82,7 @@ function translateTextNode(node: Text, language: LanguageCode) {
 }
 
 function translateElementAttributes(element: HTMLElement, language: LanguageCode) {
-  if (element.closest("[data-no-translate='true']")) return;
+  if (element.closest("[data-no-translate='true'], [translate='no'], .notranslate")) return;
 
   let translatedByI18n = false;
   for (const attribute of translatedAttributes) {

@@ -1302,7 +1302,7 @@ function BookingCard({
               <span className={styles.historyThumb} style={thumbnailStyle} />
               <div className={styles.historyCopy}>
                 <div className={styles.historyHead}>
-                  <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
+                  <h2 className={`${styles.historyTitle} notranslate`} translate="no" data-no-translate="true">{bookingTitle(booking)}</h2>
                   {group !== "Đã hủy" ? (
                     <StatusBadge booking={booking} activeLanguage={activeLanguage} />
                   ) : null}
@@ -1312,7 +1312,7 @@ function BookingCard({
                   {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
                   {formatGuestCount(booking.partySize, activeLanguage)}
                 </div>
-                <div className={styles.historyTourMeta}>
+                <div className={`${styles.historyTourMeta} notranslate`} translate="no" data-no-translate="true">
                   {tourStopsPreview(booking, activeLanguage)}
                 </div>
               </div>
@@ -1325,7 +1325,7 @@ function BookingCard({
             <span className={styles.historyThumb} style={thumbnailStyle} />
             <div className={styles.historyCopy}>
               <div className={styles.historyHead}>
-                <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
+                <h2 className={`${styles.historyTitle} notranslate`} translate="no" data-no-translate="true">{bookingTitle(booking)}</h2>
                 {group !== "Đã hủy" ? (
                   <StatusBadge booking={booking} activeLanguage={activeLanguage} />
                 ) : null}
@@ -1466,8 +1466,8 @@ function TourStopsPreview({
         <div key={`${stop.storeId}-${stop.order}-${index}`} className={styles.historyTourStop}>
           <span className={styles.historyTourStopIndex}>{stop.order || index + 1}</span>
           <span className={styles.historyTourStopCopy}>
-            <strong>{stop.storeName}</strong>
-            <small>
+            <strong className="notranslate" translate="no" data-no-translate="true">{stop.storeName}</strong>
+            <small className={stop.casts.length ? "notranslate" : undefined} translate={stop.casts.length ? "no" : undefined} data-no-translate={stop.casts.length ? "true" : undefined}>
               {stop.casts.length
                 ? stop.casts.map((cast) => cast.name).join(" · ")
                 : copy.adminSelectCastByStop}

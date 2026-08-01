@@ -474,7 +474,7 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
             {tour.stops.slice(0, 3).map((stop) => (
               <Link key={stop.id} href={`/stores/${stop.store.slug}`}>
                 <span>{stop.order}</span>
-                <strong>{stop.store.name}</strong>
+                <strong className="notranslate" translate="no" data-no-translate="true">{stop.store.name}</strong>
                 <em>{localize(categoryLabels[stop.store.category] ?? stop.store.category, language)}</em>
               </Link>
             ))}

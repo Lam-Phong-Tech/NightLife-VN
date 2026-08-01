@@ -159,8 +159,8 @@ export function CastRelatedCasts({ relatedCasts, variant, language, onTrack }: R
               }}
             />
             <span className="cast-related-copy">
-              <strong>{cast.publicAlias ?? cast.name ?? cast.stageName}</strong>
-              <small>{cast.store.name}</small>
+              <strong className="notranslate" translate="no" data-no-translate="true">{cast.publicAlias ?? cast.name ?? cast.stageName}</strong>
+              <small className="notranslate" translate="no" data-no-translate="true">{cast.store.name}</small>
               <em>{recommendationLabel(cast, language)}</em>
             </span>
           </Link>
@@ -242,7 +242,7 @@ function VenueCard({
       <span className="cast-venue-media" style={{ background: mediaBg(storeImage) }} />
       <span className="cast-venue-copy">
         <span className="cast-venue-head">
-          <strong>{profile.store.name}</strong>
+          <strong className="notranslate" translate="no" data-no-translate="true">{profile.store.name}</strong>
         </span>
         <small>
           {localizeCastText(profile.store.category || "Lounge", language)} · {area || copy.areaUpdating}

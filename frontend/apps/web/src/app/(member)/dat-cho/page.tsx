@@ -842,9 +842,9 @@ export default function Page() {
                 }}
               />
               <div className={styles.venueCopy}>
-                <div className={styles.venueName}>{targetLabel}</div>
+                <div className={`${styles.venueName} notranslate`} translate="no" data-no-translate="true">{targetLabel}</div>
                 <div className={styles.venueMeta}>
-                  {!isServiceOnlyBooking && context.castName ? context.storeName : translateText("Lounge cao cấp", activeLanguage)}{" "}
+                  {!isServiceOnlyBooking && context.castName ? <span className="notranslate" translate="no" data-no-translate="true">{context.storeName}</span> : translateText("Lounge cao cấp", activeLanguage)}{" "}
                   · {context.area ? translateText(context.area, activeLanguage) : "NightLife"}
                 </div>
                 {context.couponIssueId || context.couponId ? (
