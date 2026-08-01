@@ -17,6 +17,10 @@ import {
   languageCodes,
   localizePathname,
 } from "@/lib/i18n/locales";
+import { SITEMAP_STORE_LIMIT, SITEMAP_CAST_LIMIT } from "@/lib/seo/sitemap-limits";
+
+// Cache sitemap for 1 hour via ISR — prevents hammering the API on every bot crawl
+export const revalidate = 3600;
 
 const staticRoutes: Array<{
   path: string;
@@ -41,8 +45,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     [stores, casts] = await Promise.all([
-      discoveryApi.listStores({ limit: 50, sort: "priority" }),
-      discoveryApi.listCasts({ limit: 50, sort: "priority" }),
+      discoveryApi.listStores({ limit: SITEMAP_STORE_LIMIT, sort: "priority" }),
+      discoveryApi.listCasts({ limit: SITEMAP_CAST_LIMIT, sort: "priority" }),
     ]);
   } catch {
     stores = [];

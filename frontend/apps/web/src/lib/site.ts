@@ -10,7 +10,7 @@ export const siteConfig = {
   tagline: "Vietnam Nightlife Guide",
   url: normalizedSiteUrl.replace(/\/$/, ""),
   description:
-    "Kham pha quan nightlife, cast, uu dai va cam nang di dem tai Viet Nam tren Vietyoru.",
+    "Khám phá quán nightlife, cast, ưu đãi và cẩm nang đi đêm tại Việt Nam trên Vietyoru.",
 };
 
 export const absoluteSiteUrl = (path = "/") => {
