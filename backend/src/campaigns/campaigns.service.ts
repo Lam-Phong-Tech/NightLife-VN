@@ -71,8 +71,21 @@ export class CampaignsService {
       this.prisma.campaign.count({ where }),
     ]);
 
+    const normalizedData = data.map((campaign) => ({
+      ...campaign,
+      targetStore: campaign.targetStore
+        ? {
+            ...campaign.targetStore,
+            district:
+              campaign.targetStore.district?.trim() ||
+              campaign.targetStore.area?.district?.trim() ||
+              null,
+          }
+        : null,
+    }));
+
     return {
-      data,
+      data: normalizedData,
       total,
       page: Math.floor(skip / take) + 1,
       limit: take,

@@ -10,7 +10,16 @@ export interface CampaignItem {
     id: string;
     name: string;
     category: string;
-    area: string;
+    area?:
+      | string
+      | {
+          id: string;
+          name: string;
+          city: string;
+          district?: string | null;
+          ward?: string | null;
+        }
+      | null;
     slug: string;
     city: string;
     district?: string | null;
@@ -22,6 +31,20 @@ export interface CampaignItem {
   createdAt: string;
   updatedAt: string;
 }
+
+export const campaignStoreDistrict = (
+  store: CampaignItem['targetStore'],
+): string => {
+  const directDistrict = store?.district?.trim();
+  if (directDistrict) return directDistrict;
+
+  const areaDistrict =
+    store?.area && typeof store.area === 'object'
+      ? store.area.district?.trim()
+      : undefined;
+
+  return areaDistrict || '';
+};
 
 export const campaignsApi = {
   listPublicCampaigns: async (params?: { page?: number; limit?: number }): Promise<CampaignItem[]> => {

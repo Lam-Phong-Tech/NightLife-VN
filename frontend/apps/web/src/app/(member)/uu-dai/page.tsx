@@ -7,7 +7,11 @@ import {
   Ticket,
 } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
-import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
+import {
+  campaignStoreDistrict,
+  campaignsApi,
+  type CampaignItem,
+} from "@/lib/api/campaigns";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
@@ -354,6 +358,7 @@ function CampaignDealCard({
   nowMs: number;
 }) {
   const storeName = readableName(campaign.targetStore!.name);
+  const storeDistrict = campaignStoreDistrict(campaign.targetStore);
   const campaignName = readableName(campaign.name);
   const isVip = campaign.name.toUpperCase().includes("VIP");
 
@@ -387,7 +392,8 @@ function CampaignDealCard({
         {isVip && <div className="coupon-title-block">{campaignName}</div>}
         
         <div className="coupon-store-info">
-          {storeName} · {campaign.targetStore?.district || ""}
+          {storeName}
+          {storeDistrict && ` · ${storeDistrict}`}
           {campaign.endsAt && ` · ${copy.validUntil} ${formatShortDate(campaign.endsAt, language)}`}
         </div>
 
@@ -494,7 +500,7 @@ export default function Page() {
             campaign.name,
             campaign.targetStore!.name,
             campaign.targetStore!.city,
-            campaign.targetStore!.district ?? "",
+            campaignStoreDistrict(campaign.targetStore),
           ].join(" "),
         );
         return searchable.includes(query);

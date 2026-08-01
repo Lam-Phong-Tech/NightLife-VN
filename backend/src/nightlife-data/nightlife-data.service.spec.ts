@@ -772,6 +772,43 @@ describe('NightlifeDataService', () => {
         data: expect.objectContaining({
           name: 'Meo Meo',
           areaId: 'area-ninhbinh-general',
+          district: 'Tong hop',
+        }),
+      }),
+    );
+  });
+
+  it('syncs district from the inferred area when admin updates a store address', async () => {
+    prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
+      id: 'store-1',
+      name: 'Clever Lounge',
+      status: 'ACTIVE',
+      city: 'Hanoi',
+      address: 'Old address',
+    });
+    prisma.area.findMany.mockResolvedValueOnce([
+      {
+        id: 'area-ba-dinh',
+        code: 'hn-badinh',
+        name: 'Ba Dinh',
+        city: 'Ha Noi',
+        district: 'Ba Dinh',
+        ward: 'Cong Vi',
+      },
+    ] as never);
+    prisma.store.update.mockResolvedValueOnce({ id: 'store-1' });
+
+    await service.updateAdminStore(adminActor, 'store-1', {
+      city: 'Hanoi',
+      address: 'Cong Vi, Ba Dinh, Hanoi',
+    });
+
+    expect(prisma.store.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'store-1' },
+        data: expect.objectContaining({
+          areaId: 'area-ba-dinh',
+          district: 'Ba Dinh',
         }),
       }),
     );

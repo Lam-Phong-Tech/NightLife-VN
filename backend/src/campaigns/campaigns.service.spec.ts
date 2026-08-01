@@ -46,4 +46,22 @@ describe('CampaignsService', () => {
       prisma.campaign.findMany.mock.invocationCallOrder[0],
     );
   });
+
+  it('falls back to the related area district for campaign stores', async () => {
+    prisma.campaign.findMany.mockResolvedValueOnce([
+      {
+        id: 'campaign-1',
+        targetStore: {
+          id: 'store-1',
+          district: ' ',
+          area: { district: 'Ba Dinh' },
+        },
+      },
+    ] as never);
+    prisma.campaign.count.mockResolvedValueOnce(1 as never);
+
+    const result = await service.findAll({ skip: 0, take: 10 });
+
+    expect(result.data[0]?.targetStore?.district).toBe('Ba Dinh');
+  });
 });

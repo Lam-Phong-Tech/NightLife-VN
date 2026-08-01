@@ -23786,11 +23786,11 @@ export class NightlifeDataService {
       .replace(/(^-|-$)/g, '');
   }
 
-  private async inferAreaFromAddress(
+  private async inferAreaFromAddressDetails(
     address: string,
     city: string,
     client: NightlifePrismaClient = this.prisma,
-  ): Promise<string | undefined> {
+  ): Promise<{ id: string; district: string | null } | undefined> {
     const provinceArea = resolveVietnamProvinceArea(city);
     const cityNames = vietnamAreaCityLookupNames(city);
     const cityWhere: Prisma.AreaWhereInput = provinceArea
@@ -23818,14 +23818,14 @@ export class NightlifeDataService {
       (area) =>
         area.ward && addressToken.includes(this.normalizeToken(area.ward)),
     );
-    if (wardArea) return wardArea.id;
+    if (wardArea) return wardArea;
 
     for (const area of areas) {
       if (
         area.district &&
         addressToken.includes(this.normalizeToken(area.district))
       ) {
-        return area.id;
+        return area;
       }
     }
 
@@ -23834,11 +23834,20 @@ export class NightlifeDataService {
         area.code === provinceArea?.areaCode ||
         this.normalizeToken(area.name) === 'tong-hop',
     );
-    if (generalArea) return generalArea.id;
+    if (generalArea) return generalArea;
 
     // Fallback: just return the first active area in that city.
-    if (areas.length > 0) return areas[0].id;
+    if (areas.length > 0) return areas[0];
     return undefined;
+  }
+
+  private async inferAreaFromAddress(
+    address: string,
+    city: string,
+    client: NightlifePrismaClient = this.prisma,
+  ): Promise<string | undefined> {
+    const area = await this.inferAreaFromAddressDetails(address, city, client);
+    return area?.id;
   }
 
   async createAdminStore(
@@ -23856,8 +23865,10 @@ export class NightlifeDataService {
       dto.ward,
       dto.city,
     );
-    let areaId: string | undefined;
-    areaId = await this.inferAreaFromAddress(storeAddress || '', dto.city);
+    const inferredArea = await this.inferAreaFromAddressDetails(
+      storeAddress || '',
+      dto.city,
+    );
     const scopedStoreMediaIds =
       dto.mediaIds && dto.mediaIds.length > 0
         ? (
@@ -23875,6 +23886,7 @@ export class NightlifeDataService {
           slug,
           category: dto.category,
           city: dto.city,
+          district: inferredArea?.district,
           address: storeAddress,
           mapUrl: dto.mapUrl,
           phone: dto.phone,
@@ -23883,7 +23895,7 @@ export class NightlifeDataService {
           openingHours: dto.openingHours,
           pricingInfo: dto.pricingInfo,
           status: dto.status || 'ACTIVE',
-          areaId,
+          areaId: inferredArea?.id,
           ...(scopedStoreMediaIds.length > 0
             ? {
                 media: {
@@ -23946,9 +23958,9 @@ export class NightlifeDataService {
             dto.city ?? existing.city,
           )
         : undefined;
-    let areaId: string | undefined;
+    let inferredArea: { id: string; district: string | null } | undefined;
     if (storeAddress !== undefined || dto.city) {
-      areaId = await this.inferAreaFromAddress(
+      inferredArea = await this.inferAreaFromAddressDetails(
         (storeAddress ?? existing.address) || '',
         dto.city || existing.city,
       );
@@ -23972,6 +23984,7 @@ export class NightlifeDataService {
           ...(slug && { slug }),
           ...(dto.category && { category: dto.category }),
           ...(dto.city && { city: dto.city }),
+          ...(inferredArea && { district: inferredArea.district }),
           ...(storeAddress && { address: storeAddress }),
           ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
@@ -23986,7 +23999,7 @@ export class NightlifeDataService {
             pricingInfo: dto.pricingInfo,
           }),
           ...(dto.status && { status: dto.status }),
-          ...(areaId && { areaId }),
+          ...(inferredArea && { areaId: inferredArea.id }),
           ...(scopedStoreMediaIds
             ? {
                 media: {
