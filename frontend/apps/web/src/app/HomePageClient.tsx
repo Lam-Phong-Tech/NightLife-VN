@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import React, { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -1083,6 +1083,11 @@ const homeBannerAutoDelayMs = 7200;
 
 const homeBannerSlideTransition = "transform 960ms cubic-bezier(.22,.78,.22,1), opacity 960ms ease";
 
+// Set NEXT_PUBLIC_HIDE_UNTRANSLATED_BANNER_COPY=false to immediately restore
+// the previous behaviour if we no longer want to wait for client-side translation.
+const hideUntranslatedBannerCopy = process.env.NEXT_PUBLIC_HIDE_UNTRANSLATED_BANNER_COPY !== "false";
+const bannerTranslationFallbackDelayMs = 2600;
+
 const homeHotVideosPlaceholderText = "Video Hot đang được chuẩn bị.";
 
 const homeSectionTitleFallbacks = {
@@ -1202,6 +1207,69 @@ function translateBannerPresetText(value: string | null | undefined, language: L
   }
 
   return source;
+}
+
+function hasVietnameseCharacters(value: string) {
+  return /[\u00c0-\u1ef9\u0102\u0103\u0110\u0111\u00c2\u00e2\u00ca\u00ea\u00d4\u00f4\u01a0\u01a1\u01af\u01b0]/u.test(value);
+}
+
+function useBannerCopyTranslationReady(
+  language: LanguageCode,
+  sourceText: string[],
+) {
+  const copyRef = useRef<HTMLDivElement>(null);
+  const requiresTranslation =
+    hideUntranslatedBannerCopy &&
+    language !== "vi" &&
+    sourceText.some((text) => hasVietnameseCharacters(text));
+  const sourceKey = sourceText.join("\u0000");
+  const previousSourceKeyRef = useRef(sourceKey);
+  const [isReady, setIsReady] = useState(() => !requiresTranslation);
+
+  // Reset during render when a new slide is selected, before it can paint its
+  // Vietnamese source copy. React immediately re-renders with the hidden state.
+  if (previousSourceKeyRef.current !== sourceKey) {
+    previousSourceKeyRef.current = sourceKey;
+    const nextReady = !requiresTranslation;
+    if (isReady !== nextReady) setIsReady(nextReady);
+  }
+
+  useLayoutEffect(() => {
+    if (!requiresTranslation) {
+      setIsReady(true);
+      return undefined;
+    }
+
+    setIsReady(false);
+    const sourceFragments = sourceText
+      .map((text) => text.trim())
+      .filter(hasVietnameseCharacters);
+    const isTranslated = () => {
+      const renderedText = copyRef.current?.textContent ?? "";
+      return sourceFragments.every((source) => !renderedText.includes(source));
+    };
+    const revealWhenTranslated = () => {
+      if (isTranslated()) setIsReady(true);
+    };
+
+    revealWhenTranslated();
+    const observer = new MutationObserver(revealWhenTranslated);
+    if (copyRef.current) {
+      observer.observe(copyRef.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
+    const fallbackTimer = window.setTimeout(() => setIsReady(true), bannerTranslationFallbackDelayMs);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(fallbackTimer);
+    };
+  }, [language, requiresTranslation, sourceKey]);
+
+  return { copyRef, isReady };
 }
 
 function BannerMediaSlides({
@@ -1397,6 +1465,12 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
 
   const event = banners[activeBanner] ?? banners[0] ?? null;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
+  const { copyRef, isReady: isBannerCopyReady } = useBannerCopyTranslationReady(
+    activeLanguage,
+    event
+      ? [event.title, event.desc, event.btnText, event.statusLabel ?? "", event.subtitle ?? ""]
+      : [],
+  );
 
   useEffect(() => {
     if (process.env.NODE_ENV === "test" || banners.length < 2) return;
@@ -1511,7 +1585,17 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
+      <div
+        key={event.title}
+        ref={copyRef}
+        aria-busy={!isBannerCopyReady}
+        style={{
+          position: "relative",
+          zIndex: 1,
+          animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)",
+          visibility: isBannerCopyReady ? "visible" : "hidden",
+        }}
+      >
         {event.statusLabel && (
           <span
             className="nl-home-hero-status"
@@ -1634,6 +1718,10 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
   }, [apiBanners]);
   const event = banners[activeBanner] ?? banners[0] ?? null;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
+  const { copyRef, isReady: isBannerCopyReady } = useBannerCopyTranslationReady(
+    activeLanguage,
+    event ? [event.title, event.desc, event.btnText] : [],
+  );
 
   useEffect(() => {
     if (process.env.NODE_ENV === "test" || banners.length < 2) return;
@@ -1746,7 +1834,18 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
+      <div
+        key={event.title}
+        ref={copyRef}
+        aria-busy={!isBannerCopyReady}
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: desktop ? "520px" : "248px",
+          animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)",
+          visibility: isBannerCopyReady ? "visible" : "hidden",
+        }}
+      >
         <div
           style={{
             display: "inline-flex",
