@@ -162,6 +162,22 @@ export function middleware(request: NextRequest) {
   const isAdminLoginPath = pathname === "/admin/dang-nhap";
   const isAdminPath = pathname.startsWith("/admin") && !isAdminLoginPath;
 
+  const isMaintenanceMode =
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+    process.env.MAINTENANCE_MODE === "true";
+
+  if (pathname === "/maintenance") {
+    if (!isMaintenanceMode) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  } else if (
+    isMaintenanceMode &&
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/api")
+  ) {
+    return NextResponse.redirect(new URL("/maintenance", request.url));
+  }
+
   if (
     requestedLanguage &&
     (pathname.startsWith("/admin") || pathname.startsWith("/partner"))
