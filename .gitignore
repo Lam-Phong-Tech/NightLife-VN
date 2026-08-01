@@ -1,6 +1,8 @@
+node_modules/
 .localappdata/
 .pnpm-config/
 .pnpm-home/
 .pnpm-store-local/
 .pnpm-store/
 docker-compose.yml
+*.log
