@@ -1767,10 +1767,11 @@ export function SiteChrome({
     };
   }, []);
 
-  useEffect(() => {
+  // Apply the cached admin configuration before the first browser paint.
+  // Otherwise the default icons render briefly before the cache is read.
+  useLayoutEffect(() => {
     let cancelled = false;
 
-    // Load cached config immediately on mount to prevent layout shift and delay
     const cached = getCachedAppearanceConfig();
     if (cached) {
       setAppearanceBottomNav(cached.nav.map(mapAppearanceNavItem));
