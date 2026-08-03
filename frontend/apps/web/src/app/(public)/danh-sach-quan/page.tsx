@@ -40,6 +40,12 @@ import {
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
+import {
+  getFallbackAreaOptions,
+  isAllowedAreaForCity,
+  isGenericDiscoveryArea,
+  normalizeDiscoveryAreaKey,
+} from "@/lib/discovery-area-options";
 
 type Coordinates = {
   lat: number;
@@ -146,30 +152,6 @@ const sortLabels: Record<DiscoverySort, string> = {
   nearest: "Gần nhất",
   newest: "Mới nhất",
 };
-
-const fallbackAreaOptionsByCity: Record<string, FilterOption[]> = {
-  hn: [
-    { value: "Ba Đình", label: "Ba Đình" },
-    { value: "Tây Hồ", label: "Tây Hồ" },
-    { value: "Cầu Giấy", label: "Cầu Giấy" },
-    { value: "Nam Từ Liêm", label: "Nam Từ Liêm" },
-    { value: "Hoàn Kiếm", label: "Hoàn Kiếm" },
-    { value: "Hai Bà Trưng", label: "Hai Bà Trưng" },
-  ],
-  hcm: [
-    { value: "Quận 1", label: "Quận 1" },
-    { value: "Quận 3", label: "Quận 3" },
-    { value: "Quận 7", label: "Quận 7" },
-    { value: "Thảo Điền", label: "Thảo Điền" },
-    { value: "Bình Thạnh", label: "Bình Thạnh" },
-    { value: "Phú Nhuận", label: "Phú Nhuận" },
-  ],
-};
-
-const getFallbackAreaOptions = (cityCode: string) =>
-  cityCode
-    ? fallbackAreaOptionsByCity[cityCode] ?? []
-    : Object.values(fallbackAreaOptionsByCity).flat();
 
 const categoryTags: Record<string, string[]> = {
   BAR: ["Live music", "Rooftop", "Whisky bar"],
@@ -286,41 +268,6 @@ const englishSortLabels: Record<DiscoverySort, string> = {
   priority: "Popular",
   nearest: "Nearest",
   newest: "Newest",
-};
-
-const normalizeAreaKey = (value?: string | null) =>
-  (value ?? "")
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-const allowedAreaKeysByCity = Object.fromEntries(
-  Object.entries(fallbackAreaOptionsByCity).map(([cityCode, options]) => [
-    cityCode,
-    new Set(options.map((option) => normalizeAreaKey(option.label))),
-  ]),
-) as Record<string, Set<string>>;
-
-const isAllowedAreaForCity = (cityCode: string, areaName?: string | null) => {
-  const allowedKeys = allowedAreaKeysByCity[cityCode];
-  if (!allowedKeys) return true;
-  return allowedKeys.has(normalizeAreaKey(areaName));
-};
-
-const isGenericArea = (area: PublicArea) => {
-  const code = normalizeAreaKey(area.code);
-  const name = normalizeAreaKey(area.name);
-  const district = normalizeAreaKey(area.district);
-
-  return (
-    code.endsWith("-tong-hop") ||
-    code.endsWith("-general") ||
-    ["tong-hop", "general", "all"].includes(name) ||
-    ["tong-hop", "general", "all"].includes(district)
-  );
 };
 
 const getVenueCopy = (language: LanguageCode): VenueSearchCopy => {
@@ -927,11 +874,11 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
     const seenAreaLabels = new Set<string>();
     const dynamicOptions = areas.reduce<FilterOption[]>((options, item) => {
-      if (isGenericArea(item)) return options;
+      if (isGenericDiscoveryArea(item)) return options;
 
       const labelSource = item.name || item.district || item.city;
       const value = item.code || item.name || item.district || item.city;
-      const dedupeKey = normalizeAreaKey(labelSource);
+      const dedupeKey = normalizeDiscoveryAreaKey(labelSource);
 
       if (!isAllowedAreaForCity(city, labelSource)) return options;
       if (!value || !dedupeKey || seenAreaLabels.has(dedupeKey)) return options;
@@ -946,7 +893,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     }, []);
 
     const fallbackOptions = getFallbackAreaOptions(city).reduce<FilterOption[]>((options, option) => {
-      const dedupeKey = normalizeAreaKey(option.label);
+      const dedupeKey = normalizeDiscoveryAreaKey(option.label);
       if (!dedupeKey || seenAreaLabels.has(dedupeKey)) return options;
 
       seenAreaLabels.add(dedupeKey);

@@ -54,6 +54,12 @@ import {
   type SavedFavoriteCast,
 } from "@/lib/member-favorites";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
+import {
+  getFallbackAreaOptions,
+  isAllowedAreaForCity,
+  isGenericDiscoveryArea,
+  normalizeDiscoveryAreaKey,
+} from "@/lib/discovery-area-options";
 
 type Coordinates = {
   lat: number;
@@ -254,21 +260,6 @@ const stripCastVietnameseMarks = (value: string) =>
     .replace(/\bQuan\b/g, "District")
     .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
 
-const normalizeCastFilterOptionLabel = (value: string) =>
-  stripCastVietnameseMarks(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-const generalAreaLabels = new Set([
-  "tong hop",
-  "general",
-  "all",
-  "tat ca",
-  "vietnam",
-  "viet nam",
-]);
-
 const getCastAreaOptionLabel = (area: PublicArea, language: LanguageCode) => {
   const localizedArea = getFilterAreaLabel(area.name, language);
   if (localizedArea !== area.name) return localizedArea;
@@ -277,30 +268,37 @@ const getCastAreaOptionLabel = (area: PublicArea, language: LanguageCode) => {
 
 const buildCastAreaOptions = (
   areas: PublicArea[],
+  city: string,
   language: LanguageCode,
   allLabel: string,
 ): Option[] => {
+  if (!city) return [{ value: "", label: allLabel }];
+
   const seen = new Set<string>();
   const options: Option[] = [{ value: "", label: allLabel }];
 
   areas.forEach((area) => {
     if (!area.code || !area.name) return;
+    if (isGenericDiscoveryArea(area) || !isAllowedAreaForCity(city, area.name)) return;
 
     const label = getCastAreaOptionLabel(area, language);
-    const normalizedSourceLabel = normalizeCastFilterOptionLabel(area.name);
-    const normalizedLabel = normalizeCastFilterOptionLabel(label);
+    const normalizedLabel = normalizeDiscoveryAreaKey(label);
 
-    if (
-      !normalizedLabel ||
-      generalAreaLabels.has(normalizedSourceLabel) ||
-      generalAreaLabels.has(normalizedLabel) ||
-      seen.has(normalizedLabel)
-    ) {
-      return;
-    }
+    if (!normalizedLabel || seen.has(normalizedLabel)) return;
 
     seen.add(normalizedLabel);
     options.push({ value: area.code, label });
+  });
+
+  getFallbackAreaOptions(city).forEach((option) => {
+    const normalizedLabel = normalizeDiscoveryAreaKey(option.label);
+    if (!normalizedLabel || seen.has(normalizedLabel)) return;
+
+    seen.add(normalizedLabel);
+    options.push({
+      ...option,
+      label: getFilterAreaLabel(option.label, language),
+    });
   });
 
   return options;
@@ -706,8 +704,8 @@ export default function Page() {
   }, [casts, copy.all]);
 
   const areaOptions = useMemo<Option[]>(
-    () => buildCastAreaOptions(areas, activeLanguage, copy.all),
-    [activeLanguage, areas, copy.all],
+    () => buildCastAreaOptions(areas, city, activeLanguage, copy.all),
+    [activeLanguage, areas, city, copy.all],
   );
 
   const topRankingOrder = useMemo(
@@ -1584,7 +1582,6 @@ function CastFilterPanel({
       <div className="cast-sheet-scroll hscroll">
         <div className="cast-filter-layout">
           <section className="cast-filter-column" aria-label={copy.filterLocation}>
-            <h3 className="cast-filter-column-title">{copy.filterLocation}</h3>
             <FilterChipGroup
               label={copy.city}
               options={cityOptions}
@@ -1606,7 +1603,6 @@ function CastFilterPanel({
           </section>
 
           <section className="cast-filter-column" aria-label={copy.filterNeeds}>
-            <h3 className="cast-filter-column-title">{copy.filterNeeds}</h3>
             <FilterChipGroup
               label={copy.category}
               options={categoryOptions}
@@ -1628,7 +1624,6 @@ function CastFilterPanel({
           </section>
 
           <section className="cast-filter-column cast-filter-column--other" aria-label={copy.filterOther}>
-            <h3 className="cast-filter-column-title">{copy.filterOther}</h3>
             <div className="cast-toggle-row">
               <span>
                 <i />
@@ -2725,20 +2720,6 @@ html.vy-light .cast-card-favorite.is-active {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.cast-filter-sheet--desktop .cast-filter-column--other .cast-filter-column-title {
-  grid-column: 1 / -1;
-}
-
-.cast-filter-column-title {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: #e3c27e;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .cast-sheet-group {
   margin: 0;
 }
@@ -3209,8 +3190,7 @@ html.vy-light .cast-range-preview small {
 
 html.vy-light .cast-sort-select .cast-dropdown-trigger b,
 html.vy-light .cast-suggestions mark,
-html.vy-light .cast-range-head b,
-html.vy-light .cast-filter-column-title {
+html.vy-light .cast-range-head b {
   color: #8f6a2a;
 }
 
