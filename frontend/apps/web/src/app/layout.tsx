@@ -35,11 +35,20 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     locale: "vi_VN",
     type: "website",
+    images: [
+      {
+        url: "/seo/og-cover-bar-1200x630.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Không gian quầy bar về đêm tại Vietyoru",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
+    images: ["/seo/og-cover-bar-1200x630.jpg"],
   },
 };
 
