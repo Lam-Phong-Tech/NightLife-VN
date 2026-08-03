@@ -975,6 +975,10 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   };
 
   const startNearbyLocationRequest = () => {
+    if (isLocating) {
+      return;
+    }
+
     if (!canRequestBrowserLocation()) {
       return;
     }
@@ -1476,6 +1480,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       {isLocationPermissionOpen ? (
         <LocationPermissionDialog
           copy={copy}
+          isBusy={isLocating}
           mode={locationDialogMode}
           onAllow={confirmLocationPermission}
           onClose={() => setLocationPermissionOpen(false)}
@@ -1491,11 +1496,13 @@ export default function Page() {
 
 function LocationPermissionDialog({
   copy,
+  isBusy,
   mode,
   onAllow,
   onClose,
 }: {
   copy: VenueSearchCopy;
+  isBusy: boolean;
   mode: LocationDialogMode;
   onAllow: () => void;
   onClose: () => void;
@@ -1505,7 +1512,7 @@ function LocationPermissionDialog({
   const description = isBlocked ? copy.locationBlockedDescription : copy.locationPermissionDescription;
   const actionLabel = isBlocked ? copy.locationBlockedAction : copy.locationPermissionAction;
   const dialog = (
-    <div className="venue-location-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="venue-location-backdrop" role="presentation">
       <section
         className="venue-location-dialog"
         role="dialog"
@@ -1522,11 +1529,11 @@ function LocationPermissionDialog({
         <h2 id="venue-location-title">{title}</h2>
         <p>{description}</p>
         <div className="venue-location-actions">
-          <button type="button" className="venue-location-secondary" onClick={onClose}>
+          <button type="button" className="venue-location-secondary" onClick={onClose} disabled={isBusy}>
             {copy.locationPermissionCancel}
           </button>
-          <button type="button" className="venue-location-primary" onClick={onAllow}>
-            {actionLabel}
+          <button type="button" className="venue-location-primary" onClick={onAllow} disabled={isBusy}>
+            {isBusy ? copy.locating : actionLabel}
           </button>
         </div>
       </section>
@@ -3378,6 +3385,11 @@ const venueSearchCss = `
     font-size: 13px;
     font-weight: 900;
     cursor: pointer;
+  }
+
+  .venue-location-actions button:disabled {
+    cursor: wait;
+    opacity: .72;
   }
 
   .venue-location-secondary {
