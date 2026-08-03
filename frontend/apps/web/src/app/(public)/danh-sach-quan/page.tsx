@@ -32,6 +32,7 @@ import { useLanguage } from "@/components/providers/LanguageProvider";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Pagination } from "@/components/ui/Pagination";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { localizePathname } from "@/lib/i18n/locales";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore } from "@/lib/member-favorites";
 import {
@@ -1199,6 +1200,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
             {showSuggestions ? (
               <VenueSearchSuggestions
+                language={activeLanguage}
                 onKeyword={setQuery}
                 onRecent={setQuery}
                 popularKeywords={popularVenueKeywords}
@@ -1335,6 +1337,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 key={venue.id}
                 venue={venue}
                 copy={copy}
+                language={activeLanguage}
                 isFavorite={favoriteStoreSlugs.includes(venue.id)}
                 onToggleFavorite={toggleVenueFavorite}
               />
@@ -1502,6 +1505,7 @@ function VenuePagination({
 }
 
 function VenueSearchSuggestions({
+  language,
   onKeyword,
   onRecent,
   popularKeywords,
@@ -1509,6 +1513,7 @@ function VenueSearchSuggestions({
   recentSearches,
   venues,
 }: {
+  language: LanguageCode;
   onKeyword: (value: string) => void;
   onRecent: (value: string) => void;
   popularKeywords: string[];
@@ -1530,7 +1535,11 @@ function VenueSearchSuggestions({
         <>
           <div className="venue-suggestion-label">Gợi ý quán</div>
           {venues.map((venue) => (
-            <Link key={venue.id} href={`/stores/${venue.id}`} className="venue-suggestion-row">
+            <Link
+              key={venue.id}
+              href={localizePathname(`/stores/${venue.id}`, language)}
+              className="venue-suggestion-row"
+            >
               <span
                 className="venue-suggestion-thumb"
                 aria-hidden="true"
@@ -1911,11 +1920,13 @@ function VenueFilterToggleRow({
 function VenueResultCard({
   venue,
   copy,
+  language,
   isFavorite,
   onToggleFavorite,
 }: {
   venue: VenueView;
   copy: VenueSearchCopy;
+  language: LanguageCode;
   isFavorite: boolean;
   onToggleFavorite: (venue: VenueView) => void;
 }) {
@@ -1926,7 +1937,7 @@ function VenueResultCard({
   };
 
   return (
-    <Link href={`/stores/${venue.id}`} className="venue-card">
+    <Link href={localizePathname(`/stores/${venue.id}`, language)} className="venue-card">
       <div
         className="venue-card-media"
         aria-label={`${copy.venuePhoto} ${venue.name}`}

@@ -167,6 +167,12 @@ export async function middleware(request: NextRequest) {
   const requestedLanguage = getPathLanguage(requestedPathname);
   const pathname = stripLanguagePrefix(requestedPathname);
   const hostKind = getNightlifeHostKind(getRequestHostname(request));
+  const storedLanguage =
+    request.cookies.get("vietyoru_shared_language")?.value ??
+    request.cookies.get("vietyoru.language")?.value ??
+    request.cookies.get("vietyoru_language")?.value;
+  const preferredPublicLanguage =
+    storedLanguage && languageCodes.has(storedLanguage) ? storedLanguage : "vi";
   const memberPaths = ["/tai-khoan", "/bao-mat-tai-khoan", "/da-luu", "/gui-hoa-don", "/vi-uu-dai"];
   const isMemberPath = memberPaths.some((p) => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith("/partner");
@@ -279,7 +285,7 @@ export async function middleware(request: NextRequest) {
     (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
   ) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/vi${pathname}`;
+    localizedUrl.pathname = `/${preferredPublicLanguage}${pathname}`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 
@@ -292,7 +298,7 @@ export async function middleware(request: NextRequest) {
     (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
   ) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${requestedLanguage ?? "vi"}/stores/${replacementStoreSlug}`;
+    localizedUrl.pathname = `/${requestedLanguage ?? preferredPublicLanguage}/stores/${replacementStoreSlug}`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 
@@ -302,7 +308,7 @@ export async function middleware(request: NextRequest) {
     /^\/(?:stores|casts)\/[^/]+$/.test(pathname)
   ) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/vi${pathname}`;
+    localizedUrl.pathname = `/${preferredPublicLanguage}${pathname}`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 

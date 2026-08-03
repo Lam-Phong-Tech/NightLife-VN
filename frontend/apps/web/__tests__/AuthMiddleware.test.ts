@@ -34,13 +34,31 @@ const runMiddleware = (
 
 describe("auth middleware login-page redirects", () => {
   it.each([
+    ["/stores", "/ja/stores"],
+    ["/casts", "/ja/casts"],
+    ["/stores/moonlight-bar", "/ja/stores/moonlight-bar"],
+    ["/casts/abc", "/ja/casts/abc"],
+  ])("keeps the stored public language when localizing %s", async (pathname, expectedPath) => {
+    const response = await runMiddleware(
+      pathname,
+      { vietyoru_shared_language: "ja" },
+      "demonightlight.test9.io.vn",
+    );
+
+    expect(new URL(response.headers.get("location") || "https://invalid.test").pathname).toBe(
+      expectedPath,
+    );
+    expect(response.status).toBe(308);
+  });
+
+  it.each([
     ["/admin/dang-nhap", "admin_auth_token", "SUPER_ADMIN"],
     ["/dang-nhap-doi-tac", "partner_auth_token", "PARTNER"],
     ["/dang-nhap", "auth_token", "USER"],
   ])(
     "lets %s validate its own stored session against the backend",
-    (pathname, cookieName, role) => {
-      const response = runMiddleware(pathname, {
+    async (pathname, cookieName, role) => {
+      const response = await runMiddleware(pathname, {
         [cookieName]: createToken(role),
       });
 
@@ -51,8 +69,8 @@ describe("auth middleware login-page redirects", () => {
 
   it.each(["/dang-nhap-doi-tac", "/dang-nhap"])(
     "allows an authenticated admin to open the independent login page %s",
-    (pathname) => {
-      const response = runMiddleware(pathname, {
+    async (pathname) => {
+      const response = await runMiddleware(pathname, {
         admin_auth_token: createToken("SUPER_ADMIN"),
       });
 
@@ -61,8 +79,8 @@ describe("auth middleware login-page redirects", () => {
     },
   );
 
-  it("blocks an authenticated partner from opening partner registration", () => {
-    const response = runMiddleware("/dang-ky-doi-tac", {
+  it("blocks an authenticated partner from opening partner registration", async () => {
+    const response = await runMiddleware("/dang-ky-doi-tac", {
       partner_auth_token: createToken("PARTNER"),
     });
 
@@ -75,15 +93,15 @@ describe("auth middleware login-page redirects", () => {
     expect(url.searchParams.get("active_role")).toBe("PARTNER");
   });
 
-  it("keeps partner registration public for visitors without a session", () => {
-    const response = runMiddleware("/dang-ky-doi-tac");
+  it("keeps partner registration public for visitors without a session", async () => {
+    const response = await runMiddleware("/dang-ky-doi-tac");
 
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("requests a partner login instead of redirecting to another active portal", () => {
-    const response = runMiddleware("/partner", {
+  it("requests a partner login instead of redirecting to another active portal", async () => {
+    const response = await runMiddleware("/partner", {
       admin_auth_token: createToken("ADMIN"),
     });
     const location = new URL(response.headers.get("location") || "https://nightlife.test");
@@ -93,8 +111,8 @@ describe("auth middleware login-page redirects", () => {
     expect(location.searchParams.get("redirect")).toBe("/partner");
   });
 
-  it("allows the login page when the stored token has expired", () => {
-    const response = runMiddleware("/admin/dang-nhap", {
+  it("allows the login page when the stored token has expired", async () => {
+    const response = await runMiddleware("/admin/dang-nhap", {
       admin_auth_token: createToken("ADMIN", Math.floor(Date.now() / 1000) - 60),
     });
 
@@ -102,23 +120,23 @@ describe("auth middleware login-page redirects", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("allows the login page when the browser profile has no session", () => {
-    const response = runMiddleware("/dang-nhap");
+  it("allows the login page when the browser profile has no session", async () => {
+    const response = await runMiddleware("/dang-nhap");
 
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("sends public admin routes to the dedicated admin hostname", () => {
-    const response = runMiddleware("/admin/bookings", {}, "demonightlight.test9.io.vn");
+  it("sends public admin routes to the dedicated admin hostname", async () => {
+    const response = await runMiddleware("/admin/bookings", {}, "demonightlight.test9.io.vn");
 
     expect(response.headers.get("location")).toBe(
       "https://admin.demonightlight.test9.io.vn/admin/bookings",
     );
   });
 
-  it("sends unauthenticated admin hostname traffic to central auth", () => {
-    const response = runMiddleware("/", {}, "admin.demonightlight.test9.io.vn");
+  it("sends unauthenticated admin hostname traffic to central auth", async () => {
+    const response = await runMiddleware("/", {}, "admin.demonightlight.test9.io.vn");
     const location = new URL(response.headers.get("location") || "https://invalid.test");
 
     expect(location.origin).toBe("https://auth.demonightlight.test9.io.vn");
@@ -126,8 +144,8 @@ describe("auth middleware login-page redirects", () => {
     expect(location.searchParams.get("redirect")).toBe("/admin");
   });
 
-  it("uses the forwarded hostname when running behind the VPS reverse proxy", () => {
-    const response = runMiddleware("/", {}, "127.0.0.1", {
+  it("uses the forwarded hostname when running behind the VPS reverse proxy", async () => {
+    const response = await runMiddleware("/", {}, "127.0.0.1", {
       host: "127.0.0.1:3009",
       "x-forwarded-host": "admin.demonightlight.test9.io.vn",
     });
@@ -138,8 +156,8 @@ describe("auth middleware login-page redirects", () => {
     expect(location.searchParams.get("redirect")).toBe("/admin");
   });
 
-  it("uses the Host header when X-Forwarded-Host is unavailable", () => {
-    const response = runMiddleware("/partner", {}, "127.0.0.1", {
+  it("uses the Host header when X-Forwarded-Host is unavailable", async () => {
+    const response = await runMiddleware("/partner", {}, "127.0.0.1", {
       host: "demonightlight.test9.io.vn",
     });
 
@@ -154,8 +172,8 @@ describe("auth middleware login-page redirects", () => {
     ["member", "/tai-khoan", "/dang-nhap"],
   ])(
     "redirects the central auth root to the visible %s login path",
-    (portal, redirectPath, expectedLoginPath) => {
-      const response = runMiddleware(
+    async (portal, redirectPath, expectedLoginPath) => {
+      const response = await runMiddleware(
         `/?portal=${portal}&redirect=${encodeURIComponent(redirectPath)}`,
         {},
         "127.0.0.1",
@@ -174,8 +192,8 @@ describe("auth middleware login-page redirects", () => {
     },
   );
 
-  it("rewrites authenticated partner hostname root to the partner application", () => {
-    const response = runMiddleware(
+  it("rewrites authenticated partner hostname root to the partner application", async () => {
+    const response = await runMiddleware(
       "/",
       { partner_auth_token: createToken("STAFF") },
       "partner.demonightlight.test9.io.vn",
@@ -186,8 +204,8 @@ describe("auth middleware login-page redirects", () => {
     );
   });
 
-  it("opens the matching login page so the client can validate a central session", () => {
-    const response = runMiddleware(
+  it("opens the matching login page so the client can validate a central session", async () => {
+    const response = await runMiddleware(
       "/?portal=partner",
       { partner_auth_token: createToken("STAFF") },
       "auth.demonightlight.test9.io.vn",
@@ -199,8 +217,8 @@ describe("auth middleware login-page redirects", () => {
     expect(location.searchParams.get("portal")).toBe("partner");
   });
 
-  it("keeps the central login validation on the public auth hostname behind the reverse proxy", () => {
-    const response = runMiddleware(
+  it("keeps the central login validation on the public auth hostname behind the reverse proxy", async () => {
+    const response = await runMiddleware(
       "/?portal=partner",
       { partner_auth_token: createToken("PARTNER") },
       "127.0.0.1",

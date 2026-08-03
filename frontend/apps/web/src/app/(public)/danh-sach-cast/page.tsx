@@ -40,6 +40,7 @@ import {
   getFilterLanguageLabel,
 } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { localizePathname } from "@/lib/i18n/locales";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -1014,6 +1015,7 @@ export function CastDirectoryPage() {
             {showSuggestions ? (
               <SearchSuggestions
                 casts={suggestions}
+                language={activeLanguage}
                 popularKeywords={popularKeywords}
                 query={query}
                 rankBySlug={topRankingOrder}
@@ -1325,6 +1327,7 @@ function CastDropdown({
 
 function SearchSuggestions({
   casts,
+  language,
   popularKeywords,
   query,
   rankBySlug,
@@ -1333,6 +1336,7 @@ function SearchSuggestions({
   onRecent,
 }: {
   casts: PublicCast[];
+  language: LanguageCode;
   popularKeywords: string[];
   query: string;
   rankBySlug: ReadonlyMap<string, number>;
@@ -1358,7 +1362,11 @@ function SearchSuggestions({
             const meta = rank ? `#${rank} Ranking` : (cast.store.area?.name ?? cast.store.district);
 
             return (
-              <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
+              <Link
+                key={cast.id}
+                href={localizePathname(`/casts/${cast.slug}`, language)}
+                className="cast-suggestion-row"
+              >
                 <PlaceholderMedia
                   src={cast.thumbnailUrl}
                   alt={cast.name}
@@ -1451,7 +1459,10 @@ function CastDiscoveryCard({
 
   return (
     <article className="cast-card-wrap">
-      <Link href={`/casts/${cast.slug}`} className={`cast-card${index === 0 ? " is-leading" : ""}`}>
+      <Link
+        href={localizePathname(`/casts/${cast.slug}`, language)}
+        className={`cast-card${index === 0 ? " is-leading" : ""}`}
+      >
         <PlaceholderMedia
           src={image}
           label={translateText("Chưa có ảnh cast", language)}
