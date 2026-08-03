@@ -1995,6 +1995,7 @@ function HomeCardCarousel<T>({
           <div
             key={`${slideIndex}-${slide.map(getKey).join("-")}`}
             aria-hidden={activeSlide !== slideIndex}
+            inert={activeSlide !== slideIndex ? true : undefined}
             style={{
               flex: "0 0 100%",
               display: "grid",
