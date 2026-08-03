@@ -179,7 +179,7 @@ const getCampaignImage = (campaign: CampaignItem, index: number) =>
 const campaignStoreHref = (campaign: CampaignItem) => {
   const slug = campaign.targetStore?.slug;
   if (!slug) {
-    return "/danh-sach-quan";
+    return "/stores";
   }
 
   const params = new URLSearchParams({ couponId: campaign.id });

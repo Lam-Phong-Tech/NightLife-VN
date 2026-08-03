@@ -115,7 +115,7 @@ export function buildStoreStructuredData(
     breadcrumbJsonLd(
       [
         { name: "Trang chủ", path: "/" },
-        { name: "Tìm quán", path: "/danh-sach-quan" },
+        { name: "Tìm quán", path: "/stores" },
         { name: storeName, path: canonicalPath },
       ],
       canonicalPath,

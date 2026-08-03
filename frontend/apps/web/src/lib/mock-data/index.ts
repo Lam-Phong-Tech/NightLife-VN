@@ -118,8 +118,8 @@ export const hotVideos = [
 ];
 
 export const homeCategories = [
-  { name: 'Tìm quán', icon: '/SVG/tim quan.svg', href: '/danh-sach-quan' },
-  { name: 'Tìm Cast', icon: '/SVG/tim cast.svg', href: '/danh-sach-cast' },
+  { name: 'Tìm quán', icon: '/SVG/tim quan.svg', href: '/stores' },
+  { name: 'Tìm Cast', icon: '/SVG/tim cast.svg', href: '/casts' },
   { name: 'Ưu đãi', icon: '/SVG/uu daI.svg', href: '/uu-dai' },
   { name: 'Tour', icon: '/SVG/tim quan.svg', href: '/tour' },
   { name: 'Nhà hàng', icon: '/icons/nha-hang.svg', href: '/nha-hang' },

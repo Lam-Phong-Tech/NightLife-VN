@@ -1,19 +1,5 @@
-import type { Metadata } from "next";
-import CastListPage from "../../(public)/danh-sach-cast/page";
-import {
-  requireRouteLanguage,
-  type LocalizedRouteParams,
-} from "@/lib/i18n/server-route-locale";
-import { createLocalizedPageMetadata } from "@/lib/seo/localized-page-metadata";
+import { notFound } from "next/navigation";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: LocalizedRouteParams;
-}): Promise<Metadata> {
-  return createLocalizedPageMetadata(await requireRouteLanguage(params), "casts");
-}
-
-export default function LocalizedCastListPage() {
-  return <CastListPage />;
+export default function LegacyLocalizedCastListPage() {
+  notFound();
 }

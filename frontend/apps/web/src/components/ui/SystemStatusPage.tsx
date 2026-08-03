@@ -58,7 +58,7 @@ const statusContent: Record<
     primaryLabel: "Về trang chủ",
     primaryHref: "/",
     secondaryLabel: "Tìm quán",
-    secondaryHref: "/danh-sach-quan",
+    secondaryHref: "/stores",
   },
   "server-error": {
     code: "500",
@@ -96,7 +96,7 @@ const statusContent: Record<
     primaryLabel: "Về trang chủ",
     primaryHref: "/",
     secondaryLabel: "Tìm quán",
-    secondaryHref: "/danh-sach-quan",
+    secondaryHref: "/stores",
   },
 };
 
@@ -150,7 +150,7 @@ export function SystemStatusPage({
         <p>{translatedDescription}</p>
 
         {content.search ? (
-          <Link href="/danh-sach-quan" className="nl-system-status-search">
+          <Link href="/stores" className="nl-system-status-search">
             <Search size={17} strokeWidth={2} />
             <span>{translateText("Tìm quán hoặc cast...", activeLanguage)}</span>
           </Link>

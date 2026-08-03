@@ -6,7 +6,7 @@ export default function NotFound() {
       kind="not-found"
       contextTitle="Không tìm thấy cast"
       contextDescription="Cast này không tồn tại, chưa active hoặc chưa được duyệt public qua CMS."
-      secondaryHref="/danh-sach-cast"
+      secondaryHref="/casts"
       secondaryLabel="Xem danh sách cast"
     />
   );

@@ -9,8 +9,8 @@ const llmsText = `# Vietyoru
 ## Nội dung chính
 
 - [Trang chủ](${absoluteSiteUrl("/vi")})
-- [Tìm quán](${absoluteSiteUrl("/vi/danh-sach-quan")})
-- [Danh sách cast](${absoluteSiteUrl("/vi/danh-sach-cast")})
+- [Tìm quán](${absoluteSiteUrl("/vi/stores")})
+- [Danh sách cast](${absoluteSiteUrl("/vi/casts")})
 - [Bảng xếp hạng](${absoluteSiteUrl("/vi/xep-hang")})
 - [Ưu đãi](${absoluteSiteUrl("/vi/uu-dai")})
 - [Tour nightlife](${absoluteSiteUrl("/vi/tour")})

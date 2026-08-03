@@ -1032,7 +1032,7 @@ export default function Page() {
                   activeLanguage,
                 )}
                 ctaLabel={translateText("Khám phá quán", activeLanguage)}
-                ctaHref="/danh-sach-quan"
+                ctaHref="/stores"
                 compact
               />
             </div>

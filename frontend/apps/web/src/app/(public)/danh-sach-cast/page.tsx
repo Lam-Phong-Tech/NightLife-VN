@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -488,7 +489,7 @@ const highlightMatch = (text: string, query: string) => {
   );
 };
 
-export default function Page() {
+export function CastDirectoryPage() {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
@@ -1198,6 +1199,10 @@ export default function Page() {
       ) : null}
     </main>
   );
+}
+
+export default function LegacyCastDirectoryPage() {
+  notFound();
 }
 
 function CastPagination({

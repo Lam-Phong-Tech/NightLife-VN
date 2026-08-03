@@ -24,10 +24,10 @@ const staticRoutes: Array<{
   priority: number;
 }> = [
   { path: "/", changeFrequency: "daily", priority: 1 },
-  { path: "/danh-sach-quan", changeFrequency: "daily", priority: 0.86 },
+  { path: "/stores", changeFrequency: "daily", priority: 0.86 },
   { path: "/spa", changeFrequency: "daily", priority: 0.84 },
   { path: "/nha-hang", changeFrequency: "daily", priority: 0.84 },
-  { path: "/danh-sach-cast", changeFrequency: "daily", priority: 0.84 },
+  { path: "/casts", changeFrequency: "daily", priority: 0.84 },
   { path: "/xep-hang", changeFrequency: "daily", priority: 0.78 },
   { path: "/uu-dai", changeFrequency: "daily", priority: 0.76 },
   { path: "/tour", changeFrequency: "weekly", priority: 0.74 },

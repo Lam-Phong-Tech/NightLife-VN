@@ -73,7 +73,7 @@ export function CastHero({
         </div>
       ) : null}
       <div className="cast-mobile-topbar">
-        <Link href="/danh-sach-cast" className="cast-icon-link cast-back-link" aria-label={copy.backToCastList}>
+        <Link href="/casts" className="cast-icon-link cast-back-link" aria-label={copy.backToCastList}>
           <ChevronLeft size={20} strokeWidth={2.2} />
         </Link>
         <FavoriteButton

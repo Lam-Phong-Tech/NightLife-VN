@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -1396,7 +1397,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 }
 
 export default function Page() {
-  return <VenueDirectoryPage />;
+  notFound();
 }
 
 function LocationPermissionDialog({

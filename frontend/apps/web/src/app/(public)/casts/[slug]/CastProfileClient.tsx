@@ -500,7 +500,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 <nav className="cast-desktop-breadcrumb" aria-label="Breadcrumb">
                   <Link href="/">{copy.home}</Link>
                   <span>/</span>
-                  <Link href="/danh-sach-cast">Cast</Link>
+                  <Link href="/casts">Cast</Link>
                   <span>/</span>
                   <strong className="notranslate" translate="no" data-no-translate="true">{profile.name}</strong>
                 </nav>

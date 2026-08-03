@@ -30,10 +30,10 @@ export const googleTranslateLanguageCode: Record<LanguageCode, string> = {
 
 export const localizedPublicRootPaths = new Set([
   "/",
-  "/danh-sach-quan",
+  "/stores",
   "/spa",
   "/nha-hang",
-  "/danh-sach-cast",
+  "/casts",
   "/xep-hang",
   "/uu-dai",
   "/tour",

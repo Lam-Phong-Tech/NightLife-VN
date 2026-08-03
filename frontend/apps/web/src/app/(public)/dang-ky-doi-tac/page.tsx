@@ -222,7 +222,7 @@ const initialPartnerForm: PartnerFormState = {
 
 const bottomNav = [
   { href: '/', label: 'Trang chủ', icon: Home },
-  { href: '/danh-sach-cast', label: 'Cast', icon: UsersRound },
+  { href: '/casts', label: 'Cast', icon: UsersRound },
   { href: '/uu-dai', label: 'Ưu đãi', icon: TicketCheck },
   { href: '/lich-su-dat-cho', label: 'Đặt chỗ', icon: FileClock },
   { href: '/tai-khoan', label: 'Tài khoản', icon: LockKeyhole },

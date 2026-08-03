@@ -52,7 +52,7 @@ export function buildCastStructuredData(
     breadcrumbJsonLd(
       [
         { name: "Trang chủ", path: "/" },
-        { name: "Cast", path: "/danh-sach-cast" },
+        { name: "Cast", path: "/casts" },
         { name: displayName, path: canonicalPath },
       ],
       canonicalPath,

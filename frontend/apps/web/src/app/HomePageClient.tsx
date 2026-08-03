@@ -94,8 +94,8 @@ const colors = {
 };
 
 const categoryItems = [
-  { label: "Tìm quán", icon: MapPin, href: "/danh-sach-quan" },
-  { label: "Tìm Cast", icon: UserRound, href: "/danh-sach-cast" },
+  { label: "Tìm quán", icon: MapPin, href: "/stores" },
+  { label: "Tìm Cast", icon: UserRound, href: "/casts" },
   { label: "Ưu đãi", icon: Ticket, href: "/uu-dai" },
   { label: "Tour", icon: Map, href: "/tour" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
@@ -233,8 +233,8 @@ const appearanceIconMap: Record<string, LucideIcon> = {
 };
 
 const categoryHrefById: Record<string, string> = {
-  q1: "/danh-sach-quan",
-  q2: "/danh-sach-cast",
+  q1: "/stores",
+  q2: "/casts",
   q3: "/uu-dai",
   q4: "/tour",
   q5: "/xep-hang",
@@ -252,7 +252,7 @@ function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCatego
   const fallback = categoryItems[index] ?? categoryItems[0] ?? {
     label: "Tìm quán",
     icon: MapPin,
-    href: "/danh-sach-quan",
+    href: "/stores",
   };
   const isTourSlot = item.id === "q4";
 
@@ -717,7 +717,7 @@ function mapHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoI
     id: video.id,
     name: name || "Video Hot",
     img: backgroundFromUrl(thumbnail),
-    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
+    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/stores"),
   };
 }
 
@@ -731,7 +731,7 @@ function mapTrackedHotVideoToHomeItem(video: PublicHotVideo, index: number): Hom
     name: name || "Video Hot",
     img: backgroundFromUrl(thumbnail),
     videoUrl: isPlayableVideoFile(videoUrl) ? videoUrl : null,
-    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
+    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/stores"),
     storeSlug: video.storeSlug,
     viewCount: video.viewCount ?? 0,
     likeCount: video.likeCount ?? 0,
@@ -1279,7 +1279,7 @@ function HeaderBar({ desktop = false }: { desktop?: boolean }) {
 function SearchPanel() {
   return (
     <Link
-      href="/danh-sach-quan"
+      href="/stores"
       className="nl-home-search-panel"
       data-testid="home-search-panel"
       style={{
@@ -1492,7 +1492,7 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
 
   return (
     <Link
-      href={event.href || "/danh-sach-quan"}
+      href={event.href || "/stores"}
       className="nl-home-hero"
       data-testid="home-ad-banner"
       {...swipeHandlers}
@@ -1861,7 +1861,7 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
       <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{title}</h2>
-      {action ? <Link href="/danh-sach-quan" style={{ color: colors.muted, fontSize: "12px" }}>{action}</Link> : null}
+      {action ? <Link href="/stores" style={{ color: colors.muted, fontSize: "12px" }}>{action}</Link> : null}
     </div>
   );
 }

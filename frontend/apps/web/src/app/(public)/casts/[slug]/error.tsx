@@ -9,7 +9,7 @@ export default function Error({ reset }: { reset: () => void }) {
       onRetry={reset}
       contextTitle="Không tải được profile cast"
       contextDescription="Hệ thống chưa lấy được dữ liệu cast detail. Bạn có thể thử lại hoặc quay về danh sách cast."
-      secondaryHref="/danh-sach-cast"
+      secondaryHref="/casts"
       secondaryLabel="Danh sách cast"
     />
   );

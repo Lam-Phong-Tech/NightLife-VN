@@ -446,7 +446,7 @@ export default function Page() {
             </span>
             <h2>{translateText("Chưa lưu mục nào", activeLanguage)}</h2>
             <p>{translateText("Nhấn biểu tượng tim trên quán hoặc cast để lưu lại và xem nhanh tại đây.", activeLanguage)}</p>
-            <Link href={activeTab === "stores" ? "/danh-sach-quan" : "/danh-sach-cast"}>
+            <Link href={activeTab === "stores" ? "/stores" : "/casts"}>
               {translateText(activeTab === "stores" ? "Khám phá quán" : "Khám phá cast", activeLanguage)}
               <ChevronRight size={16} />
             </Link>

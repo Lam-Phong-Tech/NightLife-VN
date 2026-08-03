@@ -1595,7 +1595,7 @@ function RelatedStores({
 
   return (
     <section className="related-section">
-      <SectionTitle title="Quán tương tự" meta="Xem thêm" metaHref="/danh-sach-quan" />
+      <SectionTitle title="Quán tương tự" meta="Xem thêm" metaHref="/stores" />
       <div className="related-grid">
         {stores.slice(0, 4).map((related) => (
           <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
@@ -2366,7 +2366,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <nav className="desktop-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">{translateText("Trang chủ", activeLanguage)}</Link>
           <span>/</span>
-          <Link href="/danh-sach-quan">{translateText("Tìm quán", activeLanguage)}</Link>
+          <Link href="/stores">{translateText("Tìm quán", activeLanguage)}</Link>
           <span>/</span>
           <strong className="notranslate" translate="no" data-no-translate="true">{displayName}</strong>
         </nav>
@@ -2390,7 +2390,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <div className="hero-top">
                 <Link
                   className="round-action hero-back"
-                  href="/danh-sach-quan"
+                  href="/stores"
                   aria-label={translateText("Quay lại danh sách quán", activeLanguage)}
                 >
                   <ChevronLeft size={20} />

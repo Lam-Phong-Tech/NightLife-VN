@@ -135,8 +135,8 @@ const resolveHref = (href: string, language?: LanguageCode) => {
 
 const navLinks = [
   { href: "/", label: "Trang chủ" },
-  { href: "/danh-sach-quan", label: "Tìm quán" },
-  { href: "/danh-sach-cast", label: "Cast" },
+  { href: "/stores", label: "Tìm quán" },
+  { href: "/casts", label: "Cast" },
   { href: "/xep-hang", label: "Bảng xếp hạng" },
   { href: "/tour", label: "Tour", hideOnDesktop: true },
   { href: "/uu-dai", label: "Ưu đãi" },
@@ -147,7 +147,7 @@ const desktopNavLinks = navLinks.filter((link) => !link.hideOnDesktop);
 
 const bottomNav = [
   { href: "/", label: "Trang chủ", icon: Home },
-  { href: "/danh-sach-cast", label: "Tìm Cast", icon: Search },
+  { href: "/casts", label: "Tìm Cast", icon: Search },
   { href: "/uu-dai", label: "Ưu đãi", icon: Ticket },
   { href: "/lich-su-dat-cho", label: "Lịch đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
@@ -168,7 +168,7 @@ type BottomNavItem = {
 
 const bottomNavHrefById: Record<string, string> = {
   n1: "/",
-  n2: "/danh-sach-cast",
+  n2: "/casts",
   n3: "/uu-dai",
   n4: "/lich-su-dat-cho",
   n5: "/tai-khoan",
@@ -215,8 +215,8 @@ const footerGroups = [
   {
     title: "Khám phá",
     links: [
-      { href: "/danh-sach-quan", label: "Tìm quán" },
-      { href: "/danh-sach-cast", label: "Cast" },
+      { href: "/stores", label: "Tìm quán" },
+      { href: "/casts", label: "Cast" },
       { href: "/xep-hang", label: "Bảng xếp hạng" },
       { href: "/blog", label: "Blog" },
     ],
@@ -248,7 +248,7 @@ const footerReservationNotice: Record<LanguageCode, string> = {
 };
 
 const mobileFooterLinks = [
-  { href: "/danh-sach-quan", label: "Tìm quán" },
+  { href: "/stores", label: "Tìm quán" },
   { href: "/uu-dai", label: "Ưu đãi" },
   { href: "/blog", label: "Blog" },
   { href: "/legal/chinh-sach-bao-mat", label: "Chính sách" },

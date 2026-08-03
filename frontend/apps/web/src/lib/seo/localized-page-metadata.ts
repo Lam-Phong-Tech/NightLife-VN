@@ -25,10 +25,10 @@ type LocalizedSeoCopy = {
 
 const pagePaths: Record<LocalizedPageKey, string> = {
   home: "/",
-  venues: "/danh-sach-quan",
+  venues: "/stores",
   spa: "/spa",
   restaurants: "/nha-hang",
-  casts: "/danh-sach-cast",
+  casts: "/casts",
   rankings: "/xep-hang",
   offers: "/uu-dai",
   tour: "/tour",

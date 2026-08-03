@@ -269,6 +269,20 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname === "/danh-sach-quan" || pathname === "/danh-sach-cast") {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  if (
+    !requestedLanguage &&
+    (pathname === "/stores" || pathname === "/casts") &&
+    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+  ) {
+    const localizedUrl = request.nextUrl.clone();
+    localizedUrl.pathname = `/vi${pathname}`;
+    return NextResponse.redirect(localizedUrl, 308);
+  }
+
   const legacyStoreSlug = pathname.match(/^\/stores\/([^/]+)$/)?.[1];
   const replacementStoreSlug = legacyStoreSlug
     ? legacyPublicStoreSlugRedirects[legacyStoreSlug]

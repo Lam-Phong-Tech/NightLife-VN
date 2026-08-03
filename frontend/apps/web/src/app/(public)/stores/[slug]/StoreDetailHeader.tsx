@@ -75,7 +75,7 @@ export function StoreDetailHeader({
       <nav className="legacy-breadcrumb" aria-label="Breadcrumb">
         <Link href="/">Trang chủ</Link>
         <span>/</span>
-        <Link href="/danh-sach-quan">Tìm quán</Link>
+        <Link href="/stores">Tìm quán</Link>
         <span>/</span>
         <span>{store.area?.name ?? store.district ?? store.city}</span>
         <span>/</span>
