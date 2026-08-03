@@ -59,6 +59,7 @@ export type BookingRecord = {
   } | null;
   user?: {
     id: string;
+    email?: string | null;
     displayName?: string | null;
     tier?: string | null;
   } | null;

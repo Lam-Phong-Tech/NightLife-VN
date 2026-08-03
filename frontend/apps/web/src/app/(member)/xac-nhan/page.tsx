@@ -262,7 +262,7 @@ const bookingResolutionFeedback = (
 
 const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
   `${booking.guest?.displayName ?? booking.user?.displayName ?? translateText("Khách", language)} · ${
-    booking.guest?.email ?? booking.guest?.phone ?? translateText("Email đã lưu", language)
+    booking.user?.email ?? booking.guest?.email ?? booking.guest?.phone ?? translateText("Email đã lưu", language)
   }`;
 
 type BookingDiscountInfo = {
@@ -736,7 +736,7 @@ export default function Page() {
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
   const couponLabelText = booking ? bookingCouponLabel(booking) : null;
   const shouldShowDiscountSummary = Boolean(couponLabelText || discountLabelText);
-  const guestEmailLabel = booking?.guest?.email ?? (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
+  const guestEmailLabel = booking?.user?.email ?? booking?.guest?.email ?? (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
   const guestConfirmationMessage = isTourBooking
     ? `${tourCopy.emailSentPrefix} ${guestEmailLabel}. ${tourCopy.adminWillContact}`
     : `${translateText(

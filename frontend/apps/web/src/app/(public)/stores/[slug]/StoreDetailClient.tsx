@@ -1142,6 +1142,7 @@ function BookingCard({
   note,
   selectedCastSlug,
   castOptions,
+  isMemberBooking,
   isSubmitting,
   errorMessage,
   fieldErrors,
@@ -1170,6 +1171,7 @@ function BookingCard({
   note: string;
   selectedCastSlug: string;
   castOptions: BookingCastOption[];
+  isMemberBooking: boolean;
   isSubmitting: boolean;
   errorMessage: string;
   fieldErrors: BookingFieldErrors;
@@ -1260,6 +1262,7 @@ function BookingCard({
                 type="text"
                 name={storeBookingFieldNames.guestEmail}
                 value={email}
+                readOnly={isMemberBooking}
                 onBlur={() => onFieldTouched("email")}
                 onChange={(event) => {
                   onFieldTouched("email");
@@ -2609,6 +2612,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               note={note}
               selectedCastSlug={activeSelectedCastSlug}
               castOptions={serviceBookingCastOptions}
+              isMemberBooking={isMemberBooking}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
               fieldErrors={visibleFieldErrors}

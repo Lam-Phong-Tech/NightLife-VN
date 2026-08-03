@@ -3372,10 +3372,11 @@ describe('NightlifeDataService', () => {
     });
 
     await service.createMemberBooking(
-      { id: 'member-1', role: 'USER' },
+      { id: 'member-1', email: 'member@example.com', role: 'USER' },
       {
         castSlug: 'yuna-neon',
         displayName: 'Minh Nguyen',
+        email: 'different-contact@example.com',
         phone: '+84907654321',
         scheduledAt: '2026-06-30T14:00:00.000Z',
         partySize: 2,
@@ -3397,7 +3398,7 @@ describe('NightlifeDataService', () => {
         convertedUserId: 'member-1',
         displayName: 'Minh Nguyen',
         phone: '+84907654321',
-        email: '',
+        email: 'member@example.com',
       },
       select: { id: true },
     });

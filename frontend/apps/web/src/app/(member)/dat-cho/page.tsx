@@ -917,6 +917,7 @@ export default function Page() {
                 error={visibleFieldErrors.email}
                 name={bookingFieldNames.guestEmail}
                 activeLanguage={activeLanguage}
+                readOnly={isMemberMode}
               />
 
               <BookingDateTimeFields
@@ -1294,6 +1295,7 @@ function TextField({
   icon,
   error,
   activeLanguage,
+  readOnly = false,
 }: {
   label: string;
   name: string;
@@ -1304,6 +1306,7 @@ function TextField({
   icon?: React.ReactNode;
   error?: string;
   activeLanguage: LanguageCode;
+  readOnly?: boolean;
 }) {
   return (
     <label className={styles.field}>
@@ -1354,6 +1357,7 @@ function EmailField({
           {...bookingAutofillBlockProps}
           name={name}
           value={value}
+          readOnly={readOnly}
           placeholder="Vui lòng nhập email"
           onBlur={onTouched}
           onChange={(event) => {
