@@ -593,7 +593,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [isLocationPermissionOpen, setLocationPermissionOpen] = useState(false);
   const [locationDialogMode, setLocationDialogMode] = useState<LocationDialogMode>("permission");
-  const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [areas, setAreas] = useState<PublicArea[]>([]);
@@ -977,7 +976,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const handleCityChange = (nextCity: string) => {
     setCity(nextCity);
     setArea("");
-    setCityMenuOpen(false);
+    setSortMenuOpen(false);
     setSort((current) => (current === "nearest" && !coords ? "priority" : current));
   };
 
@@ -1053,11 +1052,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setTopRankingOnly(false);
     setCurrentPage(1);
     setSortMenuOpen(false);
-    setCityMenuOpen(false);
   };
 
   const handleFilterButtonClick = () => {
-    setCityMenuOpen(false);
     setSortMenuOpen(false);
 
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
@@ -1240,43 +1237,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             ) : null}
           </div>
 
-          <div
-            className="venue-city-select"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) {
-                setCityMenuOpen(false);
-              }
-            }}
-          >
-            <button
-              type="button"
-              className="venue-city-trigger"
-              aria-haspopup="listbox"
-              aria-expanded={isCityMenuOpen}
-              onClick={() => setCityMenuOpen((current) => !current)}
-            >
-              <MapPin size={15} />
-              <span className="venue-city-current">{selectedCityLabel}</span>
-              <ChevronDown size={14} />
-            </button>
-            {isCityMenuOpen ? (
-              <div className="venue-city-menu" role="listbox" aria-label={copy.chooseCity}>
-                {localizedCityOptions.map((option) => (
-                  <button
-                    key={option.value || "all"}
-                    type="button"
-                    role="option"
-                    aria-selected={option.value === city}
-                    className={option.value === city ? "is-selected" : ""}
-                    onClick={() => handleCityChange(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
           <button type="button" className="venue-find-button">
             {copy.find}
           </button>
@@ -1343,19 +1303,19 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
               onClick={() => setSortMenuOpen((current) => !current)}
             >
               <span>{copy.sortLabel}</span>
-              <strong>{getLocalizedSortLabel(sort, activeLanguage)}</strong>
+              <strong>{selectedCityLabel}</strong>
               <ChevronDown size={13} />
             </button>
             {isSortMenuOpen ? (
-              <div className="venue-sort-menu" role="listbox" aria-label={copy.sortAria}>
-                {localizedSortOptions.map((option) => (
+              <div className="venue-sort-menu" role="listbox" aria-label={copy.chooseCity}>
+                {localizedCityOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     role="option"
-                    aria-selected={option.value === sort}
-                    className={option.value === sort ? "is-selected" : ""}
-                    onClick={() => handleSortChange(option.value)}
+                    aria-selected={option.value === city}
+                    className={option.value === city ? "is-selected" : ""}
+                    onClick={() => handleCityChange(option.value)}
                   >
                     {option.label}
                   </button>

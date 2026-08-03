@@ -10,6 +10,7 @@ import {
   ChevronRight,
   History,
   Languages,
+  LocateFixed,
   MapPin,
   RotateCcw,
   Search,
@@ -91,6 +92,7 @@ type CastSearchCopy = {
   language: string;
   listAria: string;
   locating: string;
+  nearMe: string;
   openFilters: string;
   resetFilters: string;
   resultCount: (count: number) => string;
@@ -168,6 +170,7 @@ const castCopyVi: CastSearchCopy = {
   language: "Ngôn ngữ",
   listAria: "Danh sách cast",
   locating: "Đang lấy vị trí",
+  nearMe: "Gần tôi",
   openFilters: "Mở bộ lọc",
   resetFilters: "Đặt lại bộ lọc",
   resultCount: (count) => `${count} cast`,
@@ -199,6 +202,7 @@ const castCopyEn: CastSearchCopy = {
   language: "Language",
   listAria: "Cast list",
   locating: "Finding location",
+  nearMe: "Nearby",
   openFilters: "Open filters",
   resetFilters: "Reset filters",
   resultCount: (count) => `${count} Cast`,
@@ -241,6 +245,7 @@ const getCastCopy = (language: LanguageCode): CastSearchCopy => {
     language: translateText(castCopyVi.language, language),
     listAria: translateText(castCopyVi.listAria, language),
     locating: translateText(castCopyVi.locating, language),
+    nearMe: translateText(castCopyVi.nearMe, language),
     openFilters: translateText(castCopyVi.openFilters, language),
     resetFilters: translateText(castCopyVi.resetFilters, language),
     resultCount: (count) => translateText(`${count} cast`, language),
@@ -894,6 +899,8 @@ export default function Page() {
   };
 
   const requestNearby = () => {
+    if (isLocating) return;
+
     if (!navigator.geolocation) {
       setError("Thiết bị chưa hỗ trợ lấy vị trí.");
       return;
@@ -1001,15 +1008,6 @@ export default function Page() {
               </button>
             </label>
 
-            <CastDropdown
-              ariaLabel={copy.city}
-              className="cast-city-select"
-              icon={<MapPin size={16} />}
-              options={localizedCityOptions}
-              value={city}
-              onChange={handleCityChange}
-            />
-
             <button type="button" className="cast-find-button">
               {copy.find}
             </button>
@@ -1073,6 +1071,15 @@ export default function Page() {
           >
             <button
               type="button"
+              className={`cast-chip ${sort === "nearest" ? "is-active" : ""}`}
+              onClick={requestNearby}
+              disabled={isLocating}
+            >
+              <LocateFixed size={13} />
+              {isLocating ? copy.locating : copy.nearMe}
+            </button>
+            <button
+              type="button"
               className={`cast-chip ${hasActiveCoupon ? "is-active" : ""}`}
               onClick={() => setHasActiveCoupon((current) => !current)}
             >
@@ -1119,9 +1126,9 @@ export default function Page() {
               ariaLabel={copy.sortLabel}
               className="cast-sort-select"
               label={copy.sortLabel}
-              options={effectiveSortOptions}
-              value={sort}
-              onChange={(value) => handleSortChange(value as DiscoverySort)}
+              options={localizedCityOptions}
+              value={city}
+              onChange={handleCityChange}
             />
           </div>
 
