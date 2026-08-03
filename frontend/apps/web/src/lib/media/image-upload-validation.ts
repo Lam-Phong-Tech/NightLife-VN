@@ -1,7 +1,7 @@
 export const MAX_STORE_IMAGE_SIZE_BYTES = 15 * 1024 * 1024;
 export const MAX_TOUR_COVER_IMAGE_SIZE_BYTES = 15 * 1024 * 1024;
-export const MAX_ADMIN_VIDEO_SIZE_BYTES = 25 * 1024 * 1024;
-export const MAX_APPEARANCE_ICON_SIZE_BYTES = 30 * 1024;
+export const MAX_ADMIN_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
+export const MAX_APPEARANCE_ICON_SIZE_BYTES = 512 * 1024;
 export const MAX_APPEARANCE_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
 export const STORE_IMAGE_ACCEPT =
@@ -139,7 +139,7 @@ export const getContentImageValidationError = (file: File): string | null =>
 
 export const getAdminVideoValidationError = (file: File): string | null =>
   getFormatValidationError(file, videoPolicy, 'MP4 hoặc WebM') ??
-  getSizeValidationError(file, MAX_ADMIN_VIDEO_SIZE_BYTES, '25MB');
+  getSizeValidationError(file, MAX_ADMIN_VIDEO_SIZE_BYTES, '100MB');
 
 export const getAppearanceImageValidationError = (
   file: File,
@@ -155,7 +155,7 @@ export const getAppearanceImageValidationError = (
     ? getSizeValidationError(
         file,
         MAX_APPEARANCE_ICON_SIZE_BYTES,
-        '30KB',
+        '512KB',
       )
     : getSizeValidationError(
         file,

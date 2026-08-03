@@ -685,7 +685,7 @@ export default function AppearancePage() {
 
             <div style={{ display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-              <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}><b style={{ color: '#f0dda8' }}>Chuẩn icon:</b> SVG viewBox 24×24, nét 1.5–2px (hệ thống dùng 1.7px), 1 màu — dùng <b style={{ color: '#f0dda8' }}>currentColor</b> để icon tự đổi màu theo trạng thái (vàng khi chọn). Nếu là PNG: 96×96px @2x, nền trong suốt. Dung lượng &lt; 30 KB. Icon hiển thị thật 20–24px, chừa lề an toàn 2px.</span>
+              <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}><b style={{ color: '#f0dda8' }}>Chuẩn icon:</b> SVG viewBox 24×24, nét 1.5–2px (hệ thống dùng 1.7px), 1 màu — dùng <b style={{ color: '#f0dda8' }}>currentColor</b> để icon tự đổi màu theo trạng thái (vàng khi chọn). Nếu là PNG: 96×96px @2x, nền trong suốt. Dung lượng tối đa 512 KB. Icon hiển thị thật 20–24px, chừa lề an toàn 2px.</span>
             </div>
 
             <span onClick={() => setDrawer(null)} style={{ display: 'block', textAlign: 'center', fontSize: '14px', fontWeight: 700, padding: '13px', borderRadius: '12px', cursor: 'pointer', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', boxShadow: '0 14px 28px -12px rgba(168,124,60,.55)' }}>Xong</span>
@@ -848,7 +848,7 @@ export default function AppearancePage() {
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
                 <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '7px' }}>{uploadingFavicon ? 'Đang tải favicon...' : 'Kéo thả file .svg / .png vào đây'}</div>
-                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '4px' }}>hoặc bấm để chọn từ máy · tối đa 30 KB</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '4px' }}>hoặc bấm để chọn từ máy · tối đa 512 KB</div>
               </div>
             </div>
 

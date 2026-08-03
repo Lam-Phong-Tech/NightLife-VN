@@ -1,7 +1,7 @@
 export const MAX_IMAGE_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024;
-export const MAX_VIDEO_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
+export const MAX_VIDEO_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_DOCUMENT_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
-export const MAX_APPEARANCE_ICON_SIZE_BYTES = 30 * 1024;
+export const MAX_APPEARANCE_ICON_SIZE_BYTES = 512 * 1024;
 export const MAX_APPEARANCE_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
 export const uploadMimeTypes = [

@@ -95,7 +95,8 @@ Implemented endpoints:
 - `GET /storage/files/:storageKey`
 
 Uploaded files are saved under `STORAGE_LOCAL_DIR` and metadata is stored in `media_files`.
-Allowed upload types are images, videos, and PDFs. The default upload limit is 25 MB.
+Allowed upload types are images, videos, and PDFs. Upload limits depend on the
+content type; videos can be up to 100 MB.
 
 ## Core P0 Schema
 
