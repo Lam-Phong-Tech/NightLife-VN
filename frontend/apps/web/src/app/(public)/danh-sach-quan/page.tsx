@@ -1667,13 +1667,9 @@ function DesktopVenueFilterPopover({
         ) : null}
         <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
           <h3>{copy.filterNeeds}</h3>
-          <div className="venue-desktop-filter-options">
-            <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
-              {copy.hasDeals}
-            </button>
-            <button type="button" className={topRankingOnly ? "is-active" : ""} onClick={onToggleTopRanking}>
-              {copy.topRanking}
-            </button>
+          <div className="venue-filter-toggle-grid">
+            <VenueFilterToggleRow label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
+            <VenueFilterToggleRow label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
           </div>
         </section>
         <DesktopVenueFilterOptionGroup
@@ -1819,21 +1815,9 @@ function MobileVenueFilterSheet({
 
           <section className="venue-filter-group" aria-label={copy.filterNeeds}>
             <h3>{copy.filterNeeds}</h3>
-            <div>
-              <button
-                type="button"
-                className={hasActiveCoupon ? "is-active" : ""}
-                onClick={onToggleCoupon}
-              >
-                {copy.hasDeals}
-              </button>
-              <button
-                type="button"
-                className={topRankingOnly ? "is-active" : ""}
-                onClick={onToggleTopRanking}
-              >
-                {copy.topRanking}
-              </button>
+            <div className="venue-filter-toggle-grid">
+              <VenueFilterToggleRow label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
+              <VenueFilterToggleRow label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
             </div>
           </section>
 
@@ -1898,6 +1882,28 @@ function VenueFilterChipGroup({
         ))}
       </div>
     </section>
+  );
+}
+
+function VenueFilterToggleRow({
+  label,
+  pressed,
+  onToggle,
+}: {
+  label: string;
+  pressed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="venue-filter-toggle-row">
+      <span>
+        <i />
+        {label}
+      </span>
+      <button type="button" aria-pressed={pressed} className={pressed ? "is-on" : ""} onClick={onToggle}>
+        <b />
+      </button>
+    </div>
   );
 }
 
@@ -2449,6 +2455,73 @@ const venueSearchCss = `
     background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
     color: var(--vy-on-gold);
     box-shadow: 0 14px 30px -24px rgba(212, 178, 106, .72);
+  }
+
+  .venue-filter-toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .venue-filter-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 54px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 0 14px;
+  }
+
+  .venue-filter-toggle-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--vy-muted);
+    font-size: 12.5px;
+    font-weight: 800;
+  }
+
+  .venue-filter-toggle-row span i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #fb5a97;
+    box-shadow: 0 0 0 4px rgba(251, 90, 151, 0.1);
+  }
+
+  .venue-filter-toggle-row button {
+    width: 42px;
+    height: 24px;
+    position: relative;
+    flex: none;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .venue-filter-toggle-row button b {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #d8d1bf;
+    transition: transform .18s ease;
+  }
+
+  .venue-filter-toggle-row button.is-on {
+    background: linear-gradient(135deg, #f0dda8, #d4b26a);
+  }
+
+  .venue-filter-toggle-row button.is-on b {
+    transform: translateX(18px);
+    background: #19150d;
   }
 
   .venue-desktop-filter-actions {
@@ -3147,13 +3220,13 @@ const venueSearchCss = `
     font-weight: 800;
   }
 
-  .venue-filter-group div {
+  .venue-filter-group > div:not(.venue-filter-toggle-grid) {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .venue-filter-group button {
+  .venue-filter-group > div:not(.venue-filter-toggle-grid) button {
     min-height: 36px;
     border: 1px solid var(--vy-border);
     border-radius: 16px;
@@ -3166,11 +3239,17 @@ const venueSearchCss = `
     cursor: pointer;
   }
 
-  .venue-filter-group button.is-active {
+  .venue-filter-group > div:not(.venue-filter-toggle-grid) button.is-active {
     border-color: transparent;
     background: linear-gradient(135deg, #f0dda8, #d4b26a);
     color: var(--vy-on-gold);
     font-weight: 850;
+  }
+
+  @media (max-width: 560px) {
+    .venue-filter-toggle-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .venue-filter-actions {
@@ -3363,18 +3442,31 @@ const venueSearchCss = `
     background: rgba(150, 116, 52, .12);
   }
 
-  html.vy-light .venue-filter-group button {
+  html.vy-light .venue-filter-group > div:not(.venue-filter-toggle-grid) button {
     border-color: rgba(150, 116, 52, .18);
     background: rgba(255, 255, 255, .86);
     color: #6f6658;
     box-shadow: 0 10px 24px -22px rgba(68, 48, 18, .44);
   }
 
-  html.vy-light .venue-filter-group button.is-active {
+  html.vy-light .venue-filter-group > div:not(.venue-filter-toggle-grid) button.is-active {
     border-color: transparent;
     background: linear-gradient(135deg, #ffe9a8, #d7ae4b);
     color: #241a0a;
     box-shadow: 0 14px 28px -20px rgba(126, 86, 18, .62);
+  }
+
+  html.vy-light .venue-filter-toggle-row {
+    border-color: rgba(150, 116, 52, .16);
+    background: rgba(255, 255, 255, .7);
+  }
+
+  html.vy-light .venue-filter-toggle-row span {
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-filter-toggle-row button {
+    background: rgba(117, 101, 72, .25);
   }
 
   html.vy-light .venue-filter-actions {
