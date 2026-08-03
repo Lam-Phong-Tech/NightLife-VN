@@ -1364,19 +1364,25 @@
     var(--vy-gold-soft-bg);
   padding: 16px;
   display: grid;
-  grid-template-columns: 172px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
   gap: 16px;
   align-items: center;
 }
 
 .qrBox {
-  width: 172px;
-  height: 172px;
+  width: min(280px, 100%);
+  aspect-ratio: 1;
+  height: auto;
   border: 1px solid var(--vy-border-gold-32);
   border-radius: 16px;
   background: #fff;
   display: grid;
   place-items: center;
+}
+
+.qrBox img {
+  width: min(256px, 100%);
+  height: auto;
 }
 
 .qrCopy strong {

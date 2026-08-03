@@ -257,7 +257,7 @@ const parseContext = () => {
     mode: parseRequestedMode(params.get("mode")),
     date: clampBookingDate(params.get("date")),
     time: params.get("time") || "21:00",
-    guests: Number(params.get("guests") || 4),
+    guests: Number(params.get("guests") || 3),
   } as const;
 };
 
@@ -271,8 +271,8 @@ export default function Page() {
   const [email, setEmail] = useState("");
   const [bookingDate, setBookingDate] = useState(getTodayDate);
   const [bookingTime, setBookingTime] = useState("21:00");
-  const [guests, setGuests] = useState(4);
-  const [guestInput, setGuestInput] = useState("4");
+  const [guests, setGuests] = useState(3);
+  const [guestInput, setGuestInput] = useState("3");
   const [note, setNote] = useState("");
   const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
   const [storeCasts, setStoreCasts] = useState<StoreDetailCast[]>([]);
@@ -305,7 +305,7 @@ export default function Page() {
       setBookingTime(parsed.time || "21:00");
       const initialGuests = Number.isFinite(parsed.guests)
         ? clampBookingGuestCount(parsed.guests)
-        : 4;
+        : 3;
       setGuests(initialGuests);
       setGuestInput(String(initialGuests));
 
@@ -1295,7 +1295,6 @@ function TextField({
   icon,
   error,
   activeLanguage,
-  readOnly = false,
 }: {
   label: string;
   name: string;
@@ -1306,7 +1305,6 @@ function TextField({
   icon?: React.ReactNode;
   error?: string;
   activeLanguage: LanguageCode;
-  readOnly?: boolean;
 }) {
   return (
     <label className={styles.field}>
@@ -1339,6 +1337,7 @@ function EmailField({
   onTouched,
   error,
   activeLanguage,
+  readOnly = false,
 }: {
   name: string;
   value: string;
@@ -1346,6 +1345,7 @@ function EmailField({
   onTouched: () => void;
   error?: string;
   activeLanguage: LanguageCode;
+  readOnly?: boolean;
 }) {
   return (
     <label className={styles.field}>

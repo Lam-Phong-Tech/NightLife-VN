@@ -1638,7 +1638,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [lightboxMode, setLightboxMode] = useState<"photo" | "video">("photo");
-  const [guestCount, setGuestCount] = useState(4);
+  const [guestCount, setGuestCount] = useState(3);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
   const [selectedCastSlug, setSelectedCastSlug] = useState("");

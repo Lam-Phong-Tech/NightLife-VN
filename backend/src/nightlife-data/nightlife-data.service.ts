@@ -14200,7 +14200,7 @@ export class NightlifeDataService {
     const bookingCode = this.bookingCodeFor(booking);
     const qrPayload = this.bookingQrPayload(booking);
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=24&data=${encodeURIComponent(qrPayload)}`;
     const locale = this.normalizeBookingLocale(booking.locale);
     const amountLabel = this.bookingAmountLabel(booking, locale);
     const discountLabel = this.bookingDiscountEmailLabel(booking);
@@ -14335,9 +14335,9 @@ export class NightlifeDataService {
 
   private async buildBookingQrImageDataUrl(payload: string) {
     return QRCode.toDataURL(payload, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 220,
+      errorCorrectionLevel: 'Q',
+      margin: 4,
+      width: 640,
     });
   }
 
@@ -21122,9 +21122,9 @@ export class NightlifeDataService {
 
   private async buildCouponQrImageDataUrl(payload: string) {
     return QRCode.toDataURL(payload, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 220,
+      errorCorrectionLevel: 'Q',
+      margin: 4,
+      width: 640,
     });
   }
 

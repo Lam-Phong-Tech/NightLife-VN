@@ -330,7 +330,7 @@ const rebookHref = (booking: BookingRecord) => {
     ...(booking.store?.name ? { storeName: booking.store.name } : {}),
     ...(booking.cast?.slug ? { castSlug: booking.cast.slug } : {}),
     ...(booking.cast ? { castName: booking.cast.publicAlias ?? booking.cast.stageName } : {}),
-    guests: String(booking.partySize || 4),
+    guests: String(booking.partySize || 3),
     date: getTomorrowDate(),
     time: bookingTimeValue(booking.scheduledAt),
   });

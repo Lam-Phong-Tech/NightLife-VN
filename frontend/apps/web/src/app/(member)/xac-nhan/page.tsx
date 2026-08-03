@@ -131,14 +131,10 @@ const bookingQrPayload = (booking: BookingRecord) =>
   couponIssueQrPayload(booking) ||
   ["NLBOOKING", booking.id, booking.bookingCode, booking.store?.slug ?? "nightlife", booking.scheduledAt].join("|");
 
-const bookingQrImageUrl = (booking: BookingRecord) => {
-  const issueQrImage = booking.couponIssue?.qrImageDataUrl || booking.couponIssue?.qrImageUrl;
-  if (!booking.tour && issueQrImage) return issueQrImage;
-
-  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
+const bookingQrImageUrl = (booking: BookingRecord) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=24&data=${encodeURIComponent(
     bookingQrPayload(booking),
   )}`;
-};
 
 const bookingTitle = (booking: BookingRecord | null) => {
   if (!booking) return "Booking NightLife";
@@ -992,8 +988,8 @@ export default function Page() {
                 <Image
                   src={qrImageUrl}
                   alt={`${isTourBooking ? tourCopy.qrTitle : translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`}
-                  width={156}
-                  height={156}
+                  width={256}
+                  height={256}
                   unoptimized
                 />
               </div>

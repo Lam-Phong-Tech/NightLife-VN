@@ -2474,7 +2474,11 @@ export default function PartnerPage() {
       }
       const scanCanvas = document.createElement('canvas');
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
       });
       cameraStreamRef.current = stream;
@@ -2505,6 +2509,8 @@ export default function PartnerPage() {
             void scanCouponPayload(rawValue, { fromCamera: true }).then((ok) => {
               if (ok) {
                 stopCameraScan();
+              } else {
+                lastCameraPayloadRef.current = '';
               }
             });
           }
@@ -2516,10 +2522,10 @@ export default function PartnerPage() {
           return;
         }
 
-        cameraLoopRef.current = window.setTimeout(scanFrame, 450);
+        cameraLoopRef.current = window.setTimeout(scanFrame, 250);
       };
 
-      cameraLoopRef.current = window.setTimeout(scanFrame, 500);
+      cameraLoopRef.current = window.setTimeout(scanFrame, 250);
     } catch {
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
       cameraStreamRef.current = null;
@@ -6202,6 +6208,7 @@ export default function PartnerPage() {
 
             <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
               Luồng quét gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
+              Giữ QR cách camera khoảng 15-25 cm và tránh đưa camera quá sát để mã không bị mờ.
               Nếu camera không đọc được mã, có thể tải ảnh QR khách gửi để quét xác nhận. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
             </div>
 
