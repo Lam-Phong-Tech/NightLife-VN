@@ -213,6 +213,15 @@ const CAST_RANKING_IMAGE_PURPOSES = [
   'cast-gallery',
   'thumbnail',
 ] as const;
+const STORE_MENU_MEDIA_PURPOSE_KEYS = new Set([
+  'menu',
+  'menu-item',
+  'menu_item',
+  'store-menu-item',
+  'store_menu_item',
+  'partner-menu-item',
+  'partner_menu_item',
+]);
 type BookingStatusActorType =
   | 'MEMBER'
   | 'GUEST'
@@ -1162,7 +1171,11 @@ export class NightlifeDataService {
       return true;
     }
 
-    return !CAST_MEDIA_PURPOSE_KEYS.has(purpose.toLowerCase());
+    const normalizedPurpose = purpose.toLowerCase();
+    return (
+      !CAST_MEDIA_PURPOSE_KEYS.has(normalizedPurpose) &&
+      !STORE_MENU_MEDIA_PURPOSE_KEYS.has(normalizedPurpose)
+    );
   }
 
   constructor(
@@ -2508,8 +2521,19 @@ export class NightlifeDataService {
       },
     });
 
+    const menuImageKeys = new Set(
+      this.buildStoreMenuPriceItems(this.asRecord(store.pricingInfo))
+        .map((item) => item.imageUrl)
+        .filter((url): url is string => Boolean(url))
+        .map((url) => this.partnerMediaUrlKey(url))
+        .filter((key): key is string => Boolean(key)),
+    );
     const gallery = store.media
-      .filter((media) => this.isStoreGalleryMedia(media))
+      .filter(
+        (media) =>
+          this.isStoreGalleryMedia(media) &&
+          !menuImageKeys.has(this.partnerMediaUrlKey(media.url) ?? ''),
+      )
       .map((media) => {
         const metadata = this.asRecord(media.metadata);
         const thumbnailUrl =
