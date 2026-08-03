@@ -14,6 +14,11 @@ type PageMetadataOptions = {
   };
 };
 
+const DEFAULT_SOCIAL_IMAGE = {
+  url: "/seo/og-cover-bar-1200x630.jpg",
+  alt: "Không gian quầy bar về đêm tại Vietyoru",
+};
+
 export const createPageMetadata = ({
   title,
   description,
@@ -23,7 +28,8 @@ export const createPageMetadata = ({
   image,
 }: PageMetadataOptions): Metadata => {
   const canonical = path.startsWith("/") ? path : `/${path}`;
-  const images = image ? [{ url: image.url, alt: image.alt }] : undefined;
+  const socialImage = image ?? DEFAULT_SOCIAL_IMAGE;
+  const images = [{ url: socialImage.url, alt: socialImage.alt }];
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
@@ -52,7 +58,7 @@ export const createPageMetadata = ({
       card: "summary_large_image",
       title: absoluteTitle ? title : `${title} | ${siteConfig.name}`,
       description,
-      images: image ? [image.url] : undefined,
+      images: [socialImage.url],
     },
   };
 };
