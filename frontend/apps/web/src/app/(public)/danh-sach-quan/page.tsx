@@ -129,9 +129,7 @@ const cityOptions = [
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "priority", label: "Phổ biến" },
   { value: "nearest", label: "Gần nhất" },
-  { value: "newest", label: "Mới nhất" },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -1647,18 +1645,6 @@ function DesktopVenueFilterPopover({
       </header>
 
       <div className="venue-desktop-filter-body">
-        <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
-          <h3>{copy.filterNeeds}</h3>
-          <div className="venue-desktop-filter-options">
-            <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
-              {copy.hasDeals}
-            </button>
-            <button type="button" className={topRankingOnly ? "is-active" : ""} onClick={onToggleTopRanking}>
-              {copy.topRanking}
-            </button>
-          </div>
-        </section>
-
         <DesktopVenueFilterOptionGroup
           label={copy.chooseCity}
           options={cityOptions}
@@ -1679,6 +1665,17 @@ function DesktopVenueFilterPopover({
             onChange={onCategory}
           />
         ) : null}
+        <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
+          <h3>{copy.filterNeeds}</h3>
+          <div className="venue-desktop-filter-options">
+            <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
+              {copy.hasDeals}
+            </button>
+            <button type="button" className={topRankingOnly ? "is-active" : ""} onClick={onToggleTopRanking}>
+              {copy.topRanking}
+            </button>
+          </div>
+        </section>
         <DesktopVenueFilterOptionGroup
           label={copy.sortLabel.replace(":", "")}
           options={sortOptions}
@@ -2021,6 +2018,11 @@ const venueSearchCss = `
 
   .venue-search-hero {
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(21, 19, 26, 0.96), rgba(13, 12, 17, 0.98));
+    box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.7);
+    padding: 26px 28px 24px;
   }
 
   .venue-search-page--category .venue-search-hero {
@@ -2046,8 +2048,8 @@ const venueSearchCss = `
   .venue-search-title h1 {
     margin: 0;
     color: var(--vy-text);
-    font-size: 30px;
-    line-height: 1.05;
+    font-size: 28px;
+    line-height: 1.15;
     font-weight: 800;
     letter-spacing: 0;
   }
@@ -2067,10 +2069,11 @@ const venueSearchCss = `
   }
 
   .venue-search-controls {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 140px 108px;
-    gap: 12px;
-    margin-top: 24px;
+    grid-template-columns: minmax(0, 1fr) 176px;
+    gap: 10px;
+    margin-top: 18px;
   }
 
   .venue-search-field {
@@ -2082,7 +2085,7 @@ const venueSearchCss = `
   .venue-city-select,
   .venue-find-button,
   .venue-sort-select {
-    min-height: 56px;
+    min-height: 52px;
     border: 1px solid var(--vy-border-gold-32);
     border-radius: 14px;
     background: var(--vy-surface-1);

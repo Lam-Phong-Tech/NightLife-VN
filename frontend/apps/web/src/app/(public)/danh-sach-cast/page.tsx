@@ -130,8 +130,6 @@ const languageOptions: Option[] = [
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "priority", label: "Phổ biến" },
   { value: "nearest", label: "Gần nhất" },
 ];
 
@@ -1787,7 +1785,7 @@ const castSearchCss = `
 .cast-search-controls {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 176px 116px;
+  grid-template-columns: minmax(0, 1fr) 176px;
   gap: 10px;
   margin-top: 18px;
 }
