@@ -988,8 +988,8 @@ export default function Page() {
                 <Image
                   src={qrImageUrl}
                   alt={`${isTourBooking ? tourCopy.qrTitle : translateText("Mã QR đặt chỗ", activeLanguage)} ${booking.bookingCode}`}
-                  width={256}
-                  height={256}
+                  width={240}
+                  height={240}
                   unoptimized
                 />
               </div>
