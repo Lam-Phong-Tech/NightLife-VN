@@ -1,5 +1,6 @@
 import type { PublicStoreDetail, StoreOpeningHour } from "@/lib/api/store-detail";
 import { normalizeStoreOpeningHours } from "@/lib/booking-time-slots";
+import { localizePathname, type LanguageCode } from "@/lib/i18n/locales";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 import { readableName } from "./store-detail.helpers";
@@ -44,12 +45,15 @@ const openingSpec = (openingHours?: Record<string, StoreOpeningHour> | null) => 
   return specs.length ? specs : undefined;
 };
 
-export function buildStoreStructuredData(store: PublicStoreDetail) {
+export function buildStoreStructuredData(
+  store: PublicStoreDetail,
+  locale: LanguageCode = "vi",
+) {
   const imageUrls = store.gallery
     .filter((item) => item.type === "IMAGE")
     .map((item) => item.url)
     .slice(0, 6);
-  const canonicalPath = store.seo.canonicalPath || `/stores/${store.slug}`;
+  const canonicalPath = localizePathname(`/stores/${store.slug}`, locale);
   const url = absoluteSiteUrl(canonicalPath);
   const storeName = readableName(store.name);
   const businessType = schemaTypeByCategory[store.category] ?? "LocalBusiness";

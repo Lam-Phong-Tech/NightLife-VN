@@ -827,6 +827,15 @@ const STORE_SLUG_ALIASES: Record<string, string> = {
   'ktv-hoang-gia': 'golden-voice-ktv',
   'diamond-bar': 'crimson-bar',
   'sora-lounge': 'jade-lounge',
+  'draft-store-1785327636355': 'store-d7626daa',
+  'draft-store-1785333389067': 'store-622ba139',
+  'draft-store-1785333671416': 'store-15001b2b',
+  'draft-store-1785342535176': 'store-51c1c584',
+  'draft-store-1785343030488': 'store-d881e750',
+  'draft-store-1785401754710': 'store-04bb1961',
+  '1': 'store-f702cf4e',
+  '2': 'store-234448d8',
+  '3': 'store-bc67d3eb',
 };
 
 const PARTNER_DASHBOARD_DAY_LABELS = [
@@ -23388,12 +23397,7 @@ export class NightlifeDataService {
     dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
   ) {
     const mediaIds = await this.resolveAdminCastMediaIds(dto.mediaIds);
-    let slug = this.generateSlug(dto.stageName);
-    let counter = 1;
-    while (!(await this.checkAdminCastSlug(slug)).available) {
-      slug = `${this.generateSlug(dto.stageName)}-${counter}`;
-      counter++;
-    }
+    const slug = await this.resolveUniqueAdminCastSlug(dto.stageName);
 
     return this.prisma.$transaction(async (tx) => {
       const newCast = await tx.cast.create({
@@ -23584,11 +23588,7 @@ export class NightlifeDataService {
       dto.stageName !== existing.stageName &&
       existing.status === 'DRAFT'
     ) {
-      slug = this.generateSlug(dto.stageName);
-      let counter = 1;
-      while (!(await this.checkAdminCastSlug(slug, id)).available) {
-        slug = `${this.generateSlug(dto.stageName)}-${counter++}`;
-      }
+      slug = await this.resolveUniqueAdminCastSlug(dto.stageName, id);
     }
 
     const mediaIds =
@@ -23811,6 +23811,44 @@ export class NightlifeDataService {
       .replace(/(^-|-$)/g, '');
   }
 
+  private generateSafeSlugBase(name: string, type: 'store' | 'cast') {
+    return (
+      this.generateSlug(name) ||
+      `${type}-${randomUUID().replace(/-/g, '').slice(0, 8)}`
+    );
+  }
+
+  private async resolveUniqueAdminStoreSlug(name: string, excludeId?: string) {
+    const baseSlug = this.generateSafeSlugBase(name, 'store');
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (!(await this.checkAdminStoreSlug(slug, excludeId)).available) {
+      slug = `${baseSlug}-${counter++}`;
+    }
+
+    return slug;
+  }
+
+  private async resolveUniqueAdminCastSlug(name: string, excludeId?: string) {
+    const baseSlug = this.generateSafeSlugBase(name, 'cast');
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (!(await this.checkAdminCastSlug(slug, excludeId)).available) {
+      slug = `${baseSlug}-${counter++}`;
+    }
+
+    return slug;
+  }
+
+  private needsAutomaticStoreSlugReplacement(slug: string) {
+    return (
+      slug.startsWith('draft-store-') ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+    );
+  }
+
   private async inferAreaFromAddressDetails(
     address: string,
     city: string,
@@ -23879,11 +23917,7 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
     dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
   ) {
-    let slug = this.generateSlug(dto.name);
-    let counter = 1;
-    while (!(await this.checkAdminStoreSlug(slug)).available) {
-      slug = `${this.generateSlug(dto.name)}-${counter++}`;
-    }
+    const slug = await this.resolveUniqueAdminStoreSlug(dto.name);
 
     const storeAddress = this.mergeWardIntoStoreAddress(
       dto.address,
@@ -23967,12 +24001,16 @@ export class NightlifeDataService {
       where: { id },
     });
     let slug: string | undefined;
-    if (dto.name && dto.name !== existing.name && existing.status === 'DRAFT') {
-      slug = this.generateSlug(dto.name);
-      let counter = 1;
-      while (!(await this.checkAdminStoreSlug(slug, id)).available) {
-        slug = `${this.generateSlug(dto.name)}-${counter++}`;
-      }
+    const nextName = dto.name ?? existing.name;
+    const isActivatingDraft =
+      existing.status === 'DRAFT' && dto.status === 'ACTIVE';
+    const shouldRefreshStoreSlug =
+      existing.status === 'DRAFT' &&
+      ((dto.name && dto.name !== existing.name) ||
+        (isActivatingDraft &&
+          this.needsAutomaticStoreSlugReplacement(existing.slug)));
+    if (shouldRefreshStoreSlug) {
+      slug = await this.resolveUniqueAdminStoreSlug(nextName, id);
     }
 
     const storeAddress =

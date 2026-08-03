@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
+import type { LanguageCode } from "@/lib/i18n/locales";
 import { buildCastMetadata } from "@/lib/seo/cast-metadata";
 import CastProfileClient from "./CastProfileClient";
 import { buildCastStructuredData } from "./cast-profile.schema";
 
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; locale?: LanguageCode }>;
 };
 
 const legacyCastSlugMap: Record<string, string> = {
@@ -23,7 +24,7 @@ const legacyCastSlugMap: Record<string, string> = {
 
 export const dynamic = "force-dynamic";
 
-const resolveCastSlug = (slug: string) => legacyCastSlugMap[slug] ?? slug;
+export const resolveCastSlug = (slug: string) => legacyCastSlugMap[slug] ?? slug;
 
 const loadCast = async (slug: string) => {
   try {
@@ -38,13 +39,14 @@ const loadCast = async (slug: string) => {
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, locale } = await params;
 
   try {
     const cast = await getCastDetail(resolveCastSlug(slug));
-    return buildCastMetadata(cast);
+    return buildCastMetadata(cast, locale);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
+      notFound();
       return {
         title: "Không tìm thấy cast",
         description: "Cast này không tồn tại hoặc chưa được công khai trên Vietyoru.",
@@ -59,9 +61,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function Page({ params }: PageProps) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const cast = await loadCast(slug);
-  const structuredData = buildCastStructuredData(cast);
+  const structuredData = buildCastStructuredData(cast, locale);
 
   return (
     <>

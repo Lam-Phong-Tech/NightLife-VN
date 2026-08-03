@@ -40,6 +40,13 @@ export const localizedPublicRootPaths = new Set([
   "/blog",
 ]);
 
+export function isLocalizedPublicRoute(pathname: string) {
+  return (
+    localizedPublicRootPaths.has(pathname) ||
+    /^\/(?:stores|casts)\/[^/]+$/.test(pathname)
+  );
+}
+
 const excludedLocalizedPrefixes = [
   "/admin",
   "/partner",

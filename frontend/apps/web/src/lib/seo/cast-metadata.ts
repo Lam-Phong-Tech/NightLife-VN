@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {
+  languageAlternates,
+  localizePathname,
+  type LanguageCode,
+} from "@/lib/i18n/locales";
 import { absoluteSiteUrl, siteConfig } from "@/lib/site";
 
 type CastSeo = {
@@ -11,8 +16,12 @@ type CastSeo = {
 
 type CastForMetadata = { slug: string; seo: CastSeo };
 
-export function buildCastMetadata(cast: CastForMetadata): Metadata {
-  const canonicalPath = cast.seo.canonicalPath || `/casts/${cast.slug}`;
+export function buildCastMetadata(
+  cast: CastForMetadata,
+  locale: LanguageCode = "vi",
+): Metadata {
+  const detailPath = `/casts/${cast.slug}`;
+  const canonicalPath = localizePathname(detailPath, locale);
   const images = cast.seo.ogImage ? [{ url: cast.seo.ogImage }] : undefined;
   const noindex = Boolean(cast.seo.noindex);
 
@@ -22,7 +31,10 @@ export function buildCastMetadata(cast: CastForMetadata): Metadata {
     robots: { index: !noindex, follow: !noindex },
     alternates: {
       canonical: canonicalPath,
-      languages: { vi: canonicalPath, "x-default": canonicalPath },
+      languages: {
+        ...languageAlternates(detailPath),
+        "x-default": localizePathname(detailPath, "vi"),
+      },
     },
     openGraph: {
       title: cast.seo.title,

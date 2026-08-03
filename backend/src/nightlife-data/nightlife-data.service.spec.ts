@@ -778,6 +778,34 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('generates a safe store slug when the admin store name has no Latin characters', async () => {
+    prisma.store.findUnique.mockResolvedValue(null);
+    prisma.store.create.mockResolvedValue({
+      id: 'store-japanese-name',
+      name: '美人',
+      slug: 'store-testslug',
+      status: 'ACTIVE',
+    });
+
+    await service.createAdminStore(adminActor, {
+      name: '美人',
+      category: 'LOUNGE',
+      city: 'Ho Chi Minh City',
+      address: '8 Le Thanh Ton',
+      status: 'ACTIVE',
+    } as never);
+
+    const createInput = prisma.store.create.mock.calls[0][0] as {
+      data: { slug: string };
+    };
+    const createdSlug = createInput.data.slug;
+    expect(createdSlug).toMatch(/^store-[a-z0-9]{8}$/);
+    expect(createdSlug).not.toMatch(/^-/);
+    expect(prisma.store.findUnique).toHaveBeenCalledWith({
+      where: { slug: createdSlug },
+    });
+  });
+
   it('syncs district from the inferred area when admin updates a store address', async () => {
     prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
       id: 'store-1',

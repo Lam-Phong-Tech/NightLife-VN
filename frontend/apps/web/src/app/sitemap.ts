@@ -5,11 +5,7 @@ import {
   getSitemapBlogPosts,
   slugifyBlogTerm,
 } from "@/lib/content/blog";
-import {
-  discoveryApi,
-  type PublicCast,
-  type PublicStore,
-} from "@/lib/api/discovery";
+import type { PublicCast, PublicStore } from "@/lib/api/discovery";
 import { getPublishedLegalSections } from "@/lib/content/legal";
 import { absoluteSiteUrl } from "@/lib/site";
 import {
@@ -17,9 +13,9 @@ import {
   languageCodes,
   localizePathname,
 } from "@/lib/i18n/locales";
-import { SITEMAP_STORE_LIMIT, SITEMAP_CAST_LIMIT } from "@/lib/seo/sitemap-limits";
 
 // Cache sitemap for 1 hour via ISR — prevents hammering the API on every bot crawl
+export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 const staticRoutes: Array<{
@@ -38,6 +34,22 @@ const staticRoutes: Array<{
   { path: "/blog", changeFrequency: "weekly", priority: 0.72 },
 ];
 
+async function loadSitemapDiscovery<T>(endpoint: "/stores" | "/casts") {
+  const backendBaseUrl =
+    process.env.BACKEND_API_URL?.replace(/\/api\/?$/, "").replace(/\/$/, "") ||
+    "https://api.vietyoru.com";
+  const response = await fetch(`${backendBaseUrl}${endpoint}?limit=100&sort=priority`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Unable to load sitemap ${endpoint}`);
+  }
+
+  const payload = (await response.json()) as T[] | { data?: T[] };
+  return Array.isArray(payload) ? payload : payload.data ?? [];
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   let stores: PublicStore[] = [];
@@ -45,8 +57,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     [stores, casts] = await Promise.all([
-      discoveryApi.listStores({ limit: SITEMAP_STORE_LIMIT, sort: "priority" }),
-      discoveryApi.listCasts({ limit: SITEMAP_CAST_LIMIT, sort: "priority" }),
+      loadSitemapDiscovery<PublicStore>("/stores"),
+      loadSitemapDiscovery<PublicCast>("/casts"),
     ]);
   } catch {
     stores = [];
@@ -89,18 +101,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
       })),
     ),
-    ...stores.map((store) => ({
-      url: absoluteSiteUrl(`/stores/${store.slug}`),
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.82,
-    })),
-    ...casts.map((cast) => ({
-      url: absoluteSiteUrl(`/casts/${cast.slug}`),
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.78,
-    })),
+    ...stores.flatMap((store) => {
+      const path = `/stores/${store.slug}`;
+      return languageCodes.map((language) => ({
+        url: absoluteSiteUrl(localizePathname(path, language)),
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: 0.82,
+        alternates: {
+          languages: Object.fromEntries(
+            Object.entries(languageAlternates(path)).map(([locale, alternatePath]) => [
+              locale,
+              absoluteSiteUrl(alternatePath),
+            ]),
+          ),
+        },
+      }));
+    }),
+    ...casts.flatMap((cast) => {
+      const path = `/casts/${cast.slug}`;
+      return languageCodes.map((language) => ({
+        url: absoluteSiteUrl(localizePathname(path, language)),
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: 0.78,
+        alternates: {
+          languages: Object.fromEntries(
+            Object.entries(languageAlternates(path)).map(([locale, alternatePath]) => [
+              locale,
+              absoluteSiteUrl(alternatePath),
+            ]),
+          ),
+        },
+      }));
+    }),
     ...blogPosts.map((post) => ({
       url: absoluteSiteUrl(`/blog/${post.slug}`),
       lastModified: new Date(post.updatedAt),

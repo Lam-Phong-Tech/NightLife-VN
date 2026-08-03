@@ -1,9 +1,13 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
+import { localizePathname, type LanguageCode } from "@/lib/i18n/locales";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 
-export function buildCastStructuredData(cast: PublicCastDetail) {
-  const canonicalPath = cast.seo.canonicalPath || `/casts/${cast.slug}`;
+export function buildCastStructuredData(
+  cast: PublicCastDetail,
+  locale: LanguageCode = "vi",
+) {
+  const canonicalPath = localizePathname(`/casts/${cast.slug}`, locale);
   const url = absoluteSiteUrl(canonicalPath);
   const displayName = cast.publicAlias ?? cast.stageName ?? cast.name;
   const imageUrls = [

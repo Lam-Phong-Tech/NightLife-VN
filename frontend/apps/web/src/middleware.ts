@@ -11,7 +11,7 @@ import {
 } from "@/lib/auth/hosts";
 import {
   getPathLanguage,
-  localizedPublicRootPaths,
+  isLocalizedPublicRoute,
   stripLanguagePrefix,
 } from "@/lib/i18n/locales";
 
@@ -22,6 +22,17 @@ type JwtPayload = {
 
 const loginPaths = new Set(["/dang-nhap", "/dang-nhap-doi-tac", "/admin/dang-nhap"]);
 const languageCodes = new Set(["vi", "en", "ja", "ko", "zh"]);
+const legacyPublicStoreSlugRedirects: Record<string, string> = {
+  "draft-store-1785327636355": "store-d7626daa",
+  "draft-store-1785333389067": "store-622ba139",
+  "draft-store-1785333671416": "store-15001b2b",
+  "draft-store-1785342535176": "store-51c1c584",
+  "draft-store-1785343030488": "store-d881e750",
+  "draft-store-1785401754710": "store-04bb1961",
+  "-1": "store-f702cf4e",
+  "-2": "store-234448d8",
+  "-3": "store-bc67d3eb",
+};
 const portalSessions = [
   {
     portal: "admin",
@@ -151,7 +162,7 @@ function redirectPartnerRegistration(request: NextRequest) {
   return NextResponse.redirect(redirectUrl);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const requestedPathname = request.nextUrl.pathname;
   const requestedLanguage = getPathLanguage(requestedPathname);
   const pathname = stripLanguagePrefix(requestedPathname);
@@ -258,6 +269,54 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  const legacyStoreSlug = pathname.match(/^\/stores\/([^/]+)$/)?.[1];
+  const replacementStoreSlug = legacyStoreSlug
+    ? legacyPublicStoreSlugRedirects[legacyStoreSlug]
+    : undefined;
+  if (
+    replacementStoreSlug &&
+    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+  ) {
+    const localizedUrl = request.nextUrl.clone();
+    localizedUrl.pathname = `/${requestedLanguage ?? "vi"}/stores/${replacementStoreSlug}`;
+    return NextResponse.redirect(localizedUrl, 308);
+  }
+
+  if (
+    !requestedLanguage &&
+    (hostKind === "local" || hostKind === "unknown" || hostKind === "public") &&
+    /^\/(?:stores|casts)\/[^/]+$/.test(pathname)
+  ) {
+    const localizedUrl = request.nextUrl.clone();
+    localizedUrl.pathname = `/vi${pathname}`;
+    return NextResponse.redirect(localizedUrl, 308);
+  }
+
+  const publicDetailMatch = requestedLanguage
+    ? pathname.match(/^\/(stores|casts)\/([^/]+)$/)
+    : null;
+  if (
+    publicDetailMatch &&
+    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+  ) {
+    const [, resourceType, slug] = publicDetailMatch;
+    const detailApiBaseUrl =
+      process.env.BACKEND_API_URL ||
+      (hostKind === "local" ? request.nextUrl.origin + "/api/backend" : "https://api.vietyoru.com");
+    const detailApiUrl = new URL(
+      `${detailApiBaseUrl.replace(/\/$/, "")}/${resourceType}/${encodeURIComponent(slug)}`,
+    );
+
+    try {
+      const detailResponse = await fetch(detailApiUrl, { cache: "no-store" });
+      if (detailResponse.status === 404) {
+        return new NextResponse("Not Found", { status: 404 });
+      }
+    } catch {
+      // Let the page render its normal error state if the API is temporarily unavailable.
+    }
+  }
+
   const prefix = pathname.startsWith("/admin")
     ? "admin_"
     : pathname.startsWith("/partner")
@@ -298,7 +357,7 @@ export function middleware(request: NextRequest) {
   requestHeaders.set("x-vietyoru-locale", requestedLanguage ?? "vi");
   requestHeaders.set("x-vietyoru-pathname", requestedPathname);
 
-  if (requestedLanguage && !localizedPublicRootPaths.has(pathname)) {
+  if (requestedLanguage && !isLocalizedPublicRoute(pathname)) {
     const rewriteUrl = request.nextUrl.clone();
     rewriteUrl.pathname = pathname;
     rewriteUrl.searchParams.set("lang", requestedLanguage);

@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {
+  languageAlternates,
+  localizePathname,
+  type LanguageCode,
+} from "@/lib/i18n/locales";
 import { absoluteSiteUrl, siteConfig } from "@/lib/site";
 
 type StoreSeo = {
@@ -11,8 +16,12 @@ type StoreSeo = {
 
 type StoreForMetadata = { slug: string; seo: StoreSeo };
 
-export function buildStoreMetadata(store: StoreForMetadata): Metadata {
-  const canonicalPath = store.seo.canonicalPath || `/stores/${store.slug}`;
+export function buildStoreMetadata(
+  store: StoreForMetadata,
+  locale: LanguageCode = "vi",
+): Metadata {
+  const detailPath = `/stores/${store.slug}`;
+  const canonicalPath = localizePathname(detailPath, locale);
   const images = store.seo.ogImage ? [{ url: store.seo.ogImage }] : undefined;
   const noindex = Boolean(store.seo.noindex);
 
@@ -22,7 +31,10 @@ export function buildStoreMetadata(store: StoreForMetadata): Metadata {
     robots: { index: !noindex, follow: !noindex },
     alternates: {
       canonical: canonicalPath,
-      languages: { vi: canonicalPath, "x-default": canonicalPath },
+      languages: {
+        ...languageAlternates(detailPath),
+        "x-default": localizePathname(detailPath, "vi"),
+      },
     },
     openGraph: {
       title: store.seo.title,

@@ -60,7 +60,6 @@ import {
   type MemberLoginPromptIntent,
 } from "@/lib/member-favorite-auth";
 import { LanguagePicker } from "./LanguagePicker";
-import { HybridPreloader } from "./HybridPreloader";
 import { SupportChatWidget } from "./SupportChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -2186,8 +2185,6 @@ export function SiteChrome({
     };
   }, [enableScrollReveal]);
 
-  const hybridPreloader = customerRouteMotionEnabled ? <HybridPreloader /> : null;
-
   if (hideChrome) {
     return (
       <SystemFeedbackProvider>
@@ -2195,7 +2192,6 @@ export function SiteChrome({
         <SessionSecurityWatcher />
         {customerRouteMotionEnabled ? (
           <>
-            {hybridPreloader}
             <div key={`route-content-${pathname}`} className="nl-customer-route-content">
               {children}
             </div>
@@ -2515,7 +2511,6 @@ export function SiteChrome({
           )}
         </header>
 
-        {hybridPreloader}
 
         <div key={`route-content-${pathname}`} className="nl-page-content">
           {children}
