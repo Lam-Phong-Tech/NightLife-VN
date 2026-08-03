@@ -97,9 +97,9 @@ type CastSearchCopy = {
 };
 
 const cityOptions: Option[] = [
+  { value: "", label: "Tất cả" },
   { value: "hn", label: "Hà Nội" },
   { value: "hcm", label: "TP.HCM" },
-  { value: "", label: "Tất cả" },
 ];
 
 const categoryOptions: Option[] = [
@@ -489,7 +489,7 @@ const highlightMatch = (text: string, query: string) => {
 
 export default function Page() {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState("hn");
+  const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
   const [language, setLanguage] = useState("");
@@ -748,6 +748,7 @@ export default function Page() {
     [currentPageStart, visibleCasts],
   );
   const cityLabel = getCastCityLabel(city, activeLanguage);
+  const resultCityLabel = city ? cityLabel : copy.all;
   const localizedCityOptions = useMemo(
     () => cityOptions.map((option) => localizeCastOption(option, activeLanguage, copy)),
     [activeLanguage, copy],
@@ -778,6 +779,7 @@ export default function Page() {
     [activeLanguage, copy.locating, isLocating],
   );
   const activeFilterCount = [
+    city,
     area,
     category,
     language,
@@ -810,6 +812,7 @@ export default function Page() {
   }, [currentPage, totalPages]);
 
   const resetFilters = () => {
+    setCity("");
     setArea("");
     setCategory("");
     setLanguage("");
@@ -1111,7 +1114,7 @@ export default function Page() {
           <div className="cast-results-head">
             <span>
               <b>{isResultsLoading ? "..." : copy.resultCount(visibleCasts.length)}</b>
-              <span> · {cityLabel}</span>
+              <span> · {resultCityLabel}</span>
             </span>
 
             <CastDropdown

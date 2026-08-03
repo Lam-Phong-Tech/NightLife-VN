@@ -117,9 +117,9 @@ const emptyVenueImage =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%2318181c'/%3E%3Cstop offset='.52' stop-color='%23342d21'/%3E%3Cstop offset='1' stop-color='%23101114'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='800' fill='url(%23g)'/%3E%3Crect x='300' y='335' width='600' height='64' rx='32' fill='%23f0dda8' opacity='.18'/%3E%3Crect x='420' y='430' width='360' height='34' rx='17' fill='%23f0dda8' opacity='.12'/%3E%3C/svg%3E";
 
 const cityOptions = [
+  { value: "", label: "Tất cả" },
   { value: "hn", label: "Hà Nội" },
   { value: "hcm", label: "TP.HCM" },
-  { value: "", label: "Tất cả" },
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
@@ -632,7 +632,7 @@ type LocationDialogMode = "permission" | "blocked";
 export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
   const [query, setQuery] = useState("");
   const [isSearchFocused, setSearchFocused] = useState(false);
-  const [city, setCity] = useState("hn");
+  const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState<DiscoverySort>("priority");
@@ -902,7 +902,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   }, [activeLanguage, openingNow, query, stores, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
-  const selectedCityLabel = cityLabel;
+  const selectedCityLabel = city ? cityLabel : copy.all;
   const localizedCityOptions = useMemo(
     () =>
       cityOptions.map((option) => ({
@@ -1061,7 +1061,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   );
   const categoryOptions = useMemo(() => [{ label: copy.all, value: "" }, ...categoryChips], [categoryChips, copy.all]);
   const activeFilterCount = [
-    city !== "hn",
+    Boolean(city),
     area,
     !isCategoryLocked && category,
     sort !== "priority",
@@ -1098,7 +1098,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   }, [currentPage, totalPages]);
 
   const resetFilters = () => {
-    setCity("hn");
+    setCity("");
     setArea("");
     setCategory("");
     setSort("priority");
@@ -1377,7 +1377,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         <div className="venue-result-bar">
           <div>
             <strong>{isResultsLoading ? "..." : formatVenueCount(venues.length, activeLanguage)}</strong>
-            <span> · {cityLabel}</span>
+            <span> · {city ? cityLabel : copy.all}</span>
           </div>
 
           <div
