@@ -1443,6 +1443,7 @@
 
   .qrCopy strong {
     font-size: 16px;
+    text-align: center;
   }
 
   .qrCopy p {
