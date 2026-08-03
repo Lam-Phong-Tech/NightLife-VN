@@ -2386,7 +2386,7 @@ export function SiteChrome({
                 <Link
                   href={memberLoginHref}
                   className="nl-site-action-control nl-site-login-link"
-                  aria-label="Đăng nhập"
+                  aria-label={translateText("Đăng nhập", activeLanguage)}
                   style={{
                     minHeight: "36px",
                     padding: "0 12px",
@@ -2407,7 +2407,7 @@ export function SiteChrome({
                     boxShadow: "0 8px 20px rgba(212,178,106,.18)",
                   }}
                 >
-                  Đăng nhập
+                  {translateText("Đăng nhập", activeLanguage)}
                 </Link>
               ) : null}
             </div>
@@ -2472,7 +2472,7 @@ export function SiteChrome({
                   }}
                 >
                   <LogIn size={16} style={{ flex: "none" }} />
-                  Đăng nhập
+                  {translateText("Đăng nhập", activeLanguage)}
                 </Link>
               ) : (
                 <Link
