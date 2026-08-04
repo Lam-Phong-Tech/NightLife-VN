@@ -1373,10 +1373,7 @@ export default function Page() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const amountInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleResubmitBill = (
-    bill: BillRecord,
-    focusTarget?: "photo" | "amount",
-  ) => {
+  const handleResubmitBill = (bill: BillRecord) => {
     setSelectedBillId("");
     setIsFormOpen(true);
     if (bill.store?.slug) {
@@ -1393,24 +1390,11 @@ export default function Page() {
     setOcrPreview(null);
     userFeedback.info({
       title: t("Gửi lại hóa đơn"),
-      description:
-        focusTarget === "photo"
-          ? t("Vui lòng chụp hoặc chọn ảnh/chứng từ mới để gửi lại hóa đơn.")
-          : focusTarget === "amount"
-          ? t("Vui lòng điều chỉnh tổng tiền hóa đơn trước khi gửi lại.")
-          : t("Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn."),
+      description: t("Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn."),
     });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    setTimeout(() => {
-      if (focusTarget === "photo") {
-        fileInputRef.current?.click();
-      } else if (focusTarget === "amount") {
-        amountInputRef.current?.focus();
-        amountInputRef.current?.select();
-      }
-    }, 200);
   };
 
   useEffect(() => {
