@@ -513,10 +513,11 @@ function NotificationTabs({
   return (
     <div
       style={{
-        display: "flex",
+        display: isMobile ? "grid" : "flex",
+        gridTemplateColumns: isMobile ? "repeat(3, minmax(0, 1fr))" : undefined,
         gap: "7px",
         padding: isMobile ? "0 16px 12px" : "0 16px 12px",
-        overflowX: isMobile ? "auto" : "hidden",
+        overflowX: "hidden",
         minWidth: 0,
         borderBottom: `1px solid ${colors.border}`,
         scrollbarWidth: "none",
@@ -533,23 +534,24 @@ function NotificationTabs({
             aria-pressed={active}
             onClick={() => onFilterChange(tab.key)}
             style={{
-              flex: isMobile ? "1 0 96px" : "none",
+              flex: isMobile ? undefined : "none",
               position: "relative",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: isMobile ? "6px" : "5px",
-              minWidth: isMobile ? "96px" : tab.key === "all" ? "72px" : undefined,
+              minWidth: isMobile ? 0 : tab.key === "all" ? "72px" : undefined,
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
-              border: active ? "0" : `1px solid ${colors.border}`,
+              border: active ? "1px solid transparent" : `1px solid ${colors.border}`,
               borderRadius: "15px",
               padding: isMobile ? "7px 10px" : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
               overflow: "hidden",
+              whiteSpace: "nowrap",
             }}
           >
             {tab.label}
@@ -1250,18 +1252,6 @@ function MobileNotificationPanel({
           >
             Thông báo
           </h2>
-          <div
-            style={{
-              fontSize: "8px",
-              fontWeight: 700,
-              letterSpacing: "1.8px",
-              color: colors.muted,
-              textTransform: "uppercase",
-              marginTop: "2px",
-            }}
-          >
-            Notifications
-          </div>
         </div>
       </div>
 

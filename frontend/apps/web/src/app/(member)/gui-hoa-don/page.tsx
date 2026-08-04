@@ -2275,25 +2275,24 @@ export default function Page() {
 
         .nl-bill-head {
           display: flex;
-          align-items: flex-start;
-          gap: 14px;
+          align-items: center;
+          gap: 12px;
           margin-top: 4px;
           margin-bottom: 24px;
         }
 
         .nl-back-round {
-          width: 42px;
-          height: 42px;
-          flex: 0 0 42px;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid var(--vy-border);
-          border-radius: 50%;
+          border: 1px solid var(--vy-border-gold-22);
+          border-radius: 999px;
           background: var(--vy-surface-2);
-          color: var(--vy-gold-pale);
+          color: var(--vy-gold-hi);
           text-decoration: none;
-          box-shadow: var(--vy-shadow-card);
         }
 
         .nl-back-round:hover {
