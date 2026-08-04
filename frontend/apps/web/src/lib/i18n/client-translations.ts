@@ -830,7 +830,7 @@ const entries: TranslationEntry[] = [
   },
   {
     vi: "Đang chọn",
-    en: "Selected",
+    en: "Selecting",
     ja: "選択中",
     ko: "선택됨",
     zh: "已选择",

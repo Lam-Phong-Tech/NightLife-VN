@@ -81,13 +81,14 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
   const activeLanguage = useMemo(() => getLanguage(activeCode), [activeCode]);
   const draftLanguage = useMemo(() => getLanguage(draftCode), [draftCode]);
   const hasPendingLanguageChange = draftCode !== activeCode;
-  const chooseLanguageLabel = translateText("Chọn ngôn ngữ", activeCode);
+  const previewLanguageCode = hasPendingLanguageChange ? draftCode : activeCode;
+  const chooseLanguageLabel = translateText("Chọn ngôn ngữ", previewLanguageCode);
   const selectLanguageLabel = translateText("Select language", activeCode);
   const inUseLanguageLabel = translateText("Đang dùng", activeCode);
-  const selectedLanguageLabel = translateText("Đang chọn", activeCode);
+  const selectedLanguageLabel = translateText("Đang chọn", draftCode);
   const cancelLanguageLabel = translateText("Hủy", activeCode);
-  const applyLanguageLabel = translateText(`Áp dụng ${draftLanguage.badge}`, activeCode);
-  const closeLanguagePickerLabel = translateText("Đóng chọn ngôn ngữ", activeCode);
+  const applyLanguageLabel = translateText(`Áp dụng ${draftLanguage.badge}`, draftCode);
+  const closeLanguagePickerLabel = translateText("Đóng chọn ngôn ngữ", previewLanguageCode);
 
   useEffect(() => {
     const storedLanguage = readStoredLanguage();
@@ -451,18 +452,6 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                   >
                     {chooseLanguageLabel}
                   </h2>
-                  <div
-                    style={{
-                      color: colors.muted,
-                      fontSize: isMobile ? "8.5px" : "9px",
-                      fontWeight: 700,
-                      letterSpacing: "1.6px",
-                      textTransform: "uppercase",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {selectLanguageLabel}
-                  </div>
                 </div>
               </div>
               <button

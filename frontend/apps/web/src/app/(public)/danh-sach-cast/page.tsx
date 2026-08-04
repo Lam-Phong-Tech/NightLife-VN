@@ -1609,12 +1609,14 @@ function CastFilterPanel({
               value={city}
               onChange={onCity}
             />
-            <FilterChipGroup
-              label={copy.area}
-              options={areaOptions}
-              value={area}
-              onChange={onArea}
-            />
+            {city ? (
+              <FilterChipGroup
+                label={copy.area}
+                options={areaOptions}
+                value={area}
+                onChange={onArea}
+              />
+            ) : null}
             <FilterChipGroup
               label={copy.store}
               options={storeOptions}
