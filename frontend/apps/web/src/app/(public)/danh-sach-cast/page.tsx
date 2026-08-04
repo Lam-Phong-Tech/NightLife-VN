@@ -3672,6 +3672,10 @@ html.vy-light .cast-sheet-actions {
   .cast-input-clear {
     --cast-clear-size: 22px;
   }
+
+  .nl-page-content .cast-input-clear {
+    min-height: var(--cast-clear-size);
+  }
 }
 
 @media (max-width: 360px) {

@@ -3910,6 +3910,10 @@ const venueSearchCss = `
       --venue-clear-size: 22px;
     }
 
+    .nl-page-content .venue-input-clear {
+      min-height: var(--venue-clear-size);
+    }
+
     .venue-suggestions {
       top: calc(100% + 8px);
       width: min(100%, calc(100vw - 28px));
