@@ -2422,10 +2422,14 @@ export default function Page() {
           transition: all 0.15s ease;
         }
 
-        .nl-bill-filter-chip.active,
-        .nl-bill-filter-chip.active * {
+        .nl-bill-filter-chip.active {
           border-color: transparent;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+        }
+
+        .nl-bill-filter-chip.active * {
+          background: transparent !important;
           color: #241a0a !important;
         }
 
