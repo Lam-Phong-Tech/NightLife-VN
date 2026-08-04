@@ -171,6 +171,27 @@ const entries: TranslationEntry[] = [
     zh: "提交账单成功",
   },
   {
+    vi: "Chưa gửi",
+    en: "Unsent",
+    ja: "未送信",
+    ko: "미제출",
+    zh: "未发送",
+  },
+  {
+    vi: "Duyệt",
+    en: "Approved",
+    ja: "承認済み",
+    ko: "승인됨",
+    zh: "已批准",
+  },
+  {
+    vi: "Hủy/Từ chối",
+    en: "Cancelled/Rejected",
+    ja: "キャンセル/拒否",
+    ko: "취소/거절",
+    zh: "取消/拒绝",
+  },
+  {
     vi: "Thành công",
     en: "Success",
     ja: "成功",

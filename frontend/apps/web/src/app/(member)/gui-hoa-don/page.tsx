@@ -432,11 +432,29 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "파일 제거",
     zh: "移除文件",
   },
+  "Chưa gửi": {
+    en: "Unsent",
+    ja: "未送信",
+    ko: "미제출",
+    zh: "未发送",
+  },
+  "Duyệt": {
+    en: "Approved",
+    ja: "承認済み",
+    ko: "승인됨",
+    zh: "已批准",
+  },
+  "Hủy/Từ chối": {
+    en: "Cancelled/Rejected",
+    ja: "キャンセル/拒否",
+    ko: "취소/거절",
+    zh: "取消/拒绝",
+  },
   "Đã duyệt": {
     en: "Approved",
     ja: "承認済み",
     ko: "승인됨",
-    zh: "已通过",
+    zh: "已 approved",
   },
   "Từ chối": {
     en: "Rejected",
@@ -2373,10 +2391,11 @@ export default function Page() {
           transition: all 0.15s ease;
         }
 
-        .nl-bill-filter-chip.active {
+        .nl-bill-filter-chip.active,
+        .nl-bill-filter-chip.active * {
           border-color: transparent;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-          color: #241a0a;
+          color: #241a0a !important;
         }
 
         .nl-bill-chip-count {
