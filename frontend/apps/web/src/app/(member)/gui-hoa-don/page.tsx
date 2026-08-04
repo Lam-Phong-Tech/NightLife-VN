@@ -1370,7 +1370,7 @@ export default function Page() {
   };
 
   const handleResubmitBill = (bill: BillRecord) => {
-    setSelectedBill(null);
+    setSelectedBillId("");
     if (bill.store?.slug) {
       setStoreSlug(bill.store.slug);
     }
@@ -1378,7 +1378,7 @@ export default function Page() {
       setBookingId(bill.bookingId);
     }
     if (bill.totalVnd) {
-      setTotalVnd(String(bill.totalVnd));
+      setAmountInput(formatMoneyInput(String(bill.totalVnd)));
     }
     setEvidenceFile(null);
     setPreviewUrl(null);
