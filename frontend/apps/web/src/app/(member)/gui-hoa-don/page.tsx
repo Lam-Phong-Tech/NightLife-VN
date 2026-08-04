@@ -1798,7 +1798,12 @@ export default function Page() {
                       </button>
                     ))}
                     {cancelledBookings.map((booking) => (
-                      <article key={booking.id} className="nl-bill-list-item static">
+                      <button
+                        key={booking.id}
+                        type="button"
+                        className="nl-bill-list-item"
+                        onClick={() => handleOpenBooking(booking)}
+                      >
                         <div className="nl-bill-list-item-main">
                           <strong>{bookingTitle(booking)}</strong>
                           <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
@@ -1809,7 +1814,7 @@ export default function Page() {
                             {bookingCancelledLabel(booking.status, activeLanguage)}
                           </span>
                         </div>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 ) : (

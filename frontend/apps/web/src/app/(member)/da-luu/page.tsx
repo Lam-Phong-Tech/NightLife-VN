@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronRight, Heart, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Star, Trash2 } from "lucide-react";
 import { castFavoriteApi } from "@/lib/api/cast-detail";
 import { discoveryApi, type PublicCast, type PublicStore } from "@/lib/api/discovery";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
@@ -372,6 +372,9 @@ export default function Page() {
 
       <section className="saved-shell">
         <header className="saved-head">
+          <Link href="/tai-khoan" className="saved-back" aria-label={translateText("Quay lại tài khoản", activeLanguage)}>
+            <ChevronLeft size={18} />
+          </Link>
           <div>
             <h1>{translateText("Quán & Cast đã lưu", activeLanguage)}</h1>
             <p>{translateText("Những mục bạn bấm tim sẽ nằm ở đây để mở lại nhanh.", activeLanguage)}</p>
@@ -514,9 +517,26 @@ const savedPageCss = `
 
   .saved-head {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .saved-head > div {
+    min-width: 0;
+  }
+
+  .saved-back {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border: 1px solid rgba(212, 178, 106, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    color: #f0dda8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
   }
 
   .saved-head h1 {
@@ -742,6 +762,10 @@ const savedPageCss = `
   @media (max-width: 520px) {
     .saved-page {
       padding: 18px 16px 16px;
+    }
+
+    .saved-head {
+      align-items: flex-start;
     }
 
     .saved-tabs button {
