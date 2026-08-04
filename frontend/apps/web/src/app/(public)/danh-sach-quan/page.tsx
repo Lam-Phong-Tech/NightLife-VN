@@ -119,7 +119,6 @@ type VenueSearchCopy = {
   searchPlaceholder: string;
   sortAria: string;
   sortLabel: string;
-  subtitleDesktop: string;
   titlePrefix: string;
   unsaveVenue: string;
   venuePhoto: string;
@@ -213,7 +212,6 @@ const venueCopyVi: VenueSearchCopy = {
   searchPlaceholder: "Tìm quán, khu vực hoặc loại hình...",
   sortAria: "Sắp xếp danh sách",
   sortLabel: "Sắp xếp:",
-  subtitleDesktop: "",
   titlePrefix: "Tìm quán đêm",
   unsaveVenue: "Bỏ lưu quán",
   venuePhoto: "Ảnh",
@@ -259,7 +257,6 @@ const venueCopyEn: VenueSearchCopy = {
   searchPlaceholder: "Search venues, areas, or categories...",
   sortAria: "Sort venues",
   sortLabel: "Sort:",
-  subtitleDesktop: "",
   titlePrefix: "Find night venues in",
   unsaveVenue: "Unsave venue",
   venuePhoto: "Photo of",
@@ -354,16 +351,6 @@ const formatCategoryVenueSearchTitle = (category: string, cityLabel: string, lan
 
 const getCategoryVenueMobileTitle = (category: string, language: LanguageCode) =>
   getLocalizedCategoryLabel(category, language);
-
-const getCategoryVenueSubtitle = (category: string, language: LanguageCode) => {
-  if (language === "en") {
-    return category === "RESTAURANT" ? "RESTAURANTS" : "SPA & WELLNESS";
-  }
-  if (language === "ja") return category === "RESTAURANT" ? "レストラン" : "スパ & ウェルネス";
-  if (language === "ko") return category === "RESTAURANT" ? "레스토랑" : "스파 & 웰니스";
-  if (language === "zh") return category === "RESTAURANT" ? "餐厅" : "水疗 & 养生";
-  return category === "RESTAURANT" ? "NHÀ HÀNG" : "SPA & WELLNESS";
-};
 
 const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
   (categoryTags[category] ?? [fallback]).map((tag) => translateText(tag, language));
@@ -1057,10 +1044,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const pageMobileTitle = fixedCategory
     ? getCategoryVenueMobileTitle(fixedCategory, activeLanguage)
     : copy.mobileTitle;
-  const pageSubtitle = fixedCategory
-    ? getCategoryVenueSubtitle(fixedCategory, activeLanguage)
-    : copy.subtitleDesktop;
-
   useEffect(() => {
     setCurrentPage(1);
   }, [area, city, effectiveCategory, hasActiveCoupon, query, sort, topRankingOnly]);
@@ -1184,11 +1167,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             <h1>
               {pageTitle}
             </h1>
-            {pageSubtitle && (
-              <p>
-                {pageSubtitle}
-              </p>
-            )}
           </div>
         </header>
 
@@ -2094,15 +2072,6 @@ const venueSearchCss = `
     line-height: 1.15;
     font-weight: 800;
     letter-spacing: 0;
-  }
-
-  .venue-search-title p {
-    margin: 8px 0 0;
-    color: var(--vy-muted);
-    font-size: 10px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: .18em;
   }
 
   .venue-search-controls {
