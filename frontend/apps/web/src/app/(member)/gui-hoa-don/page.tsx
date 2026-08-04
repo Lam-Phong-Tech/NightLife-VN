@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   Clock,
+  FileText,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -85,6 +86,7 @@ type FormNotice =
 
 type BookingLinkedBill = NonNullable<BookingRecord["bill"]>;
 type ExistingBill = BillRecord | BookingLinkedBill;
+type BillListTab = "UNSENT" | "PENDING" | "APPROVED" | "CANCELLED";
 
 const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
   "Booking đã được xác nhận check-in": {
@@ -830,6 +832,7 @@ const billStatusLabel = (status: string | null | undefined, language: LanguageCo
     case "REJECTED":
       return localize("Từ chối", language);
     case "SUBMITTED":
+    case "PENDING_PM_BA":
       return localize("Chờ duyệt", language);
     case "PAID":
       return localize("Đã thanh toán", language);
@@ -837,6 +840,18 @@ const billStatusLabel = (status: string | null | undefined, language: LanguageCo
       return localize("Đã hủy", language);
     default:
       return localize("Đang xử lý", language);
+  }
+};
+
+const cancelledBookingStatuses = new Set(["CANCELLED", "NO_SHOW"]);
+const bookingCancelledLabel = (status: string | null | undefined, language: LanguageCode) => {
+  switch (String(status ?? "").toUpperCase()) {
+    case "NO_SHOW":
+      return localize("Không đến", language);
+    case "CANCELLED":
+      return localize("Đã hủy", language);
+    default:
+      return localize("Đã hủy", language);
   }
 };
 
@@ -1153,7 +1168,8 @@ export default function Page() {
   const [isReadingEvidence, setIsReadingEvidence] = useState(false);
   const [submittedBills, setSubmittedBills] = useState<BillRecord[]>([]);
   const [appliedBookingId, setAppliedBookingId] = useState("");
-  const [activeListTab, setActiveListTab] = useState<"PENDING" | "APPROVED" | "UNSENT">("UNSENT");
+  const [activeListTab, setActiveListTab] = useState<BillListTab>("UNSENT");
+  const [selectedBillId, setSelectedBillId] = useState("");
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
@@ -1404,12 +1420,29 @@ export default function Page() {
     [billableBookings, submittedBills],
   );
   const pendingBills = useMemo(
-    () => submittedBills.filter((bill) => bill.status === "SUBMITTED"),
+    () => submittedBills.filter((bill) => ["SUBMITTED", "PENDING_PM_BA"].includes(bill.status)),
     [submittedBills],
   );
   const approvedBills = useMemo(
     () => submittedBills.filter((bill) => ["VERIFIED", "PAID"].includes(bill.status)),
     [submittedBills],
+  );
+  const rejectedBills = useMemo(
+    () => submittedBills.filter((bill) => ["REJECTED", "VOIDED"].includes(bill.status)),
+    [submittedBills],
+  );
+  const cancelledBookings = useMemo(
+    () =>
+      bookings.filter(
+        (booking) =>
+          cancelledBookingStatuses.has(String(booking.status ?? "").toUpperCase()) &&
+          !findBillForBooking(booking, submittedBills),
+      ),
+    [bookings, submittedBills],
+  );
+  const selectedBill = useMemo(
+    () => submittedBills.find((bill) => bill.id === selectedBillId) ?? null,
+    [selectedBillId, submittedBills],
   );
 
   useEffect(() => {
@@ -1556,6 +1589,7 @@ export default function Page() {
   };
 
   const handleOpenBooking = (booking: BookingRecord) => {
+    setSelectedBillId("");
     setBookingId(booking.id);
     setCouponIssueId("");
     setAmountInput("");
@@ -1565,7 +1599,16 @@ export default function Page() {
     }
   };
 
+  const handleOpenBill = (bill: BillRecord) => {
+    setSelectedBillId(bill.id);
+    setBookingId("");
+    setCouponIssueId("");
+    setAmountInput("");
+    setNotice(null);
+  };
+
   const handleBackToList = () => {
+    setSelectedBillId("");
     setBookingId("");
     setCouponIssueId("");
     setAmountInput("");
@@ -1614,6 +1657,7 @@ export default function Page() {
         bill,
       });
       setAmountInput("");
+      setSelectedBillId("");
       setBookingId("");
       setCouponIssueId("");
       setEvidenceFile(null);
@@ -1662,12 +1706,10 @@ export default function Page() {
     <ConfigProvider locale={antdLocaleByLanguage[activeLanguage]} theme={billPickerTheme}>
       <main className="nl-bill-page">
         <section className="nl-bill-shell">
-          <Link href="/tai-khoan" className="nl-back-link">
-            <ChevronLeft size={16} />
-            <span>{t("Tài khoản")}</span>
-          </Link>
-
           <div className="nl-bill-head">
+            <Link href="/tai-khoan" className="nl-back-round" aria-label={t("Quay lại tài khoản")}>
+              <ChevronLeft size={18} />
+            </Link>
             <div className="nl-bill-title-container">
               <div className="nl-bill-title-row">
                 <h1 className="nl-bill-title">{t("Gửi hóa đơn")}</h1>
@@ -1684,13 +1726,14 @@ export default function Page() {
             </div>
           </div>
 
-          {!bookingId ? (
+          {!bookingId && !selectedBill ? (
             <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn") }>
               <div className="nl-bill-tabs" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
                 {[
                   { id: "UNSENT" as const, label: t("Chưa gửi"), count: unsentBookings.length },
                   { id: "PENDING" as const, label: t("Chờ duyệt"), count: pendingBills.length },
                   { id: "APPROVED" as const, label: t("Duyệt"), count: approvedBills.length },
+                  { id: "CANCELLED" as const, label: t("Hủy/Từ chối"), count: rejectedBills.length + cancelledBookings.length },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -1732,10 +1775,55 @@ export default function Page() {
                 ) : (
                   <div className="nl-bill-list-empty">{t("Chưa có booking nào đã check-in cần gửi hóa đơn.")}</div>
                 )
+              ) : activeListTab === "CANCELLED" ? (
+                rejectedBills.length || cancelledBookings.length ? (
+                  <div className="nl-bill-list-items">
+                    {rejectedBills.map((bill) => (
+                      <button
+                        key={bill.id}
+                        type="button"
+                        className="nl-bill-list-item"
+                        onClick={() => handleOpenBill(bill)}
+                      >
+                        <div className="nl-bill-list-item-main">
+                          <strong>{bill.store?.name || "NightLife"}</strong>
+                          <span>#{billCode(bill)}</span>
+                        </div>
+                        <div className="nl-bill-list-item-meta">
+                          <span>{formatMoney(bill.totalVnd)}</span>
+                          <span className={`nl-status-tag ${bill.status.toLowerCase()}`}>
+                            {billStatusLabel(bill.status, activeLanguage)}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                    {cancelledBookings.map((booking) => (
+                      <article key={booking.id} className="nl-bill-list-item static">
+                        <div className="nl-bill-list-item-main">
+                          <strong>{bookingTitle(booking)}</strong>
+                          <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
+                        </div>
+                        <div className="nl-bill-list-item-meta">
+                          <span>{formatDateTime(booking.scheduledAt, activeLanguage)}</span>
+                          <span className="nl-status-tag voided">
+                            {bookingCancelledLabel(booking.status, activeLanguage)}
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="nl-bill-list-empty">{t("Chưa có hóa đơn hoặc booking bị hủy/từ chối.")}</div>
+                )
               ) : (activeListTab === "PENDING" ? pendingBills : approvedBills).length ? (
                 <div className="nl-bill-list-items">
                   {(activeListTab === "PENDING" ? pendingBills : approvedBills).map((bill) => (
-                    <article key={bill.id} className="nl-bill-list-item static">
+                    <button
+                      key={bill.id}
+                      type="button"
+                      className="nl-bill-list-item"
+                      onClick={() => handleOpenBill(bill)}
+                    >
                       <div className="nl-bill-list-item-main">
                         <strong>{bill.store?.name || "NightLife"}</strong>
                         <span>#{billCode(bill)}</span>
@@ -1746,13 +1834,87 @@ export default function Page() {
                           {billStatusLabel(bill.status, activeLanguage)}
                         </span>
                       </div>
-                    </article>
+                    </button>
                   ))}
                 </div>
               ) : (
                 <div className="nl-bill-list-empty">{t("Chưa có hóa đơn trong trạng thái này.")}</div>
               )}
             </section>
+          ) : selectedBill ? (
+            <>
+              <button type="button" className="nl-bill-list-back" onClick={handleBackToList}>
+                <ChevronLeft size={16} />
+                <span>{t("Danh sách hóa đơn")}</span>
+              </button>
+              <div className="nl-bill-layout">
+                <section className="nl-bill-form nl-bill-detail" aria-label={t("Chi tiết hóa đơn")}>
+                  <div className="nl-receipt-ticket">
+                    <div className="nl-receipt-header">
+                      <span className="nl-receipt-title">{t("Chi tiết hóa đơn")}</span>
+                      <strong className="nl-receipt-store notranslate" translate="no" data-no-translate="true">
+                        {selectedBill.store?.name || "NightLife"}
+                      </strong>
+                    </div>
+                    <div className="nl-receipt-body">
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Mã hóa đơn")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value highlight">#{billCode(selectedBill)}</span>
+                      </div>
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Trạng thái")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className={`nl-status-tag ${selectedBill.status.toLowerCase()}`}>
+                          {billStatusLabel(selectedBill.status, activeLanguage)}
+                        </span>
+                      </div>
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Tổng tiền")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value highlight">{formatMoney(selectedBill.totalVnd)}</span>
+                      </div>
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Ngày sử dụng")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value">{formatDateTime(selectedBill.usedAt, activeLanguage)}</span>
+                      </div>
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Ngày gửi")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value">{formatDateTime(selectedBill.submittedAt, activeLanguage)}</span>
+                      </div>
+                      {selectedBill.booking ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Đặt chỗ liên kết")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value nl-receipt-value-wrap">
+                            {formatDateTime(selectedBill.booking.scheduledAt, activeLanguage)}
+                          </span>
+                        </div>
+                      ) : null}
+                      {selectedBill.rejectReason ? (
+                        <div className="nl-detail-note danger">
+                          <AlertCircle size={16} />
+                          <span>{selectedBill.rejectReason}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {selectedBill.media?.length ? (
+                    <div className="nl-detail-media">
+                      <span className="nl-receipt-title">{t("Ảnh / chứng từ")}</span>
+                      {selectedBill.media.map((media) => (
+                        <a key={media.id} href={media.url} target="_blank" rel="noreferrer" className="nl-detail-media-link">
+                          {media.originalName || media.mimeType}
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              </div>
+            </>
           ) : (
             <>
               <button type="button" className="nl-bill-list-back" onClick={handleBackToList}>
@@ -2106,25 +2268,32 @@ export default function Page() {
           box-sizing: border-box;
         }
 
-        .nl-back-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          color: var(--vy-muted);
-          font-size: 13px;
-          font-weight: 600;
-          text-decoration: none;
-          transition: color 0.2s ease;
-          margin-bottom: 14px;
-        }
-
-        .nl-back-link:hover {
-          color: var(--vy-gold);
-        }
-
         .nl-bill-head {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
           margin-top: 4px;
           margin-bottom: 24px;
+        }
+
+        .nl-back-round {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--vy-border);
+          border-radius: 50%;
+          background: var(--vy-surface-2);
+          color: var(--vy-gold-pale);
+          text-decoration: none;
+          box-shadow: var(--vy-shadow-card);
+        }
+
+        .nl-back-round:hover {
+          border-color: var(--vy-border-gold-40);
+          color: var(--vy-gold-hi);
         }
 
         .nl-bill-title-container {
@@ -2192,7 +2361,7 @@ export default function Page() {
 
         .nl-bill-tabs {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 8px;
           border-bottom: 1px solid var(--vy-border);
           padding-bottom: 10px;
@@ -2575,6 +2744,51 @@ export default function Page() {
 
         .nl-receipt-value.discount {
           color: var(--vy-pink);
+        }
+
+        .nl-bill-detail {
+          display: grid;
+          gap: 16px;
+        }
+
+        .nl-detail-note {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          border-radius: 10px;
+          border: 1px solid var(--vy-border);
+          padding: 12px 14px;
+          color: var(--vy-muted);
+          background: var(--vy-surface-3);
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .nl-detail-note.danger {
+          color: var(--vy-error);
+          border-color: rgba(232, 139, 153, 0.25);
+          background: rgba(232, 139, 153, 0.06);
+        }
+
+        .nl-detail-media {
+          display: grid;
+          gap: 10px;
+          border: 1px solid var(--vy-border);
+          border-radius: 12px;
+          background: var(--vy-surface-3);
+          padding: 14px;
+        }
+
+        .nl-detail-media-link {
+          color: var(--vy-gold-pale);
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 700;
+          overflow-wrap: anywhere;
+        }
+
+        .nl-detail-media-link:hover {
+          color: var(--vy-gold-hi);
         }
 
         .nl-upload-zone-wrapper {
@@ -3007,7 +3221,8 @@ export default function Page() {
           border: 1px solid transparent;
         }
 
-        .nl-status-tag.submitted {
+        .nl-status-tag.submitted,
+        .nl-status-tag.pending_pm_ba {
           background: rgba(231, 184, 105, 0.12);
           color: var(--vy-warn);
           border-color: rgba(231, 184, 105, 0.25);
@@ -3020,7 +3235,8 @@ export default function Page() {
           border-color: rgba(127, 211, 162, 0.25);
         }
 
-        .nl-status-tag.rejected {
+        .nl-status-tag.rejected,
+        .nl-status-tag.voided {
           background: rgba(232, 139, 153, 0.12);
           color: var(--vy-error);
           border-color: rgba(232, 139, 153, 0.25);
@@ -3044,6 +3260,7 @@ export default function Page() {
           }
 
           .nl-bill-tabs {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 4px;
           }
 
