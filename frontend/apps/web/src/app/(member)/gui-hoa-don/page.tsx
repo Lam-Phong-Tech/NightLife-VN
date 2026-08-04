@@ -2221,27 +2221,6 @@ export default function Page() {
                     <span className="nl-amount-suffix">₫</span>
                   </div>
                 </div>
-
-                <div className="nl-field">
-                  <label>
-                    {t("Thời gian xác nhận sử dụng")} *
-                  </label>
-                  <div
-                    className={usedAt ? "nl-confirmed-time" : "nl-confirmed-time pending"}
-                  >
-                    <div className="nl-confirmed-time-icon">
-                      {usedAt ? <CheckCircle2 size={16} /> : <Clock size={16} />}
-                    </div>
-                    <div className="nl-confirmed-time-content">
-                      <strong>
-                        {usedAt
-                          ? formatDateTime(confirmedUsageAt, activeLanguage)
-                          : t("Chưa có thời gian xác nhận")}
-                      </strong>
-                      <span>{confirmedUsageLabel}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div className="nl-field">
