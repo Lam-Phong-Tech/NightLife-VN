@@ -27,11 +27,9 @@ import { translateText } from "@/lib/i18n/client-translations";
 import { useUserActionFeedback } from "@/lib/user-action-feedback";
 import {
   AlertCircle,
-  Camera,
   CheckCircle2,
   ChevronLeft,
   Clock,
-  Edit3,
   FileText,
   Info,
   Maximize2,
@@ -2133,22 +2131,6 @@ export default function Page() {
                     return (
                       <div className="nl-detail-resubmit-box">
                         <div className="nl-detail-resubmit-actions">
-                          <button
-                            type="button"
-                            className="nl-bill-resubmit-btn secondary"
-                            onClick={() => handleResubmitBill(selectedBill, "photo")}
-                          >
-                            <Camera size={16} />
-                            <span>{t("Gửi lại ảnh mới")}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="nl-bill-resubmit-btn secondary"
-                            onClick={() => handleResubmitBill(selectedBill, "amount")}
-                          >
-                            <Edit3 size={16} />
-                            <span>{t("Sửa tổng tiền")}</span>
-                          </button>
                           <button
                             type="button"
                             className="nl-bill-resubmit-btn primary"
