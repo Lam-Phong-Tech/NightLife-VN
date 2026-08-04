@@ -2,11 +2,16 @@
 
 import {
   getAuthUser,
+  setAuthSession,
   updateStoredAuthUser,
   type AuthLoginMethod,
   type AuthUser,
 } from "@/lib/auth/session";
-import { changeMemberPassword, updateMemberProfile } from "@/lib/api/auth";
+import {
+  changeMemberPassword,
+  getCurrentMemberProfile,
+  updateMemberProfile,
+} from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import { translateText } from "@/lib/i18n/client-translations";
@@ -130,6 +135,8 @@ function loginMethodLabel(method: AuthLoginMethod, language: LanguageCode) {
 export default function Page() {
   const activeLanguage = useActiveLanguage();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isSessionChecking, setIsSessionChecking] = useState(true);
+  const [sessionMessage, setSessionMessage] = useState("");
   const [profileForm, setProfileForm] = useState<ProfileForm>(() => formFromUser(null));
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPasswordForm);
   const [profileMessage, setProfileMessage] = useState("");
@@ -143,17 +150,53 @@ export default function Page() {
   });
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const currentUser = getAuthUser();
-      setAuthUser(currentUser);
-      setProfileForm(formFromUser(currentUser));
-    }, 0);
+    let isCurrent = true;
 
-    return () => window.clearTimeout(timer);
+    const verifySession = async () => {
+      const currentUser = getAuthUser();
+      if (!currentUser || currentUser.role !== "USER") {
+        if (isCurrent) {
+          setSessionMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+          setIsSessionChecking(false);
+        }
+        return;
+      }
+
+      try {
+        const verifiedUser = await getCurrentMemberProfile();
+        if (!isCurrent) return;
+
+        const storedUser = updateStoredAuthUser({
+          displayName: verifiedUser.displayName,
+          email: verifiedUser.email,
+          phone: verifiedUser.phone,
+        });
+        const nextUser = {
+          ...(storedUser ?? currentUser),
+          ...verifiedUser,
+          loginMethod: verifiedUser.loginMethod ?? currentUser.loginMethod,
+        };
+        setAuthUser(nextUser);
+        setProfileForm(formFromUser(nextUser));
+      } catch {
+        if (isCurrent) {
+          setAuthUser(null);
+          setSessionMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+      } finally {
+        if (isCurrent) setIsSessionChecking(false);
+      }
+    };
+
+    void verifySession();
+
+    return () => {
+      isCurrent = false;
+    };
   }, []);
 
   const loginMethod = authUser?.loginMethod ?? "PASSWORD";
-  const canChangePassword = loginMethod === "PASSWORD";
+  const canChangePassword = !isSessionChecking && authUser?.role === "USER" && loginMethod === "PASSWORD";
   const normalizedProfileForm = useMemo(() => normalizeForm(profileForm), [profileForm]);
   const profileErrors = useMemo(
     () => validateProfileForm(profileForm, activeLanguage),
@@ -264,10 +307,12 @@ export default function Page() {
     setPasswordMessage("");
 
     try {
-      await changeMemberPassword({
+      const nextSession = await changeMemberPassword({
         oldPassword: passwordForm.oldPassword.trim(),
         newPassword: passwordForm.newPassword.trim(),
       });
+      setAuthSession(nextSession);
+      setAuthUser(nextSession.user);
       setPasswordForm(emptyPasswordForm);
       setPasswordMessage(translateText("Đã đổi mật khẩu tài khoản.", activeLanguage));
     } catch (error) {
@@ -290,6 +335,57 @@ export default function Page() {
   const tier = authUser?.tier || "FREE";
   const status = authUser?.status || "ACTIVE";
   const role = authUser?.role || "USER";
+
+  if (isSessionChecking || !authUser) {
+    return (
+      <main style={{ minHeight: "auto", background: colors.bg, color: colors.text }}>
+        <section style={{ maxWidth: 1040, margin: "0 auto", padding: "22px 18px 32px" }}>
+          <Link
+            href="/tai-khoan"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              color: colors.goldPale,
+              textDecoration: "none",
+              fontSize: 13,
+              fontWeight: 850,
+              marginBottom: 16,
+            }}
+          >
+            <ArrowLeft size={16} />
+            {translateText("Quay lại tài khoản", activeLanguage)}
+          </Link>
+          <section
+            style={{
+              maxWidth: 520,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 22,
+              background: colors.panel,
+              padding: 22,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <ShieldCheck size={28} color={colors.goldPale} />
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 950 }}>
+              {translateText("Bảo mật tài khoản", activeLanguage)}
+            </h1>
+            <p style={{ margin: 0, color: colors.muted, fontSize: 14, lineHeight: 1.5 }}>
+              {isSessionChecking
+                ? translateText("Đang xác minh phiên đăng nhập...", activeLanguage)
+                : translateText(sessionMessage, activeLanguage)}
+            </p>
+            {!isSessionChecking ? (
+              <Link href="/dang-nhap?redirect=/bao-mat-tai-khoan" style={primaryButtonStyle(false)}>
+                {translateText("Đăng nhập", activeLanguage)}
+              </Link>
+            ) : null}
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main style={{ minHeight: "auto", background: colors.bg, color: colors.text }}>

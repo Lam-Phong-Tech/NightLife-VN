@@ -272,8 +272,12 @@ export const updateMemberProfile = (payload: UpdateProfilePayload) => {
   });
 };
 
+export const getCurrentMemberProfile = () => {
+  return apiClient<AuthResponse["user"]>("/auth/me");
+};
+
 export const changeMemberPassword = (payload: ChangePasswordPayload) => {
-  return apiClient<{ success: boolean }>("/users/change-password", {
+  return apiClient<AuthResponse>("/auth/change-password", {
     method: "POST",
     data: payload,
   });

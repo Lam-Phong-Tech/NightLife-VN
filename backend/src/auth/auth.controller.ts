@@ -45,6 +45,7 @@ import {
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LineAuthDto } from './dto/line-auth.dto';
+import { ChangePasswordDto } from '../users/dto/change-password.dto';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -307,6 +308,25 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(request.user.id, dto);
+  }
+
+  @ApiOperation({ summary: 'Đổi mật khẩu và làm mới phiên hiện tại' })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  changePassword(
+    @Req()
+    request: Request & {
+      user: { id: string; loginMethod?: 'PASSWORD' | 'GOOGLE' | 'LINE' };
+    },
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePasswordAndRotateSession(
+      request.user,
+      dto,
+      this.sessionContext(request),
+    );
   }
 
   @ApiOperation({ summary: 'Đăng xuất tài khoản' })

@@ -25,6 +25,7 @@ import {
 } from '../notifications/socket.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { ChangePasswordDto } from '../users/dto/change-password.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -639,6 +640,40 @@ export class AuthService {
     });
 
     return { updated: true };
+  }
+
+  async changePasswordAndRotateSession(
+    user: { id: string; loginMethod?: LoginMethod },
+    dto: ChangePasswordDto,
+    sessionContext?: SessionContext,
+  ) {
+    if (user.loginMethod !== 'PASSWORD') {
+      throw new BadRequestException(
+        'Password changes are only available for password accounts',
+      );
+    }
+
+    const updatedUser = await this.usersService.changePassword(user.id, dto);
+    const now = new Date();
+
+    await this.prisma.userSession.updateMany({
+      where: {
+        userId: user.id,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: now,
+        lastSeenAt: now,
+        revokedReason: 'PASSWORD_CHANGED',
+      },
+    });
+
+    return this.toAuthResponse(
+      updatedUser,
+      sessionContext,
+      user.loginMethod ?? 'PASSWORD',
+    );
   }
 
   async logout(user: { id: string; jti?: string; exp?: number }) {

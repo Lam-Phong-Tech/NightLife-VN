@@ -26,6 +26,7 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     validateCredentials: jest.fn(),
     findByIdOrThrow: jest.fn(),
+    changePassword: jest.fn(),
     updatePassword: jest.fn(),
     toPublicUser: jest.fn((value) => ({
       id: value.id,
@@ -805,6 +806,49 @@ describe('AuthService', () => {
         activePrivilegedJti: null,
       },
     });
+  });
+
+  it('rotates the current session and revokes the others after a password change', async () => {
+    const member = {
+      ...user,
+      id: 'member-1',
+      role: 'USER',
+      tier: 'FREE',
+    };
+    usersService.changePassword.mockResolvedValue(member as never);
+    prisma.userSession.updateMany.mockResolvedValue({ count: 2 });
+    prisma.userSession.create.mockResolvedValue({ id: 'new-session' } as never);
+
+    const result = await service.changePasswordAndRotateSession(
+      { id: member.id, loginMethod: 'PASSWORD' },
+      {
+        oldPassword: 'OldStr0ngPass!',
+        newPassword: 'NewStr0ngPass!',
+      },
+      { userAgent: 'test-agent', ipAddress: '127.0.0.1' },
+    );
+
+    expect(usersService.changePassword).toHaveBeenCalledWith(member.id, {
+      oldPassword: 'OldStr0ngPass!',
+      newPassword: 'NewStr0ngPass!',
+    });
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+      where: { userId: member.id, status: 'ACTIVE' },
+      data: {
+        status: 'REVOKED',
+        revokedAt: expect.any(Date),
+        lastSeenAt: expect.any(Date),
+        revokedReason: 'PASSWORD_CHANGED',
+      },
+    });
+    expect(prisma.userSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: member.id,
+        userAgent: 'test-agent',
+        ipAddress: '127.0.0.1',
+      }),
+    });
+    expect(result).toEqual(expect.objectContaining({ accessToken: 'jwt-token' }));
   });
 
   it('does not pretend to send a password reset code for an unknown account', async () => {
