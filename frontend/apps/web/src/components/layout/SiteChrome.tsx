@@ -521,6 +521,10 @@ function NotificationTabs({
         minWidth: 0,
         borderBottom: `1px solid ${colors.border}`,
         scrollbarWidth: "none",
+        flex: "0 0 auto",
+        position: "relative",
+        zIndex: 1,
+        background: colors.notificationPanel,
       }}
     >
       {tabs.map((tab) => {
@@ -1079,6 +1083,7 @@ function DesktopNotificationDropdown({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "16px 16px 12px",
+            flex: "0 0 auto",
           }}
         >
           <h2
@@ -1152,6 +1157,7 @@ function DesktopNotificationDropdown({
             justifyContent: "flex-start",
             padding: "12px 16px",
             borderTop: `1px solid ${colors.border}`,
+            flex: "0 0 auto",
           }}
         >
           <Link
@@ -1224,6 +1230,7 @@ function MobileNotificationPanel({
           alignItems: "center",
           gap: "12px",
           padding: "14px 14px 8px",
+          flex: "0 0 auto",
         }}
       >
         <button
@@ -1264,6 +1271,7 @@ function MobileNotificationPanel({
           justifyContent: "space-between",
           padding: "0 16px 8px",
           gap: "12px",
+          flex: "0 0 auto",
         }}
       >
         <span style={{ fontSize: "11.5px", color: colors.muted }}>
