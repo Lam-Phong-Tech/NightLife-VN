@@ -396,7 +396,7 @@ export const bookingStatusGroup = (status: string, scheduledAt?: string): Bookin
   if (cancelledBookingStatuses.has(normalizedStatus)) return "Đã hủy";
   const scheduledTime = toBookingTimestamp(scheduledAt);
   if (openBookingStatuses.has(normalizedStatus) && scheduledTime > 0 && scheduledTime < Date.now()) {
-    return "Hoàn tất";
+    return "Đã hủy";
   }
   return "Mới";
 };

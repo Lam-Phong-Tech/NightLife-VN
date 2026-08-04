@@ -33,7 +33,7 @@ describe("booking history status helpers", () => {
       scheduledAt: "2026-07-08T14:00:00.000Z",
     });
 
-    expect(bookingRecordStatusGroup(overdueBooking)).toBe("Hoàn tất");
+    expect(bookingRecordStatusGroup(overdueBooking)).toBe("Đã hủy");
     expect(bookingRecordStatusLabel(overdueBooking)).toBe("Đã qua giờ");
   });
 
