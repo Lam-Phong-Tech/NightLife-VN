@@ -1567,20 +1567,31 @@ export default function Page() {
     [couponIssueId, couponIssues],
   );
   const selectedExistingBill = useMemo(
-    () =>
-      findBillForBooking(selectedBooking, submittedBills) ??
-      findBillForCouponIssue(selectedCouponIssue?.id, submittedBills),
-    [selectedBooking, selectedCouponIssue?.id, submittedBills],
+    () => {
+      if (resubmitBill) return null;
+      return (
+        findBillForBooking(selectedBooking, submittedBills) ??
+        findBillForCouponIssue(selectedCouponIssue?.id, submittedBills)
+      );
+    },
+    [resubmitBill, selectedBooking, selectedCouponIssue?.id, submittedBills],
   );
   const selectedExistingBillMessage = selectedExistingBill
     ? `${t("Hóa đơn của đặt chỗ hoặc mã ưu đãi này đã được gửi cho Admin duyệt. Bạn không thể gửi lại hóa đơn này.")} #${billCode(selectedExistingBill)}`
     : "";
 
   const confirmedUsageAt = useMemo(() => {
+    if (resubmitBill) {
+      return (
+        resubmitBill.usedAt ||
+        (resubmitBill.booking ? bookingConfirmedUsageAt(resubmitBill.booking) : null) ||
+        resubmitBill.createdAt
+      );
+    }
     if (selectedBooking) return bookingConfirmedUsageAt(selectedBooking);
     if (selectedCouponIssue) return selectedCouponIssue.usedAt ?? null;
     return null;
-  }, [selectedBooking, selectedCouponIssue]);
+  }, [resubmitBill, selectedBooking, selectedCouponIssue]);
   const usedAt = useMemo(
     () => {
       if (!confirmedUsageAt) return "";
@@ -1661,9 +1672,9 @@ export default function Page() {
     () => {
       const message = validateBillForm({
         isLoadingOptions,
-        hasBookedStores: stores.length > 0,
-        hasStore: Boolean(bookingId || storeSlug),
-        hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue),
+        hasBookedStores: stores.length > 0 || Boolean(resubmitBill),
+        hasStore: Boolean(bookingId || storeSlug || resubmitBill),
+        hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue || resubmitBill),
         isCompletedBooking:
           Boolean(selectedBooking) && !isBookingAdminConfirmedForBill(selectedBooking),
         hasExistingBill: Boolean(selectedExistingBill),
@@ -1687,6 +1698,7 @@ export default function Page() {
       isLoadingOptions,
       isPastDeadline,
       isUsedAtInvalid,
+      resubmitBill,
       storeSlug,
       stores.length,
       selectedBooking,
@@ -1750,15 +1762,24 @@ export default function Page() {
   const submitBill = async () => {
     setIsSubmitting(true);
     try {
+      const couponIdToSubmit =
+        selectedCouponIssue?.coupon.id ||
+        resubmitBill?.couponId ||
+        resubmitBill?.coupon?.id ||
+        resubmitBill?.booking?.coupon?.id;
+      const couponIssueIdToSubmit =
+        selectedCouponIssue?.id ||
+        resubmitBill?.couponIssueId ||
+        resubmitBill?.couponIssue?.id ||
+        resubmitBill?.booking?.couponIssue?.id;
+
       const payload = {
-        storeSlug,
-        ...(bookingId ? { bookingId } : {}),
-        ...(selectedCouponIssue
-          ? {
-              couponId: selectedCouponIssue.coupon.id,
-              couponIssueId: selectedCouponIssue.id,
-            }
+        storeSlug: resubmitBill?.store?.slug || storeSlug,
+        ...(resubmitBill?.bookingId || bookingId
+          ? { bookingId: resubmitBill?.bookingId || bookingId }
           : {}),
+        ...(couponIdToSubmit ? { couponId: couponIdToSubmit } : {}),
+        ...(couponIssueIdToSubmit ? { couponIssueId: couponIssueIdToSubmit } : {}),
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
       };
