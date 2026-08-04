@@ -170,7 +170,6 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
-const popularVenueKeywords = ["Top ranking", "Có ưu đãi", "Lounge", "Nhà hàng"];
 const venueItemsPerPage = 8;
 const venueSearchHistoryKey = "vietyoru.venue-search-history.v1";
 
@@ -1237,13 +1236,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
               <VenueSearchSuggestions
                 language={activeLanguage}
                 onClearRecent={clearRecentVenueSearches}
-                onKeyword={(value) => {
-                  saveRecentVenueSearch(value);
-                  setQuery(value);
-                }}
                 onRecent={selectRecentVenueSearch}
                 onSearchSubmitted={saveRecentVenueSearch}
-                popularKeywords={popularVenueKeywords}
                 query={query}
                 recentSearches={recentVenueSearches}
                 venues={suggestions}
@@ -1546,9 +1540,7 @@ function VenuePagination({
 
 function VenueSearchSuggestions({
   language,
-  onKeyword,
   onRecent,
-  popularKeywords,
   query,
   recentSearches,
   onClearRecent,
@@ -1556,9 +1548,7 @@ function VenueSearchSuggestions({
   onSearchSubmitted,
 }: {
   language: LanguageCode;
-  onKeyword: (value: string) => void;
   onRecent: (value: string) => void;
-  popularKeywords: string[];
   query: string;
   recentSearches: string[];
   onClearRecent: () => void;
@@ -1626,19 +1616,6 @@ function VenueSearchSuggestions({
         </>
       ) : null}
 
-      <div className="venue-suggestion-label">Từ khóa phổ biến</div>
-      <div className="venue-suggestion-tags is-gold">
-        {popularKeywords.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onKeyword(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -2364,12 +2341,6 @@ const venueSearchCss = `
     font-family: var(--nl-font-sans);
     font-size: 12.5px;
     cursor: pointer;
-  }
-
-  .venue-suggestion-tags.is-gold button {
-    border-color: rgba(212, 178, 106, .26);
-    background: rgba(212, 178, 106, .1);
-    color: #d9c08a;
   }
 
   .venue-filter-icon {
@@ -3684,12 +3655,6 @@ const venueSearchCss = `
     border-color: rgba(150, 116, 52, .18);
     background: rgba(255, 255, 255, .78);
     color: #6f6658;
-  }
-
-  html.vy-light .venue-suggestion-tags.is-gold button {
-    border-color: rgba(150, 116, 52, .26);
-    background: rgba(255, 232, 170, .42);
-    color: #8f6a2a;
   }
 
   html.vy-light .venue-filter-icon {

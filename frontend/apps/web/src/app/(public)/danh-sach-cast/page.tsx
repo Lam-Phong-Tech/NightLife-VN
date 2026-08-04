@@ -148,7 +148,6 @@ const compactLanguageLabels: Record<string, string> = {
   zh: "CN",
 };
 
-const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
 const castItemsPerPage = 8;
 const castSearchHistoryKey = "vietyoru.cast-search-history.v1";
 
@@ -943,20 +942,6 @@ export function CastDirectoryPage() {
     setSort(nextSort);
   };
 
-  const setPopularKeyword = (keyword: string) => {
-    if (keyword.includes("Nhật") || keyword.includes("日本語")) {
-      setLanguage("ja");
-      return;
-    }
-
-    if (keyword.includes("Top")) {
-      setSort("priority");
-      return;
-    }
-
-    setHasActiveCoupon(true);
-  };
-
   const saveRecentSearch = (value: string) => {
     setRecentSearches(addSearchHistoryItem(castSearchHistoryKey, value));
   };
@@ -969,11 +954,6 @@ export function CastDirectoryPage() {
   const selectRecentSearch = (value: string) => {
     saveRecentSearch(value);
     setQuery(value);
-  };
-
-  const selectPopularKeyword = (value: string) => {
-    saveRecentSearch(value);
-    setPopularKeyword(value);
   };
 
   return (
@@ -1048,12 +1028,10 @@ export function CastDirectoryPage() {
               <SearchSuggestions
                 casts={suggestions}
                 language={activeLanguage}
-                popularKeywords={popularKeywords}
                 query={query}
                 rankBySlug={topRankingOrder}
                 recentSearches={recentSearches}
                 onClearRecent={clearRecentSearches}
-                onKeyword={selectPopularKeyword}
                 onRecent={selectRecentSearch}
                 onSearchSubmitted={saveRecentSearch}
               />
@@ -1362,23 +1340,19 @@ function CastDropdown({
 function SearchSuggestions({
   casts,
   language,
-  popularKeywords,
   query,
   rankBySlug,
   recentSearches,
   onClearRecent,
-  onKeyword,
   onRecent,
   onSearchSubmitted,
 }: {
   casts: PublicCast[];
   language: LanguageCode;
-  popularKeywords: string[];
   query: string;
   rankBySlug: ReadonlyMap<string, number>;
   recentSearches: string[];
   onClearRecent: () => void;
-  onKeyword: (value: string) => void;
   onRecent: (value: string) => void;
   onSearchSubmitted: (value: string) => void;
 }) {
@@ -1450,19 +1424,6 @@ function SearchSuggestions({
         </>
       ) : null}
 
-      <div className="cast-suggestion-label">Từ khóa phổ biến</div>
-      <div className="cast-suggestion-tags is-gold">
-        {popularKeywords.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onKeyword(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -2623,12 +2584,6 @@ html.vy-light .cast-card-favorite.is-active {
   cursor: pointer;
 }
 
-.cast-suggestion-tags.is-gold button {
-  border-color: rgba(212, 178, 106, 0.26);
-  background: rgba(212, 178, 106, 0.1);
-  color: #d9c08a;
-}
-
 .cast-filter-popover {
   position: absolute;
   top: calc(100% + 10px);
@@ -3283,8 +3238,7 @@ html.vy-light .cast-card-body {
   background: rgba(255, 255, 255, 0.72);
 }
 
-html.vy-light .cast-language-pill,
-html.vy-light .cast-suggestion-tags.is-gold button {
+html.vy-light .cast-language-pill {
   border-color: rgba(150, 116, 52, 0.24);
   background: rgba(212, 178, 106, 0.14);
   color: #77591f;
