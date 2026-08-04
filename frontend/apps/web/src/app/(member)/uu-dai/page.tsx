@@ -105,11 +105,6 @@ const isCampaignAvailableNow = (campaign: CampaignItem, nowMs: number) => {
   return remainingMs === null || remainingMs > 0;
 };
 
-const isCampaignExpiringSoon = (campaign: CampaignItem, nowMs: number) => {
-  const remainingMs = campaignRemainingMs(campaign, nowMs);
-  return remainingMs !== null && remainingMs > 0 && remainingMs <= expiringSoonWindowMs;
-};
-
 const formatRemainingTime = (remainingMs: number, language: LanguageCode) => {
   const minuteCount = Math.ceil(remainingMs / 60000);
 
@@ -422,8 +417,8 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
   
-  // New filter types: 'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'>('ALL');
+  // Filter types: 'ALL' | 'BY_STORE' | 'VIP'
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'BY_STORE' | 'VIP'>('ALL');
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -486,8 +481,6 @@ export default function Page() {
 
     if (activeFilter === "VIP") {
       result = result.filter(c => c.name.toUpperCase().includes("VIP"));
-    } else if (activeFilter === "EXPIRING") {
-      result = result.filter(c => isCampaignExpiringSoon(c, nowMs));
     } else if (activeFilter === "BY_STORE" && selectedStoreId) {
       result = result.filter(c => c.targetStoreId === selectedStoreId);
     }
@@ -508,13 +501,6 @@ export default function Page() {
     }
 
     result.sort((a, b) => {
-      if (activeFilter === "EXPIRING") {
-        return (
-          (timestampFromDate(a.endsAt) ?? Number.MAX_SAFE_INTEGER) -
-          (timestampFromDate(b.endsAt) ?? Number.MAX_SAFE_INTEGER)
-        );
-      }
-
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
@@ -527,7 +513,7 @@ export default function Page() {
   const paginatedCoupons = filteredCampaigns.slice(campaignStartIndex, campaignStartIndex + campaignPageSize);
   const shouldShowPagination = !isLoading && !loadError && filteredCampaigns.length > campaignPageSize;
 
-  const updateFilter = (filter: 'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP') => {
+  const updateFilter = (filter: 'ALL' | 'BY_STORE' | 'VIP') => {
     setActiveFilter(filter);
     setSelectedStoreId(null);
     setCurrentPage(1);
@@ -563,13 +549,6 @@ export default function Page() {
               type="button"
             >
               {copy.all}
-            </button>
-            <button
-              className={activeFilter === "EXPIRING" ? "active" : ""}
-              onClick={() => updateFilter("EXPIRING")}
-              type="button"
-            >
-              {copy.expiring}
             </button>
             <button
               className={activeFilter === "BY_STORE" ? "active" : ""}
