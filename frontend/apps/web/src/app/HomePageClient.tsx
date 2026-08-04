@@ -425,6 +425,7 @@ type HomeCouponItem = {
   place: string;
   img?: string;
   href: string;
+  homePosition?: number;
 };
 
 type HomeVideoItem = {
@@ -706,6 +707,7 @@ function mapCampaignToHomeItem(
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
     href: `/stores/${campaign.targetStore?.slug ?? ""}?couponId=${campaign.id}`,
+    homePosition: campaign.homePosition ?? undefined,
   };
 }
 
@@ -3747,7 +3749,31 @@ export default function HomePageClient() {
                   {isHomeCouponsLoading ? (
                     <HomeDataMessage text="Đang tải ưu đãi từ API..." />
                   ) : homeCoupons.length ? (
-                    homeCoupons.map((item) => <CouponCard key={item.id} item={item} />)
+                    (() => {
+                      const slots: (HomeCouponItem | null)[] = new Array(6).fill(null);
+                      const unplaced: HomeCouponItem[] = [];
+                      homeCoupons.forEach(item => {
+                        if (item.homePosition && item.homePosition >= 1 && item.homePosition <= 6) {
+                          if (!slots[item.homePosition - 1]) {
+                            slots[item.homePosition - 1] = item;
+                          } else {
+                            unplaced.push(item);
+                          }
+                        } else {
+                          unplaced.push(item);
+                        }
+                      });
+                      unplaced.forEach(item => {
+                        const emptyIdx = slots.findIndex(s => s === null);
+                        if (emptyIdx !== -1) slots[emptyIdx] = item;
+                      });
+                      const maxPos = slots.reduce((max, item, idx) => item ? idx : max, -1);
+                      const displayCount = maxPos >= 3 ? 6 : 3;
+                      return slots.slice(0, displayCount).map((item, i) => {
+                        if (item) return <CouponCard key={item.id} item={item} />;
+                        return <div key={`empty-coupon-${i}`} />;
+                      });
+                    })()
                   ) : (
                     <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} />
                   )}
