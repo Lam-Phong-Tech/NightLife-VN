@@ -109,6 +109,9 @@ const exactMessageTranslations: Record<string, string> = {
   "bill has already been verified": "Hóa đơn này đã được xác nhận.",
   "booking already has a submitted bill":
     "Booking này đã có hóa đơn gửi về Admin, không thể gửi lại.",
+  "only rejected bills can be resubmitted": "Chỉ hóa đơn bị từ chối mới có thể gửi lại.",
+  "bill usage time is missing":
+    "Hóa đơn chưa có thời gian sử dụng đã xác nhận nên không thể gửi lại.",
   "completed booking cannot submit a bill":
     "Booking đã hoàn tất nên không thể gửi hóa đơn nữa.",
   "cancelled booking cannot be rescheduled": "Booking đã hủy không thể đổi lịch.",

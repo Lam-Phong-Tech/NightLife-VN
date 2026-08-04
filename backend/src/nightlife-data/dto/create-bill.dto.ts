@@ -93,6 +93,19 @@ export class CreateBillDto {
   usedAt: string;
 }
 
+export class ResubmitBillDto {
+  @ApiProperty({
+    example: 1800000,
+    minimum: 1,
+    description: 'Corrected original bill total in VND.',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000_000)
+  totalVnd: number;
+}
+
 export class AdminSensitiveBillQueryDto {
   @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440010',

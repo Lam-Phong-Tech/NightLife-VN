@@ -1781,7 +1781,9 @@ export default function Page() {
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
       };
-      const bill = await billApi.submitMemberBill(payload);
+      const bill = resubmitBill
+        ? await billApi.resubmitMemberBill(resubmitBill.id, { totalVnd: amount })
+        : await billApi.submitMemberBill(payload);
 
       let uploadWarning = "";
       if (evidenceFile) {
@@ -1792,7 +1794,11 @@ export default function Page() {
         }
       }
 
-      setSubmittedBills((current) => [bill, ...current]);
+      setSubmittedBills((current) =>
+        resubmitBill
+          ? current.map((item) => (item.id === bill.id ? bill : item))
+          : [bill, ...current],
+      );
       const showBillToast = uploadWarning ? userFeedback.warning : userFeedback.success;
       showBillToast({
         title: uploadWarning

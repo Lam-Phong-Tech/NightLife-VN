@@ -83,6 +83,7 @@ import {
 import {
   AdminSensitiveBillQueryDto,
   CreateBillDto,
+  ResubmitBillDto,
 } from './dto/create-bill.dto';
 import {
   AutoReverseBillsDto,
@@ -7892,6 +7893,170 @@ export class NightlifeDataService {
           totalVnd: bill.totalVnd,
           bookingId: booking?.id ?? null,
         },
+      );
+    }
+
+    return bill;
+  }
+
+  async resubmitMemberBill(
+    user: AuthenticatedUser,
+    billId: string,
+    dto: ResubmitBillDto,
+  ) {
+    const now = new Date();
+    const ownershipWhere: Prisma.BillWhereInput = {
+      id: billId,
+      deletedAt: null,
+      OR: [{ userId: user.id }, { submittedByUserId: user.id }],
+    };
+
+    const bill = await this.prisma.$transaction(async (tx) => {
+      const rejectedBill = await tx.bill.findFirst({
+        where: ownershipWhere,
+        select: {
+          ...this.billNotificationSelect(),
+          bookingId: true,
+          couponId: true,
+          couponIssueId: true,
+          storeId: true,
+          userId: true,
+          submittedByUserId: true,
+        },
+      });
+
+      if (!rejectedBill) {
+        throw new NotFoundException('Bill not found');
+      }
+
+      if (rejectedBill.status !== 'REJECTED') {
+        throw new UnprocessableEntityException(
+          'Only rejected bills can be resubmitted',
+        );
+      }
+
+      if (!rejectedBill.usedAt) {
+        throw new UnprocessableEntityException('Bill usage time is missing');
+      }
+
+      this.assertBillSubmissionWindow(rejectedBill.usedAt, now);
+
+      const updateResult = await tx.bill.updateMany({
+        where: {
+          ...ownershipWhere,
+          status: 'REJECTED',
+        },
+        data: {
+          status: 'SUBMITTED',
+          subtotalVnd: dto.totalVnd,
+          discountVnd: 0,
+          serviceChargeVnd: 0,
+          taxVnd: 0,
+          totalVnd: dto.totalVnd,
+          paidVnd: dto.totalVnd,
+          commissionAmountVnd: 0,
+          pointsEarned: 0,
+          commissionRuleSnapshot: Prisma.JsonNull,
+          pointRuleSnapshot: Prisma.JsonNull,
+          submittedAt: now,
+          reviewedAt: null,
+          verifiedAt: null,
+          rejectedAt: null,
+          reviewedById: null,
+          verifiedById: null,
+          rejectedById: null,
+          rejectReason: null,
+        },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new UnprocessableEntityException(
+          'Only rejected bills can be resubmitted',
+        );
+      }
+
+      const updatedBill = await tx.bill.findFirst({
+        where: { id: rejectedBill.id, deletedAt: null },
+        select: this.billNotificationSelect(),
+      });
+
+      if (!updatedBill) {
+        throw new NotFoundException('Bill not found');
+      }
+
+      const beforeSnapshot = {
+        status: rejectedBill.status,
+        totalVnd: rejectedBill.totalVnd,
+        submittedAt: rejectedBill.submittedAt?.toISOString() ?? null,
+        reviewedAt: rejectedBill.reviewedAt?.toISOString() ?? null,
+        rejectedAt: rejectedBill.rejectedAt?.toISOString() ?? null,
+        rejectReason: rejectedBill.rejectReason,
+      };
+      const afterSnapshot = {
+        status: updatedBill.status,
+        totalVnd: updatedBill.totalVnd,
+        submittedAt: updatedBill.submittedAt?.toISOString() ?? null,
+        reviewedAt: null,
+        rejectedAt: null,
+        rejectReason: null,
+      };
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          module: 'Bill',
+          action: 'bill.resubmit',
+          targetType: 'Bill',
+          targetId: updatedBill.id,
+          changedFields: [
+            'status',
+            'totalVnd',
+            'submittedAt',
+            'reviewedAt',
+            'rejectedAt',
+            'rejectReason',
+          ],
+          changeSummary: `Đã gửi lại hóa đơn "${updatedBill.billNumber ?? updatedBill.id}"`,
+          reason: rejectedBill.rejectReason ?? 'Member corrected rejected bill',
+          result: 'SUCCESS',
+          beforeJson: this.toPrismaJson(beforeSnapshot),
+          afterJson: this.toPrismaJson(afterSnapshot),
+          metadata: this.toPrismaJson({
+            source: 'member_bill_resubmission',
+            bookingId: rejectedBill.bookingId,
+            couponId: rejectedBill.couponId,
+            couponIssueId: rejectedBill.couponIssueId,
+            previousStatus: rejectedBill.status,
+            nextStatus: updatedBill.status,
+            previousTotalVnd: rejectedBill.totalVnd,
+            nextTotalVnd: updatedBill.totalVnd,
+            resubmittedAt: now.toISOString(),
+          }),
+        },
+      });
+
+      await this.recordCustomerBillNotification(tx, {
+        templateKey: 'customer.bill.submitted.v1',
+        userId: rejectedBill.userId ?? rejectedBill.submittedByUserId,
+        storeId: rejectedBill.storeId,
+        bookingId: rejectedBill.bookingId,
+        billId: updatedBill.id,
+        bill: updatedBill,
+        payload: {
+          source: 'member_bill_resubmission',
+          previousStatus: rejectedBill.status,
+          nextStatus: updatedBill.status,
+        },
+      });
+
+      return updatedBill;
+    });
+
+    try {
+      await this.adminNotificationService?.notifyBillSubmitted(bill);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to notify admin after bill resubmission ${bill.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 

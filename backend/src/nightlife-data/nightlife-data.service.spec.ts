@@ -173,6 +173,7 @@ describe('NightlifeDataService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     commissionConfig: {
       findMany: jest.fn(),
@@ -384,6 +385,7 @@ describe('NightlifeDataService', () => {
     prisma.tourBooking.findMany.mockResolvedValue([]);
     prisma.bill.count.mockResolvedValue(0);
     prisma.bill.findFirst.mockResolvedValue(null);
+    prisma.bill.updateMany.mockResolvedValue({ count: 0 });
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
       messageId: 'smtp-message-1',
     });
@@ -7545,6 +7547,147 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+  });
+
+  it('resubmits a rejected member bill in place without creating a second bill', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    const rejectedBill = {
+      id: 'bill-rejected-1',
+      billNumber: 'BILL-20260630-REJECTED',
+      status: 'REJECTED',
+      submitterType: 'MEMBER',
+      bookingId: 'booking-1',
+      couponId: 'coupon-1',
+      couponIssueId: 'issue-1',
+      storeId: 'store-1',
+      userId: 'member-1',
+      submittedByUserId: 'member-1',
+      subtotalVnd: 500000,
+      discountVnd: 0,
+      serviceChargeVnd: 0,
+      taxVnd: 0,
+      totalVnd: 500000,
+      paidVnd: 500000,
+      commissionAmountVnd: 0,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      pointRuleSnapshot: null,
+      submittedAt: new Date('2026-06-30T14:05:00.000Z'),
+      reviewedAt: new Date('2026-06-30T15:00:00.000Z'),
+      verifiedAt: null,
+      rejectedAt: new Date('2026-06-30T15:00:00.000Z'),
+      reviewedById: 'admin-1',
+      verifiedById: null,
+      rejectedById: 'admin-1',
+      rejectReason: 'Ảnh hóa đơn chưa rõ',
+      usedAt: new Date('2026-06-30T14:00:00.000Z'),
+      updatedAt: new Date('2026-06-30T15:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: {
+        id: 'booking-1',
+        status: 'CHECKED_IN',
+        scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      },
+      coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+      couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
+      user: { id: 'member-1', displayName: 'Member', tier: 'MEMBER' },
+      guest: null,
+    };
+    const updatedBill = {
+      ...rejectedBill,
+      status: 'SUBMITTED',
+      subtotalVnd: 650000,
+      totalVnd: 650000,
+      paidVnd: 650000,
+      submittedAt: new Date('2026-07-01T10:00:00.000Z'),
+      reviewedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      updatedAt: new Date('2026-07-01T10:00:00.000Z'),
+    };
+    prisma.bill.findFirst
+      .mockResolvedValueOnce(rejectedBill)
+      .mockResolvedValueOnce(updatedBill);
+    prisma.bill.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.resubmitMemberBill(
+      { id: 'member-1', role: 'USER' },
+      'bill-rejected-1',
+      { totalVnd: 650000 },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'bill-rejected-1',
+        status: 'SUBMITTED',
+        totalVnd: 650000,
+      }),
+    );
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+    expect(prisma.bill.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: 'bill-rejected-1',
+        status: 'REJECTED',
+        OR: [{ userId: 'member-1' }, { submittedByUserId: 'member-1' }],
+      }),
+      data: expect.objectContaining({
+        status: 'SUBMITTED',
+        subtotalVnd: 650000,
+        totalVnd: 650000,
+        paidVnd: 650000,
+        rejectedAt: null,
+        rejectedById: null,
+        rejectReason: null,
+      }),
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'member-1',
+        action: 'bill.resubmit',
+        targetId: 'bill-rejected-1',
+        beforeJson: expect.objectContaining({ status: 'REJECTED' }),
+        afterJson: expect.objectContaining({ status: 'SUBMITTED' }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        billId: 'bill-rejected-1',
+        templateKey: 'customer.bill.submitted.v1',
+        payload: expect.objectContaining({
+          source: 'member_bill_resubmission',
+          previousStatus: 'REJECTED',
+          nextStatus: 'SUBMITTED',
+        }),
+      }),
+    });
+    expect(adminNotificationService.notifyBillSubmitted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-rejected-1',
+        status: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('does not resubmit an active or voided member bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-active-1',
+      status: 'SUBMITTED',
+    });
+
+    await expect(
+      service.resubmitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        'bill-active-1',
+        { totalVnd: 650000 },
+      ),
+    ).rejects.toThrow('Only rejected bills can be resubmitted');
+
+    expect(prisma.bill.updateMany).not.toHaveBeenCalled();
+    expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
   it('rejects a member bill when the booking has not been checked in', async () => {

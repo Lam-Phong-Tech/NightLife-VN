@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   listMemberBills: vi.fn(),
   previewBillOcr: vi.fn(),
   submitMemberBill: vi.fn(),
+  resubmitMemberBill: vi.fn(),
   uploadEvidence: vi.fn(),
   listMemberBookings: vi.fn(),
   listMemberCouponIssues: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock("@/lib/api/bills", () => ({
     listMemberBills: mocks.listMemberBills,
     previewBillOcr: mocks.previewBillOcr,
     submitMemberBill: mocks.submitMemberBill,
+    resubmitMemberBill: mocks.resubmitMemberBill,
     uploadEvidence: mocks.uploadEvidence,
   },
 }));
@@ -134,6 +136,17 @@ describe("Bill submit page", () => {
       totalVnd: 1800000,
       usedAt: "2026-07-03T09:30:00.000Z",
       store: { id: "store-public", name: "Public Neon", slug: "public-neon" },
+    });
+    mocks.resubmitMemberBill.mockResolvedValue({
+      id: "bill-rejected-1",
+      billNumber: "BILL-REJECTED-1",
+      storeId: "store-public",
+      status: "SUBMITTED",
+      submitterType: "MEMBER",
+      totalVnd: 650000,
+      usedAt: new Date().toISOString(),
+      store: { id: "store-public", name: "Public Neon", slug: "public-neon" },
+      booking: defaultBooking,
     });
     mocks.uploadEvidence.mockResolvedValue({ id: "media-1" });
   });
@@ -316,5 +329,22 @@ describe("Bill submit page", () => {
     expect(screen.getByText(/Mã hóa đơn|請求書コード/)).toBeInTheDocument();
     expect(screen.getByText("#BILL-REJECTED-1")).toBeInTheDocument();
     expect(screen.getByText("#BK-PUBLIC")).toBeInTheDocument();
+
+    const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
+    const form = document.querySelector<HTMLFormElement>("form.nl-bill-form");
+    expect(amountInput).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    fireEvent.change(amountInput!, { target: { value: "650000" } });
+    await act(async () => {
+      fireEvent.submit(form!);
+    });
+
+    await waitFor(() => {
+      expect(mocks.resubmitMemberBill).toHaveBeenCalledWith("bill-rejected-1", {
+        totalVnd: 650000,
+      });
+    });
+    expect(mocks.submitMemberBill).not.toHaveBeenCalled();
   });
 });

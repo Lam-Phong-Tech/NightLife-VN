@@ -70,6 +70,10 @@ export type CreateBillPayload = {
   usedAt: string;
 };
 
+export type ResubmitBillPayload = {
+  totalVnd: number;
+};
+
 export type UploadedBillEvidence = {
   id: string;
   storageKey: string;
@@ -131,6 +135,11 @@ export const billApi = {
     apiClient<BillOcrPreview>("/bills/ocr-preview", { data: payload }),
   submitMemberBill: (payload: CreateBillPayload) =>
     apiClient<BillRecord>("/member/bills", { data: payload }),
+  resubmitMemberBill: (billId: string, payload: ResubmitBillPayload) =>
+    apiClient<BillRecord>(`/member/bills/${encodeURIComponent(billId)}/resubmit`, {
+      method: "PATCH",
+      data: payload,
+    }),
   submitPartnerBill: (payload: CreateBillPayload) =>
     apiClient<BillRecord>("/partner/bills", { data: payload }),
   uploadEvidence: (billId: string, file: File) => {

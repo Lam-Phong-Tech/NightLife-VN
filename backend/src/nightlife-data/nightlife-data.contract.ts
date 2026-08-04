@@ -19,7 +19,7 @@ import {
 } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
-import { CreateBillDto } from './dto/create-bill.dto';
+import { CreateBillDto, ResubmitBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
 import {
@@ -2251,6 +2251,46 @@ export function CreateMemberBillContract() {
           error: 'Unprocessable Entity',
         },
       },
+    }),
+  );
+}
+
+export function ResubmitMemberBillContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Bill action: member resubmits a rejected bill',
+      description:
+        "Auth guard: JwtAuthGuard + RolesGuard(USER). Reopens the member's own REJECTED bill in place, preserving its booking/coupon links and bill identity while clearing the previous review result. VOIDED or active bills cannot be resubmitted.",
+    }),
+    ApiParam({
+      name: 'billId',
+      example: '550e8400-e29b-41d4-a716-446655440030',
+    }),
+    ApiBody({ type: ResubmitBillDto }),
+    ApiOkResponse({
+      description: 'Rejected bill resubmitted for admin review.',
+      schema: { example: billExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid resubmission request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Bill does not exist or does not belong to this member.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Bill is not rejected or is outside the submission window.',
+      schema: { example: unprocessableExample },
     }),
   );
 }

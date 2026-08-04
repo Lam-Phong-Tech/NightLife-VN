@@ -58,6 +58,7 @@ import {
   PartnerConfirmCheckInContract,
   PartnerCouponsContract,
   RecordProfileViewContract,
+  ResubmitMemberBillContract,
   PartnerScanCouponPayloadContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
@@ -105,6 +106,7 @@ import {
 import {
   AdminSensitiveBillQueryDto,
   CreateBillDto,
+  ResubmitBillDto,
 } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
@@ -1220,6 +1222,22 @@ export class NightlifeDataController {
     @Body() dto: CreateBillDto,
   ) {
     return this.nightlifeDataService.submitMemberBill(request.user, dto);
+  }
+
+  @ResubmitMemberBillContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('member/bills/:billId/resubmit')
+  resubmitMemberBill(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: ResubmitBillDto,
+  ) {
+    return this.nightlifeDataService.resubmitMemberBill(
+      request.user,
+      billId,
+      dto,
+    );
   }
 
   @AdminSensitiveBillsContract()
