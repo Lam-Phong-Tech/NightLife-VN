@@ -1932,11 +1932,42 @@ export default function Page() {
                   {selectedBill.media?.length ? (
                     <div className="nl-detail-media">
                       <span className="nl-receipt-title">{t("Ảnh / chứng từ")}</span>
-                      {selectedBill.media.map((media) => (
-                        <a key={media.id} href={media.url} target="_blank" rel="noreferrer" className="nl-detail-media-link">
-                          {media.originalName || media.mimeType}
-                        </a>
-                      ))}
+                      <div className="nl-detail-media-grid">
+                        {selectedBill.media.map((media) => {
+                          const mediaUrl = media.url || "";
+                          const isImg =
+                            media.mimeType?.startsWith("image/") ||
+                            /\.(jpeg|jpg|gif|png|webp)$/i.test((mediaUrl.split("?")[0] || "")) ||
+                            /\.(jpeg|jpg|gif|png|webp)$/i.test((media.originalName || "").split("?")[0] || "");
+
+                          return isImg ? (
+                            <a
+                              key={media.id}
+                              href={mediaUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="nl-detail-media-img-wrapper"
+                            >
+                              <img
+                                src={mediaUrl}
+                                alt={media.originalName || t("Ảnh xem trước chứng từ")}
+                                className="nl-detail-media-img"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              key={media.id}
+                              href={mediaUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="nl-detail-media-link"
+                            >
+                              <FileText size={16} />
+                              <span>{media.originalName || media.mimeType || t("Tải file chứng từ")}</span>
+                            </a>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </section>
@@ -2796,24 +2827,60 @@ export default function Page() {
         }
 
         .nl-detail-media {
-          display: grid;
+          display: flex;
+          flex-direction: column;
           gap: 10px;
           border: 1px solid var(--vy-border);
-          border-radius: 12px;
+          border-radius: 14px;
           background: var(--vy-surface-3);
           padding: 14px;
         }
 
+        .nl-detail-media-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .nl-detail-media-img-wrapper {
+          display: block;
+          width: 100%;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(0, 0, 0, 0.3);
+          transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .nl-detail-media-img-wrapper:hover {
+          border-color: var(--vy-gold-bright, #d4b26a);
+        }
+
+        .nl-detail-media-img {
+          width: 100%;
+          max-height: 280px;
+          object-fit: contain;
+          display: block;
+        }
+
         .nl-detail-media-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: var(--vy-gold-pale);
           text-decoration: none;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           overflow-wrap: anywhere;
         }
 
         .nl-detail-media-link:hover {
           color: var(--vy-gold-hi);
+          border-color: rgba(255, 255, 255, 0.2);
         }
 
         .nl-upload-zone-wrapper {
