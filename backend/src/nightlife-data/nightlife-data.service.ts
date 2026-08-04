@@ -12215,7 +12215,7 @@ export class NightlifeDataService {
           status: true,
           usedAt: true,
           expiresAt: true,
-          bill: { select: { id: true } },
+          bill: { select: { id: true, status: true } },
           coupon: {
             select: {
               id: true,
@@ -12292,7 +12292,7 @@ export class NightlifeDataService {
         );
       }
 
-      if (issue.bill) {
+      if (issue.bill && !['REJECTED', 'VOIDED'].includes(issue.bill.status)) {
         throw new UnprocessableEntityException(
           'Coupon issue is already linked to a bill',
         );
