@@ -3946,7 +3946,7 @@ const venueSearchCss = `
     }
 
     .venue-result-bar {
-      margin-top: 7px;
+      margin: 7px 16px 0;
       font-size: 11px;
       gap: 8px;
     }
@@ -3979,13 +3979,13 @@ const venueSearchCss = `
     .venue-list,
     .venue-skeleton-stack {
       gap: 10px;
-      margin-top: 7px;
+      margin: 7px 16px 0;
     }
 
     .venue-pagination {
       justify-content: center;
       gap: 8px;
-      margin-top: 14px;
+      margin: 14px 16px 0;
       overflow-x: auto;
       padding: 0 14px 2px;
       scrollbar-width: none;
@@ -4117,7 +4117,7 @@ const venueSearchCss = `
     }
 
     .venue-error {
-      margin-top: 8px;
+      margin: 8px 16px 0;
       border-radius: 10px;
       padding: 9px 10px;
       font-size: 12px;
