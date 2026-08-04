@@ -1644,7 +1644,6 @@ function CastFilterPanel({
                 onChange={(value) => onSort(value as DiscoverySort)}
               />
               <section className="cast-sheet-group" aria-label={copy.filterNeeds}>
-                <h3>{copy.filterNeeds}</h3>
                 <div className="cast-filter-choices">
                   <button
                     type="button"
@@ -2742,6 +2741,10 @@ html.vy-light .cast-card-favorite.is-active {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.cast-filter-inline-groups .cast-filter-choices {
+  padding-top: 27px;
 }
 
 .cast-filter-choices button {
