@@ -4,7 +4,6 @@ import {
   getAuthUser,
   setAuthSession,
   updateStoredAuthUser,
-  type AuthLoginMethod,
   type AuthUser,
 } from "@/lib/auth/session";
 import {
@@ -19,9 +18,9 @@ import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-lang
 import {
   ArrowLeft,
   CheckCircle2,
+  Crown,
   Eye,
   EyeOff,
-  KeyRound,
   LockKeyhole,
   Mail,
   ShieldCheck,
@@ -126,10 +125,8 @@ function validatePasswordForm(form: PasswordForm, language: LanguageCode) {
   return errors;
 }
 
-function loginMethodLabel(method: AuthLoginMethod, language: LanguageCode) {
-  if (method === "GOOGLE") return "Google";
-  if (method === "LINE") return "LINE";
-  return translateText("Email và mật khẩu", language);
+function membershipTierLabel(tier?: string) {
+  return tier === "PREMIUM" || tier === "VIP" ? "VIP" : "Member";
 }
 
 export default function Page() {
@@ -332,9 +329,7 @@ export default function Page() {
     authUser?.email?.split("@")[0] ||
     translateText("Chưa đăng nhập", activeLanguage);
   const email = authUser?.email || translateText("Chưa có email", activeLanguage);
-  const tier = authUser?.tier || "FREE";
-  const status = authUser?.status || "ACTIVE";
-  const role = authUser?.role || "USER";
+  const membershipTier = membershipTierLabel(authUser?.tier);
 
   if (isSessionChecking || !authUser) {
     return (
@@ -476,14 +471,11 @@ export default function Page() {
                 value={email}
               />
               <InfoRow
-                icon={<KeyRound size={16} />}
-                label={translateText("Phương thức đăng nhập", activeLanguage)}
-                value={loginMethodLabel(loginMethod, activeLanguage)}
-              />
-              <InfoRow
-                icon={<ShieldCheck size={16} />}
-                label={translateText("Quyền truy cập", activeLanguage)}
-                value={`${role} · ${tier} · ${status}`}
+                icon={
+                  membershipTier === "VIP" ? <Crown size={16} /> : <ShieldCheck size={16} />
+                }
+                label={translateText("Hạng tài khoản", activeLanguage)}
+                value={membershipTier}
               />
             </div>
           </section>
@@ -677,8 +669,7 @@ export default function Page() {
                 </span>
                 <div>
                   <h2 style={{ margin: 0, fontSize: 18, lineHeight: 1.2, fontWeight: 950 }}>
-                    {translateText("Đăng nhập qua", activeLanguage)}{" "}
-                    {loginMethodLabel(loginMethod, activeLanguage)}
+                    {translateText("Không thể đổi mật khẩu", activeLanguage)}
                   </h2>
                   <p
                     style={{
@@ -688,9 +679,7 @@ export default function Page() {
                       lineHeight: 1.55,
                     }}
                   >
-                    {translateText("Tài khoản này xác thực qua", activeLanguage)}{" "}
-                    {loginMethodLabel(loginMethod, activeLanguage)}
-                    {translateText(", nên không có mục đổi mật khẩu tại Vietyoru.", activeLanguage)}
+                    {translateText("Tài khoản này không có mật khẩu tại Vietyoru.", activeLanguage)}
                   </p>
                 </div>
               </div>

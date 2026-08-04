@@ -1340,6 +1340,13 @@ const entries: TranslationEntry[] = [
     zh: "登录邮箱",
   },
   {
+    vi: "Hạng tài khoản",
+    en: "Account tier",
+    ja: "アカウントランク",
+    ko: "계정 등급",
+    zh: "账户等级",
+  },
+  {
     vi: "Phương thức đăng nhập",
     en: "Sign-in method",
     ja: "ログイン方法",
@@ -3067,6 +3074,20 @@ const entries: TranslationEntry[] = [
     ja: "ログイン方法",
     ko: "로그인 방식",
     zh: "登录方式",
+  },
+  {
+    vi: "Không thể đổi mật khẩu",
+    en: "Password change unavailable",
+    ja: "パスワードを変更できません",
+    ko: "비밀번호를 변경할 수 없습니다",
+    zh: "无法更改密码",
+  },
+  {
+    vi: "Tài khoản này không có mật khẩu tại Vietyoru.",
+    en: "This account does not have a Vietyoru password.",
+    ja: "このアカウントにはVietyoruのパスワードがありません。",
+    ko: "이 계정에는 Vietyoru 비밀번호가 없습니다.",
+    zh: "此账户没有 Vietyoru 密码。",
   },
   {
     vi: "Tài khoản này xác thực qua",
