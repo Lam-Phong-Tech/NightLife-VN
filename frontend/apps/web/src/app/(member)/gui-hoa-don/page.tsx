@@ -88,6 +88,12 @@ type BookingLinkedBill = NonNullable<BookingRecord["bill"]>;
 type ExistingBill = BillRecord | BookingLinkedBill;
 
 const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
+  "Booking đã được xác nhận check-in": {
+    en: "Booking check-in confirmed",
+    ja: "予約のチェックインが確認されました",
+    ko: "예약 체크인이 확인되었습니다",
+    zh: "预订签到已确认",
+  },
   "Ảnh/PDF hiện chưa có text OCR. Hệ thống không đọc trực tiếp ảnh này; vui lòng nhập tổng tiền thủ công và dùng file làm chứng từ.": {
     en: "This image/PDF has no OCR text yet. The system cannot read this file directly; please enter the total manually and keep the file as evidence.",
     ja: "この画像/PDFにはまだOCRテキストがありません。システムはこのファイルを直接読み取れないため、合計金額を手入力し、ファイルは証憑として使用してください。",
@@ -880,6 +886,7 @@ const isBookingAdminConfirmedForBill = (booking: BookingRecord | null | undefine
 const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
   booking?.qr?.usedAt ??
   booking?.couponIssue?.usedAt ??
+  (isBookingAdminConfirmedForBill(booking) ? booking?.updatedAt ?? null : null) ??
   null;
 
 const confirmedUsageSourceLabel = (
@@ -889,6 +896,9 @@ const confirmedUsageSourceLabel = (
 ) => {
   if (booking?.qr?.usedAt) return localize("QR đặt chỗ đã được đối tác xác nhận", language);
   if (booking?.couponIssue?.usedAt) return localize("Mã ưu đãi gắn đặt chỗ đã được đối tác xác nhận", language);
+  if (isBookingAdminConfirmedForBill(booking) && booking?.updatedAt) {
+    return localize("Booking đã được xác nhận check-in", language);
+  }
   if (couponIssue?.usedAt) return localize("Mã ưu đãi đã được đối tác xác nhận", language);
   if (booking || couponIssue) return localize("Chưa có xác nhận sử dụng từ quản trị viên hoặc đối tác", language);
   return localize("Chọn đặt chỗ hoặc mã ưu đãi đã được xác nhận", language);

@@ -7613,6 +7613,26 @@ describe('NightlifeDataService', () => {
     expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
+  it('uses the check-in status timestamp for a member bill when QR usage is unavailable', () => {
+    const checkedInAt = new Date('2026-07-01T09:30:00.000Z');
+
+    const usedAt = (service as any).resolveBillUsedAt(
+      { usedAt: '2026-07-01T09:30:00.000Z' },
+      {
+        booking: {
+          id: 'booking-checked-in-1',
+          status: 'CHECKED_IN',
+          updatedAt: checkedInAt,
+          qr: { usedAt: null },
+          couponIssue: null,
+        },
+        requireCheckedInBooking: true,
+      },
+    );
+
+    expect(usedAt).toEqual(checkedInAt);
+  });
+
   it('rejects bill submission for a completed member booking', async () => {
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-completed-1',

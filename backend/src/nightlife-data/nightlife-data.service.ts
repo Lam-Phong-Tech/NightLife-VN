@@ -11799,14 +11799,15 @@ export class NightlifeDataService {
       const confirmedUsageAt =
         context.booking.qr?.usedAt ??
         context.booking.couponIssue?.usedAt ??
-        (!context.requireCheckedInBooking &&
-        this.isBookingAdminConfirmedForBill(context.booking.status)
+        ((context.requireCheckedInBooking
+          ? String(context.booking.status ?? '').toUpperCase() === 'CHECKED_IN'
+          : this.isBookingAdminConfirmedForBill(context.booking.status))
           ? context.booking.updatedAt
           : null) ??
         null;
       if (!confirmedUsageAt) {
         throw new UnprocessableEntityException(
-          'Booking must be checked in with a confirmed QR or coupon before bill submission',
+          'Booking must be checked in before bill submission',
         );
       }
 
