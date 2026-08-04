@@ -1140,6 +1140,7 @@ export default function Page() {
 
         .vyr-rank-copy {
           min-width: 0;
+          overflow: hidden;
           display: flex;
           flex-direction: column;
         }
@@ -1163,9 +1164,11 @@ export default function Page() {
         }
 
         .vyr-rank-label {
+          min-width: 0;
           font-size: 11px;
           line-height: 1;
           font-weight: 700;
+          white-space: nowrap;
         }
 
         .vyr-rank-number {
@@ -1589,7 +1592,11 @@ export default function Page() {
 
           .vyr-rank-badge-line {
             min-height: 24px;
-            gap: 7px;
+            display: grid;
+            grid-template-columns: 24px minmax(0, 1fr);
+            column-gap: 7px;
+            row-gap: 5px;
+            align-items: center;
           }
 
           .vyr-rank-crown,
@@ -1597,6 +1604,8 @@ export default function Page() {
             width: 24px;
             height: 24px;
             border-radius: 7px;
+            grid-column: 1;
+            grid-row: 1;
           }
 
           .vyr-rank-crown svg {
@@ -1606,6 +1615,19 @@ export default function Page() {
 
           .vyr-rank-label {
             font-size: 9.5px;
+            grid-column: 2;
+            grid-row: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .vyr-sponsored {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            justify-self: start;
+            white-space: nowrap;
           }
 
           .vyr-rank-number {

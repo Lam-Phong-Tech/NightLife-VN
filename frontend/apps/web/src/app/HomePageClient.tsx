@@ -2325,11 +2325,12 @@ function RankingRow({ item }: { item: RankedItem }) {
         }}
       />
       <div style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px" }}>
+        <div className="nl-home-ranking-badge-line" style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px", minWidth: 0 }}>
           <span
             style={{
               width: isPodium ? 43 : 38,
               height: isPodium ? 31 : 28,
+              flex: "0 0 auto",
               borderRadius: "10px",
               display: "inline-flex",
               alignItems: "center",
@@ -2341,7 +2342,7 @@ function RankingRow({ item }: { item: RankedItem }) {
           >
             {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
           </span>
-          <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none" }}>
+          <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
             Top {item.rank}
           </span>
           {item.sponsored ? (

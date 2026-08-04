@@ -2726,6 +2726,19 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 
 .nl-home-ranking-label {
   text-shadow: none !important;
+  white-space: nowrap;
+}
+
+.nl-home-ranking-badge-line {
+  min-width: 0;
+}
+
+.nl-home-ranking-badge-line > :first-child {
+  flex: 0 0 auto;
+}
+
+.nl-home-ranking-badge-line .nl-home-ranking-label {
+  flex: 0 0 auto;
 }
 
 html.vy-light .nl-home-ranking-row[data-rank-tier="1"] .nl-home-ranking-label {
