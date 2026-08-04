@@ -1239,6 +1239,7 @@ export default function Page() {
   const [appliedBookingId, setAppliedBookingId] = useState("");
   const [activeListTab, setActiveListTab] = useState<BillListTab>("UNSENT");
   const [selectedBillId, setSelectedBillId] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
@@ -1379,6 +1380,7 @@ export default function Page() {
     focusTarget?: "photo" | "amount",
   ) => {
     setSelectedBillId("");
+    setIsFormOpen(true);
     if (bill.store?.slug) {
       setStoreSlug(bill.store.slug);
     }
@@ -1715,6 +1717,7 @@ export default function Page() {
 
   const handleOpenBooking = (booking: BookingRecord) => {
     setSelectedBillId("");
+    setIsFormOpen(true);
     setBookingId(booking.id);
     setCouponIssueId("");
     setAmountInput("");
@@ -1726,6 +1729,7 @@ export default function Page() {
 
   const handleOpenBill = (bill: BillRecord) => {
     setSelectedBillId(bill.id);
+    setIsFormOpen(false);
     setBookingId("");
     setCouponIssueId("");
     setAmountInput("");
@@ -1734,6 +1738,7 @@ export default function Page() {
 
   const handleBackToList = () => {
     setSelectedBillId("");
+    setIsFormOpen(false);
     setBookingId("");
     setCouponIssueId("");
     setAmountInput("");
@@ -1785,6 +1790,7 @@ export default function Page() {
       setSelectedBillId("");
       setBookingId("");
       setCouponIssueId("");
+      setIsFormOpen(false);
       setEvidenceFile(null);
       setOcrPreview(null);
       if (previewUrl) {
@@ -1845,7 +1851,7 @@ export default function Page() {
             </span>
           </div>
 
-          {!bookingId && !selectedBill ? (
+          {!isFormOpen && !bookingId && !selectedBill ? (
             <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn") }>
               <div className="nl-bill-filter-chips" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
                 {[
