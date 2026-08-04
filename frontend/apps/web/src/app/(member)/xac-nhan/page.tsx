@@ -6,6 +6,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import { authSessionChangeEvent, getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   buildBookingConfirmationPageFeedback,
   writeBookingConfirmationFlashToast,
@@ -261,9 +262,9 @@ const bookingResolutionFeedback = (
   );
 };
 
-const guestLabel = (booking: BookingRecord, language: LanguageCode) =>
-  `${booking.guest?.displayName ?? booking.user?.displayName ?? translateText("Khách", language)} · ${
-    booking.guest?.email ?? booking.guest?.phone ?? booking.user?.email ?? translateText("Email đã lưu", language)
+const guestLabel = (booking: BookingRecord, language: LanguageCode, authUser: AuthUser | null) =>
+  `${booking.guest?.displayName ?? booking.user?.displayName ?? authUser?.displayName ?? translateText("Khách", language)} · ${
+    booking.guest?.email ?? booking.guest?.phone ?? booking.user?.email ?? authUser?.email ?? translateText("Email đã lưu", language)
   }`;
 
 type BookingDiscountInfo = {
@@ -562,9 +563,17 @@ export default function Page() {
   const [isBookingLoading, setIsBookingLoading] = useState(true);
   const [redirectFeedback, setRedirectFeedback] = useState<BookingResolutionFeedback | null>(null);
   const [adminStoreAddress, setAdminStoreAddress] = useState("");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getAuthUser());
   const latestBookingRef = useRef<BookingRecord | null>(null);
   const handledResolutionRef = useRef<string | null>(null);
   const redirectTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const refreshAuthUser = () => setAuthUser(getAuthUser());
+    refreshAuthUser();
+    window.addEventListener(authSessionChangeEvent, refreshAuthUser);
+    return () => window.removeEventListener(authSessionChangeEvent, refreshAuthUser);
+  }, []);
 
   useEffect(() => {
     latestBookingRef.current = booking;
@@ -737,7 +746,11 @@ export default function Page() {
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
   const couponLabelText = booking ? bookingCouponLabel(booking) : null;
   const shouldShowDiscountSummary = Boolean(couponLabelText || discountLabelText);
-  const guestEmailLabel = booking?.guest?.email ?? booking?.user?.email ?? (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
+  const guestEmailLabel =
+    booking?.guest?.email ??
+    booking?.user?.email ??
+    authUser?.email ??
+    (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
   const guestConfirmationMessage = isTourBooking
     ? `${tourCopy.emailSentPrefix} ${guestEmailLabel}. ${tourCopy.adminWillContact}`
     : `${translateText(
@@ -964,7 +977,7 @@ export default function Page() {
               />
               <SummaryRow
                 label={isTourBooking ? tourCopy.bookerLabel : translateText("Người đặt", activeLanguage)}
-                value={guestLabel(booking, activeLanguage)}
+                value={guestLabel(booking, activeLanguage, authUser)}
               />
               {shouldShowDiscountSummary ? (
                 <>
