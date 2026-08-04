@@ -32,6 +32,7 @@ import {
   Clock,
   FileText,
   Info,
+  Maximize2,
   RotateCcw,
   Sparkles,
   Trash2,
@@ -336,6 +337,18 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ja: "明細ではなく原本の合計金額のみ入力してください。利用時間は確認済み時刻から取得され、10日を超えた請求書は受付できません。",
     ko: "항목/서비스 내역이 아닌 원본 영수증 총액만 입력하세요. 사용 시간은 확인된 시각을 기준으로 하며, 10일이 지난 영수증은 접수되지 않습니다.",
     zh: "只填写原始账单总额，不填写菜品/服务明细。使用时间取自已确认时间，超过10天的账单不予接收。",
+  },
+  "Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn.": {
+    en: "Please upload a new image/proof to resubmit the bill.",
+    ja: "新しい画像/証明書をアップロードして請求書を再送信してください。",
+    ko: "새 이미지/증빙 để 영수증을 재제출해 주세요.",
+    zh: "请上传新的图片/凭证以重新提交账单。",
+  },
+  "Xem ảnh gốc": {
+    en: "View original image",
+    ja: "元の画像を表示",
+    ko: "원본 이미지 보기",
+    zh: "查看原图",
   },
   "Đang gửi hóa đơn...": {
     en: "Submitting bill...",
@@ -1998,12 +2011,17 @@ export default function Page() {
                               target="_blank"
                               rel="noreferrer"
                               className="nl-detail-media-img-wrapper"
+                              title={t("Xem ảnh gốc")}
                             >
                               <img
                                 src={mediaUrl}
                                 alt={media.originalName || t("Ảnh xem trước chứng từ")}
                                 className="nl-detail-media-img"
                               />
+                              <div className="nl-detail-media-overlay">
+                                <Maximize2 size={18} />
+                                <span>{t("Xem ảnh gốc")}</span>
+                              </div>
                             </a>
                           ) : (
                             <a
@@ -2922,28 +2940,62 @@ export default function Page() {
         .nl-detail-media-grid {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          align-items: center;
+          gap: 12px;
         }
 
         .nl-detail-media-img-wrapper {
+          position: relative;
           display: block;
           width: 100%;
-          border-radius: 12px;
+          max-width: 320px;
+          margin: 0 auto;
+          border-radius: 14px;
           overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(0, 0, 0, 0.3);
-          transition: transform 0.2s ease, border-color 0.2s ease;
+          background: rgba(0, 0, 0, 0.4);
+          transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .nl-detail-media-img-wrapper:hover {
           border-color: var(--vy-gold-bright, #d4b26a);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
         .nl-detail-media-img {
           width: 100%;
-          max-height: 280px;
+          max-height: 420px;
           object-fit: contain;
           display: block;
+          margin: 0 auto;
+        }
+
+        .nl-detail-media-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(2px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          color: #f4e3b4;
+          font-size: 12px;
+          font-weight: 700;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          pointer-events: none;
+        }
+
+        .nl-detail-media-img-wrapper:hover .nl-detail-media-overlay {
+          opacity: 1;
+        }
+
+        @media (min-width: 640px) {
+          .nl-detail-media-img {
+            max-height: 480px;
+          }
         }
 
         .nl-detail-media-link {
