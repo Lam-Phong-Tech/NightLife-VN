@@ -1642,34 +1642,38 @@ function CastFilterPanel({
               value={language}
               onChange={onLanguage}
             />
-            <div className="cast-filter-inline-groups">
-              <FilterChipGroup
-                label={copy.sortLabel.replace(":", "")}
-                options={sortOptions}
-                value={sort}
-                onChange={(value) => onSort(value as DiscoverySort)}
-              />
-              <section className="cast-sheet-group" aria-label={copy.filterNeeds}>
-                <div className="cast-filter-choices">
+            <section className="cast-sheet-group" aria-label={copy.sortLabel}>
+              <h3>{copy.sortLabel.replace(":", "")}</h3>
+              <div className="cast-filter-choices">
+                {sortOptions.map((option) => (
                   <button
+                    key={`sort-${option.value}`}
                     type="button"
-                    aria-pressed={hasActiveCoupon}
-                    className={hasActiveCoupon ? "is-active" : ""}
-                    onClick={onToggleCoupon}
+                    aria-pressed={sort === option.value}
+                    className={sort === option.value ? "is-active" : ""}
+                    onClick={() => onSort(option.value)}
                   >
-                    {copy.hasDeals}
+                    {option.label}
                   </button>
-                  <button
-                    type="button"
-                    aria-pressed={topRankingOnly}
-                    className={topRankingOnly ? "is-active" : ""}
-                    onClick={onToggleTopRanking}
-                  >
-                    {copy.topRanking}
-                  </button>
-                </div>
-              </section>
-            </div>
+                ))}
+                <button
+                  type="button"
+                  aria-pressed={hasActiveCoupon}
+                  className={hasActiveCoupon ? "is-active" : ""}
+                  onClick={onToggleCoupon}
+                >
+                  {copy.hasDeals}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={topRankingOnly}
+                  className={topRankingOnly ? "is-active" : ""}
+                  onClick={onToggleTopRanking}
+                >
+                  {copy.topRanking}
+                </button>
+              </div>
+            </section>
           </section>
         </div>
       </div>
@@ -2738,25 +2742,10 @@ html.vy-light .cast-card-favorite.is-active {
   min-width: 0;
 }
 
-.cast-filter-inline-groups {
-  display: grid;
-  grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
-  align-items: start;
-  gap: 12px;
-}
-
-.cast-filter-sheet--desktop .cast-filter-inline-groups {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .cast-filter-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.cast-filter-inline-groups .cast-filter-choices {
-  padding-top: 27px;
 }
 
 .cast-filter-choices button {
