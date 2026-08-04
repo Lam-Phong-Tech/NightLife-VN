@@ -20,6 +20,7 @@ import { Prisma, CampaignStatus, DiscountType, UserRole } from '@prisma/client';
 import {
   IsString,
   IsInt,
+  Max,
   Min,
   IsOptional,
   IsEnum,
@@ -53,6 +54,12 @@ export class CreateCampaignDto {
   @IsOptional()
   @IsEnum(CampaignStatus)
   status?: CampaignStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(6)
+  homePosition?: number | null;
 }
 
 export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {}
@@ -79,6 +86,7 @@ export class CampaignsController {
       startsAt: createCampaignDto.startsAt,
       endsAt: createCampaignDto.endsAt,
       status: createCampaignDto.status || 'DRAFT',
+      homePosition: createCampaignDto.homePosition,
     };
 
     if (createCampaignDto.targetStoreId) {
@@ -124,6 +132,7 @@ export class CampaignsController {
       startsAt: updateCampaignDto.startsAt,
       endsAt: updateCampaignDto.endsAt,
       status: updateCampaignDto.status,
+      homePosition: updateCampaignDto.homePosition,
     };
 
     if (updateCampaignDto.targetStoreId === null) {

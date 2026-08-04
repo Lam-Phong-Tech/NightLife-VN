@@ -3236,7 +3236,7 @@ export default function HomePageClient() {
       if (cancelled) return;
 
       campaignsApi
-        .listPublicCampaigns({ limit: 6 })
+        .listPublicCampaigns({ limit: 6, home: true })
         .then((campaigns) => {
           if (!cancelled) {
             setHomeCoupons(

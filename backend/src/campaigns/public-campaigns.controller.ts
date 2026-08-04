@@ -10,6 +10,7 @@ export class PublicCampaignsController {
   async findPublicCampaigns(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('home') home?: string,
   ) {
     const skip = page ? (Number(page) - 1) * (Number(limit) || 50) : 0;
     const take = limit ? Number(limit) : 50;
@@ -30,7 +31,16 @@ export class PublicCampaignsController {
       ],
     };
 
-    const result = await this.campaignsService.findAll({ skip, take, where });
+    const isHomeRequest = home === 'true';
+    if (isHomeRequest) {
+      where.homePosition = { not: null };
+    }
+
+    const result = await this.campaignsService.findAll(
+      isHomeRequest
+        ? { skip, take, where, orderBy: { homePosition: 'asc' } }
+        : { skip, take, where },
+    );
 
     return {
       data: result.data,

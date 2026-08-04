@@ -327,7 +327,9 @@ export default function AdminContentPage() {
   const [campaignStoreResults, setCampaignStoreResults] = useState<any[]>([]);
   const [campaignLinkedStore, setCampaignLinkedStore] = useState<any | null>(null);
   const [campaignName, setCampaignName] = useState('');
+  const [campaignHomePosition, setCampaignHomePosition] = useState<number | ''>('');
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
+  const [campaignStatusFilter, setCampaignStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAUSED' | 'DRAFT'>('ALL');
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
   const [isDeletingCampaign, setIsDeletingCampaign] = useState(false);
 
@@ -1107,6 +1109,7 @@ export default function AdminContentPage() {
     setCampaignDates(campaign.startsAt ? [dayjs(campaign.startsAt), campaign.endsAt ? dayjs(campaign.endsAt) : null] : null);
     setCampaignStatus(campaign.status === 'ACTIVE' ? 'Hoạt động' : campaign.status === 'PAUSED' ? 'Tạm dừng' : 'Bản nháp');
     setCampaignLinkedStore(campaign.targetStore || null);
+    setCampaignHomePosition(campaign.homePosition ?? '');
     setIsAdding('campaign');
   };
 
@@ -1155,6 +1158,7 @@ export default function AdminContentPage() {
         startsAt: campaignDates?.[0] ? campaignDates[0].toISOString() : null,
         endsAt: campaignDates?.[1] ? campaignDates[1].endOf('day').toISOString() : null,
         targetStoreId: campaignLinkedStore?.id || null,
+        homePosition: campaignHomePosition || null,
       };
 
       if (editCampaignId) {
@@ -1406,6 +1410,7 @@ export default function AdminContentPage() {
     setCampaignStatus('Hoạt động');
     setCampaignDiscountType('percent');
     setCampaignDiscountValue('10%');
+    setCampaignHomePosition('');
     setEditCampaignId(null);
     setEditBlogId(null);
     setEditBannerId(null);
@@ -1771,14 +1776,34 @@ export default function AdminContentPage() {
       {/* CAMPAIGN CONTENT */}
       {activeTab === 'campaign' && (
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', overflowX: 'auto' }}>
+            {[
+              ['ALL', 'Tất cả'],
+              ['ACTIVE', 'Đang chạy'],
+              ['PAUSED', 'Tạm dừng'],
+              ['DRAFT', 'Bản nháp'],
+            ].map(([value, label]) => {
+              const isActive = campaignStatusFilter === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCampaignStatusFilter(value as typeof campaignStatusFilter)}
+                  style={{ flex: 'none', border: isActive ? '1px solid rgba(212,178,106,.6)' : '1px solid rgba(255,255,255,.1)', borderRadius: '9px', background: isActive ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: isActive ? '#f0dda8' : '#9b958a', padding: '7px 12px', fontSize: '12px', fontWeight: isActive ? 700 : 600, cursor: 'pointer' }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className="max-md:hidden" style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
             <span style={{ textAlign: 'center' }}>STT</span><span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
           </div>
           
-          {campaigns.length === 0 ? (
-            <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có campaign nào.</div>
+          {campaigns.filter((camp) => campaignStatusFilter === 'ALL' || camp.status === campaignStatusFilter).length === 0 ? (
+            <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có campaign phù hợp.</div>
           ) : (
-            campaigns.map((camp, index) => {
+            campaigns.filter((camp) => campaignStatusFilter === 'ALL' || camp.status === campaignStatusFilter).map((camp, index) => {
               const discountText = camp.discountType === 'PERCENT'
                 ? `−${camp.discountValue}%`
                 : `−${camp.discountValue.toLocaleString('vi-VN')}đ`;
@@ -3287,6 +3312,21 @@ export default function AdminContentPage() {
                   <span onClick={() => setCampaignStatus('Tạm dừng')} style={{ background: campaignStatus === 'Tạm dừng' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Tạm dừng' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Tạm dừng' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Tạm dừng' ? 700 : 600, cursor: 'pointer' }}>Tạm dừng</span>
                   <span onClick={() => setCampaignStatus('Bản nháp')} style={{ background: campaignStatus === 'Bản nháp' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Bản nháp' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Bản nháp' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Bản nháp' ? 700 : 600, cursor: 'pointer' }}>Bản nháp</span>
                 </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Vị trí trang chủ</div>
+                <select
+                  value={campaignHomePosition}
+                  onChange={(event) => setCampaignHomePosition(event.target.value ? Number(event.target.value) : '')}
+                  style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
+                >
+                  <option value="">Không hiển thị tại trang chủ</option>
+                  {[1, 2, 3, 4, 5, 6].map((position) => (
+                    <option key={position} value={position}>Vị trí {position}</option>
+                  ))}
+                </select>
+                <div style={{ marginTop: '6px', color: '#57534b', fontSize: '11px' }}>Chọn 1–6 để hiển thị tại ô tương ứng trong Coupon Hot. Chọn vị trí đã dùng sẽ thay thế campaign cũ.</div>
               </div>
 
               <div>
