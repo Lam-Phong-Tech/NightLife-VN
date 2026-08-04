@@ -2181,18 +2181,24 @@ const venueSearchCss = `
   }
 
   .venue-input-clear {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
+    --venue-clear-size: 28px;
     display: inline-grid;
     place-items: center;
-    flex: 0 0 28px;
+    width: var(--venue-clear-size);
+    min-width: var(--venue-clear-size);
+    max-width: var(--venue-clear-size);
+    height: var(--venue-clear-size);
+    min-height: var(--venue-clear-size);
+    max-height: var(--venue-clear-size);
+    aspect-ratio: 1;
+    flex: 0 0 var(--venue-clear-size);
     border: 0;
-    border-radius: 50%;
+    border-radius: 999px;
     background: rgba(255, 255, 255, .08);
     color: var(--vy-muted);
     padding: 0;
     box-sizing: border-box;
+    line-height: 1;
     cursor: pointer;
   }
 
@@ -3901,10 +3907,7 @@ const venueSearchCss = `
     }
 
     .venue-input-clear {
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
-      flex-basis: 22px;
+      --venue-clear-size: 22px;
     }
 
     .venue-suggestions {

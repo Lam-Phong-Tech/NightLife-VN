@@ -1902,13 +1902,21 @@ const castSearchCss = `
 }
 
 .cast-input-clear {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
+  --cast-clear-size: 26px;
+  display: inline-grid;
+  place-items: center;
+  width: var(--cast-clear-size);
+  min-width: var(--cast-clear-size);
+  max-width: var(--cast-clear-size);
+  height: var(--cast-clear-size);
+  min-height: var(--cast-clear-size);
+  max-height: var(--cast-clear-size);
+  aspect-ratio: 1;
   padding: 0;
   box-sizing: border-box;
-  flex: 0 0 26px;
-  border-radius: 50%;
+  flex: 0 0 var(--cast-clear-size);
+  border-radius: 999px;
+  line-height: 1;
   background: rgba(255, 255, 255, 0.1);
   color: #9b958a;
 }
@@ -3640,22 +3648,29 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-suggestions {
-    position: fixed;
-    inset: 56px 0 0;
-    width: auto;
-    border: 0;
-    border-radius: 0;
-    background: var(--vy-bg);
-    box-shadow: none;
+    position: absolute;
+    inset: auto;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 70;
+    width: min(100%, calc(100vw - 28px));
+    max-height: min(70dvh, 540px);
+    border-radius: 14px;
+    background: #16141b;
+    box-shadow: 0 24px 58px -30px rgba(0, 0, 0, .76);
     overflow-y: auto;
   }
 
   .cast-suggestion-searchline {
-    padding: 8px 14px 12px;
+    padding: 12px 14px;
   }
 
   .cast-suggestion-tags {
     padding-bottom: 12px;
+  }
+
+  .cast-input-clear {
+    --cast-clear-size: 22px;
   }
 }
 
