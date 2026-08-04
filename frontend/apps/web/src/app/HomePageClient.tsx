@@ -1941,6 +1941,7 @@ function HomeCardCarousel<T>({
   getKey,
   items,
   itemsPerSlide,
+  layoutDirection = "row",
   renderItem,
 }: {
   ariaLabel: string;
@@ -1948,6 +1949,7 @@ function HomeCardCarousel<T>({
   getKey: (item: T) => string;
   items: T[];
   itemsPerSlide: number;
+  layoutDirection?: "row" | "column";
   renderItem: (item: T) => React.ReactNode;
 }) {
   const slides = useMemo(
@@ -2001,7 +2003,7 @@ function HomeCardCarousel<T>({
             style={{
               flex: "0 0 100%",
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.max(1, itemsPerSlide)}, minmax(0, 1fr))`,
+              gridTemplateColumns: layoutDirection === "column" ? "1fr" : `repeat(${Math.max(1, itemsPerSlide)}, minmax(0, 1fr))`,
               gap,
               minWidth: 0,
               paddingRight: slideIndex < slides.length - 1 ? gap : 0,
@@ -3590,10 +3592,11 @@ export default function HomePageClient() {
                 ) : homeCoupons.length ? (
                   <HomeCardCarousel
                     ariaLabel="Coupon Hot"
-                    gap={12}
+                    gap={10}
                     getKey={(item) => item.id}
                     items={homeCoupons.slice(0, 6)}
-                    itemsPerSlide={1}
+                    itemsPerSlide={2}
+                    layoutDirection="column"
                     renderItem={(item) => <CouponCard item={item} compact />}
                   />
                 ) : (
