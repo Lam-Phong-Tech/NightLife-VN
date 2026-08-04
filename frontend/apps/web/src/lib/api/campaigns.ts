@@ -28,6 +28,7 @@ export interface CampaignItem {
   startsAt?: string | null;
   endsAt?: string | null;
   status: 'ACTIVE' | 'PAUSED' | 'DRAFT' | 'EXPIRED' | 'DELETED';
+  homePosition?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,7 +48,7 @@ export const campaignStoreDistrict = (
 };
 
 export const campaignsApi = {
-  listPublicCampaigns: async (params?: { page?: number; limit?: number }): Promise<CampaignItem[]> => {
+  listPublicCampaigns: async (params?: { page?: number; limit?: number; home?: boolean }): Promise<CampaignItem[]> => {
     try {
       const res = await apiClient<any>('/public/campaigns', { params });
       return res.data?.data || res.data || [];

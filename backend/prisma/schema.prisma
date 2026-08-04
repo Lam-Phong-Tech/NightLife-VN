@@ -1399,11 +1399,13 @@ model Campaign {
   startsAt      DateTime?      @map("starts_at")
   endsAt        DateTime?      @map("ends_at")
   status        CampaignStatus @default(DRAFT)
+  homePosition  Int?           @map("home_position")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@index([targetStoreId])
   @@index([status])
+  @@index([homePosition])
   @@index([startsAt, endsAt])
   @@map("campaigns")
 }

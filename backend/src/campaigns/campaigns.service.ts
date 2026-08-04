@@ -33,6 +33,7 @@ export class CampaignsService {
       startsAt: campaign.startsAt?.toISOString() ?? null,
       endsAt: campaign.endsAt?.toISOString() ?? null,
       status: campaign.status,
+      homePosition: campaign.homePosition,
     } as Prisma.InputJsonValue;
   }
 
@@ -146,6 +147,12 @@ export class CampaignsService {
     this.assertValidDiscount(data.discountType, data.discountValue);
 
     return this.prisma.$transaction(async (tx) => {
+      if (data.homePosition) {
+        await tx.campaign.updateMany({
+          where: { homePosition: data.homePosition },
+          data: { homePosition: null },
+        });
+      }
       const created = await tx.campaign.create({
         data,
         include: {
@@ -201,6 +208,12 @@ export class CampaignsService {
     this.assertValidDiscount(discountType, discountValue);
 
     return this.prisma.$transaction(async (tx) => {
+      if (typeof data.homePosition === 'number') {
+        await tx.campaign.updateMany({
+          where: { homePosition: data.homePosition, id: { not: id } },
+          data: { homePosition: null },
+        });
+      }
       const updated = await tx.campaign.update({
         where: { id },
         data,
