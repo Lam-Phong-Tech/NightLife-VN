@@ -30,7 +30,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   Clock,
-  FileText,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -1136,7 +1135,6 @@ export default function Page() {
     [activeLanguage],
   );
   const { formatMoney } = useMoneyFormatter(activeLanguage);
-  const focusedBillId = searchParams.get("billId") || "";
   const requestedBookingId = searchParams.get("bookingId")?.trim() || "";
   const requestedStoreSlug = searchParams.get("storeSlug")?.trim() || "";
   const [stores, setStores] = useState<BillStoreOption[]>([]);
@@ -1492,15 +1490,6 @@ export default function Page() {
   );
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
-  const visibleSubmittedBills = useMemo(() => {
-    const topBills = submittedBills.slice(0, 5);
-    if (!focusedBillId || topBills.some((bill) => bill.id === focusedBillId)) {
-      return topBills;
-    }
-
-    const focusedBill = submittedBills.find((bill) => bill.id === focusedBillId);
-    return focusedBill ? [focusedBill, ...topBills].slice(0, 6) : topBills;
-  }, [focusedBillId, submittedBills]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
   const isUsedAtInvalid = Number.isNaN(usedAtDate.getTime());
   const isFutureUsage =
@@ -2089,52 +2078,6 @@ export default function Page() {
               )}
             </form>
 
-            <aside className="nl-bill-side">
-              <section className="nl-recent">
-                <div className="nl-recent-header-container">
-                  <h2 className="nl-recent-title">{t("Hóa đơn đã gửi")}</h2>
-                  <span className="nl-recent-title-note">{t("Lịch sử gần đây")}</span>
-                  <div className="nl-recent-divider"></div>
-                </div>
-
-                <div className="nl-recent-list">
-                  {visibleSubmittedBills.length === 0 ? (
-                    <div className="nl-recent-empty">
-                      <FileText size={32} className="nl-empty-icon" />
-                      <p>{t("Bạn chưa gửi hóa đơn nào gần đây.")}</p>
-                    </div>
-                  ) : (
-                    visibleSubmittedBills.map((bill) => (
-                      <article
-                        key={bill.id}
-                        className={focusedBillId === bill.id ? "nl-recent-card active" : "nl-recent-card"}
-                      >
-                        <div className="nl-recent-card-header">
-                          <span className="nl-recent-number">{t("Hóa đơn #")}{bill.billNumber || bill.id.slice(0, 8).toUpperCase()}</span>
-                          <span className={`nl-status-tag ${bill.status.toLowerCase()}`}>
-                            {billStatusLabel(bill.status, activeLanguage)}
-                          </span>
-                        </div>
-                        <div className="nl-recent-card-body">
-                          <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">{t("Quán:")}</span>
-                            <span className="nl-recent-card-val highlight">{bill.store?.name || "NightLife"}</span>
-                          </div>
-                          <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">{t("Tổng tiền:")}</span>
-                            <span className="nl-recent-card-val gold">{formatMoney(bill.totalVnd)}</span>
-                          </div>
-                          <div className="nl-recent-card-row">
-                            <span className="nl-recent-card-lbl">{t("Ngày sử dụng:")}</span>
-                            <span className="nl-recent-card-val">{formatDateTime(bill.usedAt, activeLanguage)}</span>
-                          </div>
-                        </div>
-                      </article>
-                    ))
-                  )}
-                </div>
-              </section>
-            </aside>
               </div>
             </>
           )}
@@ -2377,15 +2320,14 @@ export default function Page() {
         }
 
         .nl-bill-layout {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 24px;
-          align-items: start;
+          display: flex;
+          justify-content: center;
           min-width: 0;
+          width: 100%;
         }
 
-        .nl-bill-form,
-        .nl-bill-side {
+        .nl-bill-form {
+          width: min(100%, 860px);
           min-width: 0;
           border: 1px solid var(--vy-border);
           border-radius: 16px;
@@ -3056,93 +2998,6 @@ export default function Page() {
           animation: spin 0.8s linear infinite;
         }
 
-        .nl-recent-header-container {
-          display: grid;
-          gap: 2px;
-          margin-bottom: 16px;
-          width: 100%;
-        }
-
-        .nl-recent-title {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--vy-text);
-        }
-
-        .nl-recent-title-note {
-          font-size: 8px;
-          font-weight: 600;
-          letter-spacing: 1.2px;
-          color: var(--vy-muted);
-          text-transform: uppercase;
-        }
-
-        .nl-recent-divider {
-          background: linear-gradient(90deg, rgba(212,178,106,.45), transparent);
-          height: 1px;
-          margin-top: 5px;
-          width: 100%;
-        }
-
-        .nl-recent-list {
-          display: grid;
-          gap: 12px;
-          width: 100%;
-        }
-
-        .nl-recent-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 16px;
-          text-align: center;
-          color: var(--vy-faint);
-          width: 100%;
-        }
-
-        .nl-empty-icon {
-          margin-bottom: 12px;
-          opacity: 0.35;
-        }
-
-        .nl-recent-empty p {
-          font-size: 13px;
-          margin: 0;
-        }
-
-        .nl-recent-card {
-          border: 1px solid var(--vy-border);
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.02);
-          padding: 14px;
-          display: grid;
-          gap: 10px;
-          width: 100%;
-          min-width: 0;
-          transition: all 0.3s ease;
-        }
-
-        .nl-recent-card.active {
-          border-color: var(--vy-gold);
-          background: rgba(212, 178, 106, 0.05);
-          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.08);
-        }
-
-        .nl-recent-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          width: 100%;
-        }
-
-        .nl-recent-number {
-          font-size: 12px;
-          font-weight: 700;
-          color: var(--vy-text-2);
-        }
-
         .nl-status-tag {
           font-size: 9px;
           font-weight: 700;
@@ -3171,37 +3026,6 @@ export default function Page() {
           border-color: rgba(232, 139, 153, 0.25);
         }
 
-        .nl-recent-card-body {
-          display: grid;
-          gap: 5px;
-          width: 100%;
-        }
-
-        .nl-recent-card-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 11.5px;
-          width: 100%;
-        }
-
-        .nl-recent-card-lbl {
-          color: var(--vy-muted);
-        }
-
-        .nl-recent-card-val {
-          color: var(--vy-text-2);
-          font-weight: 600;
-        }
-
-        .nl-recent-card-val.highlight {
-          color: var(--vy-text);
-        }
-
-        .nl-recent-card-val.gold {
-          color: var(--vy-gold);
-        }
-
         @keyframes spin {
           to {
             transform: rotate(360deg);
@@ -3210,8 +3034,7 @@ export default function Page() {
 
         @media (max-width: 860px) {
           .nl-bill-layout {
-            grid-template-columns: 1fr;
-            gap: 20px;
+            display: block;
           }
         }
 
@@ -3236,8 +3059,8 @@ export default function Page() {
             font-size: 10px;
           }
 
-          .nl-bill-form,
-          .nl-bill-side {
+          .nl-bill-form {
+            width: 100%;
             padding: 16px;
             border-radius: 12px;
           }
