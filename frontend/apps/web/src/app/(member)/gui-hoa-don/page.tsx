@@ -652,6 +652,54 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "최소",
     zh: "满",
   },
+  "Danh sách hóa đơn": {
+    en: "Bill list",
+    ja: "請求書一覧",
+    ko: "청구서 목록",
+    zh: "账单列表",
+  },
+  "Trạng thái hóa đơn": {
+    en: "Bill status",
+    ja: "請求書のステータス",
+    ko: "청구서 상태",
+    zh: "账单状态",
+  },
+  "Chưa gửi": {
+    en: "Not sent",
+    ja: "未送信",
+    ko: "미제출",
+    zh: "未提交",
+  },
+  "Duyệt": {
+    en: "Approved",
+    ja: "承認済み",
+    ko: "승인됨",
+    zh: "已批准",
+  },
+  "Đang tải danh sách hóa đơn...": {
+    en: "Loading bills...",
+    ja: "請求書を読み込んでいます...",
+    ko: "청구서를 불러오는 중...",
+    zh: "正在加载账单...",
+  },
+  "Nhập hóa đơn": {
+    en: "Enter bill",
+    ja: "請求書を入力",
+    ko: "청구서 입력",
+    zh: "填写账单",
+  },
+  "Chưa có booking nào đã check-in cần gửi hóa đơn.": {
+    en: "There are no checked-in bookings that need a bill yet.",
+    ja: "請求書の送信が必要なチェックイン済みの予約はまだありません。",
+    ko: "청구서를 제출해야 하는 체크인 완료 예약이 아직 없습니다.",
+    zh: "暂时没有需要提交账单的已签到预订。",
+  },
+  "Chưa có hóa đơn trong trạng thái này.": {
+    en: "There are no bills in this status yet.",
+    ja: "このステータスの請求書はまだありません。",
+    ko: "이 상태의 청구서가 아직 없습니다.",
+    zh: "此状态下暂时没有账单。",
+  },
 };
 
 const localize = (value: string, language: LanguageCode) => {
@@ -1664,7 +1712,7 @@ export default function Page() {
                     role="tab"
                     aria-selected={activeListTab === tab.id}
                   >
-                    <span>{tab.label}</span>
+                    <span className="nl-bill-tab-label">{tab.label}</span>
                     <span className="nl-bill-tab-count">{tab.count}</span>
                   </button>
                 ))}
@@ -2255,7 +2303,8 @@ export default function Page() {
 
         .nl-bill-tab {
           min-height: 38px;
-          display: inline-flex;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
           align-items: center;
           justify-content: center;
           gap: 7px;
@@ -2263,6 +2312,13 @@ export default function Page() {
           background: transparent;
           font-size: 13px;
           font-weight: 600;
+        }
+
+        .nl-bill-tab-label {
+          min-width: 0;
+          overflow-wrap: anywhere;
+          text-align: center;
+          line-height: 1.25;
         }
 
         .nl-bill-tab.active {
@@ -3201,6 +3257,22 @@ export default function Page() {
         @media (max-width: 620px) {
           .nl-bill-shell {
             padding: 16px 14px 18px;
+          }
+
+          .nl-bill-tabs {
+            gap: 4px;
+          }
+
+          .nl-bill-tab {
+            min-height: 44px;
+            gap: 4px;
+            font-size: 11px;
+          }
+
+          .nl-bill-tab-count {
+            min-width: 18px;
+            height: 18px;
+            font-size: 10px;
           }
 
           .nl-bill-form,
