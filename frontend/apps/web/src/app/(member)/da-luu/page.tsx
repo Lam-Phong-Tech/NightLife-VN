@@ -541,17 +541,17 @@ const savedPageCss = `
 
   .saved-head h1 {
     margin: 0;
-    font-size: clamp(24px, 7vw, 36px);
-    line-height: 1.05;
-    font-weight: 950;
+    font-size: clamp(18px, 2.5vw, 22px);
+    line-height: 1.2;
+    font-weight: 800;
     letter-spacing: 0;
   }
 
   .saved-head p {
-    margin: 8px 0 0;
+    margin: 4px 0 0;
     color: #b6b1a6;
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.45;
   }
 
   .saved-tabs {
