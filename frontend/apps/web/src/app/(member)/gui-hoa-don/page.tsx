@@ -827,16 +827,12 @@ const bookingTitle = (booking: BookingRecord) => {
 };
 
 const isBookingAdminConfirmedForBill = (booking: BookingRecord | null | undefined) =>
-  ["CONFIRMED", "CHECKED_IN", "COMPLETED"].includes(
-    String(booking?.status ?? "").toUpperCase(),
-  );
+  String(booking?.status ?? "").toUpperCase() === "CHECKED_IN";
 
 const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
   booking?.qr?.usedAt ??
   booking?.couponIssue?.usedAt ??
-  (isBookingAdminConfirmedForBill(booking)
-    ? booking?.confirmedAt ?? booking?.updatedAt ?? null
-    : null);
+  null;
 
 const confirmedUsageSourceLabel = (
   booking: BookingRecord | null,
@@ -845,9 +841,6 @@ const confirmedUsageSourceLabel = (
 ) => {
   if (booking?.qr?.usedAt) return localize("QR đặt chỗ đã được đối tác xác nhận", language);
   if (booking?.couponIssue?.usedAt) return localize("Mã ưu đãi gắn đặt chỗ đã được đối tác xác nhận", language);
-  if (isBookingAdminConfirmedForBill(booking) && (booking?.confirmedAt || booking?.updatedAt)) {
-    return localize("Đặt chỗ đã được quản trị viên xác nhận", language);
-  }
   if (couponIssue?.usedAt) return localize("Mã ưu đãi đã được đối tác xác nhận", language);
   if (booking || couponIssue) return localize("Chưa có xác nhận sử dụng từ quản trị viên hoặc đối tác", language);
   return localize("Chọn đặt chỗ hoặc mã ưu đãi đã được xác nhận", language);
@@ -1104,6 +1097,7 @@ export default function Page() {
   const [isReadingEvidence, setIsReadingEvidence] = useState(false);
   const [submittedBills, setSubmittedBills] = useState<BillRecord[]>([]);
   const [appliedBookingId, setAppliedBookingId] = useState("");
+  const [activeListTab, setActiveListTab] = useState<"PENDING" | "APPROVED" | "UNSENT">("UNSENT");
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
@@ -1270,11 +1264,6 @@ export default function Page() {
         setBookings(mergedBookingItems);
         if (requestedBooking) {
           setBookingId(requestedBooking.id);
-        } else if (mergedBookingItems.length === 1 && mergedBookingItems[0]) {
-          setBookingId(mergedBookingItems[0].id);
-          if (mergedBookingItems[0].store?.slug) {
-            setStoreSlug(mergedBookingItems[0].store.slug);
-          }
         }
         if (preferredStoreSlug && mergedBookingItems.length !== 1) {
           setStoreSlug(preferredStoreSlug);
@@ -1346,9 +1335,25 @@ export default function Page() {
     () =>
       bookings.filter((booking) => {
         const existingBill = findBillForBooking(booking, submittedBills);
-        return !existingBill || booking.id === bookingId;
+        return (
+          isBookingAdminConfirmedForBill(booking) &&
+          Boolean(bookingConfirmedUsageAt(booking)) &&
+          (!existingBill || booking.id === bookingId)
+        );
       }),
     [bookingId, bookings, submittedBills],
+  );
+  const unsentBookings = useMemo(
+    () => billableBookings.filter((booking) => !findBillForBooking(booking, submittedBills)),
+    [billableBookings, submittedBills],
+  );
+  const pendingBills = useMemo(
+    () => submittedBills.filter((bill) => bill.status === "SUBMITTED"),
+    [submittedBills],
+  );
+  const approvedBills = useMemo(
+    () => submittedBills.filter((bill) => ["VERIFIED", "PAID"].includes(bill.status)),
+    [submittedBills],
   );
 
   useEffect(() => {
@@ -1454,7 +1459,7 @@ export default function Page() {
         hasStore: Boolean(bookingId || storeSlug),
         hasConfirmedUsageSource: Boolean(selectedBooking || selectedCouponIssue),
         isCompletedBooking:
-          selectedBooking?.status.trim().toUpperCase() === "COMPLETED",
+          Boolean(selectedBooking) && !isBookingAdminConfirmedForBill(selectedBooking),
         hasExistingBill: Boolean(selectedExistingBill),
         amountInput,
         amount,
@@ -1511,7 +1516,24 @@ export default function Page() {
   };
 
   const handleAmountChange = (value: string) => {
-    setAmountInput(sanitizeMoneyInput(value));
+    setAmountInput(formatMoneyInput(value));
+  };
+
+  const handleOpenBooking = (booking: BookingRecord) => {
+    setBookingId(booking.id);
+    setCouponIssueId("");
+    setAmountInput("");
+    setNotice(null);
+    if (booking.store?.slug) {
+      setStoreSlug(booking.store.slug);
+    }
+  };
+
+  const handleBackToList = () => {
+    setBookingId("");
+    setCouponIssueId("");
+    setAmountInput("");
+    setNotice(null);
   };
 
   const submitBill = async () => {
@@ -1626,7 +1648,82 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="nl-bill-layout">
+          {!bookingId ? (
+            <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn") }>
+              <div className="nl-bill-tabs" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
+                {[
+                  { id: "UNSENT" as const, label: t("Chưa gửi"), count: unsentBookings.length },
+                  { id: "PENDING" as const, label: t("Chờ duyệt"), count: pendingBills.length },
+                  { id: "APPROVED" as const, label: t("Duyệt"), count: approvedBills.length },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={activeListTab === tab.id ? "nl-bill-tab active" : "nl-bill-tab"}
+                    onClick={() => setActiveListTab(tab.id)}
+                    role="tab"
+                    aria-selected={activeListTab === tab.id}
+                  >
+                    <span>{tab.label}</span>
+                    <span className="nl-bill-tab-count">{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+
+              {isLoadingOptions ? (
+                <div className="nl-bill-list-empty">{t("Đang tải danh sách hóa đơn...")}</div>
+              ) : activeListTab === "UNSENT" ? (
+                unsentBookings.length ? (
+                  <div className="nl-bill-list-items">
+                    {unsentBookings.map((booking) => (
+                      <button
+                        key={booking.id}
+                        type="button"
+                        className="nl-bill-list-item"
+                        onClick={() => handleOpenBooking(booking)}
+                      >
+                        <div className="nl-bill-list-item-main">
+                          <strong>{bookingTitle(booking)}</strong>
+                          <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
+                        </div>
+                        <div className="nl-bill-list-item-meta">
+                          <span>{formatDateTime(bookingConfirmedUsageAt(booking), activeLanguage)}</span>
+                          <span className="nl-status-tag draft">{t("Nhập hóa đơn")}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="nl-bill-list-empty">{t("Chưa có booking nào đã check-in cần gửi hóa đơn.")}</div>
+                )
+              ) : (activeListTab === "PENDING" ? pendingBills : approvedBills).length ? (
+                <div className="nl-bill-list-items">
+                  {(activeListTab === "PENDING" ? pendingBills : approvedBills).map((bill) => (
+                    <article key={bill.id} className="nl-bill-list-item static">
+                      <div className="nl-bill-list-item-main">
+                        <strong>{bill.store?.name || "NightLife"}</strong>
+                        <span>#{billCode(bill)}</span>
+                      </div>
+                      <div className="nl-bill-list-item-meta">
+                        <span>{formatMoney(bill.totalVnd)}</span>
+                        <span className={`nl-status-tag ${bill.status.toLowerCase()}`}>
+                          {billStatusLabel(bill.status, activeLanguage)}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="nl-bill-list-empty">{t("Chưa có hóa đơn trong trạng thái này.")}</div>
+              )}
+            </section>
+          ) : (
+            <>
+              <button type="button" className="nl-bill-list-back" onClick={handleBackToList}>
+                <ChevronLeft size={16} />
+                <span>{t("Danh sách hóa đơn")}</span>
+              </button>
+              <div className="nl-bill-layout">
             <form className="nl-bill-form" noValidate onSubmit={handleSubmit}>
               {/* Hidden inputs for test compatibility */}
               <input type="hidden" id="bill-used-at" value={usedAt ? formatDateTime(confirmedUsageAt, activeLanguage) : ""} readOnly />
@@ -1805,8 +1902,6 @@ export default function Page() {
                       placeholder={t("Vui lòng nhập tổng tiền")}
                       value={amountInput}
                       onChange={(event) => handleAmountChange(event.target.value)}
-                      onBlur={() => setAmountInput((current) => formatMoneyInput(current))}
-                      onFocus={() => setAmountInput((current) => sanitizeMoneyInput(current))}
                     />
                     <span className="nl-amount-suffix">₫</span>
                   </div>
@@ -2031,7 +2126,9 @@ export default function Page() {
                 </div>
               </section>
             </aside>
-          </div>
+              </div>
+            </>
+          )}
         </section>
 
       <style jsx>{`
@@ -2134,6 +2231,132 @@ export default function Page() {
           color: var(--vy-muted);
           font-size: 13px;
           line-height: 1.5;
+        }
+
+        .nl-bill-list {
+          display: grid;
+          gap: 16px;
+        }
+
+        .nl-bill-tabs {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          border-bottom: 1px solid var(--vy-border);
+          padding-bottom: 10px;
+        }
+
+        .nl-bill-tab,
+        .nl-bill-list-back {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
+        }
+
+        .nl-bill-tab {
+          min-height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          color: var(--vy-muted);
+          background: transparent;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .nl-bill-tab.active {
+          color: var(--vy-gold-hi);
+          box-shadow: inset 0 -2px 0 var(--vy-gold);
+        }
+
+        .nl-bill-tab-count {
+          min-width: 20px;
+          height: 20px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          background: var(--vy-surface-3);
+          color: inherit;
+          font-size: 11px;
+        }
+
+        .nl-bill-list-items {
+          display: grid;
+          gap: 10px;
+        }
+
+        .nl-bill-list-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 15px;
+          border: 1px solid var(--vy-border);
+          border-radius: 8px;
+          background: var(--vy-surface-1);
+          color: var(--vy-text);
+          text-align: left;
+        }
+
+        button.nl-bill-list-item {
+          cursor: pointer;
+        }
+
+        button.nl-bill-list-item:hover {
+          border-color: var(--vy-border-gold-40);
+          background: var(--vy-gold-soft-bg);
+        }
+
+        .nl-bill-list-item.static {
+          cursor: default;
+        }
+
+        .nl-bill-list-item-main,
+        .nl-bill-list-item-meta {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .nl-bill-list-item-main strong {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 14px;
+        }
+
+        .nl-bill-list-item-main span,
+        .nl-bill-list-item-meta > span:first-child {
+          color: var(--vy-muted);
+          font-size: 12px;
+        }
+
+        .nl-bill-list-item-meta {
+          justify-items: end;
+          flex: 0 0 auto;
+        }
+
+        .nl-bill-list-empty {
+          padding: 34px 18px;
+          border: 1px dashed var(--vy-border-gold-22);
+          border-radius: 8px;
+          color: var(--vy-muted);
+          text-align: center;
+          font-size: 13px;
+        }
+
+        .nl-bill-list-back {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin: 0 0 14px;
+          padding: 0;
+          background: transparent;
+          color: var(--vy-gold-pale);
+          font-size: 13px;
         }
 
         .nl-bill-layout {

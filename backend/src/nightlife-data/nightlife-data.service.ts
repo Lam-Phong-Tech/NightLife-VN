@@ -7729,6 +7729,12 @@ export class NightlifeDataService {
       );
     }
 
+    if (booking && booking.status !== 'CHECKED_IN') {
+      throw new UnprocessableEntityException(
+        'Booking must be checked in before bill submission',
+      );
+    }
+
     if (booking?.id) {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
@@ -11788,12 +11794,10 @@ export class NightlifeDataService {
       const confirmedUsageAt =
         context.booking.qr?.usedAt ??
         context.booking.couponIssue?.usedAt ??
-        (this.isBookingAdminConfirmedForBill(context.booking.status)
-          ? context.booking.updatedAt
-          : null);
+        null;
       if (!confirmedUsageAt) {
         throw new UnprocessableEntityException(
-          'Booking must be confirmed by admin or checked in by partner QR before bill submission',
+          'Booking must be checked in with a confirmed QR or coupon before bill submission',
         );
       }
 
@@ -11821,12 +11825,6 @@ export class NightlifeDataService {
     }
 
     return this.parseBillUsedAt(dto.usedAt);
-  }
-
-  private isBookingAdminConfirmedForBill(status: string | null | undefined) {
-    return ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(
-      String(status ?? '').toUpperCase(),
-    );
   }
 
   private parseBillUsedAt(value: Date | string | null | undefined) {
