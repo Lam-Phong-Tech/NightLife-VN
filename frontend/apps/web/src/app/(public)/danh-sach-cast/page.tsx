@@ -1645,33 +1645,22 @@ function CastFilterPanel({
           </section>
 
           <section className="cast-filter-column cast-filter-column--other" aria-label={copy.filterOther}>
-            <div className="cast-toggle-row">
-              <span>
-                <i />
-                {copy.hasDeals}
-              </span>
+            <div className="cast-filter-choices">
               <button
                 type="button"
                 aria-pressed={hasActiveCoupon}
-                className={hasActiveCoupon ? "is-on" : ""}
+                className={hasActiveCoupon ? "is-active" : ""}
                 onClick={onToggleCoupon}
               >
-                <b />
+                {copy.hasDeals}
               </button>
-            </div>
-
-            <div className="cast-toggle-row">
-              <span>
-                <i />
-                {copy.topRanking}
-              </span>
               <button
                 type="button"
                 aria-pressed={topRankingOnly}
-                className={topRankingOnly ? "is-on" : ""}
+                className={topRankingOnly ? "is-active" : ""}
                 onClick={onToggleTopRanking}
               >
-                <b />
+                {copy.topRanking}
               </button>
             </div>
           </section>
@@ -2738,7 +2727,38 @@ html.vy-light .cast-card-favorite.is-active {
 
 .cast-filter-sheet--desktop .cast-filter-column--other {
   grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: block;
+}
+
+.cast-filter-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cast-filter-choices button {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--vy-muted);
+  padding: 8px 14px;
+  font-family: var(--nl-font-sans);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.cast-filter-sheet--desktop .cast-filter-choices button {
+  min-height: 34px;
+  border-radius: 12px;
+  padding: 7px 12px;
+}
+
+.cast-filter-choices button.is-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #f0dda8, #d4b26a);
+  color: var(--vy-on-gold);
+  font-weight: 800;
 }
 
 .cast-sheet-group {
@@ -3060,6 +3080,7 @@ html.vy-light .cast-suggestions,
 html.vy-light .cast-filter-sheet,
 html.vy-light .cast-range-preview,
 html.vy-light .cast-toggle-row,
+html.vy-light .cast-filter-choices button,
 html.vy-light .cast-sheet-group button,
 html.vy-light .cast-suggestion-tags button {
   border-color: rgba(150, 116, 52, 0.2);
@@ -3076,6 +3097,7 @@ html.vy-light .cast-suggestions {
 }
 
 html.vy-light .cast-chip.is-active,
+html.vy-light .cast-filter-choices button.is-active,
 html.vy-light .cast-sheet-group button.is-active {
   border-color: rgba(150, 116, 52, 0.46);
   background: linear-gradient(135deg, #fff0b8 0%, #e4c06a 48%, #c99b3e 100%);
@@ -3272,7 +3294,7 @@ html.vy-light .cast-sheet-actions {
 
   .cast-filter-sheet--desktop .cast-filter-column--other {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: block;
   }
 }
 

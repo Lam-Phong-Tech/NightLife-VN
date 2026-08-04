@@ -1691,9 +1691,9 @@ function DesktopVenueFilterPopover({
         />
         <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
           <h3>{copy.filterNeeds}</h3>
-          <div className="venue-filter-toggle-grid">
-            <VenueFilterToggleRow label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
-            <VenueFilterToggleRow label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
+          <div className="venue-desktop-filter-options">
+            <VenueFilterChoice label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
+            <VenueFilterChoice label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
           </div>
         </section>
       </div>
@@ -1831,20 +1831,20 @@ function MobileVenueFilterSheet({
             />
           ) : null}
 
-          <section className="venue-filter-group" aria-label={copy.filterNeeds}>
-            <h3>{copy.filterNeeds}</h3>
-            <div className="venue-filter-toggle-grid">
-              <VenueFilterToggleRow label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
-              <VenueFilterToggleRow label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
-            </div>
-          </section>
-
           <VenueFilterChipGroup
             label={copy.sortLabel.replace(":", "")}
             options={sortOptions}
             value={sort}
             onChange={(value) => onSort(value as DiscoverySort)}
           />
+
+          <section className="venue-filter-group" aria-label={copy.filterNeeds}>
+            <h3>{copy.filterNeeds}</h3>
+            <div>
+              <VenueFilterChoice label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
+              <VenueFilterChoice label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
+            </div>
+          </section>
         </div>
 
         <footer className="venue-filter-actions">
@@ -1903,7 +1903,7 @@ function VenueFilterChipGroup({
   );
 }
 
-function VenueFilterToggleRow({
+function VenueFilterChoice({
   label,
   pressed,
   onToggle,
@@ -1913,15 +1913,9 @@ function VenueFilterToggleRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="venue-filter-toggle-row">
-      <span>
-        <i />
-        {label}
-      </span>
-      <button type="button" aria-pressed={pressed} className={pressed ? "is-on" : ""} onClick={onToggle}>
-        <b />
-      </button>
-    </div>
+    <button type="button" aria-pressed={pressed} className={pressed ? "is-active" : ""} onClick={onToggle}>
+      {label}
+    </button>
   );
 }
 
