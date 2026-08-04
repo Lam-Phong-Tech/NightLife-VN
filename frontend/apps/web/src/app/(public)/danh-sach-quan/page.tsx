@@ -1701,15 +1701,19 @@ function DesktopVenueFilterPopover({
             onChange={onCategory}
           />
         ) : null}
-        <DesktopVenueFilterOptionGroup
-          label={copy.sortLabel.replace(":", "")}
-          options={sortOptions}
-          value={sort}
-          onChange={(value) => onSort(value as DiscoverySort)}
-        />
-        <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
-          <h3>{copy.filterNeeds}</h3>
+        <section className="venue-desktop-filter-section" aria-label={copy.sortLabel}>
+          <h3>{copy.sortLabel.replace(":", "")}</h3>
           <div className="venue-desktop-filter-options">
+            {sortOptions.map((option) => (
+              <button
+                key={`sort-${option.value}`}
+                type="button"
+                className={sort === option.value ? "is-active" : ""}
+                onClick={() => onSort(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
             <VenueFilterChoice label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
             <VenueFilterChoice label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
           </div>
