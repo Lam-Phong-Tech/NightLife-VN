@@ -804,8 +804,8 @@ export default function Page() {
         ? `Xác nhận ${actionLabel} sát giờ`
         : `Xác nhận ${actionLabel}`,
       description: nearStart
-        ? `Lịch ${bookingTimeLabel} của ca ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${bookingTimeLabel} của ca ngày ${bookingDate}?`,
+        ? `Lịch ${bookingTimeLabel} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${bookingTimeLabel} ngày ${bookingDate}?`,
       confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createBooking(payload, normalizedEmail, actionLabel),

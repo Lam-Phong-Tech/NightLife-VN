@@ -2357,8 +2357,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         ? `Xác nhận ${actionLabel} sát giờ`
         : `Xác nhận ${actionLabel}`,
       description: nearStart
-        ? `Lịch ${selectedTimeLabel} của ca ngày ${bookingDateLabel} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTimeLabel} của ca ngày ${bookingDateLabel}?`,
+        ? `Lịch ${selectedTimeLabel} ngày ${bookingDateLabel} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTimeLabel} ngày ${bookingDateLabel}?`,
       confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createDesktopBooking(payload, normalizedEmail, actionLabel),
