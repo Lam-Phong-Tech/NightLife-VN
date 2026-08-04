@@ -41,6 +41,11 @@ import {
 } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
+import {
+  addSearchHistoryItem,
+  clearSearchHistory,
+  readSearchHistory,
+} from "@/lib/search-history";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
 import {
   getFallbackAreaOptions,
@@ -165,9 +170,9 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
-const recentVenueSearches = ["Tokyo Kitchen", "Spa Tây Hồ", "Bar Hoàn Kiếm"];
 const popularVenueKeywords = ["Top ranking", "Có ưu đãi", "Lounge", "Nhà hàng"];
 const venueItemsPerPage = 8;
+const venueSearchHistoryKey = "vietyoru.venue-search-history.v1";
 
 const venueCopyVi: VenueSearchCopy = {
   all: "Tất cả",
@@ -575,6 +580,7 @@ type LocationDialogMode = "permission" | "blocked";
 
 export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
   const [query, setQuery] = useState("");
+  const [recentVenueSearches, setRecentVenueSearches] = useState<string[]>([]);
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
@@ -607,6 +613,24 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
   const isCategoryLocked = Boolean(fixedCategory);
   const effectiveCategory = fixedCategory || category;
+
+  useEffect(() => {
+    setRecentVenueSearches(readSearchHistory(venueSearchHistoryKey));
+  }, []);
+
+  const saveRecentVenueSearch = (value: string) => {
+    setRecentVenueSearches(addSearchHistoryItem(venueSearchHistoryKey, value));
+  };
+
+  const clearRecentVenueSearches = () => {
+    clearSearchHistory(venueSearchHistoryKey);
+    setRecentVenueSearches([]);
+  };
+
+  const selectRecentVenueSearch = (value: string) => {
+    saveRecentVenueSearch(value);
+    setQuery(value);
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1178,6 +1202,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setSearchFocused(true)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveRecentVenueSearch(query);
+                }}
                 placeholder={copy.searchPlaceholder}
               />
               {query ? (
@@ -1209,8 +1236,13 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             {showSuggestions ? (
               <VenueSearchSuggestions
                 language={activeLanguage}
-                onKeyword={setQuery}
-                onRecent={setQuery}
+                onClearRecent={clearRecentVenueSearches}
+                onKeyword={(value) => {
+                  saveRecentVenueSearch(value);
+                  setQuery(value);
+                }}
+                onRecent={selectRecentVenueSearch}
+                onSearchSubmitted={saveRecentVenueSearch}
                 popularKeywords={popularVenueKeywords}
                 query={query}
                 recentSearches={recentVenueSearches}
@@ -1519,7 +1551,9 @@ function VenueSearchSuggestions({
   popularKeywords,
   query,
   recentSearches,
+  onClearRecent,
   venues,
+  onSearchSubmitted,
 }: {
   language: LanguageCode;
   onKeyword: (value: string) => void;
@@ -1527,7 +1561,9 @@ function VenueSearchSuggestions({
   popularKeywords: string[];
   query: string;
   recentSearches: string[];
+  onClearRecent: () => void;
   venues: VenueView[];
+  onSearchSubmitted: (value: string) => void;
 }) {
   return (
     <div className="venue-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
@@ -1547,6 +1583,7 @@ function VenueSearchSuggestions({
               key={venue.id}
               href={localizePathname(`/stores/${venue.id}`, language)}
               className="venue-suggestion-row"
+              onClick={() => onSearchSubmitted(query)}
             >
               <span
                 className="venue-suggestion-thumb"
@@ -1567,23 +1604,27 @@ function VenueSearchSuggestions({
         <div className="venue-suggestion-empty">Không có gợi ý trùng khớp.</div>
       )}
 
-      <div className="venue-suggestion-split">
-        <span>Tìm gần đây</span>
-        <button type="button">Xóa lịch sử</button>
-      </div>
-      <div className="venue-suggestion-tags">
-        {recentSearches.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onRecent(item)}
-          >
-            <History size={13} />
-            {item}
-          </button>
-        ))}
-      </div>
+      {recentSearches.length ? (
+        <>
+          <div className="venue-suggestion-split">
+            <span>Tìm gần đây</span>
+            <button type="button" onClick={onClearRecent}>Xóa lịch sử</button>
+          </div>
+          <div className="venue-suggestion-tags">
+            {recentSearches.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onRecent(item)}
+              >
+                <History size={13} />
+                {item}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="venue-suggestion-label">Từ khóa phổ biến</div>
       <div className="venue-suggestion-tags is-gold">
@@ -2142,14 +2183,16 @@ const venueSearchCss = `
   .venue-input-clear {
     width: 28px;
     height: 28px;
+    min-width: 28px;
     display: inline-grid;
     place-items: center;
-    flex: none;
+    flex: 0 0 28px;
     border: 0;
     border-radius: 50%;
     background: rgba(255, 255, 255, .08);
     color: var(--vy-muted);
     padding: 0;
+    box-sizing: border-box;
     cursor: pointer;
   }
 
@@ -3860,6 +3903,8 @@ const venueSearchCss = `
     .venue-input-clear {
       width: 22px;
       height: 22px;
+      min-width: 22px;
+      flex-basis: 22px;
     }
 
     .venue-suggestions {

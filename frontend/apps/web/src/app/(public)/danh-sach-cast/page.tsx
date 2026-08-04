@@ -42,6 +42,11 @@ import {
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { localizePathname } from "@/lib/i18n/locales";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
+import {
+  addSearchHistoryItem,
+  clearSearchHistory,
+  readSearchHistory,
+} from "@/lib/search-history";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -143,9 +148,9 @@ const compactLanguageLabels: Record<string, string> = {
   zh: "CN",
 };
 
-const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
 const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
 const castItemsPerPage = 8;
+const castSearchHistoryKey = "vietyoru.cast-search-history.v1";
 
 const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
@@ -492,6 +497,7 @@ const highlightMatch = (text: string, query: string) => {
 
 export function CastDirectoryPage() {
   const [query, setQuery] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
@@ -517,6 +523,10 @@ export function CastDirectoryPage() {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const copy = useMemo(() => getCastCopy(activeLanguage), [activeLanguage]);
+
+  useEffect(() => {
+    setRecentSearches(readSearchHistory(castSearchHistoryKey));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -947,6 +957,25 @@ export function CastDirectoryPage() {
     setHasActiveCoupon(true);
   };
 
+  const saveRecentSearch = (value: string) => {
+    setRecentSearches(addSearchHistoryItem(castSearchHistoryKey, value));
+  };
+
+  const clearRecentSearches = () => {
+    clearSearchHistory(castSearchHistoryKey);
+    setRecentSearches([]);
+  };
+
+  const selectRecentSearch = (value: string) => {
+    saveRecentSearch(value);
+    setQuery(value);
+  };
+
+  const selectPopularKeyword = (value: string) => {
+    saveRecentSearch(value);
+    setPopularKeyword(value);
+  };
+
   return (
     <main className="cast-search-page">
       <style>{castSearchCss}</style>
@@ -980,6 +1009,9 @@ export function CastDirectoryPage() {
                 onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setSearchFocused(true)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveRecentSearch(query);
+                }}
                 placeholder={copy.searchPlaceholder}
               />
               {query ? (
@@ -1020,8 +1052,10 @@ export function CastDirectoryPage() {
                 query={query}
                 rankBySlug={topRankingOrder}
                 recentSearches={recentSearches}
-                onKeyword={setPopularKeyword}
-                onRecent={(value) => setQuery(value)}
+                onClearRecent={clearRecentSearches}
+                onKeyword={selectPopularKeyword}
+                onRecent={selectRecentSearch}
+                onSearchSubmitted={saveRecentSearch}
               />
             ) : null}
 
@@ -1332,8 +1366,10 @@ function SearchSuggestions({
   query,
   rankBySlug,
   recentSearches,
+  onClearRecent,
   onKeyword,
   onRecent,
+  onSearchSubmitted,
 }: {
   casts: PublicCast[];
   language: LanguageCode;
@@ -1341,8 +1377,10 @@ function SearchSuggestions({
   query: string;
   rankBySlug: ReadonlyMap<string, number>;
   recentSearches: string[];
+  onClearRecent: () => void;
   onKeyword: (value: string) => void;
   onRecent: (value: string) => void;
+  onSearchSubmitted: (value: string) => void;
 }) {
   return (
     <div className="cast-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
@@ -1366,6 +1404,7 @@ function SearchSuggestions({
                 key={cast.id}
                 href={localizePathname(`/casts/${cast.slug}`, language)}
                 className="cast-suggestion-row"
+                onClick={() => onSearchSubmitted(query)}
               >
                 <PlaceholderMedia
                   src={cast.thumbnailUrl}
@@ -1389,23 +1428,27 @@ function SearchSuggestions({
         <div className="cast-suggestion-empty">Không có gợi ý trùng khớp.</div>
       )}
 
-      <div className="cast-suggestion-split">
-        <span>Tìm gần đây</span>
-        <button type="button">Xóa lịch sử</button>
-      </div>
-      <div className="cast-suggestion-tags">
-        {recentSearches.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onRecent(item)}
-          >
-            <History size={13} />
-            {item}
-          </button>
-        ))}
-      </div>
+      {recentSearches.length ? (
+        <>
+          <div className="cast-suggestion-split">
+            <span>Tìm gần đây</span>
+            <button type="button" onClick={onClearRecent}>Xóa lịch sử</button>
+          </div>
+          <div className="cast-suggestion-tags">
+            {recentSearches.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onRecent(item)}
+              >
+                <History size={13} />
+                {item}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="cast-suggestion-label">Từ khóa phổ biến</div>
       <div className="cast-suggestion-tags is-gold">
@@ -1861,6 +1904,10 @@ const castSearchCss = `
 .cast-input-clear {
   width: 26px;
   height: 26px;
+  min-width: 26px;
+  padding: 0;
+  box-sizing: border-box;
+  flex: 0 0 26px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   color: #9b958a;
