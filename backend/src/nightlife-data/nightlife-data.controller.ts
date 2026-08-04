@@ -1396,7 +1396,7 @@ export class NightlifeDataController {
 
   @CancelAdminBookingContract('admin')
   @ActionPolicy('canCancelBooking')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/bookings/:bookingId/cancel')
   cancelBookingAsAdmin(
@@ -1412,7 +1412,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canReviewBookingReschedule')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/booking-change-requests')
   listAdminBookingChangeRequests(
@@ -1426,7 +1426,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canReviewBookingReschedule')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/booking-change-requests/:requestId/review')
   reviewBookingChangeRequest(
@@ -1442,7 +1442,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageBookingChat')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bookings/:bookingId/messages')
   listAdminBookingMessages(
@@ -1456,7 +1456,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageBookingChat')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/bookings/:bookingId/messages')
   createAdminBookingMessage(
@@ -1472,7 +1472,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canViewCancelAnalytics')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bookings/cancel-analytics')
   getAdminBookingCancelAnalytics(
@@ -1629,8 +1629,9 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: List bookings with filters and pagination',
   })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerBooking')
+  @Roles('ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bookings')
   listAdminBookings(@Query() query: AdminBookingQueryDto) {
     return this.nightlifeDataService.listAdminBookings(query);
@@ -1639,8 +1640,9 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: List bills with filters and pagination',
   })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerBill')
+  @Roles('ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bills')
   listAdminBills(
     @Query() query: import('./dto/admin-bill.dto').AdminBillQueryDto,
@@ -1649,8 +1651,9 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({ summary: 'Admin action: Update booking status' })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerBooking')
+  @Roles('ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/bookings/:bookingId/status')
   async updateAdminBookingStatus(
     @Req() request: RequestWithUser,
@@ -1667,8 +1670,9 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: List coupons with filters and pagination',
   })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerCoupon')
+  @Roles('ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/coupons')
   listAdminCoupons(
     @Query() query: { page?: number; limit?: number; search?: string },
