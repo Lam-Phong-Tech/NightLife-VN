@@ -700,7 +700,10 @@ export default function Page() {
         requestMemberNotificationsRefresh();
       }
       userFeedback.success({
-        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+        title: translateText(
+          actionLabel === "đặt cast" ? "Đặt cast thành công" : "Đặt bàn thành công",
+          activeLanguage,
+        ),
         description: translateText(
           "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
           activeLanguage,
@@ -719,7 +722,10 @@ export default function Page() {
       );
       setErrorMessage(message);
       userFeedback.error({
-        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thất bại`,
+        title: translateText(
+          actionLabel === "đặt cast" ? "Đặt cast thất bại" : "Đặt bàn thất bại",
+          activeLanguage,
+        ),
         description: message,
       });
     } finally {

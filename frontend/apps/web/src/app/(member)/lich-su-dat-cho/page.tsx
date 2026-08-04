@@ -769,15 +769,15 @@ export default function Page() {
       setPendingCancelBooking(null);
       setCancelReason("");
       userFeedback.success({
-        title: "Đã hủy booking",
-        description: "Admin đã nhận thông báo.",
+        title: translateText("Hủy booking thành công", activeLanguage),
+        description: translateText("Admin đã nhận thông báo.", activeLanguage),
       });
       setMessage("Đã hủy booking. Admin đã nhận thông báo.");
     } catch (error) {
       const message = userActionErrorMessage(error, "Không hủy được booking.");
       setMessage(message);
       userFeedback.error({
-        title: "Hủy booking thất bại",
+        title: translateText("Hủy booking thất bại", activeLanguage),
         description: message,
       });
     } finally {
@@ -921,14 +921,14 @@ export default function Page() {
       setRescheduleError("");
       setMessage("Đã đổi lịch booking. Lịch mới đã được cập nhật.");
       userFeedback.success({
-        title: "Đã đổi lịch booking",
-        description: "Lịch mới đã được cập nhật.",
+        title: translateText("Đổi lịch thành công", activeLanguage),
+        description: translateText("Lịch mới đã được cập nhật.", activeLanguage),
       });
     } catch (error) {
       const message = userActionErrorMessage(error, "Không gửi được yêu cầu đổi lịch.");
       setRescheduleError(message);
       userFeedback.error({
-        title: "Đổi lịch thất bại",
+        title: translateText("Đổi lịch thất bại", activeLanguage),
         description: message,
       });
     } finally {

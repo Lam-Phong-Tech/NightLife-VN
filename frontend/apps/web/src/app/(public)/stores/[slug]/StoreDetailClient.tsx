@@ -2268,7 +2268,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }
       userFeedback.success({
         title: translateText(
-          `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+          actionLabel === "đặt cast" ? "Đặt cast thành công" : "Đặt bàn thành công",
           activeLanguage,
         ),
         description: translateText(
@@ -2289,7 +2289,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       );
       setBookingErrorMessage(message);
       userFeedback.error({
-        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thất bại`,
+        title: translateText(
+          actionLabel === "đặt cast" ? "Đặt cast thất bại" : "Đặt bàn thất bại",
+          activeLanguage,
+        ),
         description: message,
       });
     } finally {

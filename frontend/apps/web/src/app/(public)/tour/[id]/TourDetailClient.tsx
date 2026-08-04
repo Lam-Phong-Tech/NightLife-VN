@@ -659,7 +659,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
         requestMemberNotificationsRefresh();
       }
       userFeedback.success({
-        title: "Đặt tour thành công",
+        title: translateText("Đặt tour thành công", activeLanguage),
         description: translateText(
           "Yêu cầu tour đã được ghi nhận, đang chuyển sang trang xác nhận.",
           activeLanguage,
@@ -674,7 +674,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
       const message = localizedApiErrorMessage(error, activeLanguage, tourUiText("bookingFailed", "vi"));
       setErrorMessage(message);
       userFeedback.error({
-        title: "Đặt tour thất bại",
+        title: translateText("Đặt tour thất bại", activeLanguage),
         description: message,
       });
     } finally {
