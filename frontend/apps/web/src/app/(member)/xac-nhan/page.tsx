@@ -14,7 +14,7 @@ import {
 } from "@/lib/booking-confirmation-flash";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import { translateText } from "@/lib/i18n/client-translations";
-import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
@@ -33,9 +33,14 @@ type BookingResolutionFeedback = BookingConfirmationPageFeedback;
 
 const formatDateTime = (value: string | undefined, language: LanguageCode) => {
   if (!value) return translateText("Chưa có thời gian", language);
-  return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Bangkok",
   }).format(new Date(value));
 };
 

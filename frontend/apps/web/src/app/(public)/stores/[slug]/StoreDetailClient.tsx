@@ -792,6 +792,11 @@ const getTodayDate = getTodayBookingDate;
 
 const getMaxBookingDate = () => getBookingDateAfterDays(bookingDateWindowDays);
 
+const formatBookingDateForMessage = (value: string) => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+};
+
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
     <div className="empty-state">
@@ -2262,7 +2267,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         requestMemberNotificationsRefresh();
       }
       userFeedback.success({
-        title: `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+        title: translateText(
+          `${actionLabel === "đặt cast" ? "Đặt cast" : "Đặt bàn"} thành công`,
+          activeLanguage,
+        ),
         description: translateText(
           "Yêu cầu đã được ghi nhận, đang chuyển sang trang xác nhận.",
           activeLanguage,
@@ -2342,14 +2350,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const actionLabel = activeSelectedCastSlug ? "đặt cast" : "đặt bàn";
     const nearStart = isNearStartTime(scheduledAt);
+    const bookingDateLabel = formatBookingDateForMessage(selectedDate.iso);
 
     userFeedback.confirmAction({
       title: nearStart
         ? `Xác nhận ${actionLabel} sát giờ`
         : `Xác nhận ${actionLabel}`,
       description: nearStart
-        ? `Lịch ${selectedTimeLabel} của ca ngày ${selectedDate.iso} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTimeLabel} của ca ngày ${selectedDate.iso}?`,
+        ? `Lịch ${selectedTimeLabel} của ca ngày ${bookingDateLabel} đang rất gần giờ bắt đầu. Bạn có chắc muốn ${actionLabel} giờ này không?`
+        : `Bạn có chắc muốn gửi yêu cầu ${actionLabel} lúc ${selectedTimeLabel} của ca ngày ${bookingDateLabel}?`,
       confirmLabel: nearStart ? "Vẫn đặt giờ này" : "Xác nhận đặt",
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createDesktopBooking(payload, normalizedEmail, actionLabel),
