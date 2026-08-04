@@ -1381,8 +1381,12 @@ export default function Page() {
     if (bill.store?.slug) {
       setStoreSlug(bill.store.slug);
     }
-    if (bill.bookingId) {
-      setBookingId(bill.bookingId);
+    const bId = bill.booking?.id;
+    if (bId) {
+      setBookingId(bId);
+    }
+    if (bill.couponIssue?.id) {
+      setCouponIssueId(bill.couponIssue.id);
     }
     if (bill.totalVnd) {
       setAmountInput(formatMoneyInput(String(bill.totalVnd)));
@@ -1762,23 +1766,17 @@ export default function Page() {
   const submitBill = async () => {
     setIsSubmitting(true);
     try {
-      const targetBookingId = resubmitBill?.bookingId || bookingId;
+      const targetBookingId = resubmitBill?.booking?.id || bookingId;
+      const targetCouponIssueId = selectedCouponIssue?.id || resubmitBill?.couponIssue?.id || couponIssueId;
+      const targetCouponId = selectedCouponIssue?.coupon?.id || resubmitBill?.coupon?.id;
+
       const payload = {
         storeSlug: resubmitBill?.store?.slug || storeSlug,
         ...(targetBookingId
           ? { bookingId: targetBookingId }
           : {
-              ...(selectedCouponIssue
-                ? {
-                    couponId: selectedCouponIssue.coupon.id,
-                    couponIssueId: selectedCouponIssue.id,
-                  }
-                : resubmitBill?.couponIssueId || resubmitBill?.couponIssue?.id
-                ? {
-                    couponId: resubmitBill?.couponId || resubmitBill?.coupon?.id,
-                    couponIssueId: resubmitBill?.couponIssueId || resubmitBill?.couponIssue?.id,
-                  }
-                : {}),
+              ...(targetCouponId ? { couponId: targetCouponId } : {}),
+              ...(targetCouponIssueId ? { couponIssueId: targetCouponIssueId } : {}),
             }),
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
