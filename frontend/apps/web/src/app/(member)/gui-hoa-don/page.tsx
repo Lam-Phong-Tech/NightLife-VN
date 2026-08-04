@@ -9,7 +9,7 @@ import zhCN from "antd/locale/zh_CN";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
-import { ApiError, translateApiMessage } from "@/lib/api/client";
+import { ApiError, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
 import {
   billApi,
   type BillOcrPreview,
@@ -1162,6 +1162,21 @@ const cleanApiMessage = (error: unknown) => {
   );
 };
 
+const resolveAuthenticatedMediaUrl = (rawUrl?: string | null) => {
+  if (!rawUrl) return "";
+  const resolved = resolveClientUrl(rawUrl) || rawUrl;
+  if (!resolved) return "";
+  if (resolved.startsWith("data:") || resolved.startsWith("blob:")) {
+    return resolved;
+  }
+  const token = getAuthToken();
+  if (!token || resolved.includes("token=")) {
+    return resolved;
+  }
+  const separator = resolved.includes("?") ? "&" : "?";
+  return `${resolved}${separator}token=${encodeURIComponent(token)}`;
+};
+
 export default function Page() {
   const searchParams = useSearchParams();
   const activeLanguage = useActiveLanguage();
@@ -1934,7 +1949,7 @@ export default function Page() {
                       <span className="nl-receipt-title">{t("Ảnh / chứng từ")}</span>
                       <div className="nl-detail-media-grid">
                         {selectedBill.media.map((media) => {
-                          const mediaUrl = media.url || "";
+                          const mediaUrl = resolveAuthenticatedMediaUrl(media.url);
                           const isImg =
                             media.mimeType?.startsWith("image/") ||
                             /\.(jpeg|jpg|gif|png|webp)$/i.test((mediaUrl.split("?")[0] || "")) ||
