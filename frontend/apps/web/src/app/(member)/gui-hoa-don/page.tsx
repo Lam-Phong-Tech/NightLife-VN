@@ -32,6 +32,7 @@ import {
   Clock,
   FileText,
   Info,
+  RotateCcw,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -449,6 +450,18 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ja: "キャンセル/拒否",
     ko: "취소/거절",
     zh: "取消/拒绝",
+  },
+  "Gửi lại hóa đơn": {
+    en: "Resubmit bill",
+    ja: "請求書を再送信",
+    ko: "영수증 재제출",
+    zh: "重新提交账单",
+  },
+  "Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn.": {
+    en: "Please upload a new image/proof to resubmit the bill.",
+    ja: "新しい画像/証明書をアップロードして請求書を再送信してください。",
+    ko: "새 이미지/증빙 để 영수증을 재제출해 주세요.",
+    zh: "请上传新的图片/凭证以重新提交账单。",
   },
   "Đã duyệt": {
     en: "Approved",
@@ -1338,6 +1351,29 @@ export default function Page() {
     });
   };
 
+  const handleResubmitBill = (bill: BillRecord) => {
+    setSelectedBill(null);
+    if (bill.store?.slug) {
+      setStoreSlug(bill.store.slug);
+    }
+    if (bill.bookingId) {
+      setBookingId(bill.bookingId);
+    }
+    if (bill.totalVnd) {
+      setTotalVnd(String(bill.totalVnd));
+    }
+    setEvidenceFile(null);
+    setPreviewUrl(null);
+    setOcrPreview(null);
+    userFeedback.info({
+      title: t("Gửi lại hóa đơn"),
+      description: t("Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn."),
+    });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   useEffect(() => {
     let active = true;
 
@@ -1985,6 +2021,34 @@ export default function Page() {
                       </div>
                     </div>
                   ) : null}
+
+                  {(() => {
+                    if (selectedBill.status !== "REJECTED") return null;
+                    const rawUsedAt =
+                      selectedBill.usedAt ||
+                      selectedBill.booking?.scheduledAt ||
+                      selectedBill.createdAt;
+                    if (!rawUsedAt) return null;
+                    const usedAtDate = new Date(rawUsedAt);
+                    const now = new Date();
+                    const diffMs = now.getTime() - usedAtDate.getTime();
+                    const isWithin10Days =
+                      diffMs >= 0 && diffMs <= 10 * 24 * 60 * 60 * 1000;
+                    if (!isWithin10Days) return null;
+
+                    return (
+                      <div className="nl-detail-resubmit-box">
+                        <button
+                          type="button"
+                          className="nl-bill-resubmit-btn"
+                          onClick={() => handleResubmitBill(selectedBill)}
+                        >
+                          <RotateCcw size={16} />
+                          <span>{t("Gửi lại hóa đơn")}</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </section>
               </div>
             </>
@@ -2900,6 +2964,38 @@ export default function Page() {
         .nl-detail-media-link:hover {
           color: var(--vy-gold-hi);
           border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nl-detail-resubmit-box {
+          margin-top: 14px;
+        }
+
+        .nl-bill-resubmit-btn {
+          width: 100%;
+          min-height: 44px;
+          border-radius: 12px;
+          border: 1px solid var(--vy-gold-dim, #b6924a);
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+          font-size: 14px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 14px rgba(212, 178, 106, 0.2);
+        }
+
+        .nl-bill-resubmit-btn:hover {
+          filter: brightness(1.08);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(212, 178, 106, 0.3);
+        }
+
+        .nl-bill-resubmit-btn:active {
+          transform: translateY(0);
         }
 
         .nl-upload-zone-wrapper {

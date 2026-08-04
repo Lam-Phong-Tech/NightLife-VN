@@ -7740,6 +7740,7 @@ export class NightlifeDataService {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
           deletedAt: null,
+          status: { notIn: ['REJECTED', 'VOIDED', 'CANCELLED'] },
           OR: [
             { bookingId: booking.id },
             ...(booking.couponIssueId
@@ -12056,7 +12057,7 @@ export class NightlifeDataService {
         deletedAt: null,
         storeId: input.storeId,
         totalVnd: input.totalVnd,
-        status: { not: 'VOIDED' },
+        status: { notIn: ['VOIDED', 'REJECTED'] },
         usedAt: {
           gte: new Date(input.usedAt.getTime() - BILL_DUPLICATE_WINDOW_MS),
           lte: new Date(input.usedAt.getTime() + BILL_DUPLICATE_WINDOW_MS),
