@@ -513,8 +513,8 @@ function NotificationTabs({
   return (
     <div
       style={{
-        display: isMobile ? "grid" : "flex",
-        gridTemplateColumns: isMobile ? "repeat(3, minmax(0, 1fr))" : undefined,
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
         gap: isMobile ? "8px" : "7px",
         padding: isMobile ? "0 16px 12px" : "0 16px 12px",
         overflowX: "hidden",
@@ -534,14 +534,13 @@ function NotificationTabs({
             aria-pressed={active}
             onClick={() => onFilterChange(tab.key)}
             style={{
-              flex: isMobile ? undefined : "none",
               position: "relative",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: isMobile ? "6px" : "5px",
-              minWidth: isMobile ? 0 : tab.key === "all" ? "72px" : undefined,
-              minHeight: isMobile ? "34px" : "32px",
+              minWidth: 0,
+              minHeight: "34px",
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               lineHeight: 1.2,
@@ -549,7 +548,7 @@ function NotificationTabs({
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "1px solid transparent" : `1px solid ${colors.border}`,
               borderRadius: "999px",
-              padding: isMobile ? "0 8px" : "0 14px",
+              padding: isMobile ? "0 8px" : "0 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
               overflow: "hidden",
@@ -1022,7 +1021,7 @@ function DesktopNotificationDropdown({
   const todayNotices = visibleNotices.filter((notice) => notice.group === "today");
   const previousNotices = visibleNotices.filter((notice) => notice.group === "yesterday");
   const viewportWidth = typeof window === "undefined" ? 1440 : window.innerWidth;
-  const panelWidth = Math.min(404, Math.max(320, viewportWidth - 36));
+  const panelWidth = Math.min(480, Math.max(360, viewportWidth - 36));
   const anchorCenter = anchorRect ? anchorRect.left + anchorRect.width / 2 : viewportWidth - 72;
   const panelLeftTarget = anchorRect
     ? anchorRect.right - panelWidth + 12
