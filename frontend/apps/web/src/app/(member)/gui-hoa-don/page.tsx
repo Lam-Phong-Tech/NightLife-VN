@@ -2082,19 +2082,14 @@ export default function Page() {
               <input type="hidden" id="bill-used-at" value={usedAt ? formatDateTime(confirmedUsageAt, activeLanguage) : ""} readOnly />
               <input type="hidden" id="bill-booking" value={bookingId} readOnly />
 
-              <div className="nl-field">
-                <label htmlFor="bill-store-select">
-                  {t("Quán / cơ sở")} *
-                </label>
-                {selectedBooking || selectedCouponIssue ? (
-                  <>
-                    <div className="nl-static-value" id="bill-store-static">
-                      {selectedStore?.name || storeSlug}
-                    </div>
-                    {/* Hidden input for test compatibility */}
-                    <input type="hidden" id="bill-store-select" value={storeSlug} readOnly />
-                  </>
-                ) : (
+              {selectedBooking || selectedCouponIssue ? (
+                /* Hidden input for test compatibility & form state */
+                <input type="hidden" id="bill-store-select" value={storeSlug} readOnly />
+              ) : (
+                <div className="nl-field">
+                  <label htmlFor="bill-store-select">
+                    {t("Quán / cơ sở")} *
+                  </label>
                   <Select
                     className="nl-bill-ant-select"
                     disabled={isLoadingOptions || !stores.length}
@@ -2111,13 +2106,13 @@ export default function Page() {
                     popupClassName="nl-bill-select-popup"
                     value={storeSlug}
                   />
-                )}
-                {!isLoadingOptions && !stores.length ? (
-                  <span className="nl-field-help">
-                    {t("Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.")}
-                  </span>
-                ) : null}
-              </div>
+                  {!isLoadingOptions && !stores.length ? (
+                    <span className="nl-field-help">
+                      {t("Bạn cần đặt chỗ ở một quán trước khi gửi hóa đơn.")}
+                    </span>
+                  ) : null}
+                </div>
+              )}
 
               {selectedBooking ? (
                 <section className="nl-linked-booking" aria-label={t("Đặt chỗ đang gắn với hóa đơn")}>
