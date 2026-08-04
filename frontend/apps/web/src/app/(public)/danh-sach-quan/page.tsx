@@ -104,7 +104,6 @@ type VenueSearchCopy = {
   locationPermissionDescription: string;
   locationPermissionTitle: string;
   locating: string;
-  mobileSubtitle: string;
   mobileTitle: string;
   nearMe: string;
   openFilters: string;
@@ -200,7 +199,6 @@ const venueCopyVi: VenueSearchCopy = {
     "Bạn cần cấp quyền truy cập vị trí cho website thì hệ thống mới lấy được vị trí hiện tại và lọc quán gần tôi.",
   locationPermissionTitle: "Cần quyền truy cập vị trí",
   locating: "Đang lấy vị trí",
-  mobileSubtitle: "FIND VENUES",
   mobileTitle: "Tìm quán",
   nearMe: "Gần tôi",
   openFilters: "Mở bộ lọc",
@@ -247,7 +245,6 @@ const venueCopyEn: VenueSearchCopy = {
     "Please allow location access so the system can read your current position and filter venues near you.",
   locationPermissionTitle: "Location permission needed",
   locating: "Finding location",
-  mobileSubtitle: "FIND VENUES",
   mobileTitle: "Find venues",
   nearMe: "Nearby",
   openFilters: "Open filters",
@@ -604,6 +601,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const desktopFilterRef = useRef<HTMLDivElement | null>(null);
+  const locationRequestInFlightRef = useRef(false);
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
@@ -920,8 +918,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     return true;
   };
 
-  const startNearbyLocationRequest = () => {
-    if (isLocating) {
+  const startNearbyLocationRequest = ({ keepDialogOpen = false }: { keepDialogOpen?: boolean } = {}) => {
+    if (isLocating || locationRequestInFlightRef.current) {
       return;
     }
 
@@ -929,9 +927,12 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       return;
     }
 
-    setLocationPermissionOpen(false);
+    if (!keepDialogOpen) {
+      setLocationPermissionOpen(false);
+    }
     setError(null);
     setIsLocating(true);
+    locationRequestInFlightRef.current = true;
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setError(null);
@@ -940,7 +941,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           lng: position.coords.longitude,
         });
         setSort("nearest");
+        setLocationPermissionOpen(false);
         setIsLocating(false);
+        locationRequestInFlightRef.current = false;
       },
       (positionError) => {
         if (positionError.code === positionError.PERMISSION_DENIED) {
@@ -948,11 +951,13 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           setLocationPermissionOpen(true);
           setError(copy.locationBlockedMessage);
           setIsLocating(false);
+          locationRequestInFlightRef.current = false;
           return;
         }
 
         setError(copy.locationUnavailableMessage);
         setIsLocating(false);
+        locationRequestInFlightRef.current = false;
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60 * 1000 },
     );
@@ -970,7 +975,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   };
 
   const confirmLocationPermission = () => {
-    startNearbyLocationRequest();
+    startNearbyLocationRequest({ keepDialogOpen: true });
   };
 
   const handleCityChange = (nextCity: string) => {
@@ -1139,23 +1144,26 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       <style>{venueSearchCss}</style>
 
       <div className="venue-search-shell">
-        <section className="venue-search-hero" aria-label={copy.searchAria}>
-        <header className="venue-search-header">
-          <Link href="/" aria-label={translateText("Quay lại trang chủ", activeLanguage)} className="venue-search-back">
+        <header className="venue-mobile-topbar">
+          <Link
+            href="/"
+            aria-label={translateText("Quay lại trang chủ", activeLanguage)}
+            className="venue-mobile-back"
+          >
             <ArrowLeft size={17} />
           </Link>
+          <h1>{pageMobileTitle}</h1>
+        </header>
 
+        <section className="venue-search-hero" aria-label={copy.searchAria}>
+        <header className="venue-search-header">
           <div className="venue-search-title">
             <h1>
-              <span className="venue-title-desktop">
-                {pageTitle}
-              </span>
-              <span className="venue-title-mobile">{pageMobileTitle}</span>
+              {pageTitle}
             </h1>
-            {(pageSubtitle || copy.mobileSubtitle) && (
+            {pageSubtitle && (
               <p>
-                {pageSubtitle ? <span className="venue-subtitle-desktop">{pageSubtitle}</span> : null}
-                <span className="venue-subtitle-mobile">{fixedCategory ? pageSubtitle : copy.mobileSubtitle}</span>
+                {pageSubtitle}
               </p>
             )}
           </div>
@@ -2034,6 +2042,10 @@ const venueSearchCss = `
     padding: 28px 26px 34px;
   }
 
+  .venue-mobile-topbar {
+    display: none;
+  }
+
   .venue-search-hero {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.07);
@@ -2059,10 +2071,6 @@ const venueSearchCss = `
     gap: 14px;
   }
 
-  .venue-search-back {
-    display: none;
-  }
-
   .venue-search-title h1 {
     margin: 0;
     color: var(--vy-text);
@@ -2079,11 +2087,6 @@ const venueSearchCss = `
     line-height: 1;
     font-weight: 800;
     letter-spacing: .18em;
-  }
-
-  .venue-title-mobile,
-  .venue-subtitle-mobile {
-    display: none;
   }
 
   .venue-search-controls {
@@ -3788,59 +3791,54 @@ const venueSearchCss = `
 
     .venue-search-shell {
       width: 100%;
-      padding: 12px 14px 14px;
+      padding: 0 0 14px;
     }
 
+    .venue-mobile-topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px 10px;
+      background: var(--vy-bg);
+    }
+
+    .venue-mobile-back {
+      width: 36px;
+      height: 36px;
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 50%;
+      color: var(--vy-text);
+      text-decoration: none;
+    }
+
+    .venue-mobile-topbar h1 {
+      margin: 0;
+      color: var(--vy-text);
+      font-size: 17px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .venue-search-hero,
+    .venue-search-page--category .venue-search-hero,
     html.vy-light .venue-search-hero {
-      border-radius: 14px;
-      padding: 14px;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0 16px 8px;
+      background: var(--vy-bg);
     }
 
     .venue-search-header {
-      min-height: 31px;
-      align-items: center;
-      gap: 10px;
-      padding-top: 0;
-    }
-
-    .venue-search-back {
-      width: 28px;
-      height: 28px;
-      display: inline-grid;
-      place-items: center;
-      border: 1px solid var(--vy-border);
-      border-radius: 50%;
-      color: var(--vy-text);
-      background: rgba(255, 255, 255, .03);
-      text-decoration: none;
-      flex: none;
-    }
-
-    .venue-search-title h1 {
-      font-size: 17px;
-      line-height: 1;
-      font-weight: 900;
-    }
-
-    .venue-search-title p {
-      margin-top: 3px;
-      font-size: 7.5px;
-      letter-spacing: .16em;
-    }
-
-    .venue-title-desktop,
-    .venue-subtitle-desktop {
       display: none;
-    }
-
-    .venue-title-mobile,
-    .venue-subtitle-mobile {
-      display: inline;
     }
 
     .venue-search-controls {
       grid-template-columns: minmax(0, 1fr);
-      margin-top: 2px;
+      margin-top: 0;
       gap: 0;
     }
 
@@ -3849,14 +3847,14 @@ const venueSearchCss = `
     }
 
     .venue-search-input {
-      min-height: 31px;
+      min-height: 45px;
       gap: 9px;
-      border-radius: 8px;
-      padding: 0 11px;
+      border-radius: 13px;
+      padding: 0 11px 0 14px;
     }
 
     .venue-search-input input {
-      font-size: 12px;
+      font-size: 13.5px;
       font-weight: 700;
     }
 
