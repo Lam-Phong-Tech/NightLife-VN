@@ -1085,6 +1085,11 @@ const canAttachCouponIssueToBill = (issue: CouponIssue) =>
 const billCode = (bill: ExistingBill) =>
   bill.billNumber?.trim() || bill.id.slice(0, 8).toUpperCase();
 
+const billListCode = (bill: ExistingBill) =>
+  bill.booking?.bookingCode ||
+  (bill.booking?.id ? bill.booking.id.slice(0, 8).toUpperCase() : null) ||
+  billCode(bill);
+
 const findBillForBooking = (
   booking: BookingRecord | null | undefined,
   bills: BillRecord[],
@@ -1866,7 +1871,7 @@ export default function Page() {
                       >
                         <div className="nl-bill-list-item-main">
                           <strong>{bill.store?.name || "NightLife"}</strong>
-                          <span>#{billCode(bill)}</span>
+                          <span>#{billListCode(bill)}</span>
                         </div>
                         <div className="nl-bill-list-item-meta">
                           <span>{formatMoney(bill.totalVnd)}</span>
@@ -1910,7 +1915,7 @@ export default function Page() {
                     >
                       <div className="nl-bill-list-item-main">
                         <strong>{bill.store?.name || "NightLife"}</strong>
-                        <span>#{billCode(bill)}</span>
+                        <span>#{billListCode(bill)}</span>
                       </div>
                       <div className="nl-bill-list-item-meta">
                         <span>{formatMoney(bill.totalVnd)}</span>

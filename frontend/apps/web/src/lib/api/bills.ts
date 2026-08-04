@@ -35,6 +35,7 @@ export type BillRecord = {
     id: string;
     status: string;
     scheduledAt?: string | null;
+    bookingCode?: string | null;
   } | null;
   coupon?: {
     id: string;

@@ -6564,7 +6564,7 @@ export class NightlifeDataService {
         rejectReason: true,
         usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
-        booking: { select: { id: true, status: true, scheduledAt: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true, bookingCode: true } },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {
