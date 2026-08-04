@@ -541,17 +541,20 @@ function NotificationTabs({
               justifyContent: "center",
               gap: isMobile ? "6px" : "5px",
               minWidth: isMobile ? 0 : tab.key === "all" ? "72px" : undefined,
+              minHeight: isMobile ? "28px" : undefined,
+              height: isMobile ? "28px" : undefined,
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "1px solid transparent" : `1px solid ${colors.border}`,
               borderRadius: "15px",
-              padding: isMobile ? "7px 10px" : "6px 12px",
+              padding: isMobile ? "0 10px" : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
               overflow: "hidden",
               whiteSpace: "nowrap",
+              boxSizing: "border-box",
             }}
           >
             {tab.label}
