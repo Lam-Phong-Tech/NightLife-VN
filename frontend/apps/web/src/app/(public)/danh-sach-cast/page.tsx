@@ -1636,32 +1636,34 @@ function CastFilterPanel({
               value={language}
               onChange={onLanguage}
             />
-            <FilterChipGroup
-              label={copy.sortLabel.replace(":", "")}
-              options={sortOptions}
-              value={sort}
-              onChange={(value) => onSort(value as DiscoverySort)}
-            />
-          </section>
-
-          <section className="cast-filter-column cast-filter-column--other" aria-label={copy.filterOther}>
-            <div className="cast-filter-choices">
-              <button
-                type="button"
-                aria-pressed={hasActiveCoupon}
-                className={hasActiveCoupon ? "is-active" : ""}
-                onClick={onToggleCoupon}
-              >
-                {copy.hasDeals}
-              </button>
-              <button
-                type="button"
-                aria-pressed={topRankingOnly}
-                className={topRankingOnly ? "is-active" : ""}
-                onClick={onToggleTopRanking}
-              >
-                {copy.topRanking}
-              </button>
+            <div className="cast-filter-inline-groups">
+              <FilterChipGroup
+                label={copy.sortLabel.replace(":", "")}
+                options={sortOptions}
+                value={sort}
+                onChange={(value) => onSort(value as DiscoverySort)}
+              />
+              <section className="cast-sheet-group" aria-label={copy.filterNeeds}>
+                <h3>{copy.filterNeeds}</h3>
+                <div className="cast-filter-choices">
+                  <button
+                    type="button"
+                    aria-pressed={hasActiveCoupon}
+                    className={hasActiveCoupon ? "is-active" : ""}
+                    onClick={onToggleCoupon}
+                  >
+                    {copy.hasDeals}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={topRankingOnly}
+                    className={topRankingOnly ? "is-active" : ""}
+                    onClick={onToggleTopRanking}
+                  >
+                    {copy.topRanking}
+                  </button>
+                </div>
+              </section>
             </div>
           </section>
         </div>
@@ -2725,9 +2727,15 @@ html.vy-light .cast-card-favorite.is-active {
   min-width: 0;
 }
 
-.cast-filter-sheet--desktop .cast-filter-column--other {
-  grid-column: 1 / -1;
-  display: block;
+.cast-filter-inline-groups {
+  display: grid;
+  grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.cast-filter-sheet--desktop .cast-filter-inline-groups {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .cast-filter-choices {
@@ -3292,10 +3300,6 @@ html.vy-light .cast-sheet-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cast-filter-sheet--desktop .cast-filter-column--other {
-    grid-column: 1 / -1;
-    display: block;
-  }
 }
 
 @media (max-width: 767px) {
