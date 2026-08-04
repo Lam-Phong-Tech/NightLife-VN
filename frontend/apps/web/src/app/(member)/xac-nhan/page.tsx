@@ -14,7 +14,7 @@ import {
 } from "@/lib/booking-confirmation-flash";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import { translateText } from "@/lib/i18n/client-translations";
-import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
