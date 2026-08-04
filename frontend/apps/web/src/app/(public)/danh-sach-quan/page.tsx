@@ -1237,7 +1237,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 topRankingOnly={topRankingOnly}
                 sort={sort}
                 sortOptions={localizedSortOptions}
-                subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+                subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : ""}
                 onArea={setArea}
                 onCategory={setCategory}
                 onCity={handleCityChange}
@@ -1386,7 +1386,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           topRankingOnly={topRankingOnly}
           sort={sort}
           sortOptions={localizedSortOptions}
-          subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+          subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : ""}
           onArea={setArea}
           onCategory={setCategory}
           onCity={handleCityChange}
@@ -1535,14 +1535,6 @@ function VenueSearchSuggestions({
 }) {
   return (
     <div className="venue-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
-      <div className="venue-suggestion-searchline">
-        <Search size={18} />
-        <span>
-          {query}
-          <i />
-        </span>
-      </div>
-
       {venues.length ? (
         <>
           <div className="venue-suggestion-label">Gợi ý quán</div>
@@ -1649,9 +1641,8 @@ function DesktopVenueFilterPopover({
     <div className="venue-desktop-filter-popover" role="dialog" aria-label={copy.filterTitle}>
       <header className="venue-desktop-filter-head">
         <div>
-          <span>{copy.filterIntro}</span>
           <strong>{copy.filterTitle}</strong>
-          <p>{subtitle}</p>
+          {subtitle ? <p>{subtitle}</p> : null}
         </div>
         <button type="button" onClick={onClose} aria-label={copy.filterClose}>
           <X size={16} />
@@ -1802,7 +1793,7 @@ function MobileVenueFilterSheet({
         <header className="venue-filter-head">
           <div>
             <h2 id="venue-filter-title">{copy.filterTitle}</h2>
-            <p>{subtitle}</p>
+            {subtitle ? <p>{subtitle}</p> : null}
           </div>
           <button type="button" onClick={onClose} aria-label={copy.filterClose}>
             <X size={18} />
@@ -1831,16 +1822,20 @@ function MobileVenueFilterSheet({
             />
           ) : null}
 
-          <VenueFilterChipGroup
-            label={copy.sortLabel.replace(":", "")}
-            options={sortOptions}
-            value={sort}
-            onChange={(value) => onSort(value as DiscoverySort)}
-          />
-
-          <section className="venue-filter-group" aria-label={copy.filterNeeds}>
-            <h3>{copy.filterNeeds}</h3>
+          <section className="venue-filter-group" aria-label={copy.sortLabel}>
+            <h3>{copy.sortLabel.replace(":", "")}</h3>
             <div>
+              {sortOptions.map((option) => (
+                <button
+                  key={`sort-${option.value}`}
+                  type="button"
+                  aria-pressed={sort === option.value}
+                  className={sort === option.value ? "is-active" : ""}
+                  onClick={() => onSort(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
               <VenueFilterChoice label={copy.hasDeals} pressed={hasActiveCoupon} onToggle={onToggleCoupon} />
               <VenueFilterChoice label={copy.topRanking} pressed={topRankingOnly} onToggle={onToggleTopRanking} />
             </div>

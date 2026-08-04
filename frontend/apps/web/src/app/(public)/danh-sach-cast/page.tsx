@@ -1358,14 +1358,6 @@ function SearchSuggestions({
 }) {
   return (
     <div className="cast-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
-      <div className="cast-suggestion-searchline">
-        <Search size={18} />
-        <span>
-          {query}
-          <i />
-        </span>
-      </div>
-
       {casts.length ? (
         <>
           <div className="cast-suggestion-label">Gợi ý cast</div>
