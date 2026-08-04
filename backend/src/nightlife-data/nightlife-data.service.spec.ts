@@ -3395,7 +3395,7 @@ describe('NightlifeDataService', () => {
         id: 'guest-1',
         displayName: 'Minh Nguyen',
         phone: '+84907654321',
-        email: 'member@example.com',
+        email: 'different-contact@example.com',
       },
     });
 
@@ -3426,7 +3426,7 @@ describe('NightlifeDataService', () => {
         convertedUserId: 'member-1',
         displayName: 'Minh Nguyen',
         phone: '+84907654321',
-        email: 'member@example.com',
+        email: 'different-contact@example.com',
       },
       select: { id: true },
     });

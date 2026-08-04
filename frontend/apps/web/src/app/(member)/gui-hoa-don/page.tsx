@@ -1554,17 +1554,6 @@ export default function Page() {
     !selectedExistingBill &&
     !billValidationMessage;
 
-  const handleBookingChange = (value: string) => {
-    setBookingId(value);
-    if (value) {
-      setCouponIssueId("");
-    }
-    const booking = bookings.find((item) => item.id === value);
-    if (booking?.store?.slug) {
-      setStoreSlug(booking.store.slug);
-    }
-  };
-
   const handleCouponIssueChange = (value: string) => {
     setCouponIssueId(value);
     const issue = couponIssues.find((item) => item.id === value);
@@ -1823,44 +1812,6 @@ export default function Page() {
                   </span>
                 ) : null}
               </div>
-
-              {bookings.length ? (
-                <div className="nl-field">
-                  <label htmlFor="bill-booking-select">
-                    {t("Liên kết đặt chỗ")}
-                  </label>
-                  {bookingId ? (
-                    <>
-                      <div className="nl-static-value" id="bill-booking-static">
-                        {selectedBooking
-                          ? `${selectedBooking.store?.name ?? "Booking"} - ${formatDateTime(
-                              selectedBooking.scheduledAt,
-                              activeLanguage,
-                            )}`
-                          : t("Đã liên kết")}
-                      </div>
-                    </>
-                  ) : (
-                    <Select
-                      className="nl-bill-ant-select"
-                      id="bill-booking-select"
-                      onChange={handleBookingChange}
-                      options={[
-                        { label: t("Không liên kết đặt chỗ"), value: "" },
-                        ...billableBookings.map((booking) => ({
-                          label: `${booking.store?.name ?? t("Đặt chỗ")} - ${formatDateTime(
-                            booking.scheduledAt,
-                            activeLanguage,
-                          )}`,
-                          value: booking.id,
-                        })),
-                      ]}
-                      popupClassName="nl-bill-select-popup"
-                      value={bookingId}
-                    />
-                  )}
-                </div>
-              ) : null}
 
               {selectedBooking ? (
                 <section className="nl-linked-booking" aria-label={t("Đặt chỗ đang gắn với hóa đơn")}>

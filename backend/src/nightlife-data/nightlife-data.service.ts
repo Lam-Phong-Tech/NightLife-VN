@@ -4183,7 +4183,8 @@ export class NightlifeDataService {
   ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
-    const memberEmail = this.cleanEmail(user.email) || contact.email;
+    const memberAccountEmail = this.cleanEmail(user.email);
+    const bookingContactEmail = contact.email || memberAccountEmail;
     const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `booking:create:member:${user.id}`,
@@ -4194,7 +4195,7 @@ export class NightlifeDataService {
       storeId: target.store.id,
       scheduledAt,
       userId: user.id,
-      email: memberEmail,
+      email: bookingContactEmail,
       phone: contact.phone,
     });
     const guest = await this.prisma.guest.create({
@@ -4202,7 +4203,7 @@ export class NightlifeDataService {
         convertedUserId: user.id,
         displayName: contact.displayName,
         phone: contact.phone || undefined,
-        email: memberEmail || '',
+        email: bookingContactEmail || '',
       },
       select: {
         id: true,
@@ -4216,7 +4217,7 @@ export class NightlifeDataService {
       user,
       userId: user.id,
       guestId: guest.id,
-      email: memberEmail,
+      email: bookingContactEmail,
       phone: contact.phone,
       context: {
         ...context,
