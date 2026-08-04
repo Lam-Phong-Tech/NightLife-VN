@@ -6522,6 +6522,8 @@ export class NightlifeDataService {
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {
+          where: { deletedAt: null, status: 'READY' },
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
             storageKey: true,
@@ -6569,6 +6571,8 @@ export class NightlifeDataService {
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {
+          where: { deletedAt: null, status: 'READY' },
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
             storageKey: true,
@@ -22684,6 +22688,7 @@ export class NightlifeDataService {
       ? await this.prisma.media
           .findMany({
             where: { billId: { in: billIds }, deletedAt: null },
+            orderBy: { createdAt: 'desc' },
             select: { billId: true, url: true },
           })
           .catch(() => [] as Array<{ billId: string | null; url: string }>)

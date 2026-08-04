@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Logger,
   PayloadTooLargeException,
   Injectable,
   NotFoundException,
@@ -51,6 +52,8 @@ import { SystemConfigService } from '../system-config/system-config.service';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
+  private readonly logger = new Logger(StorageService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -233,27 +236,81 @@ export class StorageService implements OnModuleInit {
       );
       const access = this.resolveAccess(options.access);
       const relationIds = this.cleanRelationIds(options);
+      const purpose = options.purpose?.trim();
+      const mediaData = {
+        ownerId: options.ownerId,
+        storeId: relationIds.storeId,
+        castId: relationIds.castId,
+        bookingId: relationIds.bookingId,
+        billId: relationIds.billId,
+        contentId: relationIds.contentId,
+        storageKey,
+        originalName: validatedFile.originalName,
+        mimeType: validatedFile.mimeType,
+        sizeBytes: file.size,
+        purpose,
+        type: this.resolveMediaType(validatedFile.mimeType),
+        access,
+        url: `${publicBaseUrl}/storage/${
+          access === MediaAccess.PUBLIC ? 'public' : 'files'
+        }/${storageKey}`,
+      };
+      const shouldReplaceBillEvidence = Boolean(
+        options.userRole === 'USER' &&
+          relationIds.billId &&
+          purpose === 'bill-evidence',
+      );
 
-      return await this.prisma.media.create({
-        data: {
-          ownerId: options.ownerId,
-          storeId: relationIds.storeId,
-          castId: relationIds.castId,
-          bookingId: relationIds.bookingId,
-          billId: relationIds.billId,
-          contentId: relationIds.contentId,
-          storageKey,
-          originalName: validatedFile.originalName,
-          mimeType: validatedFile.mimeType,
-          sizeBytes: file.size,
-          purpose: options.purpose?.trim(),
-          type: this.resolveMediaType(validatedFile.mimeType),
-          access,
-          url: `${publicBaseUrl}/storage/${
-            access === MediaAccess.PUBLIC ? 'public' : 'files'
-          }/${storageKey}`,
-        },
+      if (!shouldReplaceBillEvidence) {
+        return await this.prisma.media.create({ data: mediaData });
+      }
+
+      const replacement = await this.prisma.$transaction(async (tx) => {
+        const previousMedia = await tx.media.findMany({
+          where: {
+            billId: relationIds.billId,
+            purpose: 'bill-evidence',
+            deletedAt: null,
+            status: { not: 'DELETED' },
+          },
+          select: {
+            id: true,
+            storageKey: true,
+            mimeType: true,
+          },
+        });
+        const createdMedia = await tx.media.create({ data: mediaData });
+
+        if (previousMedia.length) {
+          await tx.media.updateMany({
+            where: { id: { in: previousMedia.map((media) => media.id) } },
+            data: {
+              status: 'DELETED',
+              deletedAt: new Date(),
+            },
+          });
+        }
+
+        return { createdMedia, previousMedia };
       });
+
+      await Promise.all(
+        replacement.previousMedia.map(async (media) => {
+          if (media.mimeType === 'video/youtube') return;
+          try {
+            await unlink(join(this.getUploadDir(), media.storageKey));
+          } catch (error) {
+            const fileError = error as NodeJS.ErrnoException;
+            if (fileError.code !== 'ENOENT') {
+              this.logger.warn(
+                `Could not delete replaced bill evidence ${media.storageKey}: ${fileError.message}`,
+              );
+            }
+          }
+        }),
+      );
+
+      return replacement.createdMedia;
     } catch (error) {
       await unlink(file.path).catch(() => undefined);
       throw error;

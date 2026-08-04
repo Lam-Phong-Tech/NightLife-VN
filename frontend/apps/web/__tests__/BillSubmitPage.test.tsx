@@ -40,6 +40,8 @@ vi.mock("@/lib/api/client", () => {
 
   return {
     ApiError,
+    getAuthToken: vi.fn(() => "test-token"),
+    resolveClientUrl: vi.fn((url?: string | null) => url),
     translateApiMessage: vi.fn((message?: string, _status?: number, fallback?: string) => message ?? fallback ?? ""),
   };
 });
@@ -148,7 +150,16 @@ describe("Bill submit page", () => {
       store: { id: "store-public", name: "Public Neon", slug: "public-neon" },
       booking: defaultBooking,
     });
-    mocks.uploadEvidence.mockResolvedValue({ id: "media-1" });
+    mocks.uploadEvidence.mockResolvedValue({
+      id: "media-1",
+      storageKey: "new-bill-proof.png",
+      originalName: "new-bill-proof.png",
+      mimeType: "image/png",
+      sizeBytes: 128,
+      access: "PROTECTED",
+      url: "/storage/files/new-bill-proof.png",
+      billId: "bill-rejected-1",
+    });
   });
 
   afterEach(() => {
@@ -331,11 +342,17 @@ describe("Bill submit page", () => {
     expect(screen.getByText("#BK-PUBLIC")).toBeInTheDocument();
 
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
     const form = document.querySelector<HTMLFormElement>("form.nl-bill-form");
     expect(amountInput).not.toBeNull();
+    expect(fileInput).not.toBeNull();
     expect(form).not.toBeNull();
 
     fireEvent.change(amountInput!, { target: { value: "650000" } });
+    await userEvent.upload(
+      fileInput!,
+      new File(["new proof"], "new-bill-proof.png", { type: "image/png" }),
+    );
     await act(async () => {
       fireEvent.submit(form!);
     });
@@ -345,6 +362,16 @@ describe("Bill submit page", () => {
         totalVnd: 650000,
       });
     });
+    expect(mocks.uploadEvidence).toHaveBeenCalledWith("bill-rejected-1", expect.any(File));
+    expect(mocks.uploadEvidence.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.resubmitMemberBill.mock.invocationCallOrder[0],
+    );
     expect(mocks.submitMemberBill).not.toHaveBeenCalled();
+
+    const pendingTab = await screen.findByRole("tab", { name: /確認待ち|Chờ duyệt/i });
+    await userEvent.click(pendingTab);
+    const resubmittedBill = await screen.findByRole("button", { name: /Public Neon/i });
+    await userEvent.click(resubmittedBill);
+    expect(await screen.findByAltText("new-bill-proof.png")).toBeInTheDocument();
   });
 });

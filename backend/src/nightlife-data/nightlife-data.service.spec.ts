@@ -5953,6 +5953,8 @@ describe('NightlifeDataService', () => {
         select: expect.objectContaining({
           submitterType: true,
           media: expect.objectContaining({
+            where: { deletedAt: null, status: 'READY' },
+            orderBy: { createdAt: 'desc' },
             select: expect.objectContaining({ access: true, url: true }),
           }),
         }),
@@ -7869,6 +7871,7 @@ describe('NightlifeDataService', () => {
     );
     expect(prisma.media.findMany).toHaveBeenCalledWith({
       where: { billId: { in: ['bill-1'] }, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
       select: { billId: true, url: true },
     });
     expect(result.data).toEqual([

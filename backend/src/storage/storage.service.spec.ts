@@ -11,10 +11,13 @@ jest.mock('./upload-file-validation', () => ({
 
 describe('StorageService', () => {
   const prisma = {
+    $transaction: jest.fn(),
     media: {
       create: jest.fn(),
+      findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     bill: {
       findFirst: jest.fn(),
@@ -64,6 +67,9 @@ describe('StorageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.media.findMany.mockResolvedValue([]);
+    prisma.media.updateMany.mockResolvedValue({ count: 0 });
     jest.mocked(validateUploadedFile).mockResolvedValue({
       mimeType: 'image/png',
       originalName: 'image.png',
@@ -137,6 +143,86 @@ describe('StorageService', () => {
         url: 'http://localhost:3001/storage/files/stored-image',
       }),
     });
+  });
+
+  it('replaces previous member bill evidence after the new file is stored', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      userId: 'member-1',
+      submittedByUserId: null,
+    });
+    prisma.media.findMany.mockResolvedValue([
+      {
+        id: 'media-bill-old',
+        storageKey: 'old-bill-image.png',
+        mimeType: 'image/png',
+      },
+    ]);
+    prisma.media.create.mockResolvedValue({
+      id: 'media-bill-new',
+      storageKey: 'stored-image',
+      originalName: 'image.png',
+      mimeType: 'image/png',
+      access: MediaAccess.PROTECTED,
+      url: 'http://localhost:3001/storage/files/stored-image',
+    });
+    prisma.media.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.saveLocalFile(file, {
+      ownerId: 'member-1',
+      userRole: 'USER',
+      billId: 'bill-1',
+      purpose: 'bill-evidence',
+      access: 'PROTECTED',
+    });
+
+    expect(result).toEqual(expect.objectContaining({ id: 'media-bill-new' }));
+    expect(prisma.media.findMany).toHaveBeenCalledWith({
+      where: {
+        billId: 'bill-1',
+        purpose: 'bill-evidence',
+        deletedAt: null,
+        status: { not: 'DELETED' },
+      },
+      select: {
+        id: true,
+        storageKey: true,
+        mimeType: true,
+      },
+    });
+    expect(prisma.media.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['media-bill-old'] } },
+      data: {
+        status: 'DELETED',
+        deletedAt: expect.any(Date),
+      },
+    });
+  });
+
+  it('keeps previous member bill evidence when storing the replacement fails', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      userId: 'member-1',
+      submittedByUserId: null,
+    });
+    prisma.media.findMany.mockResolvedValue([
+      {
+        id: 'media-bill-old',
+        storageKey: 'old-bill-image.png',
+        mimeType: 'image/png',
+      },
+    ]);
+    prisma.media.create.mockRejectedValue(new Error('database write failed'));
+
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'member-1',
+        userRole: 'USER',
+        billId: 'bill-1',
+        purpose: 'bill-evidence',
+        access: 'PROTECTED',
+      }),
+    ).rejects.toThrow('database write failed');
+
+    expect(prisma.media.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects user public uploads', async () => {

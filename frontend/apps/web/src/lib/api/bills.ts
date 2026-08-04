@@ -80,6 +80,7 @@ export type UploadedBillEvidence = {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
+  access: "PUBLIC" | "PROTECTED";
   url: string;
   billId?: string | null;
 };

@@ -15,6 +15,7 @@ import {
   type BillOcrPreview,
   type BillRecord,
   type BillStoreOption,
+  type UploadedBillEvidence,
 } from "@/lib/api/bills";
 import { bookingApi, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
@@ -1781,23 +1782,47 @@ export default function Page() {
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
       };
+      let uploadWarning = "";
+      let uploadedEvidence: UploadedBillEvidence | null = null;
+
+      if (resubmitBill && evidenceFile) {
+        uploadedEvidence = await billApi.uploadEvidence(resubmitBill.id, evidenceFile);
+      }
+
       const bill = resubmitBill
         ? await billApi.resubmitMemberBill(resubmitBill.id, { totalVnd: amount })
         : await billApi.submitMemberBill(payload);
 
-      let uploadWarning = "";
-      if (evidenceFile) {
+      if (!resubmitBill && evidenceFile) {
         try {
-          await billApi.uploadEvidence(bill.id, evidenceFile);
+          uploadedEvidence = await billApi.uploadEvidence(bill.id, evidenceFile);
         } catch {
           uploadWarning = ` ${t("Hóa đơn đã được gửi, nhưng ảnh hoặc chứng từ chưa tải lên được.")}`;
         }
       }
 
+      const billWithEvidence: BillRecord = uploadedEvidence
+        ? {
+            ...bill,
+            media: [
+              {
+                id: uploadedEvidence.id,
+                storageKey: uploadedEvidence.storageKey,
+                originalName: uploadedEvidence.originalName,
+                mimeType: uploadedEvidence.mimeType,
+                access: uploadedEvidence.access,
+                url: uploadedEvidence.url,
+              },
+            ],
+          }
+        : resubmitBill?.media?.length
+          ? { ...bill, media: resubmitBill.media }
+          : bill;
+
       setSubmittedBills((current) =>
         resubmitBill
-          ? current.map((item) => (item.id === bill.id ? bill : item))
-          : [bill, ...current],
+          ? current.map((item) => (item.id === billWithEvidence.id ? billWithEvidence : item))
+          : [billWithEvidence, ...current],
       );
       const showBillToast = uploadWarning ? userFeedback.warning : userFeedback.success;
       showBillToast({
@@ -1810,8 +1835,8 @@ export default function Page() {
       });
       setNotice({
         tone: uploadWarning ? "warning" : "success",
-        message: `${t("Đã gửi hóa đơn")} ${bill.id.slice(0, 8)} ${t("để quản trị viên duyệt.")}${uploadWarning}`,
-        bill,
+        message: `${t("Đã gửi hóa đơn")} ${billWithEvidence.id.slice(0, 8)} ${t("để quản trị viên duyệt.")}${uploadWarning}`,
+        bill: billWithEvidence,
       });
       setAmountInput("");
       setSelectedBillId("");
