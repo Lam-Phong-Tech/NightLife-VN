@@ -7441,7 +7441,7 @@ describe('NightlifeDataService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
-      status: 'CONFIRMED',
+      status: 'CHECKED_IN',
       userId: 'member-1',
       storeId: 'store-1',
       guestId: 'guest-1',
@@ -7468,7 +7468,7 @@ describe('NightlifeDataService', () => {
       status: 'SUBMITTED',
       totalVnd: 1800000,
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      booking: { id: 'booking-1', status: 'CHECKED_IN' },
       guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
     });
 
@@ -7547,7 +7547,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('uses the admin booking confirmation time when QR check-in is not available', async () => {
+  it('rejects a member bill when the booking has not been checked in', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
@@ -7566,33 +7566,18 @@ describe('NightlifeDataService', () => {
       couponIssue: null,
     });
     prisma.bill.findFirst.mockResolvedValue(null);
-    prisma.bill.create.mockResolvedValue({
-      id: 'bill-admin-confirmed',
-      billNumber: 'BILL-20260701-ADMIN',
-      status: 'SUBMITTED',
-      totalVnd: 1800000,
-      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-      booking: { id: 'booking-1', status: 'CONFIRMED' },
-      guest: null,
-    });
-
-    await service.submitMemberBill(
-      { id: 'member-1', role: 'USER' },
-      {
-        bookingId: 'booking-1',
-        totalVnd: 1800000,
-        usedAt: '2026-07-22T13:00:00.000Z',
-      },
-    );
-
-    expect(prisma.bill.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
           bookingId: 'booking-1',
-          usedAt: new Date('2026-07-01T09:30:00.000Z'),
-        }),
-      }),
-    );
+          totalVnd: 1800000,
+          usedAt: '2026-07-22T13:00:00.000Z',
+        },
+      ),
+    ).rejects.toThrow('Booking must be checked in before bill submission');
+
+    expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
   it('rejects a linked member booking bill before admin or partner confirms usage time', async () => {

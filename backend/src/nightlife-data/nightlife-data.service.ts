@@ -7764,7 +7764,11 @@ export class NightlifeDataService {
       user,
     });
     const now = new Date();
-    const usedAt = this.resolveBillUsedAt(dto, { booking, couponLink });
+    const usedAt = this.resolveBillUsedAt(dto, {
+      booking,
+      couponLink,
+      requireCheckedInBooking: true,
+    });
     this.assertBillSubmissionWindow(usedAt, now);
     await this.assertBillSubmissionRateLimitAndDuplicate({
       submitterType: 'MEMBER',
@@ -11788,12 +11792,17 @@ export class NightlifeDataService {
         couponIssueUsedAt?: Date | string | null;
         adminCouponIssue?: any;
       };
+      requireCheckedInBooking?: boolean;
     },
   ) {
     if (context?.booking?.id) {
       const confirmedUsageAt =
         context.booking.qr?.usedAt ??
         context.booking.couponIssue?.usedAt ??
+        (!context.requireCheckedInBooking &&
+        this.isBookingAdminConfirmedForBill(context.booking.status)
+          ? context.booking.updatedAt
+          : null) ??
         null;
       if (!confirmedUsageAt) {
         throw new UnprocessableEntityException(
@@ -11825,6 +11834,12 @@ export class NightlifeDataService {
     }
 
     return this.parseBillUsedAt(dto.usedAt);
+  }
+
+  private isBookingAdminConfirmedForBill(status: string | null | undefined) {
+    return ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(
+      String(status ?? '').toUpperCase(),
+    );
   }
 
   private parseBillUsedAt(value: Date | string | null | undefined) {
