@@ -27,9 +27,11 @@ import { translateText } from "@/lib/i18n/client-translations";
 import { useUserActionFeedback } from "@/lib/user-action-feedback";
 import {
   AlertCircle,
+  Camera,
   CheckCircle2,
   ChevronLeft,
   Clock,
+  Edit3,
   FileText,
   Info,
   Maximize2,
@@ -1369,7 +1371,13 @@ export default function Page() {
     });
   };
 
-  const handleResubmitBill = (bill: BillRecord) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const amountInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleResubmitBill = (
+    bill: BillRecord,
+    focusTarget?: "photo" | "amount",
+  ) => {
     setSelectedBillId("");
     if (bill.store?.slug) {
       setStoreSlug(bill.store.slug);
@@ -1385,11 +1393,24 @@ export default function Page() {
     setOcrPreview(null);
     userFeedback.info({
       title: t("Gửi lại hóa đơn"),
-      description: t("Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn."),
+      description:
+        focusTarget === "photo"
+          ? t("Vui lòng chụp hoặc chọn ảnh/chứng từ mới để gửi lại hóa đơn.")
+          : focusTarget === "amount"
+          ? t("Vui lòng điều chỉnh tổng tiền hóa đơn trước khi gửi lại.")
+          : t("Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn."),
     });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+    setTimeout(() => {
+      if (focusTarget === "photo") {
+        fileInputRef.current?.click();
+      } else if (focusTarget === "amount") {
+        amountInputRef.current?.focus();
+        amountInputRef.current?.select();
+      }
+    }, 200);
   };
 
   useEffect(() => {
@@ -2105,14 +2126,32 @@ export default function Page() {
 
                     return (
                       <div className="nl-detail-resubmit-box">
-                        <button
-                          type="button"
-                          className="nl-bill-resubmit-btn"
-                          onClick={() => handleResubmitBill(selectedBill)}
-                        >
-                          <RotateCcw size={16} />
-                          <span>{t("Gửi lại hóa đơn")}</span>
-                        </button>
+                        <div className="nl-detail-resubmit-actions">
+                          <button
+                            type="button"
+                            className="nl-bill-resubmit-btn secondary"
+                            onClick={() => handleResubmitBill(selectedBill, "photo")}
+                          >
+                            <Camera size={16} />
+                            <span>{t("Gửi lại ảnh mới")}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="nl-bill-resubmit-btn secondary"
+                            onClick={() => handleResubmitBill(selectedBill, "amount")}
+                          >
+                            <Edit3 size={16} />
+                            <span>{t("Sửa tổng tiền")}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="nl-bill-resubmit-btn primary"
+                            onClick={() => handleResubmitBill(selectedBill)}
+                          >
+                            <RotateCcw size={16} />
+                            <span>{t("Gửi lại hóa đơn")}</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })()}
@@ -2256,6 +2295,7 @@ export default function Page() {
                   </label>
                   <div className="nl-amount-input-wrapper">
                     <input
+                      ref={amountInputRef}
                       id="bill-total"
                       inputMode="numeric"
                       placeholder={t("Vui lòng nhập tổng tiền")}
@@ -2280,6 +2320,7 @@ export default function Page() {
                       <span className="nl-upload-subtitle">{t("Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)")}</span>
                       <span className="nl-upload-hint">{t("Khuyến khích gửi kèm để duyệt nhanh hơn.")}</span>
                       <input
+                        ref={fileInputRef}
                         className="nl-upload-input-hidden"
                         type="file"
                         accept="image/*,.pdf"
@@ -3045,14 +3086,21 @@ export default function Page() {
           margin-top: 14px;
         }
 
+        .nl-detail-resubmit-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .nl-detail-resubmit-actions .nl-bill-resubmit-btn.primary {
+          grid-column: 1 / -1;
+        }
+
         .nl-bill-resubmit-btn {
           width: 100%;
           min-height: 44px;
           border-radius: 12px;
-          border: 1px solid var(--vy-gold-dim, #b6924a);
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-          color: #241a0a;
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
           display: inline-flex;
           align-items: center;
@@ -3060,13 +3108,37 @@ export default function Page() {
           gap: 8px;
           cursor: pointer;
           transition: all 0.2s ease;
+          padding: 10px 12px;
+        }
+
+        .nl-bill-resubmit-btn.primary {
+          border: 1px solid var(--vy-gold-dim, #b6924a);
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
           box-shadow: 0 4px 14px rgba(212, 178, 106, 0.2);
         }
 
-        .nl-bill-resubmit-btn:hover {
+        .nl-bill-resubmit-btn.secondary {
+          border: 1px solid rgba(244, 227, 180, 0.25);
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--vy-gold-pale, #f4e3b4);
+        }
+
+        .nl-bill-resubmit-btn.secondary:hover {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(244, 227, 180, 0.45);
+          color: var(--vy-gold-hi, #fff0c6);
+          transform: translateY(-1px);
+        }
+
+        .nl-bill-resubmit-btn.primary:hover {
           filter: brightness(1.08);
           transform: translateY(-1px);
           box-shadow: 0 6px 18px rgba(212, 178, 106, 0.3);
+        }
+
+        .nl-bill-resubmit-btn:active {
+          transform: scale(0.98);
         }
 
         .nl-bill-resubmit-btn:active {
