@@ -2859,11 +2859,11 @@ const entries: TranslationEntry[] = [
     zh: "提交账单",
   },
   {
-    vi: "Gửi bill gốc để Admin đối soát điểm, ưu đãi và công nợ với quán.",
-    en: "Submit the original bill so Admin can reconcile points, deals, and venue payables.",
-    ja: "原本の請求書を送信し、管理者がポイント、特典、店舗精算を確認します。",
-    ko: "원본 영수증을 제출하면 관리자가 포인트, 혜택, 매장 정산을 확인합니다.",
-    zh: "提交原始账单，供管理员核对积分、优惠和店铺结算。",
+    vi: "Gửi hóa đơn sau mỗi chuyến đi để tích lũy điểm thưởng, thăng hạng thành viên VIP và nhận nhiều ưu đãi đặc quyền.",
+    en: "Submit your bill after every visit to earn reward points, upgrade to VIP status, and unlock exclusive perks.",
+    ja: "ご利用後に請求書を送信してポイントを貯め、VIPランクへの昇格や限定特典を獲得しましょう。",
+    ko: "방문 후 영수증을 제출하고 리워드 포인트를 적립하여 VIP 등급 승급 및 전용 혜택을 누려보세요.",
+    zh: "每次消费后提交账单即可累积奖励积分，提升至 VIP 会员等级并解锁专属尊享特权。",
   },
   {
     vi: "Trong 10 ngày",

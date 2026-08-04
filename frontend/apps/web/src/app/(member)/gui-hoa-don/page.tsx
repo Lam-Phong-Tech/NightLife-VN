@@ -116,11 +116,11 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "영수증 정산",
     zh: "账单对账",
   },
-  "Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.": {
-    en: "Submit the original bill so the team can reconcile points, deals, and venue payables.",
-    ja: "原本の請求書を送信すると、ポイント、特典、店舗精算を確認できます。",
-    ko: "원본 영수증을 제출하면 포인트, 혜택, 매장 정산을 확인할 수 있습니다.",
-    zh: "提交原始账单，用于核对积分、优惠和店铺结算。",
+  "Gửi hóa đơn sau mỗi chuyến đi để tích lũy điểm thưởng, thăng hạng thành viên VIP và nhận nhiều ưu đãi đặc quyền.": {
+    en: "Submit your bill after every visit to earn reward points, upgrade to VIP status, and unlock exclusive perks.",
+    ja: "ご利用後に請求書を送信してポイントを貯め、VIPランクへの昇格や限定特典を獲得しましょう。",
+    ko: "방문 후 영수증을 제출하고 리워드 포인트를 적립하여 VIP 등급 승급 및 전용 혜택을 누려보세요.",
+    zh: "每次消费后提交账单即可累积奖励积分，提升至 VIP 会员等级并解锁专属尊享特权。",
   },
   "Quán / cơ sở": {
     en: "Venue / business",
@@ -1928,7 +1928,7 @@ export default function Page() {
               <div className="nl-bill-footer">
                 <div className="nl-info-note">
                   <Info size={15} />
-                  <span>{t("Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.")}</span>
+                  <span>{t("Gửi hóa đơn sau mỗi chuyến đi để tích lũy điểm thưởng, thăng hạng thành viên VIP và nhận nhiều ưu đãi đặc quyền.")}</span>
                 </div>
               </div>
             </section>
