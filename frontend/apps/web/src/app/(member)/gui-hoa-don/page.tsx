@@ -1611,6 +1611,20 @@ export default function Page() {
       ),
     [activeLanguage, formatMoney, selectedBooking?.coupon, selectedCouponIssue],
   );
+  const selectedBillDiscountLabel = useMemo(() => {
+    if (!selectedBill) return "";
+    const label = couponDiscountLabel(
+      selectedBill.coupon ?? selectedBill.booking?.coupon ?? null,
+      selectedBill.couponIssue ?? selectedBill.booking?.couponIssue ?? null,
+      formatMoney,
+      activeLanguage,
+    );
+    if (label) return label;
+    if (selectedBill.discountVnd && selectedBill.discountVnd > 0) {
+      return `-${formatMoney(selectedBill.discountVnd)}`;
+    }
+    return "";
+  }, [selectedBill, formatMoney, activeLanguage]);
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
@@ -1965,6 +1979,36 @@ export default function Page() {
                           {billStatusLabel(selectedBill.status, activeLanguage)}
                         </span>
                       </div>
+                      {selectedBill.booking ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mã đặt chỗ")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value highlight">
+                            #{selectedBill.booking.bookingCode || selectedBill.booking.id.slice(0, 8).toUpperCase()}
+                          </span>
+                        </div>
+                      ) : null}
+                      {selectedBill.coupon || selectedBill.couponIssue || selectedBill.booking?.coupon || selectedBill.booking?.couponIssue ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mã ưu đãi/QR")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value nl-receipt-value-wrap">
+                            {selectedBill.coupon?.name ??
+                              selectedBill.booking?.coupon?.name ??
+                              selectedBill.couponIssue?.code ??
+                              selectedBill.booking?.couponIssue?.code ??
+                              selectedBill.coupon?.code ??
+                              t("QR đặt chỗ")}
+                          </span>
+                        </div>
+                      ) : null}
+                      {selectedBillDiscountLabel ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mức giảm")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value discount">{selectedBillDiscountLabel}</span>
+                        </div>
+                      ) : null}
                       <div className="nl-receipt-row">
                         <span className="nl-receipt-label">{t("Tổng tiền")}</span>
                         <div className="nl-receipt-line"></div>
@@ -1980,7 +2024,7 @@ export default function Page() {
                         <div className="nl-receipt-line"></div>
                         <span className="nl-receipt-value">{formatDateTime(selectedBill.submittedAt, activeLanguage)}</span>
                       </div>
-                      {selectedBill.booking ? (
+                      {selectedBill.booking?.scheduledAt ? (
                         <div className="nl-receipt-row">
                           <span className="nl-receipt-label">{t("Đặt chỗ liên kết")}</span>
                           <div className="nl-receipt-line"></div>
