@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   Clock,
   FileText,
+  Info,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -895,12 +896,14 @@ const bookingTitle = (booking: BookingRecord) => {
 };
 
 const isBookingAdminConfirmedForBill = (booking: BookingRecord | null | undefined) =>
-  String(booking?.status ?? "").toUpperCase() === "CHECKED_IN";
+  ["CHECKED_IN", "COMPLETED"].includes(String(booking?.status ?? "").toUpperCase());
 
 const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
   booking?.qr?.usedAt ??
   booking?.couponIssue?.usedAt ??
-  (isBookingAdminConfirmedForBill(booking) ? booking?.updatedAt ?? null : null) ??
+  (isBookingAdminConfirmedForBill(booking)
+    ? booking?.updatedAt ?? booking?.confirmedAt ?? booking?.scheduledAt ?? null
+    : null) ??
   null;
 
 const confirmedUsageSourceLabel = (
@@ -1710,25 +1713,19 @@ export default function Page() {
             <Link href="/tai-khoan" className="nl-back-round" aria-label={t("Quay lại tài khoản")}>
               <ChevronLeft size={18} />
             </Link>
-            <div className="nl-bill-title-container">
-              <div className="nl-bill-title-row">
-                <h1 className="nl-bill-title">{t("Gửi hóa đơn")}</h1>
-                <span className="nl-bill-rule-pill">
-                  <Clock size={12} />
-                  <span>{t("Trong 10 ngày")}</span>
-                </span>
-              </div>
-              <div className="nl-bill-title-note">{t("Đối soát hóa đơn")}</div>
-              <div className="nl-title-divider"></div>
-              <p className="nl-bill-desc">
-                {t("Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.")}
-              </p>
+            <div className="nl-bill-header-copy">
+              <h1 className="nl-bill-header-title">{t("Gửi hóa đơn")}</h1>
+              <p className="nl-bill-header-subtitle">{t("Đối soát hóa đơn")}</p>
             </div>
+            <span className="nl-bill-rule-pill">
+              <Clock size={12} />
+              <span>{t("Trong 10 ngày")}</span>
+            </span>
           </div>
 
           {!bookingId && !selectedBill ? (
             <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn") }>
-              <div className="nl-bill-tabs" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
+              <div className="nl-bill-filter-chips" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
                 {[
                   { id: "UNSENT" as const, label: t("Chưa gửi"), count: unsentBookings.length },
                   { id: "PENDING" as const, label: t("Chờ duyệt"), count: pendingBills.length },
@@ -1738,13 +1735,13 @@ export default function Page() {
                   <button
                     key={tab.id}
                     type="button"
-                    className={activeListTab === tab.id ? "nl-bill-tab active" : "nl-bill-tab"}
+                    className={activeListTab === tab.id ? "nl-bill-filter-chip active" : "nl-bill-filter-chip"}
                     onClick={() => setActiveListTab(tab.id)}
                     role="tab"
                     aria-selected={activeListTab === tab.id}
                   >
-                    <span className="nl-bill-tab-label">{tab.label}</span>
-                    <span className="nl-bill-tab-count">{tab.count}</span>
+                    <span>{tab.label}</span>
+                    <span className="nl-bill-chip-count">{tab.count}</span>
                   </button>
                 ))}
               </div>
@@ -1845,6 +1842,13 @@ export default function Page() {
               ) : (
                 <div className="nl-bill-list-empty">{t("Chưa có hóa đơn trong trạng thái này.")}</div>
               )}
+
+              <div className="nl-bill-footer">
+                <div className="nl-info-note">
+                  <Info size={15} />
+                  <span>{t("Gửi hóa đơn gốc để quản trị viên đối soát điểm, ưu đãi và công nợ với quán.")}</span>
+                </div>
+              </div>
             </section>
           ) : selectedBill ? (
             <>
@@ -2278,7 +2282,7 @@ export default function Page() {
           align-items: center;
           gap: 12px;
           margin-top: 4px;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
         }
 
         .nl-back-round {
@@ -2300,28 +2304,28 @@ export default function Page() {
           color: var(--vy-gold-hi);
         }
 
-        .nl-bill-title-container {
-          display: grid;
-          gap: 2px;
-          width: 100%;
+        .nl-bill-header-copy {
+          min-width: 0;
+          flex: 1;
         }
 
-        .nl-bill-title-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 12px;
-        }
-
-        .nl-bill-title {
+        .nl-bill-header-title {
           margin: 0;
-          font-size: 21px;
-          font-weight: 600;
           color: var(--vy-text);
+          font-size: 16px;
+          font-weight: 780;
+          line-height: 1.1;
+        }
+
+        .nl-bill-header-subtitle {
+          margin: 3px 0 0;
+          color: var(--vy-text-2);
+          font-size: 11px;
+          line-height: 1.35;
         }
 
         .nl-bill-rule-pill {
+          flex: none;
           display: inline-flex;
           align-items: center;
           gap: 6px;
@@ -2334,85 +2338,83 @@ export default function Page() {
           font-weight: 700;
         }
 
-        .nl-bill-title-note {
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 1.2px;
-          color: var(--vy-muted);
-          text-transform: uppercase;
-          margin-top: -2px;
-        }
-
-        .nl-title-divider {
-          background: linear-gradient(90deg, rgba(212,178,106,.45), transparent);
-          height: 1px;
-          margin-top: 5px;
-          margin-bottom: 8px;
-          width: 100%;
-        }
-
-        .nl-bill-desc {
-          margin: 4px 0 0;
-          color: var(--vy-muted);
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
         .nl-bill-list {
           display: grid;
           gap: 16px;
         }
 
-        .nl-bill-tabs {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+        .nl-bill-filter-chips {
+          display: flex;
           gap: 8px;
-          border-bottom: 1px solid var(--vy-border);
-          padding-bottom: 10px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 4px;
         }
 
-        .nl-bill-tab,
+        .nl-bill-filter-chips::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nl-bill-filter-chip {
+          flex: none;
+          min-height: 34px;
+          border-radius: 999px;
+          padding: 8px 14px;
+          font-size: 12px;
+          white-space: nowrap;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.05);
+          color: #c5c0b6;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 720;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .nl-bill-filter-chip.active {
+          border-color: transparent;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+        }
+
+        .nl-bill-chip-count {
+          font-size: 11px;
+          opacity: 0.85;
+        }
+
+        .nl-bill-footer {
+          margin-top: 16px;
+        }
+
+        .nl-info-note {
+          border: 1px solid var(--vy-border);
+          border-radius: 14px;
+          background: var(--vy-surface-1);
+          display: flex;
+          align-items: flex-start;
+          gap: 9px;
+          padding: 11px 13px;
+        }
+
+        .nl-info-note svg {
+          flex: none;
+          margin-top: 1px;
+          color: #d9bd84;
+        }
+
+        .nl-info-note span {
+          margin: 0;
+          color: #8c8679;
+          font-size: 11px;
+          line-height: 1.55;
+        }
+
         .nl-bill-list-back {
           border: 0;
           font: inherit;
           cursor: pointer;
-        }
-
-        .nl-bill-tab {
-          min-height: 38px;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          color: var(--vy-muted);
-          background: transparent;
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        .nl-bill-tab-label {
-          min-width: 0;
-          overflow-wrap: anywhere;
-          text-align: center;
-          line-height: 1.25;
-        }
-
-        .nl-bill-tab.active {
-          color: var(--vy-gold-hi);
-          box-shadow: inset 0 -2px 0 var(--vy-gold);
-        }
-
-        .nl-bill-tab-count {
-          min-width: 20px;
-          height: 20px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 10px;
-          background: var(--vy-surface-3);
-          color: inherit;
-          font-size: 11px;
         }
 
         .nl-bill-list-items {

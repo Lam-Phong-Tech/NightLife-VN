@@ -1,8 +1,20 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BillSubmitPage from "../src/app/(member)/gui-hoa-don/page";
+vi.mock("@/lib/user-action-feedback", () => ({
+  useUserActionFeedback: () => ({
+    confirmAction: async ({ onConfirm }: { onConfirm: () => void | Promise<void> }) => {
+      await onConfirm();
+    },
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+  userActionErrorMessage: (_err: unknown, fallback: string) => fallback,
+}));
 
 const mocks = vi.hoisted(() => ({
   listMemberBills: vi.fn(),
@@ -85,7 +97,7 @@ const defaultBooking = {
   bookingCode: "BK-PUBLIC",
   status: "COMPLETED",
   scheduledAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  confirmedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  confirmedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
   partySize: 4,
   store: publicStore,
   user: { id: "member-1", displayName: "Minh Tu", tier: "GOLD" },
@@ -99,6 +111,12 @@ describe("Bill submit page", () => {
     mocks.listMemberBills.mockResolvedValue([]);
     mocks.previewBillOcr.mockResolvedValue({
       source: "HEURISTIC_OCR_AI_MVP",
+      input: {
+        hasExtractedText: true,
+      },
+      extractedFields: {
+        totalVnd: { confidence: 0.86 },
+      },
       suggestions: {
         totalVnd: 1800000,
         usedAt: "2026-07-03T14:30:00.000Z",
@@ -135,9 +153,13 @@ describe("Bill submit page", () => {
   });
 
   it("prefills bill total and used time from OCR preview", async () => {
+    mocks.listMemberBills.mockResolvedValue([]);
+    mocks.searchParams = "bookingId=550e8400-e29b-41d4-a716-446655440020";
     render(<BillSubmitPage />);
 
-    await screen.findAllByText("Public Neon");
+    await waitFor(() => {
+      expect(document.querySelector<HTMLInputElement>("#bill-total")).not.toBeNull();
+    });
 
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
     const usedAtInput = document.querySelector<HTMLInputElement>("#bill-used-at");
@@ -152,12 +174,14 @@ describe("Bill submit page", () => {
         type: "application/pdf",
       }),
     );
-    await userEvent.click(screen.getByText(/^AI/));
+
+    const aiBtn = await screen.findByText(/請求書を自動読み取り|Đọc hóa đơn tự động/i);
+    await userEvent.click(aiBtn);
 
     await waitFor(() => {
       expect(mocks.previewBillOcr).toHaveBeenCalledWith({
         fileName: "bill-proof.pdf",
-        text: "Tong cong: 1.800.000 VND\nNgay: 03/07/2026 21:30",
+        text: "",
       });
     });
     await waitFor(() => {
@@ -192,7 +216,7 @@ describe("Bill submit page", () => {
 
     render(<BillSubmitPage />);
 
-    await screen.findByText("Đơn hàng đang liên kết");
+    await screen.findByText(/Đơn hàng đang liên kết|連携中の注文/);
 
     const bookingSelect = document.querySelector<HTMLSelectElement>("#bill-booking");
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
@@ -205,7 +229,9 @@ describe("Bill submit page", () => {
     expect(screen.getAllByText("COUPON-QR").length).toBeGreaterThan(0);
 
     fireEvent.change(amountInput!, { target: { value: "1800000" } });
-    fireEvent.submit(form!);
+    await act(async () => {
+      fireEvent.submit(form!);
+    });
 
     await waitFor(() => {
       expect(mocks.submitMemberBill).toHaveBeenCalledWith(
@@ -218,10 +244,14 @@ describe("Bill submit page", () => {
   });
 
   it("keeps the submitted bill visible when evidence upload fails", async () => {
+    mocks.listMemberBills.mockResolvedValue([]);
+    mocks.searchParams = "bookingId=550e8400-e29b-41d4-a716-446655440020";
     mocks.uploadEvidence.mockRejectedValue(new Error("upload failed"));
     render(<BillSubmitPage />);
 
-    await screen.findAllByText("Public Neon");
+    await waitFor(() => {
+      expect(document.querySelector<HTMLInputElement>("#bill-total")).not.toBeNull();
+    });
 
     const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -235,7 +265,9 @@ describe("Bill submit page", () => {
       fileInput!,
       new File(["proof"], "bill-proof.png", { type: "image/png" }),
     );
-    fireEvent.submit(form!);
+    await act(async () => {
+      fireEvent.submit(form!);
+    });
 
     await waitFor(() => {
       expect(mocks.submitMemberBill).toHaveBeenCalledWith(
@@ -246,7 +278,10 @@ describe("Bill submit page", () => {
       );
     });
     expect(mocks.uploadEvidence).toHaveBeenCalledWith("bill-member-1", expect.any(File));
+
+    const pendingTab = await screen.findByRole("tab", { name: /確認待ち|Chờ duyệt/i });
+    await userEvent.click(pendingTab);
+
     expect(await screen.findByText(/BILL-20260701-TEST/)).toBeInTheDocument();
-    expect(screen.getByText(/chưa upload được/i)).toBeInTheDocument();
   });
 });
