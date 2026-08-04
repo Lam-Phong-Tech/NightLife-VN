@@ -284,4 +284,37 @@ describe("Bill submit page", () => {
 
     expect(await screen.findByText(/BILL-20260701-TEST/)).toBeInTheDocument();
   });
+
+  it("renders resubmit ticket card with invoice code when resubmitting a bill", async () => {
+    const rejectedBill = {
+      id: "bill-rejected-1",
+      billNumber: "BILL-REJECTED-1",
+      storeId: "store-public",
+      status: "REJECTED",
+      submitterType: "MEMBER",
+      totalVnd: 500000,
+      usedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      store: publicStore,
+      booking: defaultBooking,
+      rejectReason: "Ảnh không rõ nét",
+    };
+    mocks.listMemberBills.mockResolvedValue([rejectedBill]);
+
+    render(<BillSubmitPage />);
+
+    const cancelledTab = await screen.findByRole("tab", { name: /Hủy\/Từ chối|キャンセル\/拒否/i });
+    await userEvent.click(cancelledTab);
+
+    const billItem = await screen.findByRole("button", { name: /Public Neon/i });
+    await userEvent.click(billItem);
+
+    const resubmitBtn = await screen.findByRole("button", { name: /Gửi lại hóa đơn|請求書を再送信/i });
+    await userEvent.click(resubmitBtn);
+
+    expect(await screen.findByText(/Đơn hàng đang liên kết|連携中の注文/)).toBeInTheDocument();
+    expect(screen.getByText(/Mã hóa đơn|請求書コード/)).toBeInTheDocument();
+    expect(screen.getByText("#BILL-REJECTED-1")).toBeInTheDocument();
+    expect(screen.getByText("#BK-PUBLIC")).toBeInTheDocument();
+  });
 });

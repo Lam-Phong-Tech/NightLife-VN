@@ -1238,6 +1238,7 @@ export default function Page() {
   const [activeListTab, setActiveListTab] = useState<BillListTab>("UNSENT");
   const [selectedBillId, setSelectedBillId] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [resubmitBill, setResubmitBill] = useState<BillRecord | null>(null);
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
@@ -1375,6 +1376,7 @@ export default function Page() {
 
   const handleResubmitBill = (bill: BillRecord) => {
     setSelectedBillId("");
+    setResubmitBill(bill);
     setIsFormOpen(true);
     if (bill.store?.slug) {
       setStoreSlug(bill.store.slug);
@@ -1631,6 +1633,21 @@ export default function Page() {
     return "";
   }, [selectedBill, formatMoney, activeLanguage]);
 
+  const resubmitBillDiscountLabel = useMemo(() => {
+    if (!resubmitBill) return "";
+    const label = couponDiscountLabel(
+      resubmitBill.coupon ?? resubmitBill.booking?.coupon ?? null,
+      resubmitBill.couponIssue ?? resubmitBill.booking?.couponIssue ?? null,
+      formatMoney,
+      activeLanguage,
+    );
+    if (label) return label;
+    if (resubmitBill.discountVnd && resubmitBill.discountVnd > 0) {
+      return `-${formatMoney(resubmitBill.discountVnd)}`;
+    }
+    return "";
+  }, [resubmitBill, formatMoney, activeLanguage]);
+
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
   const isUsedAtInvalid = Number.isNaN(usedAtDate.getTime());
@@ -1699,6 +1716,7 @@ export default function Page() {
 
   const handleOpenBooking = (booking: BookingRecord) => {
     setSelectedBillId("");
+    setResubmitBill(null);
     setIsFormOpen(true);
     setBookingId(booking.id);
     setCouponIssueId("");
@@ -1711,6 +1729,7 @@ export default function Page() {
 
   const handleOpenBill = (bill: BillRecord) => {
     setSelectedBillId(bill.id);
+    setResubmitBill(null);
     setIsFormOpen(false);
     setBookingId("");
     setCouponIssueId("");
@@ -1720,6 +1739,7 @@ export default function Page() {
 
   const handleBackToList = () => {
     setSelectedBillId("");
+    setResubmitBill(null);
     setIsFormOpen(false);
     setBookingId("");
     setCouponIssueId("");
@@ -1770,6 +1790,7 @@ export default function Page() {
       });
       setAmountInput("");
       setSelectedBillId("");
+      setResubmitBill(null);
       setBookingId("");
       setCouponIssueId("");
       setIsFormOpen(false);
@@ -2142,7 +2163,7 @@ export default function Page() {
               <input type="hidden" id="bill-used-at" value={usedAt ? formatDateTime(confirmedUsageAt, activeLanguage) : ""} readOnly />
               <input type="hidden" id="bill-booking" value={bookingId} readOnly />
 
-              {selectedBooking || selectedCouponIssue ? (
+              {selectedBooking || selectedCouponIssue || resubmitBill ? (
                 /* Hidden input for test compatibility & form state */
                 <input type="hidden" id="bill-store-select" value={storeSlug} readOnly />
               ) : (
@@ -2174,7 +2195,84 @@ export default function Page() {
                 </div>
               )}
 
-              {selectedBooking ? (
+              {resubmitBill ? (
+                <section className="nl-linked-booking" aria-label={t("Đơn hàng đang liên kết")}>
+                  <div className="nl-receipt-ticket">
+                    <div className="nl-receipt-header">
+                      <span className="nl-receipt-title">{t("Đơn hàng đang liên kết")}</span>
+                      <strong className="nl-receipt-store notranslate" translate="no" data-no-translate="true">
+                        {resubmitBill.store?.name || "NightLife"}
+                      </strong>
+                    </div>
+                    <div className="nl-receipt-body">
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Mã hóa đơn")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value highlight">#{billCode(resubmitBill)}</span>
+                      </div>
+                      {resubmitBill.booking ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mã đặt chỗ")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value highlight">
+                            #{resubmitBill.booking.bookingCode || resubmitBill.booking.id.slice(0, 8).toUpperCase()}
+                          </span>
+                        </div>
+                      ) : null}
+                      {resubmitBill.booking?.scheduledAt ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Giờ hẹn")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value">
+                            {formatDateTime(resubmitBill.booking.scheduledAt, activeLanguage)}
+                          </span>
+                        </div>
+                      ) : null}
+                      <div className="nl-receipt-row">
+                        <span className="nl-receipt-label">{t("Xác nhận sử dụng")}</span>
+                        <div className="nl-receipt-line"></div>
+                        <span className="nl-receipt-value">
+                          {resubmitBill.usedAt
+                            ? formatDateTime(resubmitBill.usedAt, activeLanguage)
+                            : resubmitBill.booking && bookingConfirmedUsageAt(resubmitBill.booking)
+                            ? formatDateTime(bookingConfirmedUsageAt(resubmitBill.booking), activeLanguage)
+                            : formatDateTime(resubmitBill.createdAt, activeLanguage)}
+                        </span>
+                      </div>
+                      {resubmitBill.booking?.partySize ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Số người")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value">
+                            {partySizeLabel(resubmitBill.booking.partySize, activeLanguage)}
+                          </span>
+                        </div>
+                      ) : null}
+                      {resubmitBill.coupon || resubmitBill.couponIssue || resubmitBill.booking?.coupon || resubmitBill.booking?.couponIssue ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mã ưu đãi/QR")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value nl-receipt-value-wrap">
+                            {resubmitBill.coupon?.name ??
+                              resubmitBill.booking?.coupon?.name ??
+                              resubmitBill.couponIssue?.code ??
+                              resubmitBill.booking?.couponIssue?.code ??
+                              resubmitBill.coupon?.code ??
+                              t("QR đặt chỗ")}
+                          </span>
+                        </div>
+                      ) : null}
+                      {resubmitBillDiscountLabel ? (
+                        <div className="nl-receipt-row">
+                          <span className="nl-receipt-label">{t("Mức giảm")}</span>
+                          <div className="nl-receipt-line"></div>
+                          <span className="nl-receipt-value discount">{resubmitBillDiscountLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </section>
+              ) : selectedBooking ? (
                 <section className="nl-linked-booking" aria-label={t("Đặt chỗ đang gắn với hóa đơn")}>
                   <div className="nl-receipt-ticket">
                     <div className="nl-receipt-header">
@@ -2227,7 +2325,7 @@ export default function Page() {
                 </section>
               ) : null}
 
-              {!selectedBooking && couponIssues.length ? (
+              {!resubmitBill && !selectedBooking && couponIssues.length ? (
                 <div className="nl-field">
                   <label htmlFor="bill-coupon-issue-select">
                     {t("Liên kết mã ưu đãi")}
@@ -2422,10 +2520,10 @@ export default function Page() {
                   {isSubmitting ? (
                     <>
                       <span className="spin-loader"></span>
-                      <span>{t("Đang gửi hóa đơn...")}</span>
+                      <span>{resubmitBill ? t("Đang gửi lại hóa đơn...") : t("Đang gửi hóa đơn...")}</span>
                     </>
                   ) : (
-                    <span>{t("Gửi hóa đơn")}</span>
+                    <span>{resubmitBill ? t("Gửi lại hóa đơn") : t("Gửi hóa đơn")}</span>
                   )}
                 </button>
               )}
