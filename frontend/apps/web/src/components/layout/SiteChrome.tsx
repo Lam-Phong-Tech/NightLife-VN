@@ -517,6 +517,7 @@ function NotificationTabs({
         gap: "7px",
         padding: isMobile ? "0 16px 12px" : "0 16px 12px",
         overflowX: isMobile ? "auto" : "hidden",
+        minWidth: 0,
         borderBottom: `1px solid ${colors.border}`,
         scrollbarWidth: "none",
       }}
@@ -527,30 +528,25 @@ function NotificationTabs({
         return (
           <button
             key={tab.key}
+            data-testid={`notification-tab-${tab.key}`}
             type="button"
             aria-pressed={active}
             onClick={() => onFilterChange(tab.key)}
             style={{
-              flex: "none",
+              flex: isMobile ? "1 0 96px" : "none",
               position: "relative",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: showAllBadge ? 0 : isMobile ? "6px" : "5px",
-              minWidth: tab.key === "all" ? (isMobile ? "82px" : "72px") : undefined,
+              gap: isMobile ? "6px" : "5px",
+              minWidth: isMobile ? "96px" : tab.key === "all" ? "72px" : undefined,
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
               background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : colors.surface2,
               border: active ? "0" : `1px solid ${colors.border}`,
               borderRadius: "15px",
-              padding: showAllBadge
-                ? isMobile
-                  ? "7px 34px 7px 15px"
-                  : "6px 31px 6px 12px"
-                : isMobile
-                  ? "7px 15px"
-                  : "6px 12px",
+              padding: isMobile ? "7px 10px" : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
               overflow: "hidden",
@@ -560,10 +556,6 @@ function NotificationTabs({
             {showAllBadge ? (
               <b
                 style={{
-                  position: "absolute",
-                  top: "50%",
-                  right: isMobile ? "8px" : "7px",
-                  transform: "translateY(-50%)",
                   minWidth: unreadCount > 9 ? "24px" : "20px",
                   height: "18px",
                   display: "inline-flex",
