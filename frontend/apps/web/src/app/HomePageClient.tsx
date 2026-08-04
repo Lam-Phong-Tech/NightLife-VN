@@ -2719,13 +2719,16 @@ function RankingRegionDropdown({
   active,
   onChange,
   ariaLabel = "Chọn khu vực xếp hạng",
+  language = "vi",
 }: {
   active: ServiceRegion;
   onChange: (value: ServiceRegion) => void;
   ariaLabel?: string;
+  language?: LanguageCode;
 }) {
   const [open, setOpen] = useState(false);
   const selected = serviceRegionTabs.find((item) => item.id === active) ?? serviceRegionTabs[0];
+  const selectedLabel = translateText(selected.label, language);
 
   return (
     <div
@@ -2757,7 +2760,7 @@ function RankingRegionDropdown({
           boxShadow: open ? "0 12px 28px rgba(0,0,0,.28)" : "none",
         }}
       >
-        {selected.label}
+        {selectedLabel}
         <ChevronDown
           size={14}
           style={{
@@ -2789,6 +2792,7 @@ function RankingRegionDropdown({
         >
           {serviceRegionTabs.map((item) => {
             const selectedOption = active === item.id;
+            const optionLabel = translateText(item.label, language);
             return (
               <button
                 key={item.id}
@@ -2817,7 +2821,7 @@ function RankingRegionDropdown({
                   textAlign: "left",
                 }}
               >
-                <span>{item.label}</span>
+                <span>{optionLabel}</span>
                 {selectedOption ? (
                   <span
                     aria-hidden="true"
@@ -2845,12 +2849,14 @@ function ServiceFilterControls({
   activeRegion,
   onRegionChange,
   items,
+  language,
 }: {
   activeTab: string;
   onTabChange: (value: string) => void;
   activeRegion: ServiceRegion;
   onRegionChange: (value: ServiceRegion) => void;
   items: Array<{ id: string; label: string }>;
+  language: LanguageCode;
 }) {
   return (
     <div
@@ -2863,7 +2869,7 @@ function ServiceFilterControls({
       }}
     >
       <TabSwitch items={items} active={activeTab} onChange={onTabChange} />
-      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} ariaLabel="Chọn khu vực dịch vụ" />
+      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} ariaLabel="Chọn khu vực dịch vụ" language={language} />
     </div>
   );
 }
@@ -2872,10 +2878,12 @@ function RankingSectionHeader({
   title = homeSectionTitleFallbacks.ranking,
   activeRegion,
   onRegionChange,
+  language,
 }: {
   title?: string;
   activeRegion: ServiceRegion;
   onRegionChange: (value: ServiceRegion) => void;
+  language: LanguageCode;
 }) {
   return (
     <div
@@ -2892,7 +2900,7 @@ function RankingSectionHeader({
         <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
       </div>
 
-      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
+      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} language={language} />
     </div>
   );
 }
@@ -3590,6 +3598,7 @@ export default function HomePageClient() {
                 title={homeSectionTitles.ranking}
                 activeRegion={activeRankRegion}
                 onRegionChange={setActiveRankRegion}
+                language={activeLanguage}
               />
               {isRankingsLoading ? (
                 <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
@@ -3614,6 +3623,7 @@ export default function HomePageClient() {
                 activeRegion={activeServiceRegion}
                 onRegionChange={setActiveServiceRegion}
                 items={dynamicServiceTabs}
+                language={activeLanguage}
               />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                 {isFeaturedServicesLoading ? (
@@ -3660,6 +3670,7 @@ export default function HomePageClient() {
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
                   ariaLabel="Chọn khu vực video"
+                  language={activeLanguage}
                 />
               </div>
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
@@ -3747,6 +3758,7 @@ export default function HomePageClient() {
                   title={homeSectionTitles.ranking}
                   activeRegion={activeRankRegion}
                   onRegionChange={setActiveRankRegion}
+                  language={activeLanguage}
                 />
                 {isRankingsLoading ? (
                   <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
@@ -3774,6 +3786,7 @@ export default function HomePageClient() {
                 activeRegion={activeServiceRegion}
                 onRegionChange={setActiveServiceRegion}
                 items={dynamicServiceTabs}
+                language={activeLanguage}
               />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {isFeaturedServicesLoading ? (
@@ -3820,6 +3833,7 @@ export default function HomePageClient() {
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
                   ariaLabel="Chọn khu vực video"
+                  language={activeLanguage}
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
