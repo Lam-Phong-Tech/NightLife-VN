@@ -39,7 +39,7 @@ const fallbackImages = [
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=720&q=76",
 ];
 
-const campaignPageSize = 4;
+const campaignPageSize = 6;
 const expiringSoonWindowMs = 24 * 60 * 60 * 1000;
 const campaignClockTickMs = 60 * 1000;
 
