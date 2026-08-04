@@ -64,6 +64,32 @@ export class CampaignsService {
     return count;
   }
 
+  private async assertStoreActiveForActiveCampaign(
+    targetStoreId: string | null | undefined,
+    status: CampaignStatus,
+  ) {
+    if (status !== CampaignStatus.ACTIVE) {
+      return;
+    }
+
+    if (!targetStoreId) {
+      throw new BadRequestException(
+        'Vui lòng chọn Quán áp dụng đang hoạt động trước khi chuyển campaign sang trạng thái Hoạt động.',
+      );
+    }
+
+    const store = await this.prisma.store.findUnique({
+      where: { id: targetStoreId },
+      select: { id: true, status: true, deletedAt: true },
+    });
+
+    if (!store || store.status !== 'ACTIVE' || store.deletedAt !== null) {
+      throw new BadRequestException(
+        'Quán áp dụng không ở trạng thái Hoạt động. Không thể chuyển campaign sang trạng thái Hoạt động.',
+      );
+    }
+  }
+
   async findAll(params: {
     skip?: number;
     take?: number;
@@ -90,6 +116,7 @@ export class CampaignsService {
               city: true,
               district: true,
               media: true,
+              status: true,
             },
           },
         },
@@ -131,6 +158,7 @@ export class CampaignsService {
             category: true,
             area: true,
             slug: true,
+            status: true,
           },
         },
       },
@@ -145,6 +173,10 @@ export class CampaignsService {
 
   async create(data: Prisma.CampaignCreateInput, actor: AuthenticatedUser) {
     this.assertValidDiscount(data.discountType, data.discountValue);
+
+    const targetStoreId = (data.targetStore as any)?.connect?.id;
+    const campaignStatus = (data.status as CampaignStatus) || CampaignStatus.DRAFT;
+    await this.assertStoreActiveForActiveCampaign(targetStoreId, campaignStatus);
 
     return this.prisma.$transaction(async (tx) => {
       if (data.homePosition) {
@@ -163,6 +195,7 @@ export class CampaignsService {
               category: true,
               area: true,
               slug: true,
+              status: true,
             },
           },
         },
@@ -207,6 +240,16 @@ export class CampaignsService {
         : existing.discountValue;
     this.assertValidDiscount(discountType, discountValue);
 
+    let targetStoreId: string | null | undefined = existing.targetStoreId;
+    if ((data.targetStore as any)?.disconnect) {
+      targetStoreId = null;
+    } else if ((data.targetStore as any)?.connect?.id) {
+      targetStoreId = (data.targetStore as any).connect.id;
+    }
+
+    const nextStatus = (data.status as CampaignStatus) || existing.status;
+    await this.assertStoreActiveForActiveCampaign(targetStoreId, nextStatus);
+
     return this.prisma.$transaction(async (tx) => {
       if (typeof data.homePosition === 'number') {
         await tx.campaign.updateMany({
@@ -225,6 +268,7 @@ export class CampaignsService {
               category: true,
               area: true,
               slug: true,
+              status: true,
             },
           },
         },

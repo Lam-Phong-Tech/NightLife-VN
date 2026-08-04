@@ -1147,6 +1147,15 @@ export default function AdminContentPage() {
       feedback.showToast({ title: 'Mức giảm phần trăm phải từ 0% đến 100%', tone: 'error' });
       return;
     }
+
+    if (campaignStatus === 'Hoạt động') {
+      const isStoreActive = campaignLinkedStore && (campaignLinkedStore.status === 'ACTIVE' || !campaignLinkedStore.status);
+      if (!campaignLinkedStore || !isStoreActive) {
+        feedback.showToast({ title: 'Quán áp dụng chưa được chọn hoặc không ở trạng thái Hoạt động.', tone: 'error' });
+        setCampaignStatus('Tạm dừng');
+        return;
+      }
+    }
     
     setIsSubmitting(true);
     try {
@@ -3308,7 +3317,15 @@ export default function AdminContentPage() {
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Trạng thái</div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span onClick={() => setCampaignStatus('Hoạt động')} style={{ background: campaignStatus === 'Hoạt động' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Hoạt động' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Hoạt động' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Hoạt động' ? 700 : 600, cursor: 'pointer' }}>Hoạt động</span>
+                  <span onClick={() => {
+                    const isStoreActive = campaignLinkedStore && (campaignLinkedStore.status === 'ACTIVE' || !campaignLinkedStore.status);
+                    if (!campaignLinkedStore || !isStoreActive) {
+                      feedback.showToast({ title: 'Quán áp dụng chưa chọn hoặc không ở trạng thái Hoạt động. Tự động về Tạm dừng.', tone: 'warning' });
+                      setCampaignStatus('Tạm dừng');
+                    } else {
+                      setCampaignStatus('Hoạt động');
+                    }
+                  }} style={{ background: campaignStatus === 'Hoạt động' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Hoạt động' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Hoạt động' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Hoạt động' ? 700 : 600, cursor: 'pointer' }}>Hoạt động</span>
                   <span onClick={() => setCampaignStatus('Tạm dừng')} style={{ background: campaignStatus === 'Tạm dừng' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Tạm dừng' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Tạm dừng' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Tạm dừng' ? 700 : 600, cursor: 'pointer' }}>Tạm dừng</span>
                   <span onClick={() => setCampaignStatus('Bản nháp')} style={{ background: campaignStatus === 'Bản nháp' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Bản nháp' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Bản nháp' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Bản nháp' ? 700 : 600, cursor: 'pointer' }}>Bản nháp</span>
                 </div>
@@ -3402,7 +3419,15 @@ export default function AdminContentPage() {
                     {campaignStoreResults.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                         {campaignStoreResults.map((s: any) => (
-                          <div key={s.id} onClick={() => { setCampaignLinkedStore(s); setCampaignStoreSearch(''); setCampaignStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
+                          <div key={s.id} onClick={() => {
+                            setCampaignLinkedStore(s);
+                            setCampaignStoreSearch('');
+                            setCampaignStoreResults([]);
+                            if (s.status && s.status !== 'ACTIVE') {
+                              setCampaignStatus('Tạm dừng');
+                              feedback.showToast({ title: `Quán "${s.name}" đang không ở trạng thái Hoạt động. Campaign được chuyển về Tạm dừng.`, tone: 'warning' });
+                            }
+                          }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
                               <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {typeof s.area === 'object' ? s.area?.name : s.area}</div>

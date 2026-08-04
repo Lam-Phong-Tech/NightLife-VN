@@ -10,7 +10,16 @@ describe('CampaignsService', () => {
       findMany: jest.fn(),
       count: jest.fn(),
       findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
+    store: {
+      findUnique: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn((cb: any) => cb(prisma)),
   } as unknown as jest.Mocked<PrismaService>;
 
   let service: CampaignsService;
@@ -21,6 +30,8 @@ describe('CampaignsService', () => {
     prisma.campaign.findMany.mockResolvedValue([] as never);
     prisma.campaign.count.mockResolvedValue(0 as never);
     prisma.campaign.findUnique.mockResolvedValue(null as never);
+    (prisma.store.findUnique as jest.Mock).mockResolvedValue(null as never);
+    (prisma.$transaction as jest.Mock).mockImplementation((cb: any) => cb(prisma));
     service = new CampaignsService(prisma);
   });
 
@@ -86,5 +97,69 @@ describe('CampaignsService', () => {
     const result = await service.findAll({ skip: 0, take: 10 });
 
     expect(result.data[0]?.targetStore?.district).toBe('Ba Dinh');
+  });
+
+  it('rejects setting campaign to ACTIVE if no target store is linked', async () => {
+    await expect(
+      service.create(
+        {
+          name: 'Active campaign without store',
+          discountType: 'PERCENT',
+          discountValue: 10,
+          status: CampaignStatus.ACTIVE,
+        },
+        { id: 'admin-1', role: 'ADMIN' } as never,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects setting campaign to ACTIVE if target store is not ACTIVE', async () => {
+    (prisma.store.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'store-1',
+      status: 'CLOSED',
+      deletedAt: null,
+    });
+
+    await expect(
+      service.create(
+        {
+          name: 'Active campaign for closed store',
+          discountType: 'PERCENT',
+          discountValue: 10,
+          status: CampaignStatus.ACTIVE,
+          targetStore: { connect: { id: 'store-1' } },
+        },
+        { id: 'admin-1', role: 'ADMIN' } as never,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('allows setting campaign to ACTIVE if target store is ACTIVE', async () => {
+    (prisma.store.findUnique as jest.Mock).mockResolvedValueOnce({
+      id: 'store-1',
+      status: 'ACTIVE',
+      deletedAt: null,
+    });
+    (prisma.campaign.create as jest.Mock).mockResolvedValueOnce({
+      id: 'campaign-1',
+      name: 'Active campaign',
+      discountType: 'PERCENT',
+      discountValue: 10,
+      status: CampaignStatus.ACTIVE,
+      targetStoreId: 'store-1',
+    });
+
+    const result = await service.create(
+      {
+        name: 'Active campaign',
+        discountType: 'PERCENT',
+        discountValue: 10,
+        status: CampaignStatus.ACTIVE,
+        targetStore: { connect: { id: 'store-1' } },
+      },
+      { id: 'admin-1', role: 'ADMIN' } as never,
+    );
+
+    expect(result.status).toBe(CampaignStatus.ACTIVE);
   });
 });

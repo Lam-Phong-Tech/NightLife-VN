@@ -10,6 +10,7 @@ export interface CampaignItem {
     id: string;
     name: string;
     category: string;
+    status?: string;
     area?:
       | string
       | {
