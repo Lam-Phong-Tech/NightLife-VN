@@ -3584,11 +3584,18 @@ export default function HomePageClient() {
 
             <section data-testid="home-mobile-coupons" style={{ marginTop: "18px" }}>
               <SectionHeading title={homeSectionTitles.coupon} />
-              <div style={{ display: "grid", gap: "10px" }}>
+              <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "6px" }}>
                 {isHomeCouponsLoading ? (
                   <HomeDataMessage text="Đang tải ưu đãi từ API..." compact />
                 ) : homeCoupons.length ? (
-                  homeCoupons.slice(0, 2).map((item) => <CouponCard key={item.id} item={item} compact />)
+                  <HomeCardCarousel
+                    ariaLabel="Coupon Hot"
+                    gap={12}
+                    getKey={(item) => item.id}
+                    items={homeCoupons.slice(0, 6)}
+                    itemsPerSlide={1}
+                    renderItem={(item) => <CouponCard item={item} compact />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} compact />
                 )}
