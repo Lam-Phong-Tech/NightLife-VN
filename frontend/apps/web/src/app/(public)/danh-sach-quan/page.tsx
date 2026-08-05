@@ -40,7 +40,7 @@ import {
   normalizeStoreOpeningHours,
 } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
-import { sortBySearchRelevance } from "@/lib/search-relevance";
+import { searchRelevanceScore, sortBySearchRelevance } from "@/lib/search-relevance";
 import {
   addSearchHistoryItem,
   clearSearchHistory,
@@ -566,6 +566,7 @@ type LocationDialogMode = "permission" | "blocked";
 
 export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
   const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentVenueSearches, setRecentVenueSearches] = useState<string[]>([]);
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [city, setCity] = useState("");
@@ -608,14 +609,23 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setRecentVenueSearches(addSearchHistoryItem(venueSearchHistoryKey, value));
   };
 
+  const submitVenueSearch = (value = query) => {
+    const nextQuery = value.trim().replace(/\s+/g, " ");
+    setQuery(nextQuery);
+    setSubmittedQuery(nextQuery);
+    saveRecentVenueSearch(nextQuery);
+    setSearchFocused(false);
+    setCurrentPage(1);
+  };
+
   const clearRecentVenueSearches = () => {
     clearSearchHistory(venueSearchHistoryKey);
     setRecentVenueSearches([]);
   };
 
   const selectRecentVenueSearch = (value: string) => {
-    saveRecentVenueSearch(value);
     setQuery(value);
+    submitVenueSearch(value);
   };
 
   useEffect(() => {
@@ -704,7 +714,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       setError(null);
       discoveryApi
         .listStoresStrict({
-          q: query,
           city,
           area,
           category: effectiveCategory,
@@ -732,7 +741,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, city, coords, effectiveCategory, hasActiveCoupon, query, sort]);
+  }, [area, city, coords, effectiveCategory, hasActiveCoupon, sort]);
 
   useEffect(() => {
     if (!topRankingOnly) {
@@ -828,20 +837,18 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const openingNow = useMemo(() => new Date(openingClock), [openingClock]);
 
   const venues = useMemo(() => {
-    const searchSortedVenues = sortBySearchRelevance(stores, query, (store) => ({
+    const normalizedSubmittedQuery = submittedQuery.trim();
+    const nameMatchedStores = normalizedSubmittedQuery
+      ? stores.filter((store) =>
+          Number.isFinite(
+            searchRelevanceScore(normalizedSubmittedQuery, {
+              primary: [store.name],
+            }),
+          ),
+        )
+      : stores;
+    const searchSortedVenues = sortBySearchRelevance(nameMatchedStores, normalizedSubmittedQuery, (store) => ({
       primary: [store.name],
-      secondary: [
-        store.category,
-        categoryLabels[store.category],
-        store.description,
-        store.address,
-        store.area?.name,
-        store.area?.code,
-        store.district,
-        store.city,
-        store.cityCode,
-        store.slug,
-      ],
     }))
       .map((store) => toVenueView(store, activeLanguage, openingNow))
       .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
@@ -853,7 +860,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         (topRankingOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [activeLanguage, openingNow, query, stores, topRankingOnly, topRankingOrder]);
+  }, [activeLanguage, openingNow, stores, submittedQuery, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
   const selectedCityLabel = city ? cityLabel : copy.all;
@@ -1030,7 +1037,26 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     topRankingOnly,
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
-  const suggestions = useMemo(() => venues.slice(0, 4), [venues]);
+  const suggestions = useMemo(() => {
+    const suggestionQuery = query.trim();
+    if (!suggestionQuery) return [];
+
+    return sortBySearchRelevance(
+      stores.filter((store) =>
+        Number.isFinite(
+          searchRelevanceScore(suggestionQuery, {
+            primary: [store.name],
+          }),
+        ),
+      ),
+      suggestionQuery,
+      (store) => ({
+        primary: [store.name],
+      }),
+    )
+      .slice(0, 4)
+      .map((store) => toVenueView(store, activeLanguage, openingNow));
+  }, [activeLanguage, openingNow, query, stores]);
   const totalPages = Math.max(1, Math.ceil(venues.length / venueItemsPerPage));
   const currentPageStart = (currentPage - 1) * venueItemsPerPage;
   const pagedVenues = useMemo(
@@ -1046,7 +1072,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     : copy.mobileTitle;
   useEffect(() => {
     setCurrentPage(1);
-  }, [area, city, effectiveCategory, hasActiveCoupon, query, sort, topRankingOnly]);
+  }, [area, city, effectiveCategory, hasActiveCoupon, sort, submittedQuery, topRankingOnly]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1180,7 +1206,10 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") saveRecentVenueSearch(query);
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitVenueSearch();
+                  }
                 }}
                 placeholder={copy.searchPlaceholder}
               />
@@ -1189,7 +1218,11 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                   type="button"
                   aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
                   className="venue-input-clear"
-                  onClick={() => setQuery("")}
+                  onClick={() => {
+                    setQuery("");
+                    setSubmittedQuery("");
+                    setCurrentPage(1);
+                  }}
                 >
                   <X size={14} />
                 </button>
@@ -1250,7 +1283,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             ) : null}
           </div>
 
-          <button type="button" className="venue-find-button">
+          <button type="button" className="venue-find-button" onClick={() => submitVenueSearch()}>
             {copy.find}
           </button>
         </section>

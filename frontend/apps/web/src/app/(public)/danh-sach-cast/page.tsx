@@ -41,7 +41,7 @@ import {
 } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { localizePathname } from "@/lib/i18n/locales";
-import { sortBySearchRelevance } from "@/lib/search-relevance";
+import { searchRelevanceScore, sortBySearchRelevance } from "@/lib/search-relevance";
 import {
   addSearchHistoryItem,
   clearSearchHistory,
@@ -496,6 +496,7 @@ const highlightMatch = (text: string, query: string) => {
 
 export function CastDirectoryPage() {
   const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
@@ -552,7 +553,6 @@ export function CastDirectoryPage() {
       setError(null);
       discoveryApi
         .listCasts({
-          q: query,
           city,
           area,
           category,
@@ -581,7 +581,7 @@ export function CastDirectoryPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, language, query, sort]);
+  }, [area, category, city, coords, hasActiveCoupon, language, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -727,20 +727,20 @@ export function CastDirectoryPage() {
     [topRankingCasts],
   );
   const visibleCasts = useMemo(() => {
+    const normalizedSubmittedQuery = submittedQuery.trim();
     const filteredCasts = casts
       .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
-      .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug));
-    const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
+      .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug))
+      .filter((cast) =>
+        !normalizedSubmittedQuery ||
+        Number.isFinite(
+          searchRelevanceScore(normalizedSubmittedQuery, {
+            primary: [cast.name, cast.publicAlias, cast.stageName],
+          }),
+        ),
+      );
+    const searchSortedCasts = sortBySearchRelevance(filteredCasts, normalizedSubmittedQuery, (cast) => ({
       primary: [cast.name, cast.publicAlias, cast.stageName],
-      secondary: [
-        cast.store.name,
-        cast.store.category,
-        cast.store.area?.name,
-        cast.store.district,
-        cast.store.city,
-        cast.languages.join(" "),
-        cast.tags.join(" "),
-      ],
     }));
 
     if (!topRankingOnly) return searchSortedCasts;
@@ -750,9 +750,29 @@ export function CastDirectoryPage() {
         (topRankingOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
+  }, [casts, storeSlug, submittedQuery, topRankingOnly, topRankingOrder]);
 
-  const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
+  const suggestions = useMemo(() => {
+    const suggestionQuery = query.trim();
+    if (!suggestionQuery) return [];
+
+    return sortBySearchRelevance(
+      casts
+        .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
+        .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug))
+        .filter((cast) =>
+          Number.isFinite(
+            searchRelevanceScore(suggestionQuery, {
+              primary: [cast.name, cast.publicAlias, cast.stageName],
+            }),
+          ),
+        ),
+      suggestionQuery,
+      (cast) => ({
+        primary: [cast.name, cast.publicAlias, cast.stageName],
+      }),
+    ).slice(0, 4);
+  }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
   const totalPages = Math.max(1, Math.ceil(visibleCasts.length / castItemsPerPage));
   const currentPageStart = (currentPage - 1) * castItemsPerPage;
   const pagedCasts = useMemo(
@@ -811,9 +831,9 @@ export function CastDirectoryPage() {
     city,
     hasActiveCoupon,
     language,
-    query,
     sort,
     storeSlug,
+    submittedQuery,
     topRankingOnly,
   ]);
 
@@ -946,14 +966,23 @@ export function CastDirectoryPage() {
     setRecentSearches(addSearchHistoryItem(castSearchHistoryKey, value));
   };
 
+  const submitCastSearch = (value = query) => {
+    const nextQuery = value.trim().replace(/\s+/g, " ");
+    setQuery(nextQuery);
+    setSubmittedQuery(nextQuery);
+    saveRecentSearch(nextQuery);
+    setSearchFocused(false);
+    setCurrentPage(1);
+  };
+
   const clearRecentSearches = () => {
     clearSearchHistory(castSearchHistoryKey);
     setRecentSearches([]);
   };
 
   const selectRecentSearch = (value: string) => {
-    saveRecentSearch(value);
     setQuery(value);
+    submitCastSearch(value);
   };
 
   return (
@@ -990,7 +1019,10 @@ export function CastDirectoryPage() {
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") saveRecentSearch(query);
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitCastSearch();
+                  }
                 }}
                 placeholder={copy.searchPlaceholder}
               />
@@ -999,7 +1031,11 @@ export function CastDirectoryPage() {
                   type="button"
                   aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
                   className="cast-input-clear"
-                  onClick={() => setQuery("")}
+                  onClick={() => {
+                    setQuery("");
+                    setSubmittedQuery("");
+                    setCurrentPage(1);
+                  }}
                 >
                   <X size={14} />
                 </button>
@@ -1020,7 +1056,7 @@ export function CastDirectoryPage() {
               </button>
             </label>
 
-            <button type="button" className="cast-find-button">
+            <button type="button" className="cast-find-button" onClick={() => submitCastSearch()}>
               {copy.find}
             </button>
 
