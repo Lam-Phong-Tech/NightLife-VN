@@ -8318,9 +8318,9 @@ export default function PartnerPage() {
                   ) : null}
 
                   {(selectedBillBooking?.coupon || billDiscountLabel) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
                       <span style={{ color: colors.text2, flexShrink: 0 }}>Mã ưu đãi/QR</span>
-                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', minWidth: 0, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', minWidth: 0, wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.4 }}>
                         {selectedBillBooking?.coupon?.name ?? selectedBillBooking?.coupon?.code ?? 'QR đặt chỗ'}
                       </span>
                     </div>
