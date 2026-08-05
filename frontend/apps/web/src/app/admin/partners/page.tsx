@@ -27,6 +27,9 @@ type PartnerStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 type PartnerRequestType = "NEW_PARTNER" | "LISTING_UPDATE";
 type PartnerTab = "PENDING_NEW" | "PENDING_UPDATE" | "APPROVED" | "REJECTED";
 
+const partnerRequestFetchLimit = 100;
+const partnerRequestPageSize = 10;
+
 type OriginalStore = {
   id?: string | null;
   name?: string | null;
@@ -389,15 +392,27 @@ export default function AdminPartnersPage() {
   const [actionTone, setActionTone] = useState<ActionTone>("info");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewReason, setReviewReason] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadRequests = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const data = await apiClient<ApiPartnerRequest[]>("/admin/partner-requests", {
-        params: { page: 1, limit: 100 },
-      });
-      setRequests(Array.isArray(data) ? data : []);
+      const allRequests: ApiPartnerRequest[] = [];
+      let page = 1;
+
+      while (true) {
+        const data = await apiClient<ApiPartnerRequest[]>("/admin/partner-requests", {
+          params: { page, limit: partnerRequestFetchLimit },
+        });
+        const pageItems = Array.isArray(data) ? data : [];
+        allRequests.push(...pageItems);
+
+        if (pageItems.length < partnerRequestFetchLimit) break;
+        page += 1;
+      }
+
+      setRequests(allRequests);
     } catch (error) {
       setRequests([]);
       setErrorMessage(
@@ -435,11 +450,27 @@ export default function AdminPartnersPage() {
     () => requests.filter((request) => matchesTab(request, activeTab)),
     [activeTab, requests],
   );
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / partnerRequestPageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedRequests = useMemo(
+    () =>
+      filteredRequests.slice(
+        (safeCurrentPage - 1) * partnerRequestPageSize,
+        safeCurrentPage * partnerRequestPageSize,
+      ),
+    [filteredRequests, safeCurrentPage],
+  );
 
   const selectedRequest = useMemo(
-    () => requests.find((request) => request.id === selectedId) ?? filteredRequests[0] ?? null,
-    [filteredRequests, requests, selectedId],
+    () => requests.find((request) => request.id === selectedId) ?? paginatedRequests[0] ?? null,
+    [paginatedRequests, requests, selectedId],
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const reviewRequest = async (request: ApiPartnerRequest, approve: boolean) => {
     if (approve && hasCorruptedContent(request)) {
@@ -507,6 +538,7 @@ export default function AdminPartnersPage() {
                   type="button"
                   onClick={() => {
                     setActiveTab(tab.key);
+                    setCurrentPage(1);
                     setSelectedId("");
                     setActionTone("info");
                     setActionMessage("");
@@ -547,7 +579,7 @@ export default function AdminPartnersPage() {
             </div>
           ) : filteredRequests.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {filteredRequests.map((request) => {
+              {paginatedRequests.map((request) => {
                 const isSelected = request.id === selectedRequest?.id;
                 const tone = statusTone(request.status);
                 return (
@@ -628,6 +660,63 @@ export default function AdminPartnersPage() {
                   </button>
                 );
               })}
+              {totalPages > 1 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: "2px 2px 0",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage((page) => Math.max(1, page - 1));
+                      setSelectedId("");
+                    }}
+                    disabled={safeCurrentPage <= 1}
+                    style={{
+                      border: `1px solid ${colors.borderSoft}`,
+                      borderRadius: 10,
+                      background: colors.surface1,
+                      color: safeCurrentPage <= 1 ? colors.muted : colors.text2,
+                      cursor: safeCurrentPage <= 1 ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "8px 12px",
+                      opacity: safeCurrentPage <= 1 ? 0.45 : 1,
+                    }}
+                  >
+                    Trước
+                  </button>
+                  <span style={{ color: colors.muted, fontSize: 12, fontWeight: 700 }}>
+                    Trang {safeCurrentPage}/{totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage((page) => Math.min(totalPages, page + 1));
+                      setSelectedId("");
+                    }}
+                    disabled={safeCurrentPage >= totalPages}
+                    style={{
+                      border: `1px solid ${colors.borderSoft}`,
+                      borderRadius: 10,
+                      background: colors.surface1,
+                      color: safeCurrentPage >= totalPages ? colors.muted : colors.text2,
+                      cursor: safeCurrentPage >= totalPages ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "8px 12px",
+                      opacity: safeCurrentPage >= totalPages ? 0.45 : 1,
+                    }}
+                  >
+                    Sau
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div
