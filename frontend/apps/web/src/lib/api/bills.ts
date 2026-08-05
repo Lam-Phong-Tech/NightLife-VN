@@ -26,6 +26,7 @@ export type BillRecord = {
   verifiedAt?: string | null;
   rejectedAt?: string | null;
   rejectReason?: string | null;
+  createdAt?: string | null;
   paidAt?: string | null;
   store?: {
     id: string;
@@ -37,6 +38,17 @@ export type BillRecord = {
     status: string;
     scheduledAt?: string | null;
     bookingCode?: string | null;
+    partySize?: number | null;
+    coupon?: {
+      id: string;
+      code: string;
+      name: string;
+    } | null;
+    couponIssue?: {
+      id: string;
+      code: string;
+      status: string;
+    } | null;
   } | null;
   coupon?: {
     id: string;
