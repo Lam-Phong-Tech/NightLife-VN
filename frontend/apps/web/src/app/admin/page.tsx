@@ -112,6 +112,9 @@ function AdminDashboardContent() {
       console.error(err);
       setError("Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.");
       if (err && typeof err === "object" && "status" in err && err.status === 401) {
+        if ("code" in err && (err as { code?: string }).code === "SESSION_REPLACED") {
+          return;
+        }
         void logoutBrowserProfile().then(() => {
           window.location.href = "/admin/dang-nhap";
         });

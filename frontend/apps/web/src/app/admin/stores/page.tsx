@@ -1993,7 +1993,7 @@ function AdminStoresContent() {
                   const bg = isOff ? 'rgba(255,255,255,.015)' : 'rgba(255,255,255,.03)';
                   const dayColor = isOff ? '#8c8679' : '#f3f0ea';
                   
-                  const offBtn = isOff ? { fontSize: '10.5px', fontWeight: 700, color: '#e08a7e', background: 'rgba(224,138,126,.1)', border: '1px solid rgba(224,138,126,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' } : { fontSize: '10.5px', fontWeight: 700, color: '#7fd3a2', background: 'rgba(127,211,162,.1)', border: '1px solid rgba(127,211,162,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' };
+                  const offBtn = isOff ? { fontSize: '10.5px', fontWeight: 700, color: '#7fd3a2', background: 'rgba(127,211,162,.1)', border: '1px solid rgba(127,211,162,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' } : { fontSize: '10.5px', fontWeight: 700, color: '#e08a7e', background: 'rgba(224,138,126,.1)', border: '1px solid rgba(224,138,126,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' };
                   
                   const slots = state.hours ? state.hours.split(',').map((s: string) => s.trim()) : [];
                   if (slots.length === 0) slots.push(''); // Always at least one slot input if open
@@ -2069,7 +2069,7 @@ function AdminStoresContent() {
                           <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#57534b', lineHeight: '28px' }}>Nghỉ cả ngày</span>
                         )}
                       </div>
-                      <span onClick={() => updateHour(day, 'isOff', !isOff)} style={offBtn as any}>{isOff ? 'Nghỉ' : 'Mở'}</span>
+                      <span onClick={() => updateHour(day, 'isOff', !isOff)} style={offBtn as any}>{isOff ? 'Mở' : 'Nghỉ'}</span>
                     </div>
                   );
                 })}

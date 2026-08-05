@@ -61,6 +61,9 @@ export function SessionSecurityWatcher() {
           window.location.assign(loginPathForRole(notice.role));
         },
         secondaryLabel: "Đóng",
+        onSecondary: () => {
+          // Closing modal hides the popup without pushing/redirecting to login page
+        },
       });
     };
 

@@ -1821,6 +1821,10 @@ export default function AdminConsole({ section }: { section?: string }) {
       setContentStatusMessage(`Đã tải ${contentData.length} bài viết/chính sách.`);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        if (error.code === "SESSION_REPLACED") {
+          setStatusMessage("Phiên làm việc đã bị thay thế từ thiết bị khác.");
+          return;
+        }
         clearAuthSession();
         window.location.href = "/admin/dang-nhap?redirect=/admin";
         return;

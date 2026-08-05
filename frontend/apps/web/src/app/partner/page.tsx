@@ -2802,6 +2802,9 @@ export default function PartnerPage() {
         if (!isMounted) return;
 
         if (error instanceof ApiError && error.status === 401) {
+          if (error.code === "SESSION_REPLACED") {
+            return;
+          }
           try {
             const clearFn = authSession.clearAuthSession;
             if (typeof clearFn === 'function') {
@@ -7509,7 +7512,7 @@ export default function PartnerPage() {
                     aria-pressed={!item.isOff}
                     className="partner-toggle-button"
                   >
-                    {item.isOff ? 'Nghỉ' : 'Mở'}
+                    {item.isOff ? 'Mở' : 'Nghỉ'}
                   </button>
                 </div>
               );
