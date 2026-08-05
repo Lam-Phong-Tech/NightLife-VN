@@ -519,6 +519,7 @@ export function CastDirectoryPage() {
   const [casts, setCasts] = useState<PublicCast[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const filterPanelRef = useRef<HTMLElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
@@ -968,6 +969,7 @@ export function CastDirectoryPage() {
 
   const submitCastSearch = (value = query) => {
     const nextQuery = value.trim().replace(/\s+/g, " ");
+    searchInputRef.current?.blur();
     setQuery(nextQuery);
     setSubmittedQuery(nextQuery);
     saveRecentSearch(nextQuery);
@@ -1014,6 +1016,9 @@ export function CastDirectoryPage() {
             <label className={`cast-search-input ${isSearchFocused ? "is-focused" : ""}`}>
               <Search size={19} />
               <input
+                ref={searchInputRef}
+                type="search"
+                enterKeyHint="search"
                 value={query}
                 onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
                 onChange={(event) => setQuery(event.target.value)}
@@ -1021,6 +1026,7 @@ export function CastDirectoryPage() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
+                    event.currentTarget.blur();
                     submitCastSearch();
                   }
                 }}

@@ -593,6 +593,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const desktopFilterRef = useRef<HTMLDivElement | null>(null);
   const locationRequestInFlightRef = useRef(false);
   const activeLanguage = useActiveLanguage();
@@ -611,6 +612,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
   const submitVenueSearch = (value = query) => {
     const nextQuery = value.trim().replace(/\s+/g, " ");
+    searchInputRef.current?.blur();
     setQuery(nextQuery);
     setSubmittedQuery(nextQuery);
     saveRecentVenueSearch(nextQuery);
@@ -1201,6 +1203,9 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             <label className={`venue-search-input ${isSearchFocused ? "is-focused" : ""}`}>
               <Search size={18} />
               <input
+                ref={searchInputRef}
+                type="search"
+                enterKeyHint="search"
                 value={query}
                 onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
                 onChange={(event) => setQuery(event.target.value)}
@@ -1208,6 +1213,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
+                    event.currentTarget.blur();
                     submitVenueSearch();
                   }
                 }}
