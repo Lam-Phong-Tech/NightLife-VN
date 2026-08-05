@@ -9232,6 +9232,10 @@ export default function PartnerPage() {
                         type="button"
                         className="partner-bill-mobile-card"
                         onClick={() => fillBillFormFromBooking(booking)}
+                        style={{
+                          textAlign: 'left',
+                          width: '100%',
+                        }}
                       >
                         <div className="partner-bill-mobile-head">
                           <span className="partner-bill-mobile-index">#{rowIndex}</span>
@@ -9239,11 +9243,27 @@ export default function PartnerPage() {
                           <StatusPill tone="gold">Chưa gửi</StatusPill>
                         </div>
                         <div className="partner-bill-mobile-store">{storeName}</div>
-                        <div className="partner-bill-mobile-grid">
-                          <span>
-                            <small>Thao tác</small>
-                            <b style={{ color: colors.goldBright }}>NHẬP HÓA ĐƠN</b>
-                          </span>
+                        <div
+                          className="partner-bill-mobile-grid"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) auto',
+                            alignItems: 'center',
+                            gap: '10px',
+                            marginTop: '6px',
+                          }}
+                        >
+                          <div>
+                            <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>Khách đặt</small>
+                            <b style={{ fontSize: '13px', color: colors.text }}>
+                              {booking.partySize ? `${booking.partySize} khách` : 'Đặt chỗ'}
+                            </b>
+                          </div>
+                          <div>
+                            <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>Thao tác</small>
+                            <b style={{ fontSize: '12px', color: colors.goldBright }}>NHẬP HÓA ĐƠN</b>
+                          </div>
+                          <ChevronRight size={18} style={{ color: colors.gold, flexShrink: 0 }} />
                         </div>
                       </button>
                     );
@@ -9258,6 +9278,7 @@ export default function PartnerPage() {
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
                   const statusTone = billStatusTone(bill.status);
                   const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
+                  const dateStr = bill.submittedAt ? bill.submittedAt.slice(0, 10) : bill.usedAt ? bill.usedAt.slice(0, 10) : '';
 
                   return (
                     <button
@@ -9265,6 +9286,10 @@ export default function PartnerPage() {
                       type="button"
                       className="partner-bill-mobile-card"
                       onClick={() => fillBillFormFromRow(bill)}
+                      style={{
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
                     >
                       <div className="partner-bill-mobile-head">
                         <span className="partner-bill-mobile-index">#{rowIndex}</span>
@@ -9272,11 +9297,29 @@ export default function PartnerPage() {
                         <StatusPill tone={statusTone}>{translateBillStatus(bill.status)}</StatusPill>
                       </div>
                       <div className="partner-bill-mobile-store">{storeName}</div>
-                      <div className="partner-bill-mobile-grid">
-                        <span>
-                          <small>Tổng tiền</small>
-                          <b>{moneyVnd(bill.totalVnd ?? 0)}</b>
-                        </span>
+                      <div
+                        className="partner-bill-mobile-grid"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) auto',
+                          alignItems: 'center',
+                          gap: '10px',
+                          marginTop: '6px',
+                        }}
+                      >
+                        <div>
+                          <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>Tổng tiền</small>
+                          <b style={{ fontSize: '14px', color: colors.goldBright }}>{moneyVnd(bill.totalVnd ?? 0)}</b>
+                        </div>
+                        <div>
+                          <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>
+                            {dateStr ? 'Ngày tạo' : 'Mã hóa đơn'}
+                          </small>
+                          <b style={{ fontSize: '12px', color: colors.text2 }}>
+                            {dateStr || `#${billCode}`}
+                          </b>
+                        </div>
+                        <ChevronRight size={18} style={{ color: colors.gold, flexShrink: 0 }} />
                       </div>
                     </button>
                   );
@@ -9286,7 +9329,7 @@ export default function PartnerPage() {
               )}
             </div>
 
-            {/* Pagination Controls Bar (PC & Mobile Synchronized) */}
+            {/* Pagination Controls Bar (Sleek 1-Row Mobile & PC Layout) */}
             {totalBillItems > 0 && (
               <div
                 style={{
@@ -9296,8 +9339,9 @@ export default function PartnerPage() {
                   marginTop: '18px',
                   paddingTop: '14px',
                   borderTop: `1px solid ${colors.borderSoft}`,
-                  flexWrap: 'wrap',
-                  gap: '12px',
+                  flexWrap: 'nowrap',
+                  gap: '8px',
+                  width: '100%',
                 }}
               >
                 <button
@@ -9307,22 +9351,25 @@ export default function PartnerPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    padding: '8px 12px',
                     borderRadius: '10px',
                     border: `1px solid ${safeBillCurrentPage <= 1 ? colors.borderSoft : colors.borderGold40}`,
                     background: safeBillCurrentPage <= 1 ? colors.surface2 : 'rgba(212,178,106,.1)',
                     color: safeBillCurrentPage <= 1 ? colors.muted : colors.goldBright,
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     fontWeight: 700,
                     cursor: safeBillCurrentPage <= 1 ? 'not-allowed' : 'pointer',
                     opacity: safeBillCurrentPage <= 1 ? 0.5 : 1,
+                    whiteSpace: 'nowrap',
+                    flex: '0 0 auto',
                   }}
                 >
-                  <ChevronLeft size={16} /> Trang trước
+                  <ChevronLeft size={16} /> <span>Trang trước</span>
                 </button>
 
-                <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 800, color: colors.text, whiteSpace: 'nowrap' }}>
                   Trang <span style={{ color: colors.goldBright }}>{safeBillCurrentPage}</span> / {totalBillPages}
                 </span>
 
@@ -9333,19 +9380,22 @@ export default function PartnerPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    padding: '8px 12px',
                     borderRadius: '10px',
                     border: `1px solid ${safeBillCurrentPage >= totalBillPages ? colors.borderSoft : colors.borderGold40}`,
                     background: safeBillCurrentPage >= totalBillPages ? colors.surface2 : 'rgba(212,178,106,.1)',
                     color: safeBillCurrentPage >= totalBillPages ? colors.muted : colors.goldBright,
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     fontWeight: 700,
                     cursor: safeBillCurrentPage >= totalBillPages ? 'not-allowed' : 'pointer',
                     opacity: safeBillCurrentPage >= totalBillPages ? 0.5 : 1,
+                    whiteSpace: 'nowrap',
+                    flex: '0 0 auto',
                   }}
                 >
-                  Trang sau <ChevronRight size={16} />
+                  <span>Trang sau</span> <ChevronRight size={16} />
                 </button>
               </div>
             )}
