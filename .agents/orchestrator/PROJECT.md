@@ -33,8 +33,8 @@
 | 0 | Survey & Technical Reconnaissance | Probe frontend & backend files, types, endpoints, and test suites | None | DONE |
 | 1 | PR 1: P0 Financial Data & Types | frontend/apps/web/src/lib/api/bills.ts, page.tsx rendering, PartnerSettlementMoney.test.tsx, nightlife-data.service.ts timezone | M0 | DONE |
 | 2 | PR 2: Backend Activity Contracts | GET /partner/home, GET /partner/activity, GET /partner/activity/:activityId, partner-activity-query.dto.ts, StoreScope/RoleGuard | M1 | DONE |
-| 3 | PR 3: Shell & Sub-routes Strangler | app/partner/layout.tsx, PartnerShellClient, PartnerProviders, /partner/scan (jsQR), /partner/listing (ReactQuill), /partner/settings | M2 | IN_PROGRESS |
-| 4 | PR 4: Activity Core & Redirects | lib/api/partner-portal.ts, usePartnerActivity(), /partner/activity sub-routes, legacy redirects | M3 | PLANNED |
+| 3 | PR 3: Shell & Sub-routes Strangler | app/partner/layout.tsx, PartnerShellClient, PartnerProviders, /partner/scan (jsQR), /partner/listing (ReactQuill), /partner/settings | M2 | DONE |
+| 4 | PR 4: Activity Core & Redirects | lib/api/partner-portal.ts, usePartnerActivity(), /partner/activity sub-routes, legacy redirects | M3 | IN_PROGRESS |
 | 5 | PR 5: Home Redesign & Cleanup | Simplify partner/page.tsx into Home Dashboard, monolith cleanup | M4 | PLANNED |
 | 6 | Final Verification & Sentinel Handover | Full frontend/backend typecheck, lint, test, build verification and Sentinel notification | M5 | PLANNED |
 

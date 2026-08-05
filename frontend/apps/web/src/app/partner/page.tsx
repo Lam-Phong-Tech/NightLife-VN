@@ -1728,7 +1728,16 @@ function ListingTimeSelect({
 
 export default function PartnerPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const requestedPanel = searchParams.get('panel');
+
+  useEffect(() => {
+    if (requestedPanel === 'bill') {
+      router.replace('/partner/activity/new-bill');
+    } else if (requestedPanel === 'activity') {
+      router.replace('/partner/activity');
+    }
+  }, [requestedPanel, router]);
   const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>(() => readStoredPartnerTheme());
   const [stores, setStores] = useState<PartnerStore[]>([]);
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);

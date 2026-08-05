@@ -85,16 +85,24 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 | Explorer 2 (M3) | teamwork_preview_explorer | PR3 Sub-routes & Code Splitting | completed | 89727385-ca59-4ffd-9622-eed890ecf79e |
 | Explorer 3 (M3) | teamwork_preview_explorer | PR3 Frontend Verification & Tests | completed | 209c6f86-6be1-4c0d-8892-d5102c8fabe6 |
 | Worker 1 (M3) | teamwork_preview_worker | PR3 Implementation | completed | 874434e1-7966-4258-b5d9-b2d71976b84d |
-| Reviewer 1 (M3) | teamwork_preview_reviewer | PR3 Precision Reviewer | in-progress | 4fdff402-aee9-44ae-9d5e-231695564256 |
-| Reviewer 2 (M3) | teamwork_preview_reviewer | PR3 Edge Case & Performance Reviewer | in-progress | fb98f8d7-ad02-4167-8fb9-fbbb5a230f2c |
-| Challenger 1 (M3) | teamwork_preview_challenger | PR3 Shell & Context Challenger | in-progress | f67b2a8a-896c-428e-986f-a125dce94485 |
-| Challenger 2 (M3) | teamwork_preview_challenger | PR3 Sub-routes & Dynamic Code-Splitting Challenger | in-progress | de049654-dc8e-43bf-8e03-df3045798283 |
-| Auditor 1 (M3) | teamwork_preview_auditor | PR3 Forensic Integrity Auditor | in-progress | c1403f3b-53f6-445a-aa9b-0fbc6c1c3616 |
+| Reviewer 1 (M3 Gen 2) | teamwork_preview_reviewer | PR3 Precision Reviewer | completed (APPROVE) | bf09a0e8-7308-4c8b-99b2-4f750d1769f4 |
+| Reviewer 2 (M3 Gen 2) | teamwork_preview_reviewer | PR3 Edge Case & Performance Reviewer | completed (APPROVE) | 1bae39ac-d800-4e6d-bcd9-05fad9082aad |
+| Challenger 1 (M3 Gen 2) | teamwork_preview_challenger | PR3 Shell & Context Challenger | completed (APPROVE) | 36e2288f-60df-4e81-9417-20d069943d0a |
+| Reviewer 1 (M3 R3) | teamwork_preview_reviewer | PR3 Iteration 3 Precision Reviewer | completed (REQUEST_CHANGES) | 1c7b1c81-de07-4538-8a28-0c2516983b0a |
+| Reviewer 2 (M3 R3) | teamwork_preview_reviewer | PR3 Iteration 3 Edge Case Reviewer | in-progress | 91cec7ff-9a4e-4ecd-aa1e-36a80ef3bdd4 |
+| Challenger 1 (M3 R3) | teamwork_preview_challenger | PR3 Iteration 3 Shell Challenger | completed (REQUEST_CHANGES) | de09181b-3878-4e45-af88-efdd68d132bb |
+| Challenger 2 (M3 R3) | teamwork_preview_challenger | PR3 Iteration 3 Sub-routes Challenger | completed (APPROVE) | 867f2b22-150f-4202-8add-8c91107212bd |
+| Auditor 1 (M3 R3) | teamwork_preview_auditor | PR3 Iteration 3 Forensic Auditor | in-progress | 8758dfe3-d90f-46b1-9461-f779de8b1099 |
+| Worker 4 (M3 R4) | teamwork_preview_worker | PR3 Router Mock Remediation Worker | in-progress | 3c858885-ddf5-4097-ac70-5376a91cfc13 |
+| Explorer 1 (M4 Gen 2) | teamwork_preview_explorer | PR4 API Client & Hook Explorer | completed | 38c81018-ef00-4950-8b3c-b66dd4ab4cd5 |
+| Explorer 2 (M4 Gen 2) | teamwork_preview_explorer | PR4 Sub-routes & Monolith Extraction | completed | c14f7f17-fac8-4d72-b177-a5916d45db4e |
+| Explorer 3 (M4 Gen 2) | teamwork_preview_explorer | PR4 Legacy Redirects & Test Strategy | completed | 67c383df-353c-4785-9991-0460cbefde04 |
+| Worker 1 (M4 Gen 2) | teamwork_preview_worker | PR4 Implementation | in-progress | 0898aae0-053f-4898-a626-e638d9740005 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 5 / 20 (Gen 2)
-- Pending subagents: 4fdff402-aee9-44ae-9d5e-231695564256, fb98f8d7-ad02-4167-8fb9-fbbb5a230f2c, f67b2a8a-896c-428e-986f-a125dce94485, de049654-dc8e-43bf-8e03-df3045798283, c1403f3b-53f6-445a-aa9b-0fbc6c1c3616
+- Spawn count: 18 / 20 (Gen 2)
+- Pending subagents: 3c858885-ddf5-4097-ac70-5376a91cfc13
 - Predecessor: Gen 1 (a6166166-d3f1-4fc5-aed5-12da5b13dce6)
 - Successor: not yet spawned
 

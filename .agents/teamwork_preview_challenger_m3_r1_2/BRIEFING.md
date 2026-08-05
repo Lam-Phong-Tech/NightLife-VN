@@ -1,4 +1,4 @@
-# BRIEFING — 2026-08-05T08:21:37Z
+# BRIEFING — 2026-08-05T08:29:00Z
 
 ## Mission
 Empirically challenge sub-routes, dynamic code-splitting, UI/UX constraints, TypeScript check, and Next.js build compilation for M3.
@@ -18,7 +18,7 @@ Empirically challenge sub-routes, dynamic code-splitting, UI/UX constraints, Typ
 
 ## Current Parent
 - Conversation ID: 6c6f2bdb-7ba6-40c7-91bb-949d4ed343c9
-- Updated: 2026-08-05T08:21:37Z
+- Updated: 2026-08-05T08:29:00Z
 
 ## Review Scope
 - **Files to review**: Sub-routes under `/partner/*`, dynamic imports (`jsQR`, `ReactQuill`), components, TypeScript & Next.js build
@@ -26,15 +26,19 @@ Empirically challenge sub-routes, dynamic code-splitting, UI/UX constraints, Typ
 - **Review criteria**: dynamic code-splitting (`ssr: false`), window/document safety, `ThemedListingSelect`, `useSystemFeedback`, `isViewingLive` toggle, user rules compliance, build & type checking.
 
 ## Attack Surface
-- **Hypotheses tested**: [TBD]
-- **Vulnerabilities found**: [TBD]
-- **Untested angles**: [TBD]
+- **Hypotheses tested**:
+  1. SSR window/document reference crash during build or initial render for `jsQR` & `ReactQuill`: VERIFIED PASS (`ssr: false` + dynamic import inside client wrappers).
+  2. Native `<select>` or native `alert()` / `confirm()` compliance in `/partner/settings/staff`: VERIFIED PASS (`ThemedListingSelect` and `useSystemFeedback` modal used).
+  3. `isViewingLive` toggle in `/partner/listing`: VERIFIED PASS (toggles inputs disabled state, read-only HTML block, hides submit buttons).
+  4. Type safety and build errors in `frontend/apps/web`: VERIFIED PASS (`pnpm check-types` exit 0, `pnpm build` exit 0).
+- **Vulnerabilities found**: None.
+- **Untested angles**: Sub-route redirects and activity pagination (handled by M4 / Challenger 1).
 
 ## Loaded Skills
 - None explicitly assigned.
 
 ## Key Decisions Made
-- Initial assessment started.
+- Final assessment completed. Final Verdict: `APPROVE`.
 
 ## Artifact Index
 - d:\laragon\www\NightLife-VN\.agents\teamwork_preview_challenger_m3_r1_2\DISPATCH.md

@@ -1,4 +1,4 @@
-# BRIEFING — 2026-08-05T15:22:00+07:00
+# BRIEFING — 2026-08-05T15:49:15+07:00
 
 ## Mission
 Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financial data fixes, backend Activity contracts, Partner Shell & Strangler pattern, Activity sub-routes, Home redesign & monolith cleanup).
@@ -21,7 +21,7 @@ Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financi
   - Milestone 2 (PR 2: Backend Activity Contracts & Stable Pagination) PASSED & COMPLETE.
 
 ## Project Status
-- **Phase**: in progress (Milestone 3: PR 3 Partner Shell, Strangler Pattern & Sub-routes Gate Verification)
+- **Phase**: in progress (Milestone 3: PR 3 Date Picker Rule Remediation)
 
 ## Victory Audit Status
 - **Triggered**: no
