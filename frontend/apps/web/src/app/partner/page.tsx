@@ -3568,6 +3568,9 @@ export default function PartnerPage() {
           const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? '');
           return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
         }),
+    [storeBills, billStatusFilter],
+  );
+
   const normalizedBillSearchQuery = billSearchQuery.trim().toLowerCase();
 
   const filteredScopedBillRows = useMemo(() => {
