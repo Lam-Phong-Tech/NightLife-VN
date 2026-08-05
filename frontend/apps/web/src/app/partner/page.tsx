@@ -1794,6 +1794,9 @@ export default function PartnerPage() {
   const [billStatusFilter, setBillStatusFilter] = useState<string>('ALL');
   const [billCurrentPage, setBillCurrentPage] = useState<number>(1);
   const [billSearchQuery, setBillSearchQuery] = useState<string>('');
+  const [billFromDate, setBillFromDate] = useState<string>('');
+  const [billToDate, setBillToDate] = useState<string>('');
+  const [billPeriod, setBillPeriod] = useState<string>('');
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -3573,37 +3576,112 @@ export default function PartnerPage() {
 
   const normalizedBillSearchQuery = billSearchQuery.trim().toLowerCase();
 
+  const handleSelectBillPeriod = useCallback(
+    (periodKey: 'today' | 'seven' | 'thirty') => {
+      if (billPeriod === periodKey) {
+        setBillPeriod('');
+        setBillFromDate('');
+        setBillToDate('');
+      } else {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        setBillToDate(todayStr);
+
+        if (periodKey === 'today') {
+          setBillFromDate(todayStr);
+        } else if (periodKey === 'seven') {
+          const past = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+          const py = past.getFullYear();
+          const pm = String(past.getMonth() + 1).padStart(2, '0');
+          const pd = String(past.getDate()).padStart(2, '0');
+          setBillFromDate(`${py}-${pm}-${pd}`);
+        } else if (periodKey === 'thirty') {
+          const past = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+          const py = past.getFullYear();
+          const pm = String(past.getMonth() + 1).padStart(2, '0');
+          const pd = String(past.getDate()).padStart(2, '0');
+          setBillFromDate(`${py}-${pm}-${pd}`);
+        }
+        setBillPeriod(periodKey);
+      }
+      setBillCurrentPage(1);
+    },
+    [billPeriod],
+  );
+
+  const billFromMs = useMemo(
+    () => (billFromDate ? new Date(`${billFromDate}T00:00:00`).getTime() : null),
+    [billFromDate],
+  );
+
+  const billToMs = useMemo(
+    () => (billToDate ? new Date(`${billToDate}T23:59:59.999`).getTime() : null),
+    [billToDate],
+  );
+
+  const dateFilteredStoreBills = useMemo(() => {
+    if (billFromMs === null && billToMs === null) return storeBills;
+    return storeBills.filter((bill) => {
+      const billDateStr = bill.usedAt ?? bill.submittedAt ?? bill.booking?.scheduledAt;
+      const billDateMs = billDateStr ? Date.parse(billDateStr) : null;
+      const matchesFrom =
+        billFromMs === null || (billDateMs !== null && Number.isFinite(billDateMs) && billDateMs >= billFromMs);
+      const matchesTo =
+        billToMs === null || (billDateMs !== null && Number.isFinite(billDateMs) && billDateMs <= billToMs);
+      return matchesFrom && matchesTo;
+    });
+  }, [storeBills, billFromMs, billToMs]);
+
   const filteredScopedBillRows = useMemo(() => {
-    if (!normalizedBillSearchQuery) return scopedBillRows;
     return scopedBillRows.filter((bill) => {
       const billId = (bill.id || '').toLowerCase();
       const billNumber = (bill.billNumber || '').toLowerCase();
       const bookingId = (bill.booking?.id || '').toLowerCase();
       const bookingCode = ((bill.booking as any)?.bookingCode || '').toLowerCase();
       const storeName = (bill.store?.name || '').toLowerCase();
-      return (
+      const matchesSearch =
+        !normalizedBillSearchQuery ||
         billId.includes(normalizedBillSearchQuery) ||
         billNumber.includes(normalizedBillSearchQuery) ||
         bookingId.includes(normalizedBillSearchQuery) ||
         bookingCode.includes(normalizedBillSearchQuery) ||
-        storeName.includes(normalizedBillSearchQuery)
-      );
+        storeName.includes(normalizedBillSearchQuery);
+
+      const billDateStr = bill.usedAt ?? bill.submittedAt ?? bill.booking?.scheduledAt;
+      const billDateMs = billDateStr ? Date.parse(billDateStr) : null;
+      const matchesFrom =
+        billFromMs === null || (billDateMs !== null && Number.isFinite(billDateMs) && billDateMs >= billFromMs);
+      const matchesTo =
+        billToMs === null || (billDateMs !== null && Number.isFinite(billDateMs) && billDateMs <= billToMs);
+
+      return matchesSearch && matchesFrom && matchesTo;
     });
-  }, [scopedBillRows, normalizedBillSearchQuery]);
+  }, [scopedBillRows, normalizedBillSearchQuery, billFromMs, billToMs]);
 
   const filteredUnsentBookings = useMemo(() => {
-    if (!normalizedBillSearchQuery) return unsentPartnerBookings;
     return unsentPartnerBookings.filter((booking) => {
       const bookingId = (booking.id || '').toLowerCase();
       const bookingCode = ((booking as any)?.bookingCode || '').toLowerCase();
       const storeName = (booking.store?.name || '').toLowerCase();
-      return (
+      const matchesSearch =
+        !normalizedBillSearchQuery ||
         bookingId.includes(normalizedBillSearchQuery) ||
         bookingCode.includes(normalizedBillSearchQuery) ||
-        storeName.includes(normalizedBillSearchQuery)
-      );
+        storeName.includes(normalizedBillSearchQuery);
+
+      const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+      const bookingDateMs = confirmedTime ? Date.parse(confirmedTime) : null;
+      const matchesFrom =
+        billFromMs === null || (bookingDateMs !== null && Number.isFinite(bookingDateMs) && bookingDateMs >= billFromMs);
+      const matchesTo =
+        billToMs === null || (bookingDateMs !== null && Number.isFinite(bookingDateMs) && bookingDateMs <= billToMs);
+
+      return matchesSearch && matchesFrom && matchesTo;
     });
-  }, [unsentPartnerBookings, normalizedBillSearchQuery]);
+  }, [unsentPartnerBookings, normalizedBillSearchQuery, billFromMs, billToMs]);
 
   const canSubmitPartnerBill =
     !isSubmittingBill &&
@@ -6021,44 +6099,6 @@ export default function PartnerPage() {
 
   const renderOverviewPanel = () => (
     <>
-      {/* Bộ lọc kỳ thống kê */}
-      <PanelCard style={{ marginBottom: '16px' }}>
-        <div
-          className="partner-filter-head"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '14px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
-          <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {periodItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setPeriod(item.key)}
-                aria-pressed={period === item.key}
-                style={{
-                  minHeight: '38px',
-                  borderRadius: '18px',
-                  border: `1px solid ${period === item.key ? colors.borderGold40 : colors.borderSoft}`,
-                  background: period === item.key ? colors.goldGrad : colors.surface3,
-                  color: period === item.key ? colors.onGold : colors.text2,
-                  padding: '0 13px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </PanelCard>
-
       {/* 4 Thẻ chỉ số tổng quan */}
       <div className="partner-metric-grid" style={{ marginBottom: '16px' }}>
         {metrics.map((metric) => {
