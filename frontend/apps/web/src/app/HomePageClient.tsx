@@ -649,11 +649,11 @@ function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStore
   };
 }
 
-function storeAreaText(area?: string | null, cityCode?: string | null, city?: string | null) {
+function storeAreaText(area?: string | null, cityCode?: string | null, city?: string | null, language?: LanguageCode) {
   const readableArea = area ? areaLabels[area] ?? area : "";
   const readableCity = cityLabels[cityCode ?? ""] ?? city ?? "";
-
-  return [readableArea, readableCity].filter(Boolean).join(" · ");
+  const rawText = [readableArea, readableCity].filter(Boolean).join(" · ");
+  return language ? translateText(rawText, language) : rawText;
 }
 
 function formatCouponValue(coupon: PublicCoupon, language: LanguageCode, rates: CurrencyRateMap) {
@@ -674,7 +674,7 @@ function mapCouponToHomeItem(
     id: coupon.id,
     title: coupon.name,
     value: formatCouponValue(coupon, language, rates),
-    place: [coupon.store.name, storeAreaText(coupon.store.district, undefined, coupon.store.city)]
+    place: [coupon.store.name, storeAreaText(coupon.store.district, undefined, coupon.store.city, language)]
       .filter(Boolean)
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
@@ -701,7 +701,7 @@ function mapCampaignToHomeItem(
     value,
     place: [
       campaign.targetStore?.name,
-      storeAreaText(campaign.targetStore?.district, undefined, campaign.targetStore?.city),
+      storeAreaText(campaign.targetStore?.district, undefined, campaign.targetStore?.city, language),
     ]
       .filter(Boolean)
       .join(" · "),
