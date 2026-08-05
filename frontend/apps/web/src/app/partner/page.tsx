@@ -8262,7 +8262,7 @@ export default function PartnerPage() {
                 <div
                   style={{
                     display: 'flex',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     borderBottom: '1px solid rgba(212,178,106,.15)',
                     paddingBottom: '12px',

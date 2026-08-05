@@ -721,7 +721,7 @@
 
 .filterChip {
   min-height: 34px;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 8px 14px;
   font-size: 12px;
   white-space: nowrap;
