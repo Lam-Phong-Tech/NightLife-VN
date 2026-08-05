@@ -1865,6 +1865,7 @@ export default function PartnerPage() {
   );
 
   // Change Password States
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -1950,6 +1951,7 @@ export default function PartnerPage() {
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
+      setIsChangePasswordModalOpen(false);
     } catch (err: any) {
       feedback.showToast({
         tone: 'error',
@@ -8603,106 +8605,203 @@ export default function PartnerPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '14px' }}>
         <PanelCard>
-          <SectionHeading eyebrow="PARTNER SETTINGS" title="Đổi mật khẩu" />
-          <form onSubmit={handleChangePassword} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
-            <FormField label="Mật khẩu cũ">
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input
-                  type={showOldPassword ? 'text' : 'password'}
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: '40px' }}
-                  placeholder="Nhập mật khẩu hiện tại"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowOldPassword(!showOldPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: colors.muted,
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '4px',
-                  }}
-                  aria-label={showOldPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                >
-                  {showOldPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </FormField>
-            <FormField label="Mật khẩu mới">
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: '40px' }}
-                  placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: colors.muted,
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '4px',
-                  }}
-                  aria-label={showNewPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                >
-                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </FormField>
-            <FormField label="Xác nhận mật khẩu mới">
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: '40px' }}
-                  placeholder="Xác nhận mật khẩu mới"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: colors.muted,
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '4px',
-                  }}
-                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </FormField>
-            <PrimaryButton type="submit" disabled={isChangingPassword} style={{ marginTop: '8px', alignSelf: 'start' }}>
-              {isChangingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <SectionHeading title="Bảo mật tài khoản" />
+              <p style={{ fontSize: '12px', color: colors.muted, margin: '4px 0 0' }}>Cập nhật mật khẩu định kỳ để tăng cường an toàn cho tài khoản đối tác</p>
+            </div>
+            <PrimaryButton
+              type="button"
+              onClick={() => setIsChangePasswordModalOpen(true)}
+              style={{ minHeight: '40px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 800 }}
+            >
+              <ShieldCheck size={16} />
+              Đổi mật khẩu
             </PrimaryButton>
-          </form>
+          </div>
         </PanelCard>
+
+        {/* Modal đổi mật khẩu */}
+        {isChangePasswordModalOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'rgba(0, 0, 0, 0.88)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsChangePasswordModalOpen(false);
+            }}
+          >
+            <div
+              style={{
+                background: '#16151a',
+                border: `1px solid ${colors.borderGold32}`,
+                borderRadius: '20px',
+                width: '100%',
+                maxWidth: '480px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '24px',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.95)',
+                position: 'relative',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 900, color: colors.goldBright, margin: 0 }}>Đổi mật khẩu</h3>
+                  <p style={{ fontSize: '12px', color: colors.muted, marginTop: '4px', margin: 0 }}>Cập nhật mật khẩu mới cho tài khoản của bạn</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsChangePasswordModalOpen(false)}
+                  style={{
+                    background: '#24222b',
+                    border: `1px solid ${colors.borderSoft}`,
+                    borderRadius: '50%',
+                    width: '34px',
+                    height: '34px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: colors.text2,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                  aria-label="Đóng"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <FormField label="Mật khẩu cũ">
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      type={showOldPassword ? 'text' : 'password'}
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      style={{ ...inputStyle, background: '#222028', paddingRight: '40px' }}
+                      placeholder="Nhập mật khẩu hiện tại"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: colors.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px',
+                      }}
+                      aria-label={showOldPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showOldPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </FormField>
+                <FormField label="Mật khẩu mới">
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      style={{ ...inputStyle, background: '#222028', paddingRight: '40px' }}
+                      placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: colors.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px',
+                      }}
+                      aria-label={showNewPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </FormField>
+                <FormField label="Xác nhận mật khẩu mới">
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      style={{ ...inputStyle, background: '#222028', paddingRight: '40px' }}
+                      placeholder="Xác nhận mật khẩu mới"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: colors.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px',
+                      }}
+                      aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </FormField>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordModalOpen(false)}
+                    style={{
+                      padding: '0 20px',
+                      minHeight: '44px',
+                      borderRadius: '10px',
+                      border: `1px solid ${colors.borderSoft}`,
+                      background: '#24222b',
+                      color: colors.text,
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flex: 1,
+                    }}
+                  >
+                    Hủy
+                  </button>
+                  <PrimaryButton type="submit" disabled={isChangingPassword} style={{ minHeight: '44px', padding: '0 24px', flex: 1 }}>
+                    {isChangingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                  </PrimaryButton>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {currentUser?.role === 'PARTNER' && (
           <PanelCard>
