@@ -4282,6 +4282,7 @@ export class NightlifeDataService {
         tourTitle: this.bookingTourTitle(contact.note),
       },
     );
+    await this.notifyGuestBookingQrEmail(booking);
 
     return booking;
   }
@@ -14421,7 +14422,7 @@ export class NightlifeDataService {
   }
 
   private async notifyGuestBookingQrEmail(booking: BookingNotificationRecord) {
-    const email = this.cleanEmail(booking.guest?.email);
+    const email = this.cleanEmail(booking.guest?.email || booking.user?.email);
 
     if (!email) {
       return;
@@ -14444,7 +14445,7 @@ export class NightlifeDataService {
       storeName: booking.store?.name ?? null,
       storeSlug: booking.store?.slug ?? null,
       castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
-      guestName: booking.guest?.displayName ?? null,
+      guestName: booking.guest?.displayName ?? booking.user?.displayName ?? null,
       amountVnd:
         typeof booking.totalVnd === 'number' && booking.totalVnd > 0
           ? booking.totalVnd
@@ -14461,7 +14462,8 @@ export class NightlifeDataService {
     try {
       log = await this.prisma.notificationLog.create({
         data: {
-          guestId: booking.guest?.id,
+          userId: booking.user?.id ?? undefined,
+          guestId: booking.guest?.id ?? undefined,
           storeId: booking.storeId ?? booking.store?.id ?? undefined,
           bookingId: booking.id,
           channel: 'EMAIL',

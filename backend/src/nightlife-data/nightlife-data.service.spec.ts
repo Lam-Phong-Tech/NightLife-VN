@@ -3470,6 +3470,12 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'different-contact@example.com',
+        bookingId: 'booking-1',
+      }),
+    );
   });
 
   it('rejects a duplicate guest booking for the same store and time slot', async () => {
