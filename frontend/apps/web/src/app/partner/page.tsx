@@ -6279,11 +6279,11 @@ export default function PartnerPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoadingSettlementRows ? (
+              {isLoading ? (
                 <TableLoadingRows columns={7} rows={6} ariaLabel="Đang tải lịch sử đối soát" />
-              ) : settlementRows.length ? (
-                settlementRows.map((row, index) => {
-                  const statusTone = settlementStatusTone(row.status);
+              ) : filteredSettlementRows.length ? (
+                filteredSettlementRows.map((row, index) => {
+                  const statusTone = billStatusTone(row.status);
                   return (
                     <tr key={row.code} style={{ borderBottom: `1px solid ${colors.borderHair}` }}>
                       <td style={{ padding: '13px 12px', color: colors.text2, fontWeight: 800 }}>{index + 1}</td>
@@ -6294,7 +6294,7 @@ export default function PartnerPage() {
                         {row.service}
                       </td>
                       <td style={{ padding: '13px 12px', color: colors.text2, fontSize: '12px' }}>{row.time}</td>
-                      <td style={{ padding: '13px 12px', color: colors.text2, fontSize: '12px' }}>{row.customerName}</td>
+                      <td style={{ padding: '13px 12px', color: colors.text2, fontSize: '12px' }}>Khách đã ẩn</td>
                       <td
                         style={{
                           padding: '13px 12px',
@@ -6334,7 +6334,7 @@ export default function PartnerPage() {
         </div>
 
         <div className="partner-settlement-mobile-list">
-          {isLoadingSettlementRows ? (
+          {isLoading ? (
             Array.from({ length: 3 }).map((_, index) => (
               <article className="partner-settlement-mobile-card" key={`settlement-loading-${index}`}>
                 <div className="partner-staff-mobile-skeleton" />
@@ -6342,9 +6342,9 @@ export default function PartnerPage() {
                 <div className="partner-staff-mobile-skeleton" />
               </article>
             ))
-          ) : settlementRows.length ? (
-            settlementRows.map((row, index) => {
-              const statusTone = settlementStatusTone(row.status);
+          ) : filteredSettlementRows.length ? (
+            filteredSettlementRows.map((row, index) => {
+              const statusTone = billStatusTone(row.status);
               return (
                 <article className="partner-settlement-mobile-card" key={row.code}>
                   <div className="partner-settlement-mobile-head">
@@ -6360,7 +6360,7 @@ export default function PartnerPage() {
                     </span>
                     <span>
                       <small>Khách</small>
-                      <b>{row.customerName}</b>
+                      <b>Khách đã ẩn</b>
                     </span>
                     <span>
                       <small>Giảm giá</small>
