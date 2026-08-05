@@ -75,7 +75,11 @@ export default async function RootLayout({
                   var isAdmin = window.location.pathname.startsWith('/admin') || host.startsWith('admin.');
                   var key = isAdmin ? 'vy-admin-theme' : 'vy-user-theme';
                   var t = localStorage.getItem(key);
-                  if (t === 'light') document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
+                  if (t === 'light') {
+                    document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
+                  } else if (t === 'dark') {
+                    document.documentElement.classList.remove(isAdmin ? 'vy-admin-light' : 'vy-light');
+                  }
                   if (sessionStorage.getItem('vy-brand-intro-seen') === '1') {
                     document.documentElement.classList.add('nl-brand-intro-seen');
                   }

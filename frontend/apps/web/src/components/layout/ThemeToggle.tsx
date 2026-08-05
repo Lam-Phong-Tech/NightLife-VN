@@ -10,16 +10,44 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
-    // Chỉ render khi client-side để tránh hydration mismatch
-    try {
-      const storedTheme = localStorage.getItem("vy-user-theme");
-      if (storedTheme === "light" || storedTheme === "dark") {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTheme(storedTheme);
+    const syncTheme = () => {
+      try {
+        const storedTheme = localStorage.getItem("vy-user-theme");
+        const activeTheme = storedTheme === "light" ? "light" : "dark";
+        setTheme(activeTheme);
+        if (activeTheme === "light") {
+          document.documentElement.classList.add("vy-light");
+        } else {
+          document.documentElement.classList.remove("vy-light");
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    };
+
+    syncTheme();
+
+    const handleThemeEvent = (e: Event) => {
+      const detailTheme = (e as CustomEvent<{ theme?: "dark" | "light" }>).detail?.theme;
+      if (detailTheme === "light" || detailTheme === "dark") {
+        setTheme(detailTheme);
+        if (detailTheme === "light") {
+          document.documentElement.classList.add("vy-light");
+        } else {
+          document.documentElement.classList.remove("vy-light");
+        }
+      } else {
+        syncTheme();
+      }
+    };
+
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener("vy-theme-change", handleThemeEvent);
+
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener("vy-theme-change", handleThemeEvent);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -32,6 +60,9 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
       } else {
         document.documentElement.classList.remove("vy-light");
       }
+      window.dispatchEvent(
+        new CustomEvent("vy-theme-change", { detail: { theme: nextTheme } }),
+      );
     } catch {
       // ignore
     }

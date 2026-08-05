@@ -143,6 +143,18 @@ function lockTitleFromTranslation() {
 function applyTranslations(language: LanguageCode) {
   document.documentElement.lang = languageHtmlLang[language];
   document.documentElement.dataset.vietyoruLanguage = language;
+
+  try {
+    const storedTheme = localStorage.getItem("vy-user-theme");
+    if (storedTheme === "light") {
+      document.documentElement.classList.add("vy-light");
+    } else if (storedTheme === "dark") {
+      document.documentElement.classList.remove("vy-light");
+    }
+  } catch {
+    // ignore
+  }
+
   lockTitleFromTranslation();
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
