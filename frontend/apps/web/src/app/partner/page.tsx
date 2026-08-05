@@ -1890,6 +1890,15 @@ export default function PartnerPage() {
   const [staffPermissions, setStaffPermissions] = useState<string[]>(['coupon.scan', 'checkin.confirm']);
   const [staffPermissionUpdatingKey, setStaffPermissionUpdatingKey] = useState('');
   const [settingsStoreId, setSettingsStoreId] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const staffPageSize = 10;
+
+  const totalStaffPages = useMemo(() => Math.max(1, Math.ceil(staffList.length / staffPageSize)), [staffList.length, staffPageSize]);
+  const safeStaffCurrentPage = useMemo(() => Math.min(Math.max(1, staffPage), totalStaffPages), [staffPage, totalStaffPages]);
+  const paginatedStaffList = useMemo(() => {
+    const start = (safeStaffCurrentPage - 1) * staffPageSize;
+    return staffList.slice(start, start + staffPageSize);
+  }, [staffList, safeStaffCurrentPage, staffPageSize]);
 
   const fetchStaffList = useCallback(async (storeId: string) => {
     if (!storeId) return;
@@ -1897,6 +1906,7 @@ export default function PartnerPage() {
     try {
       const data = await apiClient<any[]>(`/partner/staff?storeId=${storeId}`);
       setStaffList(data);
+      setStaffPage(1);
     } catch (err: any) {
       feedback.showToast({
         tone: 'error',
@@ -9338,6 +9348,7 @@ export default function PartnerPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ background: colors.surface3, borderBottom: `1px solid ${colors.borderSoft}`, color: colors.text2, fontWeight: 700 }}>
+                      <th style={{ padding: '12px 16px', width: '60px', textAlign: 'center' }}>STT</th>
                       <th style={{ padding: '12px 16px' }}>Họ tên</th>
                       <th style={{ padding: '12px 16px' }}>Email</th>
                       <th style={{ padding: '12px 16px' }}>Quán quản lý</th>
@@ -9348,18 +9359,20 @@ export default function PartnerPage() {
                   </thead>
                   <tbody>
                     {isLoadingStaff ? (
-                      <TableLoadingRows columns={6} rows={5} ariaLabel="Đang tải danh sách nhân viên" />
+                      <TableLoadingRows columns={7} rows={5} ariaLabel="Đang tải danh sách nhân viên" />
                     ) : staffList.length === 0 ? (
                       <tr>
-                        <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
+                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: colors.muted }}>
                           Chưa có nhân viên nào tại quán này.
                         </td>
                       </tr>
                     ) : (
-                      staffList.map((staff) => {
+                      paginatedStaffList.map((staff, idx) => {
                         const currentStore = stores.find((s) => s.id === settingsStoreId);
+                        const stt = (safeStaffCurrentPage - 1) * staffPageSize + idx + 1;
                         return (
                           <tr key={staff.id} style={{ borderBottom: `1px solid ${colors.borderSoft}`, color: colors.text }}>
+                            <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: colors.muted }}>{stt}</td>
                             <td style={{ padding: '12px 16px', fontWeight: 600 }}>{staff.displayName}</td>
                             <td style={{ padding: '12px 16px' }}>{staff.email}</td>
                             <td style={{ padding: '12px 16px' }}>{currentStore?.name || 'N/A'}</td>
@@ -9417,14 +9430,18 @@ export default function PartnerPage() {
                 ) : staffList.length === 0 ? (
                   <div className="partner-staff-mobile-empty">Chưa có nhân viên nào tại quán này.</div>
                 ) : (
-                  staffList.map((staff) => {
+                  paginatedStaffList.map((staff, idx) => {
                     const currentStore = stores.find((s) => s.id === settingsStoreId);
                     const active = staff.status === 'ACTIVE';
+                    const stt = (safeStaffCurrentPage - 1) * staffPageSize + idx + 1;
                     return (
                       <article className="partner-staff-mobile-card" key={staff.id}>
                         <div className="partner-staff-mobile-head">
                           <div>
-                            <strong>{staff.displayName}</strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: colors.goldBright, background: 'rgba(212,178,106,.15)', padding: '2px 6px', borderRadius: '4px' }}>#{stt}</span>
+                              <strong>{staff.displayName}</strong>
+                            </div>
                             <span>{staff.email}</span>
                           </div>
                           <span className={active ? 'partner-staff-mobile-status active' : 'partner-staff-mobile-status'}>
@@ -9456,6 +9473,58 @@ export default function PartnerPage() {
                   })
                 )}
               </div>
+
+              {totalStaffPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${colors.borderSoft}` }}>
+                  <button
+                    type="button"
+                    disabled={safeStaffCurrentPage <= 1}
+                    onClick={() => setStaffPage((prev) => Math.max(1, prev - 1))}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      border: `1px solid ${safeStaffCurrentPage <= 1 ? colors.borderSoft : colors.borderGold40}`,
+                      background: safeStaffCurrentPage <= 1 ? colors.surface2 : 'rgba(212,178,106,.1)',
+                      color: safeStaffCurrentPage <= 1 ? colors.muted : colors.goldBright,
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: safeStaffCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                      opacity: safeStaffCurrentPage <= 1 ? 0.5 : 1,
+                    }}
+                  >
+                    <ChevronLeft size={16} /> Trang trước
+                  </button>
+
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text }}>
+                    Trang <span style={{ color: colors.goldBright }}>{safeStaffCurrentPage}</span> / {totalStaffPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={safeStaffCurrentPage >= totalStaffPages}
+                    onClick={() => setStaffPage((prev) => Math.min(totalStaffPages, prev + 1))}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      border: `1px solid ${safeStaffCurrentPage >= totalStaffPages ? colors.borderSoft : colors.borderGold40}`,
+                      background: safeStaffCurrentPage >= totalStaffPages ? colors.surface2 : 'rgba(212,178,106,.1)',
+                      color: safeStaffCurrentPage >= totalStaffPages ? colors.muted : colors.goldBright,
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: safeStaffCurrentPage >= totalStaffPages ? 'not-allowed' : 'pointer',
+                      opacity: safeStaffCurrentPage >= totalStaffPages ? 0.5 : 1,
+                    }}
+                  >
+                    Trang sau <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           </PanelCard>
         )}
