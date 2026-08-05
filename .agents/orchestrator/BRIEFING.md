@@ -107,12 +107,25 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 | Explorer 1 (M5 Gen 2) | teamwork_preview_explorer | PR5 Home Dashboard Architecture | completed | e4f403de-fa76-4018-a671-a6fc99d1b4bd |
 | Explorer 2 (M5 Gen 2) | teamwork_preview_explorer | PR5 Monolith Refactoring Explorer | completed | 3607df29-324d-4788-b9a2-118f0ff3d1c1 |
 | Explorer 3 (M5 Gen 2) | teamwork_preview_explorer | PR5 Full Suite Verification Explorer | completed | e67d65fd-dd18-4359-9f9e-4341f76fcc30 |
-| Worker 1 (M5 Gen 2) | teamwork_preview_worker | PR5 Implementation Worker | in-progress | 6d986bef-aa2e-4087-a240-2cc9e0ae3058 |
+| Reviewer 1 (M5 Gen 2) | teamwork_preview_reviewer | PR5 Precision Reviewer | completed (APPROVE) | 6479b96f-2c37-4a4e-bbcb-f5b412df6d8f |
+| Reviewer 2 (M5 Gen 2) | teamwork_preview_reviewer | PR5 Edge Case & Performance Reviewer | completed (REQUEST_CHANGES) | 074b98fd-df8d-40e0-8f75-84e56aa955cc |
+| Challenger 1 (M5 Gen 2) | teamwork_preview_challenger | PR5 Home Dashboard & KPI Challenger | completed (APPROVE) | 821378b6-7f60-46de-920d-eabafee19208 |
+| Challenger 2 (M5 Gen 2) | teamwork_preview_challenger | PR5 Build & Monolith Cleanup Challenger | completed (REJECT) | baae45e9-1a5f-4501-8cc8-1ea5f26666f7 |
+| Auditor 1 (M5 Gen 2) | teamwork_preview_auditor | PR5 Forensic Integrity Auditor | completed (CLEAN) | 6b6c7092-5acf-46f9-b5c1-0212e70c857a |
+| Worker 1 (M5 Gen 3) | teamwork_preview_worker | PR5 Implementation Worker | completed (commit 9fe3ff06) | a9625486-8135-4141-853e-20cca4a0cb74 |
+| Reviewer 1 (M5 R1) | teamwork_preview_reviewer | PR5 Precision Reviewer | completed (APPROVE) | teamwork_preview_reviewer_m5_1 |
+| Reviewer 2 (M5 R1) | teamwork_preview_reviewer | PR5 Edge Case & Performance Reviewer | completed (REQUEST_CHANGES) | teamwork_preview_reviewer_m5_2 |
+| Challenger 1 (M5 R1) | teamwork_preview_challenger | PR5 Home Dashboard Challenger | completed (APPROVE) | teamwork_preview_challenger_m5_1 |
+| Challenger 2 (M5 R1) | teamwork_preview_challenger | PR5 Build & Test Challenger | completed (REJECT) | teamwork_preview_challenger_m5_2 |
+| Auditor 1 (M5 R1) | teamwork_preview_auditor | PR5 Forensic Integrity Auditor | completed (CLEAN) | teamwork_preview_auditor_m5_1 |
+| Explorer 1 (M5 R2) | teamwork_preview_explorer | PR5 Remediation Explorer | completed | 413e1409-a626-488d-a559-45da03b4acbb |
+| Worker 2 (M5 R2) | teamwork_preview_worker | PR5 Remediation Worker | in-progress | 80af70b7-33fb-436a-9bb1-1c4590fab246 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 18 / 20 (Gen 2)
-- Pending subagents: 6d986bef-aa2e-4087-a240-2cc9e0ae3058
+- Spawn count: 17 / 20 (Gen 3)
+- Pending subagents: 80af70b7-33fb-436a-9bb1-1c4590fab246
+
 - Predecessor: Gen 1 (a6166166-d3f1-4fc5-aed5-12da5b13dce6)
 - Successor: not yet spawned
 

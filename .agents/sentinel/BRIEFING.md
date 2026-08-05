@@ -1,4 +1,4 @@
-# BRIEFING — 2026-08-05T17:00:15+07:00
+# BRIEFING — 2026-08-05T18:05:30+07:00
 
 ## Mission
 Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financial data fixes, backend Activity contracts, Partner Shell & Strangler pattern, Activity sub-routes, Home redesign & monolith cleanup).
@@ -6,7 +6,7 @@ Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financi
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: d:\laragon\www\NightLife-VN\.agents\sentinel
-- Orchestrator: bc9941d2-4b7b-4db7-9e4d-0d310fbdd700
+- Orchestrator: a6166166-d3f1-4fc5-aed5-12da5b13dce6
 - Victory Auditor: TBD
 
 ## 🔒 Key Constraints
@@ -20,10 +20,11 @@ Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financi
   - Milestone 1 (PR 1: P0 Financial Data Fixes) PASSED & COMPLETE.
   - Milestone 2 (PR 2: Backend Activity Contracts & Stable Pagination) PASSED & COMPLETE.
   - Milestone 3 (PR 3: Partner Shell, Strangler Pattern & Sub-routes) PASSED & COMPLETE.
-  - Milestone 4 (PR 4: Activity Core & Safe Legacy Redirects) PASSED & COMPLETE (commit `c4d80d0a`, all 5 Gate checks APPROVED/CLEAN).
+  - Milestone 4 (PR 4: Activity Core & Safe Legacy Redirects) PASSED & COMPLETE.
+  - Milestone 5 (PR 5: Home Redesign & Monolith Cleanup) COMMITTED (`9fe3ff06`) & Gate 5 Verification in progress.
 
 ## Project Status
-- **Phase**: in progress (Milestone 5: PR 5 Home Redesign & Monolith Cleanup)
+- **Phase**: in progress (Milestone 5: PR 5 Home Redesign & Monolith Cleanup Gate 5 Verification)
 
 ## Victory Audit Status
 - **Triggered**: no

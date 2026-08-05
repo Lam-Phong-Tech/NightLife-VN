@@ -27,8 +27,10 @@ export default function PartnerHomePage() {
       scan: '/partner/scan',
       listing: '/partner/listing',
       settings: '/partner/settings',
+      staff: '/partner/settings/staff',
       bill: '/partner/activity/new-bill',
       activity: '/partner/activity',
+      settlement: '/partner/activity',
     };
     if (panelMap[panel]) router.replace(panelMap[panel]);
   }, [searchParams, router]);
@@ -38,11 +40,18 @@ export default function PartnerHomePage() {
     setError(null);
     try {
       const res = await fetchPartnerHome(selectedStoreId, signal);
-      setData(res);
+      if (!signal?.aborted) {
+        setData(res);
+      }
     } catch (err: any) {
-      if (err.name !== 'AbortError') setError(err.message || 'Không thể tải dữ liệu tổng quan');
+      if ((err instanceof Error && err.name === 'AbortError') || err?.name === 'AbortError' || signal?.aborted) {
+        return;
+      }
+      setError(err?.message || 'Không thể tải dữ liệu tổng quan');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [selectedStoreId]);
 

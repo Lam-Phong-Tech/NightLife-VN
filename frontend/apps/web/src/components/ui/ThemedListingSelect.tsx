@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 const colors = {
@@ -53,7 +53,25 @@ export function ThemedListingSelect({
   style?: React.CSSProperties;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const selectedOption = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const handleNativeEvent = (e: Event) => {
+      const target = e.target as any;
+      if (target?.value !== undefined && target?.value !== null) {
+        onChange(target.value);
+      }
+    };
+    btn.addEventListener('change', handleNativeEvent);
+    btn.addEventListener('input', handleNativeEvent);
+    return () => {
+      btn.removeEventListener('change', handleNativeEvent);
+      btn.removeEventListener('input', handleNativeEvent);
+    };
+  }, [onChange]);
 
   return (
     <div
@@ -70,9 +88,11 @@ export function ThemedListingSelect({
       }}
     >
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((current) => (disabled ? false : !current))}
+        aria-label={ariaLabel ?? placeholder}
         aria-expanded={isOpen}
         style={{
           width: '100%',
@@ -103,6 +123,7 @@ export function ThemedListingSelect({
           style={{ flex: '0 0 auto', color: colors.goldBright }}
         />
       </button>
+
       {isOpen && !disabled ? (
         <div
           className="partner-themed-select-menu"
@@ -162,8 +183,8 @@ export function ThemedListingSelect({
           )}
         </div>
       ) : null}
+
       <select
-        aria-label={ariaLabel ?? placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}

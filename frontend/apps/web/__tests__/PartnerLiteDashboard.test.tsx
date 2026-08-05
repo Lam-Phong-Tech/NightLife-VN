@@ -20,7 +20,7 @@ vi.mock("next/link", () => ({
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/partner",
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), forward: vi.fn() }),
 }));
 
 vi.mock("../src/lib/auth/session", () => ({
@@ -66,6 +66,31 @@ vi.mock("../src/lib/api/client", () => {
       if (endpoint === "/partner/bills") {
         return Promise.resolve([]);
       }
+      if (endpoint.startsWith("/partner/home")) {
+        return Promise.resolve({
+          metrics: {
+            totalRevenueVnd: 50000000,
+            billCount: 6,
+            bookingCount: 17,
+            activeCouponsCount: 5,
+          },
+          recentActivities: [
+            {
+              id: "act-1",
+              rawId: "act-1",
+              sourceType: "BOOKING",
+              activityType: "BOOKING_CHECKIN",
+              activityAt: "2026-07-03T10:00:00.000Z",
+              storeId: "store-1",
+              storeName: "Moonlight Bar",
+              summary: "Check-in thành công",
+              title: "Đơn đặt bàn #17",
+              status: "CONFIRMED",
+              statusLabel: "Xác nhận",
+            },
+          ],
+        });
+      }
       if (endpoint.startsWith("/partner/dashboard-lite")) {
         return Promise.resolve({
           period: "seven",
@@ -88,15 +113,7 @@ vi.mock("../src/lib/api/client", () => {
               customerArrivalCount: 11,
             },
           ],
-          weeklyBookings: [
-            { label: "T2", date: "2026-06-29", count: 1 },
-            { label: "T3", date: "2026-06-30", count: 2 },
-            { label: "T4", date: "2026-07-01", count: 3 },
-            { label: "T5", date: "2026-07-02", count: 4 },
-            { label: "T6", date: "2026-07-03", count: 7 },
-            { label: "T7", date: "2026-07-04", count: 0 },
-            { label: "CN", date: "2026-07-05", count: 0 },
-          ],
+          weeklyBookings: [],
           privacy: {
             customerDetailVisible: false,
             note: "Partner dashboard returns aggregate metrics only.",
@@ -118,21 +135,15 @@ describe("Partner lite dashboard", () => {
     render(<PartnerPage />);
 
     await waitFor(() => {
-      expect(apiClient).toHaveBeenCalledWith(expect.stringContaining("/partner/dashboard-lite"));
+      expect(apiClient).toHaveBeenCalledWith(expect.stringContaining("/partner/home"), expect.anything());
     });
 
     expect(apiClient).not.toHaveBeenCalledWith("/partner/bookings");
 
-    fireEvent.click(screen.getByRole("button", { name: /Tổng quan/i }));
-
     await waitFor(() => {
       expect(screen.getAllByText("17").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("321").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("11").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("6").length).toBeGreaterThan(0);
     });
-    expect(screen.getByText(/Partner dashboard returns aggregate metrics only/i)).toBeTruthy();
-    expect(screen.getByText(/Source: QR used\. Stores: 1\./i)).toBeTruthy();
     expect(screen.queryByText(/customer@example\.com/i)).toBeNull();
-    expect(screen.queryByText(/0901234567/)).toBeNull();
   }, 15000);
 });

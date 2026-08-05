@@ -20,6 +20,14 @@ Gate Result: **PASS** (All 5 Gate Verification Agents returned APPROVE / CLEAN; 
 | challenger_2 | PR4 New Bill & Redirects Challenger | APPROVE | handoff.md |
 | auditor_1 | PR4 Forensic Integrity Auditor | CLEAN | handoff.md |
 
-Gate Result: **PASS** (All 5 Gate Verification Agents returned APPROVE / CLEAN; 0 TypeScript errors, 15/15 Vitest unit tests passed, commit `c4d80d0ae301e9dd8cf5763dcaaad8c0d1628107`)
+## Gate — Milestone 5 Iteration 1 (PR 5: Home Redesign & Monolith Cleanup)
+| Agent | Role | Verdict | Source |
+|-------|------|---------|--------|
+| worker_1 | PR5 Implementation Worker | DONE (commit 9fe3ff06) | handoff.md |
+| reviewer_1 | PR5 Precision Reviewer | APPROVE | handoff.md |
+| reviewer_2 | PR5 Edge Case & Performance Reviewer | REQUEST_CHANGES | handoff.md |
+| challenger_1 | PR5 Home Dashboard & KPI Challenger | APPROVE | handoff.md |
+| challenger_2 | PR5 Build & Monolith Cleanup Challenger | REJECT | handoff.md |
+| auditor_1 | PR5 Forensic Integrity Auditor | CLEAN | handoff.md |
 
-
+Gate Result: **FAIL** (reviewer_2 REQUEST_CHANGES & challenger_2 REJECT: 2 legacy test files `PartnerSettlementMoney.test.tsx` & `PartnerShellClient.edge-cases.test.tsx` failed; missing `?panel=staff` redirect; AbortError loading indicator handling)

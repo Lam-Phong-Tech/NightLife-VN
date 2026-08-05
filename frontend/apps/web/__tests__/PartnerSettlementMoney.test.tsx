@@ -129,6 +129,34 @@ describe("PartnerSettlementMoney", () => {
         if (endpoint.startsWith("/partner/bills")) {
           return Promise.resolve([mockBillWithNullDiscount]);
         }
+        if (endpoint.startsWith("/partner/home")) {
+          return Promise.resolve({
+            metrics: {
+              totalRevenueVnd: 1800000,
+              billCount: 1,
+              bookingCount: 0,
+              activeCouponsCount: 0,
+            },
+            recentActivities: [
+              {
+                id: "bill-null-discount-12345",
+                rawId: "bill-null-discount-12345",
+                sourceType: "BILL",
+                activityType: "BILL_PAYMENT",
+                activityAt: "2026-07-03T15:00:00.000Z",
+                storeId: "store-1",
+                storeName: "Neon Club",
+                summary: "BILL-NULL-001",
+                title: "BILL-NULL-001",
+                billNumber: "BILL-NULL-001",
+                status: "SUBMITTED",
+                statusLabel: "SUBMITTED",
+                totalVnd: 1800000,
+                discountVnd: null,
+              },
+            ],
+          });
+        }
         if (endpoint.startsWith("/partner/dashboard-lite")) {
           return Promise.resolve({
             period: "seven",
