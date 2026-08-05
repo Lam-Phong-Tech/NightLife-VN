@@ -1773,6 +1773,8 @@ export default function PartnerPage() {
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
   const [isDeletingCastProfile, setIsDeletingCastProfile] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>('seven');
+  const [overviewFromDate, setOverviewFromDate] = useState<string>('');
+  const [overviewToDate, setOverviewToDate] = useState<string>('');
   const [settlementFilters, setSettlementFilters] = useState({
     code: '',
     service: '',
@@ -3576,6 +3578,35 @@ export default function PartnerPage() {
   );
 
   const normalizedBillSearchQuery = billSearchQuery.trim().toLowerCase();
+
+  const handleSelectOverviewPeriod = useCallback(
+    (periodKey: PeriodKey) => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      setOverviewToDate(todayStr);
+
+      if (periodKey === 'today') {
+        setOverviewFromDate(todayStr);
+      } else if (periodKey === 'seven') {
+        const past = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+        const py = past.getFullYear();
+        const pm = String(past.getMonth() + 1).padStart(2, '0');
+        const pd = String(past.getDate()).padStart(2, '0');
+        setOverviewFromDate(`${py}-${pm}-${pd}`);
+      } else if (periodKey === 'thirty') {
+        const past = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+        const py = past.getFullYear();
+        const pm = String(past.getMonth() + 1).padStart(2, '0');
+        const pd = String(past.getDate()).padStart(2, '0');
+        setOverviewFromDate(`${py}-${pm}-${pd}`);
+      }
+      setPeriod(periodKey);
+    },
+    [],
+  );
 
   const handleSelectBillPeriod = useCallback(
     (periodKey: 'today' | 'seven' | 'thirty') => {
@@ -6100,6 +6131,89 @@ export default function PartnerPage() {
 
   const renderOverviewPanel = () => (
     <>
+      {/* Bộ lọc khoảng thời gian & chọn nhanh */}
+      <PanelCard style={{ marginBottom: '16px', padding: '18px 20px' }}>
+        <div
+          className="partner-overview-filter-bar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* Từ ngày */}
+            <div style={{ minWidth: '150px' }}>
+              <FormField label="Từ ngày" className="partner-date-field">
+                <ThemedDatePicker
+                  value={overviewFromDate}
+                  onChange={(value) => {
+                    setOverviewFromDate(value);
+                  }}
+                  placeholder="Chọn ngày"
+                  style={inputStyle}
+                  ariaLabel="Từ ngày"
+                />
+              </FormField>
+            </div>
+
+            {/* Đến ngày */}
+            <div style={{ minWidth: '150px' }}>
+              <FormField label="Đến ngày" className="partner-date-field">
+                <ThemedDatePicker
+                  value={overviewToDate}
+                  onChange={(value) => {
+                    setOverviewToDate(value);
+                  }}
+                  placeholder="Chọn ngày"
+                  style={inputStyle}
+                  ariaLabel="Đến ngày"
+                />
+              </FormField>
+            </div>
+
+            {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
+            <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {periodItems.map((item) => {
+                const active = period === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleSelectOverviewPeriod(item.key)}
+                    aria-pressed={active}
+                    style={{
+                      minHeight: '38px',
+                      borderRadius: '18px',
+                      border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                      background: active ? colors.goldGrad : colors.surface3,
+                      color: active ? colors.onGold : colors.text2,
+                      padding: '0 15px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </PanelCard>
+
       {/* 4 Thẻ chỉ số tổng quan */}
       <div className="partner-metric-grid" style={{ marginBottom: '16px' }}>
         {metrics.map((metric) => {
