@@ -8146,7 +8146,7 @@ export default function PartnerPage() {
                     setBillSearchQuery(e.target.value);
                     setBillCurrentPage(1);
                   }}
-                  placeholder="Tìm theo mã đặt chỗ, mã hóa đơn..."
+                  placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
                   style={{
                     width: '100%',
                     minHeight: '40px',
@@ -8258,7 +8258,7 @@ export default function PartnerPage() {
               <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
-                    {['STT', 'Mã hóa đơn / Booking', 'Quán', 'Tổng tiền / Thao tác', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
+                    {['STT', 'Mã hóa đơn / Mã đặt bàn', 'Quán', 'Tổng tiền / Thao tác', 'Thời gian', 'Mã đặt bàn', 'Trạng thái'].map((header) => (
                       <th
                         key={header}
                         style={{
