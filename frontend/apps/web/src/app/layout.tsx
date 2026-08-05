@@ -53,6 +53,89 @@ export const metadata: Metadata = {
   },
 };
 
+const criticalBillUploadStyles = `
+  .nl-bill-page .nl-upload-zone-wrapper,
+  .nl-bill-page .nl-upload-preview-card,
+  .nl-bill-page .nl-preview-info,
+  .nl-bill-page .nl-preview-actions {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .nl-bill-page .nl-upload-zone-wrapper {
+    overflow: hidden !important;
+    contain: inline-size !important;
+  }
+
+  .nl-bill-page .nl-upload-preview-card {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .nl-bill-page .nl-preview-info {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .nl-bill-page .nl-preview-filename {
+    display: -webkit-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-all !important;
+    white-space: normal !important;
+    line-height: 1.35 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  @media (max-width: 620px) {
+    .nl-bill-page .nl-upload-preview-card {
+      display: grid !important;
+      grid-template-columns: 48px minmax(0, 1fr) !important;
+      grid-template-areas: "thumb info" "actions actions" !important;
+      align-items: center !important;
+      gap: 10px 12px !important;
+    }
+
+    .nl-bill-page .nl-preview-thumb-container,
+    .nl-bill-page .nl-preview-file-icon {
+      grid-area: thumb !important;
+    }
+
+    .nl-bill-page .nl-preview-info {
+      grid-area: info !important;
+      width: 100% !important;
+    }
+
+    .nl-bill-page .nl-preview-actions {
+      grid-area: actions !important;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: stretch !important;
+      gap: 8px !important;
+      width: 100% !important;
+    }
+
+    .nl-bill-page .nl-ocr-btn-premium {
+      flex: 1 1 190px !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      justify-content: center !important;
+    }
+
+    .nl-bill-page .nl-delete-file-btn {
+      flex: 0 0 auto !important;
+      min-width: 72px !important;
+      justify-content: center !important;
+    }
+  }
+`;
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -88,6 +171,10 @@ export default async function RootLayout({
               })();
             `,
           }}
+        />
+        <style
+          id="critical-bill-upload-layout-fix"
+          dangerouslySetInnerHTML={{ __html: criticalBillUploadStyles }}
         />
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/support.js" strategy="beforeInteractive" />
