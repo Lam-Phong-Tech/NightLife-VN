@@ -32,6 +32,8 @@ import {
   TicketCheck,
   TrendingUp,
   Upload,
+  UploadCloud,
+  Info,
   UserPlus,
   UsersRound,
   Settings,
@@ -8206,8 +8208,29 @@ export default function PartnerPage() {
           />
           <form
             onSubmit={submitPartnerBill}
-            style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
+            style={{ display: 'grid', gap: '16px', marginTop: '16px' }}
           >
+            {/* Hidden compatibility inputs */}
+            <select
+              id="bill-store-select-hidden"
+              value={billStoreId || (stores[0]?.id ?? '')}
+              onChange={(e) => setBillStoreId(e.target.value)}
+              style={{ opacity: 0, position: 'absolute', zIndex: -1, pointerEvents: 'none' }}
+              aria-label="Quán thuộc partner *"
+            >
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <input
+              id="bill-used-at-hidden"
+              type="hidden"
+              value={billUsedAt}
+              onChange={(e) => setBillUsedAt(e.target.value)}
+            />
+
             {selectedBill && (
               <FormField label="Trạng thái hóa đơn">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -8223,124 +8246,92 @@ export default function PartnerPage() {
               </FormField>
             )}
 
-            <FormField label="Quán thuộc partner *" htmlFor="bill-store-select-hidden">
+            {/* Linked Booking Ticket Card / Selector */}
+            {selectedBillBooking || selectedBill ? (
               <div
-                aria-readonly="true"
                 style={{
-                  ...inputStyle,
-                  minHeight: '44px',
-                  display: 'grid',
-                  alignContent: 'center',
-                  color: selectedBillStore ? colors.text : colors.muted,
-                  fontWeight: 900,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  background: 'rgba(212,178,106,.05)',
+                  border: '1px dashed rgba(212,178,106,.3)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
                 }}
-                title={selectedBillStore?.name ?? undefined}
               >
-                {selectedBillStore ? selectedBillStore.name : <InlineLoading label="Đang tải quán được cấp quyền" />}
-              </div>
-              <select
-                id="bill-store-select-hidden"
-                value={billStoreId || (stores[0]?.id ?? '')}
-                onChange={(e) => setBillStoreId(e.target.value)}
-                style={{ opacity: 0, position: 'absolute', zIndex: -1 }}
-                aria-label="Quán thuộc partner *"
-              >
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
-            <div className="partner-bill-form-grid">
-              <FormField label="Tổng tiền bill gốc *" htmlFor="bill-amount-input">
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="bill-amount-input"
-                    inputMode="numeric"
-                    placeholder="VD: 1.800.000"
-                    value={billAmountInput}
-                    onChange={(event) => handleBillAmountChange(event.target.value)}
-                    style={{ ...inputStyle, paddingRight: '48px' }}
-                  />
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      right: '13px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: colors.goldBright,
-                      fontSize: '12px',
-                      fontWeight: 900,
-                      letterSpacing: '.03em',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    VND
-                  </span>
-                </div>
-              </FormField>
-              <FormField label="Thời gian sử dụng *" htmlFor="bill-used-at-hidden">
                 <div
-                  aria-readonly="true"
                   style={{
-                    ...inputStyle,
-                    minHeight: '44px',
-                    display: 'grid',
-                    alignContent: 'center',
-                    gap: '3px',
-                    color: billUsedAt ? colors.goldPale : colors.muted,
-                    borderColor: billUsedAt ? 'rgba(129,216,157,.34)' : colors.borderGold22,
-                    background: billUsedAt ? 'rgba(129,216,157,.08)' : colors.surface2,
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
+                    borderBottom: '1px solid rgba(212,178,106,.15)',
+                    paddingBottom: '12px',
                   }}
                 >
-                  <strong style={{ fontSize: '13px', lineHeight: 1.2 }}>
-                    {billUsedAt ? formatDateTime(billConfirmedUsageAt ?? billUsedAt) : 'Chưa có thời gian xác nhận'}
+                  <span style={{ fontSize: '11px', fontWeight: 900, color: colors.gold, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                    ĐƠN HÀNG ĐANG LIÊN KẾT
+                  </span>
+                  <strong style={{ fontSize: '15px', fontWeight: 900, color: colors.text }}>
+                    {selectedBillBooking?.store?.name ?? selectedBillStore?.name ?? selectedBill?.store?.name ?? 'Quán'}
                   </strong>
-                  <span style={{ color: colors.muted, fontSize: '11px', fontWeight: 800, lineHeight: 1.25 }}>
-                    {billUsageSourceLabel}
-                  </span>
                 </div>
-                <input
-                  id="bill-used-at-hidden"
-                  type="hidden"
-                  value={billUsedAt}
-                  onChange={(e) => setBillUsedAt(e.target.value)}
-                />
-              </FormField>
-            </div>
 
-            <FormField label="Liên kết booking">
-              {selectedBill ? (
-                <div
-                  aria-readonly="true"
-                  style={{
-                    ...inputStyle,
-                    minHeight: '44px',
-                    display: 'grid',
-                    alignContent: 'center',
-                    color: selectedBillBooking ? colors.text : colors.muted,
-                    background: colors.surface2,
-                    borderColor: colors.borderSoft,
-                    fontWeight: 800,
-                    fontSize: '13px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {selectedBillBooking
-                    ? `${formatDateTime(selectedBillBooking.scheduledAt)} - ${selectedBillBooking.partySize} khách - ${selectedBillBooking.store.name}`
-                    : selectedBill.booking
-                      ? `${formatDateTime(selectedBill.booking.scheduledAt)} - ${translateBookingStatus(selectedBill.booking.status)}`
-                      : 'Không liên kết booking'}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                  {(selectedBillBooking || selectedBill?.booking) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: colors.text2 }}>Mã đặt chỗ</span>
+                      <span style={{ fontWeight: 900, color: colors.goldBright }}>
+                        #{selectedBillBooking?.id.slice(0, 8).toUpperCase() ?? selectedBill?.booking?.id.slice(0, 8).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {(selectedBillBooking?.scheduledAt || selectedBill?.booking?.scheduledAt) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: colors.text2 }}>Giờ hẹn</span>
+                      <span style={{ fontWeight: 700, color: colors.text }}>
+                        {formatDateTime(selectedBillBooking?.scheduledAt ?? selectedBill?.booking?.scheduledAt)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: colors.text2 }}>Xác nhận sử dụng</span>
+                    <span style={{ fontWeight: 700, color: colors.text }}>
+                      {billUsedAt ? formatDateTime(billConfirmedUsageAt ?? billUsedAt) : 'Chưa có thời gian xác nhận'}
+                    </span>
+                  </div>
+
+                  {selectedBillBooking?.partySize ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: colors.text2 }}>Số người</span>
+                      <span style={{ fontWeight: 700, color: colors.text }}>
+                        {selectedBillBooking.partySize} người
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {(selectedBillBooking?.coupon || billDiscountLabel) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: colors.text2 }}>Mã ưu đãi/QR</span>
+                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedBillBooking?.coupon?.name ?? selectedBillBooking?.coupon?.code ?? 'QR đặt chỗ'}
+                      </span>
+                    </div>
+                  )}
+
+                  {billDiscountLabel && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: colors.text2 }}>Mức giảm</span>
+                      <span style={{ fontWeight: 900, color: '#e57373' }}>
+                        {billDiscountLabel}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <FormField label="Liên kết booking">
                 <ThemedListingSelect
                   value={billBookingId}
                   onChange={handleBillBookingChange}
@@ -8353,177 +8344,195 @@ export default function PartnerPage() {
                     })),
                   ]}
                 />
-              )}
-            </FormField>
-
-            {billDiscountLabel && (
-              <FormField label="Mức giảm giá áp dụng từ coupon">
-                <div
-                  aria-readonly="true"
-                  style={{
-                    ...inputStyle,
-                    minHeight: '44px',
-                    display: 'grid',
-                    alignContent: 'center',
-                    color: colors.goldPale,
-                    borderColor: 'rgba(212,178,106,.45)',
-                    background: 'rgba(212,178,106,.05)',
-                    fontWeight: 900,
-                    fontSize: '13px',
-                    padding: '0 12px',
-                  }}
-                >
-                  {billDiscountLabel}
-                </div>
               </FormField>
             )}
 
-            <FormField label="Ảnh / chứng từ">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <label
-                    style={{
-                      minHeight: '42px',
-                      borderRadius: '11px',
-                      border: `1px solid ${colors.borderGold22}`,
-                      background: colors.surface2,
-                      color: colors.gold,
-                      padding: '0 14px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <ImagePlus size={16} />
-                    {billEvidenceFile || selectedBill?.media?.length ? 'Đổi file' : 'Chọn file'}
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onInput={(event) => handleBillFileChange(event.currentTarget)}
-                      onChange={(event) => handleBillFileChange(event.currentTarget)}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  {billEvidenceFile && (
-                    <GhostButton
-                      onClick={() => setBillEvidenceFile(null)}
-                      style={{ minHeight: '42px', height: '42px', padding: '0 14px', color: colors.danger }}
-                    >
-                      Xóa file chọn
-                    </GhostButton>
-                  )}
-                </div>
+            {/* Field: Total Amount */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label
+                htmlFor="bill-amount-input"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  color: colors.gold,
+                  letterSpacing: '.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                TỔNG TIỀN HÓA ĐƠN GỐC *
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="bill-amount-input"
+                  inputMode="numeric"
+                  placeholder="Vui lòng nhập tổng tiền"
+                  value={billAmountInput}
+                  onChange={(event) => handleBillAmountChange(event.target.value)}
+                  style={{
+                    ...inputStyle,
+                    height: '50px',
+                    fontSize: '15px',
+                    fontWeight: '800',
+                    paddingRight: '44px',
+                    borderRadius: '12px',
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    right: '16px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: colors.goldBright,
+                    fontSize: '16px',
+                    fontWeight: '900',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  đ
+                </span>
+              </div>
+            </div>
 
-                {billEvidenceFile ? (
-                  <div style={{ marginTop: '4px' }}>
-                    {billEvidenceFile.type.startsWith('image/') ? (
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <img
-                          src={URL.createObjectURL(billEvidenceFile)}
-                          alt="Local Preview"
-                          style={{
-                            maxHeight: '240px',
-                            maxWidth: '100%',
-                            borderRadius: '8px',
-                            border: `1px solid ${colors.borderGold22}`,
-                            objectFit: 'contain',
-                            display: 'block',
-                          }}
-                        />
-                      </div>
+            {/* Field: Image / Evidence */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  color: colors.gold,
+                  letterSpacing: '.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                ẢNH / CHỨNG TỪ
+              </label>
+
+              {!billEvidenceFile && !selectedBill?.media?.length ? (
+                <label
+                  style={{
+                    border: '1.5px dashed rgba(212,178,106,.35)',
+                    borderRadius: '16px',
+                    background: 'rgba(212,178,106,.03)',
+                    padding: '28px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'all .15s ease-in-out',
+                  }}
+                >
+                  <UploadCloud size={32} style={{ color: colors.goldBright }} />
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: colors.text }}>
+                    Nhấn để tải ảnh hoặc file PDF
+                  </span>
+                  <span style={{ fontSize: '12px', color: colors.text2 }}>
+                    Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)
+                  </span>
+                  <span style={{ fontSize: '11px', color: colors.muted, marginTop: '2px' }}>
+                    Khuyến khích gửi kèm để duyệt nhanh hơn.
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onInput={(event) => handleBillFileChange(event.currentTarget)}
+                    onChange={(event) => handleBillFileChange(event.currentTarget)}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              ) : (
+                <div
+                  style={{
+                    border: '1px solid rgba(212,178,106,.25)',
+                    borderRadius: '14px',
+                    background: colors.surface2,
+                    padding: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                    {billEvidenceFile?.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(billEvidenceFile)}
+                        alt="Preview"
+                        style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                      />
                     ) : (
-                      <span
-                        style={{
-                          ...softCardStyle,
-                          minHeight: '38px',
-                          padding: '0 11px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          color: colors.text2,
-                          fontSize: '12px',
-                          minWidth: 0,
-                          maxWidth: '100%',
-                        }}
-                      >
-                        <FileText size={14} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {billEvidenceFile.name} (Chưa hỗ trợ preview định dạng này)
-                        </span>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.goldBright }}>
+                        <FileText size={22} />
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Chứng từ đính kèm'}
                       </span>
+                      {billEvidenceFile && (
+                        <span style={{ fontSize: '11px', color: colors.text2 }}>
+                          {(billEvidenceFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: 'transparent',
+                        color: colors.goldBright,
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Đổi file
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onInput={(event) => handleBillFileChange(event.currentTarget)}
+                        onChange={(event) => handleBillFileChange(event.currentTarget)}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    {billEvidenceFile && (
+                      <GhostButton
+                        onClick={() => setBillEvidenceFile(null)}
+                        style={{ padding: '6px 10px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px' }}
+                      >
+                        Xóa
+                      </GhostButton>
                     )}
                   </div>
-                ) : selectedBill?.media?.length ? (
-                  <div style={{ marginTop: '4px' }}>
-                    {selectedBill.media.map((med) => {
-                      const evidenceUrl = med.url ?? '';
-                      const isImg =
-                        med.mimeType?.startsWith('image/') ||
-                        /\.(jpeg|jpg|gif|png|webp)$/i.test(evidenceUrl.split('?')[0] ?? '');
-                      return (
-                        <div key={med.id} style={{ display: 'inline-block' }}>
-                          {isImg ? (
-                            <img
-                              src={evidenceUrl}
-                              alt={med.originalName || 'Evidence'}
-                              style={{
-                                maxHeight: '240px',
-                                maxWidth: '100%',
-                                borderRadius: '8px',
-                                border: `1px solid ${colors.borderGold22}`,
-                                objectFit: 'contain',
-                                display: 'block',
-                              }}
-                            />
-                          ) : (
-                            <a
-                              href={med.url || ''}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                ...softCardStyle,
-                                minHeight: '38px',
-                                padding: '0 11px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                color: colors.goldBright,
-                                fontSize: '12px',
-                                textDecoration: 'none',
-                              }}
-                            >
-                              <FileText size={14} />
-                              <span>{med.originalName || 'Tải file chứng từ'}</span>
-                            </a>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </FormField>
+                </div>
+              )}
+            </div>
 
+            {/* Info Alert Box */}
             <div
               style={{
-                ...softCardStyle,
-                padding: '12px',
+                background: 'rgba(212,178,106,.06)',
+                border: '1px solid rgba(212,178,106,.15)',
+                borderRadius: '12px',
+                padding: '14px 16px',
                 display: 'flex',
                 gap: '10px',
                 alignItems: 'flex-start',
-                color: isBillFutureUsage || isBillPastDeadline ? colors.danger : colors.goldPale,
-                fontSize: '12px',
-                fontWeight: 800,
-                lineHeight: 1.55,
+                color: isBillFutureUsage || isBillPastDeadline ? colors.danger : colors.text2,
+                fontSize: '12.5px',
+                lineHeight: 1.6,
               }}
             >
-              <AlertTriangle size={16} style={{ marginTop: '2px', flex: '0 0 auto' }} />
+              <Info size={18} style={{ color: colors.goldBright, marginTop: '2px', flex: '0 0 auto' }} />
               <span>
-                Chỉ nhập tổng tiền bill gốc. Bill quá 10 ngày hoặc thời gian tương lai sẽ không được nhận.
+                Chỉ nhập tổng tiền hóa đơn gốc, không nhập chi tiết món/dịch vụ. Thời gian sử dụng lấy từ mốc đã xác nhận; hóa đơn quá 10 ngày sẽ không được nhận.
               </span>
             </div>
 
@@ -8561,9 +8570,20 @@ export default function PartnerPage() {
                 {partnerBillAlreadySubmittedNotice}
               </div>
             ) : (
-              <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
+              <PrimaryButton
+                disabled={!canSubmitPartnerBill}
+                type="submit"
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: '900',
+                  justifyContent: 'center',
+                }}
+              >
                 {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
-                {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
+                {isSubmittingBill ? 'Đang gửi...' : 'Gửi hóa đơn'}
               </PrimaryButton>
             )}
           </form>
