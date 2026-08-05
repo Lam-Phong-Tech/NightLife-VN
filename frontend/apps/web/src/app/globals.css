@@ -3433,37 +3433,64 @@ html.vy-admin-light .nl-admin-avatar-badge {
   color: #ffffff !important;
 }
 
+.nl-admin-nav-group-title {
+  color: #c5c0b6;
+  font-weight: 850;
+}
+
+.nl-admin-nav-item {
+  color: #e6e2da;
+  font-weight: 750;
+}
+
+.nl-admin-stat-card-title {
+  color: #e6e2da;
+  font-weight: 800;
+}
+
+.nl-admin-stat-card-subtext {
+  color: #c5c0b6;
+  font-weight: 750;
+}
+
+.nl-admin-telegram-subtext {
+  color: #c5c0b6;
+  font-weight: 750;
+}
+
 /* Custom styling for Admin Navigation & Dashboard Stat Cards in Light Mode for bold, crisp text */
+/* NOTE: Admin Light Mode uses filter: invert(1). Setting #ffffff here inverts to pure black (#000000) */
 html.vy-admin-light .nl-admin-nav-group-title {
-  color: #211e19 !important;
+  color: #ffffff !important;
   font-weight: 900 !important;
   font-size: 10px !important;
   letter-spacing: 1.8px !important;
+  opacity: 0.95 !important;
 }
 
 html.vy-admin-light .nl-admin-nav-item {
-  color: #1a1814 !important;
-  font-weight: 800 !important;
+  color: #ffffff !important;
+  font-weight: 850 !important;
 }
 
 html.vy-admin-light .nl-admin-nav-item.is-active {
-  color: #000000 !important;
+  color: #ffffff !important;
   font-weight: 900 !important;
-  background: rgba(30, 24, 12, 0.12) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
 }
 
 html.vy-admin-light .nl-admin-stat-card-title {
-  color: #16141b !important;
+  color: #ffffff !important;
   font-weight: 850 !important;
 }
 
 html.vy-admin-light .nl-admin-stat-card-subtext {
-  color: #211e19 !important;
+  color: #ffffff !important;
   font-weight: 850 !important;
 }
 
 html.vy-admin-light .nl-admin-telegram-subtext {
-  color: #211e19 !important;
+  color: #ffffff !important;
   font-weight: 850 !important;
 }
 

@@ -750,7 +750,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ]
             }] : [])] as { title: string; items: AdminNavItem[] }[]).map(group => (
               <React.Fragment key={group.title}>
-                <div className="nl-admin-nav-group-title" style={{ fontSize: '9.5px', fontWeight: 850, letterSpacing: '1.8px', color: '#7f7a70', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
+                <div className="nl-admin-nav-group-title" style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '1.8px', color: '#ffffff', textTransform: 'uppercase', padding: '12px 12px 6px', opacity: 0.95 }}>
                   {group.title}
                 </div>
                 {group.items.map(item => {
@@ -777,10 +777,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         padding: '10px 12px',
                         borderRadius: '11px',
                         cursor: 'pointer',
-                        color: isActive ? '#ffffff' : '#c5c0b6',
+                        color: isActive ? '#ffffff' : '#f3f0ea',
                         fontSize: '13.5px',
-                        fontWeight: isActive ? 750 : 650,
-                        background: isActive ? 'rgba(255,255,255,.08)' : (isHovered ? 'rgba(255,255,255,.04)' : 'transparent'),
+                        fontWeight: 800,
+                        background: isActive ? 'rgba(255,255,255,.14)' : (isHovered ? 'rgba(255,255,255,.06)' : 'transparent'),
                         textDecoration: 'none'
                       }}
                     >
