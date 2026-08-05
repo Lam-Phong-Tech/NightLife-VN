@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import "./bill-upload-mobile-fix.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { PublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import { SiteChrome } from "@/components/layout/SiteChrome";
