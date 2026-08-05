@@ -577,6 +577,18 @@ const bookingPayloadFromId = (bookingId: string, bookingCode?: string | null) =>
   return `NLBOOKING|${bookingId.trim()}|${code}||`;
 };
 
+const partnerBookingCodeDisplay = (booking?: any) => {
+  if (!booking) return '';
+  const code = booking.bookingCode || booking.code;
+  if (code && typeof code === 'string' && code.trim()) {
+    const trimmed = code.trim();
+    return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  }
+  const idStr = String(booking.id || '').trim();
+  if (!idStr) return '';
+  return `#BK-${idStr.slice(0, 8).toUpperCase()}`;
+};
+
 const normalizePartnerScanPayload = (
   value: string,
   depth = 0,
@@ -9102,7 +9114,7 @@ export default function PartnerPage() {
                     paginatedUnsentBookings.length ? (
                       paginatedUnsentBookings.map((booking, index) => {
                         const active = billBookingId === booking.id;
-                        const code = booking.id.slice(0, 8).toUpperCase();
+                        const code = partnerBookingCodeDisplay(booking);
                         const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                         const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
@@ -9127,7 +9139,7 @@ export default function PartnerPage() {
                               {rowIndex}
                             </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
-                              #{code}
+                              {code}
                             </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
                               {storeName}
@@ -9222,7 +9234,7 @@ export default function PartnerPage() {
                 paginatedUnsentBookings.length ? (
                   paginatedUnsentBookings.map((booking, index) => {
                     const active = billBookingId === booking.id;
-                    const code = booking.id.slice(0, 8).toUpperCase();
+                    const code = partnerBookingCodeDisplay(booking);
                     const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                     const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
@@ -9239,7 +9251,7 @@ export default function PartnerPage() {
                       >
                         <div className="partner-bill-mobile-head">
                           <span className="partner-bill-mobile-index">#{rowIndex}</span>
-                          <span className="partner-bill-mobile-code">#{code}</span>
+                          <span className="partner-bill-mobile-code">{code}</span>
                           <StatusPill tone="gold">Chưa gửi</StatusPill>
                         </div>
                         <div className="partner-bill-mobile-store">{storeName}</div>
@@ -9503,7 +9515,7 @@ export default function PartnerPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
                       <span style={{ color: colors.text2, flexShrink: 0 }}>Mã đặt chỗ</span>
                       <span style={{ fontWeight: 900, color: colors.goldBright, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        #{selectedBillBooking?.id.slice(0, 8).toUpperCase() ?? selectedBill?.booking?.id.slice(0, 8).toUpperCase()}
+                        {partnerBookingCodeDisplay(selectedBillBooking || selectedBill?.booking)}
                       </span>
                     </div>
                   )}
