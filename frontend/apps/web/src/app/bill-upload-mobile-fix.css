@@ -1,82 +1,117 @@
 /*
  * Bill evidence upload preview overflow fix.
  *
- * The bill page keeps its component styles colocated in page.tsx. These global
- * overrides are intentionally scoped to .nl-bill-page and use higher priority
- * so long, unbroken file names and fixed-width action buttons cannot expand the
- * mobile viewport after an image or PDF is selected.
+ * Long camera-generated file names have no natural breaking points. On mobile,
+ * that intrinsic width can expand the whole bill form even when the parent uses
+ * overflow-x: hidden. Keep every upload child shrinkable, allow the file name to
+ * break, and place actions on their own row.
  */
 
-.nl-bill-page .nl-upload-preview-card {
-  max-width: 100% !important;
+.nl-bill-page .nl-field,
+.nl-bill-page .nl-upload-zone-wrapper,
+.nl-bill-page .nl-upload-preview-card,
+.nl-bill-page .nl-preview-info,
+.nl-bill-page .nl-preview-actions {
+  box-sizing: border-box !important;
   min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.nl-bill-page .nl-upload-zone-wrapper {
+  overflow: hidden !important;
+  contain: inline-size !important;
+}
+
+.nl-bill-page .nl-upload-preview-card {
+  width: 100% !important;
   overflow: hidden !important;
 }
 
 .nl-bill-page .nl-preview-info {
   flex: 1 1 0 !important;
   width: 0 !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
+  overflow: hidden !important;
 }
 
 .nl-bill-page .nl-preview-filename {
-  display: block !important;
+  display: -webkit-box !important;
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-all !important;
+  white-space: normal !important;
+  line-height: 1.35 !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
 }
 
 .nl-bill-page .nl-preview-actions {
-  min-width: 0 !important;
+  flex: 0 1 auto !important;
 }
 
 @media (max-width: 620px) {
   .nl-bill-page .nl-upload-preview-card {
     display: grid !important;
     grid-template-columns: 48px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "thumb info"
+      "actions actions" !important;
     align-items: center !important;
     gap: 10px 12px !important;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
   .nl-bill-page .nl-preview-thumb-container,
   .nl-bill-page .nl-preview-file-icon {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
+    grid-area: thumb !important;
   }
 
   .nl-bill-page .nl-preview-info {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
+    grid-area: info !important;
     width: 100% !important;
   }
 
   .nl-bill-page .nl-preview-actions {
-    grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-area: actions !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
     gap: 8px !important;
     width: 100% !important;
-    min-width: 0 !important;
   }
 
-  .nl-bill-page .nl-ocr-btn-premium,
-  .nl-bill-page .nl-delete-file-btn {
+  .nl-bill-page .nl-ocr-btn-premium {
+    flex: 1 1 190px !important;
     min-width: 0 !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .nl-bill-page .nl-delete-file-btn {
+    flex: 0 0 auto !important;
+    min-width: 72px !important;
     justify-content: center !important;
   }
 
   .nl-bill-page .nl-ocr-btn-premium span,
   .nl-bill-page .nl-delete-file-btn span {
     min-width: 0 !important;
+    max-width: 100% !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .nl-bill-page .nl-preview-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .nl-bill-page .nl-ocr-btn-premium,
+  .nl-bill-page .nl-delete-file-btn {
+    width: 100% !important;
   }
 }
