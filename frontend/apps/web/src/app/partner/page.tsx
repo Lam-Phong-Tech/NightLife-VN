@@ -3300,7 +3300,7 @@ export default function PartnerPage() {
       code: bill.billNumber ?? bill.id.slice(0, 8),
       service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store?.name ?? 'Quán'}`,
       time: formatDateTime(bill.submittedAt),
-      amount: bill.discountVnd ?? bill.totalVnd ?? 0,
+      amount: bill.discountVnd ?? null,
       status: bill.status,
       submittedAtMs:
         submittedAtMs !== null && Number.isFinite(submittedAtMs) ? submittedAtMs : null,
@@ -3644,14 +3644,14 @@ export default function PartnerPage() {
         label: 'Đặt chỗ tại quán',
         value: bookingMetricCount.toLocaleString('vi-VN'),
         sub: `${completedBookings} lượt đã xác nhận`,
-        trend: '+12% tuần này',
+        trend: 'Hoạt động',
         icon: TicketCheck,
       },
       {
         label: 'Lượt xem trang',
         value: profileViewMetricCount.toLocaleString('vi-VN'),
         sub: 'Ước tính từ hoạt động partner',
-        trend: stores.length ? '+8% so với kỳ trước' : 'Chờ dữ liệu',
+        trend: stores.length ? 'Theo lượt xem' : 'Chờ dữ liệu',
         icon: Eye,
       },
       {
@@ -6033,7 +6033,7 @@ export default function PartnerPage() {
                       {row.code}
                     </span>
                     <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>
-                      -{moneyVnd(row.amount)}
+                      {row.amount != null ? `-${moneyVnd(row.amount)}` : 'Giảm giá: Chưa xác định'}
                     </span>
                   </div>
                   <div
@@ -6687,7 +6687,7 @@ export default function PartnerPage() {
                         borderBottom: `1px solid ${colors.borderHair}`,
                       }}
                     >
-                      -{moneyVnd(row.amount)}
+                      {row.amount != null ? `-${moneyVnd(row.amount)}` : 'Giảm giá: Chưa xác định'}
                     </td>
                     <td
                       style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}
@@ -6737,7 +6737,7 @@ export default function PartnerPage() {
                   </span>
                   <span>
                     <small>Giảm giá</small>
-                    <b>-{moneyVndCode(row.amount)}</b>
+                    <b>{row.amount != null ? `-${moneyVndCode(row.amount)}` : 'Giảm giá: Chưa xác định'}</b>
                   </span>
                 </div>
               </article>

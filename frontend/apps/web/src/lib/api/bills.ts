@@ -1,6 +1,6 @@
 import { apiClient, apiFormDataClient } from "./client";
 
-export type BillStatus = "DRAFT" | "SUBMITTED" | "VERIFIED" | "REJECTED" | "PAID" | "VOIDED";
+export type BillStatus = "DRAFT" | "SUBMITTED" | "VERIFIED" | "REJECTED" | "PAID" | "VOIDED" | "PENDING_PM_BA";
 
 export type BillMedia = {
   id: string;
@@ -17,8 +17,8 @@ export type BillRecord = {
   billNumber?: string | null;
   status: BillStatus;
   submitterType?: "MEMBER" | "PARTNER" | string;
-  subtotalVnd?: number;
-  discountVnd?: number;
+  subtotalVnd?: number | null;
+  discountVnd?: number | null;
   totalVnd: number;
   submittedAt?: string | null;
   usedAt?: string | null;
@@ -26,6 +26,7 @@ export type BillRecord = {
   verifiedAt?: string | null;
   rejectedAt?: string | null;
   rejectReason?: string | null;
+  paidAt?: string | null;
   store?: {
     id: string;
     name: string;
