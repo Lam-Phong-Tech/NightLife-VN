@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PartnerPage from "../src/app/partner/page";
 import { SystemFeedbackProvider } from "../src/components/ui/SystemFeedback";
@@ -46,6 +46,9 @@ vi.mock("@/lib/api/client", () => {
 
   return {
     apiClient: mocks.apiClient,
+    apiFormDataClient: vi.fn(),
+    getAuthToken: vi.fn(() => "mock-token"),
+    resolveClientUrl: vi.fn((url: string) => url),
     ApiError,
     translateApiMessage: vi.fn((message?: string, _status?: number, fallback?: string) => message ?? fallback ?? ""),
   };
@@ -142,6 +145,9 @@ describe("PartnerSettlementMoney", () => {
         <PartnerPage />
       </SystemFeedbackProvider>
     );
+
+    const settlementNavBtn = await screen.findByRole("button", { name: /Đối soát/i });
+    fireEvent.click(settlementNavBtn);
 
     await waitFor(() => {
       expect(screen.getByText("BILL-NULL-001")).toBeInTheDocument();

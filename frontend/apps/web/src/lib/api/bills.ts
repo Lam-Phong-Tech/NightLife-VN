@@ -43,6 +43,10 @@ export type BillRecord = {
       id: string;
       code: string;
       name: string;
+      discountType?: "PERCENT" | "FIXED_AMOUNT" | string;
+      discountValue?: number;
+      maxDiscountVnd?: number | null;
+      minSpendVnd?: number | null;
     } | null;
     couponIssue?: {
       id: string;
@@ -54,6 +58,10 @@ export type BillRecord = {
     id: string;
     code: string;
     name: string;
+    discountType?: "PERCENT" | "FIXED_AMOUNT" | string;
+    discountValue?: number;
+    maxDiscountVnd?: number | null;
+    minSpendVnd?: number | null;
   } | null;
   couponIssue?: {
     id: string;
