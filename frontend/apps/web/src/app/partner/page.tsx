@@ -9672,27 +9672,31 @@ export default function PartnerPage() {
                     border: '1px solid rgba(212,178,106,.25)',
                     borderRadius: '14px',
                     background: colors.surface2,
-                    padding: '14px',
+                    padding: '12px 14px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '12px',
+                    gap: '10px',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
                     {billEvidenceFile?.type.startsWith('image/') ? (
                       <img
                         src={URL.createObjectURL(billEvidenceFile)}
                         alt="Preview"
-                        style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                        style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
                       />
                     ) : (
-                      <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.goldBright }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.goldBright, flexShrink: 0 }}>
                         <FileText size={22} />
                       </div>
                     )}
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', display: 'block' }}>
                         {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Chứng từ đính kèm'}
                       </span>
                       {billEvidenceFile && (
@@ -9702,10 +9706,10 @@ export default function PartnerPage() {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flex: '0 0 auto' }}>
                     <label
                       style={{
-                        padding: '6px 12px',
+                        padding: '6px 10px',
                         borderRadius: '8px',
                         border: `1px solid ${colors.borderGold22}`,
                         background: 'transparent',
@@ -9713,6 +9717,9 @@ export default function PartnerPage() {
                         fontSize: '12px',
                         fontWeight: 800,
                         cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
                       }}
                     >
                       Đổi file
@@ -9727,7 +9734,7 @@ export default function PartnerPage() {
                     {billEvidenceFile && (
                       <GhostButton
                         onClick={() => setBillEvidenceFile(null)}
-                        style={{ padding: '6px 10px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px' }}
+                        style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
                       >
                         Xóa
                       </GhostButton>
