@@ -65,6 +65,8 @@ const emptyPasswordForm: PasswordForm = {
 type PasswordVisibility = Record<keyof PasswordForm, boolean>;
 
 const displayNamePattern = /^[\p{L}\s]+$/u;
+const sanitizeDisplayNameInput = (value: string) =>
+  value.replace(/[^\p{L}\s]/gu, "").replace(/\s{2,}/g, " ");
 
 function formFromUser(user: AuthUser | null): ProfileForm {
   return {
@@ -511,7 +513,7 @@ export default function Page() {
               <ProfileField
                 label={translateText("Họ tên", activeLanguage)}
                 value={profileForm.displayName}
-                onChange={(value) => updateProfileField("displayName", value)}
+                onChange={(value) => updateProfileField("displayName", sanitizeDisplayNameInput(value))}
                 placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
                 error={profileErrors.displayName}
                 autoComplete="name"

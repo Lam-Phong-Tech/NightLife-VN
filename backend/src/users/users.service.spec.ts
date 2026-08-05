@@ -153,4 +153,17 @@ describe('UsersService', () => {
       data: { partnerAccountId: 'pa-1', ownerId: 'partner-user-1' },
     });
   });
+
+  it('rejects profile display names that contain only numbers', async () => {
+    prisma.user.findUnique.mockResolvedValue(activeUser);
+
+    await expect(
+      service.updateProfile(activeUser.id, {
+        displayName: '123456',
+        email: activeUser.email,
+      }),
+    ).rejects.toThrow('Họ tên chỉ được nhập chữ cái và khoảng trắng.');
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
 });

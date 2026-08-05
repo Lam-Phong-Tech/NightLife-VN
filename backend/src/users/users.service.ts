@@ -20,6 +20,28 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const normalizeDisplayName = (value?: string | null) =>
   value?.trim().replace(/\s+/g, ' ') || undefined;
 
+const displayNamePattern = /^[\p{L}\s]+$/u;
+
+const assertValidDisplayName = (displayName: string | undefined) => {
+  if (!displayName) {
+    throw new BadRequestException('Vui lòng nhập họ tên.');
+  }
+
+  if (displayName.length < 2) {
+    throw new BadRequestException('Họ tên cần tối thiểu 2 ký tự.');
+  }
+
+  if (displayName.length > 80) {
+    throw new BadRequestException('Họ tên không được vượt quá 80 ký tự.');
+  }
+
+  if (!displayNamePattern.test(displayName)) {
+    throw new BadRequestException(
+      'Họ tên chỉ được nhập chữ cái và khoảng trắng.',
+    );
+  }
+};
+
 const userAuditSnapshot = (user: {
   email: string;
   displayName?: string | null;
@@ -79,6 +101,7 @@ export class UsersService {
       throw new BadRequestException('Email không đúng định dạng');
     }
     const displayName = normalizeDisplayName(input.displayName);
+    assertValidDisplayName(displayName);
     const phone = input.phone?.trim() || null;
 
     if (currentUser.email !== email) {
