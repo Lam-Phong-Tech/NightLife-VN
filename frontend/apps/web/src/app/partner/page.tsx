@@ -8020,11 +8020,6 @@ export default function PartnerPage() {
                   count: storeBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
                 },
                 {
-                  key: 'PAID',
-                  label: 'Đã thanh toán',
-                  count: storeBills.filter((b) => b.status.toUpperCase() === 'PAID').length,
-                },
-                {
                   key: 'VOIDED',
                   label: 'Đã hủy',
                   count: storeBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
