@@ -186,14 +186,13 @@ function SupportAvatar({ size = 38 }: { size?: number }) {
 function ChatBubble({
   message,
   isMobile,
-  activeLanguage,
 }: {
   message: ChatMessage;
   isMobile: boolean;
   activeLanguage: LanguageCode;
 }) {
   const isUser = message.from === "user";
-  const messageText = translateText(message.text, activeLanguage);
+  const messageText = message.text;
   const bubbleStyle: CSSProperties = {
     borderRadius: isUser ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
     padding: isMobile ? "10px 13px" : "9px 13px",
@@ -207,6 +206,8 @@ function ChatBubble({
     return (
       <div style={{ alignSelf: "flex-end", maxWidth: isMobile ? "82%" : "84%" }}>
         <div
+          className="notranslate"
+          translate="no"
           style={{
             ...bubbleStyle,
             background: chatColors.userGrad,
@@ -244,6 +245,8 @@ function ChatBubble({
       <SupportAvatar size={isMobile ? 28 : 26} />
       <div>
         <div
+          className="notranslate"
+          translate="no"
           style={{
             ...bubbleStyle,
             background: "var(--vy-surface-3)",
@@ -322,7 +325,6 @@ function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMe
           key={message.id}
           message={message}
           isMobile={isMobile}
-          activeLanguage={activeLanguage}
         />
       ))}
     </div>
@@ -356,6 +358,8 @@ function ChatComposer({
       }}
     >
       <input
+        className="notranslate"
+        translate="no"
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         placeholder={translateText("Nhập tin nhắn...", activeLanguage)}

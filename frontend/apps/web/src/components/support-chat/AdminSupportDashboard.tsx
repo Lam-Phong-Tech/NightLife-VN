@@ -587,6 +587,8 @@ export function AdminSupportDashboard() {
                     <div key={idx} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
                       <div className="max-w-[62%]">
                         <div
+                          className="notranslate"
+                          translate="no"
                           style={
                             isAdmin
                               ? {
@@ -695,7 +697,8 @@ export function AdminSupportDashboard() {
                         if (e.key === 'Enter') sendMessage();
                       }}
                       placeholder="Nhập tin nhắn trả lời khách…"
-                      className="flex-1 bg-transparent border-none outline-none text-[13.5px]"
+                      className="flex-1 bg-transparent border-none outline-none text-[13.5px] notranslate"
+                      translate="no"
                       style={{
                         color: '#f3f0ea',
                         caretColor: '#d4b26a',

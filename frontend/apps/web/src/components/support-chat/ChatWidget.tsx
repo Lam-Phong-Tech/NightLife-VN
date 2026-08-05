@@ -113,13 +113,14 @@ export function ChatWidget() {
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`max-w-[80%] rounded-lg p-2 text-sm ${
+                className={`max-w-[80%] rounded-lg p-2 text-sm notranslate ${
                   msg.senderType === 'GUEST' || msg.senderType === 'USER'
                     ? 'bg-primary text-white ml-auto'
                     : msg.senderType === 'SYSTEM'
                     ? 'bg-gray-200 text-gray-800 text-center mx-auto text-xs'
                     : 'bg-white border border-gray-200 text-gray-800'
                 }`}
+                translate="no"
               >
                 {msg.content}
               </div>
@@ -135,7 +136,8 @@ export function ChatWidget() {
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               disabled={isOffline}
               placeholder={isOffline ? "Ngoài giờ làm việc..." : "Nhập tin nhắn..."}
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:bg-gray-100"
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:bg-gray-100 notranslate"
+              translate="no"
             />
             <button
               onClick={sendMessage}
