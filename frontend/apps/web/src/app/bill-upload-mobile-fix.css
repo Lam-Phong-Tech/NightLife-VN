@@ -1,0 +1,82 @@
+/*
+ * Bill evidence upload preview overflow fix.
+ *
+ * The bill page keeps its component styles colocated in page.tsx. These global
+ * overrides are intentionally scoped to .nl-bill-page and use higher priority
+ * so long, unbroken file names and fixed-width action buttons cannot expand the
+ * mobile viewport after an image or PDF is selected.
+ */
+
+.nl-bill-page .nl-upload-preview-card {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.nl-bill-page .nl-preview-info {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.nl-bill-page .nl-preview-filename {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.nl-bill-page .nl-preview-actions {
+  min-width: 0 !important;
+}
+
+@media (max-width: 620px) {
+  .nl-bill-page .nl-upload-preview-card {
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 10px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .nl-bill-page .nl-preview-thumb-container,
+  .nl-bill-page .nl-preview-file-icon {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .nl-bill-page .nl-preview-info {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+  }
+
+  .nl-bill-page .nl-preview-actions {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .nl-bill-page .nl-ocr-btn-premium,
+  .nl-bill-page .nl-delete-file-btn {
+    min-width: 0 !important;
+    justify-content: center !important;
+  }
+
+  .nl-bill-page .nl-ocr-btn-premium span,
+  .nl-bill-page .nl-delete-file-btn span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
