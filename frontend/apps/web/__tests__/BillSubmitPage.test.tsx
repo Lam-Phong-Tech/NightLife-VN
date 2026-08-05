@@ -363,8 +363,8 @@ describe("Bill submit page", () => {
       });
     });
     expect(mocks.uploadEvidence).toHaveBeenCalledWith("bill-rejected-1", expect.any(File));
-    expect(mocks.uploadEvidence.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.resubmitMemberBill.mock.invocationCallOrder[0],
+    expect(mocks.uploadEvidence.mock.invocationCallOrder[0]!).toBeLessThan(
+      mocks.resubmitMemberBill.mock.invocationCallOrder[0]!,
     );
     expect(mocks.submitMemberBill).not.toHaveBeenCalled();
 

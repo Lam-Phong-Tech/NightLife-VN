@@ -471,12 +471,6 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "영수증 재제출",
     zh: "重新提交账单",
   },
-  "Vui lòng tải lên ảnh/chứng từ mới để gửi lại hóa đơn.": {
-    en: "Please upload a new image/proof to resubmit the bill.",
-    ja: "新しい画像/証明書をアップロードして請求書を再送信してください。",
-    ko: "새 이미지/증빙 để 영수증을 재제출해 주세요.",
-    zh: "请上传新的图片/凭证以重新提交账单。",
-  },
   "Đã duyệt": {
     en: "Approved",
     ja: "承認済み",
@@ -717,18 +711,6 @@ const billPageCopy: Record<string, Partial<Record<LanguageCode, string>>> = {
     ko: "청구서 상태",
     zh: "账单状态",
   },
-  "Chưa gửi": {
-    en: "Not sent",
-    ja: "未送信",
-    ko: "미제출",
-    zh: "未提交",
-  },
-  "Duyệt": {
-    en: "Approved",
-    ja: "承認済み",
-    ko: "승인됨",
-    zh: "已批准",
-  },
   "Đang tải danh sách hóa đơn...": {
     en: "Loading bills...",
     ja: "請求書を読み込んでいます...",
@@ -940,16 +922,24 @@ const bookingTitle = (booking: BookingRecord) => {
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
 };
 
-const isBookingAdminConfirmedForBill = (booking: BookingRecord | null | undefined) =>
+type UsageCheckBooking = {
+  status?: string | null;
+  scheduledAt?: string | null;
+  confirmedAt?: string | null;
+  updatedAt?: string | null;
+  qr?: { usedAt?: string | null } | null;
+  couponIssue?: { id?: string; code?: string; status?: string; usedAt?: string | null } | null;
+};
+
+const isBookingAdminConfirmedForBill = (booking: UsageCheckBooking | null | undefined) =>
   ["CHECKED_IN", "COMPLETED"].includes(String(booking?.status ?? "").toUpperCase());
 
-const bookingConfirmedUsageAt = (booking: BookingRecord | null | undefined) =>
+const bookingConfirmedUsageAt = (booking: UsageCheckBooking | null | undefined) =>
   booking?.qr?.usedAt ??
   booking?.couponIssue?.usedAt ??
   (isBookingAdminConfirmedForBill(booking)
     ? booking?.updatedAt ?? booking?.confirmedAt ?? booking?.scheduledAt ?? null
-    : null) ??
-  null;
+    : null);
 
 const confirmedUsageSourceLabel = (
   booking: BookingRecord | null,
@@ -1086,10 +1076,14 @@ const canAttachCouponIssueToBill = (issue: CouponIssue) =>
 const billCode = (bill: ExistingBill) =>
   bill.billNumber?.trim() || bill.id.slice(0, 8).toUpperCase();
 
-const billListCode = (bill: ExistingBill) =>
-  bill.booking?.bookingCode ||
-  (bill.booking?.id ? bill.booking.id.slice(0, 8).toUpperCase() : null) ||
-  billCode(bill);
+const billListCode = (bill: ExistingBill) => {
+  const booking = "booking" in bill ? bill.booking : undefined;
+  return (
+    booking?.bookingCode ||
+    (booking?.id ? booking.id.slice(0, 8).toUpperCase() : null) ||
+    billCode(bill)
+  );
+};
 
 const findBillForBooking = (
   booking: BookingRecord | null | undefined,
@@ -1119,15 +1113,26 @@ const couponIssueOptionLabel = (issue: CouponIssue, language: LanguageCode) => {
 };
 
 type CouponDiscountSource = {
+  id?: string;
+  code?: string;
+  name?: string;
   discountType?: "PERCENT" | "FIXED_AMOUNT" | string;
   discountValue?: number;
   maxDiscountVnd?: number | null;
   minSpendVnd?: number | null;
 };
 
+type CouponDiscountIssueSource = {
+  id?: string;
+  code?: string;
+  status?: string;
+  discountPercent?: number | null;
+  discountRuleSnapshot?: CouponIssue["discountRuleSnapshot"];
+};
+
 const couponDiscountLabel = (
   coupon: CouponDiscountSource | null | undefined,
-  issue: CouponIssue | null | undefined,
+  issue: CouponDiscountIssueSource | null | undefined,
   formatMoney: (value: number) => string,
   language: LanguageCode,
 ) => {

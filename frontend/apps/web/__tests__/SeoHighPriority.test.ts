@@ -128,7 +128,7 @@ describe("tour detail metadata completeness", () => {
     const meta = buildTourMetadata(makeTour() as Parameters<typeof buildTourMetadata>[0]);
 
     expect(meta).toHaveProperty("twitter");
-    expect(meta.twitter?.card).toBe("summary_large_image");
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
     expect(meta.twitter?.title).toBeTruthy();
     expect(meta.twitter?.description).toBeTruthy();
   });

@@ -29,6 +29,9 @@ vi.mock("@/lib/api/client", () => {
 
   return {
     apiClient: mocks.apiClient,
+    apiFormDataClient: vi.fn(),
+    getAuthToken: vi.fn(() => "mock-token"),
+    resolveClientUrl: vi.fn((url: string) => url),
     ApiError,
     translateApiMessage: vi.fn((message?: string, _status?: number, fallback?: string) => message ?? fallback ?? ""),
   };

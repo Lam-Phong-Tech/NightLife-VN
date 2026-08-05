@@ -324,7 +324,7 @@ export async function middleware(request: NextRequest) {
       process.env.BACKEND_API_URL ||
       (hostKind === "local" ? request.nextUrl.origin + "/api/backend" : "https://api.vietyoru.com");
     const detailApiUrl = new URL(
-      `${detailApiBaseUrl.replace(/\/$/, "")}/${resourceType}/${encodeURIComponent(slug)}`,
+      `${detailApiBaseUrl.replace(/\/$/, "")}/${resourceType}/${encodeURIComponent(slug || "")}`,
     );
 
     try {
