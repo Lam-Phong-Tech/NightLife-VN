@@ -353,7 +353,8 @@ function CampaignDealCard({
   nowMs: number;
 }) {
   const storeName = readableName(campaign.targetStore!.name);
-  const storeDistrict = campaignStoreDistrict(campaign.targetStore);
+  const rawStoreDistrict = campaignStoreDistrict(campaign.targetStore);
+  const storeDistrict = rawStoreDistrict ? translateText(rawStoreDistrict, language) : "";
   const campaignName = readableName(campaign.name);
   const isVip = campaign.name.toUpperCase().includes("VIP");
 
