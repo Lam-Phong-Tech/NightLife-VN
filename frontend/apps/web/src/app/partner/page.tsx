@@ -8258,7 +8258,7 @@ export default function PartnerPage() {
               <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
-                    {['STT', 'Mã hóa đơn / Mã đặt bàn', 'Quán', 'Tổng tiền / Thao tác', 'Thời gian', 'Mã đặt bàn', 'Trạng thái'].map((header) => (
+                    {['STT', 'Mã hóa đơn / Mã đặt bàn', 'Quán', 'Tổng tiền / Thao tác', 'Trạng thái'].map((header) => (
                       <th
                         key={header}
                         style={{
@@ -8279,7 +8279,6 @@ export default function PartnerPage() {
                         const active = billBookingId === booking.id;
                         const code = booking.id.slice(0, 8).toUpperCase();
                         const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
-                        const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
                         const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                         return (
@@ -8311,12 +8310,6 @@ export default function PartnerPage() {
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
                               NHẬP HÓA ĐƠN
                             </td>
-                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                              {formatDateTime(confirmedTime)}
-                            </td>
-                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                              {translateBookingStatus(booking.status)} · {formatDateTime(booking.scheduledAt)}
-                            </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
                               <StatusPill tone="gold">Chưa gửi</StatusPill>
                             </td>
@@ -8326,7 +8319,7 @@ export default function PartnerPage() {
                     ) : (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={5}
                           style={{
                             padding: '18px 12px',
                             color: colors.text2,
@@ -8373,12 +8366,6 @@ export default function PartnerPage() {
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldPale, fontSize: '12.5px', fontWeight: 900 }}>
                             {moneyVnd(bill.totalVnd ?? 0)}
                           </td>
-                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                            {formatDateTime(bill.usedAt ?? bill.submittedAt)}
-                          </td>
-                          <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
-                            {bill.booking ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
-                          </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
                             <StatusPill tone={billStatusTone(bill.status)}>
                               {translateBillStatus(bill.status)}
@@ -8390,7 +8377,7 @@ export default function PartnerPage() {
                   ) : (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={5}
                         style={{
                           padding: '18px 12px',
                           color: colors.text2,
@@ -8412,7 +8399,6 @@ export default function PartnerPage() {
                     const active = billBookingId === booking.id;
                     const code = booking.id.slice(0, 8).toUpperCase();
                     const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
-                    const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
                     const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                     return (
@@ -8433,10 +8419,6 @@ export default function PartnerPage() {
                             <small>Thao tác</small>
                             <b style={{ color: colors.goldBright }}>NHẬP HÓA ĐƠN</b>
                           </span>
-                          <span>
-                            <small>Thời gian</small>
-                            <b>{formatDateTime(confirmedTime)}</b>
-                          </span>
                         </div>
                       </button>
                     );
@@ -8449,9 +8431,6 @@ export default function PartnerPage() {
                   const active = selectedBillId === bill.id;
                   const billCode = bill.billNumber ?? bill.id.slice(0, 8);
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
-                  const bookingText = bill.booking
-                    ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}`
-                    : 'Không liên kết booking';
                   const statusTone = billStatusTone(bill.status);
                   const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
@@ -8473,12 +8452,7 @@ export default function PartnerPage() {
                           <small>Tổng tiền</small>
                           <b>{moneyVnd(bill.totalVnd ?? 0)}</b>
                         </span>
-                        <span>
-                          <small>Thời gian</small>
-                          <b>{formatDateTime(bill.usedAt ?? bill.submittedAt)}</b>
-                        </span>
                       </div>
-                      <div className="partner-bill-mobile-booking">{bookingText}</div>
                     </button>
                   );
                 })
