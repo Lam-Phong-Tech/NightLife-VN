@@ -2688,7 +2688,7 @@ export default function Page() {
         .nl-bill-filter-chip {
           flex: none;
           min-height: 34px;
-          border-radius: 999px;
+          border-radius: 8px;
           padding: 8px 14px;
           font-size: 12px;
           white-space: nowrap;

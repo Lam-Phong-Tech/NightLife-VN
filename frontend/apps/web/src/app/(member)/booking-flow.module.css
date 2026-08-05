@@ -711,6 +711,22 @@
   user-select: none;
 }
 
+.timeChip {
+  min-width: 68px;
+  min-height: 38px;
+  border-radius: 11px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.filterChip {
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .timeChip:focus,
 .filterChip:focus,
 .timeChip:focus-visible,
