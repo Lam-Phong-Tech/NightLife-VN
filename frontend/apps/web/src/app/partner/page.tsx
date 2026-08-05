@@ -1394,8 +1394,7 @@ const contentTabs: { key: ListingTabKey; label: string }[] = [
 
 const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'scan', label: 'Quét mã QR', icon: QrCode },
-  { key: 'overview', label: 'Tổng quan', icon: Home },
-  { key: 'settlement', label: 'Đối soát', icon: FileClock },
+  { key: 'overview', label: 'Trang chủ', icon: Home },
   { key: 'listing', label: 'Đăng tin', icon: Camera },
   { key: 'bill', label: 'Hóa đơn', icon: ReceiptText },
   { key: 'settings', label: 'Cài đặt', icon: Settings },
@@ -1408,7 +1407,7 @@ const periodItems: { key: PeriodKey; label: string }[] = [
 ];
 
 const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
-  overview: { eyebrow: 'PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
+  overview: { eyebrow: 'PARTNER DASHBOARD', title: 'Trang chủ' },
   scan: { eyebrow: 'SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
   settlement: { eyebrow: 'LỊCH SỬ SỬ DỤNG', title: 'Đối soát coupon' },
   listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
@@ -6009,7 +6008,46 @@ export default function PartnerPage() {
 
   const renderOverviewPanel = () => (
     <>
-      <div className="partner-metric-grid">
+      {/* Bộ lọc kỳ thống kê */}
+      <PanelCard style={{ marginBottom: '16px' }}>
+        <div
+          className="partner-filter-head"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '14px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
+          <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {periodItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setPeriod(item.key)}
+                aria-pressed={period === item.key}
+                style={{
+                  minHeight: '38px',
+                  borderRadius: '18px',
+                  border: `1px solid ${period === item.key ? colors.borderGold40 : colors.borderSoft}`,
+                  background: period === item.key ? colors.goldGrad : colors.surface3,
+                  color: period === item.key ? colors.onGold : colors.text2,
+                  padding: '0 13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </PanelCard>
+
+      {/* 4 Thẻ chỉ số tổng quan */}
+      <div className="partner-metric-grid" style={{ marginBottom: '16px' }}>
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
@@ -6072,111 +6110,258 @@ export default function PartnerPage() {
         })}
       </div>
 
-      <div className="partner-overview-grid">
-        <PanelCard>
-          <SectionHeading
-            eyebrow="WEEKLY BOOKINGS"
-            title="Lượt đặt chỗ 7 ngày"
-            action={
-              <StatusPill tone="gold">
-                <TrendingUp size={13} />
-                Dữ liệu hiện tại
-              </StatusPill>
-            }
-          />
-          {bookingTrendBars.length ? (
-            <div className="partner-bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
-              {bookingTrendBars.map((bar, index) => (
+      {/* Biểu đồ lượt đặt chỗ 7 ngày */}
+      <PanelCard style={{ marginBottom: '16px' }}>
+        <SectionHeading
+          eyebrow="WEEKLY BOOKINGS"
+          title="Lượt đặt chỗ 7 ngày"
+          action={
+            <StatusPill tone="gold">
+              <TrendingUp size={13} />
+              Dữ liệu hiện tại
+            </StatusPill>
+          }
+        />
+        {bookingTrendBars.length ? (
+          <div className="partner-bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
+            {bookingTrendBars.map((bar, index) => (
+              <div
+                key={bar.label}
+                style={{
+                  flex: 1,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  minWidth: 0,
+                }}
+              >
                 <div
-                  key={bar.label}
                   style={{
-                    flex: 1,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    minWidth: 0,
+                    width: '100%',
+                    height: `${bar.height}%`,
+                    borderRadius: '8px 8px 0 0',
+                    background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.22)',
+                    boxShadow: index === 4 ? '0 14px 26px -18px rgba(212,178,106,.85)' : 'none',
                   }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: `${bar.height}%`,
-                      borderRadius: '8px 8px 0 0',
-                      background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.22)',
-                      boxShadow: index === 4 ? '0 14px 26px -18px rgba(212,178,106,.85)' : 'none',
-                    }}
-                  />
-                  <span style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800 }}>
-                    {bar.count}
-                  </span>
-                  <span style={{ color: colors.muted, fontSize: '11px' }}>{bar.label}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ ...softCardStyle, minHeight: '235px', display: 'grid', placeItems: 'center', color: colors.text2, fontSize: '13px', lineHeight: 1.6, padding: '18px', textAlign: 'center' }}>
-              Chưa có dữ liệu đặt chỗ trong kỳ đã chọn.
-            </div>
-          )}
-        </PanelCard>
-
-        <PanelCard>
-          <SectionHeading eyebrow="RECENT REDEMPTIONS" title="Đối soát gần đây" />
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {settlementRows.length ? (
-              settlementRows.slice(0, 4).map((row) => (
-                <div key={row.code} style={{ ...softCardStyle, padding: '12px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: '10px',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>
-                      {row.code}
-                    </span>
-                    <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>
-                      -{moneyVnd(row.amount)}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '6px',
-                      color: colors.text,
-                      fontSize: '12.5px',
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    {row.service}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '5px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: '8px',
-                      color: colors.muted,
-                      fontSize: '11px',
-                    }}
-                  >
-                    <span>{row.time}</span>
-                    <span>Khách đã ẩn</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div style={{ ...softCardStyle, padding: '16px', color: colors.text2, fontSize: '13px', lineHeight: 1.6 }}>
-                Chưa có hóa đơn hoặc lượt sử dụng coupon trong phạm vi quán.
+                />
+                <span style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800 }}>
+                  {bar.count}
+                </span>
+                <span style={{ color: colors.muted, fontSize: '11px' }}>{bar.label}</span>
               </div>
-            )}
+            ))}
           </div>
-        </PanelCard>
-      </div>
+        ) : (
+          <div style={{ ...softCardStyle, minHeight: '235px', display: 'grid', placeItems: 'center', color: colors.text2, fontSize: '13px', lineHeight: 1.6, padding: '18px', textAlign: 'center' }}>
+            Chưa có dữ liệu đặt chỗ trong kỳ đã chọn.
+          </div>
+        )}
+      </PanelCard>
+
+      {/* Bảng Lịch sử đối soát & Sử dụng coupon đầy đủ */}
+      <PanelCard>
+        <SectionHeading
+          eyebrow="SETTLEMENT TABLE"
+          title="Lịch sử đối soát & Sử dụng coupon"
+          action={
+            <StatusPill tone="gold">
+              <CalendarDays size={13} />
+              {periodItems.find((item) => item.key === period)?.label}
+            </StatusPill>
+          }
+        />
+
+        <div
+          className="partner-settlement-filter-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.1fr 1.4fr .85fr .85fr .9fr auto',
+            gap: '10px',
+            alignItems: 'end',
+            marginBottom: '16px',
+          }}
+        >
+          <FormField label="Mã giao dịch">
+            <input
+              value={settlementFilters.code}
+              onChange={(event) => updateSettlementFilter('code', event.target.value)}
+              placeholder="VD: BILL-2026..."
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Dịch vụ / Coupon">
+            <input
+              value={settlementFilters.service}
+              onChange={(event) => updateSettlementFilter('service', event.target.value)}
+              placeholder="Tên dịch vụ, coupon hoặc quán"
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Từ ngày" className="partner-date-field">
+            <ThemedDatePicker
+              value={settlementFilters.fromDate}
+              onChange={(value) => updateSettlementFilter('fromDate', value)}
+              placeholder="Chọn ngày"
+              style={inputStyle}
+              ariaLabel="Từ ngày"
+            />
+          </FormField>
+          <FormField label="Đến ngày" className="partner-date-field">
+            <ThemedDatePicker
+              value={settlementFilters.toDate}
+              onChange={(value) => updateSettlementFilter('toDate', value)}
+              placeholder="Chọn ngày"
+              style={inputStyle}
+              ariaLabel="Đến ngày"
+            />
+          </FormField>
+          <FormField label="Trạng thái">
+            <ThemedListingSelect
+              value={settlementFilters.status}
+              onChange={(value) => updateSettlementFilter('status', value)}
+              placeholder="Tất cả"
+              options={[
+                { value: 'ALL', label: 'Tất cả' },
+                ...settlementStatusOptions.map((status) => ({ value: status, label: status })),
+              ]}
+            />
+          </FormField>
+          <GhostButton disabled={!hasSettlementFilters} onClick={clearSettlementFilters}>
+            Xóa lọc
+          </GhostButton>
+        </div>
+
+        <div className="partner-table-scroll partner-settlement-table-scroll" style={{ overflowX: 'auto' }}>
+          <table className="partner-settlement-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px' }}>
+            <thead>
+              <tr>
+                {[
+                  'STT',
+                  'Mã giao dịch',
+                  'Dịch vụ / Coupon',
+                  'Thời gian',
+                  'Khách',
+                  'Giảm giá',
+                  'Trạng thái',
+                ].map((heading) => (
+                  <th
+                    key={heading}
+                    style={{
+                      padding: '12px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                      color: colors.text2,
+                      fontSize: '11.5px',
+                      fontWeight: 900,
+                      textAlign: heading === 'Giảm giá' ? 'right' : 'left',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoadingSettlementRows ? (
+                <TableLoadingRows columns={7} rows={6} ariaLabel="Đang tải lịch sử đối soát" />
+              ) : settlementRows.length ? (
+                settlementRows.map((row, index) => {
+                  const statusTone = settlementStatusTone(row.status);
+                  return (
+                    <tr key={row.code} style={{ borderBottom: `1px solid ${colors.borderHair}` }}>
+                      <td style={{ padding: '13px 12px', color: colors.text2, fontWeight: 800 }}>{index + 1}</td>
+                      <td style={{ padding: '13px 12px', color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
+                        {row.code}
+                      </td>
+                      <td style={{ padding: '13px 12px', color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
+                        {row.service}
+                      </td>
+                      <td style={{ padding: '13px 12px', color: colors.text2, fontSize: '12px' }}>{row.time}</td>
+                      <td style={{ padding: '13px 12px', color: colors.text2, fontSize: '12px' }}>{row.customerName}</td>
+                      <td
+                        style={{
+                          padding: '13px 12px',
+                          color: colors.goldPale,
+                          fontSize: '12.5px',
+                          fontWeight: 900,
+                          textAlign: 'right',
+                        }}
+                      >
+                        -{moneyVnd(row.amount)}
+                      </td>
+                      <td style={{ padding: '13px 12px' }}>
+                        <StatusPill tone={statusTone}>
+                          {translateBillStatus(row.status)}
+                        </StatusPill>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      padding: '24px 12px',
+                      color: colors.text2,
+                      fontSize: '13px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Chưa tìm thấy giao dịch đối soát phù hợp.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="partner-settlement-mobile-list">
+          {isLoadingSettlementRows ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <article className="partner-settlement-mobile-card" key={`settlement-loading-${index}`}>
+                <div className="partner-staff-mobile-skeleton" />
+                <div className="partner-staff-mobile-skeleton short" />
+                <div className="partner-staff-mobile-skeleton" />
+              </article>
+            ))
+          ) : settlementRows.length ? (
+            settlementRows.map((row, index) => {
+              const statusTone = settlementStatusTone(row.status);
+              return (
+                <article className="partner-settlement-mobile-card" key={row.code}>
+                  <div className="partner-settlement-mobile-head">
+                    <span className="partner-settlement-mobile-index">#{index + 1}</span>
+                    <span className="partner-settlement-mobile-code">{row.code}</span>
+                    <StatusPill tone={statusTone}>{translateBillStatus(row.status)}</StatusPill>
+                  </div>
+                  <div className="partner-settlement-mobile-service">{row.service}</div>
+                  <div className="partner-settlement-mobile-grid">
+                    <span>
+                      <small>Thời gian</small>
+                      <b>{row.time}</b>
+                    </span>
+                    <span>
+                      <small>Khách</small>
+                      <b>{row.customerName}</b>
+                    </span>
+                    <span>
+                      <small>Giảm giá</small>
+                      <b style={{ color: colors.goldPale }}>-{moneyVnd(row.amount)}</b>
+                    </span>
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            <div className="partner-settlement-mobile-empty">Chưa tìm thấy giao dịch đối soát phù hợp.</div>
+          )}
+        </div>
+      </PanelCard>
 
       <div
         style={{
@@ -9286,7 +9471,7 @@ export default function PartnerPage() {
       return renderScanPanel();
     }
     if (activePanel === 'settlement') {
-      return renderSettlementPanel();
+      return renderOverviewPanel();
     }
     if (activePanel === 'listing') {
       return renderListingPanel();
