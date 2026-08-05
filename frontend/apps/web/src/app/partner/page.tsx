@@ -27,6 +27,7 @@ import {
   ReceiptText,
   RefreshCcw,
   Save,
+  Search,
   Send,
   ShieldCheck,
   Sun,
@@ -1793,6 +1794,7 @@ export default function PartnerPage() {
   const [billSubView, setBillSubView] = useState<'list' | 'form'>('list');
   const [billStatusFilter, setBillStatusFilter] = useState<string>('ALL');
   const [billCurrentPage, setBillCurrentPage] = useState<number>(1);
+  const [billSearchQuery, setBillSearchQuery] = useState<string>('');
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -3557,8 +3559,40 @@ export default function PartnerPage() {
           const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? '');
           return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
         }),
-    [storeBills, billStatusFilter],
-  );
+  const normalizedBillSearchQuery = billSearchQuery.trim().toLowerCase();
+
+  const filteredScopedBillRows = useMemo(() => {
+    if (!normalizedBillSearchQuery) return scopedBillRows;
+    return scopedBillRows.filter((bill) => {
+      const billId = (bill.id || '').toLowerCase();
+      const billNumber = (bill.billNumber || '').toLowerCase();
+      const bookingId = (bill.booking?.id || '').toLowerCase();
+      const bookingCode = (bill.booking?.bookingCode || '').toLowerCase();
+      const storeName = (bill.store?.name || '').toLowerCase();
+      return (
+        billId.includes(normalizedBillSearchQuery) ||
+        billNumber.includes(normalizedBillSearchQuery) ||
+        bookingId.includes(normalizedBillSearchQuery) ||
+        bookingCode.includes(normalizedBillSearchQuery) ||
+        storeName.includes(normalizedBillSearchQuery)
+      );
+    });
+  }, [scopedBillRows, normalizedBillSearchQuery]);
+
+  const filteredUnsentBookings = useMemo(() => {
+    if (!normalizedBillSearchQuery) return unsentPartnerBookings;
+    return unsentPartnerBookings.filter((booking) => {
+      const bookingId = (booking.id || '').toLowerCase();
+      const bookingCode = (booking.bookingCode || '').toLowerCase();
+      const storeName = (booking.store?.name || '').toLowerCase();
+      return (
+        bookingId.includes(normalizedBillSearchQuery) ||
+        bookingCode.includes(normalizedBillSearchQuery) ||
+        storeName.includes(normalizedBillSearchQuery)
+      );
+    });
+  }, [unsentPartnerBookings, normalizedBillSearchQuery]);
+
   const canSubmitPartnerBill =
     !isSubmittingBill &&
     !selectedBill &&
@@ -7861,15 +7895,18 @@ export default function PartnerPage() {
   const renderBillPanel = () => {
     const BILL_ITEMS_PER_PAGE = 5;
     const isUnsentFilter = billStatusFilter === 'UNSENT';
-    const totalBillItems = isUnsentFilter ? unsentPartnerBookings.length : scopedBillRows.length;
+    const activeUnsentList = filteredUnsentBookings;
+    const activeScopedList = filteredScopedBillRows;
+
+    const totalBillItems = isUnsentFilter ? activeUnsentList.length : activeScopedList.length;
     const totalBillPages = Math.max(1, Math.ceil(totalBillItems / BILL_ITEMS_PER_PAGE));
     const safeBillCurrentPage = Math.min(Math.max(1, billCurrentPage), totalBillPages);
 
-    const paginatedUnsentBookings = unsentPartnerBookings.slice(
+    const paginatedUnsentBookings = activeUnsentList.slice(
       (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE,
       safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
     );
-    const paginatedScopedBillRows = scopedBillRows.slice(
+    const paginatedScopedBillRows = activeScopedList.slice(
       (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE,
       safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
     );
@@ -7904,6 +7941,64 @@ export default function PartnerPage() {
             <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
               Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
             </p>
+
+            {/* Ô tìm kiếm theo Mã đặt chỗ / Mã hóa đơn */}
+            <div style={{ marginBottom: '14px', maxWidth: '440px' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    color: colors.muted,
+                    pointerEvents: 'none',
+                  }}
+                />
+                <input
+                  type="text"
+                  value={billSearchQuery}
+                  onChange={(e) => {
+                    setBillSearchQuery(e.target.value);
+                    setBillCurrentPage(1);
+                  }}
+                  placeholder="Tìm theo mã đặt chỗ, mã hóa đơn..."
+                  style={{
+                    width: '100%',
+                    minHeight: '40px',
+                    padding: '8px 36px 8px 38px',
+                    borderRadius: '12px',
+                    border: `1px solid ${colors.borderSoft}`,
+                    background: colors.surface2,
+                    color: colors.text,
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+                {billSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillSearchQuery('');
+                      setBillCurrentPage(1);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      background: 'transparent',
+                      border: 0,
+                      color: colors.muted,
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
               {[
