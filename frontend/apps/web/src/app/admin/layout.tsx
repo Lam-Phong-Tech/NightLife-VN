@@ -750,7 +750,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ]
             }] : [])] as { title: string; items: AdminNavItem[] }[]).map(group => (
               <React.Fragment key={group.title}>
-                <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#57534b', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
+                <div className="nl-admin-nav-group-title" style={{ fontSize: '9.5px', fontWeight: 850, letterSpacing: '1.8px', color: '#7f7a70', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
                   {group.title}
                 </div>
                 {group.items.map(item => {
@@ -766,6 +766,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link
                       key={item.href}
                       href={item.href}
+                      className={`nl-admin-nav-item ${isActive ? 'is-active' : ''}`}
                       onClick={() => { if (isMobileSidebar) setSidebarOpen(false); }}
                       onMouseEnter={() => setHoveredLink(item.href)}
                       onMouseLeave={() => setHoveredLink(null)}
@@ -776,9 +777,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         padding: '10px 12px',
                         borderRadius: '11px',
                         cursor: 'pointer',
-                        color: isActive ? '#f3f0ea' : '#8c8679',
+                        color: isActive ? '#ffffff' : '#c5c0b6',
                         fontSize: '13.5px',
-                        fontWeight: isActive ? 600 : 500,
+                        fontWeight: isActive ? 750 : 650,
                         background: isActive ? 'rgba(255,255,255,.08)' : (isHovered ? 'rgba(255,255,255,.04)' : 'transparent'),
                         textDecoration: 'none'
                       }}
