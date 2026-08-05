@@ -8257,7 +8257,7 @@ export default function PartnerPage() {
               <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
-                    {['STT', 'Mã hóa đơn / Mã đặt bàn', 'Quán', 'Tổng tiền / Thao tác', 'Trạng thái'].map((header) => (
+                    {['STT', 'Mã đặt bàn', 'Quán', 'Tổng tiền / Thao tác', 'Trạng thái'].map((header) => (
                       <th
                         key={header}
                         style={{
