@@ -8262,8 +8262,8 @@ export default function PartnerPage() {
                 <div
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                    flexDirection: 'column',
+                    gap: '4px',
                     borderBottom: '1px solid rgba(212,178,106,.15)',
                     paddingBottom: '12px',
                   }}
@@ -8271,7 +8271,7 @@ export default function PartnerPage() {
                   <span style={{ fontSize: '11px', fontWeight: 900, color: colors.gold, letterSpacing: '.06em', textTransform: 'uppercase' }}>
                     ĐƠN HÀNG ĐANG LIÊN KẾT
                   </span>
-                  <strong style={{ fontSize: '15px', fontWeight: 900, color: colors.text }}>
+                  <strong style={{ fontSize: '18px', fontWeight: 900, color: colors.text }}>
                     {selectedBillBooking?.store?.name ?? selectedBillStore?.name ?? selectedBill?.store?.name ?? 'Quán'}
                   </strong>
                 </div>
