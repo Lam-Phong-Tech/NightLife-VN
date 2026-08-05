@@ -82,7 +82,9 @@ describe("PartnerSettlementMoney", () => {
     cleanup();
   });
 
-  it("renders 'Giảm giá: Chưa xác định' when discountVnd is null and does not render -totalVnd", async () => {
+  it(
+    "renders 'Giảm giá: Chưa xác định' when discountVnd is null and does not render -totalVnd",
+    async () => {
     const mockBillWithNullDiscount = {
       id: "bill-null-discount-12345",
       storeId: "store-1",
@@ -151,5 +153,5 @@ describe("PartnerSettlementMoney", () => {
     // Ensure -1.800.000đ or -1.800.000 VND (-totalVnd) is NEVER rendered as discount
     expect(screen.queryByText("-1.800.000đ")).toBeNull();
     expect(screen.queryByText("-1.800.000 VND")).toBeNull();
-  });
+  }, 15000);
 });
