@@ -984,6 +984,10 @@
   line-height: 1.65;
 }
 
+:global(html.vy-light) .sideText {
+  color: #57534b;
+}
+
 .summaryList {
   display: grid;
   gap: 11px;

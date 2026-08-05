@@ -805,4 +805,59 @@ const savedPageCss = `
       font-size: 16px;
     }
   }
+
+  html.vy-light .saved-back {
+    border-color: rgba(150, 116, 52, 0.32);
+    background: rgba(168, 124, 52, 0.12);
+    color: #8f6a2a;
+  }
+
+  html.vy-light .saved-head p {
+    color: #57534b;
+  }
+
+  html.vy-light .saved-tabs {
+    border-color: rgba(30, 24, 12, 0.14);
+    background: rgba(28, 22, 10, 0.045);
+  }
+
+  html.vy-light .saved-tabs button {
+    color: #4a453c;
+  }
+
+  html.vy-light .saved-tabs button:hover {
+    color: #211e19;
+  }
+
+  html.vy-light .saved-tabs button.active {
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: #241a0a;
+  }
+
+  html.vy-light .saved-tabs span {
+    border-color: rgba(150, 116, 52, 0.32);
+    background: rgba(168, 124, 52, 0.14);
+    color: #78571c;
+  }
+
+  html.vy-light .saved-tabs button.active span {
+    border-color: rgba(36, 26, 10, 0.24);
+    background: rgba(36, 26, 10, 0.16);
+    color: #241a0a;
+  }
+
+  html.vy-light .saved-card {
+    border-color: rgba(30, 24, 12, 0.12);
+    background: #ffffff;
+    box-shadow: 0 10px 24px -16px rgba(80, 55, 18, 0.2);
+  }
+
+  html.vy-light .saved-empty {
+    border-color: rgba(150, 116, 52, 0.32);
+    background: #ffffff;
+  }
+
+  html.vy-light .saved-empty p {
+    color: #57534b;
+  }
 `;
