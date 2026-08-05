@@ -3579,7 +3579,7 @@ export default function PartnerPage() {
       const billId = (bill.id || '').toLowerCase();
       const billNumber = (bill.billNumber || '').toLowerCase();
       const bookingId = (bill.booking?.id || '').toLowerCase();
-      const bookingCode = (bill.booking?.bookingCode || '').toLowerCase();
+      const bookingCode = ((bill.booking as any)?.bookingCode || '').toLowerCase();
       const storeName = (bill.store?.name || '').toLowerCase();
       return (
         billId.includes(normalizedBillSearchQuery) ||
@@ -3595,7 +3595,7 @@ export default function PartnerPage() {
     if (!normalizedBillSearchQuery) return unsentPartnerBookings;
     return unsentPartnerBookings.filter((booking) => {
       const bookingId = (booking.id || '').toLowerCase();
-      const bookingCode = (booking.bookingCode || '').toLowerCase();
+      const bookingCode = ((booking as any)?.bookingCode || '').toLowerCase();
       const storeName = (booking.store?.name || '').toLowerCase();
       return (
         bookingId.includes(normalizedBillSearchQuery) ||
