@@ -29,6 +29,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
+  __esModule: true,
   clearAuthSession: vi.fn(),
   getAuthUser: () => ({ role: "PARTNER", displayName: "Partner Demo" }),
 }));
@@ -88,76 +89,88 @@ describe("PartnerSettlementMoney", () => {
   it(
     "renders 'Giảm giá: Chưa xác định' when discountVnd is null and does not render -totalVnd",
     async () => {
-    const mockBillWithNullDiscount = {
-      id: "bill-null-discount-12345",
-      storeId: "store-1",
-      billNumber: "BILL-NULL-001",
-      status: "SUBMITTED",
-      submitterType: "PARTNER",
-      subtotalVnd: 2000000,
-      discountVnd: null,
-      totalVnd: 1800000,
-      submittedAt: "2026-07-03T15:00:00.000Z",
-      usedAt: "2026-07-03T14:00:00.000Z",
-      store: { id: "store-1", name: "Neon Club", slug: "neon-club" },
-      coupon: { id: "coupon-1", code: "PROMO", name: "Giảm Giá Đặc Biệt" },
-    };
+      const mockBillWithNullDiscount = {
+        id: "bill-null-discount-12345",
+        storeId: "store-1",
+        billNumber: "BILL-NULL-001",
+        status: "SUBMITTED",
+        submitterType: "PARTNER",
+        subtotalVnd: 2000000,
+        discountVnd: null,
+        totalVnd: 1800000,
+        submittedAt: "2026-07-03T15:00:00.000Z",
+        usedAt: "2026-07-03T14:00:00.000Z",
+        store: { id: "store-1", name: "Neon Club", slug: "neon-club" },
+        coupon: { id: "coupon-1", code: "PROMO", name: "Giảm Giá Đặc Biệt" },
+      };
 
-    mocks.listPartnerBills.mockResolvedValue([mockBillWithNullDiscount]);
-    mocks.listPartnerStores.mockResolvedValue([
-      { id: "store-1", name: "Neon Club", slug: "neon-club" },
-    ]);
+      mocks.listPartnerBills.mockResolvedValue([mockBillWithNullDiscount]);
+      mocks.listPartnerStores.mockResolvedValue([
+        { id: "store-1", name: "Neon Club", slug: "neon-club" },
+      ]);
 
-    mocks.apiClient.mockImplementation((endpoint: string) => {
-      if (endpoint === "/partner/stores") {
-        return Promise.resolve([{ id: "store-1", name: "Neon Club", slug: "neon-club" }]);
-      }
-      if (endpoint === "/partner/coupons") {
+      mocks.apiClient.mockImplementation((endpoint: string) => {
+        if (endpoint === "/partner/stores") {
+          return Promise.resolve([{ id: "store-1", name: "Neon Club", slug: "neon-club" }]);
+        }
+        if (endpoint === "/partner/coupons") {
+          return Promise.resolve([]);
+        }
+        if (endpoint === "/partner/bookings") {
+          return Promise.resolve([]);
+        }
+        if (endpoint.startsWith("/partner/bills")) {
+          return Promise.resolve([mockBillWithNullDiscount]);
+        }
+        if (endpoint.startsWith("/partner/dashboard-lite")) {
+          return Promise.resolve({
+            period: "seven",
+            from: "2026-06-27T00:00:00.000Z",
+            to: "2026-07-03T23:59:59.999Z",
+            metrics: {
+              bookingCount: 0,
+              profileViews: 0,
+              customerArrivals: 0,
+              pendingSettlementCount: 1,
+              completedBookings: 0,
+              activeCoupons: 0,
+            },
+            timeSeries: [],
+          });
+        }
+        if (endpoint.startsWith("/partner/listing-draft/")) {
+          return Promise.resolve({
+            contentId: null,
+            savedAt: null,
+            publishedAt: null,
+            review: null,
+            draft: {},
+            message: "Draft loaded",
+          });
+        }
+        if (endpoint.startsWith("/partner/notifications")) {
+          return Promise.resolve([]);
+        }
         return Promise.resolve([]);
-      }
-      if (endpoint === "/partner/bills") {
-        return Promise.resolve([mockBillWithNullDiscount]);
-      }
-      if (endpoint.startsWith("/partner/dashboard-lite")) {
-        return Promise.resolve({
-          period: "seven",
-          from: "2026-06-27T00:00:00.000Z",
-          to: "2026-07-03T23:59:59.999Z",
-          metrics: {
-            bookingCount: 0,
-            profileViews: 0,
-            customerArrivals: 0,
-            pendingSettlementCount: 1,
-            completedBookings: 0,
-            activeCoupons: 0,
-          },
-          timeSeries: [],
-        });
-      }
-      if (endpoint.startsWith("/partner/notifications")) {
-        return Promise.resolve([]);
-      }
-      return Promise.resolve([]);
-    });
+      });
 
-    render(
-      <SystemFeedbackProvider>
-        <PartnerPage />
-      </SystemFeedbackProvider>
-    );
+      render(
+        <SystemFeedbackProvider>
+          <PartnerPage />
+        </SystemFeedbackProvider>
+      );
 
-    const settlementNavBtn = await screen.findByRole("button", { name: /Đối soát/i });
-    fireEvent.click(settlementNavBtn);
+      await waitFor(() => {
+        expect(screen.getByText("BILL-NULL-001")).toBeInTheDocument();
+      });
 
-    await waitFor(() => {
-      expect(screen.getByText("BILL-NULL-001")).toBeInTheDocument();
-    });
+      // Should display "Giảm giá: Chưa xác định"
+      expect(screen.getAllByText("Giảm giá: Chưa xác định").length).toBeGreaterThan(0);
 
-    // Should display "Giảm giá: Chưa xác định"
-    expect(screen.getAllByText("Giảm giá: Chưa xác định").length).toBeGreaterThan(0);
-
-    // Ensure -1.800.000đ or -1.800.000 VND (-totalVnd) is NEVER rendered as discount
-    expect(screen.queryByText("-1.800.000đ")).toBeNull();
-    expect(screen.queryByText("-1.800.000 VND")).toBeNull();
-  }, 15000);
+      // Ensure -1.800.000đ or -1.800.000 VND (-totalVnd) is NEVER rendered as discount
+      expect(screen.queryByText("-1.800.000đ")).toBeNull();
+      expect(screen.queryByText("-1.800.000 VND")).toBeNull();
+    },
+    15000
+  );
 });

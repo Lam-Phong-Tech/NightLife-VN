@@ -67,6 +67,8 @@ export type BillRecord = {
     id: string;
     code: string;
     status: string;
+    usedAt?: string | null;
+    discountPercent?: number | null;
   } | null;
   media?: BillMedia[];
 };
