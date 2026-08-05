@@ -32,8 +32,10 @@ import {
   TicketCheck,
   TrendingUp,
   Upload,
+  UserPlus,
   UsersRound,
   Settings,
+  X,
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
@@ -1873,6 +1875,7 @@ export default function PartnerPage() {
   // Staff Management States
   const [staffList, setStaffList] = useState<any[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [staffDisplayName, setStaffDisplayName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
@@ -1996,6 +1999,7 @@ export default function PartnerPage() {
       setStaffEmail('');
       setStaffPassword('');
       setStaffPermissions(['coupon.scan', 'checkin.confirm']);
+      setIsAddStaffModalOpen(false);
       fetchStaffList(settingsStoreId);
     } catch (err: any) {
       feedback.showToast({
@@ -8482,105 +8486,20 @@ export default function PartnerPage() {
 
         {currentUser?.role === 'PARTNER' && (
           <PanelCard>
-            <SectionHeading eyebrow="STAFF MANAGEMENT" title="Quản lý nhân viên" />
-            
-            {/* Form thêm nhân viên */}
-            <div style={{ marginTop: '20px', padding: '16px', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', background: colors.surface2 }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.goldBright, marginBottom: '14px' }}>Thêm nhân viên mới</h3>
-              <form onSubmit={handleAddStaff} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'end' }}>
-                <FormField label="Họ tên nhân viên">
-                  <input
-                    type="text"
-                    value={staffDisplayName}
-                    onChange={(e) => setStaffDisplayName(e.target.value)}
-                    style={inputStyle}
-                    placeholder="Nguyễn Văn A"
-                  />
-                </FormField>
-                <FormField label="Email đăng nhập">
-                  <input
-                    type="email"
-                    value={staffEmail}
-                    onChange={(e) => setStaffEmail(e.target.value)}
-                    style={inputStyle}
-                    placeholder="staff@example.com"
-                    autoComplete="new-password"
-                  />
-                </FormField>
-                <FormField label="Mật khẩu (tối thiểu 8 ký tự)">
-                  <div style={{ position: 'relative', width: '100%' }}>
-                    <input
-                      type={showStaffPassword ? 'text' : 'password'}
-                      value={staffPassword}
-                      onChange={(e) => setStaffPassword(e.target.value)}
-                      style={{ ...inputStyle, paddingRight: '40px' }}
-                      placeholder="Nhập mật khẩu"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowStaffPassword(!showStaffPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: colors.muted,
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '4px',
-                      }}
-                      aria-label={showStaffPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                    >
-                      {showStaffPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </FormField>
-                <FormField label="Quyền hạn">
-                  <div style={{ display: 'flex', gap: '16px', minHeight: '44px', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
-                      <input
-                        type="checkbox"
-                        checked={staffPermissions.includes('coupon.scan')}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setStaffPermissions(prev => [...prev, 'coupon.scan']);
-                          } else {
-                            setStaffPermissions(prev => prev.filter(p => p !== 'coupon.scan'));
-                          }
-                        }}
-                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: colors.gold }}
-                      />
-                      Quét coupon
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', userSelect: 'none' }}>
-                      <input
-                        type="checkbox"
-                        checked={staffPermissions.includes('checkin.confirm')}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setStaffPermissions(prev => [...prev, 'checkin.confirm']);
-                          } else {
-                            setStaffPermissions(prev => prev.filter(p => p !== 'checkin.confirm'));
-                          }
-                        }}
-                        style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: colors.gold }}
-                      />
-                      Xác nhận check-in
-                    </label>
-                  </div>
-                </FormField>
-                <PrimaryButton type="submit" disabled={isAddingStaff} style={{ minHeight: '44px' }}>
-                  {isAddingStaff ? 'Đang thêm...' : 'Thêm nhân viên'}
-                </PrimaryButton>
-              </form>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+              <SectionHeading eyebrow="STAFF MANAGEMENT" title="Quản lý nhân viên" />
+              <PrimaryButton
+                type="button"
+                onClick={() => setIsAddStaffModalOpen(true)}
+                style={{ minHeight: '40px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 800 }}
+              >
+                <UserPlus size={16} />
+                Thêm nhân viên mới
+              </PrimaryButton>
             </div>
 
             {/* Danh sách nhân viên */}
-            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: colors.text }}>Danh sách nhân viên</h3>
               </div>
@@ -8709,6 +8628,209 @@ export default function PartnerPage() {
                 )}
               </div>
             </div>
+
+            {/* Modal thêm nhân viên mới */}
+            {isAddStaffModalOpen && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 9999,
+                  background: 'rgba(0, 0, 0, 0.78)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                }}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setIsAddStaffModalOpen(false);
+                }}
+              >
+                <div
+                  style={{
+                    background: colors.surface2,
+                    border: `1px solid ${colors.borderGold32}`,
+                    borderRadius: '20px',
+                    width: '100%',
+                    maxWidth: '500px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    padding: '24px',
+                    boxShadow: '0 24px 60px rgba(0,0,0,0.85)',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '18px', fontWeight: 900, color: colors.goldBright, margin: 0 }}>Thêm nhân viên mới</h3>
+                      <p style={{ fontSize: '12px', color: colors.muted, marginTop: '4px', margin: 0 }}>Tạo tài khoản nhân viên để phân quyền làm việc tại quán</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddStaffModalOpen(false)}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${colors.borderSoft}`,
+                        borderRadius: '50%',
+                        width: '34px',
+                        height: '34px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: colors.text2,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                      aria-label="Đóng"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <FormField label="Họ tên nhân viên">
+                      <input
+                        type="text"
+                        value={staffDisplayName}
+                        onChange={(e) => setStaffDisplayName(e.target.value)}
+                        style={inputStyle}
+                        placeholder="Nguyễn Văn A"
+                        autoFocus
+                      />
+                    </FormField>
+                    <FormField label="Email đăng nhập">
+                      <input
+                        type="email"
+                        value={staffEmail}
+                        onChange={(e) => setStaffEmail(e.target.value)}
+                        style={inputStyle}
+                        placeholder="staff@example.com"
+                        autoComplete="new-password"
+                      />
+                    </FormField>
+                    <FormField label="Mật khẩu (tối thiểu 8 ký tự)">
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        <input
+                          type={showStaffPassword ? 'text' : 'password'}
+                          value={staffPassword}
+                          onChange={(e) => setStaffPassword(e.target.value)}
+                          style={{ ...inputStyle, paddingRight: '40px' }}
+                          placeholder="Nhập mật khẩu"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowStaffPassword(!showStaffPassword)}
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: colors.muted,
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '4px',
+                          }}
+                          aria-label={showStaffPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        >
+                          {showStaffPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </FormField>
+                    <FormField label="Quyền hạn cấp cho nhân viên">
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingTop: '4px' }}>
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          userSelect: 'none',
+                          padding: '10px 14px',
+                          background: staffPermissions.includes('coupon.scan') ? 'rgba(212,178,106,.15)' : colors.surface3,
+                          border: `1px solid ${staffPermissions.includes('coupon.scan') ? colors.borderGold40 : colors.borderSoft}`,
+                          borderRadius: '10px',
+                          color: staffPermissions.includes('coupon.scan') ? colors.goldBright : colors.text2,
+                          fontWeight: 600,
+                          flex: '1 1 140px',
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={staffPermissions.includes('coupon.scan')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStaffPermissions(prev => [...prev, 'coupon.scan']);
+                              } else {
+                                setStaffPermissions(prev => prev.filter(p => p !== 'coupon.scan'));
+                              }
+                            }}
+                            style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: colors.gold }}
+                          />
+                          Quét coupon
+                        </label>
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          userSelect: 'none',
+                          padding: '10px 14px',
+                          background: staffPermissions.includes('checkin.confirm') ? 'rgba(212,178,106,.15)' : colors.surface3,
+                          border: `1px solid ${staffPermissions.includes('checkin.confirm') ? colors.borderGold40 : colors.borderSoft}`,
+                          borderRadius: '10px',
+                          color: staffPermissions.includes('checkin.confirm') ? colors.goldBright : colors.text2,
+                          fontWeight: 600,
+                          flex: '1 1 140px',
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={staffPermissions.includes('checkin.confirm')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStaffPermissions(prev => [...prev, 'checkin.confirm']);
+                              } else {
+                                setStaffPermissions(prev => prev.filter(p => p !== 'checkin.confirm'));
+                              }
+                            }}
+                            style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: colors.gold }}
+                          />
+                          Xác nhận check-in
+                        </label>
+                      </div>
+                    </FormField>
+
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddStaffModalOpen(false)}
+                        style={{
+                          padding: '0 20px',
+                          minHeight: '44px',
+                          borderRadius: '10px',
+                          border: `1px solid ${colors.borderSoft}`,
+                          background: 'transparent',
+                          color: colors.text2,
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          flex: 1,
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <PrimaryButton type="submit" disabled={isAddingStaff} style={{ minHeight: '44px', padding: '0 24px', flex: 1 }}>
+                        {isAddingStaff ? 'Đang thêm...' : 'Thêm nhân viên'}
+                      </PrimaryButton>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </PanelCard>
         )}
       </div>
