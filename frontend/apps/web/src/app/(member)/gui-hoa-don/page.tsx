@@ -2718,18 +2718,22 @@ export default function Page() {
           border-color: rgba(30, 24, 12, 0.14);
           background: rgba(28, 22, 10, 0.045);
           color: #4a453c;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
         }
 
-        html.vy-light .nl-bill-filter-chip:hover {
-          border-color: rgba(30, 24, 12, 0.22);
-          background: rgba(28, 22, 10, 0.08);
-          color: #211e19;
+        @media (hover: hover) and (pointer: fine) {
+          html.vy-light .nl-bill-filter-chip:hover:not(.active) {
+            border-color: rgba(30, 24, 12, 0.22);
+            background: rgba(28, 22, 10, 0.08);
+            color: #211e19;
+          }
         }
 
         html.vy-light .nl-bill-filter-chip.active {
-          border-color: transparent;
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-          color: #241a0a;
+          border-color: transparent !important;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
+          color: #241a0a !important;
         }
 
         .nl-bill-chip-count {

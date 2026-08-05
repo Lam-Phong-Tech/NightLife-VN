@@ -823,15 +823,19 @@ const savedPageCss = `
 
   html.vy-light .saved-tabs button {
     color: #4a453c;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
-  html.vy-light .saved-tabs button:hover {
-    color: #211e19;
+  @media (hover: hover) and (pointer: fine) {
+    html.vy-light .saved-tabs button:hover:not(.active) {
+      color: #211e19;
+    }
   }
 
   html.vy-light .saved-tabs button.active {
-    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-    color: #241a0a;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
+    color: #241a0a !important;
   }
 
   html.vy-light .saved-tabs span {

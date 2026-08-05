@@ -705,30 +705,34 @@
   justify-content: center;
   font-weight: 720;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  outline: none;
+  user-select: none;
 }
 
-.timeChip {
-  min-width: 68px;
-  min-height: 38px;
-  border-radius: 11px;
-  padding: 10px 16px;
-  font-size: 13px;
+.timeChip:focus,
+.filterChip:focus,
+.timeChip:focus-visible,
+.filterChip:focus-visible {
+  outline: none;
 }
 
-.filterChip {
-  min-height: 34px;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 12px;
-  white-space: nowrap;
+@media (hover: hover) and (pointer: fine) {
+  .timeChip:hover:not(.selectedChip),
+  .filterChip:hover:not(.selectedFilter) {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
 }
 
 .selectedChip,
 .selectedFilter {
-  border-color: transparent;
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-  color: #241a0a;
-  font-weight: 820;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
+  color: #241a0a !important;
+  font-weight: 820 !important;
 }
 
 :global(html.vy-light) .timeChip,
@@ -737,21 +741,34 @@
   background: rgba(28, 22, 10, 0.045);
   color: #4a453c;
   font-weight: 750;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  outline: none;
+  user-select: none;
 }
 
-:global(html.vy-light) .timeChip:hover,
-:global(html.vy-light) .filterChip:hover {
-  border-color: rgba(30, 24, 12, 0.22);
-  background: rgba(28, 22, 10, 0.08);
-  color: #211e19;
+:global(html.vy-light) .timeChip:focus,
+:global(html.vy-light) .filterChip:focus,
+:global(html.vy-light) .timeChip:focus-visible,
+:global(html.vy-light) .filterChip:focus-visible {
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :global(html.vy-light) .timeChip:hover:not(.selectedChip),
+  :global(html.vy-light) .filterChip:hover:not(.selectedFilter) {
+    border-color: rgba(30, 24, 12, 0.22);
+    background: rgba(28, 22, 10, 0.08);
+    color: #211e19;
+  }
 }
 
 :global(html.vy-light) .selectedChip,
 :global(html.vy-light) .selectedFilter {
-  border-color: transparent;
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-  color: #241a0a;
-  font-weight: 820;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
+  color: #241a0a !important;
+  font-weight: 820 !important;
 }
 
 .emptySlotMessage {
