@@ -9,6 +9,7 @@ import {
   Bell,
   CalendarDays,
   Camera,
+  ChevronLeft,
   ChevronRight,
   CheckCircle2,
   ChevronDown,
@@ -1791,6 +1792,7 @@ export default function PartnerPage() {
   const [billNowMs, setBillNowMs] = useState(0);
   const [billSubView, setBillSubView] = useState<'list' | 'form'>('list');
   const [billStatusFilter, setBillStatusFilter] = useState<string>('ALL');
+  const [billCurrentPage, setBillCurrentPage] = useState<number>(1);
   const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -7857,6 +7859,21 @@ export default function PartnerPage() {
   );
 
   const renderBillPanel = () => {
+    const BILL_ITEMS_PER_PAGE = 5;
+    const isUnsentFilter = billStatusFilter === 'UNSENT';
+    const totalBillItems = isUnsentFilter ? unsentPartnerBookings.length : scopedBillRows.length;
+    const totalBillPages = Math.max(1, Math.ceil(totalBillItems / BILL_ITEMS_PER_PAGE));
+    const safeBillCurrentPage = Math.min(Math.max(1, billCurrentPage), totalBillPages);
+
+    const paginatedUnsentBookings = unsentPartnerBookings.slice(
+      (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE,
+      safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
+    );
+    const paginatedScopedBillRows = scopedBillRows.slice(
+      (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE,
+      safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
+    );
+
     return (
       <div style={{ marginTop: '14px' }}>
         <div style={{ display: billSubView === 'list' ? 'block' : 'none' }}>
@@ -7866,7 +7883,7 @@ export default function PartnerPage() {
               title="Hóa đơn của quán"
               action={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <StatusPill tone="gold">{scopedBillRows.length} hóa đơn</StatusPill>
+                  <StatusPill tone="gold">{totalBillItems} hóa đơn</StatusPill>
                   <PrimaryButton
                     onClick={() => {
                       setBillAmountInput('');
@@ -7923,7 +7940,10 @@ export default function PartnerPage() {
                   <button
                     key={filter.key}
                     type="button"
-                    onClick={() => setBillStatusFilter(filter.key)}
+                    onClick={() => {
+                      setBillStatusFilter(filter.key);
+                      setBillCurrentPage(1);
+                    }}
                     style={{
                       padding: '6px 14px',
                       borderRadius: '20px',
@@ -7946,6 +7966,7 @@ export default function PartnerPage() {
                         padding: '1px 6px',
                         borderRadius: '10px',
                         fontSize: '11px',
+                        fontWeight: 900,
                       }}
                     >
                       {filter.count}
@@ -7978,12 +7999,13 @@ export default function PartnerPage() {
                 </thead>
                 <tbody>
                   {billStatusFilter === 'UNSENT' ? (
-                    unsentPartnerBookings.length ? (
-                      unsentPartnerBookings.map((booking, index) => {
+                    paginatedUnsentBookings.length ? (
+                      paginatedUnsentBookings.map((booking, index) => {
                         const active = billBookingId === booking.id;
                         const code = booking.id.slice(0, 8).toUpperCase();
                         const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                         const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+                        const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                         return (
                           <tr
@@ -8003,7 +8025,7 @@ export default function PartnerPage() {
                             }}
                           >
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
-                              {index + 1}
+                              {rowIndex}
                             </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
                               #{code}
@@ -8041,10 +8063,11 @@ export default function PartnerPage() {
                         </td>
                       </tr>
                     )
-                  ) : scopedBillRows.length ? (
-                    scopedBillRows.map((bill, index) => {
+                  ) : paginatedScopedBillRows.length ? (
+                    paginatedScopedBillRows.map((bill, index) => {
                       const active = selectedBillId === bill.id;
                       const billCode = bill.billNumber ?? bill.id.slice(0, 8);
+                      const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                       return (
                         <tr
@@ -8064,7 +8087,7 @@ export default function PartnerPage() {
                           }}
                         >
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
-                            {index + 1}
+                            {rowIndex}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
                             {billCode}
@@ -8109,12 +8132,13 @@ export default function PartnerPage() {
             </div>
             <div className="partner-bill-mobile-list">
               {billStatusFilter === 'UNSENT' ? (
-                unsentPartnerBookings.length ? (
-                  unsentPartnerBookings.map((booking, index) => {
+                paginatedUnsentBookings.length ? (
+                  paginatedUnsentBookings.map((booking, index) => {
                     const active = billBookingId === booking.id;
                     const code = booking.id.slice(0, 8).toUpperCase();
                     const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                     const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+                    const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                     return (
                       <button
@@ -8124,7 +8148,7 @@ export default function PartnerPage() {
                         onClick={() => fillBillFormFromBooking(booking)}
                       >
                         <div className="partner-bill-mobile-head">
-                          <span className="partner-bill-mobile-index">#{index + 1}</span>
+                          <span className="partner-bill-mobile-index">#{rowIndex}</span>
                           <span className="partner-bill-mobile-code">#{code}</span>
                           <StatusPill tone="gold">Chưa gửi</StatusPill>
                         </div>
@@ -8145,8 +8169,8 @@ export default function PartnerPage() {
                 ) : (
                   <div className="partner-bill-mobile-empty">Chưa có đặt chỗ nào cần gửi hóa đơn.</div>
                 )
-              ) : scopedBillRows.length ? (
-                scopedBillRows.map((bill, index) => {
+              ) : paginatedScopedBillRows.length ? (
+                paginatedScopedBillRows.map((bill, index) => {
                   const active = selectedBillId === bill.id;
                   const billCode = bill.billNumber ?? bill.id.slice(0, 8);
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
@@ -8154,6 +8178,7 @@ export default function PartnerPage() {
                     ? `${translateBookingStatus(bill.booking.status)} · ${formatDateTime(bill.booking.scheduledAt)}`
                     : 'Không liên kết booking';
                   const statusTone = billStatusTone(bill.status);
+                  const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                   return (
                     <button
@@ -8163,7 +8188,7 @@ export default function PartnerPage() {
                       onClick={() => fillBillFormFromRow(bill)}
                     >
                       <div className="partner-bill-mobile-head">
-                        <span className="partner-bill-mobile-index">#{index + 1}</span>
+                        <span className="partner-bill-mobile-index">#{rowIndex}</span>
                         <span className="partner-bill-mobile-code">{billCode}</span>
                         <StatusPill tone={statusTone}>{translateBillStatus(bill.status)}</StatusPill>
                       </div>
@@ -8186,6 +8211,70 @@ export default function PartnerPage() {
                 <div className="partner-bill-mobile-empty">Chưa có hóa đơn trong quán đang chọn.</div>
               )}
             </div>
+
+            {/* Pagination Controls Bar (PC & Mobile Synchronized) */}
+            {totalBillItems > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: '18px',
+                  paddingTop: '14px',
+                  borderTop: `1px solid ${colors.borderSoft}`,
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <button
+                  type="button"
+                  disabled={safeBillCurrentPage <= 1}
+                  onClick={() => setBillCurrentPage((prev) => Math.max(1, prev - 1))}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: `1px solid ${safeBillCurrentPage <= 1 ? colors.borderSoft : colors.borderGold40}`,
+                    background: safeBillCurrentPage <= 1 ? colors.surface2 : 'rgba(212,178,106,.1)',
+                    color: safeBillCurrentPage <= 1 ? colors.muted : colors.goldBright,
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: safeBillCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: safeBillCurrentPage <= 1 ? 0.5 : 1,
+                  }}
+                >
+                  <ChevronLeft size={16} /> Trang trước
+                </button>
+
+                <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text }}>
+                  Trang <span style={{ color: colors.goldBright }}>{safeBillCurrentPage}</span> / {totalBillPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={safeBillCurrentPage >= totalBillPages}
+                  onClick={() => setBillCurrentPage((prev) => Math.min(totalBillPages, prev + 1))}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: `1px solid ${safeBillCurrentPage >= totalBillPages ? colors.borderSoft : colors.borderGold40}`,
+                    background: safeBillCurrentPage >= totalBillPages ? colors.surface2 : 'rgba(212,178,106,.1)',
+                    color: safeBillCurrentPage >= totalBillPages ? colors.muted : colors.goldBright,
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: safeBillCurrentPage >= totalBillPages ? 'not-allowed' : 'pointer',
+                    opacity: safeBillCurrentPage >= totalBillPages ? 0.5 : 1,
+                  }}
+                >
+                  Trang sau <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </PanelCard>
         </div>
 
