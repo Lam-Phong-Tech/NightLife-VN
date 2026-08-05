@@ -55,6 +55,9 @@ import {
   PartnerBillsContract,
   PartnerBookingsContract,
   PartnerLiteDashboardContract,
+  PartnerHomeContract,
+  PartnerActivitiesContract,
+  PartnerActivityDetailContract,
   PartnerConfirmCheckInContract,
   PartnerCouponsContract,
   RecordProfileViewContract,
@@ -123,6 +126,7 @@ import {
   PartnerListingCastSubmitDto,
   PartnerListingDraftDto,
 } from './dto/partner-listing.dto';
+import { PartnerActivityQueryDto } from './dto/partner-activity-query.dto';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -653,6 +657,44 @@ export class NightlifeDataController {
     return this.nightlifeDataService.getPartnerLiteDashboard(
       request.user,
       period,
+    );
+  }
+
+  @PartnerHomeContract()
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('partner/home')
+  getPartnerHome(
+    @Req() request: RequestWithUser,
+    @Query('storeId') storeId?: string,
+  ) {
+    return this.nightlifeDataService.getPartnerHome(request.user, storeId);
+  }
+
+  @PartnerActivitiesContract()
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('partner/activity')
+  getPartnerActivities(
+    @Req() request: RequestWithUser,
+    @Query() dto: PartnerActivityQueryDto,
+  ) {
+    return this.nightlifeDataService.getPartnerActivities(request.user, dto);
+  }
+
+  @PartnerActivityDetailContract()
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('partner/activity/:activityId')
+  getPartnerActivityDetail(
+    @Req() request: RequestWithUser,
+    @Param('activityId') activityId: string,
+    @Query('storeId') storeId?: string,
+  ) {
+    return this.nightlifeDataService.getPartnerActivityDetail(
+      request.user,
+      activityId,
+      storeId,
     );
   }
 

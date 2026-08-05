@@ -96,6 +96,13 @@ import {
   AutoBillFraudReversalDto,
 } from './dto/qa-p2.dto';
 import {
+  PartnerActivityQueryDto,
+  PartnerActivityItem,
+  PartnerActivityResponse,
+  decodeCursor,
+  encodeCursor,
+} from './dto/partner-activity-query.dto';
+import {
   AdminCommissionOverrideQueryDto,
   CreateCommissionOverrideDto,
   UpdateCommissionOverrideDto,
@@ -3881,6 +3888,557 @@ export class NightlifeDataService {
         note: 'Partner dashboard returns aggregate metrics only.',
       },
     };
+  }
+
+  async getPartnerHome(user: AuthenticatedUser, storeId?: string) {
+    let scopedStoreIds: string[] | undefined;
+    if (storeId) {
+      await this.accessService.ensureStoreAccess(user, storeId);
+      scopedStoreIds = [storeId];
+    } else {
+      const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(
+        user,
+        'store.partner.view',
+      );
+      if (Array.isArray(accessibleStoreIds) && accessibleStoreIds.length === 0) {
+        return {
+          metrics: {
+            totalRevenueVnd: 0,
+            billCount: 0,
+            bookingCount: 0,
+            activeCouponsCount: 0,
+          },
+          recentActivities: [],
+        };
+      }
+      scopedStoreIds = accessibleStoreIds;
+    }
+
+    const billWhere = {
+      ...(scopedStoreIds ? { storeId: { in: scopedStoreIds } } : {}),
+      deletedAt: null,
+    };
+
+    const [revenueAgg, billCount, bookingCount, activeCouponsCount, recentActivitiesResult] =
+      await Promise.all([
+        this.prisma.bill.aggregate({
+          where: { ...billWhere, status: { in: ['VERIFIED', 'PAID'] } },
+          _sum: { totalVnd: true },
+        }),
+        this.prisma.bill.count({
+          where: { ...billWhere, status: { not: 'DRAFT' } },
+        }),
+        this.prisma.booking.count({
+          where: {
+            ...(scopedStoreIds ? { storeId: { in: scopedStoreIds } } : {}),
+            deletedAt: null,
+          },
+        }),
+        this.prisma.couponIssue.count({
+          where: {
+            status: 'ISSUED',
+            ...(scopedStoreIds ? { coupon: { storeId: { in: scopedStoreIds } } } : {}),
+          },
+        }),
+        this.getPartnerActivities(user, { storeId, limit: 5 }),
+      ]);
+
+    return {
+      metrics: {
+        totalRevenueVnd: revenueAgg._sum.totalVnd || 0,
+        billCount,
+        bookingCount,
+        activeCouponsCount,
+      },
+      recentActivities: recentActivitiesResult.data,
+    };
+  }
+
+  async getPartnerActivities(
+    user: AuthenticatedUser,
+    dto: PartnerActivityQueryDto,
+  ): Promise<PartnerActivityResponse> {
+    let scopedStoreIds: string[] | undefined;
+    if (dto.storeId) {
+      await this.accessService.ensureStoreAccess(user, dto.storeId);
+      scopedStoreIds = [dto.storeId];
+    } else {
+      const accessibleStoreIds = await this.accessService.getAccessibleStoreIds(
+        user,
+        'store.partner.view',
+      );
+      if (Array.isArray(accessibleStoreIds) && accessibleStoreIds.length === 0) {
+        return {
+          data: [],
+          nextCursor: null,
+          hasMore: false,
+        };
+      }
+      scopedStoreIds = accessibleStoreIds;
+    }
+
+    const limit = Math.min(Math.max(dto.limit || 20, 1), 50);
+    const decodedCursor = decodeCursor(dto.cursor);
+    const typeFilter = dto.type || 'ALL';
+
+    const startDate = dto.startDate ? new Date(dto.startDate) : undefined;
+    const endDate = dto.endDate ? new Date(dto.endDate) : undefined;
+
+    let billActivities: PartnerActivityItem[] = [];
+    let couponActivities: PartnerActivityItem[] = [];
+    let bookingActivities: PartnerActivityItem[] = [];
+
+    if (typeFilter === 'ALL' || typeFilter === 'BILL_PAYMENT') {
+      const bills = await this.prisma.bill.findMany({
+        where: {
+          ...(scopedStoreIds ? { storeId: { in: scopedStoreIds } } : {}),
+          status: { not: 'DRAFT' },
+          deletedAt: null,
+          ...(startDate || endDate
+            ? {
+                submittedAt: {
+                  ...(startDate ? { gte: startDate } : {}),
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              }
+            : {}),
+          ...(dto.search
+            ? {
+                OR: [
+                  { billNumber: { contains: dto.search, mode: 'insensitive' } },
+                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                  { couponIssue: { code: { contains: dto.search, mode: 'insensitive' } } },
+                ],
+              }
+            : {}),
+        },
+        include: {
+          store: { select: { id: true, name: true } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          couponIssue: { select: { id: true, code: true } },
+          booking: { select: { id: true, bookingCode: true } },
+        },
+        orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+        take: limit * 3,
+      });
+
+      billActivities = bills.map((bill) => {
+        const activityAt = (bill.submittedAt || bill.createdAt).toISOString();
+        return {
+          id: `bill:${bill.id}`,
+          rawId: bill.id,
+          sourceType: 'BILL',
+          activityType: 'BILL_PAYMENT',
+          activityAt,
+          storeId: bill.storeId,
+          storeName: bill.store?.name || '',
+          customerName: bill.user?.displayName || bill.guest?.fullName || 'Khách',
+          customerPhone: bill.user?.phone || bill.guest?.phone || null,
+          customerTier: bill.user?.tier || null,
+          summary: `Hóa đơn ${bill.billNumber || bill.id.slice(0, 8)} • ${(bill.totalVnd || 0).toLocaleString('vi-VN')}đ`,
+          totalVnd: bill.totalVnd,
+          discountVnd: bill.discountVnd,
+          couponCode: bill.couponIssue?.code || null,
+          billNumber: bill.billNumber || null,
+          status: bill.status,
+          statusLabel: this.getBillStatusLabel(bill.status),
+          badgeTone: this.getBillStatusTone(bill.status),
+          linkedEntities: {
+            bookingId: bill.bookingId,
+            couponIssueId: bill.couponIssueId,
+            billId: bill.id,
+          },
+        };
+      });
+    }
+
+    if (typeFilter === 'ALL' || typeFilter === 'COUPON_USAGE') {
+      const couponIssues = await this.prisma.couponIssue.findMany({
+        where: {
+          status: 'USED',
+          bill: { is: null },
+          ...(scopedStoreIds ? { coupon: { storeId: { in: scopedStoreIds } } } : {}),
+          ...(startDate || endDate
+            ? {
+                usedAt: {
+                  ...(startDate ? { gte: startDate } : {}),
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              }
+            : {}),
+          ...(dto.search
+            ? {
+                OR: [
+                  { code: { contains: dto.search, mode: 'insensitive' } },
+                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                ],
+              }
+            : {}),
+        },
+        include: {
+          coupon: { include: { store: { select: { id: true, name: true } } } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          booking: { select: { id: true, bookingCode: true } },
+        },
+        orderBy: [{ usedAt: 'desc' }, { id: 'desc' }],
+        take: limit * 3,
+      });
+
+      couponActivities = couponIssues.map((ci) => {
+        const activityAt = (ci.usedAt || ci.updatedAt || ci.createdAt).toISOString();
+        return {
+          id: `coupon:${ci.id}`,
+          rawId: ci.id,
+          sourceType: 'COUPON_ISSUE',
+          activityType: 'COUPON_USAGE',
+          activityAt,
+          storeId: ci.coupon.storeId,
+          storeName: ci.coupon.store?.name || '',
+          customerName: ci.user?.displayName || ci.guest?.fullName || 'Khách',
+          customerPhone: ci.user?.phone || ci.guest?.phone || null,
+          customerTier: ci.user?.tier || null,
+          summary: `Sử dụng ưu đãi ${ci.code}`,
+          couponCode: ci.code,
+          status: ci.status,
+          statusLabel: 'Đã sử dụng',
+          badgeTone: 'info',
+          linkedEntities: {
+            bookingId: ci.booking?.id || null,
+            couponIssueId: ci.id,
+            billId: null,
+          },
+        };
+      });
+    }
+
+    if (typeFilter === 'ALL' || typeFilter === 'BOOKING_CHECKIN') {
+      const bookings = await this.prisma.booking.findMany({
+        where: {
+          status: { in: ['CHECKED_IN', 'COMPLETED'] },
+          ...(scopedStoreIds ? { storeId: { in: scopedStoreIds } } : {}),
+          deletedAt: null,
+          ...(startDate || endDate
+            ? {
+                scheduledAt: {
+                  ...(startDate ? { gte: startDate } : {}),
+                  ...(endDate ? { lte: endDate } : {}),
+                },
+              }
+            : {}),
+          ...(dto.search
+            ? {
+                OR: [
+                  { bookingCode: { contains: dto.search, mode: 'insensitive' } },
+                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+                ],
+              }
+            : {}),
+        },
+        include: {
+          store: { select: { id: true, name: true } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          bill: { select: { id: true, billNumber: true } },
+          couponIssue: { select: { id: true, code: true } },
+        },
+        orderBy: [{ scheduledAt: 'desc' }, { id: 'desc' }],
+        take: limit * 3,
+      });
+
+      bookingActivities = bookings.map((bk) => {
+        const activityAt = (bk.scheduledAt || bk.createdAt).toISOString();
+        return {
+          id: `booking:${bk.id}`,
+          rawId: bk.id,
+          sourceType: 'BOOKING',
+          activityType: 'BOOKING_CHECKIN',
+          activityAt,
+          storeId: bk.storeId,
+          storeName: bk.store?.name || '',
+          customerName: bk.user?.displayName || bk.guest?.fullName || 'Khách',
+          customerPhone: bk.user?.phone || bk.guest?.phone || null,
+          customerTier: bk.user?.tier || null,
+          summary: `Check-in đặt bàn ${bk.bookingCode}`,
+          bookingCode: bk.bookingCode,
+          totalVnd: bk.totalVnd,
+          discountVnd: bk.discountVnd,
+          status: bk.status,
+          statusLabel: bk.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã check-in',
+          badgeTone: 'success',
+          linkedEntities: {
+            bookingId: bk.id,
+            couponIssueId: bk.couponIssueId,
+            billId: bk.bill?.id || null,
+          },
+        };
+      });
+    }
+
+    let allActivities = [...billActivities, ...couponActivities, ...bookingActivities];
+    allActivities.sort((a, b) => {
+      const timeA = new Date(a.activityAt).getTime();
+      const timeB = new Date(b.activityAt).getTime();
+      if (timeA !== timeB) {
+        return timeB - timeA;
+      }
+      return b.id.localeCompare(a.id);
+    });
+
+    if (decodedCursor) {
+      const cursorTime = new Date(decodedCursor.activityAt).getTime();
+      allActivities = allActivities.filter((item) => {
+        const itemTime = new Date(item.activityAt).getTime();
+        if (itemTime < cursorTime) return true;
+        if (itemTime === cursorTime) return item.id < decodedCursor.id;
+        return false;
+      });
+    }
+
+    const hasMore = allActivities.length > limit;
+    const data = allActivities.slice(0, limit);
+    let nextCursor: string | null = null;
+    if (data.length > 0 && hasMore) {
+      const last = data[data.length - 1];
+      nextCursor = encodeCursor(last.activityAt, last.id);
+    }
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  async getPartnerActivityDetail(
+    user: AuthenticatedUser,
+    activityId: string,
+    storeId?: string,
+  ) {
+    let scopedStoreIds: string[] | undefined;
+    if (storeId) {
+      await this.accessService.ensureStoreAccess(user, storeId);
+      scopedStoreIds = [storeId];
+    } else {
+      scopedStoreIds = await this.accessService.getAccessibleStoreIds(
+        user,
+        'store.partner.view',
+      );
+    }
+
+    if (Array.isArray(scopedStoreIds) && scopedStoreIds.length === 0) {
+      throw new ForbiddenException(
+        'You do not have permission to view activities for this store.',
+      );
+    }
+
+    const checkStorePermission = (targetStoreId: string) => {
+      if (Array.isArray(scopedStoreIds) && !scopedStoreIds.includes(targetStoreId)) {
+        throw new ForbiddenException(
+          'You do not have permission to view activities for this store.',
+        );
+      }
+    };
+
+    let type: 'BILL' | 'COUPON' | 'BOOKING' | 'UNKNOWN' = 'UNKNOWN';
+    let rawId = activityId;
+
+    if (activityId.startsWith('bill:')) {
+      type = 'BILL';
+      rawId = activityId.slice(5);
+    } else if (activityId.startsWith('coupon:')) {
+      type = 'COUPON';
+      rawId = activityId.slice(7);
+    } else if (activityId.startsWith('booking:')) {
+      type = 'BOOKING';
+      rawId = activityId.slice(8);
+    }
+
+    if (type === 'BILL' || type === 'UNKNOWN') {
+      const bill = await this.prisma.bill.findUnique({
+        where: { id: rawId },
+        include: {
+          store: { select: { id: true, name: true, address: true } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          couponIssue: { select: { id: true, code: true } },
+          booking: true,
+          reviewedBy: { select: { id: true, displayName: true } },
+        },
+      });
+
+      if (bill) {
+        checkStorePermission(bill.storeId);
+        return {
+          id: `bill:${bill.id}`,
+          rawId: bill.id,
+          sourceType: 'BILL',
+          activityType: 'BILL_PAYMENT',
+          activityAt: (bill.submittedAt || bill.createdAt).toISOString(),
+          storeId: bill.storeId,
+          storeName: bill.store?.name || '',
+          storeAddress: bill.store?.address || null,
+          customerName: bill.user?.displayName || bill.guest?.fullName || 'Khách',
+          customerPhone: bill.user?.phone || bill.guest?.phone || null,
+          customerTier: bill.user?.tier || null,
+          billNumber: bill.billNumber,
+          subtotalVnd: bill.subtotalVnd,
+          discountVnd: bill.discountVnd,
+          serviceChargeVnd: bill.serviceChargeVnd,
+          taxVnd: bill.taxVnd,
+          totalVnd: bill.totalVnd,
+          paidVnd: bill.paidVnd,
+          status: bill.status,
+          statusLabel: this.getBillStatusLabel(bill.status),
+          badgeTone: this.getBillStatusTone(bill.status),
+          couponCode: bill.couponIssue?.code || null,
+          discountRuleSnapshot: bill.discountRuleSnapshot,
+          booking: bill.booking
+            ? {
+                id: bill.booking.id,
+                bookingCode: bill.booking.bookingCode,
+                scheduledAt: bill.booking.scheduledAt.toISOString(),
+                partySize: bill.booking.partySize,
+              }
+            : null,
+          reviewedBy: bill.reviewedBy
+            ? { id: bill.reviewedBy.id, name: bill.reviewedBy.displayName }
+            : null,
+        };
+      }
+    }
+
+    if (type === 'COUPON' || type === 'UNKNOWN') {
+      const ci = await this.prisma.couponIssue.findUnique({
+        where: { id: rawId },
+        include: {
+          coupon: { include: { store: { select: { id: true, name: true, address: true } } } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          booking: { select: { id: true, bookingCode: true, scheduledAt: true } },
+          scannedBy: { select: { id: true, displayName: true } },
+        },
+      });
+
+      if (ci) {
+        checkStorePermission(ci.coupon.storeId);
+        return {
+          id: `coupon:${ci.id}`,
+          rawId: ci.id,
+          sourceType: 'COUPON_ISSUE',
+          activityType: 'COUPON_USAGE',
+          activityAt: (ci.usedAt || ci.updatedAt || ci.createdAt).toISOString(),
+          storeId: ci.coupon.storeId,
+          storeName: ci.coupon.store?.name || '',
+          storeAddress: ci.coupon.store?.address || null,
+          customerName: ci.user?.displayName || ci.guest?.fullName || 'Khách',
+          customerPhone: ci.user?.phone || ci.guest?.phone || null,
+          customerTier: ci.user?.tier || null,
+          couponCode: ci.code,
+          status: ci.status,
+          statusLabel: 'Đã sử dụng',
+          badgeTone: 'info',
+          scannedBy: ci.scannedBy
+            ? { id: ci.scannedBy.id, name: ci.scannedBy.displayName }
+            : null,
+          booking: ci.booking
+            ? {
+                id: ci.booking.id,
+                bookingCode: ci.booking.bookingCode,
+                scheduledAt: ci.booking.scheduledAt.toISOString(),
+              }
+            : null,
+        };
+      }
+    }
+
+    if (type === 'BOOKING' || type === 'UNKNOWN') {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: rawId },
+        include: {
+          store: { select: { id: true, name: true, address: true } },
+          user: { select: { id: true, displayName: true, phone: true, tier: true } },
+          guest: { select: { id: true, fullName: true, phone: true } },
+          bill: { select: { id: true, billNumber: true, totalVnd: true } },
+          couponIssue: { select: { id: true, code: true } },
+        },
+      });
+
+      if (booking) {
+        checkStorePermission(booking.storeId);
+        return {
+          id: `booking:${booking.id}`,
+          rawId: booking.id,
+          sourceType: 'BOOKING',
+          activityType: 'BOOKING_CHECKIN',
+          activityAt: (booking.scheduledAt || booking.createdAt).toISOString(),
+          storeId: booking.storeId,
+          storeName: booking.store?.name || '',
+          storeAddress: booking.store?.address || null,
+          customerName: booking.user?.displayName || booking.guest?.fullName || 'Khách',
+          customerPhone: booking.user?.phone || booking.guest?.phone || null,
+          customerTier: booking.user?.tier || null,
+          bookingCode: booking.bookingCode,
+          partySize: booking.partySize,
+          status: booking.status,
+          statusLabel: booking.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã check-in',
+          badgeTone: 'success',
+          couponCode: booking.couponIssue?.code || null,
+          bill: booking.bill
+            ? {
+                id: booking.bill.id,
+                billNumber: booking.bill.billNumber,
+                totalVnd: booking.bill.totalVnd,
+              }
+            : null,
+        };
+      }
+    }
+
+    throw new NotFoundException('Activity not found');
+  }
+
+  private getBillStatusLabel(status: string): string {
+    switch (status) {
+      case 'SUBMITTED':
+      case 'PENDING_PM_BA':
+        return 'Chờ duyệt';
+      case 'VERIFIED':
+      case 'PAID':
+        return 'Đã duyệt';
+      case 'REJECTED':
+        return 'Đã từ chối';
+      case 'VOIDED':
+        return 'Đã hủy';
+      default:
+        return status;
+    }
+  }
+
+  private getBillStatusTone(status: string): 'success' | 'warning' | 'danger' | 'info' {
+    switch (status) {
+      case 'VERIFIED':
+      case 'PAID':
+        return 'success';
+      case 'SUBMITTED':
+      case 'PENDING_PM_BA':
+        return 'warning';
+      case 'REJECTED':
+      case 'VOIDED':
+        return 'danger';
+      default:
+        return 'info';
+    }
   }
 
   async listPartnerNotifications(user: AuthenticatedUser) {

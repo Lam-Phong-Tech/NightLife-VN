@@ -1,34 +1,32 @@
-# BRIEFING — 2026-07-16T17:17:06+07:00
+# BRIEFING — 2026-08-05T14:25:30+07:00
 
 ## Mission
-Implement a comprehensive seed data sync to ensure 100% database schema coverage for the NightLife-VN project, covering 9 missing entities and providing VPS deployment scripts.
+Refactor & upgrade Partner Portal of NightLife-VN across 5 PR stages (P0 financial data fixes, backend Activity contracts, Partner Shell & Strangler pattern, Activity sub-routes, Home redesign & monolith cleanup).
 
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: d:\laragon\www\NightLife-VN\.agents\sentinel
-- Orchestrator: 61ffbece-f8cc-4657-9e67-aa9b98e6c241
-- Victory Auditor: f3e43069-2c96-4e32-97b4-3c20281fb755
+- Orchestrator: a6166166-d3f1-4fc5-aed5-12da5b13dce6
+- Victory Auditor: TBD
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
 
 ## User Context
-- **Last user request**: Implement comprehensive seed data sync (9 entities, seed modules, index integration, verify assertions, and VPS deployment script).
-- **Follow-up / Resume**: Server restarted; user requested to resume the process (`/teamwork-preview tiếp tục`).
+- **Last user request**: Teamwork Project Prompt — Production Approved (V3) for Partner Portal refactoring & upgrade across 5 PR stages.
 - **Pending clarifications**: none
-- **Delivered results**: none
+- **Delivered results**: Milestone 1 (PR 1: P0 Financial Data Fixes) PASSED & COMPLETE.
 
 ## Project Status
-- **Phase**: complete
+- **Phase**: in progress (Milestone 2: PR 2 Backend Activity Contracts & Stable Pagination)
 
 ## Victory Audit Status
-- **Triggered**: yes
-- **Verdict**: VICTORY CONFIRMED
+- **Triggered**: no
+- **Verdict**: pending
 - **Retry count**: 0
 
 ## Artifact Index
 - d:\laragon\www\NightLife-VN\ORIGINAL_REQUEST.md — Verbatim user request
 - d:\laragon\www\NightLife-VN\.agents\sentinel\BRIEFING.md — Sentinel briefing file
 - d:\laragon\www\NightLife-VN\.agents\sentinel\handoff.md — Sentinel handoff file
-

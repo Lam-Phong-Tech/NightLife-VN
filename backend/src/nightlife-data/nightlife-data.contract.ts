@@ -22,6 +22,7 @@ import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
 import { CreateBillDto, ResubmitBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
+import { PartnerActivityQueryDto } from './dto/partner-activity-query.dto';
 import {
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
@@ -2615,3 +2616,78 @@ function guardedListContract(
     }),
   );
 }
+
+export function PartnerHomeContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: get home summary metrics and recent activity stream',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Returns aggregate metrics (revenue, bill count, booking count, active coupons) and top 5 recent activities for authorized stores.',
+    }),
+    ApiOkResponse({
+      description: 'Partner home summary response.',
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user does not have the required role.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+
+export function PartnerActivitiesContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: list partner activities with stable cursor pagination',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Returns paginated activity stream sorted by (activityAt DESC, id DESC). Deduplicates coupon scan events when bill is created.',
+    }),
+    ApiOkResponse({
+      description: 'Paginated partner activities response.',
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user does not have the required role.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+
+export function PartnerActivityDetailContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: get detailed activity item by ID',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Returns full activity detail object or 404/403.',
+    }),
+    ApiParam({
+      name: 'activityId',
+      description: 'Activity item ID (prefixed or raw UUID)',
+    }),
+    ApiOkResponse({
+      description: 'Partner activity detail response.',
+    }),
+    ApiNotFoundResponse({
+      description: 'Activity not found.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user does not have the required role.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+

@@ -172,6 +172,7 @@ describe('NightlifeDataService', () => {
       aggregate: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -11833,4 +11834,251 @@ describe('NightlifeDataService', () => {
       expect(rankingFindArgs.where).not.toHaveProperty('cityCode');
     });
   });
+
+  describe('Partner Activity Contracts & Stable Pagination (PR2)', () => {
+    const partnerUser = {
+      id: 'partner-user-1',
+      role: 'PARTNER',
+      email: 'partner@example.com',
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe('getPartnerHome', () => {
+      it('aggregates revenue, bills, bookings, active coupons, and recent activities for authorized store scope', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1', 'store-2']);
+        prisma.bill.aggregate.mockResolvedValue({ _sum: { totalVnd: 5000000 } } as never);
+        prisma.bill.count.mockResolvedValue(10 as never);
+        prisma.booking.count.mockResolvedValue(8 as never);
+        prisma.couponIssue.count.mockResolvedValue(4 as never);
+
+        prisma.bill.findMany.mockResolvedValue([
+          {
+            id: 'b1',
+            submittedAt: new Date('2026-08-05T12:00:00.000Z'),
+            storeId: 'store-1',
+            status: 'VERIFIED',
+            totalVnd: 1000000,
+            discountVnd: 100000,
+            store: { name: 'Club Alpha' },
+            user: { displayName: 'Customer 1', phone: '0900000001', tier: 'VIP' },
+          },
+        ] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerHome(partnerUser);
+
+        expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+          partnerUser,
+          'store.partner.view',
+        );
+        expect(result.metrics).toEqual({
+          totalRevenueVnd: 5000000,
+          billCount: 10,
+          bookingCount: 8,
+          activeCouponsCount: 4,
+        });
+        expect(result.recentActivities).toHaveLength(1);
+        expect(result.recentActivities[0].id).toBe('bill:b1');
+      });
+
+      it('returns zeroed metrics when accessible store scope is empty', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerHome(partnerUser);
+
+        expect(result.metrics).toEqual({
+          totalRevenueVnd: 0,
+          billCount: 0,
+          bookingCount: 0,
+          activeCouponsCount: 0,
+        });
+        expect(result.recentActivities).toHaveLength(0);
+      });
+
+      it('verifies store permission when specific storeId is provided', async () => {
+        accessService.ensureStoreAccess.mockResolvedValue(undefined as never);
+        prisma.bill.aggregate.mockResolvedValue({ _sum: { totalVnd: 2000000 } } as never);
+        prisma.bill.count.mockResolvedValue(3 as never);
+        prisma.booking.count.mockResolvedValue(2 as never);
+        prisma.couponIssue.count.mockResolvedValue(1 as never);
+        prisma.bill.findMany.mockResolvedValue([] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerHome(partnerUser, 'store-1');
+
+        expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(partnerUser, 'store-1');
+        expect(result.metrics.totalRevenueVnd).toBe(2000000);
+      });
+
+      it('propagates ForbiddenException when store access check fails', async () => {
+        accessService.ensureStoreAccess.mockRejectedValue(
+          new ForbiddenException('No access') as never,
+        );
+
+        await expect(service.getPartnerHome(partnerUser, 'forbidden-store')).rejects.toThrow(
+          ForbiddenException,
+        );
+      });
+    });
+
+    describe('getPartnerActivities', () => {
+      it('executes stable pagination ordered by activityAt DESC, id DESC with nextCursor', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+
+        prisma.bill.findMany.mockResolvedValue([
+          {
+            id: 'b1',
+            submittedAt: new Date('2026-08-05T12:00:00.000Z'),
+            storeId: 'store-1',
+            status: 'VERIFIED',
+            totalVnd: 1000000,
+            discountVnd: 100000,
+            store: { name: 'Club Alpha' },
+            user: { displayName: 'User A', phone: '0901', tier: 'MEMBER' },
+          },
+          {
+            id: 'b2',
+            submittedAt: new Date('2026-08-05T10:00:00.000Z'),
+            storeId: 'store-1',
+            status: 'SUBMITTED',
+            totalVnd: 500000,
+            discountVnd: 50000,
+            store: { name: 'Club Alpha' },
+            user: { displayName: 'User B', phone: '0902', tier: 'GUEST' },
+          },
+        ] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerActivities(partnerUser, { limit: 1 });
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].id).toBe('bill:b1');
+        expect(result.hasMore).toBe(true);
+        expect(result.nextCursor).toBeDefined();
+        expect(result.nextCursor).not.toBeNull();
+      });
+
+      it('filters standalone CouponIssue items with bill: { is: null } for deduplication', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        prisma.bill.findMany.mockResolvedValue([] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([
+          {
+            id: 'c1',
+            code: 'COUPON100',
+            status: 'USED',
+            usedAt: new Date('2026-08-05T11:00:00.000Z'),
+            coupon: { storeId: 'store-1', store: { name: 'Club Alpha' } },
+            user: { displayName: 'User C' },
+          },
+        ] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerActivities(partnerUser, { type: 'COUPON_USAGE' });
+
+        expect(prisma.couponIssue.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              status: 'USED',
+              bill: { is: null },
+            }),
+          }),
+        );
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].id).toBe('coupon:c1');
+        expect(result.data[0].activityType).toBe('COUPON_USAGE');
+      });
+
+      it('decodes opaque cursor and applies threshold filtering correctly', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        const cursor = Buffer.from('2026-08-05T11:00:00.000Z_bill:b1', 'utf-8').toString('base64');
+
+        prisma.bill.findMany.mockResolvedValue([
+          {
+            id: 'b1',
+            submittedAt: new Date('2026-08-05T11:00:00.000Z'),
+            storeId: 'store-1',
+            status: 'VERIFIED',
+            totalVnd: 1000000,
+            store: { name: 'Club Alpha' },
+          },
+          {
+            id: 'b2',
+            submittedAt: new Date('2026-08-05T09:00:00.000Z'),
+            storeId: 'store-1',
+            status: 'VERIFIED',
+            totalVnd: 500000,
+            store: { name: 'Club Alpha' },
+          },
+        ] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerActivities(partnerUser, { cursor, limit: 10 });
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].id).toBe('bill:b2');
+      });
+    });
+
+    describe('getPartnerActivityDetail', () => {
+      it('returns detail for a valid bill activity ID within store scope', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        prisma.bill.findUnique.mockResolvedValue({
+          id: 'b1',
+          storeId: 'store-1',
+          billNumber: 'HD-1001',
+          subtotalVnd: 1000000,
+          discountVnd: 100000,
+          serviceChargeVnd: 50000,
+          taxVnd: 50000,
+          totalVnd: 1000000,
+          paidVnd: 1000000,
+          status: 'VERIFIED',
+          submittedAt: new Date('2026-08-05T10:00:00.000Z'),
+          createdAt: new Date('2026-08-05T10:00:00.000Z'),
+          store: { id: 'store-1', name: 'Club Alpha', address: '123 Street' },
+          user: { id: 'u1', displayName: 'User A', phone: '0901', tier: 'VIP' },
+        } as never);
+
+        const detail = await service.getPartnerActivityDetail(partnerUser, 'bill:b1');
+
+        expect(detail.id).toBe('bill:b1');
+        expect(detail.billNumber).toBe('HD-1001');
+        expect(detail.statusLabel).toBe('Đã duyệt');
+      });
+
+      it('throws ForbiddenException if activity store is outside accessible scope', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        prisma.bill.findUnique.mockResolvedValue({
+          id: 'b99',
+          storeId: 'store-99',
+          status: 'VERIFIED',
+          submittedAt: new Date(),
+          store: { name: 'Other Store' },
+        } as never);
+
+        await expect(service.getPartnerActivityDetail(partnerUser, 'bill:b99')).rejects.toThrow(
+          ForbiddenException,
+        );
+      });
+
+      it('throws NotFoundException when activity ID does not exist', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        prisma.bill.findUnique.mockResolvedValue(null as never);
+        prisma.couponIssue.findUnique.mockResolvedValue(null as never);
+        prisma.booking.findUnique.mockResolvedValue(null as never);
+
+        await expect(
+          service.getPartnerActivityDetail(partnerUser, 'bill:non-existent'),
+        ).rejects.toThrow(NotFoundException);
+      });
+    });
+  });
 });
+
