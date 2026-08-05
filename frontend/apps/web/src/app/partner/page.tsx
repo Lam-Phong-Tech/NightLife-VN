@@ -3268,7 +3268,7 @@ export default function PartnerPage() {
         category: 'Phân quyền',
         title: 'Tài khoản đang có nhiều hơn 1 quán',
         message: 'Mỗi tài khoản partner chỉ nên quản lý một quán. Kiểm tra phạm vi để Admin thu gọn quyền nếu cần.',
-        meta: `${scopedStoreCount} quán trong scope`,
+        meta: `${scopedStoreCount} quán trong phạm vi`,
         actionLabel: 'Xem tổng quan',
         panel: 'overview',
         tone: 'warning',
@@ -3888,7 +3888,7 @@ export default function PartnerPage() {
         label: 'Số khách đến',
         value: customerArrivalMetricCount.toLocaleString('vi-VN'),
         sub: `${activeCoupons} coupon đang hoạt động`,
-        trend: `${coupons.length} coupon trong scope`,
+        trend: `${coupons.length} coupon áp dụng`,
         icon: UsersRound,
       },
       {
@@ -6744,7 +6744,7 @@ export default function PartnerPage() {
             [
               'Tổng giảm giá',
               moneyVnd(totalDiscount),
-              'Theo bill trong scope',
+              'Theo bill trong phạm vi',
             ],
             ['Bill chờ soát', String(pendingSettlementBillCount), 'Đang chờ Admin xử lý'],
           ].map(([label, value, sub]) => (
