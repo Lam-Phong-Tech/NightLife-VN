@@ -24,6 +24,7 @@ export interface CampaignItem {
     slug: string;
     city: string;
     district?: string | null;
+    ward?: string | null;
     media?: Array<{ url: string }>;
   } | null;
   startsAt?: string | null;
@@ -34,18 +35,34 @@ export interface CampaignItem {
   updatedAt: string;
 }
 
+const isGeneralArea = (val?: string | null) => {
+  if (!val) return true;
+  const normalized = val.trim().toLowerCase();
+  return normalized === 'tổng hợp' || normalized === 'tong hop' || normalized === 'tong_hop' || normalized === 'all';
+};
+
 export const campaignStoreDistrict = (
   store: CampaignItem['targetStore'],
 ): string => {
+  const directWard = store?.ward?.trim();
+  if (directWard && !isGeneralArea(directWard)) return directWard;
+
+  const areaWard =
+    store?.area && typeof store.area === 'object'
+      ? store.area.ward?.trim()
+      : undefined;
+  if (areaWard && !isGeneralArea(areaWard)) return areaWard;
+
   const directDistrict = store?.district?.trim();
-  if (directDistrict) return directDistrict;
+  if (directDistrict && !isGeneralArea(directDistrict)) return directDistrict;
 
   const areaDistrict =
     store?.area && typeof store.area === 'object'
       ? store.area.district?.trim()
       : undefined;
+  if (areaDistrict && !isGeneralArea(areaDistrict)) return areaDistrict;
 
-  return areaDistrict || '';
+  return '';
 };
 
 export const campaignsApi = {

@@ -424,11 +424,26 @@ const normalizeVietnameseLocationText = (value: string) =>
     .replace(/\bPhu\?ng\s*(\d+)\b/gi, "Phường $1")
     .replace(/\bPhuong\s*(\d+)\b/gi, "Phường $1");
 
-const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) =>
-  parts
-    .filter((part): part is string => Boolean(part))
+const isGeneralLocationPart = (val?: string | null) => {
+  if (!val) return true;
+  const norm = val.trim().toLowerCase();
+  return norm === "tổng hợp" || norm === "tong hop" || norm === "tong_hop" || norm === "all";
+};
+
+const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) => {
+  const validParts = parts.filter((part): part is string => Boolean(part) && !isGeneralLocationPart(part));
+  return validParts
     .map((part) => translateText(normalizeVietnameseLocationText(part), language))
     .join(" · ");
+};
+
+const storeAddressText = (store: PublicStoreDetail, language: LanguageCode) => {
+  if (store.address) {
+    return localizeAddressAdminLabels(store.address, language);
+  }
+
+  return localizedStoreParts([(store as any).ward, store.area?.ward, store.area?.name, store.district, store.city], language);
+};
 
 const formatStoreCastCount = (count: number, language: LanguageCode) =>
   translateText(`${count} cast`, language);

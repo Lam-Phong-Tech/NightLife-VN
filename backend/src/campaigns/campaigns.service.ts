@@ -115,6 +115,7 @@ export class CampaignsService {
               slug: true,
               city: true,
               district: true,
+              address: true,
               media: true,
               status: true,
             },
@@ -123,6 +124,20 @@ export class CampaignsService {
       }),
       this.prisma.campaign.count({ where }),
     ]);
+
+    const extractWardFromAddress = (address?: string | null, areaWard?: string | null): string | null => {
+      if (areaWard && areaWard.trim() && areaWard.toLowerCase() !== 'tổng hợp' && areaWard.toLowerCase() !== 'tong hop') {
+        return areaWard.trim();
+      }
+      if (!address) return null;
+      const parts = address.split(',').map((s) => s.trim());
+      for (const part of parts) {
+        if (/^(phường|xã|thị trấn|ward)\b/i.test(part)) {
+          return part;
+        }
+      }
+      return null;
+    };
 
     const normalizedData = data.map((campaign) => ({
       ...campaign,
@@ -133,6 +148,10 @@ export class CampaignsService {
               campaign.targetStore.district?.trim() ||
               campaign.targetStore.area?.district?.trim() ||
               null,
+            ward: extractWardFromAddress(
+              campaign.targetStore.address,
+              campaign.targetStore.area?.ward,
+            ),
           }
         : null,
     }));

@@ -154,15 +154,23 @@ const withNullableTimeout = async <T,>(promise: Promise<T>, ms = 2500) =>
     }),
   ]);
 
-const storeArea = (store: PublicStore) =>
-  [store.area?.name ?? store.district, cityLabels[store.cityCode ?? ""] ?? store.city]
-    .filter(Boolean)
-    .join(" · ");
+const isGenArea = (v?: string | null) => {
+  if (!v) return true;
+  const n = v.trim().toLowerCase();
+  return n === "tổng hợp" || n === "tong hop" || n === "tong_hop" || n === "all";
+};
 
-const castArea = (cast: PublicCast) =>
-  [cast.store.area?.name ?? cast.store.district, cityLabels[cast.store.cityCode ?? ""] ?? cast.store.city]
-    .filter(Boolean)
-    .join(" · ");
+const storeArea = (store: PublicStore) => {
+  const wardName = store.ward ?? store.area?.ward;
+  const areaName = wardName && !isGenArea(wardName) ? wardName : (!isGenArea(store.area?.name) ? store.area?.name : (!isGenArea(store.district) ? store.district : ""));
+  return [areaName, cityLabels[store.cityCode ?? ""] ?? store.city].filter(Boolean).join(" · ");
+};
+
+const castArea = (cast: PublicCast) => {
+  const wardName = cast.store.ward ?? cast.store.area?.ward;
+  const areaName = wardName && !isGenArea(wardName) ? wardName : (!isGenArea(cast.store.area?.name) ? cast.store.area?.name : (!isGenArea(cast.store.district) ? cast.store.district : ""));
+  return [areaName, cityLabels[cast.store.cityCode ?? ""] ?? cast.store.city].filter(Boolean).join(" · ");
+};
 
 const mergeStoreItem = (
   slug: string,

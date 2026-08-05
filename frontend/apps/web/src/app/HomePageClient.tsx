@@ -565,9 +565,23 @@ function hotVideoThumbnail(video: PublicHotVideo, index: number) {
   );
 }
 
+const isGeneralAreaText = (val?: string | null) => {
+  if (!val) return true;
+  const norm = val.trim().toLowerCase();
+  return norm === "tổng hợp" || norm === "tong hop" || norm === "tong_hop" || norm === "all";
+};
+
 function storeAreaLabel(store: PublicStore) {
-  const areaName = store.area?.name ?? store.district ?? "";
-  const readableArea = areaLabels[areaName] ?? areaName;
+  const wardName = store.ward ?? store.area?.ward;
+  const areaName =
+    wardName && !isGeneralAreaText(wardName)
+      ? wardName
+      : !isGeneralAreaText(store.area?.name)
+      ? store.area?.name
+      : !isGeneralAreaText(store.district)
+      ? store.district
+      : "";
+  const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
   const readableCity = cityLabels[store.cityCode ?? ""] ?? store.city;
 
   return [readableArea, readableCity].filter(Boolean).join(" · ");
@@ -595,8 +609,16 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
 
 function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: number): HomeStoreCard {
   const categoryLabel = categoryLabels[item.category] ?? item.category;
-  const areaName = item.area?.name ?? item.district ?? "";
-  const readableArea = areaLabels[areaName] ?? areaName;
+  const wardName = (item as any).ward ?? item.area?.ward;
+  const areaName =
+    wardName && !isGeneralAreaText(wardName)
+      ? wardName
+      : !isGeneralAreaText(item.area?.name)
+      ? item.area?.name
+      : !isGeneralAreaText(item.district)
+      ? item.district
+      : "";
+  const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
   const readableCity = cityLabels[item.cityCode ?? ""] ?? item.city;
   const activeCouponName = item.activeCoupon?.name;
   const image = resolveClientUrl(item.thumbnailUrl);
@@ -609,10 +631,10 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
     catLabel: categoryLabel,
     category: item.category,
     cityCode: item.cityCode ?? "",
-    img: backgroundFromUrl(item.thumbnailUrl),
+    img: image ? `url(${JSON.stringify(image)}) center/cover` : undefined,
     image: image ?? undefined,
-    href: item.href || `/stores/${item.slug}`,
-    badgeText: activeCouponName || item.reason || (index < 2 ? "Gợi ý hợp gu" : categoryLabel),
+    href: `/stores/${item.slug}`,
+    badgeText: activeCouponName ? `Ưu đãi ${activeCouponName}` : index < 2 ? "Gợi ý hot" : categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
   };
 }
@@ -649,8 +671,16 @@ function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStore
   };
 }
 
-function storeAreaText(area?: string | null, cityCode?: string | null, city?: string | null, language?: LanguageCode) {
-  const readableArea = area ? areaLabels[area] ?? area : "";
+function storeAreaText(
+  area?: string | null,
+  cityCode?: string | null,
+  city?: string | null,
+  language?: LanguageCode,
+  ward?: string | null,
+) {
+  const selectedWard = ward && !isGeneralAreaText(ward) ? ward : null;
+  const selectedArea = area && !isGeneralAreaText(area) ? (areaLabels[area] ?? area) : null;
+  const readableArea = selectedWard ?? selectedArea ?? "";
   const readableCity = cityLabels[cityCode ?? ""] ?? city ?? "";
   const rawText = [readableArea, readableCity].filter(Boolean).join(" · ");
   return language ? translateText(rawText, language) : rawText;
@@ -674,7 +704,10 @@ function mapCouponToHomeItem(
     id: coupon.id,
     title: coupon.name,
     value: formatCouponValue(coupon, language, rates),
-    place: [coupon.store.name, storeAreaText(coupon.store.district, undefined, coupon.store.city, language)]
+    place: [
+      coupon.store.name,
+      storeAreaText(coupon.store.district, undefined, coupon.store.city, language, coupon.store.ward),
+    ]
       .filter(Boolean)
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
@@ -701,7 +734,13 @@ function mapCampaignToHomeItem(
     value,
     place: [
       campaign.targetStore?.name,
-      storeAreaText(campaign.targetStore?.district, undefined, campaign.targetStore?.city, language),
+      storeAreaText(
+        campaign.targetStore?.district,
+        undefined,
+        campaign.targetStore?.city,
+        language,
+        campaign.targetStore?.ward,
+      ),
     ]
       .filter(Boolean)
       .join(" · "),

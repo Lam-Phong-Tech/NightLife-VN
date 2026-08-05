@@ -525,7 +525,20 @@ const formatVenuePriceTier = (value: string | number | null | undefined, languag
 
 const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): VenueView => {
   const categoryLabel = getLocalizedCategoryLabel(store.category, language);
-  const areaLabel = getLocalizedAreaLabel(store.area?.name ?? store.district ?? store.city ?? "Trung tâm", language);
+  const isGeneralVal = (v?: string | null) => {
+    if (!v) return true;
+    const n = v.trim().toLowerCase();
+    return n === "tổng hợp" || n === "tong hop" || n === "tong_hop" || n === "all";
+  };
+  const wardName = store.ward ?? store.area?.ward;
+  const rawArea = wardName && !isGeneralVal(wardName)
+    ? wardName
+    : !isGeneralVal(store.area?.name)
+    ? store.area?.name
+    : !isGeneralVal(store.district)
+    ? store.district
+    : store.city ?? "Trung tâm";
+  const areaLabel = getLocalizedAreaLabel(rawArea, language);
   const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
   const image = backendImage ?? emptyVenueImage;

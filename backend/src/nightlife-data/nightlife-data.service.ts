@@ -3055,6 +3055,14 @@ export class NightlifeDataService {
             category: true,
             city: true,
             district: true,
+            address: true,
+            area: {
+              select: {
+                ward: true,
+                district: true,
+                name: true,
+              },
+            },
             media: {
               where: this.storeMediaWhere({
                 access: 'PUBLIC',
@@ -3072,6 +3080,34 @@ export class NightlifeDataService {
         },
       },
     });
+
+    const extractWardFromAddress = (address?: string | null, areaWard?: string | null): string | null => {
+      if (areaWard && areaWard.trim() && areaWard.toLowerCase() !== 'tổng hợp' && areaWard.toLowerCase() !== 'tong hop') {
+        return areaWard.trim();
+      }
+      if (!address) return null;
+      const parts = address.split(',').map((s) => s.trim());
+      for (const part of parts) {
+        if (/^(phường|xã|thị trấn|ward)\b/i.test(part)) {
+          return part;
+        }
+      }
+      return null;
+    };
+
+    return coupons.map((c) => ({
+      ...c,
+      store: {
+        id: c.store.id,
+        name: c.store.name,
+        slug: c.store.slug,
+        category: c.store.category,
+        city: c.store.city,
+        district: c.store.district,
+        ward: extractWardFromAddress(c.store.address, c.store.area?.ward),
+        media: c.store.media,
+      },
+    }));
   }
 
   async claimGuestCoupon(

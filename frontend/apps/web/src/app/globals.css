@@ -68,7 +68,7 @@ html.vy-light {
   --vy-bg: #f3eee5;
   --vy-bg-2: #f9f6ee;
   --vy-hero-grad: radial-gradient(ellipse at 16% -10%, rgba(212, 178, 106, 0.2) 0%, transparent 44%), radial-gradient(ellipse at 90% 0%, rgba(224, 114, 158, 0.08) 0%, transparent 38%), linear-gradient(180deg, #faf7f0 0%, #eae4d4 100%);
-  --vy-surface: rgba(255, 255, 255, 0.9);
+  --vy-surface: #ffffff;
   --vy-surface-1: rgba(28, 22, 10, 0.03);
   --vy-surface-2: rgba(28, 22, 10, 0.045);
   --vy-surface-3: rgba(28, 22, 10, 0.06);
