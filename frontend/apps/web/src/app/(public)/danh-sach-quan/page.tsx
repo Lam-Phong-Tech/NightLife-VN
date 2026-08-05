@@ -538,7 +538,7 @@ const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): Ven
     : !isGeneralVal(store.district)
     ? store.district
     : store.city ?? "Trung tâm";
-  const areaLabel = getLocalizedAreaLabel(rawArea, language);
+  const areaLabel = getLocalizedAreaLabel(rawArea ?? "Trung tâm", language);
   const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
   const image = backendImage ?? emptyVenueImage;

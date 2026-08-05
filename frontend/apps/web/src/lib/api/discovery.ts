@@ -55,6 +55,7 @@ export type PublicStore = {
   city: string;
   cityCode?: string;
   district?: string | null;
+  ward?: string | null;
   tags?: string[];
   area?: PublicArea | null;
   latitude?: number | null;

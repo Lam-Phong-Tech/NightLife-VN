@@ -123,6 +123,7 @@ export type PublicStoreDetail = {
   city: string;
   cityCode?: string;
   district?: string | null;
+  ward?: string | null;
   phone?: string | null;
   tags?: string[];
   latitude?: number | null;

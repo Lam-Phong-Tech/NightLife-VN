@@ -627,14 +627,6 @@ const plainMapsUrl = (store: PublicStoreDetail) => {
   return "";
 };
 
-const storeAddressText = (store: PublicStoreDetail, language: LanguageCode) => {
-  if (store.address) {
-    return localizeAddressAdminLabels(store.address, language);
-  }
-
-  return localizedStoreParts([store.area?.name, store.district, store.city], language);
-};
-
 const imageBackground = (url: string) => `url("${url}")`;
 
 const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
