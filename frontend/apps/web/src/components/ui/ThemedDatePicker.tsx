@@ -25,6 +25,8 @@ export interface ThemedDatePickerProps {
   ariaLabel?: string;
   style?: React.CSSProperties;
   className?: string;
+  inputReadOnly?: boolean;
+  getPopupContainer?: (node: HTMLElement) => HTMLElement;
 }
 
 export function ThemedDatePicker({
@@ -36,6 +38,8 @@ export function ThemedDatePicker({
   ariaLabel,
   style,
   className,
+  inputReadOnly = true,
+  getPopupContainer,
 }: ThemedDatePickerProps) {
   const dayjsValue = value && dayjs(value).isValid() ? dayjs(value) : null;
 
@@ -78,6 +82,10 @@ export function ThemedDatePicker({
         placeholder={placeholder}
         disabled={disabled}
         allowClear={allowClear}
+        inputReadOnly={inputReadOnly}
+        getPopupContainer={(triggerNode) =>
+          getPopupContainer ? getPopupContainer(triggerNode) : (triggerNode?.parentElement || document.body)
+        }
         aria-label={ariaLabel}
         className={className}
         suffixIcon={<CalendarDays size={16} style={{ color: colors.goldBright }} />}
