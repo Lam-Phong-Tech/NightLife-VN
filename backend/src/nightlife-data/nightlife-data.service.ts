@@ -4096,6 +4096,7 @@ export class NightlifeDataService {
       orderBy: { scheduledAt: 'desc' },
       select: {
         id: true,
+        bookingCode: true,
         tourBookingId: true,
         storeId: true,
         status: true,
@@ -6555,7 +6556,7 @@ export class NightlifeDataService {
         rejectReason: true,
         usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
-        booking: { select: { id: true, status: true, scheduledAt: true } },
+        booking: { select: { id: true, bookingCode: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {

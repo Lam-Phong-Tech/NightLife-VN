@@ -330,6 +330,7 @@ type PartnerCoupon = {
 
 type PartnerBooking = {
   id: string;
+  bookingCode?: string | null;
   status: string;
   scheduledAt: string;
   partySize: number;
@@ -381,7 +382,7 @@ type PartnerBill = {
   usedAt?: string | null;
   submitterType?: string | null;
   store?: { id?: string | null; name: string; slug?: string | null } | null;
-  booking?: { id: string; status: string; scheduledAt?: string | null } | null;
+  booking?: { id: string; bookingCode?: string | null; status: string; scheduledAt?: string | null } | null;
   coupon?: { code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
