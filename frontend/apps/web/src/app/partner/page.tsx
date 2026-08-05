@@ -488,7 +488,7 @@ type PartnerNotification = {
 };
 type PartnerNotificationEvent = Omit<PartnerNotification, 'unread'>;
 type ListingTabKey = 'store' | 'cast';
-type PeriodKey = 'today' | 'seven' | 'thirty';
+type PeriodKey = 'today' | 'seven' | 'thirty' | 'custom';
 type OfflineScanQueueItem = {
   payload: string;
   queuedAt: string;
@@ -1775,6 +1775,7 @@ export default function PartnerPage() {
   const [period, setPeriod] = useState<PeriodKey>('seven');
   const [overviewFromDate, setOverviewFromDate] = useState<string>('');
   const [overviewToDate, setOverviewToDate] = useState<string>('');
+  const [isOverviewDateModalOpen, setIsOverviewDateModalOpen] = useState(false);
   const [settlementFilters, setSettlementFilters] = useState({
     code: '',
     service: '',
@@ -6129,62 +6130,133 @@ export default function PartnerPage() {
     window.location.href = '/dang-nhap-doi-tac';
   };
 
+  const getCustomOverviewDateLabel = () => {
+    if (period === 'today') return 'Hôm nay';
+    if (period === 'seven') return '7 ngày';
+    if (period === 'thirty') return '30 ngày';
+    if (overviewFromDate && overviewToDate) {
+      const formatShort = (dStr: string) => {
+        const parts = dStr.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+        return dStr;
+      };
+      return `${formatShort(overviewFromDate)} - ${formatShort(overviewToDate)}`;
+    }
+    if (overviewFromDate) {
+      const parts = overviewFromDate.split('-');
+      return `Từ ${parts.length === 3 ? `${parts[2]}/${parts[1]}` : overviewFromDate}`;
+    }
+    if (overviewToDate) {
+      const parts = overviewToDate.split('-');
+      return `Đến ${parts.length === 3 ? `${parts[2]}/${parts[1]}` : overviewToDate}`;
+    }
+    return 'Tùy chọn';
+  };
+
+  const isCustomPeriodActive =
+    period === 'custom' ||
+    (!['today', 'seven', 'thirty'].includes(period) && (!!overviewFromDate || !!overviewToDate));
+
   const renderOverviewPanel = () => (
     <>
-      {/* Bộ lọc khoảng thời gian & chọn nhanh */}
-      <PanelCard style={{ marginBottom: '16px', padding: '18px 20px' }}>
-        <div
-          className="partner-overview-filter-bar"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
-
+        {/* Bộ lọc khoảng thời gian & chọn nhanh */}
+        <PanelCard style={{ marginBottom: '16px', padding: '16px 18px' }}>
           <div
+            className="partner-overview-filter-bar"
             style={{
               display: 'flex',
-              alignItems: 'flex-end',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '12px',
               flexWrap: 'wrap',
             }}
           >
-            {/* Từ ngày */}
-            <div style={{ minWidth: '150px' }}>
-              <FormField label="Từ ngày" className="partner-date-field">
-                <ThemedDatePicker
-                  value={overviewFromDate}
-                  onChange={(value) => {
-                    setOverviewFromDate(value);
-                  }}
-                  placeholder="Chọn ngày"
-                  style={inputStyle}
-                  ariaLabel="Từ ngày"
-                />
-              </FormField>
+            <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
+
+            {/* Desktop view (>= 768px): Inline Date Pickers + Presets */}
+            <div
+              className="partner-overview-filter-desktop"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Từ ngày */}
+              <div style={{ minWidth: '140px' }}>
+                <FormField label="Từ ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={overviewFromDate}
+                    onChange={(value) => {
+                      setOverviewFromDate(value);
+                      setPeriod('custom');
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Từ ngày"
+                  />
+                </FormField>
+              </div>
+
+              {/* Đến ngày */}
+              <div style={{ minWidth: '140px' }}>
+                <FormField label="Đến ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={overviewToDate}
+                    onChange={(value) => {
+                      setOverviewToDate(value);
+                      setPeriod('custom');
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Đến ngày"
+                  />
+                </FormField>
+              </div>
+
+              {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
+              <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {periodItems.map((item) => {
+                  const active = period === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleSelectOverviewPeriod(item.key)}
+                      aria-pressed={active}
+                      style={{
+                        minHeight: '38px',
+                        borderRadius: '18px',
+                        border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                        background: active ? colors.goldGrad : colors.surface3,
+                        color: active ? colors.onGold : colors.text2,
+                        padding: '0 15px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Đến ngày */}
-            <div style={{ minWidth: '150px' }}>
-              <FormField label="Đến ngày" className="partner-date-field">
-                <ThemedDatePicker
-                  value={overviewToDate}
-                  onChange={(value) => {
-                    setOverviewToDate(value);
-                  }}
-                  placeholder="Chọn ngày"
-                  style={inputStyle}
-                  ariaLabel="Đến ngày"
-                />
-              </FormField>
-            </div>
-
-            {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
-            <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Mobile view (< 768px): Sleek Horizontal Pill Row with Presets & Custom Date Modal Trigger */}
+            <div
+              className="partner-overview-filter-mobile"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                overflowX: 'auto',
+                paddingBottom: '2px',
+                scrollbarWidth: 'none',
+              }}
+            >
               {periodItems.map((item) => {
                 const active = period === item.key;
                 return (
@@ -6194,14 +6266,17 @@ export default function PartnerPage() {
                     onClick={() => handleSelectOverviewPeriod(item.key)}
                     aria-pressed={active}
                     style={{
-                      minHeight: '38px',
+                      minHeight: '36px',
                       borderRadius: '18px',
                       border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
                       background: active ? colors.goldGrad : colors.surface3,
                       color: active ? colors.onGold : colors.text2,
-                      padding: '0 15px',
+                      padding: '0 14px',
+                      fontSize: '13px',
                       fontWeight: 800,
                       cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flex: '0 0 auto',
                       transition: 'all 0.2s ease',
                     }}
                   >
@@ -6209,10 +6284,184 @@ export default function PartnerPage() {
                   </button>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => setIsOverviewDateModalOpen(true)}
+                aria-pressed={isCustomPeriodActive}
+                style={{
+                  minHeight: '36px',
+                  borderRadius: '18px',
+                  border: `1px solid ${isCustomPeriodActive ? colors.borderGold40 : colors.borderSoft}`,
+                  background: isCustomPeriodActive ? colors.goldGrad : colors.surface3,
+                  color: isCustomPeriodActive ? colors.onGold : colors.text2,
+                  padding: '0 14px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  flex: '0 0 auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <CalendarDays size={14} style={{ color: isCustomPeriodActive ? colors.onGold : colors.goldBright }} />
+                <span>{getCustomOverviewDateLabel()}</span>
+              </button>
             </div>
           </div>
-        </div>
-      </PanelCard>
+        </PanelCard>
+
+        {/* Modal / Bottom Sheet chọn ngày tùy chỉnh cho Mobile */}
+        {isOverviewDateModalOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,.72)',
+              backdropFilter: 'blur(8px)',
+              padding: '16px',
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsOverviewDateModalOpen(false);
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '460px',
+                background: colors.popoverBg,
+                border: `1px solid ${colors.borderGold32}`,
+                borderRadius: '20px',
+                padding: '20px',
+                boxShadow: '0 24px 48px rgba(0,0,0,.85)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+              }}
+            >
+              {/* Header modal */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: colors.text }}>
+                    Khoảng thời gian thống kê
+                  </h4>
+                  <p style={{ margin: '2px 0 0', fontSize: '12px', color: colors.muted }}>
+                    Tùy chỉnh ngày bắt đầu & ngày kết thúc đối soát
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOverviewDateModalOpen(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    border: `1px solid ${colors.borderHair}`,
+                    background: colors.surface2,
+                    color: colors.text2,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Form chọn ngày */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <FormField label="Từ ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={overviewFromDate}
+                    onChange={(value) => {
+                      setOverviewFromDate(value);
+                      setPeriod('custom');
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Từ ngày"
+                  />
+                </FormField>
+
+                <FormField label="Đến ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={overviewToDate}
+                    onChange={(value) => {
+                      setOverviewToDate(value);
+                      setPeriod('custom');
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Đến ngày"
+                  />
+                </FormField>
+              </div>
+
+              {/* Các tùy chọn nhanh trong Modal */}
+              <div>
+                <span style={{ fontSize: '12px', color: colors.muted, display: 'block', marginBottom: '8px' }}>
+                  Hoặc chọn nhanh:
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {periodItems.map((item) => {
+                    const active = period === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => {
+                          handleSelectOverviewPeriod(item.key);
+                          setIsOverviewDateModalOpen(false);
+                        }}
+                        style={{
+                          minHeight: '34px',
+                          borderRadius: '16px',
+                          border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                          background: active ? colors.goldGrad : colors.surface3,
+                          color: active ? colors.onGold : colors.text2,
+                          padding: '0 14px',
+                          fontSize: '12.5px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Button áp dụng */}
+              <button
+                type="button"
+                onClick={() => setIsOverviewDateModalOpen(false)}
+                style={{
+                  width: '100%',
+                  minHeight: '44px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  fontSize: '14px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  marginTop: '4px',
+                }}
+              >
+                Áp dụng bộ lọc
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* 4 Thẻ chỉ số tổng quan */}
       <div className="partner-metric-grid" style={{ marginBottom: '16px' }}>
@@ -10592,6 +10841,11 @@ export default function PartnerPage() {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
+        @media (min-width: 768px) {
+          .partner-overview-filter-mobile {
+            display: none !important;
+          }
+        }
         @media (max-width: 860px) {
           .partner-shell {
             padding-left: 0;
@@ -10629,6 +10883,9 @@ export default function PartnerPage() {
             display: none !important;
           }
           .partner-desktop-header-title {
+            display: none !important;
+          }
+          .partner-overview-filter-desktop {
             display: none !important;
           }
           .partner-mobile-header-store {
