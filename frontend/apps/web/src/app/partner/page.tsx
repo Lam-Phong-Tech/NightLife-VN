@@ -6281,7 +6281,6 @@ export default function PartnerPage() {
       {/* Biểu đồ lượt đặt chỗ 7 ngày */}
       <PanelCard style={{ marginBottom: '16px' }}>
         <SectionHeading
-          eyebrow="WEEKLY BOOKINGS"
           title="Lượt đặt chỗ 7 ngày"
           action={
             <StatusPill tone="gold">
