@@ -8148,59 +8148,163 @@ export default function PartnerPage() {
               Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
             </p>
 
-            {/* Ô tìm kiếm theo Mã đặt chỗ / Mã hóa đơn */}
-            <div style={{ marginBottom: '14px', maxWidth: '440px' }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Search
-                  size={16}
-                  style={{
-                    position: 'absolute',
-                    left: '14px',
-                    color: colors.muted,
-                    pointerEvents: 'none',
-                  }}
-                />
-                <input
-                  type="text"
-                  value={billSearchQuery}
-                  onChange={(e) => {
-                    setBillSearchQuery(e.target.value);
-                    setBillCurrentPage(1);
-                  }}
-                  placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
-                  style={{
-                    width: '100%',
-                    minHeight: '40px',
-                    padding: '8px 36px 8px 38px',
-                    borderRadius: '12px',
-                    border: `1px solid ${colors.borderSoft}`,
-                    background: colors.surface2,
-                    color: colors.text,
-                    fontSize: '13px',
-                    outline: 'none',
-                  }}
-                />
-                {billSearchQuery && (
+            {/* Thanh bộ lọc tìm kiếm & ngày tháng */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-end',
+                flexWrap: 'wrap',
+                marginBottom: '16px',
+              }}
+            >
+              {/* Ô tìm kiếm theo Mã đặt chỗ / Mã hóa đơn */}
+              <div style={{ flex: '1 1 240px', minWidth: '220px' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Search
+                    size={16}
+                    style={{
+                      position: 'absolute',
+                      left: '14px',
+                      color: colors.muted,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={billSearchQuery}
+                    onChange={(e) => {
+                      setBillSearchQuery(e.target.value);
+                      setBillCurrentPage(1);
+                    }}
+                    placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
+                    style={{
+                      width: '100%',
+                      minHeight: '40px',
+                      padding: '8px 36px 8px 38px',
+                      borderRadius: '12px',
+                      border: `1px solid ${colors.borderSoft}`,
+                      background: colors.surface2,
+                      color: colors.text,
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  />
+                  {billSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBillSearchQuery('');
+                        setBillCurrentPage(1);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        background: 'transparent',
+                        border: 0,
+                        color: colors.muted,
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      aria-label="Xóa tìm kiếm"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Từ ngày */}
+              <div style={{ minWidth: '150px' }}>
+                <FormField label="Từ ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={billFromDate}
+                    onChange={(value) => {
+                      setBillFromDate(value);
+                      setBillPeriod('');
+                      setBillCurrentPage(1);
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Từ ngày"
+                  />
+                </FormField>
+              </div>
+
+              {/* Đến ngày */}
+              <div style={{ minWidth: '150px' }}>
+                <FormField label="Đến ngày" className="partner-date-field">
+                  <ThemedDatePicker
+                    value={billToDate}
+                    onChange={(value) => {
+                      setBillToDate(value);
+                      setBillPeriod('');
+                      setBillCurrentPage(1);
+                    }}
+                    placeholder="Chọn ngày"
+                    style={inputStyle}
+                    ariaLabel="Đến ngày"
+                  />
+                </FormField>
+              </div>
+
+              {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {[
+                  { key: 'today', label: 'Hôm nay' },
+                  { key: 'seven', label: '7 ngày' },
+                  { key: 'thirty', label: '30 ngày' },
+                ].map((item) => {
+                  const active = billPeriod === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleSelectBillPeriod(item.key as 'today' | 'seven' | 'thirty')}
+                      style={{
+                        minHeight: '40px',
+                        borderRadius: '20px',
+                        border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                        background: active ? colors.goldGrad : colors.surface3,
+                        color: active ? colors.onGold : colors.text2,
+                        padding: '0 16px',
+                        fontSize: '13px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease-in-out',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+
+                {(billFromDate || billToDate || billPeriod) && (
                   <button
                     type="button"
                     onClick={() => {
-                      setBillSearchQuery('');
+                      setBillFromDate('');
+                      setBillToDate('');
+                      setBillPeriod('');
                       setBillCurrentPage(1);
                     }}
                     style={{
-                      position: 'absolute',
-                      right: '10px',
+                      minHeight: '40px',
+                      borderRadius: '20px',
+                      border: `1px solid ${colors.borderSoft}`,
                       background: 'transparent',
-                      border: 0,
                       color: colors.muted,
+                      padding: '0 12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
                       cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
+                      whiteSpace: 'nowrap',
                     }}
-                    aria-label="Xóa tìm kiếm"
                   >
-                    <X size={14} />
+                    Xóa lọc
                   </button>
                 )}
               </div>
@@ -8208,27 +8312,27 @@ export default function PartnerPage() {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
               {[
-                { key: 'ALL', label: 'Tất cả', count: storeBills.length },
-                { key: 'UNSENT', label: 'Chưa gửi', count: unsentPartnerBookings.length },
+                { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
+                { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
                 {
                   key: 'SUBMITTED',
                   label: 'Chờ duyệt',
-                  count: storeBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
+                  count: dateFilteredStoreBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
                 },
                 {
                   key: 'VERIFIED',
                   label: 'Đã duyệt',
-                  count: storeBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
+                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
                 },
                 {
                   key: 'REJECTED',
                   label: 'Từ chối',
-                  count: storeBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
+                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
                 },
                 {
                   key: 'VOIDED',
                   label: 'Đã hủy',
-                  count: storeBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
+                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
                 },
               ].map((filter) => {
                 const active = billStatusFilter === filter.key;
