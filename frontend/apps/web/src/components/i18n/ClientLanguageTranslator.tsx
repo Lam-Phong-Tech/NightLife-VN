@@ -12,6 +12,7 @@ import {
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
 import type { NightlifeHostKind } from "@/lib/auth/hosts";
+import { syncUserThemeFromStorage } from "@/lib/theme/user-theme";
 
 const textSourceMap = new WeakMap<Text, string>();
 const translatedAttributes = ["placeholder", "aria-label", "title", "alt"] as const;
@@ -141,6 +142,7 @@ function lockTitleFromTranslation() {
 }
 
 function applyTranslations(language: LanguageCode) {
+  syncUserThemeFromStorage();
   document.documentElement.lang = languageHtmlLang[language];
   document.documentElement.dataset.vietyoruLanguage = language;
   lockTitleFromTranslation();
@@ -160,6 +162,7 @@ function applyTranslations(language: LanguageCode) {
       "[placeholder], [aria-label], [title], img[alt], input[readonly]",
     )
     .forEach((element) => translateElementAttributes(element, language));
+  syncUserThemeFromStorage();
 }
 
 export function shouldSkipLanguageTranslation(

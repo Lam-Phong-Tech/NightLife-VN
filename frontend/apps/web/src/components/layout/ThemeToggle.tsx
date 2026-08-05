@@ -1,40 +1,30 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import {
+  readUserTheme,
+  storeUserTheme,
+  syncUserThemeFromStorage,
+  type UserTheme,
+} from "@/lib/theme/user-theme";
 
 interface ThemeToggleProps {
   isMobile?: boolean;
 }
 
 export function ThemeToggle({ isMobile }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<UserTheme>("dark");
 
   useEffect(() => {
     // Chỉ render khi client-side để tránh hydration mismatch
-    try {
-      const storedTheme = localStorage.getItem("vy-user-theme");
-      if (storedTheme === "light" || storedTheme === "dark") {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTheme(storedTheme);
-      }
-    } catch {
-      // ignore
-    }
+    syncUserThemeFromStorage();
+    setTheme(readUserTheme());
   }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
-    try {
-      localStorage.setItem("vy-user-theme", nextTheme);
-      if (nextTheme === "light") {
-        document.documentElement.classList.add("vy-light");
-      } else {
-        document.documentElement.classList.remove("vy-light");
-      }
-    } catch {
-      // ignore
-    }
+    storeUserTheme(nextTheme);
   };
 
   const size = isMobile ? 36 : 39;

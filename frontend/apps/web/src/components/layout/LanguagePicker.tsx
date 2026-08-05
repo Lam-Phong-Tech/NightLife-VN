@@ -14,6 +14,7 @@ import {
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
 import { localizeHref } from "@/lib/i18n/locales";
+import { syncUserThemeFromStorage } from "@/lib/theme/user-theme";
 
 type LanguageOption = {
   code: LanguageCode;
@@ -64,12 +65,16 @@ function getLanguage(code: LanguageCode) {
 }
 
 function storeLanguage(language: LanguageOption) {
+  syncUserThemeFromStorage();
   storeLanguagePreference(language.code);
   syncGoogleTranslateCookie(language.code);
 
   const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   const localizedHref = localizeHref(currentHref, language.code);
-  window.setTimeout(() => window.location.assign(localizedHref), 0);
+  window.setTimeout(() => {
+    syncUserThemeFromStorage();
+    window.location.assign(localizedHref);
+  }, 0);
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
@@ -97,6 +102,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
     window.dispatchEvent(
       new CustomEvent(languageChangedEvent, { detail: { language: storedLanguage } }),
     );
+    syncUserThemeFromStorage();
 
     return undefined;
   }, []);
