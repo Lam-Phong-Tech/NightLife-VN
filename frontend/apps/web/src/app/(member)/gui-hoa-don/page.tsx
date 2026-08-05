@@ -2714,6 +2714,24 @@ export default function Page() {
           color: #241a0a !important;
         }
 
+        html.vy-light .nl-bill-filter-chip {
+          border-color: rgba(30, 24, 12, 0.14);
+          background: rgba(28, 22, 10, 0.045);
+          color: #4a453c;
+        }
+
+        html.vy-light .nl-bill-filter-chip:hover {
+          border-color: rgba(30, 24, 12, 0.22);
+          background: rgba(28, 22, 10, 0.08);
+          color: #211e19;
+        }
+
+        html.vy-light .nl-bill-filter-chip.active {
+          border-color: transparent;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+        }
+
         .nl-bill-chip-count {
           font-size: 11px;
           opacity: 0.85;

@@ -731,6 +731,29 @@
   font-weight: 820;
 }
 
+:global(html.vy-light) .timeChip,
+:global(html.vy-light) .filterChip {
+  border: 1px solid rgba(30, 24, 12, 0.14);
+  background: rgba(28, 22, 10, 0.045);
+  color: #4a453c;
+  font-weight: 750;
+}
+
+:global(html.vy-light) .timeChip:hover,
+:global(html.vy-light) .filterChip:hover {
+  border-color: rgba(30, 24, 12, 0.22);
+  background: rgba(28, 22, 10, 0.08);
+  color: #211e19;
+}
+
+:global(html.vy-light) .selectedChip,
+:global(html.vy-light) .selectedFilter {
+  border-color: transparent;
+  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+  color: #241a0a;
+  font-weight: 820;
+}
+
 .emptySlotMessage {
   flex: 1 0 100%;
   width: 100%;
