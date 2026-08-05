@@ -8103,25 +8103,7 @@ export default function PartnerPage() {
       <div style={{ marginTop: '14px' }}>
         <div style={{ display: billSubView === 'list' ? 'block' : 'none' }}>
           <PanelCard>
-            <SectionHeading
-              title="Hóa đơn của quán"
-              action={
-                <PrimaryButton
-                  onClick={() => {
-                      setBillAmountInput('');
-                      setBillUsedAt('');
-                      setBillBookingId('');
-                      setBillEvidenceFile(null);
-                      setBillNotice(null);
-                      setSelectedBillId(null);
-                      setBillSubView('form');
-                    }}
-                    style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
-                  >
-                    <Plus size={14} /> Gửi hóa đơn mới
-                  </PrimaryButton>
-              }
-            />
+            <SectionHeading title="Hóa đơn của quán" />
             <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
               Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
             </p>
