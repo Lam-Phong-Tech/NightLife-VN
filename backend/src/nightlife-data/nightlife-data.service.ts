@@ -3021,10 +3021,10 @@ export class NightlifeDataService {
     return { recorded: true };
   }
 
-  listPublicCoupons() {
+  async listPublicCoupons() {
     const now = new Date();
 
-    return this.prisma.coupon.findMany({
+    const coupons = await this.prisma.coupon.findMany({
       where: {
         status: 'ACTIVE',
         deletedAt: null,
