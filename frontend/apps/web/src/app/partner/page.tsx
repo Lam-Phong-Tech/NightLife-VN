@@ -6171,7 +6171,7 @@ export default function PartnerPage() {
               flexWrap: 'wrap',
             }}
           >
-            <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ thống kê & Đối soát" />
+            <SectionHeading title="Kỳ thống kê & Đối soát" />
 
             {/* Desktop view (>= 768px): Inline Date Pickers + Presets */}
             <div
@@ -6962,7 +6962,7 @@ export default function PartnerPage() {
             flexWrap: 'wrap',
           }}
         >
-          <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ đối soát" />
+          <SectionHeading title="Kỳ đối soát" />
           <div className="partner-period-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {periodItems.map((item) => (
               <button
