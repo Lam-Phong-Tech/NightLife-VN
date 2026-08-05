@@ -36,6 +36,9 @@ export function clampBookingGuestCount(guestCount: number) {
   return Math.min(bookingValidationLimits.maxGuests, Math.max(1, integerValue));
 }
 
+export const bookingGuestCountLimitMessage = () =>
+  `Số người chỉ được từ 1 đến ${bookingValidationLimits.maxGuests}.`;
+
 export function sanitizeBookingGuestCountInput(value: string) {
   const normalizedValue = value.trim();
   if (normalizedValue.startsWith("-")) return 1;
@@ -107,7 +110,7 @@ export function validateBookingGuestCount(guestCount: number) {
     guestCount < 1 ||
     guestCount > bookingValidationLimits.maxGuests
   ) {
-    return `Số người chỉ được từ 1 đến ${bookingValidationLimits.maxGuests}.`;
+    return bookingGuestCountLimitMessage();
   }
 
   return "";

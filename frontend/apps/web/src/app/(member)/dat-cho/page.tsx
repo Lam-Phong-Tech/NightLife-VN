@@ -29,6 +29,7 @@ import {
   pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
+  bookingGuestCountLimitMessage,
   bookingValidationLimits,
   clampBookingGuestCount,
   normalizeBookingDisplayName,
@@ -662,6 +663,12 @@ export default function Page() {
     setGuestInput(String(nextGuests));
   };
 
+  const showGuestCountLimitToast = () => {
+    userFeedback.warning({
+      title: translateText(bookingGuestCountLimitMessage(), activeLanguage),
+    });
+  };
+
   const updateGuestInput = (value: string) => {
     const digits = sanitizeGuestCountDraftInput(value);
     setGuestInput(digits);
@@ -674,11 +681,17 @@ export default function Page() {
 
   const commitGuestInput = () => {
     const parsed = Number(guestInput);
+    const shouldShowLimitToast =
+      Boolean(guestInput.trim()) &&
+      (!Number.isFinite(parsed) || parsed < 1 || parsed > maxGuests);
     const nextGuests =
       guestInput.trim() && Number.isFinite(parsed)
         ? clampBookingGuestCount(parsed)
         : clampBookingGuestCount(guests);
 
+    if (shouldShowLimitToast) {
+      showGuestCountLimitToast();
+    }
     setGuests(nextGuests);
     setGuestInput(String(nextGuests));
     return nextGuests;

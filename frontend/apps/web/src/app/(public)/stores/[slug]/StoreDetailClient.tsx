@@ -66,6 +66,7 @@ import {
   pastBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
+  bookingGuestCountLimitMessage,
   bookingValidationLimits,
   clampBookingGuestCount,
   normalizeBookingDisplayName,
@@ -1255,23 +1256,35 @@ function BookingCard({
 }) {
   const bookingPriceText = priceRangeText(store, activeLanguage);
   const [guestCountDraft, setGuestCountDraft] = useState(String(guestCount));
+  const userFeedback = useUserActionFeedback();
 
   useEffect(() => {
     setGuestCountDraft(String(guestCount));
   }, [guestCount]);
 
+  const showGuestCountLimitToast = () => {
+    userFeedback.warning({
+      title: translateText(bookingGuestCountLimitMessage(), activeLanguage),
+    });
+  };
+
   const commitGuestCountDraft = () => {
     onFieldTouched("guestCount");
     const draftValue = guestCountDraft.trim();
     const normalizedDraftValue = draftValue.replace(/^0+(?=\d)/, "");
-    const parsedGuestCount =
-      normalizedDraftValue.length > String(maxBookingGuests).length
-        ? maxBookingGuests
-        : Number.parseInt(normalizedDraftValue, 10);
+    const parsedGuestCount = Number.parseInt(normalizedDraftValue, 10);
+    const shouldShowLimitToast =
+      Boolean(draftValue) &&
+      (!Number.isFinite(parsedGuestCount) ||
+        parsedGuestCount < 1 ||
+        parsedGuestCount > maxBookingGuests);
     const nextGuestCount = draftValue
       ? clampBookingGuestCount(parsedGuestCount)
       : 1;
 
+    if (shouldShowLimitToast) {
+      showGuestCountLimitToast();
+    }
     onGuestCountChange(nextGuestCount);
     setGuestCountDraft(String(nextGuestCount));
   };

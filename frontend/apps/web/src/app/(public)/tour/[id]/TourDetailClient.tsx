@@ -27,6 +27,7 @@ import { tourApi, type PublicTour, type TourStopStore, type TourStoreCast } from
 import { getAuthUser } from "@/lib/auth/session";
 import { buildBookingTimeSlots, buildScheduledAtFromBookingSlot } from "@/lib/booking-time-slots";
 import {
+  bookingGuestCountLimitMessage,
   bookingValidationLimits,
   clampBookingGuestCount,
   normalizeBookingDisplayName,
@@ -602,13 +603,25 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
     return nextGuests;
   };
 
+  const showGuestCountLimitToast = () => {
+    userFeedback.warning({
+      title: translateText(bookingGuestCountLimitMessage(), activeLanguage),
+    });
+  };
+
   const commitGuestInput = () => {
     const parsed = Number(guestInput);
+    const shouldShowLimitToast =
+      Boolean(guestInput.trim()) &&
+      (!Number.isFinite(parsed) || parsed < 1 || parsed > maxGuests);
     const nextGuests =
       guestInput.trim() && Number.isFinite(parsed)
         ? clampBookingGuestCount(parsed)
         : clampBookingGuestCount(guests);
 
+    if (shouldShowLimitToast) {
+      showGuestCountLimitToast();
+    }
     setGuests(nextGuests);
     setGuestInput(String(nextGuests));
     return nextGuests;
