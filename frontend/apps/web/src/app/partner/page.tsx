@@ -1776,6 +1776,7 @@ export default function PartnerPage() {
   const [overviewFromDate, setOverviewFromDate] = useState<string>('');
   const [overviewToDate, setOverviewToDate] = useState<string>('');
   const [isOverviewDateModalOpen, setIsOverviewDateModalOpen] = useState(false);
+  const [isBillDateModalOpen, setIsBillDateModalOpen] = useState(false);
   const [settlementFilters, setSettlementFilters] = useState({
     code: '',
     service: '',
@@ -6153,6 +6154,29 @@ export default function PartnerPage() {
     return 'Tùy chọn';
   };
 
+  const getCustomBillDateLabel = () => {
+    if (billPeriod === 'today') return 'Hôm nay';
+    if (billPeriod === 'seven') return '7 ngày';
+    if (billPeriod === 'thirty') return '30 ngày';
+    if (billFromDate && billToDate) {
+      const formatShort = (dStr: string) => {
+        const parts = dStr.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+        return dStr;
+      };
+      return `${formatShort(billFromDate)} - ${formatShort(billToDate)}`;
+    }
+    if (billFromDate) {
+      const parts = billFromDate.split('-');
+      return `Từ ${parts.length === 3 ? `${parts[2]}/${parts[1]}` : billFromDate}`;
+    }
+    if (billToDate) {
+      const parts = billToDate.split('-');
+      return `Đến ${parts.length === 3 ? `${parts[2]}/${parts[1]}` : billToDate}`;
+    }
+    return 'Tùy chọn';
+  };
+
   const isCustomPeriodActive =
     period === 'custom' ||
     (!['today', 'seven', 'thirty'].includes(period) && (!!overviewFromDate || !!overviewToDate));
@@ -8395,116 +8419,349 @@ export default function PartnerPage() {
       safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
     );
 
+    const isCustomBillPeriodActive =
+      billPeriod === 'custom' ||
+      (!['today', 'seven', 'thirty'].includes(billPeriod) && (!!billFromDate || !!billToDate));
+
     return (
       <div style={{ marginTop: '14px' }}>
         <div style={{ display: billSubView === 'list' ? 'block' : 'none' }}>
           <PanelCard>
             <SectionHeading title="Hóa đơn của quán" />
 
-            {/* Thanh bộ lọc tìm kiếm & ngày tháng */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-end',
-                flexWrap: 'wrap',
-                marginBottom: '16px',
-              }}
-            >
-              {/* Ô tìm kiếm theo Mã đặt chỗ / Mã hóa đơn */}
-              <div style={{ flex: '1 1 240px', minWidth: '220px' }}>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Search
-                    size={16}
-                    style={{
-                      position: 'absolute',
-                      left: '14px',
-                      color: colors.muted,
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={billSearchQuery}
-                    onChange={(e) => {
-                      setBillSearchQuery(e.target.value);
-                      setBillCurrentPage(1);
-                    }}
-                    placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
-                    style={{
-                      width: '100%',
-                      minHeight: '40px',
-                      padding: '8px 36px 8px 38px',
-                      borderRadius: '12px',
-                      border: `1px solid ${colors.borderSoft}`,
-                      background: colors.surface2,
-                      color: colors.text,
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
-                  />
-                  {billSearchQuery && (
+            {/* Desktop View (>= 768px): Thanh bộ lọc tìm kiếm & ngày tháng */}
+            <div className="partner-bill-filter-desktop">
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'flex-end',
+                  flexWrap: 'wrap',
+                  marginBottom: '16px',
+                }}
+              >
+                {/* Ô tìm kiếm theo Mã đặt chỗ / Mã hóa đơn */}
+                <div style={{ flex: '1 1 240px', minWidth: '220px' }}>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Search
+                      size={16}
+                      style={{
+                        position: 'absolute',
+                        left: '14px',
+                        color: colors.muted,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={billSearchQuery}
+                      onChange={(e) => {
+                        setBillSearchQuery(e.target.value);
+                        setBillCurrentPage(1);
+                      }}
+                      placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
+                      style={{
+                        width: '100%',
+                        minHeight: '40px',
+                        padding: '8px 36px 8px 38px',
+                        borderRadius: '12px',
+                        border: `1px solid ${colors.borderSoft}`,
+                        background: colors.surface2,
+                        color: colors.text,
+                        fontSize: '13px',
+                        outline: 'none',
+                      }}
+                    />
+                    {billSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBillSearchQuery('');
+                          setBillCurrentPage(1);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          background: 'transparent',
+                          border: 0,
+                          color: colors.muted,
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        aria-label="Xóa tìm kiếm"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Từ ngày */}
+                <div style={{ minWidth: '150px' }}>
+                  <FormField label="Từ ngày" className="partner-date-field">
+                    <ThemedDatePicker
+                      value={billFromDate}
+                      onChange={(value) => {
+                        setBillFromDate(value);
+                        setBillPeriod('custom');
+                        setBillCurrentPage(1);
+                      }}
+                      placeholder="Chọn ngày"
+                      style={inputStyle}
+                      ariaLabel="Từ ngày"
+                    />
+                  </FormField>
+                </div>
+
+                {/* Đến ngày */}
+                <div style={{ minWidth: '150px' }}>
+                  <FormField label="Đến ngày" className="partner-date-field">
+                    <ThemedDatePicker
+                      value={billToDate}
+                      onChange={(value) => {
+                        setBillToDate(value);
+                        setBillPeriod('custom');
+                        setBillCurrentPage(1);
+                      }}
+                      placeholder="Chọn ngày"
+                      style={inputStyle}
+                      ariaLabel="Đến ngày"
+                    />
+                  </FormField>
+                </div>
+
+                {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {[
+                    { key: 'today', label: 'Hôm nay' },
+                    { key: 'seven', label: '7 ngày' },
+                    { key: 'thirty', label: '30 ngày' },
+                  ].map((item) => {
+                    const active = billPeriod === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => handleSelectBillPeriod(item.key as 'today' | 'seven' | 'thirty')}
+                        style={{
+                          minHeight: '40px',
+                          borderRadius: '20px',
+                          border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                          background: active ? colors.goldGrad : colors.surface3,
+                          color: active ? colors.onGold : colors.text2,
+                          padding: '0 16px',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease-in-out',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+
+                  {(billFromDate || billToDate || billPeriod) && (
                     <button
                       type="button"
                       onClick={() => {
-                        setBillSearchQuery('');
+                        setBillFromDate('');
+                        setBillToDate('');
+                        setBillPeriod('');
                         setBillCurrentPage(1);
                       }}
                       style={{
-                        position: 'absolute',
-                        right: '10px',
+                        minHeight: '40px',
+                        borderRadius: '20px',
+                        border: `1px solid ${colors.borderSoft}`,
                         background: 'transparent',
-                        border: 0,
                         color: colors.muted,
+                        padding: '0 12px',
+                        fontSize: '12px',
+                        fontWeight: 700,
                         cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
+                        whiteSpace: 'nowrap',
                       }}
-                      aria-label="Xóa tìm kiếm"
                     >
-                      <X size={14} />
+                      Xóa lọc
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Từ ngày */}
-              <div style={{ minWidth: '150px' }}>
-                <FormField label="Từ ngày" className="partner-date-field">
-                  <ThemedDatePicker
-                    value={billFromDate}
-                    onChange={(value) => {
-                      setBillFromDate(value);
-                      setBillPeriod('');
+              {/* Status tabs desktop */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {[
+                  { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
+                  { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
+                  {
+                    key: 'SUBMITTED',
+                    label: 'Chờ duyệt',
+                    count: dateFilteredStoreBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
+                  },
+                  {
+                    key: 'VERIFIED',
+                    label: 'Đã duyệt',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
+                  },
+                  {
+                    key: 'REJECTED',
+                    label: 'Từ chối',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
+                  },
+                  {
+                    key: 'VOIDED',
+                    label: 'Đã hủy',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
+                  },
+                ].map((filter) => {
+                  const active = billStatusFilter === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => {
+                        setBillStatusFilter(filter.key);
+                        setBillCurrentPage(1);
+                      }}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        border: `1px solid ${active ? colors.borderGold22 : colors.borderSoft}`,
+                        background: active ? 'rgba(212,178,106,.15)' : colors.surface2,
+                        color: active ? colors.goldBright : colors.text2,
+                        transition: 'all 0.15s ease-in-out',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>{filter.label}</span>
+                      <span
+                        style={{
+                          background: active ? 'rgba(212,178,106,.25)' : 'rgba(255,255,255,.08)',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          fontWeight: 900,
+                        }}
+                      >
+                        {filter.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile View (< 768px): 3 Hàng siêu gọn + Dải Pill trượt ngang + Bottom Sheet ngày */}
+            <div
+              className="partner-bill-filter-mobile"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                marginBottom: '14px',
+              }}
+            >
+              {/* Hàng 1: Search bar full width */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    color: colors.muted,
+                    pointerEvents: 'none',
+                  }}
+                />
+                <input
+                  type="text"
+                  value={billSearchQuery}
+                  onChange={(e) => {
+                    setBillSearchQuery(e.target.value);
+                    setBillCurrentPage(1);
+                  }}
+                  placeholder="Tìm theo mã đặt bàn, mã hóa đơn..."
+                  style={{
+                    width: '100%',
+                    minHeight: '38px',
+                    padding: '8px 36px 8px 38px',
+                    borderRadius: '12px',
+                    border: `1px solid ${colors.borderSoft}`,
+                    background: colors.surface2,
+                    color: colors.text,
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+                {billSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillSearchQuery('');
                       setBillCurrentPage(1);
                     }}
-                    placeholder="Chọn ngày"
-                    style={inputStyle}
-                    ariaLabel="Từ ngày"
-                  />
-                </FormField>
-              </div>
-
-              {/* Đến ngày */}
-              <div style={{ minWidth: '150px' }}>
-                <FormField label="Đến ngày" className="partner-date-field">
-                  <ThemedDatePicker
-                    value={billToDate}
-                    onChange={(value) => {
-                      setBillToDate(value);
-                      setBillPeriod('');
-                      setBillCurrentPage(1);
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      background: 'transparent',
+                      border: 0,
+                      color: colors.muted,
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
                     }}
-                    placeholder="Chọn ngày"
-                    style={inputStyle}
-                    ariaLabel="Đến ngày"
-                  />
-                </FormField>
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
-              {/* Nút lọc nhanh: Hôm nay, 7 ngày, 30 ngày */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {/* Hàng 2: Dải pill chọn ngày trượt ngang */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  paddingBottom: '2px',
+                  scrollbarWidth: 'none',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBillPeriod('');
+                    setBillFromDate('');
+                    setBillToDate('');
+                    setBillCurrentPage(1);
+                  }}
+                  style={{
+                    minHeight: '34px',
+                    borderRadius: '18px',
+                    border: `1px solid ${!billPeriod && !billFromDate && !billToDate ? colors.borderGold40 : colors.borderSoft}`,
+                    background: !billPeriod && !billFromDate && !billToDate ? colors.goldGrad : colors.surface3,
+                    color: !billPeriod && !billFromDate && !billToDate ? colors.onGold : colors.text2,
+                    padding: '0 13px',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flex: '0 0 auto',
+                  }}
+                >
+                  Tất cả ngày
+                </button>
+
                 {[
                   { key: 'today', label: 'Hôm nay' },
                   { key: 'seven', label: '7 ngày' },
@@ -8517,23 +8774,47 @@ export default function PartnerPage() {
                       type="button"
                       onClick={() => handleSelectBillPeriod(item.key as 'today' | 'seven' | 'thirty')}
                       style={{
-                        minHeight: '40px',
-                        borderRadius: '20px',
+                        minHeight: '34px',
+                        borderRadius: '18px',
                         border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
                         background: active ? colors.goldGrad : colors.surface3,
                         color: active ? colors.onGold : colors.text2,
-                        padding: '0 16px',
-                        fontSize: '13px',
+                        padding: '0 13px',
+                        fontSize: '12.5px',
                         fontWeight: 800,
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease-in-out',
                         whiteSpace: 'nowrap',
+                        flex: '0 0 auto',
                       }}
                     >
                       {item.label}
                     </button>
                   );
                 })}
+
+                <button
+                  type="button"
+                  onClick={() => setIsBillDateModalOpen(true)}
+                  style={{
+                    minHeight: '34px',
+                    borderRadius: '18px',
+                    border: `1px solid ${isCustomBillPeriodActive ? colors.borderGold40 : colors.borderSoft}`,
+                    background: isCustomBillPeriodActive ? colors.goldGrad : colors.surface3,
+                    color: isCustomBillPeriodActive ? colors.onGold : colors.text2,
+                    padding: '0 13px',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flex: '0 0 auto',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <CalendarDays size={14} style={{ color: isCustomBillPeriodActive ? colors.onGold : colors.goldBright }} />
+                  <span>{getCustomBillDateLabel()}</span>
+                </button>
 
                 {(billFromDate || billToDate || billPeriod) && (
                   <button
@@ -8545,89 +8826,255 @@ export default function PartnerPage() {
                       setBillCurrentPage(1);
                     }}
                     style={{
-                      minHeight: '40px',
-                      borderRadius: '20px',
+                      minHeight: '34px',
+                      borderRadius: '18px',
                       border: `1px solid ${colors.borderSoft}`,
                       background: 'transparent',
                       color: colors.muted,
-                      padding: '0 12px',
+                      padding: '0 10px',
                       fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
+                      flex: '0 0 auto',
                     }}
                   >
                     Xóa lọc
                   </button>
                 )}
               </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-              {[
-                { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
-                { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
-                {
-                  key: 'SUBMITTED',
-                  label: 'Chờ duyệt',
-                  count: dateFilteredStoreBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
-                },
-                {
-                  key: 'VERIFIED',
-                  label: 'Đã duyệt',
-                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
-                },
-                {
-                  key: 'REJECTED',
-                  label: 'Từ chối',
-                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
-                },
-                {
-                  key: 'VOIDED',
-                  label: 'Đã hủy',
-                  count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
-                },
-              ].map((filter) => {
-                const active = billStatusFilter === filter.key;
-                return (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    onClick={() => {
-                      setBillStatusFilter(filter.key);
-                      setBillCurrentPage(1);
-                    }}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      border: `1px solid ${active ? colors.borderGold22 : colors.borderSoft}`,
-                      background: active ? 'rgba(212,178,106,.15)' : colors.surface2,
-                      color: active ? colors.goldBright : colors.text2,
-                      transition: 'all 0.15s ease-in-out',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <span>{filter.label}</span>
-                    <span
+              {/* Hàng 3: Dải tab trạng thái trượt ngang */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  paddingBottom: '2px',
+                  scrollbarWidth: 'none',
+                }}
+              >
+                {[
+                  { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
+                  { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
+                  {
+                    key: 'SUBMITTED',
+                    label: 'Chờ duyệt',
+                    count: dateFilteredStoreBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
+                  },
+                  {
+                    key: 'VERIFIED',
+                    label: 'Đã duyệt',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
+                  },
+                  {
+                    key: 'REJECTED',
+                    label: 'Từ chối',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
+                  },
+                  {
+                    key: 'VOIDED',
+                    label: 'Đã hủy',
+                    count: dateFilteredStoreBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
+                  },
+                ].map((filter) => {
+                  const active = billStatusFilter === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => {
+                        setBillStatusFilter(filter.key);
+                        setBillCurrentPage(1);
+                      }}
                       style={{
-                        background: active ? 'rgba(212,178,106,.25)' : 'rgba(255,255,255,.08)',
-                        padding: '1px 6px',
-                        borderRadius: '10px',
-                        fontSize: '11px',
-                        fontWeight: 900,
+                        padding: '6px 13px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        border: `1px solid ${active ? colors.borderGold22 : colors.borderSoft}`,
+                        background: active ? 'rgba(212,178,106,.15)' : colors.surface2,
+                        color: active ? colors.goldBright : colors.text2,
+                        whiteSpace: 'nowrap',
+                        flex: '0 0 auto',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
                       }}
                     >
-                      {filter.count}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span>{filter.label}</span>
+                      <span
+                        style={{
+                          background: active ? 'rgba(212,178,106,.25)' : 'rgba(255,255,255,.08)',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          fontWeight: 900,
+                        }}
+                      >
+                        {filter.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Modal / Bottom Sheet chọn ngày tùy chỉnh cho Hóa đơn */}
+            {isBillDateModalOpen && (
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 9999,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,.72)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '16px',
+                }}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setIsBillDateModalOpen(false);
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: '460px',
+                    background: colors.popoverBg,
+                    border: `1px solid ${colors.borderGold32}`,
+                    borderRadius: '20px',
+                    padding: '20px',
+                    boxShadow: '0 24px 48px rgba(0,0,0,.85)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                  }}
+                >
+                  {/* Header modal */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: colors.text }}>
+                        Khoảng thời gian hóa đơn
+                      </h4>
+                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: colors.muted }}>
+                        Tùy chỉnh ngày bắt đầu & ngày kết thúc tìm hóa đơn
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBillDateModalOpen(false)}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: `1px solid ${colors.borderHair}`,
+                        background: colors.surface2,
+                        color: colors.text2,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Form chọn ngày */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <FormField label="Từ ngày" className="partner-date-field">
+                      <ThemedDatePicker
+                        value={billFromDate}
+                        onChange={(value) => {
+                          setBillFromDate(value);
+                          setBillPeriod('custom');
+                          setBillCurrentPage(1);
+                        }}
+                        placeholder="Chọn ngày"
+                        style={inputStyle}
+                        ariaLabel="Từ ngày"
+                      />
+                    </FormField>
+
+                    <FormField label="Đến ngày" className="partner-date-field">
+                      <ThemedDatePicker
+                        value={billToDate}
+                        onChange={(value) => {
+                          setBillToDate(value);
+                          setBillPeriod('custom');
+                          setBillCurrentPage(1);
+                        }}
+                        placeholder="Chọn ngày"
+                        style={inputStyle}
+                        ariaLabel="Đến ngày"
+                      />
+                    </FormField>
+                  </div>
+
+                  {/* Các tùy chọn nhanh trong Modal */}
+                  <div>
+                    <span style={{ fontSize: '12px', color: colors.muted, display: 'block', marginBottom: '8px' }}>
+                      Hoặc chọn nhanh:
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'today', label: 'Hôm nay' },
+                        { key: 'seven', label: '7 ngày' },
+                        { key: 'thirty', label: '30 ngày' },
+                      ].map((item) => {
+                        const active = billPeriod === item.key;
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => {
+                              handleSelectBillPeriod(item.key as 'today' | 'seven' | 'thirty');
+                              setIsBillDateModalOpen(false);
+                            }}
+                            style={{
+                              minHeight: '34px',
+                              borderRadius: '16px',
+                              border: `1px solid ${active ? colors.borderGold40 : colors.borderSoft}`,
+                              background: active ? colors.goldGrad : colors.surface3,
+                              color: active ? colors.onGold : colors.text2,
+                              padding: '0 14px',
+                              fontSize: '12.5px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Button áp dụng */}
+                  <button
+                    type="button"
+                    onClick={() => setIsBillDateModalOpen(false)}
+                    style={{
+                      width: '100%',
+                      minHeight: '44px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      background: colors.goldGrad,
+                      color: colors.onGold,
+                      fontSize: '14px',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Áp dụng bộ lọc
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div
               className="partner-bill-table-scroll"
@@ -10842,7 +11289,8 @@ export default function PartnerPage() {
           }
         }
         @media (min-width: 768px) {
-          .partner-overview-filter-mobile {
+          .partner-overview-filter-mobile,
+          .partner-bill-filter-mobile {
             display: none !important;
           }
         }
@@ -10885,7 +11333,8 @@ export default function PartnerPage() {
           .partner-desktop-header-title {
             display: none !important;
           }
-          .partner-overview-filter-desktop {
+          .partner-overview-filter-desktop,
+          .partner-bill-filter-desktop {
             display: none !important;
           }
           .partner-mobile-header-store {
