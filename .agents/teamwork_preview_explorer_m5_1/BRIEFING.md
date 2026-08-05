@@ -1,39 +1,38 @@
-# BRIEFING — 2026-07-16T09:32:27+07:00
+# BRIEFING — 2026-08-05T10:10:00Z
 
 ## Mission
-Analyze backend partner request state machine and frontend AdminConsole UI for partner request reviews and diffing.
+Investigate Home Dashboard architecture and UI design for Milestone 5 (PR 5: Home Redesign & Monolith Cleanup).
 
 ## 🔒 My Identity
-- Archetype: explorer
-- Roles: Explorer 1 - Backend & Frontend Partner Request Analysis
-- Working directory: d:/laragon/www/NightLife-VN/.agents/teamwork_preview_explorer_m5_1/
-- Original parent: 0f70e5e8-075b-4673-815e-ff91f8cb5e31
-- Milestone: m5_1
+- Archetype: teamwork_preview_explorer
+- Roles: PR5 Home Dashboard Architecture Explorer
+- Working directory: d:\laragon\www\NightLife-VN\.agents\teamwork_preview_explorer_m5_1
+- Original parent: a6166166-d3f1-4fc5-aed5-12da5b13dce6
+- Milestone: M5 / PR5
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
-- CODE_ONLY network mode: no external requests, no curl/wget/etc.
+- Read-only investigation — do NOT modify source code files
+- Strict adherence to user rules: NO native `<select>`, NO native `alert/confirm/prompt` (use `useSystemFeedback`), NO native datepickers
+- Output reports to `analysis.md` and `handoff.md` in working directory
+- Communicate completion to parent via `send_message`
 
 ## Current Parent
-- Conversation ID: 0f70e5e8-075b-4673-815e-ff91f8cb5e31
-- Updated: 2026-07-16T09:33:00Z
+- Conversation ID: a6166166-d3f1-4fc5-aed5-12da5b13dce6
+- Updated: 2026-08-05T10:10:00Z
 
 ## Investigation State
-- **Explored paths**:
-  - `backend/src/nightlife-data/nightlife-data.service.ts`: State machine code, selection mapping queries, onboarding flows, reject flows.
-  - `frontend/apps/web/src/app/admin/AdminConsole.tsx`: Partner request rendering, layout tabs, review panel, and dialog overlay hooks.
-- **Key findings**:
-  - Unconditional onboarding during partner request review causes issues for existing stores (`LISTING-` updates).
-  - Backend needs conditional checks to isolate onboarding and status updates (not reverting modifying stores to `DRAFT` on rejection).
-  - Selected and mapped fields were enhanced with original store detail fields (`description`, `address`, `city`, `district`, `phone`, `openingHours`, and `pricingInfo.menuSummary`) to facilitate comparisons.
-  - Designed frontend UI modifications including separate tabs, a custom "Xem thay đổi" button, and a side-by-side comparison modal that highlights changed fields.
-- **Unexplored areas**: None.
+- **Explored paths**: `ORIGINAL_REQUEST.md`, `PROJECT.md`, `partner/page.tsx`, `partner-portal.ts`, `layout.tsx`, `PartnerShellClient.tsx`, `PartnerProviders.tsx`, `partner/activity/page.tsx`, `PartnerSettlementMoney.test.tsx`, `PartnerActivityPage.test.tsx`.
+- **Key findings**: Detailed architecture for Home Dashboard established covering 4 Overview KPI Cards (`fetchPartnerHome`), 5 Quick Action Navigation Tiles (`/partner/activity/new-bill`, `/partner/scan`, `/partner/listing`, `/partner/settings`, `/partner/settings/staff`), top 5 Recent Activities Feed Preview, and 100% User Rules Compliance.
+- **Unexplored areas**: None. Investigation complete.
 
 ## Key Decisions Made
-- Designed separate patch files for backend (`backend.patch`) and frontend (`frontend.patch`) to allow clean application of the proposed changes.
-- Modeled the diff highlighting rules using standard styles to fit existing color palettes without relying on native UI components or alerts.
+- Established DISPATCH.md, BRIEFING.md, progress.md per workflow protocol.
+- Generated `analysis.md` containing full technical specification and component code for `app/partner/page.tsx`.
+- Generated `handoff.md` following 5-component handoff report standard.
 
 ## Artifact Index
-- d:/laragon/www/NightLife-VN/.agents/teamwork_preview_explorer_m5_1/handoff.md — Analysis and Proposed Changes
-- d:/laragon/www/NightLife-VN/.agents/teamwork_preview_explorer_m5_1/backend.patch — Backend Changes Patch
-- d:/laragon/www/NightLife-VN/.agents/teamwork_preview_explorer_m5_1/frontend.patch — Frontend Changes Patch
+- `DISPATCH.md` — Incoming dispatch log
+- `BRIEFING.md` — Agent briefing state
+- `progress.md` — Heartbeat log
+- `analysis.md` — M5 Home Dashboard architecture analysis report
+- `handoff.md` — M5 5-component handoff report

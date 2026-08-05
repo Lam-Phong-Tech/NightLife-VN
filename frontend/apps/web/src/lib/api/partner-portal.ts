@@ -97,10 +97,10 @@ export async function fetchPartnerHome(
   storeId?: string,
   signal?: AbortSignal,
 ): Promise<PartnerHomeOverview> {
-  return apiClient<PartnerHomeOverview>("/partner/home", {
-    params: { storeId: storeId || undefined },
-    signal,
-  });
+  const url = storeId ? `/partner/home?storeId=${encodeURIComponent(storeId)}` : "/partner/home";
+  return signal
+    ? apiClient<PartnerHomeOverview>(url, { signal })
+    : apiClient<PartnerHomeOverview>(url);
 }
 
 export async function fetchPartnerActivities(

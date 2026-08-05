@@ -19,6 +19,8 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/partner",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
 
 vi.mock("../src/lib/auth/session", () => ({

@@ -55,6 +55,7 @@ import type { RankingCategory, RankingCity, RankingTargetType } from "@/lib/api/
 import { clearAuthSession } from "@/lib/auth/session";
 import { logoutBrowserProfile } from "@/lib/api/auth";
 import { useSocket } from "@/components/providers/SocketProvider";
+import { ThemedListingSelect } from "@/components/ui/ThemedListingSelect";
 
 const colors = {
   bg: "#0c0c0f",
@@ -3629,17 +3630,20 @@ export default function AdminConsole({ section }: { section?: string }) {
                 <FileText size={14} />
                 Export CSV
               </button>
-              <select
+              <ThemedListingSelect
                 value={couponIssueStatusFilter}
-                onChange={(event) => setCouponIssueStatusFilter(event.target.value)}
-                style={inputStyle({ width: 170, minHeight: 38 })}
-              >
-              <option value="all">Tất cả</option>
-              <option value="ISSUED">Đã cấp</option>
-              <option value="USED">Đã dùng</option>
-              <option value="EXPIRED">Hết hạn</option>
-              <option value="REVOKED">Đã hủy</option>
-              </select>
+                onChange={(val) => setCouponIssueStatusFilter(val)}
+                placeholder="Trạng thái"
+                options={[
+                  { value: "all", label: "Tất cả" },
+                  { value: "ISSUED", label: "Đã cấp" },
+                  { value: "USED", label: "Đã dùng" },
+                  { value: "EXPIRED", label: "Hết hạn" },
+                  { value: "REVOKED", label: "Đã hủy" },
+                ]}
+                compact
+                style={{ width: 170 }}
+              />
             </span>
           }
         />
@@ -3941,17 +3945,13 @@ export default function AdminConsole({ section }: { section?: string }) {
           <section>
             <h3 style={{ margin: "0 0 12px", color: colors.text, fontSize: 16 }}>Cutoff hủy/đổi lịch</h3>
             <div style={{ display: "grid", gap: 10 }}>
-              <select
+              <ThemedListingSelect
                 value={bookingPolicyStoreId}
-                onChange={(event) => setBookingPolicyStoreId(event.target.value)}
-                style={inputStyle()}
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setBookingPolicyStoreId(val)}
+                placeholder="Chọn cơ sở"
+                options={stores.map((store) => ({ value: store.id, label: store.name }))}
+                style={{ width: "100%" }}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
                 {([30, 60, 120] as const).map((value) => (
                   <button
@@ -4246,75 +4246,67 @@ export default function AdminConsole({ section }: { section?: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(320px,.92fr) minmax(0,1.08fr)", gap: 16, padding: 18 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10, alignContent: "start" }}>
           <Field label="Loại target">
-            <select
+            <ThemedListingSelect
               value={rankingForm.targetType}
-              onChange={(event) =>
+              onChange={(val) =>
                 setRankingForm((current) => ({
                   ...current,
-                  targetType: event.target.value as RankingTargetType,
+                  targetType: val as RankingTargetType,
                   targetId: "",
                 }))
               }
-              style={inputStyle()}
-            >
-              <option value="CAST">Cast</option>
-              <option value="STORE">Quán</option>
-            </select>
+              placeholder="Chọn loại"
+              options={[
+                { value: "CAST", label: "Cast" },
+                { value: "STORE", label: "Quán" },
+              ]}
+              style={{ width: "100%" }}
+            />
           </Field>
 
           <Field label="City">
-            <select
+            <ThemedListingSelect
               value={rankingForm.cityCode}
-              onChange={(event) =>
+              onChange={(val) =>
                 setRankingForm((current) => ({
                   ...current,
-                  cityCode: event.target.value as RankingCity,
+                  cityCode: val as RankingCity,
                   targetId: "",
                 }))
               }
-              style={inputStyle()}
-            >
-              {rankingCityOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Chọn thành phố"
+              options={rankingCityOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+              style={{ width: "100%" }}
+            />
           </Field>
 
           <Field label="Cast / Quán" wide>
-            <select
+            <ThemedListingSelect
               value={rankingForm.targetId}
-              onChange={(event) => setRankingForm((current) => ({ ...current, targetId: event.target.value }))}
-              style={inputStyle()}
-            >
-              {rankingOptions.length ? null : <option value="">Không có target phù hợp</option>}
-              {rankingOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name} · {option.area ?? option.city ?? "All"} · {displayCategory(option.category)}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setRankingForm((current) => ({ ...current, targetId: val }))}
+              placeholder={rankingOptions.length ? "Chọn Cast/Quán" : "Không có target phù hợp"}
+              options={rankingOptions.map((opt) => ({
+                value: opt.id,
+                label: `${opt.name} · ${opt.area ?? opt.city ?? "All"} · ${displayCategory(opt.category)}`,
+              }))}
+              style={{ width: "100%" }}
+            />
           </Field>
 
           <Field label="Category">
-            <select
+            <ThemedListingSelect
               value={rankingForm.category}
-              onChange={(event) =>
+              onChange={(val) =>
                 setRankingForm((current) => ({
                   ...current,
-                  category: event.target.value as RankingFormState["category"],
+                  category: val as RankingFormState["category"],
                   targetId: "",
                 }))
               }
-              style={inputStyle()}
-            >
-              {rankingCategoryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Chọn danh mục"
+              options={rankingCategoryOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+              style={{ width: "100%" }}
+            />
           </Field>
 
           <Field label="Scope">
@@ -4329,7 +4321,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             <input
               type="number"
               min={1}
-              max={5}
+              max={8}
               value={rankingForm.pinRank}
               onChange={(event) => setRankingForm((current) => ({ ...current, pinRank: event.target.value }))}
               style={inputStyle()}
@@ -4365,20 +4357,22 @@ export default function AdminConsole({ section }: { section?: string }) {
           </Field>
 
           <Field label="Status">
-            <select
+            <ThemedListingSelect
               value={rankingForm.status}
-              onChange={(event) =>
+              onChange={(val) =>
                 setRankingForm((current) => ({
                   ...current,
-                  status: event.target.value as RankingFormState["status"],
+                  status: val as RankingFormState["status"],
                 }))
               }
-              style={inputStyle()}
-            >
-              <option value="ACTIVE">Active</option>
-              <option value="PAUSED">Paused</option>
-              <option value="EXPIRED">Expired</option>
-            </select>
+              placeholder="Trạng thái"
+              options={[
+                { value: "ACTIVE", label: "Active" },
+                { value: "PAUSED", label: "Paused" },
+                { value: "EXPIRED", label: "Expired" },
+              ]}
+              style={{ width: "100%" }}
+            />
           </Field>
 
           <label
@@ -4506,32 +4500,36 @@ export default function AdminConsole({ section }: { section?: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(320px,.92fr) minmax(0,1.08fr)", gap: 16, padding: 18 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10, alignContent: "start" }}>
           <Field label="Loại">
-            <select
+            <ThemedListingSelect
               value={contentForm.type}
-              onChange={(event) =>
-                setContentForm((current) => ({ ...current, type: event.target.value as CmsContentType }))
+              onChange={(val) =>
+                setContentForm((current) => ({ ...current, type: val as CmsContentType }))
               }
-              style={inputStyle()}
-            >
-              <option value="BLOG">Blog</option>
-              <option value="POLICY">Chính sách</option>
-            </select>
+              placeholder="Loại"
+              options={[
+                { value: "BLOG", label: "Blog" },
+                { value: "POLICY", label: "Chính sách" },
+              ]}
+              style={{ width: "100%" }}
+            />
           </Field>
           <Field label="Status">
-            <select
+            <ThemedListingSelect
               value={contentForm.status}
-              onChange={(event) =>
+              onChange={(val) =>
                 setContentForm((current) => ({
                   ...current,
-                  status: event.target.value as ContentFormState["status"],
+                  status: val as ContentFormState["status"],
                 }))
               }
-              style={inputStyle()}
-            >
-              <option value="DRAFT">Nháp</option>
-              <option value="PUBLISHED">Đã đăng</option>
-              <option value="ARCHIVED">Lưu trữ</option>
-            </select>
+              placeholder="Trạng thái"
+              options={[
+                { value: "DRAFT", label: "Nháp" },
+                { value: "PUBLISHED", label: "Đã đăng" },
+                { value: "ARCHIVED", label: "Lưu trữ" },
+              ]}
+              style={{ width: "100%" }}
+            />
           </Field>
           <Field label="Tiêu đề" wide>
             <input
@@ -4780,47 +4778,48 @@ export default function AdminConsole({ section }: { section?: string }) {
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
               Commission flag
-              <select
-                aria-label="Revenue report commission flag"
+              <ThemedListingSelect
+                ariaLabel="Revenue report commission flag"
                 value={revenueReportDraft.flag}
-                onChange={(event) => updateRevenueReportDraft("flag", event.target.value)}
-                style={inputStyle({ minHeight: 38 })}
-              >
-                <option value="all">All flags</option>
-                <option value="NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED">Negative commission</option>
-              </select>
+                onChange={(val) => updateRevenueReportDraft("flag", val)}
+                placeholder="Commission flag"
+                options={[
+                  { value: "all", label: "All flags" },
+                  { value: "NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED", label: "Negative commission" },
+                ]}
+                compact
+                style={{ width: "100%" }}
+              />
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
               Quán
-              <select
-                aria-label="Revenue report store filter"
+              <ThemedListingSelect
+                ariaLabel="Revenue report store filter"
                 value={revenueReportDraft.storeId}
-                onChange={(event) => updateRevenueReportDraft("storeId", event.target.value)}
-                style={inputStyle({ minHeight: 38 })}
-              >
-                <option value="">Tất cả quán</option>
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateRevenueReportDraft("storeId", val)}
+                placeholder="Tất cả quán"
+                options={[
+                  { value: "", label: "Tất cả quán" },
+                  ...stores.map((store) => ({ value: store.id, label: store.name })),
+                ]}
+                compact
+                style={{ width: "100%" }}
+              />
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
               Mã giảm giá
-              <select
-                aria-label="Revenue report coupon filter"
+              <ThemedListingSelect
+                ariaLabel="Revenue report coupon filter"
                 value={revenueReportDraft.couponId}
-                onChange={(event) => updateRevenueReportDraft("couponId", event.target.value)}
-                style={inputStyle({ minHeight: 38 })}
-              >
-                <option value="">Tất cả mã</option>
-                {revenueReportCouponOptions.map((coupon) => (
-                  <option key={coupon.id} value={coupon.id}>
-                    {coupon.code} - {coupon.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateRevenueReportDraft("couponId", val)}
+                placeholder="Tất cả mã"
+                options={[
+                  { value: "", label: "Tất cả mã" },
+                  ...revenueReportCouponOptions.map((coupon) => ({ value: coupon.id, label: `${coupon.code} - ${coupon.name}` })),
+                ]}
+                compact
+                style={{ width: "100%" }}
+              />
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
               Trạng thái tính doanh thu

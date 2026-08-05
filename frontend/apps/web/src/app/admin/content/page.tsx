@@ -24,6 +24,7 @@ import {
 } from '@/lib/media/image-upload-validation';
 import { deleteUploadedMedia } from '@/lib/api/media';
 import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
+import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('vi');
@@ -3333,16 +3334,16 @@ export default function AdminContentPage() {
 
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Vị trí trang chủ</div>
-                <select
-                  value={campaignHomePosition}
-                  onChange={(event) => setCampaignHomePosition(event.target.value ? Number(event.target.value) : '')}
-                  style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }}
-                >
-                  <option value="">Không hiển thị tại trang chủ</option>
-                  {[1, 2, 3, 4, 5, 6].map((position) => (
-                    <option key={position} value={position}>Vị trí {position}</option>
-                  ))}
-                </select>
+                <ThemedListingSelect
+                  value={campaignHomePosition ? String(campaignHomePosition) : ''}
+                  onChange={(val) => setCampaignHomePosition(val ? Number(val) : '')}
+                  placeholder="Không hiển thị tại trang chủ"
+                  options={[
+                    { value: '', label: 'Không hiển thị tại trang chủ' },
+                    ...[1, 2, 3, 4, 5, 6].map((pos) => ({ value: String(pos), label: `Vị trí ${pos}` })),
+                  ]}
+                  style={{ width: '100%' }}
+                />
                 <div style={{ marginTop: '6px', color: '#57534b', fontSize: '11px' }}>Chọn 1–6 để hiển thị tại ô tương ứng trong Coupon Hot. Chọn vị trí đã dùng sẽ thay thế campaign cũ.</div>
               </div>
 

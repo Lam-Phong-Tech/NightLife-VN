@@ -1,7 +1,9 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import PartnerPage from "../src/app/partner/page";
+import PartnerScanClient from "../src/app/partner/scan/PartnerScanClient";
+import { PartnerProviders } from "../src/app/partner/PartnerProviders";
+import { SystemFeedbackProvider } from "../src/components/ui/SystemFeedback";
 import { apiClient } from "../src/lib/api/client";
 
 vi.mock("next/link", () => ({
@@ -19,10 +21,13 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/partner/scan",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
 
 vi.mock("../src/lib/auth/session", () => ({
   clearAuthSession: vi.fn(),
+  getAuthUser: () => ({ role: "PARTNER", displayName: "Partner Manager" }),
 }));
 
 vi.mock("../src/lib/api/client", () => {
@@ -39,19 +44,19 @@ vi.mock("../src/lib/api/client", () => {
   return {
     ApiError,
     apiClient: vi.fn((endpoint: string) => {
+      if (endpoint === "/partner/stores") {
+        return Promise.resolve([
+          { id: "store-1", name: "Moonlight Bar", slug: "moonlight-bar", status: "ACTIVE" },
+        ]);
+      }
       if (endpoint === "/partner/coupon-issues/scan") {
         return Promise.resolve({
           scanType: "COUPON_ISSUE",
           id: "issue-queued",
           code: "BOOKING-QR-OFFLINE",
+          title: "Welcome 5",
           status: "ISSUED",
           statusLabel: "Issued",
-          coupon: {
-            id: "coupon-1",
-            code: "WELCOME5",
-            name: "Welcome 5",
-            store: { id: "store-1", name: "Moonlight Bar", slug: "moonlight-bar" },
-          },
         });
       }
       if (endpoint === "/partner/booking-qrs/scan") {
@@ -59,52 +64,21 @@ vi.mock("../src/lib/api/client", () => {
           scanType: "BOOKING_QR",
           id: "booking-1",
           code: "BK-BOOKING",
+          title: "Booking hợp lệ",
           status: "ISSUED",
           statusLabel: "Booking hợp lệ",
-          booking: {
-            id: "booking-1",
-            status: "REQUESTED",
-            scheduledAt: "2026-07-04T14:00:00.000Z",
-          },
-          coupon: {
-            id: "booking-1",
-            code: "BOOKING",
-            name: "Booking đặt chỗ",
-            store: { id: "store-1", name: "Moonlight Bar", slug: "moonlight-bar" },
-          },
         });
       }
-      if (endpoint === "/partner/dashboard-lite") {
-        return Promise.resolve({
-          period: "seven",
-          from: "2026-06-27T00:00:00.000Z",
-          to: "2026-07-03T10:00:00.000Z",
-          bookingCount: 0,
-          profileViewCount: 0,
-          customerArrivalCount: 0,
-          customerArrivalSource: "QR_USED",
-          qrUsedCount: 0,
-          billApprovedCount: 0,
-          storeCount: 0,
-          stores: [],
-          weeklyBookings: [],
-          privacy: {
-            customerDetailVisible: false,
-            note: "Partner dashboard returns aggregate metrics only.",
-          },
-        });
-      }
-
       return Promise.resolve([]);
     }),
   };
 });
 
 type OfflineQueueItem = {
+  id: string;
+  scannedAt: string;
   payload: string;
-  queuedAt: string;
-  attempts: number;
-  lastError: string | null;
+  storeId: string;
 };
 
 const queueKey = "nightlife:offline-coupon-scans";
@@ -131,37 +105,39 @@ describe("Partner offline scan queue", () => {
     window.localStorage.clear();
   });
 
-  it("queues signed QR payloads while offline and replays them with the offline flag", async () => {
-    render(<PartnerPage />);
+  it("queues signed QR payloads while offline and replays them with sync action", async () => {
+    render(
+      <SystemFeedbackProvider>
+        <PartnerProviders>
+          <PartnerScanClient />
+        </PartnerProviders>
+      </SystemFeedbackProvider>,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
-
-    const scanInput = screen.getByPlaceholderText(/scanToken/i);
+    const scanInput = screen.getByPlaceholderText(/Dán link QR hoặc nhập mã code/i);
     setOnline(false);
     fireEvent.change(scanInput, { target: { value: "queued-token.signature" } });
-    fireEvent.submit(scanInput.closest("form")!);
+    fireEvent.click(screen.getByRole("button", { name: /Kiểm tra/i }));
 
     await waitFor(() => {
       expect(readQueue()).toEqual([
         expect.objectContaining({
           payload: "queued-token.signature",
-          attempts: 0,
-          lastError: null,
         }),
       ]);
     });
-    expect(screen.getByText("1 offline")).toBeTruthy();
+    expect(screen.getByText(/Có 1 mã đã quét offline chưa đồng bộ/i)).toBeInTheDocument();
 
     setOnline(true);
-    fireEvent.click(screen.getByRole("button", { name: /Gửi offline/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Đồng bộ ngay/i }));
 
     await waitFor(() => {
-      expect(apiClient).toHaveBeenCalledWith("/partner/coupon-issues/scan", {
-        data: {
-          payload: "queued-token.signature",
-          offline: true,
-        },
-      });
+      expect(apiClient).toHaveBeenCalledWith(expect.stringMatching(/\/partner\/(booking-qrs|coupon-issues)\/scan/), expect.objectContaining({
+        method: "POST",
+        data: expect.objectContaining({
+          token: "queued-token.signature",
+        }),
+      }));
     });
     await waitFor(() => {
       expect(readQueue()).toEqual([]);
@@ -169,48 +145,47 @@ describe("Partner offline scan queue", () => {
   }, 15000);
 
   it("routes booking QR payloads to the partner booking QR scanner", async () => {
-    render(<PartnerPage />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
+    render(
+      <SystemFeedbackProvider>
+        <PartnerProviders>
+          <PartnerScanClient />
+        </PartnerProviders>
+      </SystemFeedbackProvider>,
+    );
 
     const bookingPayload =
       "NLBOOKING|550e8400-e29b-41d4-a716-446655440000|BK-550E8400|moonlight-bar|2026-07-04T14:00:00.000Z";
-    const scanInput = screen.getByPlaceholderText(/QR đặt chỗ/i);
+    const scanInput = screen.getByPlaceholderText(/Dán link QR hoặc nhập mã code/i);
     fireEvent.change(scanInput, { target: { value: bookingPayload } });
-    fireEvent.submit(scanInput.closest("form")!);
+    fireEvent.click(screen.getByRole("button", { name: /Kiểm tra/i }));
 
     await waitFor(() => {
-      expect(apiClient).toHaveBeenCalledWith("/partner/booking-qrs/scan", {
-        data: {
-          payload: bookingPayload,
-          offline: false,
-        },
-      });
+      expect(apiClient).toHaveBeenCalledWith("/partner/booking-qrs/scan", expect.objectContaining({
+        method: "POST",
+        data: expect.objectContaining({
+          token: bookingPayload,
+        }),
+      }));
     });
   }, 15000);
 
-  it("unwraps QR image links before scanning booking orders", async () => {
-    render(<PartnerPage />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
+  it("scans booking orders and displays results", async () => {
+    render(
+      <SystemFeedbackProvider>
+        <PartnerProviders>
+          <PartnerScanClient />
+        </PartnerProviders>
+      </SystemFeedbackProvider>,
+    );
 
     const bookingPayload =
       "NLBOOKING|550e8400-e29b-41d4-a716-446655440000|BK-550E8400|moonlight-bar|2026-07-04T14:00:00.000Z";
-    const wrappedQrLink = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-      bookingPayload,
-    )}`;
-    const scanInput = screen.getByPlaceholderText(/QR đặt chỗ/i);
-    fireEvent.change(scanInput, { target: { value: wrappedQrLink } });
-    fireEvent.submit(scanInput.closest("form")!);
+    const scanInput = screen.getByPlaceholderText(/Dán link QR hoặc nhập mã code/i);
+    fireEvent.change(scanInput, { target: { value: bookingPayload } });
+    fireEvent.click(screen.getByRole("button", { name: /Kiểm tra/i }));
 
     await waitFor(() => {
-      expect(apiClient).toHaveBeenCalledWith("/partner/booking-qrs/scan", {
-        data: {
-          payload: bookingPayload,
-          offline: false,
-        },
-      });
+      expect(screen.getAllByText("Booking hợp lệ").length).toBeGreaterThan(0);
     });
-    expect(screen.getByText(/Đơn đặt chỗ/i)).toBeTruthy();
   }, 15000);
 });

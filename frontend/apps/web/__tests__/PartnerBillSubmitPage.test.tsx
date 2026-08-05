@@ -11,7 +11,8 @@ let mockSearchParamsStr = "panel=bill";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(mockSearchParamsStr),
-  useRouter: () => ({ push: mockPush, replace: mockReplace, back: vi.fn() }),
+  usePathname: () => "/partner",
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: vi.fn(), prefetch: vi.fn() }),
   redirect: (url: string) => mockRedirect(url),
 }));
 

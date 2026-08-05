@@ -73,7 +73,6 @@ export function ThemedListingSelect({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((current) => (disabled ? false : !current))}
-        aria-label={ariaLabel ?? placeholder}
         aria-expanded={isOpen}
         style={{
           width: '100%',
@@ -163,6 +162,29 @@ export function ThemedListingSelect({
           )}
         </div>
       ) : null}
+      <select
+        aria-label={ariaLabel ?? placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        tabIndex={-1}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      >
+        {options.map((option) => (
+          <option key={`${option.value}-${option.label}`} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

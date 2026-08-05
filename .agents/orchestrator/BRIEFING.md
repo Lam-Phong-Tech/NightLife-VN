@@ -26,15 +26,15 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 3. **On failure** (in this order): Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate.
 4. **Succession**: Self-succeed at 20 spawns, write handoff.md, spawn successor.
 - **Work items**:
-  - M0: Survey & Technical Reconnaissance [done]
-  - M1: PR 1 Financial Data Fixes & Type Definitions [done]
-  - M2: PR 2 Backend Activity Contracts & Stable Pagination [done]
-  - M3: PR 3 Partner Shell, Strangler Pattern & Sub-routes [in-progress]
-  - M4: PR 4 Activity Core, New Bill Route & Safe Legacy Redirects [pending]
-  - M5: PR 5 Home Redesign & Monolith Cleanup [pending]
-  - M6: Final Verification & Handover [pending]
-- **Current phase**: 3 (PR 3 Partner Shell & Sub-routes)
-- **Current focus**: Milestone 3 (PR 3) Gate Verification (2 Reviewers, 2 Challengers, 1 Forensic Auditor).
+  1. Milestone 0: Technical Reconnaissance [done]
+  2. Milestone 1: PR 1 Financial Data Fixes & Type Definitions [done]
+  3. Milestone 2: PR 2 Backend Activity Contracts & Stable Pagination [done]
+  4. Milestone 3: PR 3 Partner Shell, Strangler Pattern & Sub-routes [done]
+  5. Milestone 4: PR 4 Activity Core, New Bill Route & Safe Legacy Redirects [done]
+  6. Milestone 5: PR 5 Home Redesign & Monolith Cleanup [pending]
+  7. Milestone 6: Final Verification & Sentinel Handover [pending]
+- **Current phase**: 2 (Milestone Execution)
+- **Current focus**: Milestone 4 (PR 4: Activity Core & Redirects) GATE VERIFICATION PASSED (commit `c4d80d0ae301e9dd8cf5763dcaaad8c0d1628107`). Next: Milestone 5 (PR 5: Home Redesign & Monolith Cleanup).
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -45,13 +45,15 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 
 ## Current Parent
 - Conversation ID: 4c83c600-8492-4d31-bf67-8a430cec485a
-- Updated: 2026-08-05T15:20:46+07:00
+- Updated: 2026-08-05T16:58:30+07:00
 
 ## Key Decisions Made
 - Milestone 0 complete: synthesized reports from Explorers 1, 2, and 3.
 - Milestone 1 complete: PR 1 financial data fixes, type updates, rendering fixes, unit tests, and backend timezone alignment passed all 5 gate checks (APPROVE & CLEAN).
 - Milestone 2 complete: PR 2 backend activity contracts, stable pagination cursor, timezone alignment passed all 5 gate checks (APPROVE & CLEAN, commit `2fc02ba3`).
-- Generation 2 Orchestrator (`6c6f2bdb-7ba6-40c7-91bb-949d4ed343c9`) resumed for Milestone 3 Gate Verification.
+- Milestone 3 complete: PR 3 layout, shell client, providers, and sub-routes extracted and verified (APPROVE & CLEAN, commit `3a8c957b`).
+- Milestone 4 complete: PR 4 activity API client, `usePartnerActivity` hook, sub-routes `/partner/activity`, `/partner/activity/new-bill`, `/partner/activity/[activityId]`, and legacy redirects passed all 5 gate checks (APPROVE & CLEAN, commit `c4d80d0ae301e9dd8cf5763dcaaad8c0d1628107`).
+
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
@@ -88,23 +90,32 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 | Reviewer 1 (M3 Gen 2) | teamwork_preview_reviewer | PR3 Precision Reviewer | completed (APPROVE) | bf09a0e8-7308-4c8b-99b2-4f750d1769f4 |
 | Reviewer 2 (M3 Gen 2) | teamwork_preview_reviewer | PR3 Edge Case & Performance Reviewer | completed (APPROVE) | 1bae39ac-d800-4e6d-bcd9-05fad9082aad |
 | Challenger 1 (M3 Gen 2) | teamwork_preview_challenger | PR3 Shell & Context Challenger | completed (APPROVE) | 36e2288f-60df-4e81-9417-20d069943d0a |
-| Reviewer 1 (M3 R3) | teamwork_preview_reviewer | PR3 Iteration 3 Precision Reviewer | completed (REQUEST_CHANGES) | 1c7b1c81-de07-4538-8a28-0c2516983b0a |
-| Reviewer 2 (M3 R3) | teamwork_preview_reviewer | PR3 Iteration 3 Edge Case Reviewer | in-progress | 91cec7ff-9a4e-4ecd-aa1e-36a80ef3bdd4 |
-| Challenger 1 (M3 R3) | teamwork_preview_challenger | PR3 Iteration 3 Shell Challenger | completed (REQUEST_CHANGES) | de09181b-3878-4e45-af88-efdd68d132bb |
-| Challenger 2 (M3 R3) | teamwork_preview_challenger | PR3 Iteration 3 Sub-routes Challenger | completed (APPROVE) | 867f2b22-150f-4202-8add-8c91107212bd |
-| Auditor 1 (M3 R3) | teamwork_preview_auditor | PR3 Iteration 3 Forensic Auditor | in-progress | 8758dfe3-d90f-46b1-9461-f779de8b1099 |
-| Worker 4 (M3 R4) | teamwork_preview_worker | PR3 Router Mock Remediation Worker | in-progress | 3c858885-ddf5-4097-ac70-5376a91cfc13 |
+| Reviewer 1 (M3 R4) | teamwork_preview_reviewer | PR3 Iteration 4 Precision Reviewer | in-progress | f3d8e381-d07f-4985-8e28-0425dc9d6b16 |
+| Reviewer 2 (M3 R4) | teamwork_preview_reviewer | PR3 Iteration 4 Edge Case Reviewer | in-progress | 89ff0498-b803-40d6-a7e2-dd93f4979dbe |
+| Challenger 1 (M3 R4) | teamwork_preview_challenger | PR3 Iteration 4 Shell Challenger | in-progress | 91ce7873-13bd-45bc-a56b-42baa40b0485 |
+| Challenger 2 (M3 R4) | teamwork_preview_challenger | PR3 Iteration 4 Sub-routes Challenger | in-progress | 1649f63e-49d6-4ae3-a423-29b5ecfb7818 |
+| Auditor 1 (M3 R4) | teamwork_preview_auditor | PR3 Iteration 4 Forensic Auditor | in-progress | 35f04d7f-35bc-4421-8d7f-1919f0b659bf |
 | Explorer 1 (M4 Gen 2) | teamwork_preview_explorer | PR4 API Client & Hook Explorer | completed | 38c81018-ef00-4950-8b3c-b66dd4ab4cd5 |
 | Explorer 2 (M4 Gen 2) | teamwork_preview_explorer | PR4 Sub-routes & Monolith Extraction | completed | c14f7f17-fac8-4d72-b177-a5916d45db4e |
 | Explorer 3 (M4 Gen 2) | teamwork_preview_explorer | PR4 Legacy Redirects & Test Strategy | completed | 67c383df-353c-4785-9991-0460cbefde04 |
-| Worker 1 (M4 Gen 2) | teamwork_preview_worker | PR4 Implementation | in-progress | 0898aae0-053f-4898-a626-e638d9740005 |
+| Worker 1 (M4 Gen 2) | teamwork_preview_worker | PR4 Implementation | completed | 0898aae0-053f-4898-a626-e638d9740005 |
+| Reviewer 1 (M4 Gen 2) | teamwork_preview_reviewer | PR4 Precision Reviewer | completed (APPROVE) | 7531d6e1-bc4d-47dd-981b-3d475f7abeb3 |
+| Reviewer 2 (M4 Gen 2) | teamwork_preview_reviewer | PR4 Edge Case & Performance Reviewer | completed (APPROVE) | 28797a62-2c65-45bd-89c2-918af20cba23 |
+| Challenger 1 (M4 Gen 2) | teamwork_preview_challenger | PR4 Hook & Feed Challenger | completed (APPROVE) | 440d18fd-a59d-405a-8505-9fe81153927b |
+| Challenger 2 (M4 Gen 2) | teamwork_preview_challenger | PR4 New Bill & Redirects Challenger | completed (APPROVE) | 652a7766-64c7-4145-92cf-bbdc7a078d84 |
+| Auditor 1 (M4 Gen 2) | teamwork_preview_auditor | PR4 Forensic Integrity Auditor | completed (CLEAN) | a48368e9-cd9c-4547-b46d-63e5cd181919 |
+| Explorer 1 (M5 Gen 2) | teamwork_preview_explorer | PR5 Home Dashboard Architecture | completed | e4f403de-fa76-4018-a671-a6fc99d1b4bd |
+| Explorer 2 (M5 Gen 2) | teamwork_preview_explorer | PR5 Monolith Refactoring Explorer | completed | 3607df29-324d-4788-b9a2-118f0ff3d1c1 |
+| Explorer 3 (M5 Gen 2) | teamwork_preview_explorer | PR5 Full Suite Verification Explorer | completed | e67d65fd-dd18-4359-9f9e-4341f76fcc30 |
+| Worker 1 (M5 Gen 2) | teamwork_preview_worker | PR5 Implementation Worker | in-progress | 6d986bef-aa2e-4087-a240-2cc9e0ae3058 |
 
 ## Succession Status
 - Succession required: no
 - Spawn count: 18 / 20 (Gen 2)
-- Pending subagents: 3c858885-ddf5-4097-ac70-5376a91cfc13
+- Pending subagents: 6d986bef-aa2e-4087-a240-2cc9e0ae3058
 - Predecessor: Gen 1 (a6166166-d3f1-4fc5-aed5-12da5b13dce6)
 - Successor: not yet spawned
+
 
 ## Active Timers
 - Heartbeat cron: task-19
