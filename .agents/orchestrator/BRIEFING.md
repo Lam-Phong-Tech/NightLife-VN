@@ -74,12 +74,19 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 | Explorer 1 (M2) | teamwork_preview_explorer | PR2 Data Service & Deduplication | completed | 1760c8c9-90a2-4c22-97ef-fc594bb19e8f |
 | Explorer 2 (M2) | teamwork_preview_explorer | PR2 Controller, DTO & Pagination | completed | 6386277b-40d2-4127-8467-902dd8c000f2 |
 | Explorer 3 (M2) | teamwork_preview_explorer | PR2 Unit Tests & Verification | completed | a4fa7657-f584-4d8e-8266-ffc3e50dc883 |
-| Worker 1 (M2) | teamwork_preview_worker | PR2 Implementation | in-progress | 59691c04-eb5e-4402-a6e5-50bedaf713b9 |
+| Worker 1 (M2) | teamwork_preview_worker | PR2 Implementation | completed | 59691c04-eb5e-4402-a6e5-50bedaf713b9 |
+| Reviewer 1 (M2) | teamwork_preview_reviewer | PR2 Precision Reviewer | in-progress | 9c61151e-8be5-4572-b2a9-8751a056b5d5 |
+| Reviewer 2 (M2) | teamwork_preview_reviewer | PR2 Edge Case Reviewer | in-progress | 62b5b490-84df-4210-87db-bb6a5bccf17c |
+| Challenger 1 (M2) | teamwork_preview_challenger | PR2 Service Challenger | in-progress | d6b95221-c040-4089-a907-14d19f25da21 |
+| Challenger 2 (M2) | teamwork_preview_challenger | PR2 Auth Challenger | in-progress | ea289de5-2cef-4484-9a07-3deeead38005 |
+| Auditor 1 (M2) | teamwork_preview_auditor | PR2 Forensic Auditor | completed (CLEAN) | 1364c664-f088-4eea-a523-7a56ce917b9a |
+| Explorer 1 (M2 R2) | teamwork_preview_explorer | PR2 Remediation Analysis | completed | 963cd48c-8aeb-44ff-a0d5-00776155dd23 |
+| Worker 2 (M2 R2) | teamwork_preview_worker | PR2 Remediation Fixes | in-progress | f6e90a03-602c-4e97-8050-1c12f104b877 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 4 / 20
-- Pending subagents: 59691c04-eb5e-4402-a6e5-50bedaf713b9
+- Spawn count: 11 / 20
+- Pending subagents: f6e90a03-602c-4e97-8050-1c12f104b877
 - Predecessor: Gen 0
 - Successor: none
 

@@ -3981,14 +3981,96 @@ export class NightlifeDataService {
     const decodedCursor = decodeCursor(dto.cursor);
     const typeFilter = dto.type || 'ALL';
 
-    const startDate = dto.startDate ? new Date(dto.startDate) : undefined;
-    const endDate = dto.endDate ? new Date(dto.endDate) : undefined;
+    const startDate = dto.startDate
+      ? this.parseVietnamDateBoundary(dto.startDate, false)
+      : undefined;
+    const endDate = dto.endDate
+      ? this.parseVietnamDateBoundary(dto.endDate, true)
+      : undefined;
+
+    const cursorTime = decodedCursor
+      ? new Date(decodedCursor.activityAt)
+      : undefined;
+
+    const rawBillId = decodedCursor?.id.startsWith('bill:')
+      ? decodedCursor.id.slice(5)
+      : null;
+    const rawCouponId = decodedCursor?.id.startsWith('coupon:')
+      ? decodedCursor.id.slice(7)
+      : null;
+    const rawBookingId = decodedCursor?.id.startsWith('booking:')
+      ? decodedCursor.id.slice(8)
+      : null;
+
+    const billCursorWhere: Prisma.BillWhereInput | undefined = cursorTime
+      ? {
+          OR: [
+            { submittedAt: { lt: cursorTime } },
+            {
+              submittedAt: cursorTime,
+              ...(rawBillId ? { id: { lt: rawBillId } } : {}),
+            },
+          ],
+        }
+      : undefined;
+
+    const couponCursorWhere: Prisma.CouponIssueWhereInput | undefined =
+      cursorTime
+        ? {
+            OR: [
+              { usedAt: { lt: cursorTime } },
+              ...(rawCouponId
+                ? [
+                    {
+                      usedAt: cursorTime,
+                      id: { lt: rawCouponId },
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : undefined;
+
+    const bookingCursorWhere: Prisma.BookingWhereInput | undefined = cursorTime
+      ? {
+          OR: [
+            { scheduledAt: { lt: cursorTime } },
+            ...(rawBookingId
+              ? [
+                  {
+                    scheduledAt: cursorTime,
+                    id: { lt: rawBookingId },
+                  },
+                ]
+              : decodedCursor?.id.startsWith('coupon:')
+              ? [{ scheduledAt: cursorTime }]
+              : []),
+          ],
+        }
+      : undefined;
 
     let billActivities: PartnerActivityItem[] = [];
     let couponActivities: PartnerActivityItem[] = [];
     let bookingActivities: PartnerActivityItem[] = [];
 
     if (typeFilter === 'ALL' || typeFilter === 'BILL_PAYMENT') {
+      const billAndConditions: Prisma.BillWhereInput[] = [];
+      if (dto.search) {
+        billAndConditions.push({
+          OR: [
+            { billNumber: { contains: dto.search, mode: 'insensitive' } },
+            { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+            { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+            { couponIssue: { code: { contains: dto.search, mode: 'insensitive' } } },
+          ],
+        });
+      }
+      if (billCursorWhere) {
+        billAndConditions.push(billCursorWhere);
+      }
+
       const bills = await this.prisma.bill.findMany({
         where: {
           ...(scopedStoreIds ? { storeId: { in: scopedStoreIds } } : {}),
@@ -4002,18 +4084,7 @@ export class NightlifeDataService {
                 },
               }
             : {}),
-          ...(dto.search
-            ? {
-                OR: [
-                  { billNumber: { contains: dto.search, mode: 'insensitive' } },
-                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
-                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                  { couponIssue: { code: { contains: dto.search, mode: 'insensitive' } } },
-                ],
-              }
-            : {}),
+          ...(billAndConditions.length > 0 ? { AND: billAndConditions } : {}),
         },
         include: {
           store: { select: { id: true, name: true } },
@@ -4057,6 +4128,22 @@ export class NightlifeDataService {
     }
 
     if (typeFilter === 'ALL' || typeFilter === 'COUPON_USAGE') {
+      const couponAndConditions: Prisma.CouponIssueWhereInput[] = [];
+      if (dto.search) {
+        couponAndConditions.push({
+          OR: [
+            { code: { contains: dto.search, mode: 'insensitive' } },
+            { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+            { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+          ],
+        });
+      }
+      if (couponCursorWhere) {
+        couponAndConditions.push(couponCursorWhere);
+      }
+
       const couponIssues = await this.prisma.couponIssue.findMany({
         where: {
           status: 'USED',
@@ -4070,17 +4157,7 @@ export class NightlifeDataService {
                 },
               }
             : {}),
-          ...(dto.search
-            ? {
-                OR: [
-                  { code: { contains: dto.search, mode: 'insensitive' } },
-                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
-                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                ],
-              }
-            : {}),
+          ...(couponAndConditions.length > 0 ? { AND: couponAndConditions } : {}),
         },
         include: {
           coupon: { include: { store: { select: { id: true, name: true } } } },
@@ -4120,6 +4197,22 @@ export class NightlifeDataService {
     }
 
     if (typeFilter === 'ALL' || typeFilter === 'BOOKING_CHECKIN') {
+      const bookingAndConditions: Prisma.BookingWhereInput[] = [];
+      if (dto.search) {
+        bookingAndConditions.push({
+          OR: [
+            { bookingCode: { contains: dto.search, mode: 'insensitive' } },
+            { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
+            { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
+            { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
+          ],
+        });
+      }
+      if (bookingCursorWhere) {
+        bookingAndConditions.push(bookingCursorWhere);
+      }
+
       const bookings = await this.prisma.booking.findMany({
         where: {
           status: { in: ['CHECKED_IN', 'COMPLETED'] },
@@ -4133,17 +4226,7 @@ export class NightlifeDataService {
                 },
               }
             : {}),
-          ...(dto.search
-            ? {
-                OR: [
-                  { bookingCode: { contains: dto.search, mode: 'insensitive' } },
-                  { user: { displayName: { contains: dto.search, mode: 'insensitive' } } },
-                  { user: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { fullName: { contains: dto.search, mode: 'insensitive' } } },
-                  { guest: { phone: { contains: dto.search, mode: 'insensitive' } } },
-                ],
-              }
-            : {}),
+          ...(bookingAndConditions.length > 0 ? { AND: bookingAndConditions } : {}),
         },
         include: {
           store: { select: { id: true, name: true } },
@@ -4439,6 +4522,30 @@ export class NightlifeDataService {
       default:
         return 'info';
     }
+  }
+
+  private parseVietnamDateBoundary(dateStr: string, isEnd: boolean): Date {
+    const trimmed = dateStr.trim();
+    const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (dateOnlyRegex.test(trimmed)) {
+      const time = isEnd ? '23:59:59.999' : '00:00:00.000';
+      return new Date(`${trimmed}T${time}+07:00`);
+    }
+
+    const isoMidnightRegex = /^(\d{4}-\d{2}-\d{2})T00:00:00(\.000)?Z?$/;
+    const match = trimmed.match(isoMidnightRegex);
+    if (match) {
+      const datePart = match[1];
+      const time = isEnd ? '23:59:59.999' : '00:00:00.000';
+      return new Date(`${datePart}T${time}+07:00`);
+    }
+
+    const date = new Date(trimmed);
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException(`Invalid date format: ${dateStr}`);
+    }
+    return date;
   }
 
   async listPartnerNotifications(user: AuthenticatedUser) {

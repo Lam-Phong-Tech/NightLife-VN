@@ -1,7 +1,7 @@
-# BRIEFING — 2026-08-05T14:27:00Z
+# BRIEFING — 2026-08-05T14:31:00Z
 
 ## Mission
-Implement Milestone 2 (PR 2: Backend Activity Contracts & Stable Pagination) for NightLife-VN.
+Implement Milestone 2 (PR 2: Backend Activity Contracts & Stable Pagination) for NightLife-VN. [COMPLETED]
 
 ## 🔒 My Identity
 - Archetype: implementer, qa
@@ -15,35 +15,39 @@ Implement Milestone 2 (PR 2: Backend Activity Contracts & Stable Pagination) for
 - No dummy/facade implementations or hardcoded values.
 - Must run build and tests to verify.
 - Git commit & push after completion.
-- Must not use browser native alert/select/datepicker in frontend (not editing frontend UI here, but obey rules).
 
 ## Current Parent
 - Conversation ID: a6166166-d3f1-4fc5-aed5-12da5b13dce6
-- Updated: 2026-08-05T14:27:00Z
+- Updated: 2026-08-05T14:31:00Z
 
 ## Task Summary
 - **What to build**:
-  - DTO `PartnerActivityQueryDto` in `backend/src/nightlife-data/dto/partner-activity-query.dto.ts`
-  - Endpoints `GET /partner/home`, `GET /partner/activity`, `GET /partner/activity/:activityId` in `backend/src/nightlife-data/nightlife-data.controller.ts`
-  - Service methods `getPartnerHome`, `getPartnerActivities`, `getPartnerActivityDetail` in `backend/src/nightlife-data/nightlife-data.service.ts`
-  - Unit tests in `backend/src/nightlife-data/nightlife-data.service.spec.ts`
+  - DTO `PartnerActivityQueryDto` in `backend/src/nightlife-data/dto/partner-activity-query.dto.ts` [DONE]
+  - Endpoints `GET /partner/home`, `GET /partner/activity`, `GET /partner/activity/:activityId` in `backend/src/nightlife-data/nightlife-data.controller.ts` [DONE]
+  - Service methods `getPartnerHome`, `getPartnerActivities`, `getPartnerActivityDetail` in `backend/src/nightlife-data/nightlife-data.service.ts` [DONE]
+  - Unit tests in `backend/src/nightlife-data/nightlife-data.service.spec.ts` [DONE]
 - **Success criteria**:
-  - Stable keyset cursor pagination `<activityAt_iso>_<id>` ordered by `(activityAt DESC, id DESC)`
-  - Standalone `CouponIssue` deduplication (`status = USED` and `bill: { is: null }`)
-  - Multi-tenant StoreScope enforcement via `accessService`
-  - `@Roles('PARTNER', 'ADMIN')` returning 403 for `STAFF`
-  - Passing tests in `nightlife-data.service.spec.ts` and `pnpm check-types`
-  - Git commit and push
+  - Stable keyset cursor pagination `<activityAt_iso>_<id>` ordered by `(activityAt DESC, id DESC)` [VERIFIED]
+  - Standalone `CouponIssue` deduplication (`status = USED` and `bill: { is: null }`) [VERIFIED]
+  - Multi-tenant StoreScope enforcement via `accessService` [VERIFIED]
+  - `@Roles('PARTNER', 'ADMIN')` returning 403 for `STAFF` [VERIFIED]
+  - Passing tests in `nightlife-data.service.spec.ts` (185/185) and `pnpm check-types` (0 errors) [VERIFIED]
+  - Git commit and push (`36788a17`) [DONE]
 
 ## Change Tracker
-- **Files modified**: TBD
-- **Build status**: TBD
+- **Files modified**:
+  - `backend/src/nightlife-data/dto/partner-activity-query.dto.ts` (Created)
+  - `backend/src/nightlife-data/nightlife-data.contract.ts`
+  - `backend/src/nightlife-data/nightlife-data.controller.ts`
+  - `backend/src/nightlife-data/nightlife-data.service.ts`
+  - `backend/src/nightlife-data/nightlife-data.service.spec.ts`
+- **Build status**: PASS
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: TBD
-- **Lint status**: TBD
-- **Tests added/modified**: TBD
+- **Build/test result**: 185/185 tests passed, 0 type errors
+- **Lint status**: Clean
+- **Tests added/modified**: PR2 test suite added to `nightlife-data.service.spec.ts`
 
 ## Loaded Skills
-- None loaded yet.
+- None loaded.

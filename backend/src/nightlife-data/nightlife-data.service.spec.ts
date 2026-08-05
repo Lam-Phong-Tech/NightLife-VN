@@ -12024,6 +12024,69 @@ describe('NightlifeDataService', () => {
         expect(result.data).toHaveLength(1);
         expect(result.data[0].id).toBe('bill:b2');
       });
+
+      it('applies database-level cursor filtering for deep pagination past 60 items', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        const cursor = Buffer.from('2026-08-05T08:00:00.000Z_bill:b60', 'utf-8').toString('base64');
+
+        prisma.bill.findMany.mockResolvedValue([
+          {
+            id: 'b61',
+            submittedAt: new Date('2026-08-05T07:59:00.000Z'),
+            storeId: 'store-1',
+            status: 'VERIFIED',
+            totalVnd: 200000,
+            store: { name: 'Club Alpha' },
+          },
+        ] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        const result = await service.getPartnerActivities(partnerUser, { cursor, limit: 20 });
+
+        expect(prisma.bill.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              AND: expect.arrayContaining([
+                expect.objectContaining({
+                  OR: [
+                    { submittedAt: { lt: new Date('2026-08-05T08:00:00.000Z') } },
+                    { submittedAt: new Date('2026-08-05T08:00:00.000Z'), id: { lt: 'b60' } },
+                  ],
+                }),
+              ]),
+            }),
+          }),
+        );
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].id).toBe('bill:b61');
+      });
+
+      it('normalizes YYYY-MM-DD date range inputs to Asia/Ho_Chi_Minh (+07:00) day boundaries', async () => {
+        accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
+        prisma.bill.findMany.mockResolvedValue([] as never);
+        prisma.couponIssue.findMany.mockResolvedValue([] as never);
+        prisma.booking.findMany.mockResolvedValue([] as never);
+
+        await service.getPartnerActivities(partnerUser, {
+          startDate: '2026-08-05',
+          endDate: '2026-08-05',
+        });
+
+        const expectedStart = new Date('2026-08-04T17:00:00.000Z');
+        const expectedEnd = new Date('2026-08-05T16:59:59.999Z');
+
+        expect(prisma.bill.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              submittedAt: {
+                gte: expectedStart,
+                lte: expectedEnd,
+              },
+            }),
+          }),
+        );
+      });
     });
 
     describe('getPartnerActivityDetail', () => {
