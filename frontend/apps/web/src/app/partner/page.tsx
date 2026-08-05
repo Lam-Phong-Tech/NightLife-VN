@@ -1760,6 +1760,7 @@ export default function PartnerPage() {
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const castTableRef = useRef<HTMLDivElement | null>(null);
   const [castListPage, setCastListPage] = useState(1);
+  const [castFilterTab, setCastFilterTab] = useState<'all' | 'pending' | 'visible' | 'hidden'>('all');
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
   const [activeMenuGroupIndex, setActiveMenuGroupIndex] = useState<number>(0);
   const [menuManage, setMenuManage] = useState<boolean>(false);
@@ -7003,7 +7004,27 @@ export default function PartnerPage() {
   );
 
   const renderCastTable = () => {
-    const castRows = listingDraft.castProfiles.map((cast, index) => ({ cast, index }));
+    const getCastCategory = (cast: PartnerListingCast): 'pending' | 'visible' | 'hidden' => {
+      const statusView = partnerCastStatusView(cast);
+      if (statusView.label === 'Chờ duyệt') return 'pending';
+      if (cast.isPublic === false || statusView.label === 'Lưu nháp' || statusView.label === 'Bản nháp') return 'hidden';
+      return 'visible';
+    };
+
+    const totalCastCount = listingDraft.castProfiles.length;
+    const pendingCastCount = listingDraft.castProfiles.filter((c) => getCastCategory(c) === 'pending').length;
+    const visibleCastCount = listingDraft.castProfiles.filter((c) => getCastCategory(c) === 'visible').length;
+    const hiddenCastCount = listingDraft.castProfiles.filter((c) => getCastCategory(c) === 'hidden').length;
+
+    const castRows = listingDraft.castProfiles
+      .map((cast, index) => ({ cast, index }))
+      .filter(({ cast }) => {
+        if (castFilterTab === 'pending') return getCastCategory(cast) === 'pending';
+        if (castFilterTab === 'visible') return getCastCategory(cast) === 'visible';
+        if (castFilterTab === 'hidden') return getCastCategory(cast) === 'hidden';
+        return true;
+      });
+
     const totalPages = Math.max(1, Math.ceil(castRows.length / PARTNER_CAST_PAGE_SIZE));
     const safePage = Math.min(Math.max(castListPage, 1), totalPages);
     const pageStart = (safePage - 1) * PARTNER_CAST_PAGE_SIZE;
@@ -7050,10 +7071,87 @@ export default function PartnerPage() {
     return (
     <div ref={castTableRef} style={{ display: 'grid', gap: '14px', scrollMarginTop: '96px' }}>
       <div className="partner-cast-toolbar">
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <StatusPill tone="gold">Tất cả {listingDraft.castProfiles.length}</StatusPill>
-          <StatusPill tone="success">Đã nhập {listingDraft.castProfiles.filter((cast) => cast.stageName.trim()).length}</StatusPill>
-          <StatusPill>Thiếu tên {listingDraft.castProfiles.filter((cast) => !cast.stageName.trim()).length}</StatusPill>
+        <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}`, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setCastFilterTab('all');
+              setCastListPage(1);
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              background: castFilterTab === 'all' ? colors.goldGrad : 'transparent',
+              color: castFilterTab === 'all' ? colors.onGold : colors.muted,
+              fontWeight: castFilterTab === 'all' ? 700 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Tất cả {totalCastCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCastFilterTab('pending');
+              setCastListPage(1);
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              background: castFilterTab === 'pending' ? colors.goldGrad : 'transparent',
+              color: castFilterTab === 'pending' ? colors.onGold : (pendingCastCount > 0 ? colors.gold : colors.muted),
+              fontWeight: castFilterTab === 'pending' ? 700 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Chờ duyệt {pendingCastCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCastFilterTab('visible');
+              setCastListPage(1);
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              background: castFilterTab === 'visible' ? colors.goldGrad : 'transparent',
+              color: castFilterTab === 'visible' ? colors.onGold : colors.muted,
+              fontWeight: castFilterTab === 'visible' ? 700 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Hiển thị {visibleCastCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCastFilterTab('hidden');
+              setCastListPage(1);
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: 'none',
+              background: castFilterTab === 'hidden' ? colors.goldGrad : 'transparent',
+              color: castFilterTab === 'hidden' ? colors.onGold : colors.muted,
+              fontWeight: castFilterTab === 'hidden' ? 700 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            Ẩn {hiddenCastCount}
+          </button>
         </div>
         {!isViewingLive && (
           <PrimaryButton onClick={addCastProfile}>
@@ -7066,6 +7164,10 @@ export default function PartnerPage() {
       {!listingDraft.castProfiles.length ? (
         <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
           Chưa có cast trong bản nháp. Bấm Thêm cast để nhập dữ liệu thật của quán.
+        </div>
+      ) : !castRows.length ? (
+        <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+          Không có cast nào thuộc danh mục lọc này.
         </div>
       ) : (
         <>
