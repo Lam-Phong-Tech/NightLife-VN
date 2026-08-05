@@ -3480,22 +3480,66 @@ export default function PartnerPage() {
       }),
     [billBookingId, bills, bookings, selectedBillStore],
   );
+  const unsentPartnerBookings = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        const normalizedStatus = booking.status.trim().toUpperCase();
+        if (
+          normalizedStatus === 'CANCELLED' ||
+          normalizedStatus === 'NO_SHOW' ||
+          normalizedStatus === 'COMPLETED'
+        ) {
+          return false;
+        }
+
+        if (!partnerBookingConfirmedUsageAt(booking)) {
+          return false;
+        }
+
+        const bookingHasBill =
+          Boolean(booking.bill?.id || booking.couponIssue?.bill?.id) ||
+          bills.some(
+            (bill) =>
+              bill.booking?.id === booking.id ||
+              Boolean(booking.couponIssue?.id && bill.couponIssue?.id === booking.couponIssue.id),
+          );
+        if (bookingHasBill) {
+          return false;
+        }
+
+        if (!selectedBillStore) {
+          return true;
+        }
+
+        return (
+          booking.store.id === selectedBillStore.id ||
+          booking.store.name === selectedBillStore.name ||
+          !booking.store.id
+        );
+      }),
+    [bills, bookings, selectedBillStore],
+  );
+
+  const storeBills = useMemo(
+    () =>
+      bills.filter((bill) => {
+        if (!selectedBillStore) {
+          return true;
+        }
+        return (
+          bill.storeId === selectedBillStore.id ||
+          bill.store?.id === selectedBillStore.id ||
+          bill.store?.name === selectedBillStore.name
+        );
+      }),
+    [bills, selectedBillStore],
+  );
+
   const scopedBillRows = useMemo(
     () =>
-      bills
+      storeBills
         .filter((bill) => {
-          if (!selectedBillStore) {
-            return true;
-          }
-
-          const storeMatch = (
-            bill.storeId === selectedBillStore.id ||
-            bill.store?.id === selectedBillStore.id ||
-            bill.store?.name === selectedBillStore.name
-          );
-          if (!storeMatch) return false;
-
-          if (billStatusFilter !== 'ALL') {
+          if (billStatusFilter !== 'ALL' && billStatusFilter !== 'UNSENT') {
             return bill.status.toUpperCase() === billStatusFilter.toUpperCase();
           }
           return true;
@@ -3506,7 +3550,7 @@ export default function PartnerPage() {
           const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? '');
           return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
         }),
-    [bills, selectedBillStore, billStatusFilter],
+    [storeBills, billStatusFilter],
   );
   const canSubmitPartnerBill =
     !isSubmittingBill &&
@@ -3553,6 +3597,21 @@ export default function PartnerPage() {
     } catch {
       setBills((current) => [fallbackBill, ...current].slice(0, 40));
     }
+  };
+
+  const fillBillFormFromBooking = (booking: BookingRecord) => {
+    const nextStoreId = booking.store?.id ?? selectedBillStore?.id ?? '';
+    if (nextStoreId) {
+      setBillStoreId(nextStoreId);
+    }
+    setSelectedBillId(null);
+    setBillAmountInput('');
+    const confirmedAt = partnerBookingConfirmedUsageAt(booking);
+    setBillUsedAt(confirmedAt ? toDateTimeLocalValue(confirmedAt) : toDateTimeLocalValue(booking.scheduledAt ?? new Date()));
+    setBillBookingId(booking.id);
+    setBillEvidenceFile(null);
+    setBillNotice(null);
+    setBillSubView('form');
   };
 
   const fillBillFormFromRow = (bill: PartnerBill) => {
@@ -7826,12 +7885,33 @@ export default function PartnerPage() {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
               {[
-                { key: 'ALL', label: 'Tất cả' },
-                { key: 'SUBMITTED', label: 'Chờ duyệt' },
-                { key: 'VERIFIED', label: 'Đã duyệt' },
-                { key: 'REJECTED', label: 'Từ chối' },
-                { key: 'PAID', label: 'Đã thanh toán' },
-                { key: 'VOIDED', label: 'Đã hủy' },
+                { key: 'ALL', label: 'Tất cả', count: storeBills.length },
+                { key: 'UNSENT', label: 'Chưa gửi', count: unsentPartnerBookings.length },
+                {
+                  key: 'SUBMITTED',
+                  label: 'Chờ duyệt',
+                  count: storeBills.filter((b) => ['SUBMITTED', 'PENDING_PM_BA', 'PENDING'].includes(b.status.toUpperCase())).length,
+                },
+                {
+                  key: 'VERIFIED',
+                  label: 'Đã duyệt',
+                  count: storeBills.filter((b) => b.status.toUpperCase() === 'VERIFIED').length,
+                },
+                {
+                  key: 'REJECTED',
+                  label: 'Từ chối',
+                  count: storeBills.filter((b) => b.status.toUpperCase() === 'REJECTED').length,
+                },
+                {
+                  key: 'PAID',
+                  label: 'Đã thanh toán',
+                  count: storeBills.filter((b) => b.status.toUpperCase() === 'PAID').length,
+                },
+                {
+                  key: 'VOIDED',
+                  label: 'Đã hủy',
+                  count: storeBills.filter((b) => b.status.toUpperCase() === 'VOIDED').length,
+                },
               ].map((filter) => {
                 const active = billStatusFilter === filter.key;
                 return (
@@ -7849,9 +7929,22 @@ export default function PartnerPage() {
                       background: active ? 'rgba(212,178,106,.15)' : colors.surface2,
                       color: active ? colors.goldBright : colors.text2,
                       transition: 'all 0.15s ease-in-out',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    {filter.label}
+                    <span>{filter.label}</span>
+                    <span
+                      style={{
+                        background: active ? 'rgba(212,178,106,.25)' : 'rgba(255,255,255,.08)',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                      }}
+                    >
+                      {filter.count}
+                    </span>
                   </button>
                 );
               })}
@@ -7864,7 +7957,7 @@ export default function PartnerPage() {
               <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
-                    {['STT', 'Mã hóa đơn', 'Quán', 'Tổng tiền', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
+                    {['STT', 'Mã hóa đơn / Booking', 'Quán', 'Tổng tiền / Thao tác', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
                       <th
                         key={header}
                         style={{
@@ -7879,7 +7972,71 @@ export default function PartnerPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {scopedBillRows.length ? (
+                  {billStatusFilter === 'UNSENT' ? (
+                    unsentPartnerBookings.length ? (
+                      unsentPartnerBookings.map((booking, index) => {
+                        const active = billBookingId === booking.id;
+                        const code = booking.bookingCode || booking.id.slice(0, 8).toUpperCase();
+                        const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
+                        const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+
+                        return (
+                          <tr
+                            key={booking.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => fillBillFormFromBooking(booking)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                fillBillFormFromBooking(booking);
+                              }
+                            }}
+                            style={{
+                              cursor: 'pointer',
+                              background: active ? 'rgba(212,178,106,.12)' : 'transparent',
+                            }}
+                          >
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
+                              {index + 1}
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
+                              #{code}
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
+                              {storeName}
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
+                              NHẬP HÓA ĐƠN
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                              {formatDateTime(confirmedTime)}
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                              {translateBookingStatus(booking.status)} · {formatDateTime(booking.scheduledAt)}
+                            </td>
+                            <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                              <StatusPill tone="gold">Chưa gửi</StatusPill>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          style={{
+                            padding: '18px 12px',
+                            color: colors.text2,
+                            fontSize: '13px',
+                            textAlign: 'center',
+                          }}
+                        >
+                          Chưa có đặt chỗ nào cần gửi hóa đơn.
+                        </td>
+                      </tr>
+                    )
+                  ) : scopedBillRows.length ? (
                     scopedBillRows.map((bill, index) => {
                       const active = selectedBillId === bill.id;
                       const billCode = bill.billNumber ?? bill.id.slice(0, 8);
@@ -7946,7 +8103,44 @@ export default function PartnerPage() {
               </table>
             </div>
             <div className="partner-bill-mobile-list">
-              {scopedBillRows.length ? (
+              {billStatusFilter === 'UNSENT' ? (
+                unsentPartnerBookings.length ? (
+                  unsentPartnerBookings.map((booking, index) => {
+                    const active = billBookingId === booking.id;
+                    const code = booking.bookingCode || booking.id.slice(0, 8).toUpperCase();
+                    const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
+                    const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+
+                    return (
+                      <button
+                        key={booking.id}
+                        type="button"
+                        className={active ? 'partner-bill-mobile-card active' : 'partner-bill-mobile-card'}
+                        onClick={() => fillBillFormFromBooking(booking)}
+                      >
+                        <div className="partner-bill-mobile-head">
+                          <span className="partner-bill-mobile-index">#{index + 1}</span>
+                          <span className="partner-bill-mobile-code">#{code}</span>
+                          <StatusPill tone="gold">Chưa gửi</StatusPill>
+                        </div>
+                        <div className="partner-bill-mobile-store">{storeName}</div>
+                        <div className="partner-bill-mobile-grid">
+                          <span>
+                            <small>Thao tác</small>
+                            <b style={{ color: colors.goldBright }}>NHẬP HÓA ĐƠN</b>
+                          </span>
+                          <span>
+                            <small>Thời gian</small>
+                            <b>{formatDateTime(confirmedTime)}</b>
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="partner-bill-mobile-empty">Chưa có đặt chỗ nào cần gửi hóa đơn.</div>
+                )
+              ) : scopedBillRows.length ? (
                 scopedBillRows.map((bill, index) => {
                   const active = selectedBillId === bill.id;
                   const billCode = bill.billNumber ?? bill.id.slice(0, 8);
