@@ -50,6 +50,7 @@ import {
 } from '@/lib/api/notifications';
 import * as authSession from '@/lib/auth/session';
 import { ThemedListingSelect } from '@/components/ui/ThemedListingSelect';
+import { ThemedDatePicker } from '@/components/ui/ThemedDatePicker';
 import { useSystemFeedback, SystemFeedbackContext } from '@/components/ui/SystemFeedback';
 import { InlineLoading, TableLoadingRows } from '@/components/ui/DataLoading';
 import { validateStoreName, validateVietnamStorePhone } from '@/lib/store-form-validation';
@@ -6562,19 +6563,21 @@ export default function PartnerPage() {
             />
           </FormField>
           <FormField label="Từ ngày" className="partner-date-field">
-            <input
+            <ThemedDatePicker
               value={settlementFilters.fromDate}
-              onChange={(event) => updateSettlementFilter('fromDate', event.target.value)}
-              type="date"
+              onChange={(value) => updateSettlementFilter('fromDate', value)}
+              placeholder="Chọn ngày"
               style={inputStyle}
+              ariaLabel="Từ ngày"
             />
           </FormField>
           <FormField label="Đến ngày" className="partner-date-field">
-            <input
+            <ThemedDatePicker
               value={settlementFilters.toDate}
-              onChange={(event) => updateSettlementFilter('toDate', event.target.value)}
-              type="date"
+              onChange={(value) => updateSettlementFilter('toDate', value)}
+              placeholder="Chọn ngày"
               style={inputStyle}
+              ariaLabel="Đến ngày"
             />
           </FormField>
           <FormField label="Trạng thái">
@@ -8104,10 +8107,9 @@ export default function PartnerPage() {
                 </div>
                 <input
                   id="bill-used-at-hidden"
-                  type="datetime-local"
+                  type="hidden"
                   value={billUsedAt}
                   onChange={(e) => setBillUsedAt(e.target.value)}
-                  style={{ opacity: 0, position: 'absolute', zIndex: -1 }}
                 />
               </FormField>
             </div>
