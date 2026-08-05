@@ -3599,7 +3599,7 @@ export default function PartnerPage() {
     }
   };
 
-  const fillBillFormFromBooking = (booking: BookingRecord) => {
+  const fillBillFormFromBooking = (booking: PartnerBooking) => {
     const nextStoreId = booking.store?.id ?? selectedBillStore?.id ?? '';
     if (nextStoreId) {
       setBillStoreId(nextStoreId);
@@ -7976,7 +7976,7 @@ export default function PartnerPage() {
                     unsentPartnerBookings.length ? (
                       unsentPartnerBookings.map((booking, index) => {
                         const active = billBookingId === booking.id;
-                        const code = booking.bookingCode || booking.id.slice(0, 8).toUpperCase();
+                        const code = booking.id.slice(0, 8).toUpperCase();
                         const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                         const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
 
@@ -8107,7 +8107,7 @@ export default function PartnerPage() {
                 unsentPartnerBookings.length ? (
                   unsentPartnerBookings.map((booking, index) => {
                     const active = billBookingId === booking.id;
-                    const code = booking.bookingCode || booking.id.slice(0, 8).toUpperCase();
+                    const code = booking.id.slice(0, 8).toUpperCase();
                     const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
                     const confirmedTime = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
 
