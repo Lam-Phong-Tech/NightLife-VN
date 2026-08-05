@@ -246,7 +246,7 @@ export class CreatePartnerRequestDto {
   @ApiProperty({ example: 'securePassword123' })
   @IsNotEmpty()
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
   @MaxLength(60)
   password: string;
 

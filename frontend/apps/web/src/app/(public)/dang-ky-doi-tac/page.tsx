@@ -854,10 +854,10 @@ function PartnerPageContent({
       return;
     }
 
-    if (form.password && form.password.trim().length < 6) {
+    if (form.password && form.password.trim().length < 8) {
       setSubmitResult({
         tone: 'error',
-        message: 'Mật khẩu phải chứa ít nhất 6 ký tự.',
+        message: 'Mật khẩu phải chứa ít nhất 8 ký tự.',
       });
       return;
     }
@@ -1164,7 +1164,7 @@ function PartnerPageContent({
                   label="Mật khẩu đăng ký"
                   value={form.password || ''}
                   onChange={(value) => updateForm('password', value)}
-                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)"
                   type="password"
                   required
                   wide={!isMobile}
