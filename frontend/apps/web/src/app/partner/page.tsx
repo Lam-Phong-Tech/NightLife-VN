@@ -9132,7 +9132,7 @@ export default function PartnerPage() {
                   value={staffDisplayName}
                   onChange={(e) => setStaffDisplayName(e.target.value)}
                   style={inputStyle}
-                  placeholder="Nguyễn Văn A"
+                  placeholder="Vui lòng nhập tên nhân viên"
                   autoFocus
                 />
               </FormField>
@@ -9142,7 +9142,7 @@ export default function PartnerPage() {
                   value={staffEmail}
                   onChange={(e) => setStaffEmail(e.target.value)}
                   style={inputStyle}
-                  placeholder="staff@example.com"
+                  placeholder="Vui lòng nhập email"
                   autoComplete="new-password"
                 />
               </FormField>
