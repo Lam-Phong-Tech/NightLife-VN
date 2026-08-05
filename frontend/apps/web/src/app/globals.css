@@ -3435,63 +3435,61 @@ html.vy-admin-light .nl-admin-avatar-badge {
 
 .nl-admin-nav-group-title {
   color: #c5c0b6;
-  font-weight: 850;
+  font-weight: 650;
 }
 
 .nl-admin-nav-item {
-  color: #e6e2da;
-  font-weight: 750;
+  color: #f3f0ea;
+  font-weight: 600;
 }
 
 .nl-admin-stat-card-title {
-  color: #e6e2da;
-  font-weight: 800;
+  color: #f3f0ea;
+  font-weight: 600;
 }
 
 .nl-admin-stat-card-subtext {
   color: #c5c0b6;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .nl-admin-telegram-subtext {
   color: #c5c0b6;
-  font-weight: 750;
+  font-weight: 600;
 }
 
-/* Custom styling for Admin Navigation & Dashboard Stat Cards in Light Mode for bold, crisp text */
-/* NOTE: Admin Light Mode uses filter: invert(1). Setting #ffffff here inverts to pure black (#000000) */
+/* Custom styling for Admin Navigation & Dashboard Stat Cards in Light Mode matching storage usage text boldness */
 html.vy-admin-light .nl-admin-nav-group-title {
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  font-size: 10px !important;
-  letter-spacing: 1.8px !important;
-  opacity: 0.95 !important;
+  color: #c5c0b6 !important;
+  font-weight: 650 !important;
+  font-size: 9.5px !important;
+  letter-spacing: 1.6px !important;
 }
 
 html.vy-admin-light .nl-admin-nav-item {
-  color: #ffffff !important;
-  font-weight: 850 !important;
+  color: #f3f0ea !important;
+  font-weight: 600 !important;
 }
 
 html.vy-admin-light .nl-admin-nav-item.is-active {
   color: #ffffff !important;
-  font-weight: 900 !important;
-  background: rgba(255, 255, 255, 0.16) !important;
+  font-weight: 600 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 html.vy-admin-light .nl-admin-stat-card-title {
-  color: #ffffff !important;
-  font-weight: 850 !important;
+  color: #f3f0ea !important;
+  font-weight: 600 !important;
 }
 
 html.vy-admin-light .nl-admin-stat-card-subtext {
-  color: #ffffff !important;
-  font-weight: 850 !important;
+  color: #c5c0b6 !important;
+  font-weight: 600 !important;
 }
 
 html.vy-admin-light .nl-admin-telegram-subtext {
-  color: #ffffff !important;
-  font-weight: 850 !important;
+  color: #c5c0b6 !important;
+  font-weight: 600 !important;
 }
 
 .nl-home-venue-card .nl-favorite-button.home-favorite-button {

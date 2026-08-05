@@ -451,10 +451,10 @@ function AdminDashboardContent() {
               >
                 {activeStores}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Quán hoạt động
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 HN {stats?.activeStoresHn ?? 0} · HCM {stats?.activeStoresHcm ?? 0}
               </div>
             </div>
@@ -512,8 +512,8 @@ function AdminDashboardContent() {
               >
                 {totalCasts}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>Cast</div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>Cast</div>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 {pendingCasts} chờ kiểm duyệt
               </div>
             </div>
@@ -570,10 +570,10 @@ function AdminDashboardContent() {
               >
                 {totalContents}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Bài viết & Campaign
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 Nội dung đang hiển thị
               </div>
             </div>
@@ -630,10 +630,10 @@ function AdminDashboardContent() {
               >
                 {todaysBookings}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Booking {["hôm nay", "tuần này", "tháng này"][activeFilter]}
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 {todaysBookingsCompleted} hoàn tất · {todaysBookingsNew} mới
               </div>
             </div>
@@ -699,10 +699,10 @@ function AdminDashboardContent() {
               >
                 {pendingBills}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Hóa đơn chờ duyệt
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 ≈ {formatVnd(pendingBillsAmount)}
               </div>
             </div>
@@ -756,10 +756,10 @@ function AdminDashboardContent() {
                 {formatVnd(monthlyRevenue).replace("M₫", "")}
                 <span style={{ fontSize: "15px", fontWeight: 700 }}>M₫</span>
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Tổng doanh thu
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 Hoa hồng {formatVnd(commissionAmount)}
               </div>
             </div>
@@ -822,10 +822,10 @@ function AdminDashboardContent() {
               >
                 {pendingPartners}
               </div>
-              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#ffffff", fontWeight: 800, marginTop: "1px" }}>
+              <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Đối tác Join Us
               </div>
-              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "6px" }}>
+              <div className="nl-admin-stat-card-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "6px" }}>
                 Chờ duyệt hợp tác
               </div>
             </div>
@@ -1337,7 +1337,7 @@ function AdminDashboardContent() {
                               <>{log.payload?.title || "Cảnh báo hệ thống"}</>
                             )}
                           </div>
-                          <div className="nl-admin-telegram-subtext" style={{ fontSize: "10.5px", color: "#f3f0ea", fontWeight: 800, marginTop: "3px" }}>
+                          <div className="nl-admin-telegram-subtext" style={{ fontSize: "10.5px", color: "#c5c0b6", fontWeight: 600, marginTop: "3px" }}>
                             {timeAgo} ·{" "}
                             {log.recipient === "TELEGRAM_ADMIN_CHAT_ID"
                               ? "nhóm Admin"
