@@ -8856,8 +8856,7 @@ export default function PartnerPage() {
                   position: 'fixed',
                   inset: 0,
                   zIndex: 9999,
-                  background: 'rgba(0, 0, 0, 0.78)',
-                  backdropFilter: 'blur(8px)',
+                  background: 'rgba(0, 0, 0, 0.88)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -8869,7 +8868,7 @@ export default function PartnerPage() {
               >
                 <div
                   style={{
-                    background: colors.surface2,
+                    background: '#16151a',
                     border: `1px solid ${colors.borderGold32}`,
                     borderRadius: '20px',
                     width: '100%',
@@ -8877,7 +8876,7 @@ export default function PartnerPage() {
                     maxHeight: '90vh',
                     overflowY: 'auto',
                     padding: '24px',
-                    boxShadow: '0 24px 60px rgba(0,0,0,0.85)',
+                    boxShadow: '0 24px 60px rgba(0,0,0,0.95)',
                     position: 'relative',
                   }}
                 >
@@ -8890,7 +8889,7 @@ export default function PartnerPage() {
                       type="button"
                       onClick={() => setIsAddStaffModalOpen(false)}
                       style={{
-                        background: 'rgba(255,255,255,0.06)',
+                        background: '#24222b',
                         border: `1px solid ${colors.borderSoft}`,
                         borderRadius: '50%',
                         width: '34px',
@@ -8914,7 +8913,7 @@ export default function PartnerPage() {
                         type="text"
                         value={staffDisplayName}
                         onChange={(e) => setStaffDisplayName(e.target.value)}
-                        style={inputStyle}
+                        style={{ ...inputStyle, background: '#222028' }}
                         placeholder="Nguyễn Văn A"
                         autoFocus
                       />
@@ -8924,7 +8923,7 @@ export default function PartnerPage() {
                         type="email"
                         value={staffEmail}
                         onChange={(e) => setStaffEmail(e.target.value)}
-                        style={inputStyle}
+                        style={{ ...inputStyle, background: '#222028' }}
                         placeholder="staff@example.com"
                         autoComplete="new-password"
                       />
@@ -8935,7 +8934,7 @@ export default function PartnerPage() {
                           type={showStaffPassword ? 'text' : 'password'}
                           value={staffPassword}
                           onChange={(e) => setStaffPassword(e.target.value)}
-                          style={{ ...inputStyle, paddingRight: '40px' }}
+                          style={{ ...inputStyle, background: '#222028', paddingRight: '40px' }}
                           placeholder="Nhập mật khẩu"
                           autoComplete="new-password"
                         />
@@ -8971,7 +8970,7 @@ export default function PartnerPage() {
                           fontSize: '13px',
                           userSelect: 'none',
                           padding: '10px 14px',
-                          background: staffPermissions.includes('coupon.scan') ? 'rgba(212,178,106,.15)' : colors.surface3,
+                          background: staffPermissions.includes('coupon.scan') ? '#352b19' : '#222028',
                           border: `1px solid ${staffPermissions.includes('coupon.scan') ? colors.borderGold40 : colors.borderSoft}`,
                           borderRadius: '10px',
                           color: staffPermissions.includes('coupon.scan') ? colors.goldBright : colors.text2,
@@ -9000,7 +8999,7 @@ export default function PartnerPage() {
                           fontSize: '13px',
                           userSelect: 'none',
                           padding: '10px 14px',
-                          background: staffPermissions.includes('checkin.confirm') ? 'rgba(212,178,106,.15)' : colors.surface3,
+                          background: staffPermissions.includes('checkin.confirm') ? '#352b19' : '#222028',
                           border: `1px solid ${staffPermissions.includes('checkin.confirm') ? colors.borderGold40 : colors.borderSoft}`,
                           borderRadius: '10px',
                           color: staffPermissions.includes('checkin.confirm') ? colors.goldBright : colors.text2,
@@ -9033,8 +9032,8 @@ export default function PartnerPage() {
                           minHeight: '44px',
                           borderRadius: '10px',
                           border: `1px solid ${colors.borderSoft}`,
-                          background: 'transparent',
-                          color: colors.text2,
+                          background: '#24222b',
+                          color: colors.text,
                           fontSize: '13px',
                           fontWeight: 700,
                           cursor: 'pointer',
