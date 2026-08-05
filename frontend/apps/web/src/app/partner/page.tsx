@@ -7919,10 +7919,8 @@ export default function PartnerPage() {
               eyebrow="STORE BILLS"
               title="Hóa đơn của quán"
               action={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <StatusPill tone="gold">{totalBillItems} hóa đơn</StatusPill>
-                  <PrimaryButton
-                    onClick={() => {
+                <PrimaryButton
+                  onClick={() => {
                       setBillAmountInput('');
                       setBillUsedAt('');
                       setBillBookingId('');
@@ -7935,7 +7933,6 @@ export default function PartnerPage() {
                   >
                     <Plus size={14} /> Gửi hóa đơn mới
                   </PrimaryButton>
-                </div>
               }
             />
             <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
