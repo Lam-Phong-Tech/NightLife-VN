@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { logoutBrowserProfile } from '@/lib/api/auth';
 import { getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
-import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, Settings, CheckCheck, LucideIcon } from 'lucide-react';
+import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, CheckCheck, LucideIcon } from 'lucide-react';
 import {
   adminTopbarFiltersVisibilityEvent,
   type AdminTopbarFiltersVisibilityDetail,
@@ -1177,12 +1177,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })()}
                   </div>
 
-                  {/* Settings footer link */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', borderTop: '1px solid rgba(255,255,255,.055)', background: 'rgba(255,255,255,.01)' }}>
-                    <span style={{ fontSize: '11.5px', color: '#6f6b62', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Settings size={12} />
-                      Vận hành
-                    </span>
+                  {/* Notification footer link */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '11px 16px', borderTop: '1px solid rgba(255,255,255,.055)', background: 'rgba(255,255,255,.01)' }}>
                     <Link
                       href="/admin"
                       onClick={() => setShowNotifications(false)}
