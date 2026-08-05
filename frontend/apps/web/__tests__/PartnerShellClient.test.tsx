@@ -141,7 +141,9 @@ describe('PartnerShellClient & PartnerProviders', () => {
       </SystemFeedbackProvider>,
     );
 
-    const scanLink = screen.getAllByText('Quét QR & Đặt chỗ')[0]?.closest('a');
+    const scanEl = screen.getAllByText('Quét QR & Đặt chỗ')[0];
+    expect(scanEl).toBeDefined();
+    const scanLink = scanEl!.closest('a');
     expect(scanLink).toHaveAttribute('aria-current', 'page');
   });
 

@@ -217,7 +217,9 @@ export function PartnerStoreScopeProvider({ children }: { children: React.ReactN
         let storedId: string | null = null;
         if (typeof window !== 'undefined' && window.sessionStorage) {
           try {
-            storedId = window.sessionStorage.getItem('vy-partner-selected-store-id');
+            storedId =
+              window.sessionStorage.getItem('vy-partner-selected-store-id') ||
+              window.sessionStorage.getItem('partner_active_store_id');
           } catch {}
         }
         if (storedId && storeData.some((s) => s.id === storedId)) return storedId;

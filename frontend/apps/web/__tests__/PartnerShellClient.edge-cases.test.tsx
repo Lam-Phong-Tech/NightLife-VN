@@ -112,7 +112,7 @@ describe('PartnerShellClient & PartnerProviders Edge Cases Stress Test', () => {
 
     // Click option "Beta Pub"
     const betaOption = screen.getAllByText('Beta Pub')[0];
-    fireEvent.click(betaOption);
+    if (betaOption) fireEvent.click(betaOption);
 
     // Verify state and sessionStorage persistence
     await waitFor(() => {
