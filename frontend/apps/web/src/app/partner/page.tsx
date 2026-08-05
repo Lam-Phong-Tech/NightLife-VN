@@ -8104,7 +8104,6 @@ export default function PartnerPage() {
         <div style={{ display: billSubView === 'list' ? 'block' : 'none' }}>
           <PanelCard>
             <SectionHeading
-              eyebrow="STORE BILLS"
               title="Hóa đơn của quán"
               action={
                 <PrimaryButton
