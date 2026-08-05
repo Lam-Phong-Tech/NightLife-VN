@@ -1,4 +1,4 @@
-# BRIEFING — 2026-08-05T14:24:32+07:00
+# BRIEFING — 2026-08-05T15:21:00+07:00
 
 ## Mission
 Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refactoring & Upgrade project (R1 financial data fixes, R2 backend activity contracts & stable pagination, R3 shell & sub-routes strangler pattern, R4 activity core & new bill route, R5 home redesign & monolith cleanup).
@@ -16,8 +16,8 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 1. **Decompose**:
    - M0: Survey & Technical Reconnaissance (3 parallel Explorers) [DONE]
    - M1: R1 (PR 1) P0 Financial Data Fixes & Type Definitions [DONE]
-   - M2: R2 (PR 2) Backend Activity Contracts & Stable Pagination [IN_PROGRESS - Gen 1 Successor]
-   - M3: R3 (PR 3) Partner Shell, Strangler Pattern & Sub-routes
+   - M2: R2 (PR 2) Backend Activity Contracts & Stable Pagination [DONE]
+   - M3: R3 (PR 3) Partner Shell, Strangler Pattern & Sub-routes [IN_PROGRESS - Gate Verification]
    - M4: R4 (PR 4) Activity Core, New Bill Route & Safe Legacy Redirects
    - M5: R5 (PR 5) Home Redesign & Monolith Cleanup
    - M6: Final Verification & Sentinel Handover
@@ -28,13 +28,13 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 - **Work items**:
   - M0: Survey & Technical Reconnaissance [done]
   - M1: PR 1 Financial Data Fixes & Type Definitions [done]
-  - M2: PR 2 Backend Activity Contracts & Stable Pagination [in-progress]
-  - M3: PR 3 Partner Shell, Strangler Pattern & Sub-routes [pending]
+  - M2: PR 2 Backend Activity Contracts & Stable Pagination [done]
+  - M3: PR 3 Partner Shell, Strangler Pattern & Sub-routes [in-progress]
   - M4: PR 4 Activity Core, New Bill Route & Safe Legacy Redirects [pending]
   - M5: PR 5 Home Redesign & Monolith Cleanup [pending]
   - M6: Final Verification & Handover [pending]
-- **Current phase**: 2 (PR 2 Backend Activity Contracts)
-- **Current focus**: Gen 1 Successor executing Milestone 2.
+- **Current phase**: 3 (PR 3 Partner Shell & Sub-routes)
+- **Current focus**: Milestone 3 (PR 3) Gate Verification (2 Reviewers, 2 Challengers, 1 Forensic Auditor).
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -45,12 +45,13 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 
 ## Current Parent
 - Conversation ID: 4c83c600-8492-4d31-bf67-8a430cec485a
-- Updated: 2026-08-05T14:24:32+07:00
+- Updated: 2026-08-05T15:20:46+07:00
 
 ## Key Decisions Made
 - Milestone 0 complete: synthesized reports from Explorers 1, 2, and 3.
 - Milestone 1 complete: PR 1 financial data fixes, type updates, rendering fixes, unit tests, and backend timezone alignment passed all 5 gate checks (APPROVE & CLEAN).
-- Self-Succession executed: Gen 0 Orchestrator spawned Gen 1 Successor (`a6166166-d3f1-4fc5-aed5-12da5b13dce6`) to continue Milestone 2.
+- Milestone 2 complete: PR 2 backend activity contracts, stable pagination cursor, timezone alignment passed all 5 gate checks (APPROVE & CLEAN, commit `2fc02ba3`).
+- Generation 2 Orchestrator (`6c6f2bdb-7ba6-40c7-91bb-949d4ed343c9`) resumed for Milestone 3 Gate Verification.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
@@ -70,28 +71,35 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 | Challenger 1 (M1 R3) | teamwork_preview_challenger | PR1 Iteration 3 Frontend Challenger | completed (APPROVE) | 9b59a326-93fe-4416-981a-bb231edf5af0 |
 | Challenger 2 (M1 R3) | teamwork_preview_challenger | PR1 Iteration 3 Backend Challenger | completed (APPROVE) | 3cc2990d-fc5b-4aa6-9315-78583cfce439 |
 | Auditor 1 (M1 R3) | teamwork_preview_auditor | PR1 Iteration 3 Forensic Auditor | completed (CLEAN) | 3a97da0b-d54a-43b3-8cf4-0953b57dd62a |
-| Orchestrator Successor | self | Milestone 2 PR 2 Orchestration | in-progress | a6166166-d3f1-4fc5-aed5-12da5b13dce6 |
+| Orchestrator Successor Gen 1 | self | Milestone 2 PR 2 Orchestration | completed | a6166166-d3f1-4fc5-aed5-12da5b13dce6 |
 | Explorer 1 (M2) | teamwork_preview_explorer | PR2 Data Service & Deduplication | completed | 1760c8c9-90a2-4c22-97ef-fc594bb19e8f |
 | Explorer 2 (M2) | teamwork_preview_explorer | PR2 Controller, DTO & Pagination | completed | 6386277b-40d2-4127-8467-902dd8c000f2 |
 | Explorer 3 (M2) | teamwork_preview_explorer | PR2 Unit Tests & Verification | completed | a4fa7657-f584-4d8e-8266-ffc3e50dc883 |
 | Worker 1 (M2) | teamwork_preview_worker | PR2 Implementation | completed | 59691c04-eb5e-4402-a6e5-50bedaf713b9 |
-| Reviewer 1 (M2) | teamwork_preview_reviewer | PR2 Precision Reviewer | in-progress | 9c61151e-8be5-4572-b2a9-8751a056b5d5 |
-| Reviewer 2 (M2) | teamwork_preview_reviewer | PR2 Edge Case Reviewer | in-progress | 62b5b490-84df-4210-87db-bb6a5bccf17c |
-| Challenger 1 (M2) | teamwork_preview_challenger | PR2 Service Challenger | in-progress | d6b95221-c040-4089-a907-14d19f25da21 |
-| Challenger 2 (M2) | teamwork_preview_challenger | PR2 Auth Challenger | in-progress | ea289de5-2cef-4484-9a07-3deeead38005 |
-| Auditor 1 (M2) | teamwork_preview_auditor | PR2 Forensic Auditor | completed (CLEAN) | 1364c664-f088-4eea-a523-7a56ce917b9a |
-| Explorer 1 (M2 R2) | teamwork_preview_explorer | PR2 Remediation Analysis | completed | 963cd48c-8aeb-44ff-a0d5-00776155dd23 |
-| Worker 2 (M2 R2) | teamwork_preview_worker | PR2 Remediation Fixes | in-progress | f6e90a03-602c-4e97-8050-1c12f104b877 |
+| Reviewer 1 (M2 R2) | teamwork_preview_reviewer | PR2 Iteration 2 Precision Reviewer | completed (APPROVE) | 69a626b8-e624-4da1-b2dd-a1988ae7d614 |
+| Reviewer 2 (M2 R2) | teamwork_preview_reviewer | PR2 Iteration 2 Edge Case Reviewer | completed (APPROVE) | 34684f37-645d-402b-97b3-2ed02b40c8ce |
+| Challenger 1 (M2 R2) | teamwork_preview_challenger | PR2 Iteration 2 Deep Pagination Challenger | completed (APPROVE) | bfa5d7ac-d322-4fc1-b24a-5e04fbfe976e |
+| Challenger 2 (M2 R2) | teamwork_preview_challenger | PR2 Iteration 2 Timezone Challenger | completed (APPROVE) | 7179e855-786d-428f-b7e2-fb61b1b2cd9f |
+| Auditor 1 (M2 R2) | teamwork_preview_auditor | PR2 Iteration 2 Forensic Auditor | completed (CLEAN) | dcd64ff6-5ca5-4501-89cc-3df087875704 |
+| Explorer 1 (M3) | teamwork_preview_explorer | PR3 Layout & Strangler | completed | cdd6769b-8431-4ac1-be0b-abd194c80976 |
+| Explorer 2 (M3) | teamwork_preview_explorer | PR3 Sub-routes & Code Splitting | completed | 89727385-ca59-4ffd-9622-eed890ecf79e |
+| Explorer 3 (M3) | teamwork_preview_explorer | PR3 Frontend Verification & Tests | completed | 209c6f86-6be1-4c0d-8892-d5102c8fabe6 |
+| Worker 1 (M3) | teamwork_preview_worker | PR3 Implementation | completed | 874434e1-7966-4258-b5d9-b2d71976b84d |
+| Reviewer 1 (M3) | teamwork_preview_reviewer | PR3 Precision Reviewer | in-progress | 4fdff402-aee9-44ae-9d5e-231695564256 |
+| Reviewer 2 (M3) | teamwork_preview_reviewer | PR3 Edge Case & Performance Reviewer | in-progress | fb98f8d7-ad02-4167-8fb9-fbbb5a230f2c |
+| Challenger 1 (M3) | teamwork_preview_challenger | PR3 Shell & Context Challenger | in-progress | f67b2a8a-896c-428e-986f-a125dce94485 |
+| Challenger 2 (M3) | teamwork_preview_challenger | PR3 Sub-routes & Dynamic Code-Splitting Challenger | in-progress | de049654-dc8e-43bf-8e03-df3045798283 |
+| Auditor 1 (M3) | teamwork_preview_auditor | PR3 Forensic Integrity Auditor | in-progress | c1403f3b-53f6-445a-aa9b-0fbc6c1c3616 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 11 / 20
-- Pending subagents: f6e90a03-602c-4e97-8050-1c12f104b877
-- Predecessor: Gen 0
-- Successor: none
+- Spawn count: 5 / 20 (Gen 2)
+- Pending subagents: 4fdff402-aee9-44ae-9d5e-231695564256, fb98f8d7-ad02-4167-8fb9-fbbb5a230f2c, f67b2a8a-896c-428e-986f-a125dce94485, de049654-dc8e-43bf-8e03-df3045798283, c1403f3b-53f6-445a-aa9b-0fbc6c1c3616
+- Predecessor: Gen 1 (a6166166-d3f1-4fc5-aed5-12da5b13dce6)
+- Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-23
+- Heartbeat cron: task-19
 - Safety timer: none
 - On succession: kill all timers before spawning successor
 - On context truncation: run `manage_task(Action="list")` — re-create if missing
@@ -104,4 +112,5 @@ Manage the execution of the 5 PR stages for the NightLife-VN Partner Portal Refa
 - d:\laragon\www\NightLife-VN\.agents\orchestrator\plan.md — Detailed implementation plan
 - d:\laragon\www\NightLife-VN\.agents\orchestrator\progress.md — Progress and liveness tracking
 - d:\laragon\www\NightLife-VN\.agents\orchestrator\GATE_STATUS.md — Milestone gate verdicts
-- d:\laragon\www\NightLife-VN\.agents\orchestrator\handoff.md — Handoff to Gen 1 successor
+- d:\laragon\www\NightLife-VN\.agents\orchestrator\handoff.md — Handoff to Gen 2 successor
+ — Handoff to Gen 1 successor

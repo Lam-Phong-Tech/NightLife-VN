@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { createNoindexMetadata } from "@/lib/seo/page-metadata";
+import { PartnerProviders } from "./PartnerProviders";
+import { PartnerShellClient } from "./PartnerShellClient";
 
 export const metadata: Metadata = createNoindexMetadata(
   "Khu vực đối tác",
@@ -8,5 +10,9 @@ export const metadata: Metadata = createNoindexMetadata(
 );
 
 export default function PartnerLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <PartnerProviders>
+      <PartnerShellClient>{children}</PartnerShellClient>
+    </PartnerProviders>
+  );
 }
