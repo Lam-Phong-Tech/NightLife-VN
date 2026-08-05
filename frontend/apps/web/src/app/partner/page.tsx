@@ -10604,7 +10604,7 @@ export default function PartnerPage() {
             padding: 20px 18px 28px;
           }
           .partner-mobile-page-title {
-            display: block !important;
+            display: none !important;
           }
           .partner-header {
             padding: 0 16px !important;
