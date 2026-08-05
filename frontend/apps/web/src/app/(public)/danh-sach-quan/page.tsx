@@ -3578,9 +3578,9 @@ const venueSearchCss = `
   html.vy-light .venue-search-input,
   html.vy-light .venue-city-trigger,
   html.vy-light .venue-chip {
-    border-color: rgba(150, 116, 52, .2);
-    background: rgba(255, 255, 255, .78);
-    color: #6f6658;
+    border-color: rgba(150, 116, 52, .24);
+    background: rgba(255, 255, 255, .92);
+    color: #4a453c;
     box-shadow: 0 18px 42px -32px rgba(68, 48, 18, .42);
   }
 

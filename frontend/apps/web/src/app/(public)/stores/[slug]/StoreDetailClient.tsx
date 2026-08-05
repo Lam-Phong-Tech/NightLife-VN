@@ -4508,6 +4508,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border-color: rgba(255, 255, 255, .1);
         }
 
+        html.vy-light .feature-chips span,
+        html.vy-light .menu-chips button {
+          color: #78571c;
+          background: rgba(168, 124, 52, .12);
+          border-color: rgba(150, 116, 52, .32);
+        }
+
+        html.vy-light .feature-chips span:nth-child(n + 3) {
+          color: #4a453c;
+          background: rgba(28, 22, 10, .05);
+          border-color: rgba(30, 24, 12, .14);
+        }
+
         .language-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4683,6 +4696,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .menu-chips button.active {
           color: var(--vy-on-gold);
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          border-color: transparent;
+        }
+
+        html.vy-light .menu-chips button {
+          color: #4a453c;
+          background: rgba(28, 22, 10, .05);
+          border-color: rgba(30, 24, 12, .14);
+        }
+
+        html.vy-light .menu-chips button.active {
+          color: #241a0a;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
           border-color: transparent;
         }
