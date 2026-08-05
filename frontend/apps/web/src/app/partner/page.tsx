@@ -8250,10 +8250,14 @@ export default function PartnerPage() {
             {selectedBillBooking || selectedBill ? (
               <div
                 style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
                   background: 'rgba(212,178,106,.05)',
                   border: '1px dashed rgba(212,178,106,.3)',
                   borderRadius: '16px',
-                  padding: '16px 20px',
+                  padding: '16px 14px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px',
@@ -8266,64 +8270,66 @@ export default function PartnerPage() {
                     gap: '4px',
                     borderBottom: '1px solid rgba(212,178,106,.15)',
                     paddingBottom: '12px',
+                    width: '100%',
+                    boxSizing: 'border-box',
                   }}
                 >
                   <span style={{ fontSize: '11px', fontWeight: 900, color: colors.gold, letterSpacing: '.06em', textTransform: 'uppercase' }}>
                     ĐƠN HÀNG ĐANG LIÊN KẾT
                   </span>
-                  <strong style={{ fontSize: '18px', fontWeight: 900, color: colors.text }}>
+                  <strong style={{ fontSize: '17px', fontWeight: 900, color: colors.text, wordBreak: 'break-word', lineHeight: 1.3 }}>
                     {selectedBillBooking?.store?.name ?? selectedBillStore?.name ?? selectedBill?.store?.name ?? 'Quán'}
                   </strong>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px', width: '100%', boxSizing: 'border-box' }}>
                   {(selectedBillBooking || selectedBill?.booking) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: colors.text2 }}>Mã đặt chỗ</span>
-                      <span style={{ fontWeight: 900, color: colors.goldBright }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Mã đặt chỗ</span>
+                      <span style={{ fontWeight: 900, color: colors.goldBright, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         #{selectedBillBooking?.id.slice(0, 8).toUpperCase() ?? selectedBill?.booking?.id.slice(0, 8).toUpperCase()}
                       </span>
                     </div>
                   )}
 
                   {(selectedBillBooking?.scheduledAt || selectedBill?.booking?.scheduledAt) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: colors.text2 }}>Giờ hẹn</span>
-                      <span style={{ fontWeight: 700, color: colors.text }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Giờ hẹn</span>
+                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {formatDateTime(selectedBillBooking?.scheduledAt ?? selectedBill?.booking?.scheduledAt)}
                       </span>
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: colors.text2 }}>Xác nhận sử dụng</span>
-                    <span style={{ fontWeight: 700, color: colors.text }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                    <span style={{ color: colors.text2, flexShrink: 0 }}>Xác nhận sử dụng</span>
+                    <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {billUsedAt ? formatDateTime(billConfirmedUsageAt ?? billUsedAt) : 'Chưa có thời gian xác nhận'}
                     </span>
                   </div>
 
                   {selectedBillBooking?.partySize ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: colors.text2 }}>Số người</span>
-                      <span style={{ fontWeight: 700, color: colors.text }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Số người</span>
+                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', flexShrink: 0 }}>
                         {selectedBillBooking.partySize} người
                       </span>
                     </div>
                   ) : null}
 
                   {(selectedBillBooking?.coupon || billDiscountLabel) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: colors.text2 }}>Mã ưu đãi/QR</span>
-                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Mã ưu đãi/QR</span>
+                      <span style={{ fontWeight: 700, color: colors.text, textAlign: 'right', minWidth: 0, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {selectedBillBooking?.coupon?.name ?? selectedBillBooking?.coupon?.code ?? 'QR đặt chỗ'}
                       </span>
                     </div>
                   )}
 
                   {billDiscountLabel && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: colors.text2 }}>Mức giảm</span>
-                      <span style={{ fontWeight: 900, color: '#e57373' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Mức giảm</span>
+                      <span style={{ fontWeight: 900, color: '#e57373', textAlign: 'right', flexShrink: 0 }}>
                         {billDiscountLabel}
                       </span>
                     </div>
