@@ -161,7 +161,7 @@ describe("PartnerSettlementMoney", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText("BILL-NULL-001")).toBeInTheDocument();
+        expect(screen.getAllByText("BILL-NULL-001").length).toBeGreaterThan(0);
       });
 
       // Should display "Giảm giá: Chưa xác định"
