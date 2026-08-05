@@ -2490,6 +2490,8 @@ export function SiteChrome({
                 >
                   <UserRound size={16} style={{ flex: "none" }} />
                   <span
+                    className="notranslate"
+                    translate="no"
                     style={{
                       overflow: "hidden",
                       textOverflow: "ellipsis",

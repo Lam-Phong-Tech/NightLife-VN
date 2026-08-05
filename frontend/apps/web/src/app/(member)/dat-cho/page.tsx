@@ -1328,7 +1328,8 @@ function TextField({
             onTouched();
             onChange(event.target.value);
           }}
-          className={styles.input}
+          className={`${styles.input} notranslate`}
+          translate="no"
         />
       </span>
       <FieldError activeLanguage={activeLanguage} message={error} />
@@ -1373,7 +1374,8 @@ function EmailField({
           inputMode="email"
           autoCapitalize="none"
           autoCorrect="off"
-          className={styles.input}
+          className={`${styles.input} notranslate`}
+          translate="no"
           spellCheck={false}
         />
       </span>

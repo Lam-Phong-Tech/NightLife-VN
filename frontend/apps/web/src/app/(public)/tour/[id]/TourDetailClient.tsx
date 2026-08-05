@@ -1130,7 +1130,8 @@ function TextField({
         </span>
         <input
           {...bookingAutofillBlockProps}
-          className={styles.input}
+          className={`${styles.input} notranslate`}
+          translate="no"
           name={name}
           value={value}
           onBlur={onTouched}

@@ -977,7 +977,7 @@ export default function Page() {
               />
               <SummaryRow
                 label={isTourBooking ? tourCopy.bookerLabel : translateText("Người đặt", activeLanguage)}
-                value={guestLabel(booking, activeLanguage, authUser)}
+                value={<span className="notranslate" translate="no">{guestLabel(booking, activeLanguage, authUser)}</span>}
               />
               {shouldShowDiscountSummary ? (
                 <>

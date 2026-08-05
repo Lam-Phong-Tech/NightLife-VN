@@ -286,7 +286,7 @@ export default function Page() {
           <div className="wallet-summary" aria-label="Tóm tắt ví ưu đãi">
             <strong>{filterCounts.active}</strong>
             <span>mã còn dùng</span>
-            <small>{memberName}</small>
+            <small className="notranslate" translate="no">{memberName}</small>
           </div>
         </header>
 

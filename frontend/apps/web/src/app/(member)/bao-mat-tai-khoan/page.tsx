@@ -441,6 +441,8 @@ export default function Page() {
                   {translateText("Bảo mật tài khoản", activeLanguage)}
                 </p>
                 <h1
+                  className="notranslate"
+                  translate="no"
                   style={{
                     margin: 0,
                     fontSize: 25,
@@ -452,6 +454,8 @@ export default function Page() {
                   {name}
                 </h1>
                 <p
+                  className="notranslate"
+                  translate="no"
                   style={{
                     margin: "7px 0 0",
                     color: colors.muted,
@@ -753,7 +757,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
         <small style={{ display: "block", color: colors.dim, fontSize: 11, fontWeight: 800 }}>
           {label}
         </small>
-        <strong style={{ display: "block", marginTop: 2, fontSize: 13, overflowWrap: "anywhere" }}>
+        <strong className="notranslate" translate="no" style={{ display: "block", marginTop: 2, fontSize: 13, overflowWrap: "anywhere" }}>
           {value}
         </strong>
       </span>
@@ -782,6 +786,8 @@ function ProfileField({
     <label style={{ display: "grid", gap: 7 }}>
       <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 900 }}>{label}</span>
       <input
+        className="notranslate"
+        translate="no"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}

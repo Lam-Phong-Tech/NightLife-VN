@@ -1298,6 +1298,8 @@ function BookingCard({
               <span>{translateText("Họ tên", activeLanguage)}</span>
               <input
                 {...bookingInputAutofillBlockProps}
+                className="notranslate"
+                translate="no"
                 name={storeBookingFieldNames.guestName}
                 value={guestName}
                 onBlur={() => onFieldTouched("guestName")}
@@ -1319,6 +1321,8 @@ function BookingCard({
               <span>{translateText("Email", activeLanguage)}</span>
               <input
                 {...bookingInputAutofillBlockProps}
+                className="notranslate"
+                translate="no"
                 type="text"
                 name={storeBookingFieldNames.guestEmail}
                 value={email}

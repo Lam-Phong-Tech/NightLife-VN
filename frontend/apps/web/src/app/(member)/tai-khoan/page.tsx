@@ -216,6 +216,8 @@ export default function Page() {
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <h1
+                    className="notranslate"
+                    translate="no"
                     style={{
                       display: "-webkit-box",
                       margin: 0,
@@ -233,6 +235,8 @@ export default function Page() {
                     {name}
                   </h1>
                   <p
+                    className="notranslate"
+                    translate="no"
                     style={{
                       marginTop: 5,
                       fontSize: 13,
@@ -246,7 +250,7 @@ export default function Page() {
                     {accountEmail}
                   </p>
                 </div>
-                <span className="nl-account-tier" style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
+                <span className="nl-account-tier notranslate" translate="no" style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
                   {tier}
                 </span>
               </div>
@@ -264,7 +268,12 @@ export default function Page() {
                     ? <InlineLoading label={translateText("Đang cập nhật điểm thưởng", activeLanguage)} />
                     : pointSummaryError
                       ? translateText("Chưa tải được điểm thật, vui lòng thử lại.", activeLanguage)
-                      : translateText(`Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ${tier}.`, activeLanguage)}
+                      : (
+                        <>
+                          {translateText("Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ", activeLanguage)}
+                          <span className="notranslate" translate="no">{tier}</span>.
+                        </>
+                      )}
                 </p>
               </div>
             </section>
