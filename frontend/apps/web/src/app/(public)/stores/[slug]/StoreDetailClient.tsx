@@ -182,10 +182,40 @@ const introFallbackOrder: Record<LanguageCode, IntroLanguageKey[]> = {
   zh: ["en", "vi", "ja"],
 };
 
-const languageLabels: Record<string, string> = {
-  en: "Anh",
-  ja: "Nhật",
-  vi: "Việt",
+const spokenLanguageLabels: Record<string, Record<LanguageCode, string>> = {
+  en: { vi: "tiếng Anh", en: "English", ja: "英語", ko: "영어", zh: "英语" },
+  ja: { vi: "tiếng Nhật", en: "Japanese", ja: "日本語", ko: "일본어", zh: "日语" },
+  ko: { vi: "tiếng Hàn", en: "Korean", ja: "韓国語", ko: "한국어", zh: "韩语" },
+  tw: { vi: "tiếng Đài Loan", en: "Taiwanese", ja: "台湾語", ko: "대만어", zh: "台湾语" },
+  vi: { vi: "tiếng Việt", en: "Vietnamese", ja: "ベトナム語", ko: "베트남어", zh: "越南语" },
+  zh: { vi: "tiếng Trung", en: "Chinese", ja: "中国語", ko: "중국어", zh: "中文" },
+};
+
+const spokenLanguageAliases: Record<string, keyof typeof spokenLanguageLabels> = {
+  anh: "en",
+  chinese: "zh",
+  dai: "tw",
+  "dai-loan": "tw",
+  en: "en",
+  english: "en",
+  han: "ko",
+  ja: "ja",
+  japanese: "ja",
+  jp: "ja",
+  ko: "ko",
+  korean: "ko",
+  kr: "ko",
+  loan: "tw",
+  nhat: "ja",
+  taiwan: "tw",
+  taiwanese: "tw",
+  trung: "zh",
+  tw: "tw",
+  vi: "vi",
+  vietnamese: "vi",
+  vn: "vi",
+  zh: "zh",
+  "zh-tw": "tw",
 };
 
 const nationalityLabels: Record<string, string> = {
@@ -329,13 +359,38 @@ const emptyMediaBackground = "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #
 const heroSwipeDistancePx = 48;
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
+const normalizeLanguageLookupKey = (language: string) =>
+  normalizeLanguageCode(language)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const languageToNationality = (language: string) =>
   nationalityLabels[normalizeLanguageCode(language)];
 
-const languageToLabel = (language: string) => {
-  const normalized = normalizeLanguageCode(language);
-  return languageLabels[normalized] ?? language.trim().toUpperCase();
+const canonicalSpokenLanguageKey = (language: string) => {
+  const lookupKey = normalizeLanguageLookupKey(language);
+  return spokenLanguageAliases[lookupKey] ?? normalizeLanguageCode(language);
+};
+
+const formatSpokenLanguageStatLabel = (language: string, activeLanguage: LanguageCode) => {
+  const normalizedLanguage = canonicalSpokenLanguageKey(language);
+  const languageName = spokenLanguageLabels[normalizedLanguage]?.[activeLanguage] ?? language.trim();
+
+  if (!languageName) {
+    return translateText("Đang cập nhật", activeLanguage);
+  }
+
+  const formats: Record<LanguageCode, string> = {
+    vi: `Nói ${languageName}`,
+    en: `Speaks ${languageName}`,
+    ja: `${languageName}対応`,
+    ko: `${languageName} 가능`,
+    zh: `会说${languageName}`,
+  };
+
+  return formats[activeLanguage];
 };
 
 const nationalitiesFromLanguages = (languages: string[]) =>
@@ -1831,7 +1886,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     const languageCounts = new Map<string, number>();
     store.casts.forEach((cast) => {
       cast.languages.forEach((language) => {
-        const label = languageToLabel(language);
+        const label = canonicalSpokenLanguageKey(language);
         languageCounts.set(label, (languageCounts.get(label) ?? 0) + 1);
       });
     });
@@ -1841,7 +1896,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
       .map(([language, count]) => ({
-        label: translateText(`Nói tiếng ${language}`, activeLanguage),
+        label: formatSpokenLanguageStatLabel(language, activeLanguage),
         value: `${Math.round((count / totalCasts) * 100)}%`,
       }));
 
