@@ -10802,17 +10802,7 @@ export default function PartnerPage() {
             <div className="partner-header-left">
               {/* Desktop-only Page Title */}
               <div className="partner-desktop-header-title">
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    letterSpacing: '1.7px',
-                    color: colors.gold,
-                  }}
-                >
-                  {panelTitles[visibleActivePanel].eyebrow}
-                </div>
-                <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>
+                <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>
                   {panelTitles[visibleActivePanel].title}
                 </h1>
               </div>
@@ -10852,23 +10842,6 @@ export default function PartnerPage() {
               </div>
             </div>
             <div className="partner-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <span
-                className="partner-header-status-pill"
-                style={{
-                  height: '38px',
-                  borderRadius: '19px',
-                  border: `1px solid ${colors.borderGold32}`,
-                  padding: '0 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: colors.text2,
-                  fontSize: '12px',
-                }}
-              >
-                <CheckCircle2 size={15} color={colors.gold} />
-                {activeStoreStatus}
-              </span>
               <button
                 type="button"
                 onClick={togglePartnerTheme}
