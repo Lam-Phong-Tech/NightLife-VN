@@ -6279,9 +6279,7 @@ export default function PartnerPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
-                <TableLoadingRows columns={7} rows={6} ariaLabel="Đang tải lịch sử đối soát" />
-              ) : filteredSettlementRows.length ? (
+              {filteredSettlementRows.length ? (
                 filteredSettlementRows.map((row, index) => {
                   const statusTone = billStatusTone(row.status);
                   return (
@@ -6334,15 +6332,7 @@ export default function PartnerPage() {
         </div>
 
         <div className="partner-settlement-mobile-list">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, index) => (
-              <article className="partner-settlement-mobile-card" key={`settlement-loading-${index}`}>
-                <div className="partner-staff-mobile-skeleton" />
-                <div className="partner-staff-mobile-skeleton short" />
-                <div className="partner-staff-mobile-skeleton" />
-              </article>
-            ))
-          ) : filteredSettlementRows.length ? (
+          {filteredSettlementRows.length ? (
             filteredSettlementRows.map((row, index) => {
               const statusTone = billStatusTone(row.status);
               return (
