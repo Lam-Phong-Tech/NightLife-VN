@@ -8213,7 +8213,7 @@ export default function PartnerPage() {
                             }}
                             style={{
                               cursor: 'pointer',
-                              background: active ? 'rgba(212,178,106,.12)' : 'transparent',
+                              background: 'transparent',
                             }}
                           >
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
@@ -8269,7 +8269,7 @@ export default function PartnerPage() {
                           }}
                           style={{
                             cursor: 'pointer',
-                            background: active ? 'rgba(212,178,106,.12)' : 'transparent',
+                            background: 'transparent',
                           }}
                         >
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
@@ -8323,7 +8323,7 @@ export default function PartnerPage() {
                       <button
                         key={booking.id}
                         type="button"
-                        className={active ? 'partner-bill-mobile-card active' : 'partner-bill-mobile-card'}
+                        className="partner-bill-mobile-card"
                         onClick={() => fillBillFormFromBooking(booking)}
                       >
                         <div className="partner-bill-mobile-head">
@@ -8356,7 +8356,7 @@ export default function PartnerPage() {
                     <button
                       key={bill.id}
                       type="button"
-                      className={active ? 'partner-bill-mobile-card active' : 'partner-bill-mobile-card'}
+                      className="partner-bill-mobile-card"
                       onClick={() => fillBillFormFromRow(bill)}
                     >
                       <div className="partner-bill-mobile-head">
