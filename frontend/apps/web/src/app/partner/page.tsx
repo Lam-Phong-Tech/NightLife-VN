@@ -7986,7 +7986,6 @@ export default function PartnerPage() {
     <PanelCard className="partner-listing-panel">
       <SectionHeading
         className="partner-listing-heading"
-        eyebrow="DRAFT & APPROVAL"
         title="Thông tin hiển thị trên trang quán"
         action={
           <div className="partner-listing-review-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
