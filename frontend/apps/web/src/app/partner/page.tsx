@@ -1433,6 +1433,10 @@ const cardStyle: React.CSSProperties = {
   borderRadius: '16px',
   background: colors.surface1,
   boxShadow: '0 18px 38px -28px rgba(0,0,0,.75)',
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  overflow: 'hidden',
 };
 
 const softCardStyle: React.CSSProperties = {
@@ -9709,7 +9713,7 @@ export default function PartnerPage() {
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', display: 'block' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', display: 'block', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                         {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Chứng từ đính kèm'}
                       </span>
                       {billEvidenceFile && (
@@ -10431,9 +10435,17 @@ export default function PartnerPage() {
           display: block;
           padding-left: 252px;
           min-height: 100dvh;
+          width: 100%;
+          max-width: 100vw;
+          overflow-x: hidden;
+          box-sizing: border-box;
         }
         .partner-content {
           padding: 26px 30px 34px;
+          width: 100%;
+          max-width: 100%;
+          overflow-x: hidden;
+          box-sizing: border-box;
         }
         .partner-metric-grid {
           display: grid;
