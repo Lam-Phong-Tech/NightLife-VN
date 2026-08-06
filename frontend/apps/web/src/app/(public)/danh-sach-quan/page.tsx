@@ -312,13 +312,11 @@ const toRankingCity = (cityCode: string): RankingCity =>
   cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
 
 const formatVenueCount = (count: number, language: LanguageCode) => {
-  if (language === "en") return `${count} ${count === 1 ? "venue" : "venues"}`;
-  return `${count} ${translateText("quán", language)}`;
+  return translateText(`${count} quán`, language);
 };
 
 const formatVenueActiveFilters = (count: number, language: LanguageCode) => {
-  if (language === "en") return `${count} ${count === 1 ? "filter" : "filters"} active`;
-  return `${count} ${translateText("bộ lọc đang bật", language)}`;
+  return translateText(`${count} bộ lọc đang bật`, language);
 };
 
 const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
