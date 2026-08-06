@@ -416,6 +416,7 @@ function AdminCastsContent() {
   const [selectedCast, setSelectedCast] = useState<any>(null);
   const [isAddingCast, setIsAddingCast] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Form states
   const [formData, setFormData] = useState<any>({
@@ -471,9 +472,17 @@ function AdminCastsContent() {
   const fetchCasts = async () => {
     try {
       const res = await apiClient<any>('/admin/casts', { params: { search: search || undefined, limit: 1000 } });
+      setFetchError(null);
       setCasts(normalizeListResponse(res));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem danh sách Cast. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setFetchError(e?.message || 'Lỗi khi tải danh sách Cast. Vui lòng thử lại.');
+      }
+      setCasts([]);
     }
   };
 
@@ -1140,6 +1149,13 @@ function AdminCastsContent() {
       {toast && (
         <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', background: colors.surface1, border: `1px solid ${colors.gold}`, color: colors.gold, padding: '12px 24px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
           {toast}
+        </div>
+      )}
+
+      {fetchError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', color: '#f87171' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{fetchError}</span>
         </div>
       )}
       

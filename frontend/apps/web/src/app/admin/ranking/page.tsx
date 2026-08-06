@@ -613,7 +613,7 @@ function AdminRankingsClient() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '12px', fontWeight: 800, color: toast.type === 'success' ? '#7fd3a2' : toast.type === 'warning' ? '#e3c27e' : '#e88b99', marginBottom: '2px' }}>
-              {toast.type === 'success' ? 'Thành công' : toast.type === 'warning' ? 'Lưu ý' : 'Không lưu được'}
+              {toast.type === 'success' ? 'Thành công' : toast.type === 'warning' ? 'Lưu ý' : /quy\u1ec1n|forbidden|403/i.test(toast.message ?? '') ? 'Bạn không có quyền' : 'Không lưu được'}
             </div>
             <div style={{ fontSize: '12.5px', lineHeight: 1.45, color: '#c5c0b6' }}>{toast.message}</div>
           </div>
