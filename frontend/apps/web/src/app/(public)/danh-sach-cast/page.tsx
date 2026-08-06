@@ -3486,6 +3486,10 @@ html.vy-light .cast-sheet-actions {
     min-width: 118px;
   }
 
+  html.vy-light .cast-sort-select {
+    min-width: 132px;
+  }
+
   .cast-sort-select .cast-dropdown-trigger {
     min-height: 24px;
     justify-content: center;
@@ -3499,6 +3503,8 @@ html.vy-light .cast-sheet-actions {
   }
 
   html.vy-light .cast-sort-select .cast-dropdown-trigger {
+    min-height: 38px;
+    padding: 0 12px;
     border: 1px solid rgba(150, 116, 52, 0.2);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.78);
