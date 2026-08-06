@@ -336,9 +336,7 @@ const getCastCategoryLabel = (category: string, language: LanguageCode) =>
   getFilterCategoryLabel(category, language);
 
 const formatCastActiveFilters = (count: number, language: LanguageCode) =>
-  language === "en"
-    ? `${count} ${count === 1 ? "filter" : "filters"} active`
-    : `${count} ${translateText("bộ lọc đang bật", language)}`;
+  translateText(`${count} bộ lọc đang bật`, language);
 
 type CastFavoriteFeedbackCopy = {
   savedTitle: string;
