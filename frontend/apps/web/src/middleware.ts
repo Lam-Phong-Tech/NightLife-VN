@@ -358,6 +358,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Redirect Operator away from permissions management page
+  if (isAdminPath && pathname === '/admin/permissions' && userRole === 'OPERATOR') {
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
   // Protect admin routes
   if (
     isAdminPath &&

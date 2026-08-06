@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useSyncExternalStore, useMemo } from 'react';
 import { authSessionChangeEvent, getAuthUser } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api/client';
 
 const colors = {
   bg: '#0c0c0f',
@@ -15,60 +16,6 @@ const colors = {
   gold: '#d4b26a',
   goldGrad: 'linear-gradient(135deg,#f0dda8,#d4b26a)'
 };
-
-export type CapRow = [string, string, number, number, number, number, number];
-
-// Matrix Data for 6 Groups
-const INIT_SYSTEM: CapRow[] = [
-  ['Quản lý tài khoản CMS (Tạo/Sửa/Xóa/Đổi Pass)', 'Manage Accounts', 1, 0, 0, 0, 0],
-  ['Sửa/Xem cấu hình hệ thống', 'System Configs', 1, 0, 0, 0, 0],
-  ['Duyệt đối tác (Partner)', 'Approve Partners', 1, 0, 0, 0, 0],
-  ['Quản lý nội dung trang chủ (Content)', 'Manage Content', 1, 0, 0, 0, 0],
-];
-
-const INIT_BOOKING: CapRow[] = [
-  ['Xem danh sách đặt bàn', 'canViewPartnerBooking', 1, 1, 1, 1, 0],
-  ['Huỷ đặt bàn của khách (vượt quá Cut-off)', 'canCancelBooking', 1, 1, 0, 0, 0],
-  ['Duyệt/Từ chối yêu cầu đổi giờ (Reschedule)', 'canReviewBookingReschedule', 1, 1, 0, 0, 0],
-  ['Xem và Quản lý Chat hỗ trợ đặt bàn', 'canManageBookingChat', 1, 1, 0, 0, 0],
-  ['Xem báo cáo tỷ lệ huỷ (Cancel Analytics)', 'canViewCancelAnalytics', 1, 1, 0, 0, 0],
-];
-
-const INIT_STORE: CapRow[] = [
-  ['Xem thông tin quán', 'canViewPartnerStore', 1, 1, 1, 1, 0],
-  ['Cấu hình luật huỷ bàn (Cut-off Time)', 'canUpdateStorePolicy', 1, 1, 0, 0, 0],
-  ['Quản lý Ranking thủ công (Pin/Score)', 'canManageRanking', 1, 0, 0, 0, 0],
-];
-
-const INIT_VOUCHER: CapRow[] = [
-  ['Xem mã giảm giá của quán', 'canViewPartnerCoupon', 1, 1, 1, 1, 0],
-  ['Quét mã QR giảm giá', 'canScanCoupon', 1, 0, 1, 1, 0],
-  ['Xác nhận khách check-in (Sử dụng Issue)', 'canConfirmCheckIn', 1, 0, 1, 1, 0],
-  ['Quản lý lượt phát mã (Thu hồi/Xoay vòng QR)', 'canManageCouponIssue', 1, 0, 0, 0, 0],
-];
-
-const INIT_CAST: CapRow[] = [
-  ['Quản lý hồ sơ Cast', 'canManageCast', 1, 1, 1, 1, 0],
-  ['Xoá Cast (Soft Delete)', 'canSoftDeleteCast', 1, 0, 0, 0, 0],
-  ['Xoá cứng Cast (Hard Delete)', 'canHardDeleteCast', 0, 0, 0, 0, 0], // Only Super Admin
-];
-
-const INIT_BILL: CapRow[] = [
-  ['Xem & tạo hoá đơn cho quán', 'canReviewBill', 1, 0, 1, 1, 0],
-  ['Xem danh sách hoá đơn (Chưa thanh toán)', 'canViewPartnerBill', 1, 1, 1, 0, 0],
-  ['Xem hoá đơn nhạy cảm (Đang chờ duyệt)', 'canViewSensitiveBill', 1, 0, 0, 0, 0],
-  ['Duyệt hoá đơn (Approve/Reject)', 'canApproveBill', 1, 0, 0, 0, 0],
-  ['Xác nhận hoá đơn hoa hồng âm (PM/BA)', 'canConfirmBillPmBa', 1, 0, 0, 0, 0],
-  ['Huỷ/Hoàn tiền hoá đơn đã duyệt (Void)', 'canVoidBill', 1, 0, 0, 0, 0],
-  ['Đảo ngược hoá đơn (Reverse/Auto-Reverse)', 'canReverseBill', 1, 0, 0, 0, 0],
-  ['Xem báo cáo doanh thu', 'canViewRevenueReport', 1, 0, 0, 0, 0],
-];
-
-const INIT_USER: CapRow[] = [
-  ['Xem lịch sử đặt bàn bản thân', 'canViewMemberBooking', 1, 0, 0, 0, 1],
-  ['Xem voucher / coupon bản thân', 'canViewMemberCoupon', 1, 0, 0, 0, 1],
-  ['Lấy (claim) mã ưu đãi mới', 'canClaimMemberCoupon', 0, 0, 0, 0, 1],
-];
 
 const Toggle = ({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) => (
   <div
@@ -109,6 +56,37 @@ const subscribeToAuthRole = (onStoreChange: () => void) => {
 const getCurrentAuthRole = () => getAuthUser()?.role ?? null;
 const getServerAuthRole = () => null;
 
+type Role = { key: string, name: string, level: number };
+type Permission = { key: string, name: string, description?: string };
+type MatrixData = {
+  roles: Role[];
+  permissions: Permission[];
+  assignments: Record<string, string[]>;
+  version: number;
+};
+
+const CATEGORIES = [
+  { prefix: 'booking.', label: 'Booking & Hỗ trợ' },
+  { prefix: 'store.', label: 'Quán & Chính sách' },
+  { prefix: 'coupon.', label: 'Ưu đãi & QR' },
+  { prefix: 'checkin.', label: 'Ưu đãi & QR' },
+  { prefix: 'bill.', label: 'Hóa đơn & Tài chính' },
+  { prefix: 'report.', label: 'Báo cáo' },
+  { prefix: 'ranking.', label: 'Xếp hạng' },
+  { prefix: 'cast.', label: 'Cast' },
+  { prefix: 'system.', label: 'Hệ thống' },
+  { prefix: 'partner.', label: 'Đối tác' },
+  { prefix: 'content.', label: 'Nội dung' },
+  { prefix: 'media.', label: 'Media' },
+];
+
+function getCategory(key: string) {
+  for (const cat of CATEGORIES) {
+    if (key.startsWith(cat.prefix)) return cat.label;
+  }
+  return 'Khác';
+}
+
 export default function AdminPermissionsPage() {
   const currentRole = useSyncExternalStore(
     subscribeToAuthRole,
@@ -117,72 +95,131 @@ export default function AdminPermissionsPage() {
   );
 
   const isSuperAdmin = currentRole === 'SUPER_ADMIN';
-  const canManageOperatorPermissions =
-    currentRole === 'ADMIN' || currentRole === 'SUPER_ADMIN';
+  const isAdmin = currentRole === 'ADMIN';
 
-  const [capsSystem, setCapsSystem] = useState<CapRow[]>(INIT_SYSTEM);
-  const [capsBooking, setCapsBooking] = useState<CapRow[]>(INIT_BOOKING);
-  const [capsStore, setCapsStore] = useState<CapRow[]>(INIT_STORE);
-  const [capsVoucher, setCapsVoucher] = useState<CapRow[]>(INIT_VOUCHER);
-  const [capsCast, setCapsCast] = useState<CapRow[]>(INIT_CAST);
-  const [capsBill, setCapsBill] = useState<CapRow[]>(INIT_BILL);
-  const [capsUser, setCapsUser] = useState<CapRow[]>(INIT_USER);
-  const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [matrixData, setMatrixData] = useState<MatrixData | null>(null);
+  const [localAssignments, setLocalAssignments] = useState<Record<string, string[]>>({});
+  const [dirtyRoles, setDirtyRoles] = useState<Set<string>>(new Set());
+  
+  const [toast, setToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2600);
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
-    if (
-      (colIdx === 2 && !isSuperAdmin) ||
-      (colIdx === 3 && !canManageOperatorPermissions) ||
-      colIdx === 6
-    ) {
-      return;
+  const fetchMatrix = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiClient<MatrixData>('/admin/rbac/matrix');
+      setMatrixData(data);
+      setLocalAssignments(JSON.parse(JSON.stringify(data.assignments)));
+      setDirtyRoles(new Set());
+    } catch (err: any) {
+      setError(err.message || 'Lỗi khi tải dữ liệu phân quyền');
+    } finally {
+      setLoading(false);
     }
-
-    const updater = (prev: CapRow[]) => {
-      const next = [...prev];
-      const row = next[rowIdx];
-      if (!row) return next;
-      const newRow = [...row] as CapRow;
-      newRow[colIdx] = newRow[colIdx] === 1 ? 0 : 1;
-      next[rowIdx] = newRow;
-      return next;
-    };
-    if (section === 'system') setCapsSystem(updater);
-    else if (section === 'booking') setCapsBooking(updater);
-    else if (section === 'store') setCapsStore(updater);
-    else if (section === 'voucher') setCapsVoucher(updater);
-    else if (section === 'cast') setCapsCast(updater);
-    else if (section === 'bill') setCapsBill(updater);
-    else if (section === 'user') setCapsUser(updater);
-    showToast('Đã cập nhật cấu hình quyền');
   };
 
-  const visibleRoleColumnCount =
-    3 + Number(canManageOperatorPermissions) + Number(isSuperAdmin);
-  const matrixGridCols = `1fr repeat(${visibleRoleColumnCount}, 100px)`;
+  useEffect(() => {
+    if (currentRole !== 'OPERATOR') {
+      fetchMatrix();
+    }
+  }, [currentRole]);
 
-  const renderCapRow = (c: CapRow, idx: number, section: string) => {
+  const handleToggle = (roleKey: string, permKey: string) => {
+    setLocalAssignments(prev => {
+      const next = { ...prev };
+      const rolePerms = next[roleKey] || [];
+      if (rolePerms.includes(permKey)) {
+        next[roleKey] = rolePerms.filter(k => k !== permKey);
+      } else {
+        next[roleKey] = [...rolePerms, permKey];
+      }
+      return next;
+    });
+    setDirtyRoles(prev => new Set(prev).add(roleKey));
+  };
+
+  const handleSaveColumn = async (roleKey: string) => {
+    if (!matrixData) return;
+    try {
+      const permissionKeys = localAssignments[roleKey] || [];
+      const res = await apiClient<{ roleKey: string, permissionCount: number, version: number }>(`/admin/rbac/roles/${roleKey}/permissions`, {
+        method: 'PUT',
+        data: { permissionKeys, version: matrixData.version }
+      });
+      setMatrixData(prev => prev ? { ...prev, version: res.version } : null);
+      setDirtyRoles(prev => {
+        const next = new Set(prev);
+        next.delete(roleKey);
+        return next;
+      });
+      showToast('Đã lưu phân quyền', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi lưu phân quyền', 'error');
+    }
+  };
+
+  const visibleRoles = useMemo(() => {
+    if (!matrixData) return [];
+    let roles = matrixData.roles.filter(r => !['user', 'partner', 'staff'].includes(r.key));
+    if (!isSuperAdmin) {
+      roles = roles.filter(r => r.key === 'operator');
+    }
+    return roles.sort((a, b) => b.level - a.level);
+  }, [matrixData, isSuperAdmin]);
+
+  const groupedPermissions = useMemo(() => {
+    if (!matrixData) return {};
+    const groups: Record<string, Permission[]> = {};
+    matrixData.permissions.forEach(p => {
+      const cat = getCategory(p.key);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+    return groups;
+  }, [matrixData]);
+
+  if (currentRole === 'OPERATOR') {
     return (
-      <div key={idx} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
-        <span style={{ minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{c[0]}</span>
-        </span>
-        {isSuperAdmin && <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />}
-        {canManageOperatorPermissions && <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />}
-        <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
-        <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
-        <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} disabled={true} />
+      <div style={{ padding: '40px', textAlign: 'center', color: '#ff4d4f' }}>
+        <h2>403 - Bạn không có quyền truy cập trang này</h2>
       </div>
     );
-  };
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: colors.text2 }}>
+        Đang tải cấu hình phân quyền...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: '#ff4d4f' }}>
+        <p>{error}</p>
+        <button onClick={fetchMatrix} style={{ marginTop: '10px', padding: '8px 16px', background: colors.gold, color: colors.onGold, border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
+  const matrixGridCols = `minmax(250px, 1fr) repeat(${visibleRoles.length}, 130px)`;
 
   return (
-    <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ padding: '12px 16px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', marginBottom: '20px', color: colors.text2, fontSize: '13px' }}>
+        Nhân viên quán (Staff) được phân quyền riêng theo từng cửa hàng, không qua ma trận này.
+      </div>
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <span style={{ fontSize: '18px', fontWeight: 600, color: '#f3f0ea' }}>Bảng phân quyền chi tiết (Matrix)</span>
@@ -194,47 +231,77 @@ export default function AdminPermissionsPage() {
         {/* Header Row */}
         <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.02)', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.8px', color: '#8c8679', textTransform: 'uppercase' }}>Chức năng</span>
-          {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#e3c27e' }}>Quản trị viên</span>}
-          {canManageOperatorPermissions && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên vận hành</span>}
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Đối tác</span>
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên quán</span>
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Người dùng</span>
+          {visibleRoles.map(role => {
+            const canEdit = isSuperAdmin || (isAdmin && role.key === 'operator');
+            const isDirty = dirtyRoles.has(role.key);
+            return (
+              <div key={role.key} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: canEdit ? '#e3c27e' : '#c5c0b6', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {role.name}
+                  {isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffc107', display: 'inline-block' }} title="Có thay đổi chưa lưu" />}
+                </span>
+                {canEdit && (
+                  <button 
+                    onClick={() => handleSaveColumn(role.key)}
+                    disabled={!isDirty}
+                    style={{ 
+                      padding: '4px 12px', 
+                      fontSize: '11px',
+                      background: isDirty ? colors.gold : 'rgba(255,255,255,0.1)', 
+                      color: isDirty ? colors.onGold : colors.text2, 
+                      border: 'none', 
+                      borderRadius: '4px', 
+                      cursor: isDirty ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Lưu
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
         
-        {/* 1. Hệ thống & Admin */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>1. Hệ thống &amp; Quản trị</div>
-        {capsSystem.map((c, i) => renderCapRow(c, i, 'system'))}
-
-        {/* 2. Đặt bàn & Chat */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>2. Booking &amp; Hỗ trợ (Chat)</div>
-        {capsBooking.map((c, i) => renderCapRow(c, i, 'booking'))}
-
-        {/* 3. Store & Ranking */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>3. Quán &amp; Xếp hạng</div>
-        {capsStore.map((c, i) => renderCapRow(c, i, 'store'))}
-
-        {/* 4. Voucher & QR */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>4. Ưu đãi, QR &amp; Đối tác</div>
-        {capsVoucher.map((c, i) => renderCapRow(c, i, 'voucher'))}
-
-        {/* 5. Cast */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>5. Quản lý Cast</div>
-        {capsCast.map((c, i) => renderCapRow(c, i, 'cast'))}
-
-        {/* 6. Hoá đơn & Doanh thu */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>6. Hoá đơn &amp; Báo cáo doanh thu</div>
-        {capsBill.map((c, i) => renderCapRow(c, i, 'bill'))}
-
-        {/* 7. User */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>7. Quyền khách hàng (User/Member)</div>
-        {capsUser.map((c, i) => renderCapRow(c, i, 'user'))}
+        {Object.entries(groupedPermissions).map(([category, perms], index) => (
+          <React.Fragment key={category}>
+            <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: index > 0 ? '1px' : '0' }}>
+              {index + 1}. {category}
+            </div>
+            {perms.map((p) => (
+              <div key={p.key} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{p.name}</span>
+                  {p.description && <span style={{ display: 'block', fontSize: '11px', color: colors.muted, marginTop: '2px' }}>{p.description}</span>}
+                </span>
+                {visibleRoles.map(role => {
+                  const canEdit = isSuperAdmin || (isAdmin && role.key === 'operator');
+                  const rolePerms = localAssignments[role.key] || [];
+                  const isOn = rolePerms.includes(p.key);
+                  return (
+                    <Toggle 
+                      key={`${role.key}-${p.key}`} 
+                      on={isOn} 
+                      onClick={() => handleToggle(role.key, p.key)} 
+                      disabled={!canEdit} 
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </React.Fragment>
+        ))}
 
       </div>
 
       {toast && (
-        <div style={{ position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: 90, display: 'flex', alignItems: 'center', gap: '10px', background: '#17161c', border: '1px solid rgba(212,178,106,.3)', color: '#f3f0ea', fontSize: '13.5px', fontWeight: 500, padding: '13px 22px', borderRadius: '12px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          {toast}
+        <div style={{ position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: 90, display: 'flex', alignItems: 'center', gap: '10px', background: '#17161c', border: `1px solid ${toast.type === 'success' ? 'rgba(127,211,162,0.3)' : 'rgba(255,77,79,0.3)'}`, color: '#f3f0ea', fontSize: '13.5px', fontWeight: 500, padding: '13px 22px', borderRadius: '12px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)' }}>
+          {toast.type === 'success' ? (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          ) : (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          )}
+          {toast.msg}
         </div>
       )}
     </div>
