@@ -185,8 +185,9 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPublicRankings(query);
   }
 
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminDashboard')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/media/store-videos')
   adminListStoreVideos(@Query() query: AdminStoreVideoQueryDto) {
     return this.nightlifeDataService.adminListStoreVideos(query);
@@ -254,7 +255,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageRanking')
-  @Roles('ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/rankings')
   listAdminRankingConfigs(@Query() query: AdminRankingQueryDto) {
@@ -262,7 +263,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageRanking')
-  @Roles('ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/rankings/options')
   listAdminRankingTargetOptions(
@@ -272,7 +273,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageRanking')
-  @Roles('ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/rankings')
   createAdminRankingConfig(
@@ -286,7 +287,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageRanking')
-  @Roles('ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/rankings/:rankingId')
   updateAdminRankingConfig(
@@ -302,7 +303,7 @@ export class NightlifeDataController {
   }
 
   @ActionPolicy('canManageRanking')
-  @Roles('ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Delete('admin/rankings/:rankingId')
   deleteAdminRankingConfig(
@@ -334,8 +335,9 @@ export class NightlifeDataController {
   }
 
   @AdminContentsContract()
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminContent')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/contents')
   listAdminContents(@Query() query: AdminContentQueryDto) {
     return this.nightlifeDataService.listAdminContents(query);
@@ -1350,8 +1352,9 @@ export class NightlifeDataController {
   }
 
   @AdminPartnerRequestsContract()
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerRequest')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/partner-requests')
   listAdminPartnerRequests(@Query() query: AdminPartnerRequestQueryDto) {
     return this.nightlifeDataService.listAdminPartnerRequests(query);
@@ -1374,8 +1377,8 @@ export class NightlifeDataController {
   }
 
   @AdminCouponIssuesContract()
-  @ActionPolicy('canManageCouponIssue')
-  @Roles('ADMIN')
+  @ActionPolicy('canViewCouponIssue')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/coupon-issues')
   listAdminCouponIssues(@Query() query: AdminCouponIssueQueryDto) {
@@ -1667,7 +1670,7 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({ summary: 'Admin action: Update booking status' })
-  @ActionPolicy('canViewPartnerBooking')
+  @ActionPolicy('canUpdateBookingStatus')
   @Roles('ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/bookings/:bookingId/status')
@@ -1792,8 +1795,9 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: List stores with filters and pagination',
   })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminStore')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/stores')
   listAdminStores(
     @Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto,
@@ -1899,8 +1903,9 @@ export class NightlifeDataController {
   // ==========================================
 
   @ApiOperation({ summary: 'Admin action: List casts' })
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminCast')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/casts')
   listAdminCasts(
     @Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto,
@@ -1994,8 +1999,9 @@ export class NightlifeDataController {
   }
 
   @AdminDashboardStatsContract()
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminDashboard')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/dashboard/stats')
   async getAdminDashboardStats(
     @Query() query: { timeframe?: string; city?: string; category?: string },
@@ -2033,8 +2039,9 @@ export class NightlifeDataController {
     return this.nightlifeDataService.getAdminLayoutBadges();
   }
 
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewAdminDashboard')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/dashboard/export')
   async getAdminDashboardExport(
     @Query() query: { timeframe?: string; city?: string; category?: string },

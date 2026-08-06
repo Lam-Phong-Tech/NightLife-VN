@@ -259,4 +259,24 @@ describe('AccessService', () => {
     });
     expect(prisma.bill.findFirst).not.toHaveBeenCalled();
   });
+
+  it('checks admin and operator specific view policies', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
+
+    await expect(service.canViewAdminStore({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canViewAdminCast({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canViewPartnerRequest({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canViewAdminContent({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canViewCouponIssue({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canViewAdminDashboard({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+    await expect(service.canUpdateBookingStatus({ id: 'operator-1', role: 'OPERATOR' })).resolves.toBe(true);
+
+    expect(prisma.rolePermission.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          permission: { key: 'booking.status.update' },
+        }),
+      }),
+    );
+  });
 });

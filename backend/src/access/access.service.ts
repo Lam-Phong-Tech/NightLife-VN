@@ -119,6 +119,34 @@ export class AccessService {
     return this.hasRolePermission(user, 'store.policy.update');
   }
 
+  canViewAdminStore(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'store.admin.view');
+  }
+
+  canViewAdminCast(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'cast.admin.view');
+  }
+
+  canViewPartnerRequest(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'partner.request.view');
+  }
+
+  canViewAdminContent(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'content.admin.view');
+  }
+
+  canViewCouponIssue(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'coupon.issue.view');
+  }
+
+  canViewAdminDashboard(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'report.dashboard.view');
+  }
+
+  canUpdateBookingStatus(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'booking.status.update');
+  }
+
   async canReviewBill(user: AuthenticatedUser, billId?: string) {
     return this.canAccessBillAction(user, billId, 'bill.review');
   }

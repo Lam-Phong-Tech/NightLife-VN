@@ -26,7 +26,14 @@ export type ActionPolicy =
   | 'canManageBookingChat'
   | 'canCancelBooking'
   | 'canViewCancelAnalytics'
-  | 'canUpdateStorePolicy';
+  | 'canUpdateStorePolicy'
+  | 'canViewAdminStore'
+  | 'canViewAdminCast'
+  | 'canViewPartnerRequest'
+  | 'canViewAdminContent'
+  | 'canViewCouponIssue'
+  | 'canViewAdminDashboard'
+  | 'canUpdateBookingStatus';
 
 export const ActionPolicy = (policy: ActionPolicy) =>
   SetMetadata(ACTION_POLICY_KEY, policy);

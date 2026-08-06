@@ -137,6 +137,34 @@ export class ActionPolicyGuard implements CanActivate {
       return this.accessService.canUpdateStorePolicy(user);
     }
 
+    if (policy === 'canViewAdminStore') {
+      return this.accessService.canViewAdminStore(user);
+    }
+
+    if (policy === 'canViewAdminCast') {
+      return this.accessService.canViewAdminCast(user);
+    }
+
+    if (policy === 'canViewPartnerRequest') {
+      return this.accessService.canViewPartnerRequest(user);
+    }
+
+    if (policy === 'canViewAdminContent') {
+      return this.accessService.canViewAdminContent(user);
+    }
+
+    if (policy === 'canViewCouponIssue') {
+      return this.accessService.canViewCouponIssue(user);
+    }
+
+    if (policy === 'canViewAdminDashboard') {
+      return this.accessService.canViewAdminDashboard(user);
+    }
+
+    if (policy === 'canUpdateBookingStatus') {
+      return this.accessService.canUpdateBookingStatus(user);
+    }
+
     return false;
   }
 }

@@ -225,6 +225,48 @@ const PERMISSIONS = [
     description: 'Assign roles to other users (restricted by role level)',
     roleKeys: ['super_admin', 'admin'],
   },
+  {
+    key: 'store.admin.view',
+    name: 'View admin stores',
+    description: 'View store list in CMS admin portal',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'cast.admin.view',
+    name: 'View admin casts',
+    description: 'View cast list in CMS admin portal',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'partner.request.view',
+    name: 'View partner requests',
+    description: 'View partner registration requests',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'content.admin.view',
+    name: 'View admin content',
+    description: 'View CMS content articles and pages',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'coupon.issue.view',
+    name: 'View coupon issues',
+    description: 'View issued coupon history in CMS',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'report.dashboard.view',
+    name: 'View admin dashboard',
+    description: 'View admin dashboard statistics and exports',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'booking.status.update',
+    name: 'Update booking status',
+    description: 'Update booking status in admin CMS',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
 ];
 
 export async function seedRoles(
@@ -287,6 +329,16 @@ export async function seedPermissions(
         },
       });
     }
+
+    const expectedRoleIds = p.roleKeys
+      .map((k) => roles[k]?.id)
+      .filter(Boolean) as string[];
+    await prisma.rolePermission.deleteMany({
+      where: {
+        permissionId: permission.id,
+        roleId: { notIn: expectedRoleIds },
+      },
+    });
   }
 
   console.log(`     ${Object.keys(result).length} permissions`);

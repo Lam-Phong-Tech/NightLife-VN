@@ -16,6 +16,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { TourModule } from './tour/tour.module';
 import { PartnerStaffModule } from './partner-staff/partner-staff.module';
+import { RbacModule } from './rbac/rbac.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -35,6 +36,7 @@ import { validateEnv } from './config/env.validation';
     CampaignsModule,
     TourModule,
     PartnerStaffModule,
+    RbacModule,
   ],
   controllers: [AppController],
   providers: [AppService],

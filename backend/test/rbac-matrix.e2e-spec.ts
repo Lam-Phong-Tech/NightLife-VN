@@ -67,6 +67,12 @@ describe('RBAC matrix (e2e)', () => {
     autoBillFraudReversal: jest.fn(),
     exportAdminQaAuditTrail: jest.fn(),
     getAdminUatDashboard: jest.fn(),
+    listAdminStores: jest.fn(),
+    listAdminCasts: jest.fn(),
+    listAdminPartnerRequests: jest.fn(),
+    listAdminContents: jest.fn(),
+    getAdminDashboardStats: jest.fn(),
+    updateAdminBookingStatus: jest.fn(),
   };
   const accessService = {
     canViewPartnerStore: jest.fn(),
@@ -92,6 +98,13 @@ describe('RBAC matrix (e2e)', () => {
     canCancelBooking: jest.fn(),
     canViewCancelAnalytics: jest.fn(),
     canUpdateStorePolicy: jest.fn(),
+    canViewAdminStore: jest.fn(),
+    canViewAdminCast: jest.fn(),
+    canViewPartnerRequest: jest.fn(),
+    canViewAdminContent: jest.fn(),
+    canViewCouponIssue: jest.fn(),
+    canViewAdminDashboard: jest.fn(),
+    canUpdateBookingStatus: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -222,6 +235,13 @@ describe('RBAC matrix (e2e)', () => {
     accessService.canCancelBooking.mockResolvedValue(true);
     accessService.canViewCancelAnalytics.mockResolvedValue(true);
     accessService.canUpdateStorePolicy.mockResolvedValue(true);
+    accessService.canViewAdminStore.mockResolvedValue(true);
+    accessService.canViewAdminCast.mockResolvedValue(true);
+    accessService.canViewPartnerRequest.mockResolvedValue(true);
+    accessService.canViewAdminContent.mockResolvedValue(true);
+    accessService.canViewCouponIssue.mockResolvedValue(true);
+    accessService.canViewAdminDashboard.mockResolvedValue(true);
+    accessService.canUpdateBookingStatus.mockResolvedValue(true);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [NightlifeDataController],
@@ -680,5 +700,129 @@ describe('RBAC matrix (e2e)', () => {
     expect(response.body.message).toContain(
       'Independent coupon claim is not part of MVP v3.2',
     );
+  });
+
+  it('Operator + canViewAdminStore=true -> GET /admin/stores -> 200', async () => {
+    nightlifeDataService.listAdminStores.mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/stores')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+    expect(accessService.canViewAdminStore).toHaveBeenCalled();
+  });
+
+  it('Operator + canViewAdminStore=false -> GET /admin/stores -> 403', async () => {
+    accessService.canViewAdminStore.mockResolvedValueOnce(false);
+    await request(app.getHttpServer())
+      .get('/admin/stores')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator -> PATCH /admin/stores/:id -> 403', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/stores/123')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator -> POST /admin/stores -> 403', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/stores')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator -> DELETE /admin/stores/:id -> 403', async () => {
+    await request(app.getHttpServer())
+      .delete('/admin/stores/123')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator + canViewAdminCast=true -> GET /admin/casts -> 200', async () => {
+    nightlifeDataService.listAdminCasts.mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/casts')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+  });
+
+  it('Operator -> POST /admin/casts -> 403', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/casts')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator -> DELETE /admin/casts/:id -> 403', async () => {
+    await request(app.getHttpServer())
+      .delete('/admin/casts/123')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator + canViewPartnerRequest=true -> GET /admin/partner-requests -> 200', async () => {
+    nightlifeDataService.listAdminPartnerRequests.mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/partner-requests')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+  });
+
+  it('Operator -> PATCH /admin/partner-requests/:id/review -> 403', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/partner-requests/123/review')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator + canViewAdminContent=true -> GET /admin/contents -> 200', async () => {
+    nightlifeDataService.listAdminContents.mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/contents')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+  });
+
+  it('Operator -> POST /admin/contents -> 403', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/contents')
+      .set('x-test-role', 'OPERATOR')
+      .expect(403);
+  });
+
+  it('Operator + canViewCouponIssue=true -> GET /admin/coupon-issues -> 200', async () => {
+    nightlifeDataService.listAdminCouponIssues.mockResolvedValue([]);
+    await request(app.getHttpServer())
+      .get('/admin/coupon-issues')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+  });
+
+  it('Operator + canViewAdminDashboard=true -> GET /admin/dashboard/stats -> 200', async () => {
+    nightlifeDataService.getAdminDashboardStats.mockResolvedValue({});
+    await request(app.getHttpServer())
+      .get('/admin/dashboard/stats')
+      .set('x-test-role', 'OPERATOR')
+      .expect(200);
+  });
+
+  it('Operator + canUpdateBookingStatus=true -> PATCH /admin/bookings/:id/status -> 200', async () => {
+    nightlifeDataService.updateAdminBookingStatus = jest.fn().mockResolvedValue({});
+    await request(app.getHttpServer())
+      .patch('/admin/bookings/123/status')
+      .set('x-test-role', 'OPERATOR')
+      .send({ status: 'CONFIRMED' })
+      .expect(200);
+  });
+
+  it('Operator + canUpdateBookingStatus=false but canViewPartnerBooking=true -> PATCH /admin/bookings/:id/status -> 403', async () => {
+    accessService.canUpdateBookingStatus.mockResolvedValueOnce(false);
+    await request(app.getHttpServer())
+      .patch('/admin/bookings/123/status')
+      .set('x-test-role', 'OPERATOR')
+      .send({ status: 'CONFIRMED' })
+      .expect(403);
   });
 });
