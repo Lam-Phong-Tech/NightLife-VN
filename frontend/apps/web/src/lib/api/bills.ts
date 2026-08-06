@@ -141,6 +141,11 @@ export const billApi = {
       method: "PATCH",
       data: payload,
     }),
+  resubmitPartnerBill: (billId: string, payload: ResubmitBillPayload) =>
+    apiClient<BillRecord>(`/partner/bills/${encodeURIComponent(billId)}/resubmit`, {
+      method: 'PATCH',
+      data: payload,
+    }),
   submitPartnerBill: (payload: CreateBillPayload) =>
     apiClient<BillRecord>("/partner/bills", { data: payload }),
   uploadEvidence: (billId: string, file: File) => {

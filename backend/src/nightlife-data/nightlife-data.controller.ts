@@ -818,6 +818,22 @@ export class NightlifeDataController {
     return this.nightlifeDataService.submitPartnerBill(request.user, dto);
   }
 
+  @ApiOperation({ summary: 'Partner action: resubmit a rejected bill' })
+  @Roles('PARTNER', 'STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('partner/bills/:billId/resubmit')
+  resubmitPartnerBill(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: ResubmitBillDto,
+  ) {
+    return this.nightlifeDataService.resubmitMemberBill(
+      request.user,
+      billId,
+      dto,
+    );
+  }
+
   @ApiOperation({
     summary: 'Bill P2: OCR/AI preview helper for uploaded bill evidence',
   })

@@ -3468,9 +3468,11 @@ export default function PartnerPage() {
       null
     );
   }, [bills, selectedBillBooking]);
-  const partnerBillAlreadySubmittedNotice = selectedBill
+  const selectedBillIsRejected = (selectedBill?.status || '').toUpperCase() === 'REJECTED';
+  const selectedBillBookingExistingBillIsRejected = (selectedBillBookingExistingBill?.status || '').toUpperCase() === 'REJECTED';
+  const partnerBillAlreadySubmittedNotice = selectedBill && !selectedBillIsRejected
     ? `Bill ${selectedBill.billNumber ?? selectedBill.id.slice(0, 8)} đã được gửi về Admin, không thể gửi lại bill này.`
-    : selectedBillBookingExistingBill
+    : selectedBillBookingExistingBill && !selectedBillBookingExistingBillIsRejected
       ? `Booking này đã có bill ${selectedBillBookingExistingBill.billNumber ?? selectedBillBookingExistingBill.id.slice(0, 8)} gửi về Admin, không thể gửi lại.`
       : '';
 
@@ -3809,8 +3811,8 @@ export default function PartnerPage() {
 
   const canSubmitPartnerBill =
     !isSubmittingBill &&
-    !selectedBill &&
-    !selectedBillBookingExistingBill &&
+    (!selectedBill || selectedBillIsRejected) &&
+    (!selectedBillBookingExistingBill || selectedBillBookingExistingBillIsRejected) &&
     Boolean(billNowMs) &&
     Boolean(selectedBillStore) &&
     Boolean(selectedBillBooking) &&
@@ -3895,6 +3897,49 @@ export default function PartnerPage() {
 
     setIsSubmittingBill(true);
     try {
+      // Nếu bill hiện tại bị từ chối → gửi lại (resubmit)
+      if (selectedBill && selectedBillIsRejected) {
+        const resubmitted = (await billApi.resubmitPartnerBill(selectedBill.id, {
+          totalVnd: billAmount,
+        })) as PartnerBill;
+
+        let uploadWarning = '';
+        if (billEvidenceFile) {
+          try {
+            await billApi.uploadEvidence(resubmitted.id, billEvidenceFile);
+          } catch {
+            uploadWarning = ' Bill đã gửi lại, nhưng ảnh/chứng từ chưa upload được.';
+          }
+        }
+
+        const normalizedBill: PartnerBill = {
+          ...resubmitted,
+          storeId: resubmitted.storeId ?? selectedBill.storeId ?? selectedBillStore!.id,
+          store: resubmitted.store ?? selectedBill.store ?? selectedBillStore,
+        };
+
+        await refreshPartnerBills(normalizedBill);
+        setSelectedBillId(normalizedBill.id);
+        setBillEvidenceFile(null);
+        pushPartnerNotificationEvent({
+          id: `bill-resubmitted:${normalizedBill.id}:${normalizedBill.submittedAt ?? Date.now()}`,
+          category: 'Hóa đơn',
+          title: 'Đã gửi lại bill về Admin',
+          message: `${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} của ${selectedBillStore!.name} đang chờ Admin kiểm tra lại.${uploadWarning}`,
+          meta: `${moneyVnd(billAmount)} · ${formatDateTime(normalizedBill.usedAt ?? normalizedBill.submittedAt ?? new Date().toISOString())}`,
+          actionLabel: 'Xem bill',
+          panel: 'bill',
+          tone: uploadWarning ? 'warning' : 'gold',
+          icon: ReceiptText,
+        });
+        setBillNotice({
+          tone: uploadWarning ? 'gold' : 'success',
+          message: `Đã gửi lại bill ${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
+        });
+        return;
+      }
+
+      // Tạo bill mới
       const bill = (await billApi.submitPartnerBill({
         storeId: selectedBillStore.id,
         bookingId: billBookingId || undefined,
@@ -9991,7 +10036,7 @@ export default function PartnerPage() {
                 }}
               >
                 {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
-                {isSubmittingBill ? 'Đang gửi...' : 'Gửi hóa đơn'}
+                {isSubmittingBill ? 'Đang gửi...' : selectedBillIsRejected ? 'Gửi lại hóa đơn' : 'Gửi hóa đơn'}
               </PrimaryButton>
             )}
           </form>
