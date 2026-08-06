@@ -1251,7 +1251,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 aria-label={copy.openFilters}
                 aria-haspopup="dialog"
                 aria-expanded={isDesktopFilterOpen || isFilterSheetOpen}
-                className={`venue-filter-icon ${isDesktopFilterOpen ? "is-active" : ""}`}
+                className={`venue-filter-icon ${isDesktopFilterOpen || isFilterSheetOpen ? "is-active" : ""}`}
                 data-testid="venue-filter-button"
                 onClick={(event) => {
                   event.preventDefault();
@@ -3964,16 +3964,7 @@ const venueSearchCss = `
     }
 
     .venue-chip-row {
-      gap: 7px;
-      margin: 7px -14px 0;
-      padding: 0 14px 2px;
-    }
-
-    .venue-chip {
-      min-height: 28px;
-      padding: 0 13px;
-      font-size: 10.5px;
-      border-radius: 999px;
+      display: none;
     }
 
     .venue-result-bar {

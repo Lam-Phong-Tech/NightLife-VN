@@ -3446,15 +3446,7 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-chip-row {
-    margin: 12px -16px 0;
-    padding: 0 16px 4px;
-  }
-
-  .cast-chip {
-    min-height: 32px;
-    border-radius: 16px;
-    padding: 7px 13px;
-    font-size: 12px;
+    display: none;
   }
 
   .cast-results-section {
