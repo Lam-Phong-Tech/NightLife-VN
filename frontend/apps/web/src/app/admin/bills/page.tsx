@@ -44,6 +44,8 @@ type AdminBill = {
   amount?: number | null;
   date?: string | null;
   sender?: string | null;
+  submitterName?: string | null;
+  submitterStoreName?: string | null;
   hasImage?: boolean;
   images?: string[];
   status: string;
@@ -601,7 +603,16 @@ export default function AdminBillsPage() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                 <span style={{ color: colors.muted, fontSize: '14px' }}>Người gửi</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>{selectedBill.sender}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                  <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>
+                    {selectedBill.submitterName || selectedBill.sender}
+                  </span>
+                  {selectedBill.submitterStoreName && (
+                    <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 500 }}>
+                      {selectedBill.submitterStoreName}
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '24px', marginBottom: '8px' }}>
                 <span style={{ color: colors.muted, fontSize: '14px' }}>Hạng khách</span>

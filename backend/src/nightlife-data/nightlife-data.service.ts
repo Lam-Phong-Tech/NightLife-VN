@@ -22671,6 +22671,7 @@ export class NightlifeDataService {
               select: { id: true, displayName: true, tier: true, role: true },
             },
             guest: { select: { id: true, displayName: true } },
+            submittedByUser: { select: { id: true, displayName: true } },
             booking: {
               select: {
                 id: true,
@@ -22742,8 +22743,16 @@ export class NightlifeDataService {
 
     const mappedItems = items.map((bill) => {
       let guestType = 'Member';
-      const sender =
-        bill.user?.displayName || bill.guest?.displayName || 'Guest';
+      const isPartnerSubmit = bill.submitterType === 'PARTNER';
+      const sender = isPartnerSubmit
+        ? (bill.submittedByUser?.displayName || bill.user?.displayName || bill.guest?.displayName || 'Partner')
+        : (bill.user?.displayName || bill.guest?.displayName || 'Guest');
+      const submitterName = isPartnerSubmit
+        ? (bill.submittedByUser?.displayName || null)
+        : null;
+      const submitterStoreName = isPartnerSubmit
+        ? (bill.store?.name || null)
+        : null;
       if (bill.user) guestType = bill.user.tier || 'Member';
       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
       else if (bill.submitterType === 'MEMBER') guestType = 'Member';
@@ -22780,6 +22789,8 @@ export class NightlifeDataService {
         amount: grossVnd,
         date: (bill.submittedAt ?? bill.createdAt).toISOString(),
         sender,
+        submitterName,
+        submitterStoreName,
         hasImage: (mediaByBillId.get(bill.id)?.length ?? 0) > 0,
         images: mediaByBillId.get(bill.id) ?? [],
         status: bill.status,
