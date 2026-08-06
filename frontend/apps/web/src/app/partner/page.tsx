@@ -583,11 +583,25 @@ const partnerBookingCodeDisplay = (booking?: any) => {
   const code = booking.bookingCode || booking.code;
   if (code && typeof code === 'string' && code.trim()) {
     const trimmed = code.trim();
-    return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    if (!trimmed.toUpperCase().startsWith('BILL-')) {
+      return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    }
   }
   const idStr = String(booking.id || '').trim();
   if (!idStr) return '';
   return `#BK-${idStr.slice(0, 8).toUpperCase()}`;
+};
+
+const getPartnerBillBookingCodeDisplay = (bill: PartnerBill) => {
+  if (bill.booking) {
+    const display = partnerBookingCodeDisplay(bill.booking);
+    if (display) return display;
+  }
+  if ((bill as any).bookingId) {
+    const cleanId = String((bill as any).bookingId).trim();
+    if (cleanId) return `#BK-${cleanId.slice(0, 8).toUpperCase()}`;
+  }
+  return '—';
 };
 
 const normalizePartnerScanPayload = (
@@ -9176,7 +9190,7 @@ export default function PartnerPage() {
                   ) : paginatedScopedBillRows.length ? (
                     paginatedScopedBillRows.map((bill, index) => {
                       const active = selectedBillId === bill.id;
-                      const billCode = partnerBookingCodeDisplay(bill.booking) || '—';
+                      const billCode = getPartnerBillBookingCodeDisplay(bill);
                       const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                       return (
@@ -9291,7 +9305,7 @@ export default function PartnerPage() {
               ) : paginatedScopedBillRows.length ? (
                 paginatedScopedBillRows.map((bill, index) => {
                   const active = selectedBillId === bill.id;
-                  const billCode = partnerBookingCodeDisplay(bill.booking) || '—';
+                  const billCode = getPartnerBillBookingCodeDisplay(bill);
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
                   const statusTone = billStatusTone(bill.status);
                   const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
