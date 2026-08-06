@@ -332,6 +332,8 @@ export default function AdminContentPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [campaignStatusFilter, setCampaignStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAUSED' | 'DRAFT'>('ALL');
   const [campaignPage, setCampaignPage] = useState(1);
+  const [bannerPage, setBannerPage] = useState(1);
+  const [blogPage, setBlogPage] = useState(1);
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
   const [isDeletingCampaign, setIsDeletingCampaign] = useState(false);
 
@@ -1884,60 +1886,73 @@ export default function AdminContentPage() {
       })()}
 
       {/* BANNER CONTENT */}
-      {activeTab === 'banner' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-          {banners.map((banner) => {
-            const metadata = (banner.metadata as any) || {};
-            const displayStatus = banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'DRAFT' ? 'Nháp' : 'Ẩn';
-            const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${resolveClientUrl(metadata.imageUrl)})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
-            
-            return (
-            <div key={banner.id} data-noinvert onClick={() => handleEditBanner(banner)} style={{ 
-              height: '220px', borderRadius: '16px', border: `1px solid ${colors.borderSoft}`, 
-              background: bgImage, backgroundSize: 'cover', backgroundPosition: 'center',
-              padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              position: 'relative', cursor: 'pointer'
-            }}>
-              <div>
-                {metadata.statusLabel && (
-                  <span style={{ 
-                    display: 'inline-block', padding: '4px 12px', borderRadius: '16px', 
-                    background: 'rgba(0,0,0,0.5)', border: `1px solid ${colors.borderGold22}`, color: colors.gold, 
-                    fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase'
-                  }}>
-                    <span style={{ color: '#ef4444', marginRight: '6px' }}>•</span>{metadata.statusLabel}
-                  </span>
-                )}
-              </div>
-              <div>
-                {metadata.subtitle && <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase', marginBottom: '8px' }}>{metadata.subtitle}</div>}
-                <h3 style={{ fontSize: '20px', fontWeight: 700, color: colors.text, margin: '0 0 4px 0' }}>{banner.title}</h3>
-                {metadata.description && <div style={{ fontSize: '12px', color: '#c5c0b6', marginBottom: '12px' }}>{metadata.description}</div>}
+      {activeTab === 'banner' && (() => {
+        const paginatedBanners = paginateAdminItems(banners, bannerPage, adminPageSize);
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              {paginatedBanners.map((banner) => {
+                const metadata = (banner.metadata as any) || {};
+                const displayStatus = banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'DRAFT' ? 'Nháp' : 'Ẩn';
+                const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${resolveClientUrl(metadata.imageUrl)})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                  <div style={{ fontSize: '12px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{metadata.position || 'Không xác định'}</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ 
-                      padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 700,
-                      background: colors.goldGrad, color: colors.onGold
-                    }}>
-                      {metadata.tag || 'Chi tiết'}
-                    </span>
-                    <span style={{ 
-                      color: getBannerStatusStyle(displayStatus).color, 
-                      padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
-                      border: getBannerStatusStyle(displayStatus).border
-                    }}>
-                      {displayStatus}
-                    </span>
+                return (
+                  <div key={banner.id} data-noinvert onClick={() => handleEditBanner(banner)} style={{ 
+                    height: '220px', borderRadius: '16px', border: `1px solid ${colors.borderSoft}`, 
+                    background: bgImage, backgroundSize: 'cover', backgroundPosition: 'center',
+                    padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                    position: 'relative', cursor: 'pointer'
+                  }}>
+                    <div>
+                      {metadata.statusLabel && (
+                        <span style={{ 
+                          display: 'inline-block', padding: '4px 12px', borderRadius: '16px', 
+                          background: 'rgba(0,0,0,0.5)', border: `1px solid ${colors.borderGold22}`, color: colors.gold, 
+                          fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase'
+                        }}>
+                          <span style={{ color: '#ef4444', marginRight: '6px' }}>•</span>{metadata.statusLabel}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      {metadata.subtitle && <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase', marginBottom: '8px' }}>{metadata.subtitle}</div>}
+                      <h3 style={{ fontSize: '20px', fontWeight: 700, color: colors.text, margin: '0 0 4px 0' }}>{banner.title}</h3>
+                      {metadata.description && <div style={{ fontSize: '12px', color: '#c5c0b6', marginBottom: '12px' }}>{metadata.description}</div>}
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                        <div style={{ fontSize: '12px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{metadata.position || 'Không xác định'}</span></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ 
+                            padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+                            background: colors.goldGrad, color: colors.onGold
+                          }}>
+                            {metadata.tag || 'Chi tiết'}
+                          </span>
+                          <span style={{ 
+                            color: getBannerStatusStyle(displayStatus).color, 
+                            padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
+                            border: getBannerStatusStyle(displayStatus).border
+                          }}>
+                            {displayStatus}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-            );
-          })}
-        </div>
-      )}
+            <AdminPagination
+              page={bannerPage}
+              totalItems={banners.length}
+              pageSize={adminPageSize}
+              itemLabel="banner"
+              onPageChange={setBannerPage}
+            />
+          </div>
+        );
+      })()}
 
       {/* BLOG CONTENT */}
       {activeTab === 'blog' && (
@@ -2049,50 +2064,61 @@ export default function AdminContentPage() {
             <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px', background: colors.surface1, borderRadius: '16px', border: `1px solid ${colors.borderSoft}` }}>
               Chưa có bài viết nào
             </div>
-          ) : blogs.map((blog) => (
-            <div 
-              key={blog.id} 
-              className="p-3.5 md:p-4 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 bg-[#121118]"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div style={{ width: '64px', height: '48px', borderRadius: '8px', background: '#271932', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                  {(blog.metadata as any)?.image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={(blog.metadata as any).image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : null}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 className="text-xs md:text-sm font-bold text-[#f3f0ea] m-0 truncate" title={blog.title}>{blog.title}</h3>
-                  <div style={{ fontSize: '11.5px', color: colors.muted, marginTop: '2px' }}>
-                    {(blog.metadata as any)?.category || 'Không phân loại'} · {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+          ) : (
+            <>
+              {paginateAdminItems(blogs, blogPage, adminPageSize).map((blog) => (
+                <div 
+                  key={blog.id} 
+                  className="p-3.5 md:p-4 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 bg-[#121118]"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div style={{ width: '64px', height: '48px', borderRadius: '8px', background: '#271932', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                      {(blog.metadata as any)?.image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={(blog.metadata as any).image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : null}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 className="text-xs md:text-sm font-bold text-[#f3f0ea] m-0 truncate" title={blog.title}>{blog.title}</h3>
+                      <div style={{ fontSize: '11.5px', color: colors.muted, marginTop: '2px' }}>
+                        {(blog.metadata as any)?.category || 'Không phân loại'} · {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div 
+                        onClick={() => handleEditBlog(blog)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        <Pencil size={14} /> <span style={{ fontWeight: 600 }}>Sửa</span>
+                      </div>
+                      <div 
+                        onClick={() => window.open(`/blog/${blog.slug}?preview=1`, '_blank')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        <Eye size={14} /> <span style={{ fontWeight: 600 }}>Xem</span>
+                      </div>
+                    </div>
+                    <span style={{ 
+                      border: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').border, 
+                      color: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').color, 
+                      padding: '3px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, display: 'inline-block', flex: 'none', textAlign: 'center'
+                    }}>
+                      {blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp'}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div 
-                    onClick={() => handleEditBlog(blog)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
-                  >
-                    <Pencil size={14} /> <span style={{ fontWeight: 600 }}>Sửa</span>
-                  </div>
-                  <div 
-                    onClick={() => window.open(`/blog/${blog.slug}?preview=1`, '_blank')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '5px', color: colors.muted, fontSize: '12px', cursor: 'pointer' }}
-                  >
-                    <Eye size={14} /> <span style={{ fontWeight: 600 }}>Xem</span>
-                  </div>
-                </div>
-                <span style={{ 
-                  border: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').border, 
-                  color: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').color, 
-                  padding: '3px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, display: 'inline-block', flex: 'none', textAlign: 'center'
-                }}>
-                  {blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp'}
-                </span>
-              </div>
-            </div>
-          ))}
+              ))}
+              <AdminPagination
+                page={blogPage}
+                totalItems={blogs.length}
+                pageSize={adminPageSize}
+                itemLabel="bài viết"
+                onPageChange={setBlogPage}
+              />
+            </>
+          )}
         </div>
       )}
 
