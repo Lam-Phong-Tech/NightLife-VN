@@ -258,7 +258,12 @@ export default function Page() {
               <div className="nl-account-points-panel" style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
                   <span>{translateText("Điểm thưởng", activeLanguage)}</span>
-                  <span>{pointFormatter.format(rewardPoints)} {translateText("điểm", activeLanguage)}</span>
+                  <span>
+                    <span className="notranslate" translate="no" data-no-translate="true">
+                      {pointFormatter.format(rewardPoints)}
+                    </span>{" "}
+                    {translateText("điểm", activeLanguage)}
+                  </span>
                 </div>
                 <div className="nl-account-points-track" style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
                   <div className="nl-account-points-fill" style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />

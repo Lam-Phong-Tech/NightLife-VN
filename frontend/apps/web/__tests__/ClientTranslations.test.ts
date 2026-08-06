@@ -198,7 +198,7 @@ describe("client translations", () => {
       "夜の外出に役立つナイトライフガイド",
     );
     expect(translateText("Tất cả tag", "ja")).toBe("すべてのタグ");
-    expect(translateText("Lọc", "ja")).toBe("絞り込む");
+    expect(translateText("Lọc", "ja")).toBe("フィルター");
     expect(translateText("Nổi bật · Cẩm nang khu vực", "ja")).toBe(
       "注目 · エリアガイド",
     );
@@ -254,5 +254,12 @@ describe("client translations", () => {
     // Second call retrieves from memory/localStorage cache instantly
     const result2 = translateText("Sự kiện âm nhạc EDM lớn nhất năm", "ko");
     expect(result2).toBe(result1);
+  });
+
+  it("translates point counts preserving numeric values as reward points", () => {
+    expect(translateText("7 điểm", "ja")).toBe("7 pt");
+    expect(translateText("7 điểm", "en")).toBe("7 pts");
+    expect(translateText("7 điểm", "ko")).toBe("7점");
+    expect(translateText("7 điểm", "zh")).toBe("7 积分");
   });
 });

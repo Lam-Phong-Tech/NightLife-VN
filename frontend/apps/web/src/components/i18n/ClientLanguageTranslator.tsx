@@ -53,7 +53,7 @@ function translateTextNode(node: Text, language: LanguageCode) {
   const parent = node.parentElement;
   if (!parent) return;
   const rawValue = node.nodeValue ?? "";
-  if (!rawValue.trim()) return;
+  if (!rawValue.trim() || /^\s*[\d,.\s\-\+\$%₫đ]+$/i.test(rawValue)) return;
 
   const storedSource = textSourceMap.get(node);
   let source = storedSource ?? rawValue;

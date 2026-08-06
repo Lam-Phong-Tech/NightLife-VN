@@ -8632,14 +8632,14 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">):
     }[language];
   }
 
-  const tourStopsCountMatch = normalized.match(/^(\d+)\s*điểm$/i);
-  if (tourStopsCountMatch) {
-    const count = tourStopsCountMatch[1] ?? "";
+  const rewardPointsCountMatch = normalized.match(/^([\d,.]+)\s*điểm$/i);
+  if (rewardPointsCountMatch) {
+    const count = rewardPointsCountMatch[1] ?? "";
     return {
-      en: `${count} spots`,
-      ja: `${count}箇所`,
-      ko: `${count}곳`,
-      zh: `${count}个景点`,
+      en: `${count} pts`,
+      ja: `${count} pt`,
+      ko: `${count}점`,
+      zh: `${count} 积分`,
     }[language];
   }
 
