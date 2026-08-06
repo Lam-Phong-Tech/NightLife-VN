@@ -164,7 +164,7 @@ const castCopyVi: CastSearchCopy = {
   emptyDescription: "Đổi khu vực hoặc ngôn ngữ để xem thêm.",
   emptyTitle: "Chưa có cast phù hợp",
   filterIntro: "Lọc cast theo nhu cầu",
-  filterTitle: "Bộ lọc",
+  filterTitle: "Lọc",
   find: "Tìm",
   findCast: "Tìm cast",
   filterLocation: "Địa điểm",

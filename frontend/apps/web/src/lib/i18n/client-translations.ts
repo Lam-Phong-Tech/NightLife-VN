@@ -4865,8 +4865,8 @@ const dynamicPhraseEntries: TranslationEntry[] = [
   },
   {
     vi: "Lọc",
-    en: "Filter",
-    ja: "絞り込む",
+    en: "Filters",
+    ja: "フィルター",
     ko: "필터",
     zh: "筛选",
   },

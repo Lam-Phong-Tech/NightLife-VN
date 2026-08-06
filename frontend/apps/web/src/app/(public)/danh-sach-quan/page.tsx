@@ -184,7 +184,7 @@ const venueCopyVi: VenueSearchCopy = {
   filterClose: "Đóng bộ lọc",
   filterIntro: "Lọc quán theo nhu cầu",
   filterNeeds: "Nhu cầu",
-  filterTitle: "Bộ lọc",
+  filterTitle: "Lọc",
   find: "Tìm",
   hasDeals: "Có ưu đãi",
   listAria: "Danh sách quán",
