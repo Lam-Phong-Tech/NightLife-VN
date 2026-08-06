@@ -3453,6 +3453,45 @@ export default function PartnerPage() {
     : selectedBillBookingExistingBill
       ? `Booking này đã có bill ${selectedBillBookingExistingBill.billNumber ?? selectedBillBookingExistingBill.id.slice(0, 8)} gửi về Admin, không thể gửi lại.`
       : '';
+
+  const isReadOnlyBill = useMemo(() => {
+    if (selectedBill) {
+      const status = (selectedBill.status || '').toUpperCase();
+      return ['SUBMITTED', 'PENDING', 'PENDING_PM_BA', 'VERIFIED'].includes(status);
+    }
+    return Boolean(partnerBillAlreadySubmittedNotice);
+  }, [selectedBill, partnerBillAlreadySubmittedNotice]);
+
+  const selectedBillMedia = selectedBill?.media?.[0];
+  const evidenceImageUrl = useMemo(() => {
+    if (billEvidenceFile && billEvidenceFile.type.startsWith('image/')) {
+      return URL.createObjectURL(billEvidenceFile);
+    }
+    if (selectedBillMedia) {
+      const rawUrl = selectedBillMedia.url ?? (selectedBillMedia.storageKey ? `/storage/files/${selectedBillMedia.storageKey}` : null);
+      if (rawUrl) {
+        return listingMediaUrl(rawUrl);
+      }
+    }
+    return null;
+  }, [billEvidenceFile, selectedBillMedia]);
+
+  const isEvidenceImage = useMemo(() => {
+    if (billEvidenceFile) {
+      return billEvidenceFile.type.startsWith('image/');
+    }
+    if (selectedBillMedia) {
+      const mime = (selectedBillMedia.mimeType || '').toLowerCase();
+      const name = (selectedBillMedia.originalName || '').toLowerCase();
+      const url = (selectedBillMedia.url || '').toLowerCase();
+      const key = (selectedBillMedia.storageKey || '').toLowerCase();
+      if (mime) {
+        return mime.startsWith('image/');
+      }
+      return /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(name || url || key) || Boolean(evidenceImageUrl);
+    }
+    return Boolean(evidenceImageUrl);
+  }, [billEvidenceFile, selectedBillMedia, evidenceImageUrl]);
   const billDiscountLabel = useMemo(() => {
     if (selectedBill) {
       const snapshot = selectedBill.discountRuleSnapshot;
@@ -9622,6 +9661,8 @@ export default function PartnerPage() {
                   inputMode="numeric"
                   placeholder="Vui lòng nhập tổng tiền"
                   value={billAmountInput}
+                  readOnly={isReadOnlyBill}
+                  disabled={isReadOnlyBill}
                   onChange={(event) => handleBillAmountChange(event.target.value)}
                   style={{
                     ...inputStyle,
@@ -9630,6 +9671,16 @@ export default function PartnerPage() {
                     fontWeight: '800',
                     paddingRight: '44px',
                     borderRadius: '12px',
+                    ...(isReadOnlyBill
+                      ? {
+                          cursor: 'not-allowed',
+                          opacity: 0.85,
+                          background: colors.surface3,
+                          borderColor: colors.borderSoft,
+                          color: colors.text2,
+                          pointerEvents: 'none',
+                        }
+                      : {}),
                   }}
                 />
                 <span
@@ -9665,40 +9716,148 @@ export default function PartnerPage() {
               </label>
 
               {!billEvidenceFile && !selectedBill?.media?.length ? (
-                <label
+                isReadOnlyBill ? (
+                  <div
+                    style={{
+                      border: '1px dashed rgba(212,178,106,.2)',
+                      borderRadius: '14px',
+                      background: colors.surface2,
+                      padding: '16px',
+                      color: colors.muted,
+                      fontSize: '12.5px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Chưa có ảnh chứng từ đính kèm
+                  </div>
+                ) : (
+                  <label
+                    style={{
+                      border: '1.5px dashed rgba(212,178,106,.35)',
+                      borderRadius: '16px',
+                      background: 'rgba(212,178,106,.03)',
+                      padding: '28px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      transition: 'all .15s ease-in-out',
+                    }}
+                  >
+                    <UploadCloud size={32} style={{ color: colors.goldBright }} />
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: colors.text }}>
+                      Nhấn để tải ảnh hoặc file PDF
+                    </span>
+                    <span style={{ fontSize: '12px', color: colors.text2 }}>
+                      Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)
+                    </span>
+                    <span style={{ fontSize: '11px', color: colors.muted, marginTop: '2px' }}>
+                      Khuyến khích gửi kèm để duyệt nhanh hơn.
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onInput={(event) => handleBillFileChange(event.currentTarget)}
+                      onChange={(event) => handleBillFileChange(event.currentTarget)}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )
+              ) : isEvidenceImage && evidenceImageUrl ? (
+                <div
                   style={{
-                    border: '1.5px dashed rgba(212,178,106,.35)',
+                    border: '1px solid rgba(212,178,106,.25)',
                     borderRadius: '16px',
-                    background: 'rgba(212,178,106,.03)',
-                    padding: '28px 16px',
+                    background: colors.surface2,
+                    padding: '12px',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                    transition: 'all .15s ease-in-out',
+                    gap: '10px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
                   }}
                 >
-                  <UploadCloud size={32} style={{ color: colors.goldBright }} />
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: colors.text }}>
-                    Nhấn để tải ảnh hoặc file PDF
-                  </span>
-                  <span style={{ fontSize: '12px', color: colors.text2 }}>
-                    Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)
-                  </span>
-                  <span style={{ fontSize: '11px', color: colors.muted, marginTop: '2px' }}>
-                    Khuyến khích gửi kèm để duyệt nhanh hơn.
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onInput={(event) => handleBillFileChange(event.currentTarget)}
-                    onChange={(event) => handleBillFileChange(event.currentTarget)}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+                  <a
+                    href={evidenceImageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'block',
+                      position: 'relative',
+                      width: '100%',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      background: '#000',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <img
+                      src={evidenceImageUrl}
+                      alt="Ảnh chứng từ hóa đơn"
+                      style={{
+                        maxHeight: '360px',
+                        width: '100%',
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        display: 'block',
+                        margin: '0 auto',
+                      }}
+                    />
+                  </a>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Ảnh chứng từ đính kèm'}
+                      </span>
+                      {billEvidenceFile && (
+                        <span style={{ fontSize: '11px', color: colors.text2 }}>
+                          {(billEvidenceFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      )}
+                    </div>
+                    {!isReadOnlyBill && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        <label
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: `1px solid ${colors.borderGold22}`,
+                            background: 'transparent',
+                            color: colors.goldBright,
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          Đổi file
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onInput={(event) => handleBillFileChange(event.currentTarget)}
+                            onChange={(event) => handleBillFileChange(event.currentTarget)}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                        {billEvidenceFile && (
+                          <GhostButton
+                            onClick={() => setBillEvidenceFile(null)}
+                            style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
+                          >
+                            Xóa
+                          </GhostButton>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <div
                   style={{
@@ -9717,17 +9876,9 @@ export default function PartnerPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
-                    {billEvidenceFile?.type.startsWith('image/') ? (
-                      <img
-                        src={URL.createObjectURL(billEvidenceFile)}
-                        alt="Preview"
-                        style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    ) : (
-                      <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.goldBright, flexShrink: 0 }}>
-                        <FileText size={22} />
-                      </div>
-                    )}
+                    <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.goldBright, flexShrink: 0 }}>
+                      <FileText size={22} />
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
                       <span style={{ fontSize: '13px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', display: 'block', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                         {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Chứng từ đính kèm'}
@@ -9739,40 +9890,42 @@ export default function PartnerPage() {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flex: '0 0 auto' }}>
-                    <label
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: `1px solid ${colors.borderGold22}`,
-                        background: 'transparent',
-                        color: colors.goldBright,
-                        fontSize: '12px',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      Đổi file
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onInput={(event) => handleBillFileChange(event.currentTarget)}
-                        onChange={(event) => handleBillFileChange(event.currentTarget)}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    {billEvidenceFile && (
-                      <GhostButton
-                        onClick={() => setBillEvidenceFile(null)}
-                        style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
+                  {!isReadOnlyBill && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flex: '0 0 auto' }}>
+                      <label
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          border: `1px solid ${colors.borderGold22}`,
+                          background: 'transparent',
+                          color: colors.goldBright,
+                          fontSize: '12px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
                       >
-                        Xóa
-                      </GhostButton>
-                    )}
-                  </div>
+                        Đổi file
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onInput={(event) => handleBillFileChange(event.currentTarget)}
+                          onChange={(event) => handleBillFileChange(event.currentTarget)}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {billEvidenceFile && (
+                        <GhostButton
+                          onClick={() => setBillEvidenceFile(null)}
+                          style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
+                        >
+                          Xóa
+                        </GhostButton>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
