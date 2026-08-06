@@ -9811,54 +9811,42 @@ export default function PartnerPage() {
                       }}
                     />
                   </a>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 800, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {billEvidenceFile ? billEvidenceFile.name : selectedBill?.media?.[0]?.originalName || 'Ảnh chứng từ đính kèm'}
-                      </span>
+                  {!isReadOnlyBill && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', width: '100%' }}>
+                      <label
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          border: `1px solid ${colors.borderGold22}`,
+                          background: 'transparent',
+                          color: colors.goldBright,
+                          fontSize: '12px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        Đổi file
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onInput={(event) => handleBillFileChange(event.currentTarget)}
+                          onChange={(event) => handleBillFileChange(event.currentTarget)}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
                       {billEvidenceFile && (
-                        <span style={{ fontSize: '11px', color: colors.text2 }}>
-                          {(billEvidenceFile.size / (1024 * 1024)).toFixed(2)} MB
-                        </span>
+                        <GhostButton
+                          onClick={() => setBillEvidenceFile(null)}
+                          style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
+                        >
+                          Xóa
+                        </GhostButton>
                       )}
                     </div>
-                    {!isReadOnlyBill && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                        <label
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            border: `1px solid ${colors.borderGold22}`,
-                            background: 'transparent',
-                            color: colors.goldBright,
-                            fontSize: '12px',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                          }}
-                        >
-                          Đổi file
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onInput={(event) => handleBillFileChange(event.currentTarget)}
-                            onChange={(event) => handleBillFileChange(event.currentTarget)}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-                        {billEvidenceFile && (
-                          <GhostButton
-                            onClick={() => setBillEvidenceFile(null)}
-                            style={{ padding: '6px 8px', height: 'auto', minHeight: '0', color: colors.danger, fontSize: '12px', whiteSpace: 'nowrap' }}
-                          >
-                            Xóa
-                          </GhostButton>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               ) : (
                 <div
