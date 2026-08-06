@@ -6277,6 +6277,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "확인 비밀번호가 일치하지 않습니다.",
     zh: "两次输入的密码不一致。",
   },
+  {
+    vi: "Trang có thể đã đổi tên hoặc không còn tồn tại. Thử tìm quán, cast hoặc quay về trang chủ.",
+    en: "This page may have been renamed or no longer exists. Try searching for a venue, Cast, or return home.",
+    ja: "このページは名称が変更されたか、存在しない可能性があります。店舗やキャストを検索するか、ホームへ戻ってください。",
+    ko: "이 페이지는 이름이 변경되었거나 더 이상 존재하지 않을 수 있습니다. 매장이나 Cast를 검색하거나 홈으로 돌아가세요.",
+    zh: "该页面可能已更名或不再存在。请尝试搜索店铺、陪伴人员，或返回首页。",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(

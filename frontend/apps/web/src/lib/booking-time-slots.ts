@@ -108,7 +108,12 @@ const formatTimeRanges = (ranges: OpeningTimeRange[]) =>
 const normalizeWeekdayKey = (key: string): WeekdayKey | null => {
   const normalized = normalizeText(key);
 
-  if (normalized === "cn" || normalized.includes("sunday") || normalized.includes("chu nhat")) {
+  if (
+    normalized === "cn" ||
+    normalized === "sun" ||
+    normalized.includes("sunday") ||
+    normalized.includes("chu nhat")
+  ) {
     return "sunday";
   }
 

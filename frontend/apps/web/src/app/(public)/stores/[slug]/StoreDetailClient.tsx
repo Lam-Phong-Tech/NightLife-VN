@@ -1954,7 +1954,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const bookingTimeOptions = useMemo(
     () =>
       buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
-        fallback: "empty",
+        fallback: "default",
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
   );

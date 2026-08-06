@@ -478,7 +478,7 @@ export default function Page() {
 
   const bookingTimeOptionGroups = useMemo(() => {
     return storeHoursResolved
-      ? buildBookingTimeSlotGroups(storeOpeningHours, bookingDate, { fallback: "empty" })
+      ? buildBookingTimeSlotGroups(storeOpeningHours, bookingDate, { fallback: "default" })
       : [];
   }, [bookingDate, storeHoursResolved, storeOpeningHours]);
   const bookingTimeOptions = useMemo(
@@ -922,7 +922,7 @@ export default function Page() {
                 value={guestName}
                 onChange={(value) => setGuestName(sanitizeBookingDisplayNameInput(value))}
                 onTouched={() => markFieldTouched("guestName")}
-                placeholder="Vui lòng nhập họ tên"
+                placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
                 icon={<UserRound size={16} />}
                 error={visibleFieldErrors.guestName}
                 name={bookingFieldNames.guestName}
@@ -1378,7 +1378,7 @@ function EmailField({
           name={name}
           value={value}
           readOnly={readOnly}
-          placeholder="Vui lòng nhập email"
+          placeholder={translateText("Vui lòng nhập email", activeLanguage)}
           onBlur={onTouched}
           onChange={(event) => {
             onTouched();
