@@ -181,6 +181,7 @@ const nextHomeGuideRank = (tourItems: AdminHomeTour[], blogItems: CmsContentItem
 
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'recommend' | 'tour' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
@@ -828,8 +829,14 @@ export default function AdminContentPage() {
     try {
       const data = await contentApi.adminList({ type: 'BLOG' });
       if (data) setBlogs(data);
-    } catch (error) {
-      console.error('Failed to fetch blogs:', error);
+    } catch (e: any) {
+      console.error('Failed to fetch blogs:', e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem danh sách nội dung. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setFetchError(e?.message || 'Lỗi khi tải dữ liệu. Vui lòng thử lại.');
+      }
     }
   };
 

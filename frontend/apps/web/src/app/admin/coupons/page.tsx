@@ -9,6 +9,7 @@ const campaignPageSize = 9;
 
 export default function AdminCouponsPage() {
   const feedback = useSystemFeedback();
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   const [campaignStatusFilter, setCampaignStatusFilter] = useState<'all' | 'active' | 'paused'>('all');
   const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
@@ -130,8 +131,14 @@ export default function AdminCouponsPage() {
         setIssues(res.data);
         setTotalIssues(res.total ?? res.data.length);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem danh sách mã ưu đãi. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setFetchError(e?.message || 'Lỗi khi tải dữ liệu. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -242,6 +249,13 @@ export default function AdminCouponsPage() {
         .scw::-webkit-scrollbar-thumb { background: rgba(212,178,106,.2); border-radius: 9px; }
         .scw::-webkit-scrollbar-track { background: transparent; }
       `}</style>
+
+      {fetchError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', color: '#f87171' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
 
       {/* Top Stats - Mocked for visual similarity */}
       <div className="nl-admin-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '18px' }}>

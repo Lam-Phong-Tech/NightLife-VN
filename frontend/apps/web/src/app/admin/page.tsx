@@ -78,6 +78,7 @@ function AdminDashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
   const [user, setUser] = useState<any>(null);
 
@@ -110,7 +111,12 @@ function AdminDashboardContent() {
       }
     } catch (err: any) {
       console.error(err);
-      setError("Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.");
+      const status = err?.status ?? err?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(err?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem dữ liệu thống kê dashboard. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setError(err?.message || "Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.");
+      }
       if (err && typeof err === "object" && "status" in err && err.status === 401) {
         if ("code" in err && (err as { code?: string }).code === "SESSION_REPLACED") {
           return;
@@ -217,6 +223,12 @@ function AdminDashboardContent() {
       data-screen-label="Admin · Dashboard"
       style={{ padding: "24px 26px 40px" }}
     >
+      {fetchError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', color: '#f87171' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
       {["SUPER_ADMIN", "ADMIN", "STAFF"].includes(user?.role) &&
         storageUsage &&
         storageUsage.percentage >= 90 && (

@@ -172,6 +172,7 @@ export default function AdminBillsPage() {
   const [billsList, setBillsList] = useState<AdminBill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [meta, setMeta] = useState<AdminBillsMeta | null>(null);
   const [stats, setStats] = useState<AdminBillsStats>({
     pendingCount: 0,
@@ -212,15 +213,20 @@ export default function AdminBillsPage() {
         if (res.stats) setStats(res.stats);
         if (res.meta) setMeta(res.meta);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       setBillsList([]);
       setMeta(null);
-      setLoadError(
-        e instanceof ApiError
-          ? translateApiMessage(e.message, e.status)
-          : 'Không tải được danh sách hóa đơn. Vui lòng thử lại.',
-      );
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem danh sách hóa đơn. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setLoadError(
+          e instanceof ApiError
+            ? translateApiMessage(e.message, e.status)
+            : 'Không tải được danh sách hóa đơn. Vui lòng thử lại.',
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -293,6 +299,13 @@ export default function AdminBillsPage() {
   return (
     <div className="nl-admin-page nl-admin-bills-page" style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
       
+      {fetchError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', color: '#f87171' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
+
       {/* TOP FILTERS */}
       <div className="nl-admin-list-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div className="nl-admin-tabs" style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
