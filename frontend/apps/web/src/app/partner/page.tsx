@@ -601,6 +601,9 @@ const getPartnerBillBookingCodeDisplay = (bill: PartnerBill) => {
     const cleanId = String((bill as any).bookingId).trim();
     if (cleanId) return `#BK-${cleanId.slice(0, 8).toUpperCase()}`;
   }
+  if (bill.billNumber) {
+    return bill.billNumber;
+  }
   return '—';
 };
 
