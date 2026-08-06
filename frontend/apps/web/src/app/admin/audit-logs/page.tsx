@@ -149,6 +149,7 @@ export default function AdminAuditLogsPage() {
 
   // Detail Modal
   const [selectedLog, setSelectedLog] = useState<AuditLogRec | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const selectedDetail = selectedLog ? getFriendlyAuditDetail(selectedLog) : null;
 
   const fetchLogs = async () => {
@@ -163,8 +164,12 @@ export default function AdminAuditLogsPage() {
       setLogs(res.items || []);
       setTotalPages(res.meta?.totalPages || 1);
       setTotalItems(res.meta?.total || 0);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to fetch audit logs', e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem trang này. Vui lòng liên hệ Admin để được cấp quyền.');
+      }
     } finally {
       setLoading(false);
     }
@@ -209,6 +214,12 @@ export default function AdminAuditLogsPage() {
 
   return (
     <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto' }}>
+      {fetchError && (
+        <div style={{ marginBottom: '16px', background: 'rgba(232,80,80,.1)', border: '1px solid rgba(232,80,80,.3)', borderRadius: '12px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e85050" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span style={{ fontSize: '13.5px', color: '#f87171', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <span style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea' }}>Audit Log</span>
         <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>

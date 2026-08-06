@@ -212,6 +212,40 @@ function AdminToursContent() {
     coverUrl: '',
     status: 'ACTIVE', // 'ACTIVE' or 'HIDDEN'
     departureSchedule: createDefaultTourDepartureSchedule(),
+};
+
+export default function AdminToursPage() {
+  return (
+    <React.Suspense fallback={<DataSkeleton variant="list" count={6} style={{ padding: '20px' }} />}>
+      <AdminToursContent />
+    </React.Suspense>
+  );
+}
+
+function AdminToursContent() {
+  const feedback = useSystemFeedback();
+  const [tours, setTours] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [tourSel, setTourSel] = useState<string | null>(null); // 'new' or Tour UUID
+  const [toast, setToast] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const filterCity = searchParams.get('city') || 'all';
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Form State
+  const [formData, setFormData] = useState<AdminTourForm>({
+    title: '',
+    subtitle: '',
+    city: 'Hanoi', // 'Hanoi' or 'Ho Chi Minh City'
+    durationHours: 4,
+    priceTier: 3,
+    coverUrl: '',
+    status: 'ACTIVE', // 'ACTIVE' or 'HIDDEN'
+    departureSchedule: createDefaultTourDepartureSchedule(),
     stops: [] as { storeId: string; order: number; store?: { name: string; category: string; district: string } }[]
   });
 
@@ -219,6 +253,7 @@ function AdminToursContent() {
   const [venueSearchResults, setVenueSearchResults] = useState<any[]>([]);
   const [isSearchingVenues, setIsSearchingVenues] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingCoverMediaIdRef = useRef<string | null>(null);
 
@@ -233,8 +268,14 @@ function AdminToursContent() {
       if (res && res.data) {
         setTours(res.data);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem trang này. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setFetchError(e?.message || 'Lỗi khi tải dữ liệu. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -503,82 +544,6 @@ function AdminToursContent() {
       setTourSel(null);
       setVenueSearch('');
       fetchTours();
-    } catch (e: any) {
-      showToast(e.message || 'Lỗi khi lưu Tour');
-    }
-  };
-
-  const deleteTour = async () => {
-    if (!tourSel || tourSel === 'new') return;
-    if (!window.confirm('Bạn có chắc chắn muốn xoá Tour này không?')) return;
-    try {
-      await apiClient(`/admin/tours/${tourSel}`, { method: 'DELETE' });
-      showToast('Đã xoá Tour thành công!');
-      closeDrawer();
-      fetchTours();
-    } catch (e: any) {
-      showToast('Lỗi khi xoá: ' + e.message);
-    }
-  };
-
-  // Filter tours list
-  const filteredList = tours.filter(t => {
-    const matchCity = filterCity === 'all' || t.city === filterCity;
-    const query = search.toLowerCase().trim();
-    const matchSearch = !query || t.title.toLowerCase().includes(query) || (t.subtitle && t.subtitle.toLowerCase().includes(query));
-    return matchCity && matchSearch;
-  });
-
-  const paginated = paginateAdminItems(filteredList, currentPage);
-
-  // Filter candidates list
-  const selectedStoreIds = formData.stops.map(s => s.storeId);
-  const normalizedVenueQuery = normalizeSearchText(venueSearch);
-  const candidatePool = normalizedVenueQuery ? [...venueSearchResults, ...stores] : stores;
-  const seenStoreIds = new Set<string>();
-  const candidates = candidatePool.filter(s => {
-    if (!s?.id || seenStoreIds.has(s.id)) return false;
-    seenStoreIds.add(s.id);
-    const matchCity = isSameCity(s.city, formData.city);
-    const notSelected = !selectedStoreIds.includes(s.id);
-    const isActiveVenue = s.category !== 'MASSAGE_SPA' && s.status === 'ACTIVE';
-    const normalizedName = normalizeSearchText(s.name);
-    const matchQuery = !normalizedVenueQuery || normalizedName.includes(normalizedVenueQuery);
-    return matchCity && notSelected && isActiveVenue && matchQuery;
-  }).sort((a, b) => {
-    if (!normalizedVenueQuery) return String(a.name || '').localeCompare(String(b.name || ''), 'vi');
-    const aName = normalizeSearchText(a.name);
-    const bName = normalizeSearchText(b.name);
-    const aStarts = aName.startsWith(normalizedVenueQuery) ? 0 : 1;
-    const bStarts = bName.startsWith(normalizedVenueQuery) ? 0 : 1;
-    return aStarts - bStarts || aName.localeCompare(bName, 'vi');
-  }).slice(0, 5);
-
-  const priceLabel = (tier: number) => {
-    if (tier === 2) return '$$';
-    if (tier === 3) return '$$$';
-    return '$$$$';
-  };
-
-  const getCityLabel = (code: string) => {
-    if (code === 'Hanoi' || code === 'HN') return 'Hà Nội';
-    if (code === 'Ho Chi Minh City' || code === 'HCM') return 'TP.HCM';
-    return code;
-  };
-  const departureScheduleErrors = getTourDepartureScheduleErrors(formData.departureSchedule);
-
-  const boxS = { background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', borderRadius: '10px', padding: '12px 13px', fontSize: '13px', color: '#f3f0ea' };
-  const inputS = { ...boxS, width: '100%', outline: 'none' };
-  const seg = (a: boolean) => ({ fontSize: '12px', padding: '9px 15px', borderRadius: '9px', cursor: 'pointer', fontWeight: 600, color: a ? '#241a0a' : '#9b958a', background: a ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)', border: a ? 'none' : '1px solid rgba(255,255,255,.08)' });
-
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-      
-      {/* Top filter and actions header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '310px' }}>
-          <svg style={{ position: 'absolute', left: '14px', top: '13px', color: '#57534b' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm Tour..."

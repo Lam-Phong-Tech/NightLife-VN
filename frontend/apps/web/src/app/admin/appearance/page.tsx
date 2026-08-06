@@ -317,6 +317,8 @@ export default function AppearancePage() {
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const iconUploadInputRef = useRef<HTMLInputElement>(null);
   const logoUploadInputRef = useRef<HTMLInputElement>(null);
   const faviconUploadInputRef = useRef<HTMLInputElement>(null);
@@ -345,9 +347,14 @@ export default function AppearancePage() {
           setTitles(fetchedTitles);
           setBrand(fetchedState.brand);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load appearance config', err);
-        setToast('Lỗi tải cấu hình: Đang dùng dữ liệu mặc định');
+        const status = err?.status ?? err?.statusCode;
+        if (status === 403 || /quyền|forbidden/i.test(err?.message ?? '')) {
+          setFetchError('Bạn không có quyền xem trang này. Vui lòng liên hệ Admin để được cấp quyền.');
+        } else {
+          setToast('Lỗi tải cấu hình: Đang dùng dữ liệu mặc định');
+        }
       } finally {
         setLoading(false);
       }
@@ -874,6 +881,13 @@ export default function AppearancePage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif" }}>
+
+      {fetchError && (
+        <div style={{ margin: '22px 26px 0', background: 'rgba(232,80,80,.1)', border: '1px solid rgba(232,80,80,.3)', borderRadius: '12px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e85050" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span style={{ fontSize: '13.5px', color: '#f87171', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
 
       <div style={{ padding: '22px 26px 110px', opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
         {/* LOGO */}
