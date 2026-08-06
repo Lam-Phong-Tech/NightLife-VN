@@ -374,4 +374,37 @@ describe("Bill submit page", () => {
     await userEvent.click(resubmittedBill);
     expect(await screen.findByAltText("new-bill-proof.png")).toBeInTheDocument();
   });
+
+  it("renders evidence image preview using storageKey when media.url is null", async () => {
+    mocks.listMemberBills.mockResolvedValue([
+      {
+        id: "bill-key-1",
+        billNumber: "BILL-KEY-1",
+        status: "SUBMITTED",
+        totalVnd: 500000,
+        store: publicStore,
+        media: [
+          {
+            id: "media-key-1",
+            storageKey: "evidence-proof.jpg",
+            url: null,
+            originalName: "evidence-proof.jpg",
+            mimeType: "image/jpeg",
+          },
+        ],
+      },
+    ]);
+
+    render(<BillSubmitPage />);
+
+    const pendingTab = await screen.findByRole("tab", { name: /確認待ち|Chờ duyệt/i });
+    await userEvent.click(pendingTab);
+
+    const billItem = await screen.findByRole("button", { name: /Public Neon/i });
+    await userEvent.click(billItem);
+
+    const img = await screen.findByAltText("evidence-proof.jpg");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", expect.stringContaining("/storage/files/evidence-proof.jpg"));
+  });
 });

@@ -1194,19 +1194,21 @@ const cleanApiMessage = (error: unknown) => {
   );
 };
 
-const resolveAuthenticatedMediaUrl = (rawUrl?: string | null) => {
-  if (!rawUrl) return "";
-  const resolved = resolveClientUrl(rawUrl) || rawUrl;
+const resolveAuthenticatedMediaUrl = (rawUrl?: string | null, storageKey?: string | null) => {
+  const target = rawUrl?.trim() || (storageKey?.trim() ? `/storage/files/${storageKey.trim()}` : "");
+  if (!target) return "";
+  const resolved = resolveClientUrl(target) || target;
   if (!resolved) return "";
-  if (resolved.startsWith("data:") || resolved.startsWith("blob:")) {
-    return resolved;
+  const protectedUrl = resolved.replace("/storage/public/", "/storage/files/");
+  if (protectedUrl.startsWith("data:") || protectedUrl.startsWith("blob:")) {
+    return protectedUrl;
   }
   const token = getAuthToken();
-  if (!token || resolved.includes("token=")) {
-    return resolved;
+  if (!token || protectedUrl.includes("token=")) {
+    return protectedUrl;
   }
-  const separator = resolved.includes("?") ? "&" : "?";
-  return `${resolved}${separator}token=${encodeURIComponent(token)}`;
+  const separator = protectedUrl.includes("?") ? "&" : "?";
+  return `${protectedUrl}${separator}token=${encodeURIComponent(token)}`;
 };
 
 export default function Page() {
@@ -2127,11 +2129,12 @@ export default function Page() {
                       <span className="nl-receipt-title">{t("Ảnh / chứng từ")}</span>
                       <div className="nl-detail-media-grid">
                         {selectedBill.media.map((media) => {
-                          const mediaUrl = resolveAuthenticatedMediaUrl(media.url);
+                          const mediaUrl = resolveAuthenticatedMediaUrl(media.url, media.storageKey);
                           const isImg =
                             media.mimeType?.startsWith("image/") ||
-                            /\.(jpeg|jpg|gif|png|webp)$/i.test((mediaUrl.split("?")[0] || "")) ||
-                            /\.(jpeg|jpg|gif|png|webp)$/i.test((media.originalName || "").split("?")[0] || "");
+                            /\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test((mediaUrl.split("?")[0] || "")) ||
+                            /\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test((media.originalName || "").split("?")[0] || "") ||
+                            /\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test((media.storageKey || "").split("?")[0] || "");
 
                           return isImg ? (
                             <a
