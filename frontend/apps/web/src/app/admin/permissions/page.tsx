@@ -80,6 +80,64 @@ const CATEGORIES = [
   { prefix: 'media.', label: 'Media' },
 ];
 
+/** Bản dịch tiếng Việt cho từng permission key */
+const PERM_VI: Record<string, { name: string; desc: string }> = {
+  'store.partner.view':          { name: 'Xem quán thuộc phạm vi', desc: 'Xem danh sách các quán trong phạm vi đối tác/vận hành' },
+  'coupon.partner.view':         { name: 'Xem mã ưu đãi thuộc phạm vi', desc: 'Xem danh sách mã ưu đãi thuộc quán trong phạm vi' },
+  'booking.partner.view':        { name: 'Xem đặt chỗ thuộc phạm vi', desc: 'Xem danh sách đặt chỗ (booking) thuộc phạm vi quản lý' },
+  'bill.partner.view':           { name: 'Xem hóa đơn thuộc phạm vi', desc: 'Xem danh sách hóa đơn thanh toán thuộc phạm vi quản lý' },
+  'coupon.scan':                 { name: 'Quét mã QR ưu đãi', desc: 'Quét mã QR ưu đãi của khách hàng tại quán' },
+  'checkin.confirm':             { name: 'Xác nhận check-in', desc: 'Xác nhận lượt check-in của khách sau khi quét mã QR' },
+  'bill.review':                 { name: 'Duyệt hóa đơn (Legacy)', desc: 'Quyền duyệt hóa đơn cũ — giữ lại để tương thích hệ thống' },
+  'bill.approval.preview':       { name: 'Xem trước phê duyệt hóa đơn', desc: 'Xem trước tổng tiền, giảm giá, hoa hồng và tích điểm trước khi duyệt' },
+  'bill.approve':                { name: 'Duyệt hoặc từ chối hóa đơn', desc: 'Phê duyệt hoặc từ chối hóa đơn gửi lên trong quy trình duyệt Admin' },
+  'bill.pm_ba.confirm':          { name: 'Xác nhận hóa đơn hoa hồng âm (PM/BA)', desc: 'Xác nhận lý do PM/BA cho hóa đơn hoa hồng âm trước khi xác minh cuối' },
+  'bill.void':                   { name: 'Hủy bỏ hóa đơn đã duyệt', desc: 'Hủy bỏ hoặc hoàn tiền hóa đơn đã duyệt và thu hồi điểm thưởng liên quan' },
+  'bill.reverse':                { name: 'Đảo ngược hóa đơn đã duyệt', desc: 'Hoàn tác hóa đơn đã duyệt thủ công hoặc qua luồng tự động rủi ro cao' },
+  'bill.sensitive.view':         { name: 'Xem danh sách hóa đơn nhạy cảm', desc: 'Xem hóa đơn chờ duyệt với chế độ ẩn thông tin theo vai trò' },
+  'report.revenue.view':         { name: 'Xem báo cáo doanh thu', desc: 'Xem báo cáo tổng quan về doanh thu, chiết khấu và hoa hồng' },
+  'booking.member.view':         { name: 'Xem đặt chỗ cá nhân', desc: 'Xem danh sách đặt chỗ của chính tài khoản khách hàng' },
+  'coupon.member.view':          { name: 'Xem mã ưu đãi cá nhân', desc: 'Xem danh sách mã ưu đãi sở hữu bởi tài khoản khách hàng' },
+  'coupon.member.claim':         { name: 'Nhận mã ưu đãi thành viên', desc: 'Thu thập mã ưu đãi dành cho thành viên hoặc VIP' },
+  'ranking.manage':              { name: 'Quản lý bảng xếp hạng', desc: 'Thiết lập và quản lý thứ hạng danh mục toàn hệ thống' },
+  'coupon.issue.manage':         { name: 'Quản lý lượt phát mã ưu đãi', desc: 'Thu hồi hoặc xoay vòng (rotate) mã QR lượt phát ưu đãi' },
+  'booking.reschedule.review':   { name: 'Duyệt yêu cầu đổi lịch đặt chỗ', desc: 'Xem và phê duyệt các yêu cầu thay đổi thời gian đặt chỗ' },
+  'booking.chat.manage':         { name: 'Quản lý hội thoại hỗ trợ booking', desc: 'Truy cập và gửi tin nhắn trong kênh chat hỗ trợ đặt chỗ' },
+  'booking.cancel':              { name: 'Hủy đặt chỗ thay mặt khách', desc: 'Hủy đặt chỗ thay khách hàng, bỏ qua giới hạn thời gian hủy' },
+  'report.cancel_analytics.view':{ name: 'Xem phân tích tỷ lệ hủy', desc: 'Xem biểu đồ và báo cáo thống kê tỷ lệ hủy đặt chỗ' },
+  'store.policy.update':         { name: 'Cập nhật chính sách quán', desc: 'Chỉnh sửa chính sách đặt chỗ của quán (giới hạn thời gian hủy, v.v.)' },
+  'media.protected.read':        { name: 'Truy cập tệp phương tiện bảo mật', desc: 'Xem hình ảnh/video giới hạn theo chủ sở hữu hoặc cửa hàng' },
+  'system.storage.config':       { name: 'Cấu hình dung lượng VPS', desc: 'Cấu hình hạn mức lưu trữ tối đa cho hệ thống VPS' },
+  'system.storage.view':         { name: 'Xem dung lượng VPS', desc: 'Xem tình trạng sử dụng dung lượng lưu trữ VPS hiện tại' },
+  'system.hard_delete':          { name: 'Xóa vĩnh viễn dữ liệu', desc: 'Xóa hoàn toàn bản ghi khỏi cơ sở dữ liệu (không thể khôi phục)' },
+  'system.role.assign':          { name: 'Phân quyền tài khoản', desc: 'Gán vai trò và quyền hạn cho người dùng khác' },
+  'store.admin.view':            { name: 'Xem danh sách quán (CMS)', desc: 'Xem danh sách tất cả địa điểm quán trên trang quản trị Admin' },
+  'cast.admin.view':             { name: 'Xem danh sách Cast (CMS)', desc: 'Xem danh sách nhân sự Cast trên trang quản trị Admin' },
+  'partner.request.view':        { name: 'Xem yêu cầu đăng ký đối tác', desc: 'Xem danh sách đơn đăng ký đối tác gửi đến hệ thống' },
+  'content.admin.view':          { name: 'Xem quản lý nội dung (CMS)', desc: 'Xem bài viết, trang nội dung và truyền thông trên Admin' },
+  'coupon.issue.view':           { name: 'Xem lịch sử phát mã ưu đãi', desc: 'Xem toàn bộ lịch sử các mã ưu đãi đã phát ra trên hệ thống' },
+  'report.dashboard.view':       { name: 'Xem dashboard thống kê Admin', desc: 'Xem chỉ số tổng quan, biểu đồ và xuất báo cáo dữ liệu Admin' },
+  'booking.status.update':       { name: 'Cập nhật trạng thái đặt chỗ', desc: 'Cập nhật trạng thái xử lý của đơn đặt chỗ trên Admin CMS' },
+};
+
+/** Tên hiển thị tiếng Việt cho từng role key */
+const ROLE_VI: Record<string, string> = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  operator: 'Nhân viên vận hành',
+  staff: 'Nhân viên quán',
+  partner: 'Đối tác',
+  member: 'Thành viên',
+};
+
+function getPermVI(key: string, fallbackName: string, fallbackDesc?: string) {
+  const vi = PERM_VI[key];
+  return {
+    name: vi?.name ?? fallbackName,
+    desc: vi?.desc ?? fallbackDesc ?? '',
+  };
+}
+
 function getCategory(key: string) {
   for (const cat of CATEGORIES) {
     if (key.startsWith(cat.prefix)) return cat.label;
@@ -237,7 +295,7 @@ export default function AdminPermissionsPage() {
             return (
               <div key={role.key} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: canEdit ? '#e3c27e' : '#c5c0b6', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {role.name}
+                  {ROLE_VI[role.key] ?? role.name}
                   {isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffc107', display: 'inline-block' }} title="Có thay đổi chưa lưu" />}
                 </span>
                 {canEdit && (
@@ -271,8 +329,10 @@ export default function AdminPermissionsPage() {
             {perms.map((p) => (
               <div key={p.key} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{p.name}</span>
-                  {p.description && <span style={{ display: 'block', fontSize: '11px', color: colors.muted, marginTop: '2px' }}>{p.description}</span>}
+                  {(() => { const vi = getPermVI(p.key, p.name, p.description); return (<>
+                    <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{vi.name}</span>
+                    {vi.desc && <span style={{ display: 'block', fontSize: '11px', color: colors.muted, marginTop: '2px' }}>{vi.desc}</span>}
+                  </>); })()}
                 </span>
                 {visibleRoles.map(role => {
                   const canEdit = isSuperAdmin || (isAdmin && role.key === 'operator');
