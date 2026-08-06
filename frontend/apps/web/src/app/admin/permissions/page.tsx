@@ -145,6 +145,13 @@ function getCategory(key: string) {
   return 'Khác';
 }
 
+/** Những quyền chỉ Super Admin mới được nhìn thấy, Admin không xét được */
+const SUPER_ADMIN_ONLY_PERMS = new Set([
+  'system.hard_delete',
+  'system.role.assign',
+  'system.storage.config',
+]);
+
 export default function AdminPermissionsPage() {
   const currentRole = useSyncExternalStore(
     subscribeToAuthRole,
@@ -236,13 +243,15 @@ export default function AdminPermissionsPage() {
   const groupedPermissions = useMemo(() => {
     if (!matrixData) return {};
     const groups: Record<string, Permission[]> = {};
-    matrixData.permissions.forEach(p => {
-      const cat = getCategory(p.key);
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(p);
-    });
+    matrixData.permissions
+      .filter(p => isSuperAdmin || !SUPER_ADMIN_ONLY_PERMS.has(p.key))
+      .forEach(p => {
+        const cat = getCategory(p.key);
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(p);
+      });
     return groups;
-  }, [matrixData]);
+  }, [matrixData, isSuperAdmin]);
 
   if (currentRole === 'OPERATOR') {
     return (
