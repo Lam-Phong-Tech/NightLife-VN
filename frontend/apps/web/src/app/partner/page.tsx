@@ -9438,19 +9438,12 @@ export default function PartnerPage() {
           <SectionHeading
             title="Form gửi hóa đơn"
             action={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {selectedBill && (
-                  <StatusPill tone={billStatusTone(selectedBill.status)}>
-                    {translateBillStatus(selectedBill.status)}
-                  </StatusPill>
-                )}
-                <GhostButton
-                  onClick={() => setBillSubView('list')}
-                  style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
-                >
-                  <ArrowLeft size={14} /> Quay lại
-                </GhostButton>
-              </div>
+              <GhostButton
+                onClick={() => setBillSubView('list')}
+                style={{ minHeight: '32px', height: '32px', padding: '0 12px', fontSize: '12px' }}
+              >
+                <ArrowLeft size={14} /> Quay lại
+              </GhostButton>
             }
           />
           <form
