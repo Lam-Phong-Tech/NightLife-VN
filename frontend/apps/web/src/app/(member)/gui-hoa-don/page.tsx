@@ -1239,6 +1239,7 @@ export default function Page() {
   const [submittedBills, setSubmittedBills] = useState<BillRecord[]>([]);
   const [appliedBookingId, setAppliedBookingId] = useState("");
   const [activeListTab, setActiveListTab] = useState<BillListTab>("UNSENT");
+  const [billListPage, setBillListPage] = useState(1);
   const [selectedBillId, setSelectedBillId] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [resubmitBill, setResubmitBill] = useState<BillRecord | null>(null);
@@ -1906,59 +1907,141 @@ export default function Page() {
             </span>
           </div>
 
-          {!isFormOpen && !bookingId && !selectedBill ? (
-            <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn") }>
-              <div className="nl-bill-filter-chips" role="tablist" aria-label={t("Trạng thái hóa đơn") }>
-                {[
-                  { id: "UNSENT" as const, label: t("Chưa gửi"), count: unsentBookings.length },
-                  { id: "PENDING" as const, label: t("Chờ duyệt"), count: pendingBills.length },
-                  { id: "APPROVED" as const, label: t("Duyệt"), count: approvedBills.length },
-                  { id: "CANCELLED" as const, label: t("Hủy/Từ chối"), count: rejectedBills.length + cancelledBookings.length },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    className={activeListTab === tab.id ? "nl-bill-filter-chip active" : "nl-bill-filter-chip"}
-                    onClick={() => setActiveListTab(tab.id)}
-                    role="tab"
-                    aria-selected={activeListTab === tab.id}
-                  >
-                    <span>{tab.label}</span>
-                    <span className="nl-bill-chip-count">{tab.count}</span>
-                  </button>
-                ))}
-              </div>
+          {!isFormOpen && !bookingId && !selectedBill ? (() => {
+            const MEMBER_BILL_PAGE_SIZE = 5;
+            const activeTabTotalCount =
+              activeListTab === "UNSENT"
+                ? unsentBookings.length
+                : activeListTab === "PENDING"
+                ? pendingBills.length
+                : activeListTab === "APPROVED"
+                ? approvedBills.length
+                : rejectedBills.length + cancelledBookings.length;
 
-              {isLoadingOptions ? (
-                <div className="nl-bill-list-empty">{t("Đang tải danh sách hóa đơn...")}</div>
-              ) : activeListTab === "UNSENT" ? (
-                unsentBookings.length ? (
+            const totalBillListPages = Math.max(1, Math.ceil(activeTabTotalCount / MEMBER_BILL_PAGE_SIZE));
+            const safeBillListPage = Math.min(Math.max(1, billListPage), totalBillListPages);
+
+            const paginatedUnsentBookings = unsentBookings.slice(
+              (safeBillListPage - 1) * MEMBER_BILL_PAGE_SIZE,
+              safeBillListPage * MEMBER_BILL_PAGE_SIZE
+            );
+
+            const pendingOrApproved = activeListTab === "PENDING" ? pendingBills : approvedBills;
+            const paginatedPendingOrApproved = pendingOrApproved.slice(
+              (safeBillListPage - 1) * MEMBER_BILL_PAGE_SIZE,
+              safeBillListPage * MEMBER_BILL_PAGE_SIZE
+            );
+
+            const cancelledItems = [
+              ...rejectedBills.map((bill) => ({ kind: "bill" as const, bill })),
+              ...cancelledBookings.map((booking) => ({ kind: "booking" as const, booking })),
+            ];
+            const paginatedCancelledItems = cancelledItems.slice(
+              (safeBillListPage - 1) * MEMBER_BILL_PAGE_SIZE,
+              safeBillListPage * MEMBER_BILL_PAGE_SIZE
+            );
+
+            return (
+              <section className="nl-bill-list" aria-label={t("Danh sách hóa đơn")}>
+                <div className="nl-bill-filter-chips" role="tablist" aria-label={t("Trạng thái hóa đơn")}>
+                  {[
+                    { id: "UNSENT" as const, label: t("Chưa gửi"), count: unsentBookings.length },
+                    { id: "PENDING" as const, label: t("Chờ duyệt"), count: pendingBills.length },
+                    { id: "APPROVED" as const, label: t("Duyệt"), count: approvedBills.length },
+                    { id: "CANCELLED" as const, label: t("Hủy/Từ chối"), count: rejectedBills.length + cancelledBookings.length },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={activeListTab === tab.id ? "nl-bill-filter-chip active" : "nl-bill-filter-chip"}
+                      onClick={() => {
+                        setActiveListTab(tab.id);
+                        setBillListPage(1);
+                      }}
+                      role="tab"
+                      aria-selected={activeListTab === tab.id}
+                    >
+                      <span>{tab.label}</span>
+                      <span className="nl-bill-chip-count">{tab.count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {isLoadingOptions ? (
+                  <div className="nl-bill-list-empty">{t("Đang tải danh sách hóa đơn...")}</div>
+                ) : activeListTab === "UNSENT" ? (
+                  unsentBookings.length ? (
+                    <div className="nl-bill-list-items">
+                      {paginatedUnsentBookings.map((booking) => (
+                        <button
+                          key={booking.id}
+                          type="button"
+                          className="nl-bill-list-item"
+                          onClick={() => handleOpenBooking(booking)}
+                        >
+                          <div className="nl-bill-list-item-main">
+                            <strong>{bookingTitle(booking)}</strong>
+                            <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
+                          </div>
+                          <div className="nl-bill-list-item-meta">
+                            <span>{formatDateTime(bookingConfirmedUsageAt(booking), activeLanguage)}</span>
+                            <span className="nl-status-tag draft">{t("Nhập hóa đơn")}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="nl-bill-list-empty">{t("Chưa có booking nào đã check-in cần gửi hóa đơn.")}</div>
+                  )
+                ) : activeListTab === "CANCELLED" ? (
+                  cancelledItems.length ? (
+                    <div className="nl-bill-list-items">
+                      {paginatedCancelledItems.map((item) =>
+                        item.kind === "bill" ? (
+                          <button
+                            key={item.bill.id}
+                            type="button"
+                            className="nl-bill-list-item"
+                            onClick={() => handleOpenBill(item.bill)}
+                          >
+                            <div className="nl-bill-list-item-main">
+                              <strong>{item.bill.store?.name || "NightLife"}</strong>
+                              <span>#{billListCode(item.bill)}</span>
+                            </div>
+                            <div className="nl-bill-list-item-meta">
+                              <span>{formatMoney(item.bill.totalVnd)}</span>
+                              <span className={`nl-status-tag ${item.bill.status.toLowerCase()}`}>
+                                {billStatusLabel(item.bill.status, activeLanguage)}
+                              </span>
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            key={item.booking.id}
+                            type="button"
+                            className="nl-bill-list-item"
+                            onClick={() => handleOpenBooking(item.booking)}
+                          >
+                            <div className="nl-bill-list-item-main">
+                              <strong>{bookingTitle(item.booking)}</strong>
+                              <span>#{item.booking.bookingCode || item.booking.id.slice(0, 8).toUpperCase()}</span>
+                            </div>
+                            <div className="nl-bill-list-item-meta">
+                              <span>{formatDateTime(item.booking.scheduledAt, activeLanguage)}</span>
+                              <span className="nl-status-tag voided">
+                                {bookingCancelledLabel(item.booking.status, activeLanguage)}
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <div className="nl-bill-list-empty">{t("Chưa có hóa đơn hoặc booking bị hủy/từ chối.")}</div>
+                  )
+                ) : pendingOrApproved.length ? (
                   <div className="nl-bill-list-items">
-                    {unsentBookings.map((booking) => (
-                      <button
-                        key={booking.id}
-                        type="button"
-                        className="nl-bill-list-item"
-                        onClick={() => handleOpenBooking(booking)}
-                      >
-                        <div className="nl-bill-list-item-main">
-                          <strong>{bookingTitle(booking)}</strong>
-                          <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
-                        </div>
-                        <div className="nl-bill-list-item-meta">
-                          <span>{formatDateTime(bookingConfirmedUsageAt(booking), activeLanguage)}</span>
-                          <span className="nl-status-tag draft">{t("Nhập hóa đơn")}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="nl-bill-list-empty">{t("Chưa có booking nào đã check-in cần gửi hóa đơn.")}</div>
-                )
-              ) : activeListTab === "CANCELLED" ? (
-                rejectedBills.length || cancelledBookings.length ? (
-                  <div className="nl-bill-list-items">
-                    {rejectedBills.map((bill) => (
+                    {paginatedPendingOrApproved.map((bill) => (
                       <button
                         key={bill.id}
                         type="button"
@@ -1977,63 +2060,54 @@ export default function Page() {
                         </div>
                       </button>
                     ))}
-                    {cancelledBookings.map((booking) => (
-                      <button
-                        key={booking.id}
-                        type="button"
-                        className="nl-bill-list-item"
-                        onClick={() => handleOpenBooking(booking)}
-                      >
-                        <div className="nl-bill-list-item-main">
-                          <strong>{bookingTitle(booking)}</strong>
-                          <span>#{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
-                        </div>
-                        <div className="nl-bill-list-item-meta">
-                          <span>{formatDateTime(booking.scheduledAt, activeLanguage)}</span>
-                          <span className="nl-status-tag voided">
-                            {bookingCancelledLabel(booking.status, activeLanguage)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
                   </div>
                 ) : (
-                  <div className="nl-bill-list-empty">{t("Chưa có hóa đơn hoặc booking bị hủy/từ chối.")}</div>
-                )
-              ) : (activeListTab === "PENDING" ? pendingBills : approvedBills).length ? (
-                <div className="nl-bill-list-items">
-                  {(activeListTab === "PENDING" ? pendingBills : approvedBills).map((bill) => (
-                    <button
-                      key={bill.id}
-                      type="button"
-                      className="nl-bill-list-item"
-                      onClick={() => handleOpenBill(bill)}
-                    >
-                      <div className="nl-bill-list-item-main">
-                        <strong>{bill.store?.name || "NightLife"}</strong>
-                        <span>#{billListCode(bill)}</span>
-                      </div>
-                      <div className="nl-bill-list-item-meta">
-                        <span>{formatMoney(bill.totalVnd)}</span>
-                        <span className={`nl-status-tag ${bill.status.toLowerCase()}`}>
-                          {billStatusLabel(bill.status, activeLanguage)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="nl-bill-list-empty">{t("Chưa có hóa đơn trong trạng thái này.")}</div>
-              )}
+                  <div className="nl-bill-list-empty">{t("Chưa có hóa đơn trong trạng thái này.")}</div>
+                )}
 
-              <div className="nl-bill-footer">
-                <div className="nl-info-note">
-                  <Info size={15} />
-                  <span>{t("Gửi hóa đơn sau mỗi chuyến đi để tích lũy điểm thưởng, thăng hạng thành viên VIP và nhận nhiều ưu đãi đặc quyền.")}</span>
+                {totalBillListPages > 1 && (
+                  <nav aria-label={t("Phân trang hóa đơn")} className="nl-bill-pagination">
+                    <span>
+                      {t("Trang")} {safeBillListPage} / {totalBillListPages} ({activeTabTotalCount} {t("mục")})
+                    </span>
+                    <div className="nl-bill-pagination-actions">
+                      <button
+                        type="button"
+                        disabled={safeBillListPage <= 1}
+                        onClick={() => setBillListPage((p) => Math.max(1, p - 1))}
+                      >
+                        {t("Trước")}
+                      </button>
+                      {Array.from({ length: totalBillListPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          className={p === safeBillListPage ? "active" : ""}
+                          onClick={() => setBillListPage(p)}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={safeBillListPage >= totalBillListPages}
+                        onClick={() => setBillListPage((p) => Math.min(totalBillListPages, p + 1))}
+                      >
+                        {t("Sau")}
+                      </button>
+                    </div>
+                  </nav>
+                )}
+
+                <div className="nl-bill-footer">
+                  <div className="nl-info-note">
+                    <Info size={15} />
+                    <span>{t("Gửi hóa đơn sau mỗi chuyến đi để tích lũy điểm thưởng, thăng hạng thành viên VIP và nhận nhiều ưu đãi đặc quyền.")}</span>
+                  </div>
                 </div>
-              </div>
-            </section>
-          ) : selectedBill ? (
+              </section>
+            );
+          })() : selectedBill ? (
             <>
               <button type="button" className="nl-bill-list-back" onClick={handleBackToList}>
                 <ChevronLeft size={16} />
