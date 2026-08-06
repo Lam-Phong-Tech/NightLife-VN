@@ -604,6 +604,23 @@ const getPartnerBillBookingCodeDisplay = (bill: PartnerBill) => {
   return '—';
 };
 
+const resolvePartnerMediaUrl = (url: unknown) => {
+  const trimmed = safeListingText(url).trim();
+  const resolved = resolveClientUrl(trimmed) || trimmed;
+  const protectedUrl = resolved.replace('/storage/public/', '/storage/files/');
+  if (!protectedUrl.includes('/storage/files/')) {
+    return resolved;
+  }
+
+  const token = getAuthToken();
+  if (!token) {
+    return protectedUrl;
+  }
+
+  const separator = protectedUrl.includes('?') ? '&' : '?';
+  return `${protectedUrl}${separator}token=${encodeURIComponent(token)}`;
+};
+
 const normalizePartnerScanPayload = (
   value: string,
   depth = 0,
@@ -3470,7 +3487,7 @@ export default function PartnerPage() {
     if (selectedBillMedia) {
       const rawUrl = selectedBillMedia.url ?? (selectedBillMedia.storageKey ? `/storage/files/${selectedBillMedia.storageKey}` : null);
       if (rawUrl) {
-        return listingMediaUrl(rawUrl);
+        return resolvePartnerMediaUrl(rawUrl);
       }
     }
     return null;
@@ -5131,22 +5148,7 @@ export default function PartnerPage() {
     );
   };
 
-  const listingMediaUrl = (url: unknown) => {
-    const trimmed = safeListingText(url).trim();
-    const resolved = resolveClientUrl(trimmed) || trimmed;
-    const protectedUrl = resolved.replace('/storage/public/', '/storage/files/');
-    if (!protectedUrl.includes('/storage/files/')) {
-      return resolved;
-    }
-
-    const token = getAuthToken();
-    if (!token) {
-      return protectedUrl;
-    }
-
-    const separator = protectedUrl.includes('?') ? '&' : '?';
-    return `${protectedUrl}${separator}token=${encodeURIComponent(token)}`;
-  };
+  const listingMediaUrl = resolvePartnerMediaUrl;
 
   const getListingYoutubeId = (url: unknown) => {
     const trimmed = safeListingText(url).trim();
