@@ -65,6 +65,8 @@ export function AdminSupportDashboard() {
   const [toast, setToast] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [ticketFilter, setTicketFilter] = useState<AdminSupportTicketFilter>('waiting');
+  const [ticketSearch, setTicketSearch] = useState('');
+  const [ticketPage, setTicketPage] = useState(1);
 
   const activeTicketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -335,6 +337,20 @@ export function AdminSupportDashboard() {
   };
 
   const visibleTickets = filterAdminSupportTickets(pendingTickets, ticketFilter);
+  const filteredTickets = visibleTickets.filter((ticket) => {
+    if (!ticketSearch.trim()) return true;
+    const q = ticketSearch.trim().toLowerCase();
+    const name = (ticket.user?.displayName || 'Khách vãng lai').toLowerCase();
+    const email = (ticket.user?.email || '').toLowerCase();
+    const id = (ticket.id || '').toLowerCase();
+    const msg = (ticket.latestMessage || '').toLowerCase();
+    return name.includes(q) || email.includes(q) || id.includes(q) || msg.includes(q);
+  });
+
+  const TICKET_PAGE_SIZE = 5;
+  const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / TICKET_PAGE_SIZE));
+  const safeTicketPage = Math.min(Math.max(1, ticketPage), totalTicketPages);
+  const paginatedTickets = filteredTickets.slice((safeTicketPage - 1) * TICKET_PAGE_SIZE, safeTicketPage * TICKET_PAGE_SIZE);
 
   return (
     <div
@@ -369,6 +385,11 @@ export function AdminSupportDashboard() {
               <input
                 type="text"
                 placeholder="Tìm hội thoại…"
+                value={ticketSearch}
+                onChange={(e) => {
+                  setTicketSearch(e.target.value);
+                  setTicketPage(1);
+                }}
                 className="bg-transparent border-none outline-none text-xs w-full"
                 style={{
                   color: '#f3f0ea',
@@ -379,7 +400,10 @@ export function AdminSupportDashboard() {
             <div className="flex gap-1.5 mt-2.5">
               <button
                 type="button"
-                onClick={() => setTicketFilter('waiting')}
+                onClick={() => {
+                  setTicketFilter('waiting');
+                  setTicketPage(1);
+                }}
                 aria-pressed={ticketFilter === 'waiting'}
                 className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
@@ -392,7 +416,10 @@ export function AdminSupportDashboard() {
               </button>
               <button
                 type="button"
-                onClick={() => setTicketFilter('all')}
+                onClick={() => {
+                  setTicketFilter('all');
+                  setTicketPage(1);
+                }}
                 aria-pressed={ticketFilter === 'all'}
                 className="whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
                 style={{
@@ -406,8 +433,8 @@ export function AdminSupportDashboard() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 custom-scrollbar">
-            {visibleTickets.map((ticket) => {
+          <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1 custom-scrollbar">
+            {paginatedTickets.map((ticket) => {
               const isClaimed = ticket.claimedByOther;
               const isSelected = ticket.id === activeTicketId;
               const avatarLetter = (ticket.user?.displayName || 'K').charAt(0).toUpperCase();
@@ -482,12 +509,66 @@ export function AdminSupportDashboard() {
               );
             })}
 
-            {visibleTickets.length === 0 && (
+            {filteredTickets.length === 0 && (
               <div className="text-center mt-8 text-xs" style={{ color: '#57534b' }}>
-                {ticketFilter === 'waiting' ? 'Không có tin nhắn chờ' : 'Không có hội thoại'}
+                {ticketSearch.trim() ? 'Không tìm thấy hội thoại phù hợp' : ticketFilter === 'waiting' ? 'Không có tin nhắn chờ' : 'Không có hội thoại'}
               </div>
             )}
           </div>
+
+          {/* Pagination bar for support tickets */}
+          {filteredTickets.length > 0 && (
+            <div
+              className="p-3 flex-none flex items-center justify-between gap-2 text-xs"
+              style={{
+                borderTop: '1px solid rgba(255,255,255,.06)',
+                background: 'rgba(255,255,255,.015)',
+                color: '#8c8679',
+              }}
+            >
+              <span style={{ fontSize: '11px', fontWeight: 600 }}>
+                Trang {safeTicketPage}/{totalTicketPages} ({filteredTickets.length} hội thoại)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={safeTicketPage <= 1}
+                  onClick={() => setTicketPage((p) => Math.max(1, p - 1))}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    border: '1px solid rgba(255,255,255,.08)',
+                    background: 'rgba(255,255,255,.035)',
+                    color: safeTicketPage <= 1 ? '#57534b' : '#c5c0b6',
+                    cursor: safeTicketPage <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: safeTicketPage <= 1 ? 0.5 : 1,
+                  }}
+                >
+                  Trước
+                </button>
+                <button
+                  type="button"
+                  disabled={safeTicketPage >= totalTicketPages}
+                  onClick={() => setTicketPage((p) => Math.min(totalTicketPages, p + 1))}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    border: '1px solid rgba(255,255,255,.08)',
+                    background: 'rgba(255,255,255,.035)',
+                    color: safeTicketPage >= totalTicketPages ? '#57534b' : '#c5c0b6',
+                    cursor: safeTicketPage >= totalTicketPages ? 'not-allowed' : 'pointer',
+                    opacity: safeTicketPage >= totalTicketPages ? 0.5 : 1,
+                  }}
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Cột phải: Active Chat Thread */}
