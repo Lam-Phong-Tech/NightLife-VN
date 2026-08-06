@@ -24,6 +24,7 @@ import {
 } from '@/lib/media/image-upload-validation';
 import { deleteUploadedMedia } from '@/lib/api/media';
 import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
+import { AdminPagination, adminPageSize, clampAdminPage, paginateAdminItems } from '../components/AdminPagination';
 
 dayjs.extend(customParseFormat);
 dayjs.locale('vi');
@@ -330,6 +331,7 @@ export default function AdminContentPage() {
   const [campaignHomePosition, setCampaignHomePosition] = useState<number | ''>('');
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [campaignStatusFilter, setCampaignStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAUSED' | 'DRAFT'>('ALL');
+  const [campaignPage, setCampaignPage] = useState(1);
   const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
   const [isDeletingCampaign, setIsDeletingCampaign] = useState(false);
 
@@ -1783,83 +1785,103 @@ export default function AdminContentPage() {
 
 
       {/* CAMPAIGN CONTENT */}
-      {activeTab === 'campaign' && (
-        <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', overflowX: 'auto' }}>
-            {[
-              ['ALL', 'Tất cả'],
-              ['ACTIVE', 'Đang chạy'],
-              ['PAUSED', 'Tạm dừng'],
-              ['DRAFT', 'Bản nháp'],
-            ].map(([value, label]) => {
-              const isActive = campaignStatusFilter === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCampaignStatusFilter(value as typeof campaignStatusFilter)}
-                  style={{ flex: 'none', border: isActive ? '1px solid rgba(212,178,106,.6)' : '1px solid rgba(255,255,255,.1)', borderRadius: '9px', background: isActive ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: isActive ? '#f0dda8' : '#9b958a', padding: '7px 12px', fontSize: '12px', fontWeight: isActive ? 700 : 600, cursor: 'pointer' }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="max-md:hidden" style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-            <span style={{ textAlign: 'center' }}>STT</span><span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
-          </div>
-          
-          {campaigns.filter((camp) => campaignStatusFilter === 'ALL' || camp.status === campaignStatusFilter).length === 0 ? (
-            <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có campaign phù hợp.</div>
-          ) : (
-            campaigns.filter((camp) => campaignStatusFilter === 'ALL' || camp.status === campaignStatusFilter).map((camp, index) => {
-              const discountText = camp.discountType === 'PERCENT'
-                ? `−${camp.discountValue}%`
-                : `−${camp.discountValue.toLocaleString('vi-VN')}đ`;
-              const storeName = camp.targetStore?.name || 'Toàn hệ thống';
-              const timeText = camp.startsAt ? `${dayjs(camp.startsAt).format('DD/MM')} – ${camp.endsAt ? dayjs(camp.endsAt).format('DD/MM') : '...'}` : 'Luôn áp dụng';
-              
-              let statusColor = '#9ca3af';
-              let statusBorder = 'rgba(156,163,175,0.3)';
-              let statusText: string = camp.status;
-              if (camp.status === 'ACTIVE') { statusColor = '#4ade80'; statusBorder = 'rgba(74,222,128,0.3)'; statusText = 'Đang chạy'; }
-              if (camp.status === 'PAUSED') { statusColor = '#facc15'; statusBorder = 'rgba(250,204,21,0.3)'; statusText = 'Tạm dừng'; }
-              if (camp.status === 'DRAFT') { statusColor = '#818cf8'; statusBorder = 'rgba(129,140,248,0.3)'; statusText = 'Bản nháp'; }
-              if (camp.status === 'EXPIRED') { statusColor = '#9ca3af'; statusBorder = 'rgba(156,163,175,0.3)'; statusText = 'Đã kết thúc'; }
+      {activeTab === 'campaign' && (() => {
+        const filteredCampaigns = campaigns.filter((camp) => campaignStatusFilter === 'ALL' || camp.status === campaignStatusFilter);
+        const paginatedCampaigns = paginateAdminItems(filteredCampaigns, campaignPage, adminPageSize);
+        const currentSafePage = clampAdminPage(campaignPage, filteredCampaigns.length, adminPageSize);
 
-              return (
-                <div 
-                  key={camp.id} 
-                  onClick={() => handleEditCampaign(camp)} 
-                  className="p-3.5 border-b border-white/[0.04] text-xs md:text-sm cursor-pointer max-md:flex max-md:flex-col max-md:gap-2 md:grid md:grid-cols-[48px_1.6fr_1.4fr_1.2fr_130px] md:gap-3 md:items-center md:px-4.5"
-                >
-                  <span className="max-md:hidden" style={{ color: '#8c8679', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>{index + 1}</span>
+        return (
+          <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.06)', overflowX: 'auto' }}>
+              {[
+                ['ALL', 'Tất cả'],
+                ['ACTIVE', 'Đang chạy'],
+                ['PAUSED', 'Tạm dừng'],
+                ['DRAFT', 'Bản nháp'],
+              ].map(([value, label]) => {
+                const isActive = campaignStatusFilter === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setCampaignStatusFilter(value as typeof campaignStatusFilter);
+                      setCampaignPage(1);
+                    }}
+                    style={{ flex: 'none', border: isActive ? '1px solid rgba(212,178,106,.6)' : '1px solid rgba(255,255,255,.1)', borderRadius: '9px', background: isActive ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: isActive ? '#f0dda8' : '#9b958a', padding: '7px 12px', fontSize: '12px', fontWeight: isActive ? 700 : 600, cursor: 'pointer' }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="max-md:hidden" style={{ display: 'grid', gridTemplateColumns: '48px 1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+              <span style={{ textAlign: 'center' }}>STT</span><span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+            </div>
+            
+            {filteredCampaigns.length === 0 ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có campaign phù hợp.</div>
+            ) : (
+              <>
+                {paginatedCampaigns.map((camp, index) => {
+                  const discountText = camp.discountType === 'PERCENT'
+                    ? `−${camp.discountValue}%`
+                    : `−${camp.discountValue.toLocaleString('vi-VN')}đ`;
+                  const storeName = camp.targetStore?.name || 'Toàn hệ thống';
+                  const timeText = camp.startsAt ? `${dayjs(camp.startsAt).format('DD/MM')} – ${camp.endsAt ? dayjs(camp.endsAt).format('DD/MM') : '...'}` : 'Luôn áp dụng';
+                  const sttNumber = (currentSafePage - 1) * adminPageSize + index + 1;
                   
-                  {/* Mobile Row 1 / Desktop Col 2 */}
-                  <div className="flex items-center justify-between w-full md:w-auto gap-2">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
-                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '48px', flex: 'none' }}>{discountText}</span>
-                      <span className="truncate" style={{ color: '#f3f0ea', fontWeight: 600 }}>{camp.name}</span>
-                    </div>
-                    <div className="md:hidden">
-                      <span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 8px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 600 }}>{statusText}</span>
-                    </div>
-                  </div>
+                  let statusColor = '#9ca3af';
+                  let statusBorder = 'rgba(156,163,175,0.3)';
+                  let statusText: string = camp.status;
+                  if (camp.status === 'ACTIVE') { statusColor = '#4ade80'; statusBorder = 'rgba(74,222,128,0.3)'; statusText = 'Đang chạy'; }
+                  if (camp.status === 'PAUSED') { statusColor = '#facc15'; statusBorder = 'rgba(250,204,21,0.3)'; statusText = 'Tạm dừng'; }
+                  if (camp.status === 'DRAFT') { statusColor = '#818cf8'; statusBorder = 'rgba(129,140,248,0.3)'; statusText = 'Bản nháp'; }
+                  if (camp.status === 'EXPIRED') { statusColor = '#9ca3af'; statusBorder = 'rgba(156,163,175,0.3)'; statusText = 'Đã kết thúc'; }
 
-                  {/* Mobile Row 2 / Desktop Col 3 & 4 */}
-                  <div className="flex items-center justify-between w-full md:contents text-xs text-[#c5c0b6] pt-0.5 md:pt-0">
-                    <span style={{ color: '#c5c0b6' }}>{storeName}</span>
-                    <span style={{ color: '#8c8679', fontSize: '11.5px' }}>{timeText}</span>
-                  </div>
+                  return (
+                    <div 
+                      key={camp.id} 
+                      onClick={() => handleEditCampaign(camp)} 
+                      className="p-3.5 border-b border-white/[0.04] text-xs md:text-sm cursor-pointer max-md:flex max-md:flex-col max-md:gap-2 md:grid md:grid-cols-[48px_1.6fr_1.4fr_1.2fr_130px] md:gap-3 md:items-center md:px-4.5"
+                    >
+                      <span className="max-md:hidden" style={{ color: '#8c8679', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>{sttNumber}</span>
+                      
+                      {/* Mobile Row 1 / Desktop Col 2 */}
+                      <div className="flex items-center justify-between w-full md:w-auto gap-2">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+                          <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '48px', flex: 'none' }}>{discountText}</span>
+                          <span className="truncate" style={{ color: '#f3f0ea', fontWeight: 600 }}>{camp.name}</span>
+                        </div>
+                        <div className="md:hidden">
+                          <span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 8px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 600 }}>{statusText}</span>
+                        </div>
+                      </div>
 
-                  {/* Desktop Col 5 */}
-                  <span className="max-md:hidden" style={{ textAlign: 'right' }}><span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>{statusText}</span></span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
+                      {/* Mobile Row 2 / Desktop Col 3 & 4 */}
+                      <div className="flex items-center justify-between w-full md:contents text-xs text-[#c5c0b6] pt-0.5 md:pt-0">
+                        <span style={{ color: '#c5c0b6' }}>{storeName}</span>
+                        <span style={{ color: '#8c8679', fontSize: '11.5px' }}>{timeText}</span>
+                      </div>
+
+                      {/* Desktop Col 5 */}
+                      <span className="max-md:hidden" style={{ textAlign: 'right' }}><span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>{statusText}</span></span>
+                    </div>
+                  );
+                })}
+
+                <AdminPagination
+                  page={campaignPage}
+                  totalItems={filteredCampaigns.length}
+                  pageSize={adminPageSize}
+                  itemLabel="chương trình"
+                  onPageChange={setCampaignPage}
+                />
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* BANNER CONTENT */}
       {activeTab === 'banner' && (
