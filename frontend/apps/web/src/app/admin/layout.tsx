@@ -753,7 +753,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="nl-admin-nav-group-title" style={{ fontSize: '9.5px', fontWeight: 650, letterSpacing: '1.6px', color: '#c5c0b6', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
                   {group.title}
                 </div>
-                {group.items.map(item => {
+                {group.items.filter(item => {
+                  // Ẩn "Ma trận quyền" với Operator
+                  if (item.href === '/admin/permissions' && currentUser?.role === 'OPERATOR') return false;
+                  return true;
+                }).map(item => {
                   const isActive = pathname === item.href;
                   const isHovered = hoveredLink === item.href;
                   let overrideCount = item.count;
