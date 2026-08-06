@@ -15,6 +15,8 @@ import { CampaignsService } from './campaigns.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { ActionPolicy } from '../access/action-policy.decorator';
+import { ActionPolicyGuard } from '../access/action-policy.guard';
 import { AuthenticatedUser } from '../access/access.service';
 import { Prisma, CampaignStatus, DiscountType, UserRole } from '@prisma/client';
 import {
@@ -98,6 +100,8 @@ export class CampaignsController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
+  @ActionPolicy('canViewAdminContent')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -115,6 +119,8 @@ export class CampaignsController {
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR)
+  @ActionPolicy('canViewAdminContent')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   findOne(@Param('id') id: string) {
     return this.campaignsService.findOne(id);
   }
