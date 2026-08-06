@@ -3,9 +3,10 @@ import { TourController } from './tour.controller';
 import { PublicTourController } from './public-tour.controller';
 import { TourService } from './tour.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AccessModule } from '../access/access.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AccessModule],
   controllers: [TourController, PublicTourController],
   providers: [TourService],
   exports: [TourService],
