@@ -460,6 +460,15 @@ export class StorageService implements OnModuleInit {
       }
     }
 
+    // Allow a member (USER) to view protected evidence of their own bill,
+    // even if the file was uploaded by a partner or operator.
+    if (user.role === 'USER' && mediaFile.bill) {
+      const bill = mediaFile.bill as { storeId: string; userId: string | null; submittedByUserId: string | null };
+      if (bill.userId === user.id || bill.submittedByUserId === user.id) {
+        return resolvedFile;
+      }
+    }
+
     if (mediaFile.ownerId !== user.id) {
       throw new ForbiddenException('You cannot access this media file');
     }
@@ -472,7 +481,7 @@ export class StorageService implements OnModuleInit {
       where: { storageKey },
       include: {
         booking: { select: { storeId: true } },
-        bill: { select: { storeId: true } },
+        bill: { select: { storeId: true, userId: true, submittedByUserId: true } },
         cast: { select: { storeId: true } },
         content: { select: { storeId: true } },
       },
