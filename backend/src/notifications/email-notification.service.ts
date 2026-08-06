@@ -512,7 +512,6 @@ export class EmailNotificationService {
         : []),
       [template.labels.paymentMethod, template.defaults.paymentMethod],
       [template.labels.deliveryInfo, template.defaults.deliveryInfo],
-      [template.labels.status, this.statusLabel(input.status, template)],
       ...(input.note
         ? ([[template.labels.note, input.note]] as Array<[string, string]>)
         : []),
