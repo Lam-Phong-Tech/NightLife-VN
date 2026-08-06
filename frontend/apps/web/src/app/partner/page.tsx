@@ -9176,7 +9176,7 @@ export default function PartnerPage() {
                   ) : paginatedScopedBillRows.length ? (
                     paginatedScopedBillRows.map((bill, index) => {
                       const active = selectedBillId === bill.id;
-                      const billCode = bill.billNumber ?? bill.id.slice(0, 8);
+                      const billCode = partnerBookingCodeDisplay(bill.booking) || '—';
                       const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
                       return (
@@ -9291,7 +9291,7 @@ export default function PartnerPage() {
               ) : paginatedScopedBillRows.length ? (
                 paginatedScopedBillRows.map((bill, index) => {
                   const active = selectedBillId === bill.id;
-                  const billCode = bill.billNumber ?? bill.id.slice(0, 8);
+                  const billCode = partnerBookingCodeDisplay(bill.booking) || '—';
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
                   const statusTone = billStatusTone(bill.status);
                   const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
@@ -9330,10 +9330,10 @@ export default function PartnerPage() {
                         </div>
                         <div>
                           <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>
-                            {dateStr ? 'Ngày tạo' : 'Mã hóa đơn'}
+                            {dateStr ? 'Ngày tạo' : 'Mã đặt bàn'}
                           </small>
                           <b style={{ fontSize: '12px', color: colors.text2 }}>
-                            {dateStr || `#${billCode}`}
+                            {dateStr || billCode}
                           </b>
                         </div>
                         <ChevronRight size={18} style={{ color: colors.gold, flexShrink: 0 }} />
