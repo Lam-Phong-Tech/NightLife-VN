@@ -9530,6 +9530,15 @@ export default function PartnerPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px', width: '100%', boxSizing: 'border-box' }}>
+                  {selectedBill && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <span style={{ color: colors.text2, flexShrink: 0 }}>Mã hóa đơn</span>
+                      <span style={{ fontWeight: 900, color: colors.goldBright, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedBill.billNumber ?? selectedBill.id.slice(0, 8)}
+                      </span>
+                    </div>
+                  )}
+
                   {(selectedBillBooking || selectedBill?.booking) && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
                       <span style={{ color: colors.text2, flexShrink: 0 }}>Mã đặt chỗ</span>
