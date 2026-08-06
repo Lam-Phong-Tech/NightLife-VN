@@ -3400,7 +3400,14 @@ html.vy-light .cast-sheet-actions {
     border-radius: 0;
     box-shadow: none;
     padding: 0 16px 8px;
-    background: var(--vy-bg);
+    background: transparent !important;
+  }
+
+  html.vy-light .cast-hero {
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .cast-hero-copy {
@@ -3423,14 +3430,26 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-input-filter {
-    display: inline-flex;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
     border: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--vy-muted);
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--vy-gold);
+    flex: none;
+  }
+
+  html.vy-light .cast-input-filter,
+  html.vy-light .cast-input-filter:hover,
+  html.vy-light .cast-input-filter:focus-visible,
+  html.vy-light .cast-input-filter.is-active {
+    border: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #a1782d;
   }
 
   .cast-input-filter b {
@@ -3462,16 +3481,36 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-sort-select {
-    font-size: 12px;
+    min-height: 22px;
+    font-size: 11px;
+    min-width: 118px;
   }
 
   .cast-sort-select .cast-dropdown-trigger {
-    min-height: auto;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    gap: 5px;
+    min-height: 24px;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 12px;
+    background: var(--vy-surface-2);
+    padding: 0 10px;
+    font-size: 11px;
     box-shadow: none;
+  }
+
+  html.vy-light .cast-sort-select .cast-dropdown-trigger {
+    border: 1px solid rgba(150, 116, 52, 0.2);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #6f6658;
+    box-shadow: 0 18px 42px -32px rgba(68, 48, 18, 0.42);
+  }
+
+  html.vy-light .cast-sort-select .cast-dropdown-trigger:hover,
+  html.vy-light .cast-sort-select .cast-dropdown-trigger:focus-visible,
+  html.vy-light .cast-sort-select.is-open .cast-dropdown-trigger {
+    border-color: rgba(150, 116, 52, 0.34);
+    background: rgba(255, 255, 255, 0.9);
   }
 
   .cast-sort-select.is-open .cast-dropdown-trigger {
@@ -3480,7 +3519,7 @@ html.vy-light .cast-sheet-actions {
 
   .cast-sort-select .cast-dropdown-label {
     display: inline;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .cast-sort-select .cast-dropdown-trigger b {
