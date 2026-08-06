@@ -607,6 +607,7 @@ function AdminStoresContent() {
   const [partnerLinkEditing, setPartnerLinkEditing] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showDeletedStores, setShowDeletedStores] = useState(false);
   const searchParams = useSearchParams();
@@ -680,11 +681,19 @@ function AdminStoresContent() {
   const fetchStores = async () => {
     try {
       const res = await apiClient<any>('/admin/stores', { params: { limit: 1000, includeDeleted: 'true' } });
+      setFetchError(null);
       if (res && res.data) {
         setStores(res.data);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const status = e?.status ?? e?.statusCode;
+      if (status === 403 || /quyền|forbidden/i.test(e?.message ?? '')) {
+        setFetchError('Bạn không có quyền xem danh sách Quán. Vui lòng liên hệ Admin để được cấp quyền.');
+      } else {
+        setFetchError(e?.message || 'Lỗi khi tải danh sách Quán. Vui lòng thử lại.');
+      }
+      setStores([]);
     }
   };
 
@@ -1479,7 +1488,14 @@ function AdminStoresContent() {
 
   return (
     <div className="nl-admin-page" data-screen-label="Admin · Venues" style={{ padding: '22px 26px 44px', minHeight: '100vh', background: '#0c0c0f' }}>
-      
+
+      {fetchError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', color: '#f87171' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{fetchError}</span>
+        </div>
+      )}
+
       {/* Top filters */}
       <div className="nl-admin-list-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '16px' }}>
         <div className="nl-admin-inline-search max-md:w-full" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '250px' }}>
