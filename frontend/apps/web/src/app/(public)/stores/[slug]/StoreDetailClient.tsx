@@ -1793,8 +1793,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const displayName = readableName(store.name);
   const rawGallery = store.gallery?.filter((item) => item.url) ?? [];
-  const photoGallery = rawGallery.filter((item) => item.type === "IMAGE");
-  const videoGallery = rawGallery.filter((item) => item.type === "VIDEO");
+  const isMediaItemVideo = (item: StoreGalleryItem) => {
+    if (item.type === "VIDEO") return true;
+    if (item.purpose === "PARTNER_STORE_VIDEO" || item.purpose === "STORE_VIDEO") return true;
+    if (item.mimeType?.startsWith("video/")) return true;
+    const url = (item.url || "").toLowerCase();
+    if (/\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(url)) return true;
+    if (url.includes("youtube.com") || url.includes("youtu.be") || url.includes("vimeo.com")) return true;
+    return false;
+  };
+
+  const videoGallery = rawGallery.filter(isMediaItemVideo);
+  const photoGallery = rawGallery.filter((item) => !isMediaItemVideo(item));
   const gallery = photoGallery;
   const lightboxGallery = lightboxMode === "video" ? videoGallery : gallery;
   const lightboxIndex = lightboxMode === "video" ? selectedVideoIndex : selectedPhotoIndex;
@@ -2072,7 +2082,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const lightboxMediaUrl = lightboxMedia
     ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url)
     : "";
-  const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMediaUrl) : "";
+  const isLightboxVideo = lightboxMedia ? isMediaItemVideo(lightboxMedia) : false;
+  const lightboxVideoUrl = isLightboxVideo ? videoEmbedUrl(lightboxMediaUrl) : "";
 
   useEffect(() => {
     let ignore = false;
@@ -2858,7 +2869,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </button>
               ) : null}
               <div className="lightbox-media">
-                {lightboxMedia.type === "VIDEO" ? (
+                {isLightboxVideo ? (
                   lightboxVideoUrl.includes("youtube.com/embed") ||
                   lightboxVideoUrl.includes("player.vimeo.com") ? (
                     <iframe
@@ -2868,7 +2879,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       allowFullScreen
                     />
                   ) : (
-                    <video src={lightboxVideoUrl || lightboxMediaUrl} controls autoPlay />
+                    <video src={lightboxVideoUrl || lightboxMediaUrl} controls autoPlay playsInline />
                   )
                 ) : (
                   <img src={lightboxMediaUrl} alt={lightboxMedia.alt || displayName} />
@@ -4943,21 +4954,44 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .lightbox-media {
-          width: min(100%, 980px);
-          aspect-ratio: 16 / 9;
-          display: grid;
-          place-items: center;
+          width: 100%;
+          max-width: min(92vw, 1080px);
+          max-height: min(82vh, 860px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
         }
 
-        .lightbox-media img,
-        .lightbox-media video,
-        .lightbox-media iframe {
-          width: 100%;
-          height: 100%;
+        .lightbox-media img {
+          max-width: min(92vw, 1080px);
+          max-height: min(82vh, 860px);
+          width: auto;
+          height: auto;
           border: 0;
           object-fit: contain;
           border-radius: 8px;
           background: #050608;
+        }
+
+        .lightbox-media video {
+          max-width: min(92vw, 1080px);
+          max-height: min(82vh, 860px);
+          width: auto;
+          height: auto;
+          border: 0;
+          object-fit: contain;
+          border-radius: 8px;
+          background: #000000;
+        }
+
+        .lightbox-media iframe {
+          width: min(92vw, 960px);
+          aspect-ratio: 16 / 9;
+          max-height: min(82vh, 860px);
+          border: 0;
+          border-radius: 8px;
+          background: #000000;
         }
 
         .lightbox-close,

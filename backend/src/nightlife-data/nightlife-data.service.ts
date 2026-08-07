@@ -2554,9 +2554,17 @@ export class NightlifeDataService {
             )
             .map((value) => value.trim())[0] ?? null;
 
+        const isVideo =
+          media.type === 'VIDEO' ||
+          ['PARTNER_STORE_VIDEO', 'STORE_VIDEO'].includes(media.purpose ?? '') ||
+          Boolean(media.mimeType?.startsWith('video/')) ||
+          /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(media.url || '') ||
+          (media.url || '').includes('youtube.com') ||
+          (media.url || '').includes('youtu.be');
+
         return {
           id: media.id,
-          type: media.type,
+          type: isVideo ? 'VIDEO' : media.type,
           url: media.url,
           thumbnailUrl,
           purpose: media.purpose,
