@@ -149,7 +149,13 @@ describe('NightlifeDataService', () => {
     bookingQr: {
       count: jest.fn(),
     },
+    tour: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+    },
     tourBooking: {
+      create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
@@ -157,9 +163,13 @@ describe('NightlifeDataService', () => {
       updateMany: jest.fn(),
     },
     tourBookingQr: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
     },
     tourBookingCheckIn: {
       create: jest.fn(),
@@ -3998,6 +4008,237 @@ describe('NightlifeDataService', () => {
         },
       }),
     });
+  });
+
+  it('sends QR email when creating guest tour booking', async () => {
+    const tourStop = {
+      id: 'stop-1',
+      order: 1,
+      storeId: 'store-1',
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'BAR',
+        openingHours: null,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    };
+    const tour = {
+      id: 'tour-1',
+      title: 'Hanoi Night Crawl',
+      status: 'ACTIVE',
+      deletedAt: null,
+      durationHours: 4,
+      departureSchedule: null,
+      departureTimes: [],
+      stops: [tourStop],
+    };
+
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
+    prisma.tour.findFirst.mockResolvedValue(tour as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-tour-1' } as never);
+    prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.couponIssue.findFirst.mockResolvedValue(null);
+    prisma.tourBooking.create.mockResolvedValue({
+      id: 'tb-1',
+      bookingCode: 'TB-123456',
+    } as never);
+    prisma.booking.create.mockResolvedValue({ id: 'child-1' } as never);
+    prisma.tourBookingQr.create.mockResolvedValue({ id: 'qr-1' } as never);
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' } as never);
+
+    const createdTourBooking = {
+      id: 'tb-1',
+      bookingCode: 'TB-123456',
+      tourId: 'tour-1',
+      status: 'REQUESTED',
+      locale: 'vi',
+      scheduledAt: new Date('2026-08-10T14:00:00.000Z'),
+      partySize: 2,
+      durationHoursSnapshot: 4,
+      titleSnapshot: 'Hanoi Night Crawl',
+      itinerarySnapshot: [],
+      note: 'Guest tour note',
+      tour: { id: 'tour-1', title: 'Hanoi Night Crawl' },
+      user: null,
+      guest: {
+        id: 'guest-tour-1',
+        displayName: 'Guest Tour User',
+        phone: '0901234567',
+        email: 'guesttour@example.com',
+      },
+      qr: { id: 'qr-1', code: 'TQR-123456', status: 'ACTIVE', expiresAt: new Date(), completedAt: null },
+      bookings: [
+        {
+          id: 'child-1',
+          storeId: 'store-1',
+          tourStopOrder: 1,
+          status: 'REQUESTED',
+          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+          cast: null,
+        },
+      ],
+      checkIns: [],
+    };
+    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(createdTourBooking as never);
+    prisma.notificationLog.create.mockResolvedValue({ id: 'log-tour-email-1' } as never);
+    prisma.notificationLog.update.mockResolvedValue({ id: 'log-tour-email-1' } as never);
+    emailNotificationService.sendBookingQrEmail.mockResolvedValue({ messageId: 'msg-tour-1' });
+
+    await service.createGuestTourBooking('tour-1', {
+      displayName: 'Guest Tour User',
+      email: 'guesttour@example.com',
+      phone: '0901234567',
+      scheduledAt: '2026-08-10T14:00:00.000Z',
+      partySize: 2,
+      note: 'Guest tour note',
+    });
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        guestId: 'guest-tour-1',
+        bookingId: 'child-1',
+        channel: 'EMAIL',
+        status: 'QUEUED',
+        recipient: 'guesttour@example.com',
+        templateKey: 'customer.booking.qr_email.v1',
+        payload: expect.objectContaining({
+          bookingId: 'tb-1',
+          bookingCode: 'TB-123456',
+          storeName: 'Tour: Hanoi Night Crawl',
+          isTourBooking: true,
+        }),
+      }),
+    });
+    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'guesttour@example.com',
+        bookingId: 'tb-1',
+        bookingCode: 'TB-123456',
+        storeName: 'Tour: Hanoi Night Crawl',
+      }),
+    );
+  });
+
+  it('sends QR email when creating member tour booking', async () => {
+    const tourStop = {
+      id: 'stop-1',
+      order: 1,
+      storeId: 'store-1',
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'BAR',
+        openingHours: null,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    };
+    const tour = {
+      id: 'tour-1',
+      title: 'Hanoi Night Crawl',
+      status: 'ACTIVE',
+      deletedAt: null,
+      durationHours: 4,
+      departureSchedule: null,
+      departureTimes: [],
+      stops: [tourStop],
+    };
+
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
+    prisma.tour.findFirst.mockResolvedValue(tour as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-tour-2' } as never);
+    prisma.booking.findFirst.mockResolvedValue(null);
+    prisma.couponIssue.findFirst.mockResolvedValue(null);
+    prisma.tourBooking.create.mockResolvedValue({
+      id: 'tb-2',
+      bookingCode: 'TB-654321',
+    } as never);
+    prisma.booking.create.mockResolvedValue({ id: 'child-2' } as never);
+    prisma.tourBookingQr.create.mockResolvedValue({ id: 'qr-2' } as never);
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-2' } as never);
+
+    const createdTourBooking = {
+      id: 'tb-2',
+      bookingCode: 'TB-654321',
+      tourId: 'tour-1',
+      status: 'REQUESTED',
+      locale: 'vi',
+      scheduledAt: new Date('2026-08-10T14:00:00.000Z'),
+      partySize: 3,
+      durationHoursSnapshot: 4,
+      titleSnapshot: 'Hanoi Night Crawl',
+      itinerarySnapshot: [],
+      note: 'Member tour note',
+      tour: { id: 'tour-1', title: 'Hanoi Night Crawl' },
+      user: { id: 'user-mem-1', email: 'member@example.com', displayName: 'Member User' },
+      guest: {
+        id: 'guest-tour-2',
+        displayName: 'Member User',
+        phone: '0987654321',
+        email: 'member@example.com',
+      },
+      qr: { id: 'qr-2', code: 'TQR-654321', status: 'ACTIVE', expiresAt: new Date(), completedAt: null },
+      bookings: [
+        {
+          id: 'child-2',
+          storeId: 'store-1',
+          tourStopOrder: 1,
+          status: 'REQUESTED',
+          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+          cast: null,
+        },
+      ],
+      checkIns: [],
+    };
+    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(createdTourBooking as never);
+    prisma.notificationLog.create.mockResolvedValue({ id: 'log-tour-email-2' } as never);
+    prisma.notificationLog.update.mockResolvedValue({ id: 'log-tour-email-2' } as never);
+    emailNotificationService.sendBookingQrEmail.mockResolvedValue({ messageId: 'msg-tour-2' });
+
+    const memberUser = {
+      id: 'user-mem-1',
+      email: 'member@example.com',
+      displayName: 'Member User',
+      role: 'USER',
+    } as any;
+
+    await service.createMemberTourBooking(memberUser, 'tour-1', {
+      displayName: 'Member User',
+      email: 'member@example.com',
+      phone: '0987654321',
+      scheduledAt: '2026-08-10T14:00:00.000Z',
+      partySize: 3,
+      note: 'Member tour note',
+    });
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        guestId: 'guest-tour-2',
+        bookingId: 'child-2',
+        channel: 'EMAIL',
+        status: 'QUEUED',
+        recipient: 'member@example.com',
+        templateKey: 'customer.booking.qr_email.v1',
+        payload: expect.objectContaining({
+          bookingId: 'tb-2',
+          bookingCode: 'TB-654321',
+          storeName: 'Tour: Hanoi Night Crawl',
+          isTourBooking: true,
+        }),
+      }),
+    });
+    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'member@example.com',
+        bookingId: 'tb-2',
+        bookingCode: 'TB-654321',
+        storeName: 'Tour: Hanoi Night Crawl',
+      }),
+    );
   });
 
   it('looks up a guest tour booking by its master booking code', async () => {
