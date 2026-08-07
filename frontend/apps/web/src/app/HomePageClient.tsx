@@ -1318,6 +1318,8 @@ function HeaderBar({ desktop = false }: { desktop?: boolean }) {
 }
 
 function SearchPanel() {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <Link
       href="/stores"
@@ -1336,7 +1338,9 @@ function SearchPanel() {
       }}
     >
       <Search size={18} color={colors.gold} />
-      <span style={{ flex: 1, fontSize: "14px" }}>Tìm quán gần bạn...</span>
+      <span style={{ flex: 1, fontSize: "14px" }}>
+        {translateText("Tìm quán gần bạn...", activeLanguage)}
+      </span>
       <SlidersHorizontal size={17} color={colors.dim} />
     </Link>
   );

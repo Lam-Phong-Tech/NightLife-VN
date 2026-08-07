@@ -1795,6 +1795,20 @@ const entries: TranslationEntry[] = [
     zh: "搜索附近店铺或 陪伴人员...",
   },
   {
+    vi: "Tìm quán gần bạn...",
+    en: "Find venues near you...",
+    ja: "お近くの店舗を探す...",
+    ko: "내 주변 매장 찾기...",
+    zh: "查找附近的店铺...",
+  },
+  {
+    vi: "Tìm quán gần bạn",
+    en: "Find venues near you",
+    ja: "お近くの店舗を探す",
+    ko: "내 주변 매장 tìm",
+    zh: "查找附近的店铺",
+  },
+  {
     vi: "Vui lòng nhập ghi chú nếu có",
     en: "Please enter notes if any",
     ja: "必要に応じてメモを入力してください",
