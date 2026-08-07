@@ -493,6 +493,7 @@ jobs:
             echo "backend_booking_validation=400 http://127.0.0.1:$BACKEND_PORT/bookings" | tee -a "$SMOKE_RESULTS"
 
             if [ -d "$FRONTEND_DIR" ]; then
+              PORT="$FRONTEND_PORT" pm2 restart app-demonightlight.test9.io.vn --update-env 2>/dev/null || (cd "$FRONTEND_DIR" && PORT="$FRONTEND_PORT" pm2 start pnpm --name app-demonightlight.test9.io.vn --update-env -- --dir apps/web run start) 2>/dev/null || true
               check_url frontend_home_local "http://127.0.0.1:$FRONTEND_PORT/"
               check_url frontend_admin_local "http://127.0.0.1:$FRONTEND_PORT/admin"
               check_url frontend_partner_local "http://127.0.0.1:$FRONTEND_PORT/partner"
