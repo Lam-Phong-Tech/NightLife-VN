@@ -12,6 +12,12 @@ type PlaceholderMediaProps = {
   style?: CSSProperties;
   imageStyle?: CSSProperties;
   children?: React.ReactNode;
+  /**
+   * true → loading="eager" + fetchPriority="high"
+   * Dùng cho ảnh đầu tiên visible trong viewport khi trang load lần đầu.
+   * Mặc định false → loading="lazy" (tiết kiệm bandwidth cho ảnh ngoài viewport).
+   */
+  priority?: boolean;
 };
 
 export function getImageUrlFromCss(value?: string | null) {
@@ -21,7 +27,7 @@ export function getImageUrlFromCss(value?: string | null) {
   const match = input.match(/url\((['"]?)(.*?)\1\)/i);
   if (match?.[2]) return match[2].trim();
 
-  if (/^(https?:\/\/|\/|data:image\/)/i.test(input)) return input;
+  if (/^(https?:\/\/|\\/|data:image\/)/i.test(input)) return input;
 
   return "";
 }
@@ -35,6 +41,7 @@ export function PlaceholderMedia({
   style,
   imageStyle,
   children,
+  priority = false,
 }: PlaceholderMediaProps) {
   const imageSrc = useMemo(() => getImageUrlFromCss(src), [src]);
   const [prevImageSrc, setPrevImageSrc] = useState(imageSrc);
@@ -107,7 +114,15 @@ export function PlaceholderMedia({
           src={imageSrc}
           alt={alt}
           onError={() => setFailed(true)}
-          loading="lazy"
+          // priority=true → eager + high-priority fetch hint cho ảnh đầu tiên visible
+          // priority=false → lazy cho ảnh ngoài/dưới viewport (tiết kiệm bandwidth)
+          loading={priority ? "eager" : "lazy"}
+          // @ts-expect-error: fetchpriority là attribute HTML hợp lệ, TS chưa có type đầy đủ
+          fetchpriority={priority ? "high" : "auto"}
+          // width+height giúp browser biết aspect ratio trước khi ảnh load
+          // → tránh layout shift (CLS), không cần giá trị pixel chính xác vì CSS override
+          width="100%"
+          height="100%"
           style={{
             position: "absolute",
             inset: 0,

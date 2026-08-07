@@ -1154,7 +1154,9 @@ function isHomeHotVideosEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS !== "false";
 }
 
-const homeSecondaryLoadDelayMs = process.env.NODE_ENV === "test" ? 0 : 800;
+// Giảm từ 800ms xuống 200ms — các section rankings/coupons/services load sớm hơn ~600ms
+// requestIdleCallback (bên dưới) sẽ chạy người khóa CPU xong, tối đa chờ 200ms
+const homeSecondaryLoadDelayMs = process.env.NODE_ENV === "test" ? 0 : 200;
 
 function useHomeSecondaryLoadReady() {
   const [ready, setReady] = useState(() => process.env.NODE_ENV === "test");
@@ -1994,7 +1996,8 @@ function HomeCardCarousel<T>({
   items: T[];
   itemsPerSlide: number;
   layoutDirection?: "row" | "column";
-  renderItem: (item: T) => React.ReactNode;
+  // index = vị trí toàn cục của item trong mảng gốc, dùng để quyết định priority load ảnh
+  renderItem: (item: T, index: number) => React.ReactNode;
 }) {
   const slides = useMemo(
     () => chunkHomeCarouselItems(items, itemsPerSlide),
@@ -2055,9 +2058,13 @@ function HomeCardCarousel<T>({
               transition: "opacity 960ms ease",
             }}
           >
-            {slide.map((item) => (
-              <React.Fragment key={getKey(item)}>{renderItem(item)}</React.Fragment>
-            ))}
+            {slide.map((item, itemIndexInSlide) => {
+              // tính index toàn cục để card đầu tiên trong slide 0 biết mình ưu tiên
+              const globalIndex = slideIndex * itemsPerSlide + itemIndexInSlide;
+              return (
+                <React.Fragment key={getKey(item)}>{renderItem(item, globalIndex)}</React.Fragment>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -2081,11 +2088,13 @@ function VenueMiniCard({
   item,
   compact = false,
   isFavorite = false,
+  priority = false,
   onToggleFavorite,
 }: {
   item: HomeStoreCard;
   compact?: boolean;
   isFavorite?: boolean;
+  priority?: boolean;
   onToggleFavorite?: (item: HomeStoreCard) => void;
 }) {
   return (
@@ -2114,6 +2123,7 @@ function VenueMiniCard({
         src={item.img}
         alt={item.name ?? "Địa điểm"}
         label="Ảnh quán"
+        priority={priority}
         style={{ height: compact ? "112px" : "156px", position: "relative" }}
       >
         <FavoriteButton
@@ -2188,7 +2198,7 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
   );
 }
 
-function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
+function CouponCard({ item, compact = false, priority = false }: { item: HomeCouponItem; compact?: boolean; priority?: boolean }) {
   const imageSize = compact ? 78 : 92;
 
   return (
@@ -2230,6 +2240,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
         src={item.img}
         alt={item.title ?? "Coupon"}
         label="Ảnh ưu đãi"
+        priority={priority}
         style={{
           width: imageSize,
           height: imageSize,
@@ -2310,7 +2321,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
   );
 }
 
-function RankingRow({ item }: { item: RankedItem }) {
+function RankingRow({ item, priority = false }: { item: RankedItem; priority?: boolean }) {
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
@@ -2361,6 +2372,7 @@ function RankingRow({ item }: { item: RankedItem }) {
         src={item.img}
         alt={item.name ?? "Xếp hạng"}
         label=""
+        priority={priority}
         style={{
           width: 64,
           height: 64,
@@ -3009,8 +3021,12 @@ function RankingListColumn({
 
       {list.length ? (
         <div style={{ display: "grid", alignSelf: "start", gap: "12px", minWidth: 0 }}>
-          {list.map((item) => (
-            <RankingRow key={`${title}-${item.rank}-${item.href ?? item.name}`} item={item} />
+          {list.map((item, rowIndex) => (
+            <RankingRow
+              key={`${title}-${item.rank}-${item.href ?? item.name}`}
+              item={item}
+              priority={rowIndex === 0}
+            />
           ))}
         </div>
       ) : (
@@ -3616,10 +3632,11 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={2}
-                    renderItem={(item) => (
+                    renderItem={(item, index) => (
                       <VenueMiniCard
                         item={item}
                         compact
+                        priority={index < 2}
                         isFavorite={favoriteStoreSlugs.includes(item.slug)}
                         onToggleFavorite={toggleHomeStoreFavorite}
                       />
@@ -3644,7 +3661,7 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     items={homeCoupons.slice(0, 6)}
                     itemsPerSlide={2}
                     layoutDirection="column"
-                    renderItem={(item) => <CouponCard item={item} compact />}
+                    renderItem={(item, index) => <CouponCard item={item} compact priority={index < 2} />}
                   />
                 ) : (
                   <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} compact />
@@ -3785,9 +3802,10 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={4}
-                    renderItem={(item) => (
+                    renderItem={(item, index) => (
                       <VenueMiniCard
                         item={item}
+                        priority={index < 4}
                         isFavorite={favoriteStoreSlugs.includes(item.slug)}
                         onToggleFavorite={toggleHomeStoreFavorite}
                       />
