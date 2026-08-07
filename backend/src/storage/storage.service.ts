@@ -260,7 +260,7 @@ export class StorageService implements OnModuleInit {
             variants: processed.variants,
             originalWidth: processed.originalWidth,
             originalHeight: processed.originalHeight,
-          };
+          } as Prisma.InputJsonObject;
 
           // Delete the raw original upload — no longer needed
           await unlink(file.path).catch((err: NodeJS.ErrnoException) => {
@@ -305,7 +305,7 @@ export class StorageService implements OnModuleInit {
         purpose,
         type: this.resolveMediaType(finalMimeType),
         access,
-        metadata: mediaMetadata ?? Prisma.JsonNull,
+        metadata: mediaMetadata !== null ? (mediaMetadata as Prisma.InputJsonValue) : Prisma.JsonNull,
         url: `${publicBaseUrl}/storage/${
           access === MediaAccess.PUBLIC ? 'public' : 'files'
         }/${storageKey}`,
