@@ -8984,7 +8984,7 @@ export function syncGoogleTranslateCookie(language: LanguageCode) {
   );
 }
 
-const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v1.";
+const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v2.";
 const dynamicMemoryCache = new Map<string, Partial<Record<LanguageCode, string>>>();
 let isDynamicCacheHydrated = false;
 
@@ -8999,6 +8999,7 @@ function hydrateDynamicCache() {
       if (!raw) continue;
       const parsed = JSON.parse(raw) as Record<string, string>;
       for (const [sourceKey, translatedVal] of Object.entries(parsed)) {
+        if (!translatedVal || translatedVal === sourceKey) continue;
         let entry = dynamicMemoryCache.get(sourceKey);
         if (!entry) {
           entry = {};
