@@ -76,19 +76,32 @@
   box-shadow: var(--vy-shadow-card);
 }
 
+.heroBanner {
+  position: relative;
+  width: 100%;
+  min-height: clamp(340px, 38vw, 460px);
+  overflow: hidden;
+}
+
 .heroMedia {
-  min-height: clamp(260px, 31vw, 390px);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: clamp(340px, 38vw, 460px);
 }
 
 .heroOverlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: flex;
-  align-items: flex-end;
-  padding: clamp(22px, 4vw, 42px);
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(20px, 3.5vw, 36px);
   background:
-    linear-gradient(180deg, rgba(12, 12, 15, 0.08), rgba(12, 12, 15, 0.68) 62%, rgba(12, 12, 15, 0.96)),
-    linear-gradient(90deg, rgba(12, 12, 15, 0.88), rgba(12, 12, 15, 0.16));
+    linear-gradient(180deg, rgba(12, 12, 15, 0.1) 0%, rgba(12, 12, 15, 0.7) 50%, rgba(12, 12, 15, 0.96) 100%),
+    linear-gradient(90deg, rgba(12, 12, 15, 0.86), rgba(12, 12, 15, 0.2));
 }
 
 .heroCopy {
@@ -104,7 +117,7 @@
   color: var(--tour-accent-fg);
   background: var(--tour-accent-bg);
   border-radius: 999px;
-  padding: 6px 11px;
+  padding: 5px 11px;
   font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.04em;
@@ -113,20 +126,20 @@
 }
 
 .heroTitle {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   color: #fffaf0;
-  font-size: clamp(34px, 6vw, 64px);
+  font-size: clamp(24px, 3.4vw, 42px);
   font-weight: 950;
-  line-height: 1.02;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 .heroText {
-  max-width: 660px;
-  margin: 14px 0 0;
-  color: #d7d0c3;
-  font-size: 15px;
-  line-height: 1.75;
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: #e5ded2;
+  font-size: 14px;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
@@ -354,10 +367,10 @@
 }
 
 .bookingCard {
-  align-self: start;
+  align-self: flex-start;
   margin-top: 0;
   position: sticky;
-  top: 84px;
+  top: 76px;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;

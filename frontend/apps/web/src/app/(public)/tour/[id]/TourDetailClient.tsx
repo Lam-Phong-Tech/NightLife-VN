@@ -781,12 +781,14 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
         <div className={styles.layout}>
           <div className={styles.mainColumn}>
             <section className={styles.hero}>
-              <PlaceholderMedia
-                src={tourCover(tour)}
-                alt={tour.title}
-                label={tx("noTourImage")}
-                className={styles.heroMedia}
-              >
+              <div className={styles.heroBanner}>
+                <PlaceholderMedia
+                  src={tourCover(tour)}
+                  alt={tour.title}
+                  label={tx("noTourImage")}
+                  className={styles.heroMedia}
+                  priority
+                />
                 <div className={styles.heroOverlay}>
                   <div className={styles.heroCopy}>
                     <span className={styles.eyebrow}>
@@ -796,7 +798,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                     {cleanSubtitle ? <p className={styles.heroText}>{cleanSubtitle}</p> : null}
                   </div>
                 </div>
-              </PlaceholderMedia>
+              </div>
               <div className={styles.heroStats}>
                 <div className={styles.heroStat}>
                   <strong>
