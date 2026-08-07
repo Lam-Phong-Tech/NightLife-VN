@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import "./bill-upload-mobile-fix.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
@@ -17,6 +18,17 @@ import {
   isLanguageCode,
   languageHtmlLang,
 } from "@/lib/i18n/locales";
+
+// Font Inter được next/font tự download lúc build — self-hosted cùng origin, không còn
+// DNS lookup / request chặn render tới fonts.googleapis.com (~750ms)
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-inter",
+  preload: true,
+});
+
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -219,7 +231,7 @@ export default async function RootLayout({
   const documentLanguage = isLanguageCode(requestedLocale) ? requestedLocale : "vi";
 
   return (
-    <html lang={languageHtmlLang[documentLanguage]} suppressHydrationWarning>
+    <html lang={languageHtmlLang[documentLanguage]} className={inter.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

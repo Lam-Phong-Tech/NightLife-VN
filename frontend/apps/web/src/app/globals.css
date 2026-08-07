@@ -1,6 +1,7 @@
 /* Tailwind v4: chỉ cần 1 dòng import này là có toàn bộ utility class.
    (Bản v3 cũ phải viết @tailwind base; @tailwind components; @tailwind utilities;) */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+/* Google Fonts Inter đã được chuyển sang next/font/google trong layout.tsx
+   → self-hosted, không còn @import blocking 3rd-party, tải nhanh hơn ~750ms */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -276,7 +277,7 @@ html.vy-light .nl-site-brand-tagline {
 }
 
 :root {
-  --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --nl-font-sans: var(--font-inter, "Inter"), "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -710,7 +711,7 @@ body {
 /* Premium dark/gold theme override mapped to --vy tokens */
 :root {
   --nl-bg: var(--vy-bg);
-  --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --nl-font-sans: var(--font-inter, "Inter"), "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --nl-surface: var(--vy-surface);
   --nl-surface-soft: var(--vy-surface-2);
   --nl-surface-strong: var(--vy-surface-3);
