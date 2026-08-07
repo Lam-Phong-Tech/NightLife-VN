@@ -1101,13 +1101,16 @@ function PartnerPageContent({
                   placeholder="-- Chọn loại hình --"
                   required
                   options={[
-                    { value: 'CLUB', label: 'Câu lạc bộ' },
-                    { value: 'LOUNGE', label: 'Quán lounge' },
-                    { value: 'BAR', label: 'Quán bar' },
-                    { value: 'GIRLS_BAR', label: 'Quán bar nữ' },
-                    { value: 'KARAOKE', label: 'Karaoke' },
-                    { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
-                    { value: 'RESTAURANT', label: 'Nhà hàng' },
+                    { value: 'LOUNGE', label: 'ラウンジ (Lounge)' },
+                    { value: 'KYABAKURA', label: 'キャバクラ (Kyabakura)' },
+                    { value: 'GIRLS_BAR', label: 'ガールズバー (Girls Bar)' },
+                    { value: 'SNACK', label: 'スナック (Snack)' },
+                    { value: 'BAR', label: 'バー (Bar)' },
+                    { value: 'CLUB', label: 'クラブ (Club)' },
+                    { value: 'KARAOKE', label: 'カラオケ (Karaoke)' },
+                    { value: 'MASSAGE_SPA', label: 'マッサージ (Massage)' },
+                    { value: 'RESTAURANT', label: 'レストラン (Restaurant)' },
+                    { value: 'CASINO', label: 'Casino' },
                   ]}
                 />
 
