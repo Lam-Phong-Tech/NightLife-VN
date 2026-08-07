@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
-import { unlink } from 'node:fs/promises';
+import { unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MediaAccess, MediaType, Prisma } from '@prisma/client';
 import { AccessService } from '../access/access.service';
@@ -401,6 +401,26 @@ export class StorageService implements OnModuleInit {
 
     const relationIds = this.cleanRelationIds(options);
 
+    // -----------------------------------------------------------------------
+    // Auto-fetch & cache YouTube thumbnail (non-blocking — errors are logged)
+    // -----------------------------------------------------------------------
+    let thumbnailMeta: Prisma.InputJsonObject | null = null;
+    try {
+      thumbnailMeta = await this.fetchAndCacheYoutubeThumbnail(
+        externalVideo.videoId,
+        storageKey,
+      );
+      this.logger.log(
+        `Thumbnail cached for YouTube ${externalVideo.videoId}: ${JSON.stringify((thumbnailMeta as Record<string, unknown>).primaryKey)}`,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Could not cache thumbnail for YouTube ${externalVideo.videoId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+
     return this.prisma.media.create({
       data: {
         ownerId: options.ownerId,
@@ -417,6 +437,10 @@ export class StorageService implements OnModuleInit {
         type: MediaType.VIDEO,
         access,
         url: externalVideo.url,
+        metadata:
+          thumbnailMeta !== null
+            ? (thumbnailMeta as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
       },
     });
   }
@@ -478,7 +502,17 @@ export class StorageService implements OnModuleInit {
       },
     });
 
-    if (media.mimeType !== 'video/youtube') {
+    if (media.mimeType === 'video/youtube') {
+      // For YouTube videos: clean up cached thumbnail variant files if any
+      const meta = media.metadata as Record<string, unknown> | null;
+      const thumbnail = meta?.thumbnail as Record<string, unknown> | undefined;
+      const thumbVariants = thumbnail?.variants as
+        | Array<{ webpKey: string; avifKey: string }>
+        | undefined;
+      if (thumbVariants?.length) {
+        await this.deleteVariantFiles(thumbVariants, this.getUploadDir());
+      }
+    } else {
       const uploadDir = this.getUploadDir();
 
       // Delete variant files (WebP + AVIF) if they exist in metadata
@@ -577,6 +611,70 @@ export class StorageService implements OnModuleInit {
       mediaFile,
       path: join(this.getUploadDir(), storageKey),
     };
+  }
+
+  /**
+   * Download the best available YouTube thumbnail, process it through the
+   * image optimization pipeline, and return thumbnail metadata for storage.
+   *
+   * Priority: maxresdefault (1280×720) → hqdefault (480×360) → mqdefault (320×180)
+   * Output stored in metadata.thumbnail: { primaryKey, variants, originalWidth, originalHeight }
+   */
+  private async fetchAndCacheYoutubeThumbnail(
+    videoId: string,
+    baseStorageKey: string,
+  ): Promise<Prisma.InputJsonObject> {
+    const candidateUrls = [
+      `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+      `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+    ];
+
+    let imageBuffer: Buffer | null = null;
+    for (const thumbUrl of candidateUrls) {
+      try {
+        const res = await fetch(thumbUrl, {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (
+          res.ok &&
+          res.headers.get('content-type')?.startsWith('image/')
+        ) {
+          imageBuffer = Buffer.from(await res.arrayBuffer());
+          this.logger.debug(`YouTube thumbnail fetched from ${thumbUrl}`);
+          break;
+        }
+      } catch {
+        // try next candidate
+      }
+    }
+
+    if (!imageBuffer) {
+      throw new Error(`No thumbnail available for YouTube videoId ${videoId}`);
+    }
+
+    const uploadDir = this.getUploadDir();
+    const tempPath = join(uploadDir, `${baseStorageKey}-thumb-src.jpg`);
+    await writeFile(tempPath, imageBuffer);
+
+    try {
+      const processed = await this.imageProcessingService.processImage(
+        tempPath,
+        `${baseStorageKey}-thumb`,
+        uploadDir,
+        'STORE_GALLERY', // 400, 800, 1200 breakpoints — suitable for a 16:9 thumbnail
+      );
+
+      return {
+        primaryKey: processed.primaryStorageKey,
+        variants:   processed.variants as Prisma.InputJsonValue,
+        originalWidth:  processed.originalWidth,
+        originalHeight: processed.originalHeight,
+      };
+    } finally {
+      // Always delete the downloaded source JPEG regardless of success/failure
+      await unlink(tempPath).catch(() => undefined);
+    }
   }
 
   private async deleteVariantFiles(
