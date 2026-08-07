@@ -3899,18 +3899,18 @@ export default function PartnerPage() {
     try {
       // Nếu bill hiện tại bị từ chối → gửi lại (resubmit)
       if (selectedBill && selectedBillIsRejected) {
-        const resubmitted = (await billApi.resubmitPartnerBill(selectedBill.id, {
-          totalVnd: billAmount,
-        })) as PartnerBill;
-
         let uploadWarning = '';
         if (billEvidenceFile) {
           try {
-            await billApi.uploadEvidence(resubmitted.id, billEvidenceFile);
+            await billApi.uploadEvidence(selectedBill.id, billEvidenceFile);
           } catch {
             uploadWarning = ' Bill đã gửi lại, nhưng ảnh/chứng từ chưa upload được.';
           }
         }
+
+        const resubmitted = (await billApi.resubmitPartnerBill(selectedBill.id, {
+          totalVnd: billAmount,
+        })) as PartnerBill;
 
         const normalizedBill: PartnerBill = {
           ...resubmitted,

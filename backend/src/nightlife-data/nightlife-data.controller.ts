@@ -829,7 +829,7 @@ export class NightlifeDataController {
     @Param('billId') billId: string,
     @Body() dto: ResubmitBillDto,
   ) {
-    return this.nightlifeDataService.resubmitMemberBill(
+    return this.nightlifeDataService.resubmitPartnerBill(
       request.user,
       billId,
       dto,

@@ -7939,6 +7939,81 @@ describe('NightlifeDataService', () => {
     expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
+  it('resubmits a rejected partner bill when user has store access', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    const rejectedBill = {
+      id: 'bill-rejected-partner-1',
+      billNumber: 'BILL-PARTNER-REJECTED',
+      status: 'REJECTED',
+      totalVnd: 500000,
+      usedAt: new Date('2026-07-01T10:00:00.000Z'),
+      submittedAt: new Date('2026-07-01T10:30:00.000Z'),
+      reviewedAt: new Date('2026-07-01T11:00:00.000Z'),
+      rejectedAt: new Date('2026-07-01T11:00:00.000Z'),
+      rejectReason: 'Ảnh mờ/không rõ',
+      storeId: 'store-1',
+      bookingId: 'booking-1',
+      userId: 'customer-1',
+      submittedByUserId: 'partner-user-1',
+      submittedByPartnerAccountId: 'partner-account-1',
+    };
+    const updatedBill = {
+      ...rejectedBill,
+      status: 'SUBMITTED',
+      totalVnd: 550000,
+      submittedAt: new Date(),
+      reviewedAt: null,
+      rejectedAt: null,
+      rejectReason: null,
+    };
+
+    accessService.ensureStoreAccess.mockResolvedValue(true);
+    prisma.bill.findFirst
+      .mockResolvedValueOnce(rejectedBill)
+      .mockResolvedValueOnce(updatedBill);
+    prisma.bill.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.resubmitPartnerBill(
+      { id: 'partner-user-1', role: 'PARTNER' },
+      'bill-rejected-partner-1',
+      { totalVnd: 550000 },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'bill-rejected-partner-1',
+        status: 'SUBMITTED',
+        totalVnd: 550000,
+      }),
+    );
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-user-1', role: 'PARTNER' },
+      'store-1',
+      'bill.partner.view',
+    );
+    expect(prisma.bill.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: 'bill-rejected-partner-1',
+        storeId: 'store-1',
+        status: 'REJECTED',
+      }),
+      data: expect.objectContaining({
+        status: 'SUBMITTED',
+        totalVnd: 550000,
+      }),
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'partner-user-1',
+        action: 'bill.resubmit',
+        targetId: 'bill-rejected-partner-1',
+        metadata: expect.objectContaining({
+          source: 'partner_bill_resubmission',
+        }),
+      }),
+    });
+  });
+
   it('rejects a member bill when the booking has not been checked in', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({

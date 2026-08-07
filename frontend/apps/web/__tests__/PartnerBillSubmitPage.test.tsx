@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   previewBillOcr: vi.fn(),
   submitMemberBill: vi.fn(),
   submitPartnerBill: vi.fn(),
+  resubmitPartnerBill: vi.fn(),
   uploadEvidence: vi.fn(),
   listStores: vi.fn(),
   searchParams: "panel=bill",
@@ -73,6 +74,7 @@ vi.mock("@/lib/api/bills", () => ({
     previewBillOcr: mocks.previewBillOcr,
     submitMemberBill: mocks.submitMemberBill,
     submitPartnerBill: mocks.submitPartnerBill,
+    resubmitPartnerBill: mocks.resubmitPartnerBill,
     uploadEvidence: mocks.uploadEvidence,
   },
 }));
@@ -218,7 +220,7 @@ describe("Partner bill submit page", () => {
       </SystemFeedbackProvider>,
     );
 
-    await screen.findByText("2 quán trong scope");
+    await screen.findByText("2 quán trong phạm vi");
     expect(mocks.apiClient).toHaveBeenCalledWith("/partner/stores");
     expect(mocks.listPartnerStores).not.toHaveBeenCalled();
     expect(mocks.listStores).not.toHaveBeenCalled();
@@ -261,7 +263,7 @@ describe("Partner bill submit page", () => {
       </SystemFeedbackProvider>,
     );
 
-    await screen.findByText("BILL-NEON");
+    await screen.findAllByText("BILL-NEON");
     expect(screen.queryByText("BILL-VELVET")).not.toBeInTheDocument();
 
     const storeSelect = screen.getByLabelText("Quán thuộc partner *") as HTMLSelectElement;
@@ -320,4 +322,92 @@ describe("Partner bill submit page", () => {
     expect(await screen.findByTestId("mock-react-quill")).toHaveTextContent("Draft description");
     expect(screen.getByTestId("mock-react-quill")).not.toHaveTextContent("Live description");
   }, 20_000);
+
+  it("resubmits a rejected partner bill using resubmitPartnerBill API", async () => {
+    const pastIso = new Date(Date.now() - 3600_000).toISOString();
+    const rejectedPartnerBills = [
+      {
+        id: "bill-rejected",
+        storeId: "store-neon",
+        billNumber: "BILL-REJECTED-1",
+        status: "REJECTED",
+        rejectReason: "Ảnh mờ/không rõ",
+        submitterType: "PARTNER",
+        totalVnd: 500000,
+        usedAt: pastIso,
+        submittedAt: pastIso,
+        store: { id: "store-neon", name: "Neon Club", slug: "neon-club" },
+        booking: {
+          id: "booking-1",
+          bookingCode: "BK-12345",
+          scheduledAt: pastIso,
+          status: "CONFIRMED",
+          store: { id: "store-neon", name: "Neon Club", slug: "neon-club" },
+        },
+        media: [],
+      },
+    ];
+
+    mocks.apiClient.mockImplementation((path: string) => {
+      if (path === "/partner/stores") return Promise.resolve(partnerStores);
+      if (path === "/partner/coupons") return Promise.resolve([]);
+      if (path === "/partner/bookings") return Promise.resolve([]);
+      if (path === "/partner/bills") return Promise.resolve(rejectedPartnerBills);
+      if (path.startsWith("/partner/dashboard-lite")) return Promise.resolve(dashboardLite);
+      if (path.startsWith("/partner/listing-draft/")) return Promise.resolve(listingDraftResponse);
+      return Promise.reject(new Error(`Unhandled apiClient path ${path}`));
+    });
+
+    mocks.listPartnerBills.mockResolvedValue(rejectedPartnerBills);
+    mocks.resubmitPartnerBill.mockResolvedValue({
+      ...rejectedPartnerBills[0],
+      status: "SUBMITTED",
+      totalVnd: 550000,
+    });
+
+    render(
+      <SystemFeedbackProvider>
+        <PartnerPage />
+      </SystemFeedbackProvider>,
+    );
+
+    const billItems = await screen.findAllByText("#BK-12345");
+    fireEvent.click(billItems[0]);
+
+    expect(screen.getAllByText("Từ chối").length).toBeGreaterThan(0);
+    expect(screen.getByText("Lý do từ chối: Ảnh mờ/không rõ")).toBeInTheDocument();
+
+    const amountInput = (document.getElementById("bill-amount-input") || screen.getByLabelText(/TỔNG TIỀN/i)) as HTMLInputElement;
+    fireEvent.change(amountInput, { target: { value: "550000" } });
+    await waitFor(() => {
+      expect(amountInput).toHaveValue("550.000");
+    });
+
+    const usedAtInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    if (usedAtInput) {
+      fireEvent.change(usedAtInput, {
+        target: { value: toDatetimeLocalValue(new Date(Date.now() - 10 * 60 * 1000)) },
+      });
+    }
+
+    const form = amountInput.closest("form") as HTMLFormElement;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mocks.resubmitPartnerBill).toHaveBeenCalledWith("bill-rejected", {
+        totalVnd: 550000,
+      });
+    });
+
+    mocks.apiClient.mockImplementation((path: string) => {
+      if (path === "/partner/stores") return Promise.resolve(partnerStores);
+      if (path === "/partner/coupons") return Promise.resolve([]);
+      if (path === "/partner/bookings") return Promise.resolve([]);
+      if (path === "/partner/bills") return Promise.resolve(partnerBills);
+      if (path.startsWith("/partner/dashboard-lite")) return Promise.resolve(dashboardLite);
+      if (path.startsWith("/partner/listing-draft/")) return Promise.resolve(listingDraftResponse);
+      return Promise.reject(new Error(`Unhandled apiClient path ${path}`));
+    });
+    mocks.listPartnerBills.mockResolvedValue(partnerBills);
+  });
 });
