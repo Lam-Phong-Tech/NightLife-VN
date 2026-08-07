@@ -122,7 +122,7 @@ jobs:
             export BACKEND_API_URL="http://127.0.0.1:3012"
             export BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012,http://127.0.0.1:3000,http://localhost:3000"
             export PORT=3009
-            PORT=3009 pm2 restart app-demonightlight.test9.io.vn --update-env 2>/dev/null || PORT=3009 pm2 start pnpm --name "app-demonightlight.test9.io.vn" --update-env -- --dir apps/web run start
+            BACKEND_API_URL="http://127.0.0.1:3012" BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012" PORT=3009 pm2 restart app-demonightlight.test9.io.vn --update-env 2>/dev/null || BACKEND_API_URL="http://127.0.0.1:3012" BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012" PORT=3009 pm2 start pnpm --name "app-demonightlight.test9.io.vn" --update-env -- --dir apps/web run start
             pm2 save
 
             ok=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3009/dat-cho >/dev/null; then ok=1; break; fi; sleep 2; done; if [ "$ok" != 1 ]; then echo "::error::Frontend khong tra loi /dat-cho tren cong 3009 sau ~40s."; pm2 logs app-demonightlight.test9.io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
