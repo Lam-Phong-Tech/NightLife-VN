@@ -195,6 +195,7 @@ describe('StorageService', () => {
         id: true,
         storageKey: true,
         mimeType: true,
+        metadata: true,
       },
     });
     expect(prisma.media.updateMany).toHaveBeenCalledWith({
