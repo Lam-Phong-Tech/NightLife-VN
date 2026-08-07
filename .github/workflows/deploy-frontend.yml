@@ -118,7 +118,7 @@ jobs:
           script: |
             cd /var/www/demonightlight.test9.io.vn
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
-            pnpm install --prod --no-frozen-lockfile || pnpm install --prod
+            pnpm install --no-frozen-lockfile || pnpm install
             export BACKEND_API_URL="http://127.0.0.1:3012"
             export BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012,http://127.0.0.1:3000,http://localhost:3000"
             export PORT=3009

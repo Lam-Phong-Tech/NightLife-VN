@@ -115,7 +115,7 @@ jobs:
             BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/nightlife/demo-uat}"
             BACKUP_STORAGE_PATHS="${BACKUP_STORAGE_PATHS:-uploads public/uploads}"
             PUBLIC_FRONTEND_URL="${PUBLIC_FRONTEND_URL:-https://demonightlight.test9.io.vn}"
-            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://demonightlight.test9.io.vn/api/backend}"
+            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://api.demonightlight.test9.io.vn}"
             BACKEND_PM2_NAME="app-api.demonightlight.test9.io.vn"
             BACKEND_PORT="3012"
             FRONTEND_PORT="3009"
@@ -435,7 +435,7 @@ jobs:
 
             mkdir -p "$EVIDENCE_DIR" "$BACKUP_ROOT"
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
-            pnpm install --prod --no-frozen-lockfile || pnpm install --prod
+            pnpm install --no-frozen-lockfile || pnpm install
             pnpm exec prisma generate
 
             chmod +x scripts/backup-uat.sh
