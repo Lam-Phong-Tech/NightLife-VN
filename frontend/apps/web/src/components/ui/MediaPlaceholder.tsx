@@ -27,7 +27,7 @@ export function getImageUrlFromCss(value?: string | null) {
   const match = input.match(/url\((['"]?)(.*?)\1\)/i);
   if (match?.[2]) return match[2].trim();
 
-  if (/^(https?:\/\/|\\/|data:image\/)/i.test(input)) return input;
+  if (/^(https?:\/\/|\/|data:image\/)/i.test(input)) return input;
 
   return "";
 }
