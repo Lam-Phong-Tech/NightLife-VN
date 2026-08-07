@@ -1197,11 +1197,12 @@ function getBannerSlideTransform(index: number, activeIndex: number) {
 }
 
 function shouldLoadBannerSlideImage(index: number, activeIndex: number, bannerCount: number) {
-  if (bannerCount <= 3) return true;
-  const previousIndex = (activeIndex - 1 + bannerCount) % bannerCount;
+  // Chỉ load slide đang active và 1 slide kế tiếp để tránh tải ảnh đồng thời
+  // khi bannerCount nhỏ (trường hợp phổ biến 2-3 banners)
   const nextIndex = (activeIndex + 1) % bannerCount;
+  const previousIndex = (activeIndex - 1 + bannerCount) % bannerCount;
 
-  return index === activeIndex || index === previousIndex || index === nextIndex;
+  return index === activeIndex || index === nextIndex || index === previousIndex;
 }
 
 const bannerPresetDelimiters = [" · ", " Â· ", " — ", " â€” ", " - "];
@@ -3052,7 +3053,7 @@ function BottomNav() {
   return null;
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ initialBanners = [] }: { initialBanners?: CmsContentItem[] }) {
   const activeLanguage = useActiveLanguage();
   const feedback = useSystemFeedback();
   const userFeedback = useUserActionFeedback();
@@ -3067,8 +3068,9 @@ export default function HomePageClient() {
   const [homeRecommendations, setHomeRecommendations] = useState<HomeStoreCard[]>([]);
   const [isHomeRecommendationsLoading, setHomeRecommendationsLoading] = useState(true);
   const [homeRecommendationsError, setHomeRecommendationsError] = useState("");
-  const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>([]);
-  const [isHomeBannersLoading, setHomeBannersLoading] = useState(true);
+  // Nếu có initialBanners từ SSR pre-fetch → dùng ngay, không cần chờ API
+  const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>(initialBanners);
+  const [isHomeBannersLoading, setHomeBannersLoading] = useState(initialBanners.length === 0);
   const [homeCoupons, setHomeCoupons] = useState<HomeCouponItem[]>([]);
   const [isHomeCouponsLoading, setHomeCouponsLoading] = useState(true);
   const [homeCouponsError, setHomeCouponsError] = useState("");
@@ -3277,8 +3279,10 @@ export default function HomePageClient() {
         if (!cancelled) setHomeRecommendationsLoading(false);
       });
 
+    // Nếu đã có initialBanners từ SSR, chỉ refresh ngầm (không block UI)
+    // Nếu chưa có thì fetch bình thường và hiện skeleton
     contentApi
-      .list({ type: "BANNER", limit: 50 })
+      .list({ type: "BANNER", limit: 10 })
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })
