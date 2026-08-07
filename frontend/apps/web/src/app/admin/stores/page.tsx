@@ -25,6 +25,13 @@ import {
   validateStoreName,
   validateVietnamStorePhone,
 } from '@/lib/store-form-validation';
+import {
+  dedupeMediaItems,
+  filterStoreAlbumMedia,
+  mediaItemUrl,
+  normalizeMediaKey,
+} from '@/lib/store-media-filter';
+
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -72,39 +79,6 @@ const locationNamesMatch = (first?: string | null, second?: string | null) => {
   );
 };
 
-const normalizeMediaKey = (value?: string | null) => {
-  const url = value?.trim();
-  if (!url) return '';
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
-    const youtubeId =
-      host === 'youtu.be'
-        ? parsed.pathname.split('/').filter(Boolean)[0]
-        : host.endsWith('youtube.com')
-          ? parsed.searchParams.get('v') ||
-            parsed.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1]
-          : '';
-    if (youtubeId) return `youtube:${youtubeId.toLowerCase()}`;
-    parsed.hash = '';
-    parsed.pathname = parsed.pathname.replace(/\/+$/g, '');
-    return parsed.toString().toLowerCase();
-  } catch {
-    return url.toLowerCase();
-  }
-};
-
-const mediaItemUrl = (item: any) => item?.url || item?.thumb || item?.title || '';
-
-const dedupeMediaItems = <T extends Record<string, any>>(items: T[]) => {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = normalizeMediaKey(mediaItemUrl(item)) || String(item.id || '');
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-};
 
 const isBrokenAddressPart = (part?: string | null) => {
   const text = part?.trim() ?? '';
@@ -913,15 +887,8 @@ function AdminStoresContent() {
     setNameTouched(false);
     setPhoneTouched(false);
     setHoursForm(normalizeOpeningHoursForForm(st.openingHours));
+    const { cover, galleryMedia } = filterStoreAlbumMedia(st.media, st.pricingInfo);
     const storeMedia = (Array.isArray(st.media) ? st.media : []).filter((m: any) => !m.castId);
-    const imageMedia = dedupeMediaItems(storeMedia.filter((m: any) => m.type === 'IMAGE'));
-    const cover = imageMedia.find((m: any) =>
-      ['store-hero', 'STORE_COVER', 'COVER_IMAGE'].includes(m.purpose),
-    ) || imageMedia[0] || null;
-    const coverKey = normalizeMediaKey(mediaItemUrl(cover));
-    const galleryMedia = imageMedia.filter(
-      (m: any) => normalizeMediaKey(mediaItemUrl(m)) !== coverKey,
-    );
     const videoMedia = dedupeMediaItems(storeMedia.filter((m: any) => m.type === 'VIDEO'));
     setCoverImage(cover || null);
     setAlbums(galleryMedia);
