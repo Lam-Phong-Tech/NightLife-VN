@@ -4,6 +4,7 @@ import { MediaAccess } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from './storage.service';
 import { validateUploadedFile } from './upload-file-validation';
+import { ImageProcessingService } from './image-processing.service';
 
 jest.mock('./upload-file-validation', () => ({
   validateUploadedFile: jest.fn(),
@@ -63,6 +64,12 @@ describe('StorageService', () => {
     path: 'uploads-test/stored-image',
   };
 
+  const imageProcessingService = {
+    shouldOptimize: jest.fn().mockReturnValue(false),
+    processImage: jest.fn(),
+    cleanupFiles: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<ImageProcessingService>;
+
   let service: StorageService;
 
   beforeEach(() => {
@@ -79,6 +86,7 @@ describe('StorageService', () => {
       prisma,
       accessService as never,
       systemConfigService as never,
+      imageProcessingService,
     );
   });
 

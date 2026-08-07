@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Req,
@@ -24,6 +25,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type * as express from 'express';
+import { join, dirname } from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaResponseDto } from './dto/storage-response.dto';
 import { StorageService } from './storage.service';
@@ -199,18 +201,29 @@ export class StorageController {
     'application/octet-stream',
     'image/jpeg',
     'image/png',
+    'image/webp',
+    'image/avif',
     'video/mp4',
   )
   @Get('public/:storageKey')
   async getPublicFile(
     @Param('storageKey') storageKey: string,
+    @Headers('accept') acceptHeader: string,
     @Res() response: express.Response,
   ) {
     const { mediaFile, path } =
       await this.storageService.resolvePublicLocalFile(storageKey);
 
-    response.type(mediaFile.mimeType);
-    return response.sendFile(path);
+    // Cache-Control: 1 year immutable for public media assets
+    response.set('Cache-Control', 'public, max-age=31536000, immutable');
+    response.set('Vary', 'Accept');
+
+    // Content negotiation: serve AVIF variant if browser supports it
+    const servedPath = this.resolveVariantPath(path, mediaFile.storageKey, mediaFile.metadata, acceptHeader);
+    const servedMime = servedPath !== path ? 'image/avif' : mediaFile.mimeType;
+
+    response.type(servedMime);
+    return response.sendFile(servedPath);
   }
 
   @ApiOperation({ summary: 'Truy xuất file có bảo vệ (cần token)' })
@@ -219,6 +232,8 @@ export class StorageController {
     'application/octet-stream',
     'image/jpeg',
     'image/png',
+    'image/webp',
+    'image/avif',
     'video/mp4',
   )
   @ApiBearerAuth()
@@ -226,6 +241,7 @@ export class StorageController {
   @Get('files/:storageKey')
   async getFile(
     @Param('storageKey') storageKey: string,
+    @Headers('accept') acceptHeader: string,
     @Req() request: RequestWithUser,
     @Res() response: express.Response,
   ) {
@@ -235,7 +251,43 @@ export class StorageController {
         request.user,
       );
 
-    response.type(mediaFile.mimeType);
-    return response.sendFile(path);
+    // Short cache for protected files (private, must revalidate)
+    response.set('Cache-Control', 'private, max-age=300, must-revalidate');
+    response.set('Vary', 'Accept');
+
+    const servedPath = this.resolveVariantPath(path, mediaFile.storageKey, mediaFile.metadata, acceptHeader);
+    const servedMime = servedPath !== path ? 'image/avif' : mediaFile.mimeType;
+
+    response.type(servedMime);
+    return response.sendFile(servedPath);
+  }
+
+  /**
+   * If the browser accepts AVIF and a matching AVIF variant exists in metadata,
+   * return the AVIF file path that corresponds to the requested storageKey.
+   * Otherwise return the default path unchanged.
+   *
+   * Matching is done by webpKey so we always serve the SAME SIZE in AVIF
+   * (not the largest or smallest available).
+   */
+  private resolveVariantPath(
+    defaultPath: string,
+    storageKey: string,
+    metadata: unknown,
+    acceptHeader?: string,
+  ): string {
+    if (!acceptHeader?.includes('image/avif')) return defaultPath;
+
+    const meta = metadata as Record<string, unknown> | null;
+    const variants = meta?.variants as
+      | Array<{ webpKey: string; avifKey: string; width: number }>
+      | undefined;
+    if (!variants?.length) return defaultPath;
+
+    // Find the variant whose webpKey matches the requested storageKey
+    const matching = variants.find((v) => v.webpKey === storageKey);
+    if (!matching?.avifKey) return defaultPath;
+
+    return join(dirname(defaultPath), matching.avifKey);
   }
 }

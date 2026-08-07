@@ -45,6 +45,11 @@ const detectBinaryMimeType = (
     bytes.length >= 12 &&
     Buffer.from(bytes.subarray(4, 8)).toString('ascii') === 'ftyp'
   ) {
+    // Distinguish AVIF from generic MP4/video by checking the brand
+    const brand = Buffer.from(bytes.subarray(8, 12)).toString('ascii');
+    if (brand === 'avif' || brand === 'avis' || brand === 'MA1B' || brand === 'MA1A') {
+      return 'image/avif';
+    }
     return 'video/mp4';
   }
   if (ascii.startsWith('%PDF-')) return 'application/pdf';

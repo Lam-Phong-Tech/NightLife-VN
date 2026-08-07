@@ -14,7 +14,9 @@ import { join } from 'node:path';
 import { MediaAccess, MediaType } from '@prisma/client';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemConfigService } from '../system-config/system-config.service';
 import { validateUploadedFile } from './upload-file-validation';
+import { ImageProcessingService } from './image-processing.service';
 
 type UploadedFile = {
   filename: string;
@@ -48,7 +50,6 @@ const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
   'TOUR_COVER',
 ]);
 
-import { SystemConfigService } from '../system-config/system-config.service';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -59,6 +60,7 @@ export class StorageService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly accessService: AccessService,
     private readonly systemConfigService: SystemConfigService,
+    private readonly imageProcessingService: ImageProcessingService,
   ) {}
 
   onModuleInit() {
@@ -203,6 +205,9 @@ export class StorageService implements OnModuleInit {
       throw new BadRequestException('File is required');
     }
 
+    // Tracks all extra files created during image processing for cleanup on error
+    const processingCreatedPaths: string[] = [];
+
     try {
       await this.validateUploadPermissions(options);
 
@@ -225,7 +230,57 @@ export class StorageService implements OnModuleInit {
         );
       }
 
-      const storageKey = file.filename;
+      const purpose = options.purpose?.trim();
+      const uploadDir = this.getUploadDir();
+
+      // -----------------------------------------------------------------------
+      // Image optimization pipeline (WebP + AVIF variants)
+      // -----------------------------------------------------------------------
+      let storageKey = file.filename;
+      let finalMimeType: string = validatedFile.mimeType;
+      let finalSizeBytes = file.size;
+      let mediaMetadata: Record<string, unknown> | null = null;
+
+      if (this.imageProcessingService.shouldOptimize(purpose, validatedFile.mimeType)) {
+        try {
+          const processed = await this.imageProcessingService.processImage(
+            file.path,
+            file.filename,
+            uploadDir,
+            purpose,
+          );
+
+          processingCreatedPaths.push(...processed.createdPaths);
+
+          // Swap the storage key and metadata to use the optimized primary variant
+          storageKey = processed.primaryStorageKey;
+          finalMimeType = processed.primaryMimeType;
+          finalSizeBytes = processed.primarySizeBytes;
+          mediaMetadata = {
+            variants: processed.variants,
+            originalWidth: processed.originalWidth,
+            originalHeight: processed.originalHeight,
+          };
+
+          // Delete the raw original upload — no longer needed
+          await unlink(file.path).catch((err: NodeJS.ErrnoException) => {
+            if (err.code !== 'ENOENT') {
+              this.logger.warn(`Could not delete original upload ${file.path}: ${err.message}`);
+            }
+          });
+        } catch (error) {
+          this.logger.error(
+            `Image processing failed for ${file.filename}: ${
+              error instanceof Error ? error.message : String(error)
+            }. Falling back to original file.`,
+          );
+          // On processing failure fall back to original file — do not block upload
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // Build URLs and media record
+      // -----------------------------------------------------------------------
       const webBaseUrl = this.configService.get<string>('WEB_BASE_URL');
       const defaultPublicBase = webBaseUrl
         ? `${webBaseUrl}/api/backend`
@@ -236,7 +291,6 @@ export class StorageService implements OnModuleInit {
       );
       const access = this.resolveAccess(options.access);
       const relationIds = this.cleanRelationIds(options);
-      const purpose = options.purpose?.trim();
       const mediaData = {
         ownerId: options.ownerId,
         storeId: relationIds.storeId,
@@ -246,15 +300,17 @@ export class StorageService implements OnModuleInit {
         contentId: relationIds.contentId,
         storageKey,
         originalName: validatedFile.originalName,
-        mimeType: validatedFile.mimeType,
-        sizeBytes: file.size,
+        mimeType: finalMimeType,
+        sizeBytes: finalSizeBytes,
         purpose,
-        type: this.resolveMediaType(validatedFile.mimeType),
+        type: this.resolveMediaType(finalMimeType),
         access,
+        metadata: mediaMetadata,
         url: `${publicBaseUrl}/storage/${
           access === MediaAccess.PUBLIC ? 'public' : 'files'
         }/${storageKey}`,
       };
+
       const shouldReplaceBillEvidence = Boolean(
         options.userRole === 'USER' &&
           relationIds.billId &&
@@ -277,6 +333,7 @@ export class StorageService implements OnModuleInit {
             id: true,
             storageKey: true,
             mimeType: true,
+            metadata: true,
           },
         });
         const createdMedia = await tx.media.create({ data: mediaData });
@@ -297,8 +354,15 @@ export class StorageService implements OnModuleInit {
       await Promise.all(
         replacement.previousMedia.map(async (media) => {
           if (media.mimeType === 'video/youtube') return;
+          // Delete all variant files stored in metadata (if any)
+          const meta = media.metadata as Record<string, unknown> | null;
+          const variants = meta?.variants as Array<{ webpKey: string; avifKey: string }> | undefined;
+          if (variants?.length) {
+            await this.deleteVariantFiles(variants, uploadDir);
+          }
+          // Delete the primary file itself
           try {
-            await unlink(join(this.getUploadDir(), media.storageKey));
+            await unlink(join(uploadDir, media.storageKey));
           } catch (error) {
             const fileError = error as NodeJS.ErrnoException;
             if (fileError.code !== 'ENOENT') {
@@ -312,7 +376,10 @@ export class StorageService implements OnModuleInit {
 
       return replacement.createdMedia;
     } catch (error) {
+      // Clean up the original upload file
       await unlink(file.path).catch(() => undefined);
+      // Clean up any variant files created before the error
+      await this.imageProcessingService.cleanupFiles(processingCreatedPaths);
       throw error;
     }
   }
@@ -372,6 +439,7 @@ export class StorageService implements OnModuleInit {
         billId: true,
         storageKey: true,
         mimeType: true,
+        metadata: true,
         deletedAt: true,
         cast: { select: { storeId: true } },
         content: { select: { storeId: true } },
@@ -411,7 +479,19 @@ export class StorageService implements OnModuleInit {
     });
 
     if (media.mimeType !== 'video/youtube') {
-      await unlink(join(this.getUploadDir(), media.storageKey)).catch(
+      const uploadDir = this.getUploadDir();
+
+      // Delete variant files (WebP + AVIF) if they exist in metadata
+      const meta = media.metadata as Record<string, unknown> | null;
+      const variants = meta?.variants as
+        | Array<{ webpKey: string; avifKey: string }>
+        | undefined;
+      if (variants?.length) {
+        await this.deleteVariantFiles(variants, uploadDir);
+      }
+
+      // Delete the primary file
+      await unlink(join(uploadDir, media.storageKey)).catch(
         (error: NodeJS.ErrnoException) => {
           if (error.code !== 'ENOENT') throw error;
         },
@@ -497,6 +577,26 @@ export class StorageService implements OnModuleInit {
       mediaFile,
       path: join(this.getUploadDir(), storageKey),
     };
+  }
+
+  private async deleteVariantFiles(
+    variants: Array<{ webpKey: string; avifKey: string }>,
+    uploadDir: string,
+  ): Promise<void> {
+    await Promise.all(
+      variants.flatMap((v) => [
+        unlink(join(uploadDir, v.webpKey)).catch((err: NodeJS.ErrnoException) => {
+          if (err.code !== 'ENOENT') {
+            this.logger.warn(`Could not delete variant ${v.webpKey}: ${err.message}`);
+          }
+        }),
+        unlink(join(uploadDir, v.avifKey)).catch((err: NodeJS.ErrnoException) => {
+          if (err.code !== 'ENOENT') {
+            this.logger.warn(`Could not delete variant ${v.avifKey}: ${err.message}`);
+          }
+        }),
+      ]),
+    );
   }
 
   private resolveMediaType(mimeType: string) {

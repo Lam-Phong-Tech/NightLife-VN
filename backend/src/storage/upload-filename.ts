@@ -9,6 +9,7 @@ const extensionsByMimeType: Record<SupportedUploadMimeType, readonly string[]> =
     'image/jpeg': ['jpg', 'jpeg'],
     'image/png': ['png'],
     'image/webp': ['webp'],
+    'image/avif': ['avif'],
     'image/gif': ['gif'],
     'image/svg+xml': ['svg'],
     'video/mp4': ['mp4'],

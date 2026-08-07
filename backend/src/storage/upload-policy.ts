@@ -8,6 +8,7 @@ export const uploadMimeTypes = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/avif',
   'image/gif',
   'image/svg+xml',
   'video/mp4',
@@ -26,6 +27,7 @@ const rasterImageMimeTypes = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/avif',
   'image/gif',
 ] as const;
 
