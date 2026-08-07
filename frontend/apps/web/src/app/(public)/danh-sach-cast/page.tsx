@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
@@ -492,7 +492,7 @@ const highlightMatch = (text: string, query: string) => {
   );
 };
 
-export function CastDirectoryPage() {
+export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: PublicCast[] }) {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -514,9 +514,12 @@ export function CastDirectoryPage() {
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
-  const [casts, setCasts] = useState<PublicCast[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [casts, setCasts] = useState<PublicCast[]>(initialCasts);
+  // Nếu server đã cung cấp data ban đầu → không cần skeleton lần đầu
+  const [isLoading, setIsLoading] = useState(initialCasts.length === 0);
   const [error, setError] = useState<string | null>(null);
+  // Ref để nhận biết lần render đầu tiên → bỏ debounce 220ms
+  const isFirstLoad = useRef(true);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const filterPanelRef = useRef<HTMLElement | null>(null);
   const activeLanguage = useActiveLanguage();
@@ -547,6 +550,18 @@ export function CastDirectoryPage() {
   useEffect(() => {
     let cancelled = false;
 
+    // Lần đầu tiên: nếu server đã cung cấp initialCasts thì bỏ qua (không fetch lại)
+    // Chỉ fetch khi user thay đổi filter, lúc đó isFirstLoad.current đã là false
+    if (isFirstLoad.current && initialCasts.length > 0) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // Lần đầu không có initialCasts (fallback): fetch ngay, không debounce
+    // Sau đó: debounce 220ms để tránh gọi API liên tục khi user thay đổi filter
+    const delay = isFirstLoad.current ? 0 : 220;
+    isFirstLoad.current = false;
+
     const timer = window.setTimeout(() => {
       setIsLoading(true);
       setError(null);
@@ -574,13 +589,13 @@ export function CastDirectoryPage() {
         .finally(() => {
           if (!cancelled) setIsLoading(false);
         });
-    }, 220);
+    }, delay);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, language, sort]);
+  }, [area, category, city, coords, hasActiveCoupon, initialCasts.length, language, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1197,6 +1212,8 @@ export function CastDirectoryPage() {
                   rank={topRankingOrder.get(cast.slug) ?? null}
                   language={activeLanguage}
                   isFavorite={favoriteCastSlugs.includes(cast.slug)}
+                  // 3 ảnh đầu tiên trang 1: eager + fetchpriority=high để tăng LCP
+                  priority={currentPage === 1 && index < 3}
                   onToggleFavorite={() => void toggleCastFavorite(cast)}
                 />
               ))}
@@ -1255,8 +1272,10 @@ export function CastDirectoryPage() {
   );
 }
 
-export default function LegacyCastDirectoryPage() {
-  notFound();
+// Route /danh-sach-cast là legacy — render trực tiếp không qua SSR wrapper
+// (Route chính có SSR là /[locale]/casts/page.tsx)
+export default function CastDirectoryPageRoute() {
+  return <CastDirectoryPage />;
 }
 
 function CastPagination({
@@ -1466,6 +1485,7 @@ function CastDiscoveryCard({
   rank,
   language,
   isFavorite,
+  priority = false,
   onToggleFavorite,
 }: {
   cast: PublicCast;
@@ -1473,6 +1493,7 @@ function CastDiscoveryCard({
   rank: number | null;
   language: LanguageCode;
   isFavorite: boolean;
+  priority?: boolean;
   onToggleFavorite: () => void;
 }) {
   const handleFavoriteClick = (event: React.MouseEvent | React.KeyboardEvent) => {
@@ -1504,6 +1525,7 @@ function CastDiscoveryCard({
           label={translateText("Chưa có ảnh cast", language)}
           tone="dark"
           className="cast-card-media"
+          priority={priority}
         >
           <span className="cast-media-shade" />
           {rank ? (
