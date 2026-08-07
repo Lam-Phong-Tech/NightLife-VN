@@ -7735,10 +7735,20 @@ function buildTermPattern(term: string) {
 
 function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
   let output = value
-    .replace(/\b(?:Quận|District)\s+(\d+)\b/gi, (_match, district: string) =>
+    .replace(
+      /\b(?:Phường|Ward)\s+([A-Za-z0-9\sÀ-ỹ]+?)(?=$|\s*[\cdot,·|—]|\s+(?:Quận|District|Thành phố|Hà Nội|TP|Hồ Chí Minh|Ho Chi Minh|Da Nang|Đà Nẵng))/gi,
+      (_match, ward: string) => translateWardLabel(ward, language),
+    )
+    .replace(
+      /\b(?:Quận|District)\s+([A-Za-z0-9\sÀ-ỹ]+?)(?=$|\s*[\cdot,·|—]|\s+(?:Thành phố|Hà Nội|TP|Hồ Chí Minh|Ho Chi Minh|Da Nang|Đà Nẵng))/gi,
+      (_match, district: string) => translateDistrictLabel(district, language),
+    )
+    .replace(/\b(?:Phường|Ward)\s+([A-Za-z0-9\sÀ-ỹ]+)\b/gi, (_match, ward: string) =>
+      translateWardLabel(ward, language),
+    )
+    .replace(/\b(?:Quận|District)\s+([A-Za-z0-9\sÀ-ỹ]+)\b/gi, (_match, district: string) =>
       translateDistrictLabel(district, language),
     )
-    .replace(/\bPhường\s+(\d+)\b/gi, (_match, ward: string) => translateWardLabel(ward, language))
     .replace(/(?:,\s*|\b)Thành phố\s+/gi, (match) => {
       const isComma = match.startsWith(",");
       return isComma ? (language === "en" ? ", City " : ", ") : language === "en" ? "City " : "";
@@ -7792,29 +7802,40 @@ function translateDelimitedText(value: string, language: Exclude<LanguageCode, "
 }
 
 function translateDistrictLabel(district: string, language: Exclude<LanguageCode, "vi">) {
+  const clean = district.trim();
+  const isNumber = /^\d+$/.test(clean);
+
   return {
-    en: `District ${district}`,
-    ja: `${district}区`,
-    ko: `${district}군`,
-    zh: `第${district}郡`,
+    en: isNumber ? `District ${clean}` : `${clean} District`,
+    ja: `${clean}区`,
+    ko: isNumber ? `${clean}군` : `${clean}구`,
+    zh: isNumber ? `第${clean}郡` : `${clean}区`,
   }[language];
 }
 
 function translateWardLabel(ward: string, language: Exclude<LanguageCode, "vi">) {
+  const clean = ward.trim();
+  const isNumber = /^\d+$/.test(clean);
+
   return {
-    en: `Ward ${ward}`,
-    ja: `Ward ${ward}`,
-    ko: `Ward ${ward}`,
-    zh: `第${ward}坊`,
+    en: isNumber ? `Ward ${clean}` : `${clean} Ward`,
+    ja: `${clean}坊`,
+    ko: `${clean}동`,
+    zh: isNumber ? `第${clean}坊` : `${clean}坊`,
   }[language];
 }
 
 function translatePattern(value: string, language: Exclude<LanguageCode, "vi">): string | null {
   const normalized = normalizeText(value);
 
-  const districtMatch = normalized.match(/^(?:Quận|District)\s+(\d+)$/i);
+  const districtMatch = normalized.match(/^(?:Quận|District)\s+([A-Za-z0-9\sÀ-ỹ]+)$/i);
   if (districtMatch) {
     return translateDistrictLabel(districtMatch[1] ?? "", language);
+  }
+
+  const wardMatch = normalized.match(/^(?:Phường|Ward)\s+([A-Za-z0-9\sÀ-ỹ]+)$/i);
+  if (wardMatch) {
+    return translateWardLabel(wardMatch[1] ?? "", language);
   }
 
   const updatedAtMatch = normalized.match(/^Cập nhật:\s*(.+)$/i);

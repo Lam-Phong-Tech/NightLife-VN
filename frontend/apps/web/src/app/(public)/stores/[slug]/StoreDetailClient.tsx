@@ -2638,18 +2638,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <section className="desktop-only">
                 <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
                 <div className="tour-grid">
-                  {tourMedia.slice(0, 4).map((item, index) => (
-                    <button
-                      className="tour-card"
-                      type="button"
-                      key={`${item.id}-${index}`}
-                      style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={(event) => openVideoGallery(index, event)}
-                    >
-                      <Play size={18} fill="currentColor" />
-                      <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
-                    </button>
-                  ))}
+                  {tourMedia.slice(0, 4).map((item, index) => {
+                    const videoUrl = resolveClientUrl(item.url) ?? item.url;
+                    const visualUrl = mediaVisualUrl(item);
+                    const isDirectVideo = !visualUrl && videoUrl && !videoUrl.includes("youtube.com") && !videoUrl.includes("vimeo.com");
+
+                    return (
+                      <button
+                        className="tour-card"
+                        type="button"
+                        key={`${item.id}-${index}`}
+                        style={visualUrl ? { backgroundImage: imageBackground(visualUrl) } : undefined}
+                        onClick={(event) => openVideoGallery(index, event)}
+                      >
+                        {isDirectVideo ? (
+                          <video
+                            className="tour-card-video-preview"
+                            src={`${videoUrl}#t=0.1`}
+                            preload="metadata"
+                            muted
+                            playsInline
+                          />
+                        ) : null}
+                        <Play size={18} fill="currentColor" />
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             ) : null}
@@ -2766,18 +2780,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <section className="mobile-only">
                 <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
                 <div className="tour-rail hscroll">
-                  {tourMedia.slice(0, 6).map((item, index) => (
-                    <button
-                      className="tour-card"
-                      type="button"
-                      key={`${item.id}-${index}`}
-                      style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      onClick={(event) => openVideoGallery(index, event)}
-                    >
-                      <Play size={18} fill="currentColor" />
-                      <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
-                    </button>
-                  ))}
+                  {tourMedia.slice(0, 6).map((item, index) => {
+                    const videoUrl = resolveClientUrl(item.url) ?? item.url;
+                    const visualUrl = mediaVisualUrl(item);
+                    const isDirectVideo = !visualUrl && videoUrl && !videoUrl.includes("youtube.com") && !videoUrl.includes("vimeo.com");
+
+                    return (
+                      <button
+                        className="tour-card"
+                        type="button"
+                        key={`${item.id}-${index}`}
+                        style={visualUrl ? { backgroundImage: imageBackground(visualUrl) } : undefined}
+                        onClick={(event) => openVideoGallery(index, event)}
+                      >
+                        {isDirectVideo ? (
+                          <video
+                            className="tour-card-video-preview"
+                            src={`${videoUrl}#t=0.1`}
+                            preload="metadata"
+                            muted
+                            playsInline
+                          />
+                        ) : null}
+                        <Play size={18} fill="currentColor" />
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             ) : null}
@@ -2898,7 +2926,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               ) : null}
               <div className="lightbox-caption">
                 {lightboxIndex + 1}/{lightboxGallery.length}
-                {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
               </div>
             </div>,
             portalTarget,
@@ -3552,6 +3579,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 0;
           border-radius: 8px;
           overflow: hidden;
+          background-color: #121215;
           background-size: cover;
           background-position: center;
           color: var(--vy-gold-pale);
@@ -3559,6 +3587,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+
+        .tour-card-video-preview {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          pointer-events: none;
+          z-index: 0;
         }
 
         .tour-card::after {
