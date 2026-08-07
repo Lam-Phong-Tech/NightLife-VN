@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { MediaAccess, MediaType } from '@prisma/client';
+import { MediaAccess, MediaType, Prisma } from '@prisma/client';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemConfigService } from '../system-config/system-config.service';
@@ -305,7 +305,7 @@ export class StorageService implements OnModuleInit {
         purpose,
         type: this.resolveMediaType(finalMimeType),
         access,
-        metadata: mediaMetadata,
+        metadata: mediaMetadata ?? Prisma.JsonNull,
         url: `${publicBaseUrl}/storage/${
           access === MediaAccess.PUBLIC ? 'public' : 'files'
         }/${storageKey}`,
