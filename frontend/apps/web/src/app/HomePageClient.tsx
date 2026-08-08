@@ -565,13 +565,32 @@ function hotVideoThumbnail(video: PublicHotVideo, index: number) {
   );
 }
 
-const isGeneralAreaText = (val?: string | null) => {
+function isGeneralAreaText(val?: string | null) {
   if (!val) return true;
   const norm = val.trim().toLowerCase();
-  return norm === "tổng hợp" || norm === "tong hop" || norm === "tong_hop" || norm === "all";
-};
+  return (
+    norm === "" ||
+    norm === "tổng hợp" ||
+    norm === "tong hop" ||
+    norm === "tong_hop" ||
+    norm === "theo khu vực" ||
+    norm === "theo khu vuc" ||
+    norm === "all" ||
+    norm === "hà nội" ||
+    norm === "hanoi" ||
+    norm === "hồ chí minh" ||
+    norm === "ho chi minh" ||
+    norm === "ho chi minh city" ||
+    norm === "tp.hcm" ||
+    norm === "tp. hồ chí minh" ||
+    norm === "đà nẵng" ||
+    norm === "da nang" ||
+    norm === "trung tâm" ||
+    norm === "trung tam"
+  );
+}
 
-function storeAreaLabel(store: PublicStore) {
+function storeAreaLabel(store: PublicStore, language: LanguageCode = "vi") {
   const wardName = store.ward ?? store.area?.ward;
   const areaName =
     wardName && !isGeneralAreaText(wardName)
@@ -582,12 +601,12 @@ function storeAreaLabel(store: PublicStore) {
       ? store.district
       : "";
   const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
-  const readableCity = cityLabels[store.cityCode ?? ""] ?? store.city;
+  const readableCity = getCityDisplay(store.cityCode, store.city, language);
 
   return [readableArea, readableCity].filter(Boolean).join(" · ");
 }
 
-function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
+function mapStoreToHomeCard(store: PublicStore, index: number, language: LanguageCode = "vi"): HomeStoreCard {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const image = storeCardImage(store, index);
 
@@ -595,7 +614,7 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
     id: store.id,
     slug: store.slug,
     name: store.name,
-    area: storeAreaLabel(store),
+    area: storeAreaLabel(store, language),
     catLabel: categoryLabel,
     category: store.category,
     cityCode: store.cityCode ?? "",
@@ -607,7 +626,7 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
   };
 }
 
-function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: number): HomeStoreCard {
+function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: number, language: LanguageCode = "vi"): HomeStoreCard {
   const categoryLabel = categoryLabels[item.category] ?? item.category;
   const wardName = (item as any).ward ?? item.area?.ward;
   const areaName =
@@ -619,7 +638,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
       ? item.district
       : "";
   const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
-  const readableCity = cityLabels[item.cityCode ?? ""] ?? item.city;
+  const readableCity = getCityDisplay(item.cityCode, item.city, language);
   const activeCouponName = item.activeCoupon?.name;
   const image = resolveClientUrl(item.thumbnailUrl);
 

@@ -428,7 +428,26 @@ const normalizeVietnameseLocationText = (value: string) =>
 const isGeneralLocationPart = (val?: string | null) => {
   if (!val) return true;
   const norm = val.trim().toLowerCase();
-  return norm === "tổng hợp" || norm === "tong hop" || norm === "tong_hop" || norm === "all";
+  return (
+    norm === "" ||
+    norm === "tổng hợp" ||
+    norm === "tong hop" ||
+    norm === "tong_hop" ||
+    norm === "theo khu vực" ||
+    norm === "theo khu vuc" ||
+    norm === "all" ||
+    norm === "hà nội" ||
+    norm === "hanoi" ||
+    norm === "hồ chí minh" ||
+    norm === "ho chi minh" ||
+    norm === "ho chi minh city" ||
+    norm === "tp.hcm" ||
+    norm === "tp. hồ chí minh" ||
+    norm === "đà nẵng" ||
+    norm === "da nang" ||
+    norm === "trung tâm" ||
+    norm === "trung tam"
+  );
 };
 
 const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) => {

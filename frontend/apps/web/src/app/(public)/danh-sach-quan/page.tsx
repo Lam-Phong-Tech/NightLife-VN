@@ -526,7 +526,26 @@ const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): Ven
   const isGeneralVal = (v?: string | null) => {
     if (!v) return true;
     const n = v.trim().toLowerCase();
-    return n === "tổng hợp" || n === "tong hop" || n === "tong_hop" || n === "all";
+    return (
+      n === "" ||
+      n === "tổng hợp" ||
+      n === "tong hop" ||
+      n === "tong_hop" ||
+      n === "theo khu vực" ||
+      n === "theo khu vuc" ||
+      n === "all" ||
+      n === "hà nội" ||
+      n === "hanoi" ||
+      n === "hồ chí minh" ||
+      n === "ho chi minh" ||
+      n === "ho chi minh city" ||
+      n === "tp.hcm" ||
+      n === "tp. hồ chí minh" ||
+      n === "đà nẵng" ||
+      n === "da nang" ||
+      n === "trung tâm" ||
+      n === "trung tam"
+    );
   };
   const wardName = store.ward ?? store.area?.ward;
   const rawArea = wardName && !isGeneralVal(wardName)
@@ -535,9 +554,9 @@ const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): Ven
     ? store.area?.name
     : !isGeneralVal(store.district)
     ? store.district
-    : store.city ?? "Trung tâm";
-  const areaLabel = getLocalizedAreaLabel(rawArea ?? "Trung tâm", language);
-  const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city;
+    : null;
+  const areaLabel = rawArea ? getLocalizedAreaLabel(rawArea, language) : "";
+  const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city || "";
   const backendImage = resolveClientUrl(store.thumbnailUrl);
   const image = backendImage ?? emptyVenueImage;
   const { label: statusLabel, isOpen, tone } = openingStatus(store, language, now);
@@ -1603,7 +1622,7 @@ function VenueSearchSuggestions({
               <span>
                 <b className="notranslate" translate="no" data-no-translate="true">{highlightMatch(venue.name, query)}</b>
                 <small>
-                  {venue.categoryLabel} · {venue.areaLabel} · {venue.cityLabel}
+                  {[venue.categoryLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
                 </small>
               </span>
               <ChevronRight size={15} />
@@ -2012,11 +2031,7 @@ function VenueResultCard({
             <h2 className="notranslate" translate="no" data-no-translate="true">{venue.name}</h2>
           </div>
           <p className="venue-meta">
-            {venue.categoryLabel} · {venue.areaLabel}
-            <span className="venue-mobile-distance">
-              {" "}
-              · {venue.distanceLabel} · {venue.cityLabel}
-            </span>
+            {[venue.categoryLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
           </p>
           <div className="venue-tags">
             {venue.tags.map((tag) => (
@@ -2026,7 +2041,7 @@ function VenueResultCard({
           <div className="venue-price notranslate" translate="no" data-no-translate="true">{venue.priceLabel}</div>
           <div className="venue-distance">
             <MapPin size={12} />
-            {venue.distanceLabel} · {venue.areaLabel} · {venue.cityLabel}
+            {[venue.distanceLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
           </div>
         </div>
 

@@ -211,12 +211,41 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
 }
 
 export function buildCastArea(profile: CastProfile) {
-  return [
-    profile.store.area?.name ?? profile.store.district,
-    cityLabels[profile.store.cityCode ?? ""] ?? profile.store.city,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const isGenVal = (v?: string | null) => {
+    if (!v) return true;
+    const n = v.trim().toLowerCase();
+    return (
+      n === "" ||
+      n === "tổng hợp" ||
+      n === "tong hop" ||
+      n === "tong_hop" ||
+      n === "theo khu vực" ||
+      n === "theo khu vuc" ||
+      n === "all" ||
+      n === "hà nội" ||
+      n === "hanoi" ||
+      n === "hồ chí minh" ||
+      n === "ho chi minh" ||
+      n === "ho chi minh city" ||
+      n === "tp.hcm" ||
+      n === "tp. hồ chí minh" ||
+      n === "đà nẵng" ||
+      n === "da nang" ||
+      n === "trung tâm" ||
+      n === "trung tam"
+    );
+  };
+  const wardName = profile.store.ward ?? profile.store.area?.ward;
+  const rawWard = wardName && !isGenVal(wardName)
+    ? wardName
+    : !isGenVal(profile.store.area?.name)
+    ? profile.store.area?.name
+    : !isGenVal(profile.store.district)
+    ? profile.store.district
+    : null;
+  const city = cityLabels[profile.store.cityCode ?? ""] ?? profile.store.city;
+
+  return [rawWard, city].filter(Boolean).join(" · ");
 }
 
 export function buildBookingHref(profile: CastProfile, area: string) {

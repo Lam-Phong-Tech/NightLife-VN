@@ -157,19 +157,52 @@ const withNullableTimeout = async <T,>(promise: Promise<T>, ms = 2500) =>
 const isGenArea = (v?: string | null) => {
   if (!v) return true;
   const n = v.trim().toLowerCase();
-  return n === "tổng hợp" || n === "tong hop" || n === "tong_hop" || n === "all";
+  return (
+    n === "" ||
+    n === "tổng hợp" ||
+    n === "tong hop" ||
+    n === "tong_hop" ||
+    n === "theo khu vực" ||
+    n === "theo khu vuc" ||
+    n === "all" ||
+    n === "hà nội" ||
+    n === "hanoi" ||
+    n === "hồ chí minh" ||
+    n === "ho chi minh" ||
+    n === "ho chi minh city" ||
+    n === "tp.hcm" ||
+    n === "tp. hồ chí minh" ||
+    n === "đà nẵng" ||
+    n === "da nang" ||
+    n === "trung tâm" ||
+    n === "trung tam"
+  );
 };
 
 const storeArea = (store: PublicStore) => {
   const wardName = store.ward ?? store.area?.ward;
-  const areaName = wardName && !isGenArea(wardName) ? wardName : (!isGenArea(store.area?.name) ? store.area?.name : (!isGenArea(store.district) ? store.district : ""));
-  return [areaName, cityLabels[store.cityCode ?? ""] ?? store.city].filter(Boolean).join(" · ");
+  const areaName = wardName && !isGenArea(wardName)
+    ? wardName
+    : !isGenArea(store.area?.name)
+    ? store.area?.name
+    : !isGenArea(store.district)
+    ? store.district
+    : null;
+  const city = cityLabels[store.cityCode ?? ""] ?? store.city;
+  return [areaName, city].filter(Boolean).join(" · ");
 };
 
 const castArea = (cast: PublicCast) => {
   const wardName = cast.store.ward ?? cast.store.area?.ward;
-  const areaName = wardName && !isGenArea(wardName) ? wardName : (!isGenArea(cast.store.area?.name) ? cast.store.area?.name : (!isGenArea(cast.store.district) ? cast.store.district : ""));
-  return [areaName, cityLabels[cast.store.cityCode ?? ""] ?? cast.store.city].filter(Boolean).join(" · ");
+  const areaName = wardName && !isGenArea(wardName)
+    ? wardName
+    : !isGenArea(cast.store.area?.name)
+    ? cast.store.area?.name
+    : !isGenArea(cast.store.district)
+    ? cast.store.district
+    : null;
+  const city = cityLabels[cast.store.cityCode ?? ""] ?? cast.store.city;
+  return [areaName, city].filter(Boolean).join(" · ");
 };
 
 const mergeStoreItem = (
