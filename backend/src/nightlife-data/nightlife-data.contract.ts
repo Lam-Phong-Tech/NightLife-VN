@@ -311,7 +311,7 @@ const castDetailExample = {
     googlePlaceId: null,
   },
   seo: {
-    title: 'Yuna tại Neon Club | NightLife VN',
+    title: 'Yuna · Neon Club | Vietyoru',
     description:
       'Yuna hosts public VIP bookings at Neon Club in Tay Ho, Ha Noi.',
     canonicalPath: '/casts/yuna-neon',

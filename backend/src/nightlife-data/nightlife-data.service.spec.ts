@@ -2386,7 +2386,7 @@ describe('NightlifeDataService', () => {
           mapUrl: 'https://maps.example/velvet',
         }),
         seo: expect.objectContaining({
-          title: 'Aya tại Velvet Club | NightLife VN',
+          title: 'Aya · Velvet Club | Vietyoru',
           canonicalPath: '/casts/aya-velvet',
           ogImage: 'https://example.com/aya-avatar.jpg',
         }),
