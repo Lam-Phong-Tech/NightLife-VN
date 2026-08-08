@@ -3653,3 +3653,15 @@ html, body {
   margin-top: 0px !important;
   position: static !important;
 }
+
+/* Hide native browser clear button (X) on input[type="search"] globally */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  display: none;
+}
+
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}

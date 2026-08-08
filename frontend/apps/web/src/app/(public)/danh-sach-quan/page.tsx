@@ -2191,14 +2191,6 @@ const venueSearchCss = `
     color: var(--vy-text);
     font-size: 15px;
     font-weight: 600;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  .venue-search-input input::-webkit-search-cancel-button,
-  .venue-search-input input::-webkit-search-decoration {
-    -webkit-appearance: none;
-    display: none;
   }
 
   .venue-search-input input::placeholder {
