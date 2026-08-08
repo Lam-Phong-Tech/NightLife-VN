@@ -3318,8 +3318,8 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
 
     discoveryApi
       .listStoresStrict({ city: "all", limit: 8, sort: "priority" })
-      .then((stores) => {
-        if (!cancelled) setHomeStores(stores);
+      .then((result) => {
+        if (!cancelled) setHomeStores(result.stores);
       })
       .catch(() => {
         if (!cancelled) {

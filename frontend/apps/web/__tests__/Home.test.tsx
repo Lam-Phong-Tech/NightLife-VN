@@ -121,7 +121,13 @@ describe('Home Page', () => {
     window.localStorage.clear();
     delete process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS;
 
-    listStoresStrictMock.mockResolvedValue([]);
+    listStoresStrictMock.mockResolvedValue({
+      stores: [],
+      total: 0,
+      page: 1,
+      limit: 8,
+      meta: { total: 0, page: 1, limit: 8, offset: 0, hasMore: false, sort: "priority" },
+    });
     contentRecommendationsMock.mockResolvedValue([
       {
         id: 'store-api-1',

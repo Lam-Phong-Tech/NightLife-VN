@@ -169,7 +169,7 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
-const venueItemsPerPage = 8;
+const venueItemsPerPage = 12;
 const venueSearchHistoryKey = "vietyoru.venue-search-history.v1";
 
 const venueCopyVi: VenueSearchCopy = {
@@ -617,6 +617,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [stores, setStores] = useState<PublicStore[]>([]);
+  const [totalStores, setTotalStores] = useState(0);
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
   );
@@ -746,21 +747,27 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       setError(null);
       discoveryApi
         .listStoresStrict({
+          q: submittedQuery,
           city,
           area,
           category: effectiveCategory,
           lat: coords?.lat,
           lng: coords?.lng,
-          limit: 48,
+          page: currentPage,
+          limit: venueItemsPerPage,
           sort,
           hasActiveCoupon,
         })
-        .then((items) => {
-          if (!cancelled) setStores(items);
+        .then((result) => {
+          if (!cancelled) {
+            setStores(result.stores);
+            setTotalStores(result.total);
+          }
         })
         .catch(() => {
           if (!cancelled) {
             setStores([]);
+            setTotalStores(0);
             setError("Chưa kết nối được dữ liệu quán.");
           }
         })
@@ -773,7 +780,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, city, coords, effectiveCategory, hasActiveCoupon, sort]);
+  }, [area, city, coords, currentPage, effectiveCategory, hasActiveCoupon, sort, submittedQuery]);
 
   useEffect(() => {
     if (!topRankingOnly) {
@@ -1089,12 +1096,17 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       .slice(0, 4)
       .map((store) => toVenueView(store, activeLanguage, openingNow));
   }, [activeLanguage, openingNow, query, stores]);
-  const totalPages = Math.max(1, Math.ceil(venues.length / venueItemsPerPage));
-  const currentPageStart = (currentPage - 1) * venueItemsPerPage;
-  const pagedVenues = useMemo(
-    () => venues.slice(currentPageStart, currentPageStart + venueItemsPerPage),
-    [currentPageStart, venues],
-  );
+  const totalPages = Math.max(1, Math.ceil(totalStores / venueItemsPerPage));
+  const pagedVenues = venues;
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && currentPage > 0) {
+      const targetElement = document.querySelector(".venue-result-bar") || document.querySelector(".venue-list");
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [currentPage]);
   const showSuggestions = isSearchFocused && query.trim().length > 0;
   const pageTitle = fixedCategory
     ? formatCategoryVenueSearchTitle(fixedCategory, cityLabel, activeLanguage)
@@ -1295,7 +1307,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
               <DesktopVenueFilterPopover
                 area={area}
                 areaOptions={areaOptions}
-                applyLabel={formatVenueApplyLabel(venues.length, activeLanguage)}
+                applyLabel={formatVenueApplyLabel(totalStores, activeLanguage)}
                 category={category}
                 categoryOptions={categoryOptions}
                 city={city}
@@ -1365,7 +1377,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
         <div className="venue-result-bar">
           <div>
-            <strong>{isResultsLoading ? "..." : formatVenueCount(venues.length, activeLanguage)}</strong>
+            <strong>{isResultsLoading ? "..." : formatVenueCount(totalStores, activeLanguage)}</strong>
             <span> · {city ? cityLabel : copy.all}</span>
           </div>
 
@@ -1430,7 +1442,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
             </div>
           )}
         </section>
-        {!isResultsLoading && venues.length > venueItemsPerPage ? (
+        {!isResultsLoading && totalStores > venueItemsPerPage ? (
           <VenuePagination
             currentPage={currentPage}
             language={activeLanguage}
@@ -1444,7 +1456,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         <MobileVenueFilterSheet
           area={area}
           areaOptions={areaOptions}
-          applyLabel={formatVenueApplyLabel(venues.length, activeLanguage)}
+          applyLabel={formatVenueApplyLabel(totalStores, activeLanguage)}
           category={category}
           categoryOptions={categoryOptions}
           city={city}

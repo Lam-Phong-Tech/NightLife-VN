@@ -269,6 +269,14 @@ const sortStores = (stores: PublicStore[], params: DiscoveryParams) =>
     return left.name.localeCompare(right.name);
   });
 
+export type PublicDiscoveryStoreListResponse = {
+  stores: PublicStore[];
+  total: number;
+  page: number;
+  limit: number;
+  meta: PublicDiscoveryMeta;
+};
+
 const paginateItems = <T>(items: T[], params: DiscoveryParams = {}) => {
   const limit =
     typeof params.limit === "number" && Number.isFinite(params.limit) && params.limit > 0
@@ -287,7 +295,7 @@ const paginateItems = <T>(items: T[], params: DiscoveryParams = {}) => {
 const getFallbackAreas = (params: Pick<DiscoveryParams, "city"> = {}) =>
   demoAreas.filter((area) => matchesCity(params.city, area));
 
-const getFallbackStores = (params: DiscoveryParams = {}) => {
+const getFallbackStores = (params: DiscoveryParams = {}): PublicDiscoveryStoreListResponse => {
   const stores = demoStores
     .filter((store) => matchesCity(params.city, store))
     .filter((store) => matchesCategory(params.category, store))
@@ -309,7 +317,33 @@ const getFallbackStores = (params: DiscoveryParams = {}) => {
     )
     .map((store) => withStoreDistance(store, params));
 
-  return paginateItems(sortStores(stores, params), params);
+  const sorted = sortStores(stores, params);
+  const total = sorted.length;
+  const paged = paginateItems(sorted, params);
+  const limit =
+    typeof params.limit === "number" && Number.isFinite(params.limit) && params.limit > 0
+      ? params.limit
+      : total;
+  const page =
+    typeof params.page === "number" && Number.isFinite(params.page) && params.page > 0
+      ? params.page
+      : 1;
+  const offset = (page - 1) * limit;
+
+  return {
+    stores: paged,
+    total,
+    page,
+    limit,
+    meta: {
+      total,
+      page,
+      limit,
+      offset,
+      hasMore: offset + paged.length < total,
+      sort: params.sort ?? "priority",
+    },
+  };
 };
 
 const getFallbackCasts = (params: DiscoveryParams = {}) => {
@@ -392,16 +426,61 @@ const normalizePublicStore = (store: PublicStore): PublicStore => ({
     : store.priceReference,
 });
 
+const unwrapStoreListResponse = (
+  response: PublicStore[] | PublicDiscoveryListResponse<PublicStore>,
+  params: DiscoveryParams = {}
+): PublicDiscoveryStoreListResponse => {
+  if (Array.isArray(response)) {
+    const stores = response.map(normalizePublicStore);
+    const limit = params.limit ?? stores.length;
+    const page = params.page ?? 1;
+    const offset = params.offset ?? (page - 1) * limit;
+
+    return {
+      stores,
+      total: stores.length,
+      page,
+      limit,
+      meta: {
+        total: stores.length,
+        page,
+        limit,
+        offset,
+        hasMore: offset + stores.length < stores.length,
+        sort: params.sort ?? "priority",
+      },
+    };
+  }
+
+  const stores = (response.data ?? []).map(normalizePublicStore);
+  const meta = response.meta ?? {
+    total: stores.length,
+    page: params.page ?? 1,
+    limit: params.limit ?? stores.length,
+    offset: params.offset ?? 0,
+    hasMore: false,
+    sort: params.sort ?? "priority",
+  };
+
+  return {
+    stores,
+    total: meta.total,
+    page: meta.page,
+    limit: meta.limit,
+    meta,
+  };
+};
+
 const normalizePublicCast = (cast: PublicCast): PublicCast => ({
   ...cast,
   thumbnailUrl: resolveClientUrl(cast.thumbnailUrl),
   store: normalizePublicStore(cast.store),
 });
 
-const withDemoFallback = async <T extends unknown[]>(
+const withDemoFallback = async <T>(
   request: () => Promise<T>,
   fallback: () => T,
-) => {
+): Promise<T> => {
   try {
     return await request();
   } catch {
@@ -420,13 +499,13 @@ export const discoveryApi = {
       () =>
         apiClient<PublicStore[] | PublicDiscoveryListResponse<PublicStore>>("/stores", {
           params: toParams(params),
-        }).then((response) => unwrapListResponse(response).map(normalizePublicStore)),
+        }).then((response) => unwrapStoreListResponse(response, params)),
       () => getFallbackStores(params),
     ),
   listStoresStrict: (params?: DiscoveryParams) =>
     apiClient<PublicStore[] | PublicDiscoveryListResponse<PublicStore>>("/stores", {
       params: toParams(params),
-    }).then((response) => unwrapListResponse(response).map(normalizePublicStore)),
+    }).then((response) => unwrapStoreListResponse(response, params)),
   listCasts: (params?: DiscoveryParams) =>
     withDemoFallback(
       () =>
@@ -440,3 +519,4 @@ export const discoveryApi = {
       params: toParams(params),
     }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
 };
+

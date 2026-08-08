@@ -270,7 +270,7 @@ export default function Page() {
     void (async () => {
       const [storeList, castList] = await Promise.all([
         mergedStoreSlugs.length
-          ? withTimeout(discoveryApi.listStores({ city: "all", limit: 120 }), [] as PublicStore[])
+          ? withTimeout(discoveryApi.listStores({ city: "all", limit: 120 }).then((res) => res.stores), [] as PublicStore[])
           : Promise.resolve([] as PublicStore[]),
         mergedCastSlugs.length
           ? withTimeout(discoveryApi.listCasts({ city: "all", limit: 160 }), [] as PublicCast[])
