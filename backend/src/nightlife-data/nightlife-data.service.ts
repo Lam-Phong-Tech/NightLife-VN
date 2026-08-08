@@ -2308,6 +2308,7 @@ export class NightlifeDataService {
         ? this.cityCodeFromAreaCode(store.area.code)
         : this.normalizeCityCode(store.city),
       district: store.district,
+      ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
       tags: store.tags ?? [],
       area: store.area
         ? {
@@ -2601,6 +2602,7 @@ export class NightlifeDataService {
         ? this.cityCodeFromAreaCode(store.area.code)
         : this.normalizeCityCode(store.city),
       district: store.district,
+      ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
       phone: store.phone,
       tags: store.tags ?? [],
       latitude: this.toNumber(store.latitude),
@@ -7104,6 +7106,7 @@ export class NightlifeDataService {
             ? this.cityCodeFromAreaCode(store.area.code)
             : this.normalizeCityCode(store.city),
           district: store.district,
+          ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
           tags: store.tags ?? [],
           area: this.mapPublicArea(store.area),
           latitude: this.toNumber(store.latitude),
@@ -25423,6 +25426,7 @@ export class NightlifeDataService {
               ? this.cityCodeFromAreaCode(store.area.code)
               : this.normalizeCityCode(store.city),
             district: store.district,
+            ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
             area: this.mapPublicArea(store.area),
             thumbnailUrl: this.resolveStoreCoverImage(store.media),
             href: `/stores/${store.slug}`,
@@ -25597,6 +25601,7 @@ export class NightlifeDataService {
             ? this.cityCodeFromAreaCode(store.area.code)
             : this.normalizeCityCode(store.city),
           district: store.district,
+          ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
           area: this.mapPublicArea(store.area),
           thumbnailUrl: this.resolveStoreCoverImage(store.media),
           href: `/stores/${store.slug}`,
@@ -25768,6 +25773,7 @@ export class NightlifeDataService {
             description: store.description,
             city: store.city,
             district: store.district,
+            ward: store.ward ?? store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
             area: this.mapPublicArea(store.area),
             thumbnailUrl: this.resolveStoreCoverImage(store.media),
             href: `/stores/${store.slug}`,

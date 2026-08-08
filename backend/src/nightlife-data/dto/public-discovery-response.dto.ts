@@ -154,6 +154,9 @@ export class PublicStoreDto {
   @ApiPropertyOptional({ example: 'Tay Ho', nullable: true })
   district?: string | null;
 
+  @ApiPropertyOptional({ example: 'Phường Sài Gòn', nullable: true })
+  ward?: string | null;
+
   @ApiPropertyOptional({ type: [String], example: ['vip', 'cocktail'] })
   tags?: string[];
 
