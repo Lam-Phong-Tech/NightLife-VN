@@ -78,14 +78,15 @@ export async function createI18nNoindexMetadata(
   requestedLanguage?: string | string[] | null,
 ): Promise<Metadata> {
   const { getServerSelectedLanguage } = await import("@/lib/i18n/server-language");
-  const { translateText } = await import("@/lib/i18n/client-translations");
+  const { translateTextCore } = await import("@/lib/i18n/translation-core");
 
   const language = await getServerSelectedLanguage(requestedLanguage);
-  const translatedTitle = translateText(rawTitle, language);
-  const translatedDescription = translateText(rawDescription, language);
+  const translatedTitle = translateTextCore(rawTitle, language);
+  const translatedDescription = translateTextCore(rawDescription, language);
 
   return createNoindexMetadata(
     `${translatedTitle} | ${siteConfig.name}`,
     translatedDescription,
   );
 }
+
