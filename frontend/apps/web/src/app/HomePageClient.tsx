@@ -671,6 +671,46 @@ function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStore
   };
 }
 
+function getCityDisplay(cityCode?: string | null, city?: string | null, language: LanguageCode = "vi") {
+  const normCity = (cityCode ?? city ?? "").toLowerCase();
+  const isHcm = normCity.includes("hcm") || normCity.includes("ho chi minh") || normCity.includes("hồ chí minh") || normCity.includes("saigon");
+  const isHn = normCity.includes("hn") || normCity.includes("hanoi") || normCity.includes("hà nội");
+  const isDn = normCity.includes("dn") || normCity.includes("da nang") || normCity.includes("đà nẵng");
+
+  if (isHcm) {
+    return {
+      vi: "TP.HCM",
+      en: "Ho Chi Minh City",
+      ja: "ホーチミン市",
+      ko: "호찌민시",
+      zh: "胡志明市",
+    }[language] ?? "TP.HCM";
+  }
+
+  if (isHn) {
+    return {
+      vi: "Hà Nội",
+      en: "Hanoi",
+      ja: "ハノイ",
+      ko: "하노이",
+      zh: "河内",
+    }[language] ?? "Hà Nội";
+  }
+
+  if (isDn) {
+    return {
+      vi: "Đà Nẵng",
+      en: "Da Nang",
+      ja: "ダナン",
+      ko: "다낭",
+      zh: "岘港",
+    }[language] ?? "Đà Nẵng";
+  }
+
+  const fallback = cityLabels[cityCode ?? ""] ?? city ?? "";
+  return language ? translateText(fallback, language) : fallback;
+}
+
 function storeAreaText(
   area?: string | null,
   cityCode?: string | null,
@@ -681,7 +721,7 @@ function storeAreaText(
   const selectedWard = ward && !isGeneralAreaText(ward) ? ward : null;
   const selectedArea = area && !isGeneralAreaText(area) ? (areaLabels[area] ?? area) : null;
   const readableArea = selectedWard ?? selectedArea ?? "";
-  const readableCity = cityLabels[cityCode ?? ""] ?? city ?? "";
+  const readableCity = getCityDisplay(cityCode, city, language ?? "vi");
   const rawText = [readableArea, readableCity].filter(Boolean).join(" · ");
   return language ? translateText(rawText, language) : rawText;
 }
@@ -699,6 +739,7 @@ function mapCouponToHomeItem(
 ): HomeCouponItem {
   void index;
   const storeImageUrl = coupon.store.media?.[0]?.url;
+  const storeCityCode = coupon.store.cityCode ?? (coupon.store.city?.toLowerCase().includes("ho chi minh") || coupon.store.city?.toLowerCase().includes("hồ chí minh") ? "hcm" : "hn");
 
   return {
     id: coupon.id,
@@ -706,7 +747,7 @@ function mapCouponToHomeItem(
     value: formatCouponValue(coupon, language, rates),
     place: [
       coupon.store.name,
-      storeAreaText(coupon.store.district, undefined, coupon.store.city, language, coupon.store.ward),
+      storeAreaText(coupon.store.district, storeCityCode, coupon.store.city, language, coupon.store.ward),
     ]
       .filter(Boolean)
       .join(" · "),
@@ -727,25 +768,21 @@ function mapCampaignToHomeItem(
     campaign.discountType === "PERCENT"
       ? `-${campaign.discountValue}%`
       : `-${formatVndByLanguage(campaign.discountValue, language, rates)}`;
+  const store = campaign.targetStore;
+  const storeCityCode = store?.cityCode ?? (store?.city?.toLowerCase().includes("ho chi minh") || store?.city?.toLowerCase().includes("hồ chí minh") ? "hcm" : "hn");
 
   return {
     id: campaign.id,
     title: campaign.name,
     value,
     place: [
-      campaign.targetStore?.name,
-      storeAreaText(
-        campaign.targetStore?.district,
-        undefined,
-        campaign.targetStore?.city,
-        language,
-        campaign.targetStore?.ward,
-      ),
+      store?.name,
+      storeAreaText(store?.district, storeCityCode, store?.city, language, store?.ward),
     ]
       .filter(Boolean)
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
-    href: `/stores/${campaign.targetStore?.slug ?? ""}?couponId=${campaign.id}`,
+    href: `/stores/${store?.slug ?? ""}?couponId=${campaign.id}`,
     homePosition: campaign.homePosition ?? undefined,
   };
 }

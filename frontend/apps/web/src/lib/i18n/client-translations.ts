@@ -8984,7 +8984,7 @@ export function syncGoogleTranslateCookie(language: LanguageCode) {
   );
 }
 
-const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v2.";
+const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v3.";
 const dynamicMemoryCache = new Map<string, Partial<Record<LanguageCode, string>>>();
 let isDynamicCacheHydrated = false;
 
@@ -9050,7 +9050,11 @@ export function normalizeText(value: string) {
 
 const vietnameseSourceAliases: Record<string, string> = {
   Hanoi: "Hà Nội",
-  "Ho Chi Minh City": "TP. Hồ Chí Minh",
+  "Ho Chi Minh City": "TP.HCM",
+  "Ho Chi Minh": "TP.HCM",
+  "Hồ Chí Minh": "TP.HCM",
+  "TP. Hồ Chí Minh": "TP.HCM",
+  "Da Nang": "Đà Nẵng",
 };
 
 export function getVietnameseSource(value: string) {
@@ -9059,8 +9063,15 @@ export function getVietnameseSource(value: string) {
 }
 
 export function translateText(value: string, language: LanguageCode): string {
+  if (language === "vi") {
+    if (value.includes(" · ") || value.includes(" — ") || value.includes(", ")) {
+      const parts = value.split(/(\s*[\cdot,·|—]\s*)/);
+      return parts.map((part) => getVietnameseSource(part)).join("");
+    }
+    return getVietnameseSource(value);
+  }
+
   const source = getVietnameseSource(value);
-  if (language === "vi") return source;
 
   const normalized = normalizeText(source);
   if (!normalized) return source;
