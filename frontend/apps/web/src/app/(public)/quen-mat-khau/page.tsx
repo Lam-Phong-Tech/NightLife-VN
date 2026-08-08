@@ -6,12 +6,17 @@ import {
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
-import { translateText } from "@/lib/i18n/client-translations";
+import {
+  isLanguageCode,
+  languageChangedEvent,
+  storeLanguagePreference,
+  translateText,
+} from "@/lib/i18n/client-translations";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const colors = {
   bg: "#0c0c0f",
@@ -52,6 +57,27 @@ export default function ForgotPasswordPage() {
   const [messageTone, setMessageTone] = useState<"error" | "success">("success");
   const [expiresInMinutes, setExpiresInMinutes] = useState(15);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    if (!isLanguageCode(requestedLanguage)) return;
+
+    storeLanguagePreference(requestedLanguage);
+    window.dispatchEvent(
+      new CustomEvent(languageChangedEvent, { detail: { language: requestedLanguage } }),
+    );
+  }, []);
+
+  useEffect(() => {
+    const rawSourceTitle = "Quên mật khẩu";
+    const fullSourceTitle = `${rawSourceTitle} | Vietyoru`;
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("data-vietyoru-source-title", fullSourceTitle);
+    }
+    const pageTitle = translateText(rawSourceTitle, activeLanguage);
+    document.title = `${pageTitle} | Vietyoru`;
+  }, [activeLanguage]);
 
   const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
 

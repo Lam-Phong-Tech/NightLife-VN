@@ -4583,23 +4583,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-weight: 800;
         }
 
-        .feature-chips span:nth-child(n + 3) {
-          color: var(--vy-muted);
-          background: var(--vy-surface-2);
-          border-color: rgba(255, 255, 255, .1);
-        }
-
         html.vy-light .feature-chips span,
         html.vy-light .menu-chips button {
           color: #78571c;
           background: rgba(168, 124, 52, .12);
           border-color: rgba(150, 116, 52, .32);
-        }
-
-        html.vy-light .feature-chips span:nth-child(n + 3) {
-          color: #4a453c;
-          background: rgba(28, 22, 10, .05);
-          border-color: rgba(30, 24, 12, .14);
         }
 
         .language-grid {
