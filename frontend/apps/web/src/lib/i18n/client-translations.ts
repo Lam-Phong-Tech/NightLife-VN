@@ -9283,6 +9283,11 @@ export function translateDocumentTitle(language: LanguageCode) {
     return;
   }
 
+  // Do not auto-translate dynamic entity titles on detail pages (Cast, Store, Tour, Blog detail)
+  if (/^\/(?:[a-z]{2}\/)?(?:casts|stores|tour|blog)\/[^/]+$/i.test(pathname)) {
+    return;
+  }
+
   const titleElement = document.querySelector("title");
   if (!titleElement) return;
 

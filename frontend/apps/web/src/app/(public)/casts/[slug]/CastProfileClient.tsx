@@ -175,26 +175,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
   useEffect(() => {
     const titleElement = document.querySelector("title");
+    const fullTitle = `${profile.name} · ${profile.store.name} | Vietyoru`;
     if (titleElement) {
       titleElement.setAttribute("translate", "no");
       titleElement.setAttribute("data-no-translate", "true");
       titleElement.classList.add("notranslate");
-      titleElement.setAttribute(
-        "data-vietyoru-source-title",
-        `${profile.name} · ${profile.store.name} | Vietyoru`,
-      );
+      titleElement.setAttribute("data-vietyoru-source-title", fullTitle);
     }
-    const storeName = translateText(profile.store.name, activeLanguage);
-    const mainTitle =
-      activeLanguage === "ja"
-        ? `${storeName}の${profile.name}`
-        : activeLanguage === "ko"
-          ? `${storeName}의 ${profile.name}`
-          : activeLanguage === "zh"
-            ? `${storeName}的${profile.name}`
-            : `${profile.name} · ${storeName}`;
-    document.title = `${mainTitle} | Vietyoru`;
-  }, [profile.name, profile.store.name, activeLanguage]);
+    document.title = fullTitle;
+  }, [profile.name, profile.store.name]);
 
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
   const favoriteFeedbackCopy = castFavoriteFeedbackCopy(activeLanguage, profile.name);
