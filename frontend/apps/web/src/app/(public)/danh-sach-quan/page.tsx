@@ -320,8 +320,7 @@ const formatVenueActiveFilters = (count: number, language: LanguageCode) => {
 };
 
 const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
-  if (language === "en") return `View ${formatVenueCount(count, language)}`;
-  return `${translateText("Xem", language)} ${formatVenueCount(count, language)}`;
+  return translateText(`Xem ${count} quán`, language);
 };
 
 const formatVenueSearchTitle = (
