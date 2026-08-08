@@ -7,6 +7,7 @@ import {
   languageChangedEvent,
   languageHtmlLang,
   readStoredLanguage,
+  translateDocumentTitle,
   translateText,
   translateWithWhitespace,
   type LanguageCode,
@@ -131,15 +132,6 @@ function normalizeForComparison(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function lockTitleFromTranslation() {
-  const titleElement = document.querySelector("title");
-  if (titleElement) {
-    titleElement.setAttribute("translate", "no");
-    titleElement.setAttribute("data-no-translate", "true");
-    titleElement.classList.add("notranslate");
-  }
-}
-
 function applyTranslations(language: LanguageCode) {
   document.documentElement.lang = languageHtmlLang[language];
   document.documentElement.dataset.vietyoruLanguage = language;
@@ -155,7 +147,7 @@ function applyTranslations(language: LanguageCode) {
     // ignore
   }
 
-  lockTitleFromTranslation();
+  translateDocumentTitle(language);
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
@@ -209,6 +201,36 @@ export function ClientLanguageTranslator({
   hostKind: NightlifeHostKind;
 }) {
   const pathname = usePathname() || "/";
+
+  // Dedicated layout effect to handle document title translation for all user-facing pages
+  useLayoutEffect(() => {
+    let language = readStoredLanguage();
+
+    const updateTitle = () => {
+      translateDocumentTitle(language);
+    };
+
+    const onLanguageChange = (event: Event) => {
+      const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }>).detail?.language;
+      language = nextLanguage ?? readStoredLanguage();
+      updateTitle();
+    };
+
+    updateTitle();
+    window.addEventListener(languageChangedEvent, onLanguageChange);
+
+    const titleElement = document.querySelector("title");
+    let titleObserver: MutationObserver | null = null;
+    if (titleElement) {
+      titleObserver = new MutationObserver(updateTitle);
+      titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
+    }
+
+    return () => {
+      window.removeEventListener(languageChangedEvent, onLanguageChange);
+      if (titleObserver) titleObserver.disconnect();
+    };
+  }, [pathname, hostKind]);
 
   useLayoutEffect(() => {
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
@@ -278,3 +300,4 @@ export function ClientLanguageTranslator({
     </div>
   );
 }
+

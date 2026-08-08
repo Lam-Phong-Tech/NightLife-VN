@@ -6298,6 +6298,97 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "이 페이지는 이름이 변경되었거나 더 이상 존재하지 않을 수 있습니다. 매장이나 Cast를 검색하거나 홈으로 돌아가세요.",
     zh: "该页面可能已更名或不再存在。请尝试搜索店铺、陪伴人员，或返回首页。",
   },
+  {
+    vi: "Đăng nhập đối tác",
+    en: "Partner login",
+    ja: "パートナーログイン",
+    ko: "파트너 로그인",
+    zh: "合作伙伴登录",
+  },
+  {
+    vi: "Danh sách Cast",
+    en: "Cast list",
+    ja: "キャスト一覧",
+    ko: "캐스트 목록",
+    zh: "佳丽列表",
+  },
+  {
+    vi: "Tài khoản",
+    en: "Account",
+    ja: "アカウント",
+    ko: "계정",
+    zh: "账户",
+  },
+  {
+    vi: "Đặt chỗ",
+    en: "Bookings",
+    ja: "予約",
+    ko: "예약",
+    zh: "预订",
+  },
+  {
+    vi: "Chi tiết mã",
+    en: "Coupon details",
+    ja: "クーポン詳細",
+    ko: "쿠폰 상세",
+    zh: "优惠券详情",
+  },
+  {
+    vi: "Gửi hóa đơn",
+    en: "Submit bill",
+    ja: "領収書送信",
+    ko: "영수증 제출",
+    zh: "提交账单",
+  },
+  {
+    vi: "Nhà hàng",
+    en: "Restaurants",
+    ja: "レストラン",
+    ko: "레스토랑",
+    zh: "餐厅",
+  },
+  {
+    vi: "Spa",
+    en: "Spa",
+    ja: "スパ",
+    ko: "스파",
+    zh: "水疗 Spa",
+  },
+  {
+    vi: "Tour",
+    en: "Tours",
+    ja: "ツアー",
+    ko: "투어",
+    zh: "旅游",
+  },
+  {
+    vi: "Đã lưu",
+    en: "Favorites",
+    ja: "お気に入り",
+    ko: "저장됨",
+    zh: "已保存",
+  },
+  {
+    vi: "Xác nhận",
+    en: "Confirmation",
+    ja: "確認",
+    ko: "확인",
+    zh: "确认",
+  },
+  {
+    vi: "Cấp quyền Email từ LINE",
+    en: "LINE Email Authorization",
+    ja: "LINEからのメール許可",
+    ko: "LINE 이메일 권한 승인",
+    zh: "LINE 邮箱授权",
+  },
+  {
+    vi: "Đang chuyển tiếp",
+    en: "Redirecting",
+    ja: "転送中",
+    ko: "리다이렉트 중",
+    zh: "正在跳转",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -9109,3 +9200,57 @@ export function translateWithWhitespace(value: string, language: LanguageCode) {
   const translated = translateText(value, language);
   return `${leading}${translated}${trailing}`;
 }
+
+export function translateDocumentTitle(language: LanguageCode) {
+  if (typeof document === "undefined") return;
+
+  const hostname = window.location.hostname.toLowerCase();
+  const pathname = window.location.pathname;
+
+  // Only translate user-facing document titles (skip internal admin console & partner dashboard titles)
+  if (
+    hostname.startsWith("admin.") ||
+    pathname.startsWith("/admin")
+  ) {
+    return;
+  }
+
+  const titleElement = document.querySelector("title");
+  if (!titleElement) return;
+
+  titleElement.setAttribute("translate", "no");
+  titleElement.setAttribute("data-no-translate", "true");
+  titleElement.classList.add("notranslate");
+
+  const rawTitle = titleElement.textContent || document.title || "";
+  if (!rawTitle.trim()) return;
+
+  let sourceTitle = titleElement.getAttribute("data-vietyoru-source-title");
+  if (!sourceTitle) {
+    sourceTitle = rawTitle;
+    titleElement.setAttribute("data-vietyoru-source-title", sourceTitle);
+  }
+
+  if (language === "vi" && rawTitle !== sourceTitle && rawTitle.includes(" | ")) {
+    sourceTitle = rawTitle;
+    titleElement.setAttribute("data-vietyoru-source-title", sourceTitle);
+  }
+
+  if (sourceTitle.includes(" | ")) {
+    const parts = sourceTitle.split(" | ");
+    const mainTitle = parts[0];
+    const suffix = parts.slice(1).join(" | ");
+    const translatedMain = translateText(mainTitle, language);
+    const translatedSuffix = translateText(suffix, language);
+    const newTitle = `${translatedMain} | ${translatedSuffix}`;
+    if (document.title !== newTitle) {
+      document.title = newTitle;
+    }
+  } else {
+    const translatedTitle = translateText(sourceTitle, language);
+    if (document.title !== translatedTitle) {
+      document.title = translatedTitle;
+    }
+  }
+}
+

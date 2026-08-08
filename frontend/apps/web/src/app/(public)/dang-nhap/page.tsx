@@ -234,6 +234,17 @@ export default function Page() {
     );
   }, []);
 
+  useEffect(() => {
+    const rawSourceTitle = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
+    const fullSourceTitle = `${rawSourceTitle} | Vietyoru`;
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("data-vietyoru-source-title", fullSourceTitle);
+    }
+    const pageTitle = translateText(rawSourceTitle, activeLanguage);
+    document.title = `${pageTitle} | Vietyoru`;
+  }, [isReg, activeLanguage]);
+
   const title = translateText(
     isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên",
     activeLanguage,
