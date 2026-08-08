@@ -7,6 +7,13 @@ import { activatePortalAuthSession, loginPartner } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { nightlifeOrigins } from "@/lib/auth/hosts";
+import {
+  isLanguageCode,
+  languageChangedEvent,
+  storeLanguagePreference,
+  translateText,
+} from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 type PartnerTheme = "dark" | "light";
 
@@ -533,7 +540,29 @@ function LoginContent({
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
   const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>("dark");
+
+  useEffect(() => {
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    if (!isLanguageCode(requestedLanguage)) return;
+
+    storeLanguagePreference(requestedLanguage);
+    window.dispatchEvent(
+      new CustomEvent(languageChangedEvent, { detail: { language: requestedLanguage } }),
+    );
+  }, []);
+
+  useEffect(() => {
+    const rawSourceTitle = "Đăng nhập đối tác";
+    const fullSourceTitle = `${rawSourceTitle} | Vietyoru`;
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("data-vietyoru-source-title", fullSourceTitle);
+    }
+    const pageTitle = translateText(rawSourceTitle, activeLanguage);
+    document.title = `${pageTitle} | Vietyoru`;
+  }, [activeLanguage]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {

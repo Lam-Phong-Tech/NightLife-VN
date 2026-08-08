@@ -2,7 +2,12 @@
 
 import { resetPassword } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { translateText } from "@/lib/i18n/client-translations";
+import {
+  isLanguageCode,
+  languageChangedEvent,
+  storeLanguagePreference,
+  translateText,
+} from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage } from "@/lib/i18n/use-active-language";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -69,6 +74,27 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    if (!isLanguageCode(requestedLanguage)) return;
+
+    storeLanguagePreference(requestedLanguage);
+    window.dispatchEvent(
+      new CustomEvent(languageChangedEvent, { detail: { language: requestedLanguage } }),
+    );
+  }, []);
+
+  useEffect(() => {
+    const rawSourceTitle = "Đặt lại mật khẩu";
+    const fullSourceTitle = `${rawSourceTitle} | Vietyoru`;
+    const titleElement = document.querySelector("title");
+    if (titleElement) {
+      titleElement.setAttribute("data-vietyoru-source-title", fullSourceTitle);
+    }
+    const pageTitle = translateText(rawSourceTitle, activeLanguage);
+    document.title = `${pageTitle} | Vietyoru`;
+  }, [activeLanguage]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
