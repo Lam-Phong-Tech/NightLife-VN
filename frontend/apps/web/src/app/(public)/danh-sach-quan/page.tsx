@@ -1261,20 +1261,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 }}
                 placeholder={copy.searchPlaceholder}
               />
-              {query ? (
-                <button
-                  type="button"
-                  aria-label={translateText("Xóa tìm kiếm", activeLanguage)}
-                  className="venue-input-clear"
-                  onClick={() => {
-                    setQuery("");
-                    setSubmittedQuery("");
-                    setCurrentPage(1);
-                  }}
-                >
-                  <X size={14} />
-                </button>
-              ) : null}
+
               <button
                 type="button"
                 aria-label={copy.openFilters}
@@ -2202,34 +2189,7 @@ const venueSearchCss = `
     box-shadow: 0 18px 42px -34px rgba(212, 178, 106, .72);
   }
 
-  .venue-input-clear {
-    --venue-clear-size: 28px;
-    display: inline-grid;
-    place-items: center;
-    width: var(--venue-clear-size);
-    min-width: var(--venue-clear-size);
-    max-width: var(--venue-clear-size);
-    height: var(--venue-clear-size);
-    min-height: var(--venue-clear-size);
-    max-height: var(--venue-clear-size);
-    aspect-ratio: 1;
-    flex: 0 0 var(--venue-clear-size);
-    border: 0;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .08);
-    color: var(--vy-muted);
-    padding: 0;
-    box-sizing: border-box;
-    line-height: 1;
-    cursor: pointer;
-  }
 
-  .venue-input-clear:hover,
-  .venue-input-clear:focus-visible {
-    background: rgba(212, 178, 106, .14);
-    color: var(--vy-gold-pale);
-    outline: 0;
-  }
 
   .venue-suggestions {
     position: absolute;
@@ -3632,16 +3592,7 @@ const venueSearchCss = `
     box-shadow: 0 18px 42px -34px rgba(68, 48, 18, .58);
   }
 
-  html.vy-light .venue-input-clear {
-    background: rgba(35, 27, 14, .08);
-    color: #8c806e;
-  }
 
-  html.vy-light .venue-input-clear:hover,
-  html.vy-light .venue-input-clear:focus-visible {
-    background: rgba(212, 178, 106, .18);
-    color: #7b591f;
-  }
 
   html.vy-light .venue-pagination,
   html.vy-light .venue-pagination > span {
@@ -3916,13 +3867,7 @@ const venueSearchCss = `
       height: 14px;
     }
 
-    .venue-input-clear {
-      --venue-clear-size: 22px;
-    }
 
-    .nl-page-content .venue-input-clear {
-      min-height: var(--venue-clear-size);
-    }
 
     .venue-suggestions {
       top: calc(100% + 8px);
