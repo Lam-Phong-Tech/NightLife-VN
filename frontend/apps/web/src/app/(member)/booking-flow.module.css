@@ -2462,11 +2462,17 @@
   }
 
   .historyPagination {
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
   .historyPaginationActions {
-    justify-content: flex-start;
+    justify-content: center;
+  }
+
+  .historyPaginationActions button:not(:first-child):not(:last-child) {
+    display: none !important;
   }
 }
 

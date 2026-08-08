@@ -3568,14 +3568,14 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-pagination {
-    width: max-content;
-    max-width: calc(100% - 32px);
+    width: 100%;
+    max-width: 100%;
     justify-content: center;
-    gap: 8px;
+    align-items: center;
+    gap: 14px;
     margin: 14px auto 0;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
+    overflow-x: visible;
+    padding: 0 16px;
   }
 
   .cast-pagination::-webkit-scrollbar {
@@ -3585,20 +3585,21 @@ html.vy-light .cast-sheet-actions {
   .cast-pagination > span {
     min-width: auto;
     flex: none;
-    font-size: 11px;
+    font-size: 13px;
+    font-weight: 800;
     white-space: nowrap;
   }
 
   .cast-pagination > div {
-    flex: none;
-    gap: 6px;
+    display: none !important;
   }
 
   .cast-pagination button {
-    min-width: 31px;
-    height: 31px;
-    border-radius: 10px;
-    font-size: 11px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 11px;
+    font-size: 12px;
   }
 
   .cast-card {

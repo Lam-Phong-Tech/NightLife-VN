@@ -4031,11 +4031,12 @@ const venueSearchCss = `
 
     .venue-pagination {
       justify-content: center;
-      gap: 8px;
-      margin: 14px 16px 0;
-      overflow-x: auto;
-      padding: 0 14px 2px;
-      scrollbar-width: none;
+      align-items: center;
+      gap: 14px;
+      margin: 14px auto 0;
+      width: 100%;
+      padding: 0 16px;
+      overflow-x: visible;
     }
 
     .venue-pagination::-webkit-scrollbar {
@@ -4045,20 +4046,21 @@ const venueSearchCss = `
     .venue-pagination > span {
       min-width: auto;
       flex: none;
-      font-size: 11px;
+      font-size: 13px;
+      font-weight: 800;
       white-space: nowrap;
     }
 
     .venue-pagination > div {
-      flex: none;
-      gap: 6px;
+      display: none !important;
     }
 
     .venue-pagination button {
-      min-width: 31px;
-      height: 31px;
-      border-radius: 10px;
-      font-size: 11px;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 11px;
+      font-size: 12px;
     }
 
     .venue-card {

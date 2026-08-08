@@ -1238,6 +1238,15 @@ export default function Page() {
           .campaign-grid {
             grid-template-columns: 1fr;
           }
+
+          .campaign-pagination {
+            justify-content: center;
+            gap: 12px;
+          }
+
+          .campaign-pagination-actions button:not(:first-child):not(:last-child) {
+            display: none !important;
+          }
         }
       `}</style>
     </main>

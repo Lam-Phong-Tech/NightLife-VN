@@ -423,3 +423,24 @@
     word-break: break-word !important;
   }
 }
+
+@media (max-width: 768px) {
+  .nl-bill-pagination {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+
+  .nl-bill-pagination-actions {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 10px !important;
+  }
+
+  .nl-bill-pagination-actions button:not(:first-child):not(:last-child) {
+    display: none !important;
+  }
+}
