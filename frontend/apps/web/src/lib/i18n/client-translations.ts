@@ -6299,6 +6299,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "该页面可能已更名或不再存在。请尝试搜索店铺、陪伴人员，或返回首页。",
   },
   {
+    vi: "Đặt cast tại quán",
+    en: "Book Cast at venue",
+    ja: "店舗でキャストを予約",
+    ko: "매장에서 Cast 예약",
+    zh: "在店铺预约 Cast",
+  },
+  {
     vi: "Đăng nhập hội viên",
     en: "Member login",
     ja: "会員ログイン",

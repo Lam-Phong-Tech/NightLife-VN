@@ -5,6 +5,7 @@ type CastProfileCopy = {
   areaUpdating: string;
   backToCastList: string;
   birthMonth: string;
+  bookCastAtVenue: string;
   bookThisCast: string;
   closeGallery: string;
   currentVenue: string;
@@ -40,6 +41,7 @@ const castProfileCopy: Record<LanguageCode, CastProfileCopy> = {
     areaUpdating: "Khu vực đang cập nhật",
     backToCastList: "Quay lại danh sách cast",
     birthMonth: "Tháng sinh",
+    bookCastAtVenue: "Đặt cast tại quán",
     bookThisCast: "Đặt cast này",
     closeGallery: "Đóng gallery",
     currentVenue: "Quán đang thuộc về",
@@ -73,6 +75,7 @@ const castProfileCopy: Record<LanguageCode, CastProfileCopy> = {
     areaUpdating: "Area updating",
     backToCastList: "Back to Cast list",
     birthMonth: "Birth month",
+    bookCastAtVenue: "Book Cast at venue",
     bookThisCast: "Book this Cast",
     closeGallery: "Close gallery",
     currentVenue: "Current venue",
@@ -106,6 +109,7 @@ const castProfileCopy: Record<LanguageCode, CastProfileCopy> = {
     areaUpdating: "エリア更新中",
     backToCastList: "キャスト一覧へ戻る",
     birthMonth: "誕生月",
+    bookCastAtVenue: "店舗でキャストを予約",
     bookThisCast: "このキャストを予約",
     closeGallery: "ギャラリーを閉じる",
     currentVenue: "現在の店舗",
@@ -139,6 +143,7 @@ const castProfileCopy: Record<LanguageCode, CastProfileCopy> = {
     areaUpdating: "지역 업데이트 중",
     backToCastList: "캐스트 목록으로 돌아가기",
     birthMonth: "생월",
+    bookCastAtVenue: "매장에서 Cast 예약",
     bookThisCast: "이 Cast 예약",
     closeGallery: "갤러리 닫기",
     currentVenue: "현재 매장",
@@ -172,6 +177,7 @@ const castProfileCopy: Record<LanguageCode, CastProfileCopy> = {
     areaUpdating: "区域更新中",
     backToCastList: "返回 Cast 列表",
     birthMonth: "出生月份",
+    bookCastAtVenue: "在店铺预约 Cast",
     bookThisCast: "预约此 Cast",
     closeGallery: "关闭相册",
     currentVenue: "当前场所",
