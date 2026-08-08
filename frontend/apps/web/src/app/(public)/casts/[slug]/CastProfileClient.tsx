@@ -179,9 +179,21 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       titleElement.setAttribute("translate", "no");
       titleElement.setAttribute("data-no-translate", "true");
       titleElement.classList.add("notranslate");
+      titleElement.setAttribute(
+        "data-vietyoru-source-title",
+        `${profile.name} · ${profile.store.name} | Vietyoru`,
+      );
     }
-    const tagline = translateText("NightLife VN", activeLanguage);
-    document.title = `${profile.name} · ${profile.store.name} | ${tagline}`;
+    const storeName = translateText(profile.store.name, activeLanguage);
+    const mainTitle =
+      activeLanguage === "ja"
+        ? `${storeName}の${profile.name}`
+        : activeLanguage === "ko"
+          ? `${storeName}의 ${profile.name}`
+          : activeLanguage === "zh"
+            ? `${storeName}的${profile.name}`
+            : `${profile.name} · ${storeName}`;
+    document.title = `${mainTitle} | Vietyoru`;
   }, [profile.name, profile.store.name, activeLanguage]);
 
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;

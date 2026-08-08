@@ -8486,6 +8486,18 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">):
     }[language];
   }
 
+  const atStoreMatch = normalized.match(/^(.+?)\s+tại\s+(.+)$/i);
+  if (atStoreMatch) {
+    const subject = translateText(atStoreMatch[1] ?? "", language);
+    const store = translateText(atStoreMatch[2] ?? "", language);
+    return {
+      en: `${subject} at ${store}`,
+      ja: `${store}の${subject}`,
+      ko: `${store}의 ${subject}`,
+      zh: `${store}的${subject}`,
+    }[language];
+  }
+
   const featuredCategoryMatch = normalized.match(/^Nổi bật\s+·\s+(.+)$/i);
   if (featuredCategoryMatch) {
     const category = translateText(featuredCategoryMatch[1] ?? "", language);

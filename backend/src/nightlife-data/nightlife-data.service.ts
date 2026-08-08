@@ -2978,7 +2978,7 @@ export class NightlifeDataService {
         googlePlaceId: cast.store.googlePlaceId,
       },
       seo: {
-        title: `${name} tại ${cast.store.name} | NightLife VN`,
+        title: `${name} · ${cast.store.name} | Vietyoru`,
         description: seoDescription,
         canonicalPath: `/casts/${cast.slug}`,
         ogImage: thumbnailUrl,
@@ -16605,7 +16605,7 @@ export class NightlifeDataService {
       );
     }
 
-    return `${name} tại ${cast.store.name}${location ? `, ${location}` : ''}. Xem bio, gallery public, ngôn ngữ hỗ trợ và đặt booking theo cast trên NightLife VN.`;
+    return `${name} · ${cast.store.name}${location ? `, ${location}` : ''}. Xem bio, gallery public, ngôn ngữ hỗ trợ và đặt booking theo cast trên Vietyoru.`;
   }
 
   private async loadRelatedPublicCasts(cast: PublicRelatedCastSource) {
