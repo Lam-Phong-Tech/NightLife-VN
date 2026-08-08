@@ -2,7 +2,7 @@
  * CastDirectoryServer — Server Component
  *
  * Fetch dữ liệu cast ngay trên server (không cần JS hydrate) rồi truyền
- * xuống CastDirectoryPage (Client Component) qua prop `initialCasts`.
+ * xuống CastDirectoryPage (Client Component) qua prop `initialCasts` và `initialTotal`.
  *
  * Lợi ích:
  * - HTML trả về đã có nội dung → user không thấy skeleton ở lần tải đầu tiên
@@ -13,11 +13,16 @@ import { discoveryApi } from "@/lib/api/discovery";
 import { CastDirectoryPage } from "./page";
 
 export async function CastDirectoryServer() {
-  // Fetch 60 cast đầu tiên (giới hạn giống client, sort mặc định “newest”)
-  // Dùng catch(() => []) để graceful degrade: nếu API lỗi → client tự fetch
-  const initialCasts = await discoveryApi
-    .listCasts({ limit: 60, sort: "newest" })
-    .catch(() => []);
+  // Fetch trang 1 với 12 cast (giống limit client-side), sort mặc định "newest"
+  // Dùng catch(() => null) để graceful degrade: nếu API lỗi → client tự fetch
+  const result = await discoveryApi
+    .listCasts({ limit: 12, page: 1, sort: "newest" })
+    .catch(() => null);
 
-  return <CastDirectoryPage initialCasts={initialCasts} />;
+  return (
+    <CastDirectoryPage
+      initialCasts={result?.casts ?? []}
+      initialTotal={result?.total ?? 0}
+    />
+  );
 }

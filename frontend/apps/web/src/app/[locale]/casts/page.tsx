@@ -18,7 +18,7 @@ export async function generateMetadata({
 /**
  * Route /[locale]/casts — Server Component (không có "use client")
  *
- * Fetch 60 cast đầu tiên trên server trước khi trả HTML về browser.
+ * Fetch trang 1 với 12 cast trên server trước khi trả HTML về browser.
  * → User thấy nội dung ngay, không có skeleton ở lần tải đầu tiên.
  * → Filter/sort/search vẫn hoạt động bình thường ở client sau hydration.
  *
@@ -26,10 +26,15 @@ export async function generateMetadata({
  * như behaviour cũ, skeleton sẽ hiện (không break giao diện).
  */
 export default async function LocalizedCastListPage() {
-  const initialCasts = await discoveryApi
-    .listCasts({ limit: 60, sort: "newest" })
-    .catch(() => []);
+  const result = await discoveryApi
+    .listCasts({ limit: 12, page: 1, sort: "newest" })
+    .catch(() => null);
 
-  return <CastDirectoryPage initialCasts={initialCasts} />;
+  return (
+    <CastDirectoryPage
+      initialCasts={result?.casts ?? []}
+      initialTotal={result?.total ?? 0}
+    />
+  );
 }
 

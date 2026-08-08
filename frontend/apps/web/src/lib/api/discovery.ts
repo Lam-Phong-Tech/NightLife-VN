@@ -277,6 +277,14 @@ export type PublicDiscoveryStoreListResponse = {
   meta: PublicDiscoveryMeta;
 };
 
+export type PublicDiscoveryCastListResponse = {
+  casts: PublicCast[];
+  total: number;
+  page: number;
+  limit: number;
+  meta: PublicDiscoveryMeta;
+};
+
 const paginateItems = <T>(items: T[], params: DiscoveryParams = {}) => {
   const limit =
     typeof params.limit === "number" && Number.isFinite(params.limit) && params.limit > 0
@@ -346,8 +354,8 @@ const getFallbackStores = (params: DiscoveryParams = {}): PublicDiscoveryStoreLi
   };
 };
 
-const getFallbackCasts = (params: DiscoveryParams = {}) => {
-  const casts = demoCasts
+const getFallbackCasts = (params: DiscoveryParams = {}): PublicDiscoveryCastListResponse => {
+  const allCasts = demoCasts
     .filter((cast) => matchesCity(params.city, cast.store))
     .filter((cast) => matchesCategory(params.category, cast.store))
     .filter((cast) => matchesArea(params.area, cast.store))
@@ -374,22 +382,14 @@ const getFallbackCasts = (params: DiscoveryParams = {}) => {
     )
     .map((cast) => {
       const store = withStoreDistance(cast.store, params);
-
-      return {
-        ...cast,
-        distanceKm: store.distanceKm,
-        store,
-      };
+      return { ...cast, distanceKm: store.distanceKm, store };
     });
 
-  const sorted = [...casts].sort((left, right) => {
+  const sorted = [...allCasts].sort((left, right) => {
     if (params.sort === "priority") {
       const leftPriority = demoPrioritySlugs.get(left.store.slug) ?? Number.POSITIVE_INFINITY;
       const rightPriority = demoPrioritySlugs.get(right.store.slug) ?? Number.POSITIVE_INFINITY;
-
-      if (leftPriority !== rightPriority) {
-        return leftPriority - rightPriority;
-      }
+      if (leftPriority !== rightPriority) return leftPriority - rightPriority;
     }
 
     if (params.sort === "nearest" || hasCoordinates(params)) {
@@ -397,16 +397,38 @@ const getFallbackCasts = (params: DiscoveryParams = {}) => {
         typeof left.distanceKm === "number" ? left.distanceKm : Number.POSITIVE_INFINITY;
       const rightDistance =
         typeof right.distanceKm === "number" ? right.distanceKm : Number.POSITIVE_INFINITY;
-
-      if (leftDistance !== rightDistance) {
-        return leftDistance - rightDistance;
-      }
+      if (leftDistance !== rightDistance) return leftDistance - rightDistance;
     }
 
     return left.name.localeCompare(right.name);
   });
 
-  return paginateItems(sorted, params);
+  const total = sorted.length;
+  const paged = paginateItems(sorted, params);
+  const limit =
+    typeof params.limit === "number" && Number.isFinite(params.limit) && params.limit > 0
+      ? params.limit
+      : total;
+  const page =
+    typeof params.page === "number" && Number.isFinite(params.page) && params.page > 0
+      ? params.page
+      : 1;
+  const offset = (page - 1) * limit;
+
+  return {
+    casts: paged,
+    total,
+    page,
+    limit,
+    meta: {
+      total,
+      page,
+      limit,
+      offset,
+      hasMore: offset + paged.length < total,
+      sort: params.sort ?? "newest",
+    },
+  };
 };
 
 const unwrapListResponse = <T>(response: T[] | PublicDiscoveryListResponse<T>) =>
@@ -511,7 +533,38 @@ export const discoveryApi = {
       () =>
         apiClient<PublicCast[] | PublicDiscoveryListResponse<PublicCast>>("/casts", {
           params: toParams(params),
-        }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
+        }).then((response): PublicDiscoveryCastListResponse => {
+          if (Array.isArray(response)) {
+            const casts = response.map(normalizePublicCast);
+            const limit = params?.limit ?? casts.length;
+            const page = params?.page ?? 1;
+            const offset = params?.offset ?? (page - 1) * limit;
+            return {
+              casts,
+              total: casts.length,
+              page,
+              limit,
+              meta: {
+                total: casts.length,
+                page,
+                limit,
+                offset,
+                hasMore: false,
+                sort: params?.sort ?? "newest",
+              },
+            };
+          }
+          const casts = (response.data ?? []).map(normalizePublicCast);
+          const meta = response.meta ?? {
+            total: casts.length,
+            page: params?.page ?? 1,
+            limit: params?.limit ?? casts.length,
+            offset: params?.offset ?? 0,
+            hasMore: false,
+            sort: params?.sort ?? "newest",
+          };
+          return { casts, total: meta.total, page: meta.page, limit: meta.limit, meta };
+        }),
       () => getFallbackCasts(params),
     ),
   listCastsStrict: (params?: DiscoveryParams) =>

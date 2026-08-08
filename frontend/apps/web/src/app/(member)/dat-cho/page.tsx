@@ -227,8 +227,8 @@ const loadStoreCastOptions = async (storeSlug: string) => {
     // Production can lag behind this backend filter; fall back to the broad public list.
   }
 
-  const allCasts = await discoveryApi.listCasts({ city: "all", limit: 100 });
-  return allCasts.filter((cast) => cast.store.slug === storeSlug).map(publicCastToStoreCast);
+  const castResult = await discoveryApi.listCasts({ city: "all", limit: 100 });
+  return castResult.casts.filter((cast) => cast.store.slug === storeSlug).map(publicCastToStoreCast);
 };
 
 const parseContext = () => {

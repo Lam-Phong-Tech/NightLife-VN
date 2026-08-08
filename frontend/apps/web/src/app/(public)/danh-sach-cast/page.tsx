@@ -148,7 +148,7 @@ const compactLanguageLabels: Record<string, string> = {
   zh: "CN",
 };
 
-const castItemsPerPage = 8;
+const castItemsPerPage = 12;
 const castSearchHistoryKey = "vietyoru.cast-search-history.v1";
 
 const toRankingCity = (cityCode: string): RankingCity =>
@@ -492,7 +492,7 @@ const highlightMatch = (text: string, query: string) => {
   );
 };
 
-export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: PublicCast[] }) {
+export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { initialCasts?: PublicCast[]; initialTotal?: number }) {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -515,6 +515,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>(initialCasts);
+  const [totalCasts, setTotalCasts] = useState(initialTotal);
   // Nếu server đã cung cấp data ban đầu → không cần skeleton lần đầu
   const [isLoading, setIsLoading] = useState(initialCasts.length === 0);
   const [error, setError] = useState<string | null>(null);
@@ -567,22 +568,28 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
       setError(null);
       discoveryApi
         .listCasts({
+          q: submittedQuery || undefined,
           city,
           area,
           category,
           language,
           lat: coords?.lat,
-          limit: 60,
+          limit: castItemsPerPage,
           lng: coords?.lng,
+          page: currentPage,
           sort,
           hasActiveCoupon,
         })
-        .then((items) => {
-          if (!cancelled) setCasts(items);
+        .then((result) => {
+          if (!cancelled) {
+            setCasts(result.casts);
+            setTotalCasts(result.total);
+          }
         })
         .catch(() => {
           if (!cancelled) {
             setCasts([]);
+            setTotalCasts(0);
             setError("Chưa kết nối được dữ liệu cast.");
           }
         })
@@ -595,7 +602,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, initialCasts.length, language, sort]);
+  }, [area, category, city, coords, currentPage, hasActiveCoupon, initialCasts.length, language, sort, submittedQuery]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -787,12 +794,8 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
       }),
     ).slice(0, 4);
   }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
-  const totalPages = Math.max(1, Math.ceil(visibleCasts.length / castItemsPerPage));
-  const currentPageStart = (currentPage - 1) * castItemsPerPage;
-  const pagedCasts = useMemo(
-    () => visibleCasts.slice(currentPageStart, currentPageStart + castItemsPerPage),
-    [currentPageStart, visibleCasts],
-  );
+  const totalPages = Math.max(1, Math.ceil(totalCasts / castItemsPerPage));
+  const pagedCasts = casts;
   const cityLabel = getCastCityLabel(city, activeLanguage);
   const resultCityLabel = city ? cityLabel : copy.all;
   const localizedCityOptions = useMemo(
@@ -852,10 +855,9 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
   ]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+    if (currentPage <= 1) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
 
   const resetFilters = () => {
     setCity("");
@@ -1114,7 +1116,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
                   }
                   storeOptions={storeOptions}
                   storeSlug={storeSlug}
-                  total={visibleCasts.length}
+                  total={totalCasts}
                   hasActiveCoupon={hasActiveCoupon}
                   topRankingOnly={topRankingOnly}
                   variant="desktop"
@@ -1186,7 +1188,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
         <section className="cast-results-section" aria-label={copy.listAria}>
           <div className="cast-results-head">
             <span>
-              <b>{isResultsLoading ? "..." : copy.resultCount(visibleCasts.length)}</b>
+              <b>{isResultsLoading ? "..." : copy.resultCount(totalCasts)}</b>
               <span> · {resultCityLabel}</span>
             </span>
 
@@ -1202,13 +1204,13 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
 
           {isResultsLoading ? (
             <LoadingSkeleton />
-          ) : visibleCasts.length > 0 ? (
+          ) : pagedCasts.length > 0 ? (
             <div className="cast-card-grid">
               {pagedCasts.map((cast, index) => (
                 <CastDiscoveryCard
                   key={cast.id}
                   cast={cast}
-                  index={currentPageStart + index}
+                  index={(currentPage - 1) * castItemsPerPage + index}
                   rank={topRankingOrder.get(cast.slug) ?? null}
                   language={activeLanguage}
                   isFavorite={favoriteCastSlugs.includes(cast.slug)}
@@ -1221,7 +1223,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
           ) : (
             <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
           )}
-          {!isResultsLoading && visibleCasts.length > castItemsPerPage ? (
+          {!isResultsLoading && totalPages > 1 ? (
             <CastPagination
               currentPage={currentPage}
               language={activeLanguage}
@@ -1252,7 +1254,7 @@ export function CastDirectoryPage({ initialCasts = [] }: { initialCasts?: Public
           }
           storeOptions={storeOptions}
           storeSlug={storeSlug}
-          total={visibleCasts.length}
+          total={totalCasts}
           hasActiveCoupon={hasActiveCoupon}
           topRankingOnly={topRankingOnly}
           variant="mobile"

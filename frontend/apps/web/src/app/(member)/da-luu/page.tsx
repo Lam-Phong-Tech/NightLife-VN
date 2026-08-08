@@ -273,7 +273,7 @@ export default function Page() {
           ? withTimeout(discoveryApi.listStores({ city: "all", limit: 120 }).then((res) => res.stores), [] as PublicStore[])
           : Promise.resolve([] as PublicStore[]),
         mergedCastSlugs.length
-          ? withTimeout(discoveryApi.listCasts({ city: "all", limit: 160 }), [] as PublicCast[])
+          ? withTimeout(discoveryApi.listCasts({ city: "all", limit: 160 }).then((res) => res.casts), [] as PublicCast[])
           : Promise.resolve([] as PublicCast[]),
       ]);
 
