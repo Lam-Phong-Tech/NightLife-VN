@@ -71,3 +71,21 @@ export const createNoindexMetadata = (title: string, description: string): Metad
     follow: false,
   },
 });
+
+export async function createI18nNoindexMetadata(
+  rawTitle: string,
+  rawDescription: string,
+  requestedLanguage?: string | string[] | null,
+): Promise<Metadata> {
+  const { getServerSelectedLanguage } = await import("@/lib/i18n/server-language");
+  const { translateText } = await import("@/lib/i18n/client-translations");
+
+  const language = await getServerSelectedLanguage(requestedLanguage);
+  const translatedTitle = translateText(rawTitle, language);
+  const translatedDescription = translateText(rawDescription, language);
+
+  return createNoindexMetadata(
+    `${translatedTitle} | ${siteConfig.name}`,
+    translatedDescription,
+  );
+}
