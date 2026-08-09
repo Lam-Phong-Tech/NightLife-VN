@@ -65,6 +65,11 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: ["/seo/og-cover-bar-1200x630.jpg"],
   },
+  verification: {
+    google:
+      process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ||
+      "k2G7d4aXbHBXvPwmwAcrbROHHxhC8rCVvUvvpjUAiK4",
+  },
 };
 
 const criticalBillUploadStyles = `
