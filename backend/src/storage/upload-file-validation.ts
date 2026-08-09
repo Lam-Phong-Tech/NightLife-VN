@@ -57,7 +57,9 @@ const detectBinaryMimeType = (
 };
 
 const looksLikeSvg = (source: string) =>
-  /^(?:\uFEFF|\s)*(?:<\?xml[\s\S]*?\?>\s*)?<svg(?:\s|>)/i.test(source);
+  /^(?:\uFEFF|\s)*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!DOCTYPE[\s\S]*?(?:\]>|>))\s*)*<svg(?:\s|>)/i.test(
+    source,
+  );
 
 const getUnsafeSvgReason = (source: string): string | null => {
   if (!looksLikeSvg(source)) return 'Nội dung không phải file SVG.';

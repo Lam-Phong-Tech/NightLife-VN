@@ -100,7 +100,9 @@ describe('validateUploadedFile', () => {
 
   it('accepts safe appearance SVG and rejects active content', async () => {
     const safeSvg = await createFile(
-      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>',
+      '<?xml version="1.0" encoding="iso-8859-1"?>\n' +
+        '<!-- Generator: Adobe Illustrator -->\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>',
       {
         filename: 'safe-svg',
         originalname: 'icon.svg',
@@ -125,6 +127,25 @@ describe('validateUploadedFile', () => {
     await expect(
       validateUploadedFile(unsafeSvg, 'APPEARANCE_ICON'),
     ).rejects.toThrow('không an toàn');
+  });
+
+  it('rejects SVG documents with a DOCTYPE', async () => {
+    const file = await createFile(
+      '<?xml version="1.0" encoding="iso-8859-1"?>\n' +
+        '<!-- Generator: Adobe Illustrator -->\n' +
+        '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" ' +
+        '"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>',
+      {
+        filename: 'doctype-svg',
+        originalname: 'icon.svg',
+        mimetype: 'image/svg+xml',
+      },
+    );
+
+    await expect(validateUploadedFile(file, 'APPEARANCE_ICON')).rejects.toThrow(
+      'DOCTYPE',
+    );
   });
 
   it('rejects WebP for CMS content images', async () => {
