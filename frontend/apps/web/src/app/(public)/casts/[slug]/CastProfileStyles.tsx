@@ -1137,18 +1137,46 @@ export function CastProfileStyles() {
 
       html.vy-light .cast-desktop-name-block p,
       html.vy-light .cast-desktop-stat-row span,
-      html.vy-light .cast-desktop-copy {
-        color: #6f6657;
+      html.vy-light .cast-desktop-copy,
+      html.vy-light .cast-mobile .cast-mobile-bio {
+        color: #2b2318 !important;
+        font-weight: 500;
       }
 
       html.vy-light .cast-desktop-stat-row b,
-      html.vy-light .cast-desktop .cast-info-row strong {
-        color: #4a3924;
+      html.vy-light .cast-desktop .cast-info-row strong,
+      html.vy-light .cast-mobile .cast-info-row strong,
+      html.vy-light .cast-info-row strong {
+        color: #120e08 !important;
         font-weight: 750;
       }
 
-      html.vy-light .cast-desktop .cast-info-row span {
-        color: #857968;
+      html.vy-light .cast-desktop .cast-info-row span,
+      html.vy-light .cast-mobile .cast-info-row span,
+      html.vy-light .cast-info-row span {
+        color: #594b39 !important;
+        font-weight: 600;
+      }
+
+      html.vy-light .cast-section-heading small {
+        color: #594b39 !important;
+        font-weight: 750;
+      }
+
+      html.vy-light .cast-schedule-row strong,
+      html.vy-light .cast-schedule-row b {
+        color: #120e08 !important;
+        font-weight: 750;
+      }
+
+      html.vy-light .cast-schedule-row small {
+        color: #594b39 !important;
+        font-weight: 600;
+      }
+
+      html.vy-light .cast-schedule-row.is-highlight b {
+        color: #926618 !important;
+        font-weight: 800;
       }
 
       html.vy-light .cast-desktop .cast-chip.language,
@@ -1164,13 +1192,18 @@ export function CastProfileStyles() {
         box-shadow: 0 14px 34px rgba(80,61,27,.08);
       }
 
-      html.vy-light .cast-related-section.desktop .cast-related-copy strong {
-        color: #3a3022;
+      html.vy-light .cast-related-section.desktop .cast-related-copy strong,
+      html.vy-light .cast-related-copy strong {
+        color: #1c150c !important;
+        font-weight: 800;
       }
 
       html.vy-light .cast-related-section.desktop .cast-related-copy small,
-      html.vy-light .cast-related-section.desktop .cast-related-copy em {
-        color: #746a5a;
+      html.vy-light .cast-related-section.desktop .cast-related-copy em,
+      html.vy-light .cast-related-copy small,
+      html.vy-light .cast-related-copy em {
+        color: #5c4d38 !important;
+        font-weight: 650;
       }
 
       .nl-page-content:has(.cast-page) {
@@ -1501,15 +1534,17 @@ export function CastProfileStyles() {
         display: inline-flex;
         align-items: center;
         padding: 0 10px;
-        border: 1px solid rgba(151,112,37,.34);
+        border: 1px solid rgba(151,112,37,.45);
         border-radius: 8px;
-        background: rgba(255,252,244,.94);
-        box-shadow: 0 2px 8px rgba(86,61,24,.1);
-        color: #4a3924;
+        background: rgba(255,252,244,.96);
+        box-shadow: 0 2px 10px rgba(86,61,24,.15);
+        color: #1a1208 !important;
+        font-weight: 900;
       }
 
       html.vy-light .cast-lightbox-topbar em {
-        color: #806c4a;
+        color: #614c27 !important;
+        font-weight: 700;
       }
 
       html.vy-light .cast-lightbox-close,

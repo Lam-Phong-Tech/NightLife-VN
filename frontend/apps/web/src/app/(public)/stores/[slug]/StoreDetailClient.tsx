@@ -5105,6 +5105,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           transform: translateY(-50%) !important;
         }
 
+        html.vy-light .related-copy small {
+          color: #9c6c1d !important;
+          font-weight: 900;
+        }
+
+        html.vy-light .related-copy strong {
+          color: #1a1208 !important;
+          font-weight: 800;
+        }
+
+        html.vy-light .related-copy em {
+          color: #594b39 !important;
+          font-weight: 600;
+        }
+
         .lightbox-caption {
           position: absolute;
           left: 50%;
@@ -5113,6 +5128,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #f4dd9b;
           font-size: 13px;
           font-weight: 800;
+        }
+
+        html.vy-light .lightbox-caption {
+          color: #1a1208 !important;
+          background: rgba(255, 250, 240, 0.96) !important;
+          border: 1px solid rgba(142, 99, 28, 0.42) !important;
+          box-shadow: 0 4px 16px rgba(70, 48, 10, 0.22) !important;
+          padding: 5px 16px !important;
+          border-radius: 999px !important;
+          font-weight: 900 !important;
         }
 
         .hscroll {
