@@ -6,7 +6,7 @@ const MAX_ORIGINAL_NAME_LENGTH = 220;
 
 const extensionsByMimeType: Record<SupportedUploadMimeType, readonly string[]> =
   {
-    'image/jpeg': ['jpg', 'jpeg'],
+    'image/jpeg': ['jpg', 'jpeg', 'jfif'],
     'image/png': ['png'],
     'image/webp': ['webp'],
     'image/avif': ['avif'],

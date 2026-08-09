@@ -5,7 +5,7 @@ export const MAX_APPEARANCE_ICON_SIZE_BYTES = 512 * 1024;
 export const MAX_APPEARANCE_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
 export const STORE_IMAGE_ACCEPT =
-  'image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif';
+  'image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.jfif,.png,.webp,.gif';
 export const TOUR_COVER_IMAGE_ACCEPT = STORE_IMAGE_ACCEPT;
 export const ADMIN_VIDEO_ACCEPT = 'video/mp4,video/webm,.mp4,.webm';
 export const CONTENT_IMAGE_ACCEPT =
@@ -26,7 +26,7 @@ const rasterImagePolicy: FileFormatPolicy = {
     'image/gif',
   ]),
   extensionsByMimeType: {
-    'image/jpeg': ['jpg', 'jpeg'],
+    'image/jpeg': ['jpg', 'jpeg', 'jfif'],
     'image/png': ['png'],
     'image/webp': ['webp'],
     'image/gif': ['gif'],
@@ -119,7 +119,7 @@ export const getStoreImageValidationError = (file: File): string | null =>
   getFormatValidationError(
     file,
     rasterImagePolicy,
-    'JPG, JPEG, PNG, WebP hoặc GIF',
+    'JPG, JPEG, JFIF, PNG, WebP hoặc GIF',
   ) ??
   getSizeValidationError(file, MAX_STORE_IMAGE_SIZE_BYTES, '15MB');
 
@@ -129,7 +129,7 @@ export const getTourCoverImageValidationError = (
   getFormatValidationError(
     file,
     rasterImagePolicy,
-    'JPG, JPEG, PNG, WebP hoặc GIF; không chấp nhận video',
+    'JPG, JPEG, JFIF, PNG, WebP hoặc GIF; không chấp nhận video',
   ) ??
   getSizeValidationError(file, MAX_TOUR_COVER_IMAGE_SIZE_BYTES, '15MB');
 

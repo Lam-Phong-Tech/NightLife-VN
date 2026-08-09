@@ -47,7 +47,7 @@ describe('store image upload validation', () => {
     ).toContain('không đúng định dạng');
     expect(
       getStoreImageValidationError(mediaFile('cover.heic', 'image/heic')),
-    ).toContain('JPG, JPEG, PNG, WebP hoặc GIF');
+    ).toContain('JPG, JPEG, JFIF, PNG, WebP hoặc GIF');
   });
 
   it('rejects a name whose extension disagrees with MIME', () => {
