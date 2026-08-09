@@ -1677,12 +1677,6 @@ function CastFilterPanel({
                 onChange={onArea}
               />
             ) : null}
-            <FilterChipGroup
-              label={copy.store}
-              options={storeOptions}
-              value={storeSlug}
-              onChange={onStore}
-            />
           </section>
 
           <section className="cast-filter-column" aria-label={copy.filterNeeds}>
