@@ -244,5 +244,42 @@ export const contentApi = {
   adminDelete: (id: string) =>
     apiClient<CmsContentItem>(`/admin/contents/${encodeURIComponent(id)}`, {
       method: "DELETE",
-    }),
+  }),
+};
+
+export type LegalPageKey = "PRIVACY_POLICY" | "TERMS_OF_USE" | "OPERATING_POLICY";
+export type LegalPageSection = { heading: string; body: string };
+export type LegalPage = {
+  id: string;
+  key: LegalPageKey;
+  slug: string;
+  title: string;
+  excerpt?: string | null;
+  sections: LegalPageSection[];
+  noindex: boolean;
+  version: number;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminLegalPagesResponse = {
+  data: LegalPage[];
+  capabilities: { canUpdate: boolean };
+};
+
+export const legalPagesApi = {
+  list: () => apiClient<{ data: LegalPage[] }>("/legal-pages"),
+  get: (slug: string) => apiClient<LegalPage>(`/legal-pages/${encodeURIComponent(slug)}`),
+  adminList: () => apiClient<AdminLegalPagesResponse>("/admin/legal-pages"),
+  adminUpdate: (
+    key: LegalPageKey,
+    payload: {
+      expectedVersion: number;
+      title?: string;
+      excerpt?: string;
+      sections?: LegalPageSection[];
+      noindex?: boolean;
+    },
+  ) => apiClient<LegalPage>(`/admin/legal-pages/${encodeURIComponent(key)}`, { method: "PATCH", data: payload }),
 };

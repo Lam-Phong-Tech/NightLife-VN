@@ -115,6 +115,8 @@ const PERM_VI: Record<string, { name: string; desc: string }> = {
   'cast.admin.view':             { name: 'Xem danh sách Cast (CMS)', desc: 'Xem danh sách nhân sự Cast trên trang quản trị Admin' },
   'partner.request.view':        { name: 'Xem yêu cầu đăng ký đối tác', desc: 'Xem danh sách đơn đăng ký đối tác gửi đến hệ thống' },
   'content.admin.view':          { name: 'Xem quản lý nội dung (CMS)', desc: 'Xem bài viết, trang nội dung và truyền thông trên Admin' },
+  'legal.page.view':             { name: 'Xem trang pháp lý', desc: 'Xem ba trang chính sách cố định trên Admin' },
+  'legal.page.update':           { name: 'Cập nhật trang pháp lý', desc: 'Chỉnh sửa nội dung ba trang pháp lý cố định' },
   'coupon.issue.view':           { name: 'Xem lịch sử phát mã ưu đãi', desc: 'Xem toàn bộ lịch sử các mã ưu đãi đã phát ra trên hệ thống' },
   'report.dashboard.view':       { name: 'Xem dashboard thống kê Admin', desc: 'Xem chỉ số tổng quan, biểu đồ và xuất báo cáo dữ liệu Admin' },
   'booking.status.update':       { name: 'Cập nhật trạng thái đặt chỗ', desc: 'Cập nhật trạng thái xử lý của đơn đặt chỗ trên Admin CMS' },

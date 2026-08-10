@@ -21121,7 +21121,7 @@ export class NightlifeDataService {
   }
 
   private isContentType(value: string): value is ContentType {
-    return ['BLOG', 'POLICY', 'BANNER'].includes(value);
+    return ['BLOG', 'BANNER'].includes(value);
   }
 
   private resolveContentStatus(

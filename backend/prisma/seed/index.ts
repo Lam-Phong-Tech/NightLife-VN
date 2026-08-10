@@ -19,6 +19,7 @@ import { seedFullFixtures } from './14-full-fixtures';
 import { seedSystemConfigs } from './15-system-configs';
 import { seedTours } from './16-tours';
 import { seedAdminCouponsAndCampaigns } from './17-admin-coupons-campaigns';
+import { seedLegalPages } from './18-legal-pages';
 import { SeedOptions, resolveSeedProfile } from './shared';
 import { verifySeedCoverage } from './verify';
 
@@ -68,6 +69,8 @@ export async function seedAll(
     guests: transactions.guests,
     now: options.now,
   });
+
+  await seedLegalPages(prisma);
 
   if (options.profile === 'full') {
     await seedFullFixtures(prisma, {

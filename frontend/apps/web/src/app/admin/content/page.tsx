@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
-import { contentApi, getCmsContentImageUrl, CmsContentItem } from '@/lib/api/content';
+import { contentApi, getCmsContentImageUrl, CmsContentItem, legalPagesApi, LegalPage, LegalPageSection } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
@@ -182,7 +182,7 @@ const nextHomeGuideRank = (tourItems: AdminHomeTour[], blogItems: CmsContentItem
 export default function AdminContentPage() {
   const feedback = useSystemFeedback();
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'recommend' | 'tour' | 'video' | 'blog'>('campaign');
+  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'recommend' | 'tour' | 'video' | 'blog' | 'legal'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [editBannerId, setEditBannerId] = useState<string | null>(null);
@@ -197,6 +197,15 @@ export default function AdminContentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [blogs, setBlogs] = useState<CmsContentItem[]>([]);
+  const [legalPages, setLegalPages] = useState<LegalPage[]>([]);
+  const [canUpdateLegalPages, setCanUpdateLegalPages] = useState(false);
+  const [isLoadingLegalPages, setIsLoadingLegalPages] = useState(false);
+  const [isSavingLegalPage, setIsSavingLegalPage] = useState(false);
+  const [editingLegalPage, setEditingLegalPage] = useState<LegalPage | null>(null);
+  const [legalTitle, setLegalTitle] = useState('');
+  const [legalExcerpt, setLegalExcerpt] = useState('');
+  const [legalSections, setLegalSections] = useState<LegalPageSection[]>([]);
+  const [legalNoindex, setLegalNoindex] = useState(true);
   const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [tours, setTours] = useState<AdminHomeTour[]>([]);
   const [isLoadingTours, setIsLoadingTours] = useState(false);
@@ -346,6 +355,7 @@ export default function AdminContentPage() {
   useEffect(() => {
     fetchCategories();
     fetchBlogs();
+    fetchLegalPages();
     fetchBanners();
     fetchTours();
     fetchBannerTags();
@@ -854,6 +864,67 @@ export default function AdminContentPage() {
       if (data) setBanners(data);
     } catch (error) {
       console.error('Failed to fetch banners:', error);
+    }
+  };
+
+  const fetchLegalPages = async () => {
+    try {
+      setIsLoadingLegalPages(true);
+      const response = await legalPagesApi.adminList();
+      setLegalPages(response.data || []);
+      setCanUpdateLegalPages(Boolean(response.capabilities?.canUpdate));
+    } catch (error: any) {
+      const status = error?.status ?? error?.statusCode;
+      setFetchError(status === 403
+        ? 'Bạn không có quyền xem các trang pháp lý.'
+        : error?.message || 'Không tải được nội dung pháp lý.');
+    } finally {
+      setIsLoadingLegalPages(false);
+    }
+  };
+
+  const handleEditLegalPage = (page: LegalPage) => {
+    setEditingLegalPage(page);
+    setLegalTitle(page.title);
+    setLegalExcerpt(page.excerpt || '');
+    setLegalSections(page.sections.map((section) => ({ ...section })));
+    setLegalNoindex(page.noindex);
+  };
+
+  const closeLegalEditor = () => {
+    if (isSavingLegalPage) return;
+    setEditingLegalPage(null);
+    setLegalSections([]);
+  };
+
+  const handleSaveLegalPage = async () => {
+    if (!editingLegalPage || !canUpdateLegalPages) return;
+    if (!legalTitle.trim() || !legalSections.some((section) => section.heading.trim() && section.body.trim())) {
+      feedback.showToast({ title: 'Vui lòng nhập tiêu đề và ít nhất một phần nội dung.', tone: 'warning' });
+      return;
+    }
+    try {
+      setIsSavingLegalPage(true);
+      const updated = await legalPagesApi.adminUpdate(editingLegalPage.key, {
+        expectedVersion: editingLegalPage.version,
+        title: legalTitle.trim(),
+        excerpt: legalExcerpt.trim(),
+        sections: legalSections
+          .map((section) => ({ heading: section.heading.trim(), body: section.body.trim() }))
+          .filter((section) => section.heading && section.body),
+        noindex: legalNoindex,
+      });
+      setLegalPages((current) => current.map((page) => page.key === updated.key ? updated : page));
+      setEditingLegalPage(updated);
+      feedback.showToast({ title: 'Đã lưu trang pháp lý.', tone: 'success' });
+    } catch (error: any) {
+      feedback.showToast({
+        title: error?.status === 409 ? 'Trang đã được cập nhật. Vui lòng tải lại trước khi lưu.' : error?.message || 'Không lưu được trang pháp lý.',
+        tone: 'error',
+      });
+      if (error?.status === 409) fetchLegalPages();
+    } finally {
+      setIsSavingLegalPage(false);
     }
   };
 
@@ -1774,9 +1845,20 @@ export default function AdminContentPage() {
           >
             Blog
           </button>
+          <button
+            onClick={() => setActiveTab('legal')}
+            className="px-4 py-2 rounded-lg border-none text-xs md:text-sm font-semibold flex-none whitespace-nowrap cursor-pointer"
+            style={{
+              background: activeTab === 'legal' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'legal' ? colors.onGold : colors.muted,
+              fontWeight: activeTab === 'legal' ? 700 : 500,
+            }}
+          >
+            Pháp lý
+          </button>
         </div>
 
-        <button 
+        {activeTab !== 'legal' && <button
           onClick={() => {
             if (activeTab === 'video') {
               setShowVideoToast(true);
@@ -1803,7 +1885,7 @@ export default function AdminContentPage() {
         >
           <Plus size={18} strokeWidth={3} />
           {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : activeTab === 'recommend' ? 'Thêm đề xuất' : activeTab === 'tour' ? 'Thêm tour và blog' : 'Viết bài'}
-        </button>
+        </button>}
       </div>
 
 
@@ -2140,6 +2222,36 @@ export default function AdminContentPage() {
                 onPageChange={setBlogPage}
               />
             </>
+          )}
+        </div>
+      )}
+
+      {/* LEGAL CONTENT — exactly three fixed pages */}
+      {activeTab === 'legal' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.22)', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+            Ba trang pháp lý được cố định trong hệ thống. Bạn chỉ có thể chỉnh sửa nội dung; không thể thêm, xóa hoặc đổi đường dẫn.
+          </div>
+          {isLoadingLegalPages ? (
+            <DataSkeleton variant="list" count={3} />
+          ) : legalPages.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, background: colors.surface1, borderRadius: '16px', border: `1px solid ${colors.borderSoft}` }}>
+              Chưa tải được các trang pháp lý.
+            </div>
+          ) : (
+            legalPages.map((page) => (
+              <div key={page.key} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', borderRadius: '16px', background: colors.surface1, border: `1px solid ${colors.borderSoft}` }}>
+                <div style={{ width: 62, height: 50, flex: 'none', borderRadius: 10, display: 'grid', placeItems: 'center', background: 'rgba(212,178,106,.12)', color: colors.gold, fontSize: 22 }}>§</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ color: colors.text, fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.title}</div>
+                  <div style={{ color: colors.muted, fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/vi/legal/{page.slug} · Cập nhật {new Date(page.updatedAt).toLocaleDateString('vi-VN')}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 'none' }}>
+                  <button type="button" onClick={() => window.open(`/vi/legal/${page.slug}`, '_blank')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}><Eye size={14} /> Xem</button>
+                  <button type="button" disabled={!canUpdateLegalPages} onClick={() => handleEditLegalPage(page)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', color: canUpdateLegalPages ? colors.muted : 'rgba(140,134,121,.45)', cursor: canUpdateLegalPages ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 700 }}><Pencil size={14} /> {canUpdateLegalPages ? 'Sửa' : 'Chỉ xem'}</button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
@@ -2985,6 +3097,56 @@ export default function AdminContentPage() {
                 <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
                 <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : (editBannerId ? 'Cập nhật' : 'Thêm banner')}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingLegalPage && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ width: 760, maxWidth: '96vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(212,178,106,.22)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: colors.muted, fontSize: 10, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase' }}>Pháp lý · Trang cố định</div>
+                <div style={{ color: colors.text, fontSize: 18, fontWeight: 800, marginTop: 4 }}>Sửa {editingLegalPage.title}</div>
+              </div>
+              <button type="button" onClick={closeLegalEditor} style={{ width: 32, height: 32, borderRadius: 9, display: 'grid', placeItems: 'center', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.05)', color: colors.muted, cursor: 'pointer' }}><X size={16} /></button>
+            </div>
+            <div className="scw" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
+                URL cố định
+                <input value={`/vi/legal/${editingLegalPage.slug}`} readOnly style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, padding: '11px 13px', color: colors.muted, fontSize: 13 }} />
+              </label>
+              <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
+                Tiêu đề
+                <input value={legalTitle} onChange={(event) => setLegalTitle(event.target.value.slice(0, 180))} style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '11px 13px', color: colors.text, fontSize: 14, fontWeight: 700 }} />
+              </label>
+              <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
+                Mô tả ngắn
+                <textarea value={legalExcerpt} onChange={(event) => setLegalExcerpt(event.target.value.slice(0, 320))} rows={3} style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', resize: 'vertical', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '11px 13px', color: colors.text, fontSize: 13, lineHeight: 1.55 }} />
+              </label>
+              <div>
+                <div style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 8 }}>Các phần nội dung</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {legalSections.map((section, index) => (
+                    <div key={`${editingLegalPage.key}-${index}`} style={{ padding: 13, borderRadius: 12, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.08)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input value={section.heading} onChange={(event) => setLegalSections((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, heading: event.target.value.slice(0, 180) } : item))} placeholder="Tiêu đề phần" style={{ flex: 1, minWidth: 0, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 9, padding: '9px 11px', color: colors.text, fontSize: 13, fontWeight: 700 }} />
+                        <button type="button" disabled={legalSections.length <= 1} onClick={() => setLegalSections((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={{ border: 0, background: 'transparent', color: legalSections.length <= 1 ? 'rgba(140,134,121,.3)' : '#e88b99', cursor: legalSections.length <= 1 ? 'not-allowed' : 'pointer' }}><X size={15} /></button>
+                      </div>
+                      <textarea value={section.body} onChange={(event) => setLegalSections((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, body: event.target.value.slice(0, 30000) } : item))} rows={5} placeholder="Nội dung phần" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 9, resize: 'vertical', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 9, padding: '10px 11px', color: colors.text, fontSize: 13, lineHeight: 1.65 }} />
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setLegalSections((current) => [...current, { heading: '', body: '' }])} style={{ marginTop: 10, border: '1px dashed rgba(212,178,106,.35)', background: 'transparent', color: colors.gold, borderRadius: 9, padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>+ Thêm phần nội dung</button>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 9, color: colors.text2, fontSize: 12.5, fontWeight: 700 }}>
+                <input type="checkbox" checked={!legalNoindex} onChange={(event) => setLegalNoindex(!event.target.checked)} /> Cho phép Google lập chỉ mục trang này
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.08)' }}>
+              <button type="button" onClick={closeLegalEditor} style={{ border: 0, background: 'transparent', color: colors.muted, padding: '10px 14px', cursor: 'pointer', fontWeight: 700 }}>Hủy</button>
+              <button type="button" disabled={isSavingLegalPage} onClick={handleSaveLegalPage} style={{ border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, padding: '10px 18px', cursor: isSavingLegalPage ? 'not-allowed' : 'pointer', opacity: isSavingLegalPage ? .65 : 1, fontWeight: 800 }}>{isSavingLegalPage ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
             </div>
           </div>
         </div>

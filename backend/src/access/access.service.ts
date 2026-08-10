@@ -135,6 +135,14 @@ export class AccessService {
     return this.hasRolePermission(user, 'content.admin.view');
   }
 
+  canViewAdminLegalPages(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'legal.page.view');
+  }
+
+  canUpdateAdminLegalPages(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'legal.page.update');
+  }
+
   canViewCouponIssue(user: AuthenticatedUser) {
     return this.hasRolePermission(user, 'coupon.issue.view');
   }

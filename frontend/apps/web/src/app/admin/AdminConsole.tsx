@@ -2796,6 +2796,11 @@ export default function AdminConsole({ section }: { section?: string }) {
   };
 
   const editContent = (content: CmsContentItem) => {
+    if (content.type === "POLICY") {
+      setContentStatusMessage("Chính sách được quản lý trong tab Pháp lý.");
+      window.location.href = "/admin/content";
+      return;
+    }
     const metadata = content.metadata ?? {};
     const tags = Array.isArray(metadata.tags)
       ? metadata.tags.filter((item): item is string => typeof item === "string").join(", ")
@@ -2820,6 +2825,10 @@ export default function AdminConsole({ section }: { section?: string }) {
   };
 
   const saveContent = async () => {
+    if (contentForm.type === "POLICY") {
+      setContentStatusMessage("Chính sách được quản lý trong tab Pháp lý.");
+      return;
+    }
     if (!contentForm.title.trim()) {
       setContentStatusMessage("Nhập tiêu đề trước khi lưu content.");
       return;
@@ -4497,7 +4506,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       <div style={{ padding: 18, borderBottom: `1px solid ${colors.borderSoft}` }}>
         <SectionTitle
           title="Trình soạn thảo nội dung"
-          eyebrow="BLOG / POLICY CMS"
+          eyebrow="BLOG CMS"
           action={
             <button type="button" onClick={resetContentForm} style={buttonStyle("secondary")}>
               <Plus size={15} />
@@ -4518,7 +4527,6 @@ export default function AdminConsole({ section }: { section?: string }) {
               style={inputStyle()}
             >
               <option value="BLOG">Blog</option>
-              <option value="POLICY">Chính sách</option>
             </select>
           </Field>
           <Field label="Status">
@@ -4651,6 +4659,11 @@ export default function AdminConsole({ section }: { section?: string }) {
                   {content.publishedAt ? new Date(content.publishedAt).toLocaleDateString("vi-VN") : "chưa đăng"}
                 </span>
               </span>
+              {content.type === "POLICY" ? (
+                <a href="/admin/content" style={{ color: colors.gold, fontSize: 12, fontWeight: 800 }}>
+                  Quản lý tại tab Pháp lý
+                </a>
+              ) : (
               <span style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={() => editContent(content)} style={buttonStyle("secondary")}>
                   <Pencil size={14} />
@@ -4665,6 +4678,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                   <Trash2 size={14} />
                 </button>
               </span>
+              )}
             </div>
           ))}
           {!contentItems.length ? <EmptyState>Chưa có content CMS. Tạo blog hoặc chính sách ở form bên trái.</EmptyState> : null}

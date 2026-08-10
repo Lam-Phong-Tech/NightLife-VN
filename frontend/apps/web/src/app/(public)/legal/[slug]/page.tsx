@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
-import { getLegalSection, getPublishedLegalSections } from "@/lib/content/legal";
+import { getLegalSection, LEGAL_PAGE_SLUGS } from "@/lib/content/legal";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
 export const dynamicParams = false;
 
 const formatDate = (value: string) =>
@@ -19,13 +20,17 @@ const formatDate = (value: string) =>
   }).format(new Date(value));
 
 export async function generateStaticParams() {
-  const legalSections = await getPublishedLegalSections();
-  return legalSections.map((section) => ({ slug: section.slug }));
+  return LEGAL_PAGE_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const section = await getLegalSection(slug);
+  let section;
+  try {
+    section = await getLegalSection(slug);
+  } catch {
+    section = undefined;
+  }
 
   if (!section) {
     return {
@@ -40,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: section.title,
-    description: section.description,
+    description: section.excerpt || section.title,
     alternates: {
       canonical: `/legal/${section.slug}`,
     },
@@ -106,14 +111,12 @@ export default async function LegalDetailPage({ params }: PageProps) {
         </header>
 
         <div style={{ display: "grid", gap: "24px", marginTop: "28px" }}>
-          {section.items.map((item, index) => (
+          {section.sections.map((item, index) => (
             <section key={item.heading}>
               <h2 style={{ margin: 0, fontSize: "23px", lineHeight: 1.25, fontWeight: 900 }}>
                 {index + 1}. {item.heading}
               </h2>
-              <p
-                style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85 }}
-              >
+              <p style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85, whiteSpace: "pre-line" }}>
                 {item.body}
               </p>
             </section>

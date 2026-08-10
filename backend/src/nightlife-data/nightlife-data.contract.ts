@@ -928,14 +928,14 @@ const contentExample = {
 export function PublicContentsContract() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Public content: list published blog/policy content',
+       summary: 'Public content: list published blog/banner content',
       description:
-        'Auth guard: none. Returns PUBLISHED Content records for blog and policy pages. Draft, archived, deleted, and future-published records are excluded.',
+        'Auth guard: none. Returns PUBLISHED Content records for blog and banner content. Legal pages are served by the dedicated /legal-pages API.',
     }),
     ApiQuery({
       name: 'type',
       required: false,
-      description: 'Content type: BLOG or POLICY.',
+       description: 'Content type: BLOG or BANNER.',
       example: 'BLOG',
     }),
     ApiQuery({ name: 'q', required: false, example: 'tay ho' }),
@@ -956,7 +956,7 @@ export function PublicContentDetailContract() {
     ApiOperation({
       summary: 'Public content: get published content by slug',
       description:
-        'Auth guard: none. Returns one PUBLISHED Content record by slug for public blog/policy detail pages.',
+        'Auth guard: none. Returns one PUBLISHED Content record by slug for public blog detail pages.',
     }),
     ApiParam({
       name: 'slug',
@@ -976,7 +976,7 @@ export function PublicContentDetailContract() {
 
 export function AdminContentsContract() {
   return guardedListContract(
-    'Admin content: list blog and policy records',
+    'Admin content: list blog and banner records',
     'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists non-deleted Content records with type/status/search filters for CMS review.',
     contentExample,
   );
@@ -1081,9 +1081,9 @@ export function AdminContentMutationContract(
   action: 'create' | 'update' | 'delete',
 ) {
   const summaries = {
-    create: 'Admin content: create blog or policy record',
-    update: 'Admin content: update blog or policy record',
-    delete: 'Admin content: soft delete blog or policy record',
+    create: 'Admin content: create blog or banner record',
+    update: 'Admin content: update blog or banner record',
+    delete: 'Admin content: soft delete blog or banner record',
   };
 
   return applyDecorators(
@@ -1091,7 +1091,7 @@ export function AdminContentMutationContract(
     ApiOperation({
       summary: summaries[action],
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Mutates Content records used by public blog and legal/policy pages.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Mutates Content records used by public blog and banner surfaces. Legal pages use the dedicated legal-pages mutation API.',
     }),
     ApiOkResponse({
       description: 'Content mutation result.',

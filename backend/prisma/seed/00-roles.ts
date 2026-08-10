@@ -250,6 +250,18 @@ const PERMISSIONS = [
     roleKeys: ['super_admin', 'admin', 'operator'],
   },
   {
+    key: 'legal.page.view',
+    name: 'View legal pages',
+    description: 'View the fixed privacy, terms and operating policy pages',
+    roleKeys: ['super_admin', 'admin', 'operator'],
+  },
+  {
+    key: 'legal.page.update',
+    name: 'Update legal pages',
+    description: 'Update content of the fixed legal pages',
+    roleKeys: ['super_admin', 'admin'],
+  },
+  {
     key: 'coupon.issue.view',
     name: 'View coupon issues',
     description: 'View issued coupon history in CMS',

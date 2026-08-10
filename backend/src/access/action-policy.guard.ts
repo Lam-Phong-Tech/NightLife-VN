@@ -153,6 +153,14 @@ export class ActionPolicyGuard implements CanActivate {
       return this.accessService.canViewAdminContent(user);
     }
 
+    if (policy === 'canViewAdminLegalPages') {
+      return this.accessService.canViewAdminLegalPages(user);
+    }
+
+    if (policy === 'canUpdateAdminLegalPages') {
+      return this.accessService.canUpdateAdminLegalPages(user);
+    }
+
     if (policy === 'canViewCouponIssue') {
       return this.accessService.canViewCouponIssue(user);
     }

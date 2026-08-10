@@ -3,9 +3,17 @@ import Link from "next/link";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getPublishedLegalSections, legalPlaceholderNotice } from "@/lib/content/legal";
 
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
-  const legalSections = await getPublishedLegalSections();
-  const shouldNoindex = legalSections.length === 0 || legalSections.some((section) => section.noindex);
+  let shouldNoindex = true;
+  try {
+    const legalSections = await getPublishedLegalSections();
+    shouldNoindex = legalSections.length === 0 || legalSections.some((section) => section.noindex);
+  } catch {
+    // Metadata must remain build-safe when the backend is unavailable.
+  }
 
   return {
     title: "Pháp lý và chính sách",
@@ -102,7 +110,7 @@ export default async function LegalPage() {
                 {section.title}
               </h2>
               <p style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "14px", lineHeight: 1.65 }}>
-                {section.description}
+                {section.excerpt || section.title}
               </p>
               <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12px", fontWeight: 800 }}>
                 Cập nhật: {formatDate(section.updatedAt)}
@@ -130,7 +138,7 @@ export default async function LegalPage() {
                   {section.title}
                 </h3>
                 <p style={{ margin: "8px 0 0", color: "var(--vy-text-2)", fontSize: "15px", lineHeight: 1.75 }}>
-                  {section.items[0]?.body}
+                  {section.sections[0]?.body}
                 </p>
               </section>
             ))}

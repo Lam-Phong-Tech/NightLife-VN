@@ -15,7 +15,7 @@ import {
 export class PublicContentQueryDto {
   @IsOptional()
   @IsString()
-  @IsIn(['BLOG', 'POLICY', 'BANNER', 'blog', 'policy', 'banner'])
+  @IsIn(['BLOG', 'BANNER', 'blog', 'banner'])
   type?: string;
 
   @IsOptional()
@@ -49,7 +49,7 @@ export class AdminContentQueryDto extends PublicContentQueryDto {
 
 export class CreateAdminContentDto {
   @IsString()
-  @IsIn(['BLOG', 'POLICY', 'BANNER', 'blog', 'policy', 'banner'])
+  @IsIn(['BLOG', 'BANNER', 'blog', 'banner'])
   type!: string;
 
   @IsString()
@@ -91,7 +91,7 @@ export class CreateAdminContentDto {
 export class UpdateAdminContentDto {
   @IsOptional()
   @IsString()
-  @IsIn(['BLOG', 'POLICY', 'BANNER', 'blog', 'policy', 'banner'])
+  @IsIn(['BLOG', 'BANNER', 'blog', 'banner'])
   type?: string;
 
   @IsOptional()

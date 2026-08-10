@@ -17,6 +17,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
 import { TourModule } from './tour/tour.module';
 import { PartnerStaffModule } from './partner-staff/partner-staff.module';
 import { RbacModule } from './rbac/rbac.module';
+import { LegalPagesModule } from './legal-pages/legal-pages.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -37,6 +38,7 @@ import { validateEnv } from './config/env.validation';
     TourModule,
     PartnerStaffModule,
     RbacModule,
+    LegalPagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -31,6 +31,8 @@ export type ActionPolicy =
   | 'canViewAdminCast'
   | 'canViewPartnerRequest'
   | 'canViewAdminContent'
+  | 'canViewAdminLegalPages'
+  | 'canUpdateAdminLegalPages'
   | 'canViewCouponIssue'
   | 'canViewAdminDashboard'
   | 'canUpdateBookingStatus';
