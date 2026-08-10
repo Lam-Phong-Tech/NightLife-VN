@@ -13,6 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
     "seed": "prisma db seed",
+    "seed:legal": "ts-node prisma/seed-legal-pages.ts",
     "seed:full": "ts-node prisma/seed.ts --profile=full",
     "seed:check": "ts-node prisma/seed-check.ts",
     "seed:check-links": "ts-node prisma/seed-link-check.ts",
