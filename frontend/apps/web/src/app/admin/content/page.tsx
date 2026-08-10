@@ -2230,7 +2230,7 @@ export default function AdminContentPage() {
       {activeTab === 'legal' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.22)', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-            Ba trang pháp lý được cố định trong hệ thống. Bạn chỉ có thể chỉnh sửa nội dung; không thể thêm, xóa hoặc đổi đường dẫn.
+            Ba trang pháp lý được cố định trong hệ thống và dùng chung nội dung cho mọi ngôn ngữ (/vi, /en, /ja, /ko, /zh). Bạn chỉ có thể chỉnh sửa nội dung; không thể thêm, xóa hoặc đổi đường dẫn.
           </div>
           {isLoadingLegalPages ? (
             <DataSkeleton variant="list" count={3} />
@@ -2244,7 +2244,7 @@ export default function AdminContentPage() {
                 <div style={{ width: 62, height: 50, flex: 'none', borderRadius: 10, display: 'grid', placeItems: 'center', background: 'rgba(212,178,106,.12)', color: colors.gold, fontSize: 22 }}>§</div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ color: colors.text, fontSize: 15, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.title}</div>
-                  <div style={{ color: colors.muted, fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/vi/legal/{page.slug} · Cập nhật {new Date(page.updatedAt).toLocaleDateString('vi-VN')}</div>
+                  <div style={{ color: colors.muted, fontSize: 11.5, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/{'{locale}'}/legal/{page.slug} · Dùng chung mọi ngôn ngữ · Cập nhật {new Date(page.updatedAt).toLocaleDateString('vi-VN')}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 'none' }}>
                   <button type="button" onClick={() => window.open(`/vi/legal/${page.slug}`, '_blank')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', color: colors.muted, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}><Eye size={14} /> Xem</button>
@@ -3114,8 +3114,8 @@ export default function AdminContentPage() {
             </div>
             <div className="scw" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
-                URL cố định
-                <input value={`/vi/legal/${editingLegalPage.slug}`} readOnly style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, padding: '11px 13px', color: colors.muted, fontSize: 13 }} />
+                Mẫu URL chung cho mọi ngôn ngữ
+                <input value={`/{locale}/legal/${editingLegalPage.slug}`} readOnly style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, padding: '11px 13px', color: colors.muted, fontSize: 13 }} />
               </label>
               <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
                 Tiêu đề
