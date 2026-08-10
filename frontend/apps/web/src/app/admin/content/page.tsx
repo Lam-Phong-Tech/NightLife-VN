@@ -2229,9 +2229,6 @@ export default function AdminContentPage() {
       {/* LEGAL CONTENT — exactly three fixed pages */}
       {activeTab === 'legal' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.22)', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-            Ba trang pháp lý được cố định trong hệ thống và dùng chung nội dung cho mọi ngôn ngữ (/vi, /en, /ja, /ko, /zh). Bạn chỉ có thể chỉnh sửa nội dung; không thể thêm, xóa hoặc đổi đường dẫn.
-          </div>
           {isLoadingLegalPages ? (
             <DataSkeleton variant="list" count={3} />
           ) : legalPages.length === 0 ? (
