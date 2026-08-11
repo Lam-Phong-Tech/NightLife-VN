@@ -130,7 +130,7 @@ export function BlogClient({
                 lineHeight: 1.7,
               }}
             >
-              {translateText("Gợi ý khu vực, etiquette, ưu đãi và mẹo đặt chỗ để khách có một buổi tối rõ ràng hơn trước khi gửi yêu cầu.", activeLanguage)}
+              {translateText("Khám phá địa điểm, quán bar, ưu đãi và kinh nghiệm đặt chỗ để chủ động lên kế hoạch cho một đêm đáng nhớ.", activeLanguage)}
             </p>
           </div>
 

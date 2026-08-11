@@ -432,11 +432,11 @@ const entries: TranslationEntry[] = [
     zh: "每次出行的夜生活指南",
   },
   {
-    vi: "Gợi ý khu vực, etiquette, ưu đãi và mẹo đặt chỗ để khách có một buổi tối rõ ràng hơn trước khi gửi yêu cầu.",
-    en: "Area tips, etiquette, offers, and booking tricks so you have a clearer night before requesting.",
-    ja: "リクエスト前に夜の流れが分かるよう、エリア情報、マナー、特典、予約のコツを紹介します。",
-    ko: "요청 전 밤 일정을 쉽게 알 수 있도록 지역 정보, 에티켓, 혜택, 예약 팁을 소개합니다.",
-    zh: "在提交请求前，为你提供区域建议、礼仪、优惠和预订技巧。",
+    vi: "Khám phá địa điểm, quán bar, ưu đãi và kinh nghiệm đặt chỗ để chủ động lên kế hoạch cho một đêm đáng nhớ.",
+    en: "Discover venues, bars, exclusive offers, and booking tips to confidently plan a memorable night.",
+    ja: "スポットやバー、お得な情報、予約のコツをチェックして、思い出に残る夜を自分らしく計画しましょう。",
+    ko: "장소와 바, 혜택, 예약 팁을 살펴보고 기억에 남는 밤을 자신 있게 계획해 보세요.",
+    zh: "探索各类场所、酒吧、优惠信息与预订攻略，自信规划一个难忘的夜晚。",
   },
   {
     vi: "Email này đã được đăng ký.",
@@ -4859,11 +4859,11 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "每次夜晚出行都可参考的夜生活指南",
   },
   {
-    vi: "Gợi ý khu vực, etiquette, ưu đãi và mẹo đặt chỗ để khách có một buổi tối rõ ràng hơn trước khi gửi yêu cầu.",
-    en: "Area tips, etiquette, deals, and booking advice so guests know the plan before sending a request.",
-    ja: "リクエスト前に夜の流れが分かるよう、エリア情報、マナー、特典、予約のコツを紹介します。",
-    ko: "요청을 보내기 전 밤 일정이 선명해지도록 지역 추천, 에티켓, 혜택, 예약 팁을 제공합니다.",
-    zh: "提供区域建议、礼仪、优惠和预订技巧，让客人在发送请求前更清楚今晚安排。",
+    vi: "Khám phá địa điểm, quán bar, ưu đãi và kinh nghiệm đặt chỗ để chủ động lên kế hoạch cho một đêm đáng nhớ.",
+    en: "Discover venues, bars, exclusive offers, and booking tips to confidently plan a memorable night.",
+    ja: "スポットやバー、お得な情報、予約のコツをチェックして、思い出に残る夜を自分らしく計画しましょう。",
+    ko: "장소와 바, 혜택, 예약 팁을 살펴보고 기억에 남는 밤을 자신 있게 계획해 보세요.",
+    zh: "探索各类场所、酒吧、优惠信息与预订攻略，自信规划一个难忘的夜晚。",
   },
   {
     vi: "Tất cả tag",
