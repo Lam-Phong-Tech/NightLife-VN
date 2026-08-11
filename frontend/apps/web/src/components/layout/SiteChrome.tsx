@@ -1573,6 +1573,14 @@ function SiteFooter({
           >
             {copy.description}
           </p>
+          <p style={{ margin: "12px 0 0", color: colors.text2, lineHeight: 1.6 }}>
+            <a
+              href="mailto:booking@vietyoru.com"
+              style={{ color: colors.goldPale, textDecoration: "none" }}
+            >
+              booking@vietyoru.com
+            </a>
+          </p>
         </div>
 
         {footerGroups.map((group) => (

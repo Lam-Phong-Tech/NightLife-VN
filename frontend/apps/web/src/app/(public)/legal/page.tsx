@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
-import { getPublishedLegalSections, legalPlaceholderNotice } from "@/lib/content/legal";
+import { getPublishedLegalSections, legalPageDescription } from "@/lib/content/legal";
+import { getServerSelectedLanguage } from "@/lib/i18n/server-language";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ const formatDate = (value: string) =>
 
 export default async function LegalPage() {
   const legalSections = await getPublishedLegalSections();
+  const language = await getServerSelectedLanguage();
 
   return (
     <main
@@ -81,7 +83,7 @@ export default async function LegalPage() {
           Pháp lý và chính sách vận hành
         </h1>
         <p style={{ maxWidth: "740px", margin: "16px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.75 }}>
-          {legalPlaceholderNotice}
+          {legalPageDescription[language]}
         </p>
 
         <section
