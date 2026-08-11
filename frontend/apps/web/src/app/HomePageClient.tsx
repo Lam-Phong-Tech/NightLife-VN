@@ -2107,6 +2107,8 @@ function HomeCardCarousel<T>({
               flex: "0 0 100%",
               display: "grid",
               gridTemplateColumns: layoutDirection === "column" ? "1fr" : `repeat(${Math.max(1, itemsPerSlide)}, minmax(0, 1fr))`,
+              // Do not stretch a one-item column slide to the height of another slide.
+              alignItems: layoutDirection === "column" ? "start" : undefined,
               gap,
               minWidth: 0,
               paddingRight: slideIndex < slides.length - 1 ? gap : 0,
@@ -2267,7 +2269,8 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
         position: "relative",
         display: "grid",
         gridTemplateColumns: `${imageSize}px minmax(0, 1fr)`,
-        alignItems: "center",
+        alignItems: "start",
+        alignSelf: "start",
         gap: compact ? "11px" : "14px",
         minHeight: compact ? 104 : 124,
         padding: compact ? "11px" : "14px",
