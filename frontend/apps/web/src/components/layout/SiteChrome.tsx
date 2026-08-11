@@ -1573,9 +1573,6 @@ function SiteFooter({
           >
             {copy.description}
           </p>
-          <p style={{ margin: "12px 0 0", color: "#9a9488", lineHeight: 1.6 }}>
-            {copy.legalPlaceholder}
-          </p>
         </div>
 
         {footerGroups.map((group) => (
