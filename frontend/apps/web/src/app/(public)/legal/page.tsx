@@ -119,31 +119,6 @@ export default async function LegalPage() {
           ))}
         </section>
 
-        <section
-          style={{
-            marginTop: "30px",
-            border: "1px solid var(--vy-border)",
-            borderRadius: "8px",
-            padding: "clamp(18px, 4vw, 28px)",
-            background: "var(--vy-surface)",
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: "24px", lineHeight: 1.25, fontWeight: 900 }}>
-            Tóm tắt placeholder
-          </h2>
-          <div style={{ display: "grid", gap: "18px", marginTop: "18px" }}>
-            {legalSections.map((section) => (
-              <section key={section.slug}>
-                <h3 style={{ margin: 0, color: "var(--vy-gold-pale)", fontSize: "17px", fontWeight: 900 }}>
-                  {section.title}
-                </h3>
-                <p style={{ margin: "8px 0 0", color: "var(--vy-text-2)", fontSize: "15px", lineHeight: 1.75 }}>
-                  {section.sections[0]?.body}
-                </p>
-              </section>
-            ))}
-          </div>
-        </section>
       </section>
     </main>
   );

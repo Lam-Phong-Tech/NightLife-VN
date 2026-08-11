@@ -3,7 +3,7 @@ import { legalPagesApi, type LegalPage, type LegalPageKey } from "@/lib/api/cont
 export type LegalSection = LegalPage;
 
 export const legalPlaceholderNotice =
-  "Các trang pháp lý được quản lý tập trung. Nội dung hiển thị trên website được lấy trực tiếp từ hệ thống quản trị.";
+  "Tổng hợp các quy định và chính sách được áp dụng tại Vietyoru, nhằm bảo đảm tính minh bạch, nhất quán và quyền lợi của khách hàng trong quá trình sử dụng dịch vụ.";
 
 export const LEGAL_PAGE_SLUGS = [
   "chinh-sach-bao-mat",
