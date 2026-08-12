@@ -839,7 +839,8 @@ export default function AdminContentPage() {
       feedback.showToast({ title: 'Đã lưu danh sách Video Hot thành công', tone: 'success' });
     } catch (err) {
       console.error(err);
-      feedback.showToast({ title: 'Có lỗi xảy ra khi lưu', tone: 'error' });
+      const errorTitle = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu';
+      feedback.showToast({ title: errorTitle, tone: 'error' });
     }
   };
 

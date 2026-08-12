@@ -507,6 +507,8 @@ describe('NightlifeDataService', () => {
           access: 'PUBLIC',
           status: 'READY',
           type: 'VIDEO',
+          purpose: 'STORE_VIDEO',
+          storeId: { not: null },
           store: {
             deletedAt: null,
             status: 'ACTIVE',
@@ -519,6 +521,55 @@ describe('NightlifeDataService', () => {
         id: 'media-active',
         storeSlug: 'active-lounge',
         href: '/stores/active-lounge',
+      }),
+    ]);
+  });
+
+  it('filters admin hot videos with the same public-safe rules', async () => {
+    prisma.content.findUnique.mockResolvedValue({
+      id: 'content-hot-videos',
+      slug: 'hot-videos-all',
+      metadata: {
+        videos: [{ mediaId: 'media-active' }, { mediaId: 'media-stale' }],
+      },
+    } as never);
+    prisma.media.findMany.mockResolvedValue([
+      {
+        id: 'media-active',
+        url: 'https://youtu.be/active',
+        originalName: 'Active store video',
+        createdAt: new Date('2026-08-01T00:00:00.000Z'),
+        store: {
+          name: 'Active Lounge',
+          slug: 'active-lounge',
+          media: [],
+        },
+      },
+    ] as never);
+
+    const result = await service.adminGetHotVideos('all');
+
+    expect(prisma.media.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { in: ['media-active', 'media-stale'] },
+          deletedAt: null,
+          access: 'PUBLIC',
+          status: 'READY',
+          type: 'VIDEO',
+          purpose: 'STORE_VIDEO',
+          storeId: { not: null },
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        }),
+      }),
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'media-active',
+        storeSlug: 'active-lounge',
       }),
     ]);
   });

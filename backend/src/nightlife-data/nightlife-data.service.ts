@@ -26026,7 +26026,7 @@ export class NightlifeDataService {
   }
 
   async adminGetHotVideos(cityCode: string) {
-    return this.getHotVideos(cityCode, { publicOnly: false });
+    return this.getHotVideos(cityCode, { publicOnly: true });
   }
 
   private async getHotVideos(
@@ -26055,6 +26055,8 @@ export class NightlifeDataService {
               access: 'PUBLIC',
               status: 'READY',
               type: 'VIDEO',
+              purpose: 'STORE_VIDEO',
+              storeId: { not: null },
               store: {
                 deletedAt: null,
                 status: 'ACTIVE',
