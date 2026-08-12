@@ -4092,6 +4092,8 @@ describe('NightlifeDataService', () => {
   });
 
   it('sends QR email when creating guest tour booking', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-01T10:00:00.000Z'));
+
     const tourStop = {
       id: 'stop-1',
       order: 1,
@@ -4204,6 +4206,8 @@ describe('NightlifeDataService', () => {
   });
 
   it('sends QR email when creating member tour booking', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-01T10:00:00.000Z'));
+
     const tourStop = {
       id: 'stop-1',
       order: 1,
