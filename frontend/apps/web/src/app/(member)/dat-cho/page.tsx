@@ -648,7 +648,7 @@ export default function Page() {
 
   const targetLabel =
     !isServiceOnlyBooking && context.castName
-      ? `${context.castName} @ ${context.storeName}`
+      ? context.castName
       : context.storeName;
   const isMemberMode = mode === "member";
   const parsedGuestInput = Number(guestInput);
