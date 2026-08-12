@@ -103,6 +103,7 @@ describe('NightlifeDataService', () => {
     },
     media: {
       create: jest.fn(),
+      count: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
@@ -114,6 +115,7 @@ describe('NightlifeDataService', () => {
       count: jest.fn(),
       updateMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
     },
@@ -340,6 +342,7 @@ describe('NightlifeDataService', () => {
     prisma.cast.update.mockResolvedValue({ id: 'cast-draft-1' });
     prisma.cast.updateMany.mockResolvedValue({ count: 1 });
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' });
+    prisma.media.count.mockResolvedValue(0);
     prisma.media.findMany.mockResolvedValue([] as never);
     prisma.media.update.mockResolvedValue({ id: 'media-draft-1' });
     prisma.media.updateMany.mockResolvedValue({ count: 1 });
@@ -358,6 +361,7 @@ describe('NightlifeDataService', () => {
     });
     prisma.content.updateMany.mockResolvedValue({ count: 1 });
     prisma.content.findFirst.mockResolvedValue(null);
+    prisma.content.findUnique.mockResolvedValue(null);
     prisma.coupon.findFirst.mockResolvedValue(null);
     prisma.coupon.create.mockResolvedValue(undefined as never);
     prisma.coupon.update.mockResolvedValue(undefined as never);
@@ -386,6 +390,7 @@ describe('NightlifeDataService', () => {
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.count.mockResolvedValue(0);
+    prisma.auditLog.groupBy.mockResolvedValue([] as never);
     prisma.booking.count.mockResolvedValue(0);
     prisma.booking.findMany.mockResolvedValue([]);
     prisma.tourBookingCheckIn.count.mockResolvedValue(0);
@@ -468,6 +473,82 @@ describe('NightlifeDataService', () => {
         },
       }),
     );
+  });
+
+  it('filters public hot videos to active, non-deleted stores', async () => {
+    prisma.content.findUnique.mockResolvedValue({
+      id: 'content-hot-videos',
+      slug: 'hot-videos-all',
+      metadata: {
+        videos: [{ mediaId: 'media-active' }, { mediaId: 'media-deleted' }],
+      },
+    } as never);
+    prisma.media.findMany.mockResolvedValue([
+      {
+        id: 'media-active',
+        url: 'https://youtu.be/active',
+        originalName: 'Active store video',
+        createdAt: new Date('2026-08-01T00:00:00.000Z'),
+        store: {
+          name: 'Active Lounge',
+          slug: 'active-lounge',
+          media: [],
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicHotVideos('all');
+
+    expect(prisma.media.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { in: ['media-active', 'media-deleted'] },
+          deletedAt: null,
+          access: 'PUBLIC',
+          status: 'READY',
+          type: 'VIDEO',
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        }),
+      }),
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'media-active',
+        storeSlug: 'active-lounge',
+        href: '/stores/active-lounge',
+      }),
+    ]);
+  });
+
+  it('rejects saving hot videos from inactive or deleted stores', async () => {
+    prisma.media.count.mockResolvedValue(1);
+
+    await expect(
+      service.adminUpdateHotVideos(
+        'all',
+        { mediaIds: ['media-active', 'media-deleted'] },
+        adminActor.id,
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.media.count).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['media-active', 'media-deleted'] },
+        type: 'VIDEO',
+        purpose: 'STORE_VIDEO',
+        deletedAt: null,
+        access: 'PUBLIC',
+        status: 'READY',
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      },
+    });
+    expect(prisma.content.upsert).not.toHaveBeenCalled();
   });
 
   it('searches public stores by name with category and area filters', async () => {

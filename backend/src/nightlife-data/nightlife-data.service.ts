@@ -25932,15 +25932,26 @@ export class NightlifeDataService {
       type: 'VIDEO',
       purpose: 'STORE_VIDEO',
       storeId: { not: null },
+      deletedAt: null,
+      access: 'PUBLIC',
+      status: 'READY',
+      store: {
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
     };
 
     if (query.cityCode && query.cityCode !== 'all') {
       if (query.cityCode === 'other') {
         where.store = {
+          deletedAt: null,
+          status: 'ACTIVE',
           city: { notIn: ['Hanoi', 'Ho Chi Minh City'] },
         };
       } else {
         where.store = {
+          deletedAt: null,
+          status: 'ACTIVE',
           OR: [
             {
               city: {
@@ -26044,6 +26055,10 @@ export class NightlifeDataService {
               access: 'PUBLIC',
               status: 'READY',
               type: 'VIDEO',
+              store: {
+                deletedAt: null,
+                status: 'ACTIVE',
+              },
             }
           : {}),
       },
@@ -26097,6 +26112,31 @@ export class NightlifeDataService {
   ) {
     const normalizedCityCode = this.normalizeHotVideoCityCode(cityCode);
     const slug = `hot-videos-${normalizedCityCode}`;
+    const uniqueMediaIds = [...new Set(dto.mediaIds)];
+
+    if (uniqueMediaIds.length) {
+      const validMediaCount = await this.prisma.media.count({
+        where: {
+          id: { in: uniqueMediaIds },
+          type: 'VIDEO',
+          purpose: 'STORE_VIDEO',
+          deletedAt: null,
+          access: 'PUBLIC',
+          status: 'READY',
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        },
+      });
+
+      if (validMediaCount !== uniqueMediaIds.length) {
+        throw new BadRequestException(
+          'Hot videos must belong to active, non-deleted stores',
+        );
+      }
+    }
+
     const videosMeta = dto.mediaIds.map((id, index) => ({
       mediaId: id,
       rank: index + 1,
