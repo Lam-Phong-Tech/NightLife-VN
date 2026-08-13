@@ -164,6 +164,24 @@ const localizedApiErrorMessage = (error: unknown, language: LanguageCode, fallba
   return translateText(vietnameseMessage, language);
 };
 
+const bookingSystemErrorMessage = "Hệ thống đang gặp lỗi. Vui lòng thử lại sau.";
+
+const isBookingSystemError = (error: unknown) => {
+  if (error instanceof ApiError) {
+    return error.status >= 500 || /failed to fetch|fetch failed|network|load failed/i.test(error.message);
+  }
+
+  return error instanceof Error && /failed to fetch|fetch failed|network|load failed/i.test(error.message);
+};
+
+const localizedBookingSubmitErrorMessage = (error: unknown, language: LanguageCode) => {
+  if (isBookingSystemError(error)) {
+    return translateText(bookingSystemErrorMessage, language);
+  }
+
+  return localizedApiErrorMessage(error, language, "Không gửi được yêu cầu đặt bàn.");
+};
+
 type IntroLine = {
   key: IntroLanguageKey;
   text: string;
@@ -1231,7 +1249,6 @@ function BookingCard({
   castOptions,
   isMemberBooking,
   isSubmitting,
-  errorMessage,
   fieldErrors,
   activeLanguage,
   onDateSelect,
@@ -1260,7 +1277,6 @@ function BookingCard({
   castOptions: BookingCastOption[];
   isMemberBooking: boolean;
   isSubmitting: boolean;
-  errorMessage: string;
   fieldErrors: BookingFieldErrors;
   activeLanguage: LanguageCode;
   onDateSelect: (value: string) => void;
@@ -1501,12 +1517,6 @@ function BookingCard({
           message={fieldErrors.note}
           reserveSpace
         />
-
-        {errorMessage ? (
-          <div className="booking-error" role="alert" aria-live="polite">
-            {translateText(errorMessage, activeLanguage)}
-          </div>
-        ) : null}
 
         <button
           type="button"
@@ -1751,7 +1761,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [note, setNote] = useState("");
   const [isMemberBooking, setIsMemberBooking] = useState(false);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
-  const [bookingErrorMessage, setBookingErrorMessage] = useState("");
   const [bookingTouchedFields, setBookingTouchedFields] = useState<BookingTouchedFields>({});
   const [bookingSubmitAttempted, setBookingSubmitAttempted] = useState(false);
   const [isFavorite, setIsFavorite] = useState(
@@ -2079,7 +2088,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setBookingTouchedFields((current) =>
       current[field] ? current : { ...current, [field]: true },
     );
-    setBookingErrorMessage("");
   };
 
   const bookingQuery = new URLSearchParams({
@@ -2391,12 +2399,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }
       router.push(`/xac-nhan?${confirmParams.toString()}`);
     } catch (error) {
-      const message = localizedApiErrorMessage(
-        error,
-        activeLanguage,
-        "Không gửi được yêu cầu đặt bàn.",
-      );
-      setBookingErrorMessage(message);
+      const message = localizedBookingSubmitErrorMessage(error, activeLanguage);
       userFeedback.error({
         title: translateText(
           actionLabel === "đặt cast" ? "Đặt cast thất bại" : "Đặt bàn thất bại",
@@ -2412,7 +2415,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const submitDesktopBooking = async () => {
     if (isBookingSubmitting) return;
 
-    setBookingErrorMessage("");
     setBookingSubmitAttempted(true);
     setBookingTouchedFields(touchAllBookingFields());
 
@@ -2749,7 +2751,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               castOptions={serviceBookingCastOptions}
               isMemberBooking={isMemberBooking}
               isSubmitting={isBookingSubmitting}
-              errorMessage={bookingErrorMessage}
               fieldErrors={visibleFieldErrors}
               activeLanguage={activeLanguage}
               onDateSelect={(value) => {
@@ -4423,18 +4424,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-gold) !important;
         }
 
-        .booking-error {
-          margin-top: 8px;
-          padding: 10px 12px;
-          border: 1px solid rgba(248, 113, 113, .3);
-          border-radius: 8px;
-          background: rgba(127, 29, 29, .16);
-          color: #fecaca;
-          font-size: 13px;
-          font-weight: 850;
-          line-height: 1.45;
-        }
-
         .booking-field-error,
         .booking-card .nl-booking-field-error {
           display: block;
@@ -4451,13 +4440,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field-error.is-empty {
           visibility: hidden;
-        }
-
-        html.vy-light .store-detail-page .booking-error {
-          border-color: rgba(190, 18, 60, .52);
-          background: linear-gradient(180deg, #fff1f2, #ffe4e9);
-          color: #8f1230;
-          box-shadow: 0 12px 26px rgba(143, 18, 48, .14);
         }
 
         html.vy-light .store-detail-page .booking-submit-overlay {
