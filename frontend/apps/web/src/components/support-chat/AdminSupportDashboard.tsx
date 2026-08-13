@@ -617,7 +617,6 @@ export function AdminSupportDashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f3f0ea' }}>{currentTicketDisplay.userId ? currentTicketDisplay.user?.displayName : 'Khách vãng lai'}</div>
-                  <div style={{ fontSize: '10.5px', color: '#7fd3a2', marginTop: '1px' }}>● Đang trực tuyến</div>
                 </div>
                 <button
                   onClick={closeTicket}
