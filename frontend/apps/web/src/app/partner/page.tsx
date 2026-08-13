@@ -508,6 +508,7 @@ const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
+const scanToastDedupeMs = 5000;
 const billSubmitDeadlineMs = 10 * 24 * 60 * 60 * 1000;
 const signedQrTokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
@@ -1912,9 +1913,21 @@ export default function PartnerPage() {
   const scanPermissionNotice =
     'Tài khoản nhân viên của bạn chưa được cấp quyền quét QR hoặc xác nhận check-in cho quán này. Vui lòng liên hệ tài khoản đối tác quản lý để bật quyền phù hợp.';
 
+  const lastScanToastRef = useRef({ key: '', shownAt: 0 });
+
   const showScanToast = useCallback(
     (title: string, description: string, tone: 'warning' | 'error' = 'warning') => {
       setScanMessage(description);
+      const toastKey = `${tone}:${title}:${description}`;
+      const now = Date.now();
+      if (
+        lastScanToastRef.current.key === toastKey &&
+        now - lastScanToastRef.current.shownAt < scanToastDedupeMs
+      ) {
+        return;
+      }
+
+      lastScanToastRef.current = { key: toastKey, shownAt: now };
       feedback.showToast({
         tone,
         title,
@@ -2254,6 +2267,10 @@ export default function PartnerPage() {
   const lastCameraPayloadRef = useRef('');
 
   useEffect(() => {
+    lastCameraPayloadRef.current = '';
+  }, [scanStoreId, staffCanConfirmCheckIn, staffCanScanCoupons]);
+
+  useEffect(() => {
     document.documentElement.classList.toggle('vy-light', partnerTheme === 'light');
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -2588,10 +2605,18 @@ export default function PartnerPage() {
             lastCameraPayloadRef.current = rawValue;
             setScanPayload(rawValue);
             setCameraMessage('Đã đọc QR, đang kiểm tra mã...');
+            const cameraPayload = normalizePartnerScanPayload(rawValue);
+            const cameraNeedsCheckInPermission =
+              cameraPayload?.kind === 'booking' || cameraPayload?.kind === 'tour';
+            const cameraHasRequiredPermission = cameraPayload
+              ? cameraNeedsCheckInPermission
+                ? staffCanConfirmCheckIn
+                : staffCanScanCoupons
+              : true;
             void scanCouponPayload(rawValue, { fromCamera: true }).then((ok) => {
               if (ok) {
                 stopCameraScan();
-              } else {
+              } else if (cameraHasRequiredPermission) {
                 lastCameraPayloadRef.current = '';
               }
             });
@@ -2620,7 +2645,15 @@ export default function PartnerPage() {
       setCameraMessage(message);
       showScanToast('Không mở được camera', message, 'error');
     }
-  }, [scanCouponPayload, scanPermissionNotice, showScanToast, staffCanUseQrTools, stopCameraScan]);
+  }, [
+    scanCouponPayload,
+    scanPermissionNotice,
+    showScanToast,
+    staffCanConfirmCheckIn,
+    staffCanScanCoupons,
+    staffCanUseQrTools,
+    stopCameraScan,
+  ]);
 
   const handleQrImageFileChange = useCallback(
     async (input: HTMLInputElement) => {
