@@ -52,6 +52,23 @@ const ZODIAC_SIGNS = [
   { value: 'Pisces', label: 'Song Ngư' },
 ];
 
+// Form chỉ lưu tháng sinh, nên dùng cung hoàng đạo đại diện cho từng tháng.
+// Quản trị viên vẫn có thể điều chỉnh thủ công khi cần dựa trên ngày sinh chính xác.
+const ZODIAC_BY_BIRTH_MONTH: Record<number, string> = {
+  1: 'Capricorn',
+  2: 'Aquarius',
+  3: 'Pisces',
+  4: 'Aries',
+  5: 'Taurus',
+  6: 'Gemini',
+  7: 'Cancer',
+  8: 'Leo',
+  9: 'Virgo',
+  10: 'Libra',
+  11: 'Scorpio',
+  12: 'Sagittarius',
+};
+
 const LANGUAGE_LABELS: Record<string, string> = {
   VN: 'Tiếng Việt',
   VI: 'Tiếng Việt',
@@ -1640,7 +1657,11 @@ function AdminCastsContent() {
                             key={mVal}
                             type="button"
                             onClick={() => {
-                              setFormData({ ...formData, birthMonth: mVal });
+                              setFormData({
+                                ...formData,
+                                birthMonth: mVal,
+                                zodiacSign: ZODIAC_BY_BIRTH_MONTH[mVal],
+                              });
                               setMonthPickerOpen(false);
                             }}
                             style={{
