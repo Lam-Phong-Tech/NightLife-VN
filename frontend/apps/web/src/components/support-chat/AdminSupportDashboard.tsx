@@ -665,8 +665,8 @@ export function AdminSupportDashboard() {
                   }
 
                   return (
-                    <div key={idx} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                      <div className="max-w-[62%]">
+                    <div key={idx} className={`flex min-w-0 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                      <div className="max-w-[62%] min-w-0">
                         <div
                           className="notranslate"
                           translate="no"
@@ -680,6 +680,9 @@ export function AdminSupportDashboard() {
                                   padding: '11px 15px',
                                   borderRadius: '15px 15px 4px 15px',
                                   fontWeight: 500,
+                                  whiteSpace: 'pre-wrap',
+                                  overflowWrap: 'anywhere',
+                                  wordBreak: 'break-word',
                                 }
                               : {
                                   fontSize: '13px',
@@ -689,6 +692,9 @@ export function AdminSupportDashboard() {
                                   border: '1px solid rgba(255,255,255,.08)',
                                   padding: '11px 15px',
                                   borderRadius: '15px 15px 15px 4px',
+                                  whiteSpace: 'pre-wrap',
+                                  overflowWrap: 'anywhere',
+                                  wordBreak: 'break-word',
                                 }
                           }
                         >
