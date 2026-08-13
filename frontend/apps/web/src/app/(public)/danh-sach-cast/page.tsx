@@ -1183,7 +1183,11 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
           </nav>
         </section>
 
-        {error ? <div className="cast-error">{translateText(error, activeLanguage)}</div> : null}
+        {error ? (
+          <div className="cast-error" role="alert" aria-live="polite">
+            {translateText(error, activeLanguage)}
+          </div>
+        ) : null}
 
         <section className="cast-results-section" aria-label={copy.listAria}>
           <div className="cast-results-head">
@@ -3172,6 +3176,15 @@ html.vy-light .cast-sheet-group button.is-active {
 html.vy-light .cast-chip.is-active .cast-live-dot {
   background: #d22d72;
   box-shadow: 0 0 8px rgba(210, 45, 114, 0.78);
+}
+
+html.vy-light .cast-error {
+  border-color: rgba(190, 18, 60, 0.52);
+  background: linear-gradient(180deg, #fff1f2 0%, #ffdce4 100%);
+  color: #8f1230;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 16px 34px -24px rgba(143, 18, 48, 0.48);
 }
 
 html.vy-light .cast-search-input input,
