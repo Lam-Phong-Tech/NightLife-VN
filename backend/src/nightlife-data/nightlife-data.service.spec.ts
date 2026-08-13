@@ -8107,12 +8107,13 @@ describe('NightlifeDataService', () => {
     prisma.bill.findFirst
       .mockResolvedValueOnce(rejectedBill)
       .mockResolvedValueOnce(updatedBill);
+    prisma.media.findFirst.mockResolvedValue({ id: 'replacement-evidence-1' });
     prisma.bill.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.resubmitPartnerBill(
       { id: 'partner-user-1', role: 'PARTNER' },
       'bill-rejected-partner-1',
-      { totalVnd: 550000 },
+      { totalVnd: 550000, evidenceMediaId: 'replacement-evidence-1' },
     );
 
     expect(result).toEqual(
@@ -8127,6 +8128,15 @@ describe('NightlifeDataService', () => {
       'store-1',
       'bill.partner.view',
     );
+    expect(prisma.media.findFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: 'replacement-evidence-1',
+        billId: 'bill-rejected-partner-1',
+        ownerId: 'partner-user-1',
+        purpose: 'bill-evidence',
+      }),
+      select: { id: true },
+    });
     expect(prisma.bill.updateMany).toHaveBeenCalledWith({
       where: expect.objectContaining({
         id: 'bill-rejected-partner-1',
@@ -8148,6 +8158,30 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+  });
+
+  it('does not resubmit a rejected partner bill without replacement evidence', async () => {
+    const rejectedBill = {
+      id: 'bill-rejected-partner-no-evidence',
+      status: 'REJECTED',
+      storeId: 'store-1',
+      usedAt: new Date(),
+      rejectedAt: new Date(),
+    };
+    accessService.ensureStoreAccess.mockResolvedValue(true);
+    prisma.bill.findFirst.mockReset();
+    prisma.bill.findFirst.mockResolvedValue(rejectedBill);
+
+    await expect(
+      service.resubmitPartnerBill(
+        { id: 'partner-user-1', role: 'PARTNER' },
+        rejectedBill.id,
+        { totalVnd: 550000 },
+      ),
+    ).rejects.toThrow('Replacement bill evidence is required');
+
+    expect(prisma.media.findFirst).not.toHaveBeenCalled();
+    expect(prisma.bill.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects a member bill when the booking has not been checked in', async () => {

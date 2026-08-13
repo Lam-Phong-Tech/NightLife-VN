@@ -3470,6 +3470,7 @@ export default function PartnerPage() {
   }, [bills, selectedBillBooking]);
   const selectedBillIsRejected = (selectedBill?.status || '').toUpperCase() === 'REJECTED';
   const selectedBillBookingExistingBillIsRejected = (selectedBillBookingExistingBill?.status || '').toUpperCase() === 'REJECTED';
+  const requiresReplacementEvidence = Boolean(selectedBill && selectedBillIsRejected);
   const partnerBillAlreadySubmittedNotice = selectedBill && !selectedBillIsRejected
     ? `Bill ${selectedBill.billNumber ?? selectedBill.id.slice(0, 8)} đã được gửi về Admin, không thể gửi lại bill này.`
     : selectedBillBookingExistingBill && !selectedBillBookingExistingBillIsRejected
@@ -3636,6 +3637,39 @@ export default function PartnerPage() {
         );
       }),
     [bills, bookings, selectedBillStore],
+  );
+
+  // A booking becomes COMPLETED by the server once its 10-day bill-submission
+  // window closes. It has no Bill record, so keep it as a separate list rather
+  // than treating it as an invoice status.
+  const expiredBillPartnerBookings = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        if (booking.status.trim().toUpperCase() !== 'COMPLETED') return false;
+
+        const usedAt = partnerBookingConfirmedUsageAt(booking);
+        const usedAtMs = usedAt ? Date.parse(usedAt) : Number.NaN;
+        if (!Number.isFinite(usedAtMs) || !billNowMs || billNowMs - usedAtMs <= billSubmitDeadlineMs) {
+          return false;
+        }
+
+        const bookingHasBill =
+          Boolean(booking.bill?.id || booking.couponIssue?.bill?.id) ||
+          bills.some(
+            (bill) =>
+              bill.booking?.id === booking.id ||
+              Boolean(booking.couponIssue?.id && bill.couponIssue?.id === booking.couponIssue.id),
+          );
+        if (bookingHasBill) return false;
+
+        return (
+          !selectedBillStore ||
+          booking.store.id === selectedBillStore.id ||
+          booking.store.name === selectedBillStore.name ||
+          !booking.store.id
+        );
+      }),
+    [billNowMs, bills, bookings, selectedBillStore],
   );
 
   const storeBills = useMemo(
@@ -3809,6 +3843,24 @@ export default function PartnerPage() {
     });
   }, [unsentPartnerBookings, normalizedBillSearchQuery, billFromMs, billToMs]);
 
+  const filteredExpiredBillBookings = useMemo(() => {
+    return expiredBillPartnerBookings.filter((booking) => {
+      const bookingId = (booking.id || '').toLowerCase();
+      const bookingCode = (booking.bookingCode || '').toLowerCase();
+      const storeName = (booking.store?.name || '').toLowerCase();
+      const matchesSearch =
+        !normalizedBillSearchQuery ||
+        bookingId.includes(normalizedBillSearchQuery) ||
+        bookingCode.includes(normalizedBillSearchQuery) ||
+        storeName.includes(normalizedBillSearchQuery);
+      const usedAt = partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt;
+      const usedAtMs = usedAt ? Date.parse(usedAt) : Number.NaN;
+      const matchesFrom = billFromMs === null || (Number.isFinite(usedAtMs) && usedAtMs >= billFromMs);
+      const matchesTo = billToMs === null || (Number.isFinite(usedAtMs) && usedAtMs <= billToMs);
+      return matchesSearch && matchesFrom && matchesTo;
+    });
+  }, [expiredBillPartnerBookings, normalizedBillSearchQuery, billFromMs, billToMs]);
+
   const canSubmitPartnerBill =
     !isSubmittingBill &&
     (!selectedBill || selectedBillIsRejected) &&
@@ -3818,6 +3870,7 @@ export default function PartnerPage() {
     Boolean(selectedBillBooking) &&
     selectedBillBooking?.status.trim().toUpperCase() !== 'COMPLETED' &&
     billAmount > 0 &&
+    (!requiresReplacementEvidence || Boolean(billEvidenceFile)) &&
     Boolean(billUsedAt) &&
     !isBillUsedAtInvalid &&
     !isBillFutureUsage &&
@@ -3877,9 +3930,16 @@ export default function PartnerPage() {
       setBillStoreId(nextStoreId);
     }
     setSelectedBillId(bill.id);
-    setBillAmountInput(bill.totalVnd ? bill.totalVnd.toLocaleString('vi-VN') : '');
+    setBillAmountInput(
+      bill.status.toUpperCase() === 'REJECTED'
+        ? ''
+        : bill.totalVnd
+          ? bill.totalVnd.toLocaleString('vi-VN')
+          : '',
+    );
     setBillUsedAt(toDateTimeLocalValue(bill.usedAt ?? bill.submittedAt ?? new Date()));
     setBillBookingId(bill.booking?.id ?? '');
+    setBillEvidenceFile(null);
     setBillSubView('form');
   };
 
@@ -3895,21 +3955,23 @@ export default function PartnerPage() {
       return;
     }
 
+    if (requiresReplacementEvidence && !billEvidenceFile) {
+      setBillNotice({
+        tone: 'danger',
+        message: 'Vui lòng nhập lại tổng tiền và tải lên ảnh/chứng từ thay thế trước khi gửi lại hóa đơn.',
+      });
+      return;
+    }
+
     setIsSubmittingBill(true);
     try {
       // Nếu bill hiện tại bị từ chối → gửi lại (resubmit)
       if (selectedBill && selectedBillIsRejected) {
-        let uploadWarning = '';
-        if (billEvidenceFile) {
-          try {
-            await billApi.uploadEvidence(selectedBill.id, billEvidenceFile);
-          } catch {
-            uploadWarning = ' Bill đã gửi lại, nhưng ảnh/chứng từ chưa upload được.';
-          }
-        }
+        const replacementEvidence = await billApi.uploadEvidence(selectedBill.id, billEvidenceFile!);
 
         const resubmitted = (await billApi.resubmitPartnerBill(selectedBill.id, {
           totalVnd: billAmount,
+          evidenceMediaId: replacementEvidence.id,
         })) as PartnerBill;
 
         const normalizedBill: PartnerBill = {
@@ -3925,16 +3987,16 @@ export default function PartnerPage() {
           id: `bill-resubmitted:${normalizedBill.id}:${normalizedBill.submittedAt ?? Date.now()}`,
           category: 'Hóa đơn',
           title: 'Đã gửi lại bill về Admin',
-          message: `${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} của ${selectedBillStore!.name} đang chờ Admin kiểm tra lại.${uploadWarning}`,
+          message: `${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} của ${selectedBillStore!.name} đang chờ Admin kiểm tra lại.`,
           meta: `${moneyVnd(billAmount)} · ${formatDateTime(normalizedBill.usedAt ?? normalizedBill.submittedAt ?? new Date().toISOString())}`,
           actionLabel: 'Xem bill',
           panel: 'bill',
-          tone: uploadWarning ? 'warning' : 'gold',
+          tone: 'gold',
           icon: ReceiptText,
         });
         setBillNotice({
-          tone: uploadWarning ? 'gold' : 'success',
-          message: `Đã gửi lại bill ${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
+          tone: 'success',
+          message: `Đã gửi lại bill ${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} để Admin duyệt.`,
         });
         return;
       }
@@ -8523,14 +8585,16 @@ export default function PartnerPage() {
   const renderBillPanel = () => {
     const BILL_ITEMS_PER_PAGE = 5;
     const isUnsentFilter = billStatusFilter === 'UNSENT';
-    const activeUnsentList = filteredUnsentBookings;
+    const isExpiredFilter = billStatusFilter === 'EXPIRED';
+    const isBookingListFilter = isUnsentFilter || isExpiredFilter;
+    const activeBookingList = isExpiredFilter ? filteredExpiredBillBookings : filteredUnsentBookings;
     const activeScopedList = filteredScopedBillRows;
 
-    const totalBillItems = isUnsentFilter ? activeUnsentList.length : activeScopedList.length;
+    const totalBillItems = isBookingListFilter ? activeBookingList.length : activeScopedList.length;
     const totalBillPages = Math.max(1, Math.ceil(totalBillItems / BILL_ITEMS_PER_PAGE));
     const safeBillCurrentPage = Math.min(Math.max(1, billCurrentPage), totalBillPages);
 
-    const paginatedUnsentBookings = activeUnsentList.slice(
+    const paginatedBookingList = activeBookingList.slice(
       (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE,
       safeBillCurrentPage * BILL_ITEMS_PER_PAGE,
     );
@@ -8717,6 +8781,7 @@ export default function PartnerPage() {
                 {[
                   { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
                   { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
+                  { key: 'EXPIRED', label: 'Hết hạn', count: filteredExpiredBillBookings.length },
                   {
                     key: 'SUBMITTED',
                     label: 'Chờ duyệt',
@@ -8977,6 +9042,7 @@ export default function PartnerPage() {
                 {[
                   { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
                   { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
+                  { key: 'EXPIRED', label: 'Hết hạn', count: filteredExpiredBillBookings.length },
                   {
                     key: 'SUBMITTED',
                     label: 'Chờ duyệt',
@@ -9218,9 +9284,9 @@ export default function PartnerPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {billStatusFilter === 'UNSENT' ? (
-                    paginatedUnsentBookings.length ? (
-                      paginatedUnsentBookings.map((booking, index) => {
+                  {isBookingListFilter ? (
+                    paginatedBookingList.length ? (
+                      paginatedBookingList.map((booking, index) => {
                         const active = billBookingId === booking.id;
                         const code = partnerBookingCodeDisplay(booking);
                         const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
@@ -9229,17 +9295,17 @@ export default function PartnerPage() {
                         return (
                           <tr
                             key={booking.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => fillBillFormFromBooking(booking)}
+                            role={isExpiredFilter ? undefined : 'button'}
+                            tabIndex={isExpiredFilter ? undefined : 0}
+                            onClick={isExpiredFilter ? undefined : () => fillBillFormFromBooking(booking)}
                             onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
+                              if (!isExpiredFilter && (event.key === 'Enter' || event.key === ' ')) {
                                 event.preventDefault();
                                 fillBillFormFromBooking(booking);
                               }
                             }}
                             style={{
-                              cursor: 'pointer',
+                              cursor: isExpiredFilter ? 'default' : 'pointer',
                               background: 'transparent',
                             }}
                           >
@@ -9253,10 +9319,12 @@ export default function PartnerPage() {
                               {storeName}
                             </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
-                              NHẬP HÓA ĐƠN
+                              {isExpiredFilter ? 'QUÁ HẠN 10 NGÀY' : 'NHẬP HÓA ĐƠN'}
                             </td>
                             <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
-                              <StatusPill tone="gold">Chưa gửi</StatusPill>
+                              <StatusPill tone={isExpiredFilter ? 'danger' : 'gold'}>
+                                {isExpiredFilter ? 'Hết hạn' : 'Chưa gửi'}
+                              </StatusPill>
                             </td>
                           </tr>
                         );
@@ -9272,7 +9340,7 @@ export default function PartnerPage() {
                             textAlign: 'center',
                           }}
                         >
-                          Chưa có đặt chỗ nào cần gửi hóa đơn.
+                          {isExpiredFilter ? 'Chưa có hóa đơn nào hết hạn.' : 'Chưa có đặt chỗ nào cần gửi hóa đơn.'}
                         </td>
                       </tr>
                     )
@@ -9338,9 +9406,9 @@ export default function PartnerPage() {
               </table>
             </div>
             <div className="partner-bill-mobile-list">
-              {billStatusFilter === 'UNSENT' ? (
-                paginatedUnsentBookings.length ? (
-                  paginatedUnsentBookings.map((booking, index) => {
+              {isBookingListFilter ? (
+                paginatedBookingList.length ? (
+                  paginatedBookingList.map((booking, index) => {
                     const active = billBookingId === booking.id;
                     const code = partnerBookingCodeDisplay(booking);
                     const storeName = booking.store?.name ?? selectedBillStore?.name ?? 'Quán';
@@ -9351,7 +9419,8 @@ export default function PartnerPage() {
                         key={booking.id}
                         type="button"
                         className="partner-bill-mobile-card"
-                        onClick={() => fillBillFormFromBooking(booking)}
+                        disabled={isExpiredFilter}
+                        onClick={isExpiredFilter ? undefined : () => fillBillFormFromBooking(booking)}
                         style={{
                           textAlign: 'left',
                           width: '100%',
@@ -9360,7 +9429,9 @@ export default function PartnerPage() {
                         <div className="partner-bill-mobile-head">
                           <span className="partner-bill-mobile-index">#{rowIndex}</span>
                           <span className="partner-bill-mobile-code">{code}</span>
-                          <StatusPill tone="gold">Chưa gửi</StatusPill>
+                          <StatusPill tone={isExpiredFilter ? 'danger' : 'gold'}>
+                            {isExpiredFilter ? 'Hết hạn' : 'Chưa gửi'}
+                          </StatusPill>
                         </div>
                         <div className="partner-bill-mobile-store">{storeName}</div>
                         <div
@@ -9380,16 +9451,22 @@ export default function PartnerPage() {
                             </b>
                           </div>
                           <div>
-                            <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>Thao tác</small>
-                            <b style={{ fontSize: '12px', color: colors.goldBright }}>NHẬP HÓA ĐƠN</b>
+                            <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>
+                              {isExpiredFilter ? 'Trạng thái' : 'Thao tác'}
+                            </small>
+                            <b style={{ fontSize: '12px', color: isExpiredFilter ? colors.danger : colors.goldBright }}>
+                              {isExpiredFilter ? 'QUÁ HẠN 10 NGÀY' : 'NHẬP HÓA ĐƠN'}
+                            </b>
                           </div>
-                          <ChevronRight size={18} style={{ color: colors.gold, flexShrink: 0 }} />
+                          {!isExpiredFilter ? <ChevronRight size={18} style={{ color: colors.gold, flexShrink: 0 }} /> : null}
                         </div>
                       </button>
                     );
                   })
                 ) : (
-                  <div className="partner-bill-mobile-empty">Chưa có đặt chỗ nào cần gửi hóa đơn.</div>
+                  <div className="partner-bill-mobile-empty">
+                    {isExpiredFilter ? 'Chưa có hóa đơn nào hết hạn.' : 'Chưa có đặt chỗ nào cần gửi hóa đơn.'}
+                  </div>
                 )
               ) : paginatedScopedBillRows.length ? (
                 paginatedScopedBillRows.map((bill, index) => {
@@ -9575,6 +9652,23 @@ export default function PartnerPage() {
               </FormField>
             )}
 
+            {requiresReplacementEvidence ? (
+              <div
+                style={{
+                  border: '1px solid rgba(255,180,168,.38)',
+                  borderRadius: '12px',
+                  background: 'rgba(255,180,168,.08)',
+                  color: colors.danger,
+                  padding: '12px 14px',
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                Hóa đơn bị từ chối. Vui lòng nhập lại tổng tiền hóa đơn gốc và tải lên ảnh/chứng từ thay thế. Không thể gửi lại nếu thiếu một trong hai thông tin này.
+              </div>
+            ) : null}
+
             {/* Linked Booking Ticket Card / Selector */}
             {selectedBillBooking || selectedBill ? (
               <div
@@ -9703,7 +9797,7 @@ export default function PartnerPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                TỔNG TIỀN HÓA ĐƠN GỐC *
+                {requiresReplacementEvidence ? 'NHẬP LẠI TỔNG TIỀN HÓA ĐƠN GỐC *' : 'TỔNG TIỀN HÓA ĐƠN GỐC *'}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -9762,10 +9856,10 @@ export default function PartnerPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                ẢNH / CHỨNG TỪ
+                {requiresReplacementEvidence ? 'ẢNH / CHỨNG TỪ THAY THẾ *' : 'ẢNH / CHỨNG TỪ'}
               </label>
 
-              {!billEvidenceFile && !selectedBill?.media?.length ? (
+              {!billEvidenceFile && (requiresReplacementEvidence || !selectedBill?.media?.length) ? (
                 isReadOnlyBill ? (
                   <div
                     style={{
@@ -9799,13 +9893,13 @@ export default function PartnerPage() {
                   >
                     <UploadCloud size={32} style={{ color: colors.goldBright }} />
                     <span style={{ fontSize: '14px', fontWeight: 800, color: colors.text }}>
-                      Nhấn để tải ảnh hoặc file PDF
+                      {requiresReplacementEvidence ? 'Tải ảnh hoặc file PDF thay thế' : 'Nhấn để tải ảnh hoặc file PDF'}
                     </span>
                     <span style={{ fontSize: '12px', color: colors.text2 }}>
                       Hỗ trợ JPG, PNG, WEBP, GIF, PDF (Tối đa 25MB)
                     </span>
-                    <span style={{ fontSize: '11px', color: colors.muted, marginTop: '2px' }}>
-                      Khuyến khích gửi kèm để duyệt nhanh hơn.
+                    <span style={{ fontSize: '11px', color: requiresReplacementEvidence ? colors.danger : colors.muted, marginTop: '2px' }}>
+                      {requiresReplacementEvidence ? 'Bắt buộc khi gửi lại hóa đơn bị từ chối.' : 'Khuyến khích gửi kèm để duyệt nhanh hơn.'}
                     </span>
                     <input
                       type="file"

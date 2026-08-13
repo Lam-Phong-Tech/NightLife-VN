@@ -104,6 +104,15 @@ export class ResubmitBillDto {
   @Min(1)
   @Max(1_000_000_000)
   totalVnd: number;
+
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440099',
+    description:
+      'Replacement bill-evidence media id. Required for partner resubmission after rejection.',
+  })
+  @IsOptional()
+  @IsUUID()
+  evidenceMediaId?: string;
 }
 
 export class AdminSensitiveBillQueryDto {

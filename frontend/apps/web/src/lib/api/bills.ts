@@ -72,6 +72,7 @@ export type CreateBillPayload = {
 
 export type ResubmitBillPayload = {
   totalVnd: number;
+  evidenceMediaId?: string;
 };
 
 export type UploadedBillEvidence = {

@@ -8169,6 +8169,32 @@ export class NightlifeDataService {
 
     this.assertBillSubmissionWindow(rejectedBill.usedAt, now);
 
+    if (!dto.evidenceMediaId) {
+      throw new UnprocessableEntityException(
+        'Replacement bill evidence is required when resubmitting a rejected bill',
+      );
+    }
+
+    const replacementEvidence = await this.prisma.media.findFirst({
+      where: {
+        id: dto.evidenceMediaId,
+        billId: rejectedBill.id,
+        ownerId: user.id,
+        purpose: 'bill-evidence',
+        access: 'PROTECTED',
+        status: 'READY',
+        deletedAt: null,
+        createdAt: { gte: rejectedBill.rejectedAt ?? now },
+      },
+      select: { id: true },
+    });
+
+    if (!replacementEvidence) {
+      throw new UnprocessableEntityException(
+        'A new replacement bill evidence file is required when resubmitting a rejected bill',
+      );
+    }
+
     const bill = await this.prisma.$transaction(async (tx) => {
       const updateResult = await tx.bill.updateMany({
         where: {
@@ -8260,6 +8286,7 @@ export class NightlifeDataService {
             nextStatus: updatedBill.status,
             previousTotalVnd: rejectedBill.totalVnd,
             nextTotalVnd: updatedBill.totalVnd,
+            replacementEvidenceMediaId: replacementEvidence.id,
             resubmittedAt: now.toISOString(),
           }),
         },
