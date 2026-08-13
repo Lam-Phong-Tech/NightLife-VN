@@ -6077,6 +6077,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "无法发送订桌请求。",
   },
   {
+    vi: "Hệ thống đang gặp lỗi. Vui lòng thử lại sau.",
+    en: "The system is having an issue. Please try again later.",
+    ja: "システムで問題が発生しています。しばらくしてからもう一度お試しください。",
+    ko: "시스템에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    zh: "系统当前出现问题。请稍后再试。",
+  },
+  {
     vi: "Không gửi được yêu cầu đặt chỗ.",
     en: "Could not send the reservation request.",
     ja: "予約リクエストを送信できませんでした。",
