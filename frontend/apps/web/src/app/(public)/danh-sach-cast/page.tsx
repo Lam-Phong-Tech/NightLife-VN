@@ -2352,6 +2352,17 @@ html.vy-light .cast-card-favorite.is-active {
   transition: filter 360ms ease;
 }
 
+.cast-card-media :where(picture, img) {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.cast-card-media > div:last-child {
+  position: relative;
+  z-index: 4 !important;
+}
+
 .cast-card:hover .cast-card-media {
   filter: saturate(1.08) contrast(1.04);
 }
@@ -2361,6 +2372,7 @@ html.vy-light .cast-card-favorite.is-active {
   inset: 0;
   background: linear-gradient(180deg, rgba(12, 12, 15, 0.02) 35%, rgba(12, 12, 15, 0.92) 100%);
   z-index: 1;
+  pointer-events: none;
 }
 
 .cast-rank-badge {
@@ -2400,8 +2412,9 @@ html.vy-light .cast-card-favorite.is-active {
   position: absolute;
   left: 12px;
   right: 12px;
-  z-index: 2;
+  z-index: 5;
   min-width: 0;
+  pointer-events: none;
 }
 
 .cast-card-name {

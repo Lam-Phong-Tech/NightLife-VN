@@ -84,41 +84,46 @@ export function PlaceholderMedia({
         style={{
           position: "absolute",
           inset: 0,
+          zIndex: 0,
           background:
             "radial-gradient(circle at 18% 18%,rgba(212,178,106,.26),transparent 26%), radial-gradient(circle at 82% 70%,var(--vy-surface-3),transparent 24%)",
           opacity: isLight ? 0.8 : 1,
         }}
       />
-      {label ? (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            textAlign: "center",
-            padding: "14px",
-          }}
-        >
-          <ImageOff size={28} strokeWidth={1.8} />
-          <span style={{ fontSize: "12px", fontWeight: 800, lineHeight: 1.3 }}>{label}</span>
-        </div>
-      ) : (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ImageOff size={20} strokeWidth={1.8} />
-        </div>
-      )}
+      {!showImage ? (
+        label ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              textAlign: "center",
+              padding: "14px",
+            }}
+          >
+            <ImageOff size={28} strokeWidth={1.8} />
+            <span style={{ fontSize: "12px", fontWeight: 800, lineHeight: 1.3 }}>{label}</span>
+          </div>
+        ) : (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ImageOff size={20} strokeWidth={1.8} />
+          </div>
+        )
+      ) : null}
       {showImage ? (
         <ResponsiveMedia
           src={imageSrc}
@@ -136,6 +141,7 @@ export function PlaceholderMedia({
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 0,
             width: "100%",
             height: "100%",
             objectFit: "cover",
@@ -144,7 +150,7 @@ export function PlaceholderMedia({
           }}
         />
       ) : null}
-      {children ? <div style={{ position: "relative", zIndex: 1, width: "100%", height: "100%" }}>{children}</div> : null}
+      {children ? <div style={{ position: "relative", zIndex: 3, width: "100%", height: "100%" }}>{children}</div> : null}
     </div>
   );
 }
