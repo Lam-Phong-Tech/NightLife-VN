@@ -2268,7 +2268,8 @@ export function SiteChrome({
                   <span
                     className="nl-site-brand-name"
                     style={{
-                      fontSize: isMobile ? "22px" : "26px",
+                      fontSize: "clamp(22px, 2.3vw, 26px)",
+                      fontFamily: '"Arial Black", system-ui, -apple-system, "Segoe UI", sans-serif',
                       fontWeight: 800,
                       lineHeight: 1,
                       background: colors.goldGrad,
@@ -2284,8 +2285,8 @@ export function SiteChrome({
                     className="nl-site-brand-tagline"
                     style={{
                       marginTop: "3px",
-                      fontSize: isMobile ? "7px" : "8.5px",
-                      letterSpacing: isMobile ? "1.2px" : "1.6px",
+                      fontSize: "clamp(7px, .75vw, 8.5px)",
+                      letterSpacing: "clamp(1.2px, .12vw, 1.6px)",
                       color: colors.goldPale,
                       opacity: 0.72,
                       overflow: "hidden",

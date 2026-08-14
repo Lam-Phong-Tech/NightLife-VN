@@ -1240,6 +1240,11 @@ textarea::placeholder {
   transition-timing-function: var(--vy-motion-touch);
 }
 
+/* Header controls stay compositor-only; color, border and shadow changes are immediate. */
+.nl-site-action-control {
+  transition-property: opacity, transform !important;
+}
+
 .nl-page-content input,
 .nl-page-content select,
 .nl-page-content textarea,
