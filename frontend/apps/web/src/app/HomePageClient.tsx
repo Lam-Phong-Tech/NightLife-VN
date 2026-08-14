@@ -1242,6 +1242,26 @@ function useHomeSectionReady() {
   return [sectionRef, ready] as const;
 }
 
+function useUserInteractionStarted() {
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (started || process.env.NODE_ENV === "test") return;
+    const start = () => setStarted(true);
+    const options: AddEventListenerOptions = { once: true, passive: true };
+    window.addEventListener("pointerdown", start, options);
+    window.addEventListener("keydown", start, { once: true });
+    window.addEventListener("scroll", start, options);
+    return () => {
+      window.removeEventListener("pointerdown", start);
+      window.removeEventListener("keydown", start);
+      window.removeEventListener("scroll", start);
+    };
+  }, [started]);
+
+  return started;
+}
+
 function getBannerSlideTransform(index: number, activeIndex: number) {
   if (index === activeIndex) return "translate3d(0,0,0) scale(1.03)";
   return `translate3d(${index < activeIndex ? "-" : ""}34%,0,0) scale(1.05)`;
@@ -1502,6 +1522,7 @@ function CategoryGrid({
 function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
+  const canAutoRotate = useUserInteractionStarted();
   const banners: HomeBanner[] = useMemo(() => {
     return apiBanners.flatMap(b => {
       const meta = getHomeBannerMetadata(b);
@@ -1527,14 +1548,14 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test" || banners.length < 2) return;
+    if (!canAutoRotate || banners.length < 2) return;
 
     const timer = window.setInterval(() => {
       setActiveBanner((current) => (current + 1) % banners.length);
     }, homeBannerAutoDelayMs);
 
     return () => window.clearInterval(timer);
-  }, [banners.length]);
+  }, [banners.length, canAutoRotate]);
 
   if (isLoading) {
     return (
@@ -1746,6 +1767,7 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
 function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
+  const canAutoRotate = useUserInteractionStarted();
   const banners: HomeBanner[] = useMemo(() => {
     return apiBanners.flatMap((banner) => {
       const meta = getHomeBannerMetadata(banner);
@@ -1770,14 +1792,14 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test" || banners.length < 2) return;
+    if (!canAutoRotate || banners.length < 2) return;
 
     const timer = window.setInterval(() => {
       setActiveBanner((current) => (current + 1) % banners.length);
     }, homeBannerAutoDelayMs);
 
     return () => window.clearInterval(timer);
-  }, [banners.length]);
+  }, [banners.length, canAutoRotate]);
 
   if (isLoading) {
     return (
@@ -2095,6 +2117,7 @@ function HomeCardCarousel<T>({
   );
   const slideKey = useMemo(() => items.map(getKey).join("|"), [getKey, items]);
   const [activeSlide, setActiveSlide] = useState(0);
+  const canAutoRotate = useUserInteractionStarted();
   const swipeHandlers = useCarouselSwipe(slides.length, setActiveSlide);
 
   useEffect(() => {
@@ -2103,14 +2126,14 @@ function HomeCardCarousel<T>({
   }, [itemsPerSlide, slideKey, slides.length]);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test" || slides.length < 2) return;
+    if (!canAutoRotate || slides.length < 2) return;
 
     const timer = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % slides.length);
     }, homeBannerAutoDelayMs);
 
     return () => window.clearInterval(timer);
-  }, [slides.length]);
+  }, [canAutoRotate, slides.length]);
 
   return (
     <div
