@@ -102,6 +102,14 @@ const areaLabels: Record<string, LocalizedLabels> = {
   "Binh Thanh": { vi: "Bình Thạnh", en: "Binh Thanh", ja: "ビンタン", ko: "빈타인", zh: "平盛" },
   "Phu Nhuan": { vi: "Phú Nhuận", en: "Phu Nhuan", ja: "フーニュアン", ko: "푸년", zh: "富润" },
   "Phường Sài Gòn": { vi: "Phường Sài Gòn", en: "Sai Gon Ward", ja: "サイゴン区", ko: "사이공 구", zh: "西贡坊" },
+  "Sài Gòn": { vi: "Sài Gòn", en: "Sai Gon", ja: "サイゴン", ko: "사이공", zh: "西贡" },
+  "Cống Vị": { vi: "Cống Vị", en: "Cong Vi", ja: "コンビ", ko: "꽁비", zh: "贡维" },
+  "Phường Giảng Võ": { vi: "Phường Giảng Võ", en: "Giang Vo Ward", ja: "ザンボー区", ko: "장보 구", zh: "讲武坊" },
+  "Giảng Võ": { vi: "Giảng Võ", en: "Giang Vo", ja: "ザンボー", ko: "장보", zh: "讲武" },
+  "Phường Ngọc Hà": { vi: "Phường Ngọc Hà", en: "Ngoc Ha Ward", ja: "ゴックハ区", ko: "응옥하 구", zh: "玉河坊" },
+  "Ngọc Hà": { vi: "Ngọc Hà", en: "Ngoc Ha", ja: "ゴックハ", ko: "응옥하", zh: "玉河" },
+  "Phường Hai Bà Trưng": { vi: "Phường Hai Bà Trưng", en: "Hai Ba Trung Ward", ja: "ハイバーチュン区", ko: "하이바쯩 구", zh: "二征夫人坊" },
+  "Hai Bà Trưng": { vi: "Hai Bà Trưng", en: "Hai Ba Trung", ja: "ハイバーチュン", ko: "하이바쯩", zh: "二征夫人" },
 };
 
 const normalizeLabelKey = (value: string) =>

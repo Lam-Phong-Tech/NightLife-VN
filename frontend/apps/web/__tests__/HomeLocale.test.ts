@@ -10,6 +10,8 @@ describe("homepage locale labels", () => {
     expect(getFilterCityLabel("hn", "ja")).toBe("ハノイ");
     expect(getFilterCityLabel("hcm", "ja")).toBe("ホーチミン市");
     expect(getFilterAreaLabel("Phường Sài Gòn", "ja")).toBe("サイゴン区");
+    expect(getFilterAreaLabel("Phường Giảng Võ", "ja")).toBe("ザンボー区");
+    expect(getFilterAreaLabel("Cống Vị", "ja")).toBe("コンビ");
   });
 
   it("localizes category labels without a network lookup", () => {
