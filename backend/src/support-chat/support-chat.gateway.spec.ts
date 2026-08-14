@@ -3,6 +3,7 @@ import type { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupportChatGateway } from './support-chat.gateway';
 import { SupportChatService } from './support-chat.service';
+import { SocketGateway } from '../notifications/socket.gateway';
 
 describe('SupportChatGateway', () => {
   const claimTicketMock = jest.fn();
@@ -17,6 +18,10 @@ describe('SupportChatGateway', () => {
     tokenBlacklist: { findUnique: jest.fn() },
     userSession: { findUnique: jest.fn() },
   } as unknown as jest.Mocked<PrismaService>;
+  const socketGateway = {
+    notifyMemberNotificationCreated: jest.fn(),
+    notifyAdminSupportChatMessage: jest.fn(),
+  } as unknown as jest.Mocked<SocketGateway>;
 
   let gateway: SupportChatGateway;
 
@@ -35,7 +40,12 @@ describe('SupportChatGateway', () => {
       status: 'ACTIVE',
       expiresAt: new Date(Date.now() + 60_000),
     });
-    gateway = new SupportChatGateway(supportChatService, jwtService, prisma);
+    gateway = new SupportChatGateway(
+      supportChatService,
+      jwtService,
+      prisma,
+      socketGateway,
+    );
     gateway.server = {
       emit: jest.fn(),
     } as unknown as Server;

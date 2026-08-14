@@ -206,6 +206,73 @@ export class SupportChatService {
     return message;
   }
 
+  async createMemberReplyNotification(input: {
+    ticketId: string;
+    messageId: string;
+    content: string;
+  }) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: input.ticketId },
+      select: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!ticket?.user) return null;
+
+    return this.prisma.notificationLog.create({
+      data: {
+        userId: ticket.user.id,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: ticket.user.email || `user:${ticket.user.id}`,
+        templateKey: 'customer.support.reply.v1',
+        payload: {
+          supportTicketId: input.ticketId,
+          messageId: input.messageId,
+          preview: this.notificationPreview(input.content),
+        },
+      },
+    });
+  }
+
+  async createAdminCustomerMessageNotification(input: {
+    ticketId: string;
+    messageId: string;
+    content: string;
+  }) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: input.ticketId },
+      select: {
+        user: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return this.prisma.notificationLog.create({
+      data: {
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'ADMIN',
+        templateKey: 'admin.support.customer_message.v1',
+        payload: {
+          supportTicketId: input.ticketId,
+          messageId: input.messageId,
+          customerName: ticket?.user?.displayName || 'Khách vãng lai',
+          preview: this.notificationPreview(input.content),
+        },
+      },
+    });
+  }
+
   async claimTicket(ticketId: string, adminId: string) {
     const existing = await this.prisma.supportTicket.findUnique({
       where: { id: ticketId },
@@ -297,5 +364,12 @@ export class SupportChatService {
         closedAt: new Date(),
       },
     });
+  }
+
+  private notificationPreview(content: string) {
+    const normalized = content.replace(/\s+/g, ' ').trim();
+    return normalized.length > 160
+      ? `${normalized.slice(0, 157)}...`
+      : normalized;
   }
 }

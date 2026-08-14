@@ -220,7 +220,9 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback(
     (toast: ToastInput) => {
       const tone = toast.tone ?? "info";
-      const placement = toast.placement ?? "top-right";
+      const placement = window.location.pathname.startsWith("/admin")
+        ? "top-right"
+        : (toast.placement ?? "top-right");
       const dedupeMs = toast.dedupeMs ?? 1500;
       const dedupeKey =
         toast.dedupeKey ?? `${placement}:${tone}:${toast.title}:${toast.description ?? ""}`;

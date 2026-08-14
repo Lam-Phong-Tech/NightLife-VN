@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown, Edit2, Key, Ban, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
 import { getAuthUser } from '@/lib/auth/session';
 import { getAdminUsers, createAdminUser, updateAdminUser, changeAdminUserPassword, disableAdminUser, restoreAdminUser, hardDeleteAdminUser, searchStoresForAdmin } from '@/lib/api/admin-users';
+import { AdminToast } from '@/components/ui/AdminToast';
 
 const colors = {
   bg: '#0c0c0f',
@@ -683,12 +684,7 @@ export default function AdminRolesPage() {
         </div>
       )}
 
-      {toast && (
-        <div style={{ position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: 90, display: 'flex', alignItems: 'center', gap: '10px', background: '#17161c', border: '1px solid rgba(212,178,106,.3)', color: '#f3f0ea', fontSize: '13.5px', fontWeight: 500, padding: '13px 22px', borderRadius: '12px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          {toast}
-        </div>
-      )}
+      <AdminToast message={toast} />
       {storeSearchOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div style={{ width: '480px', maxWidth: '94vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>

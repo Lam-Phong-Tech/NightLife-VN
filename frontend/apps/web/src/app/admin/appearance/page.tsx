@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { AdminToast } from '@/components/ui/AdminToast';
 import {
   cacheAppearanceConfig,
   normalizeAppearanceConfig,
@@ -1213,11 +1214,7 @@ export default function AppearancePage() {
       {renderLogoDrawer()}
       {renderFaviconDrawer()}
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: '22px', left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: '#1c1a22', border: '1px solid rgba(212,178,106,.4)', color: '#f0dda8', fontSize: '13px', fontWeight: 600, padding: '12px 20px', borderRadius: '12px', boxShadow: '0 16px 36px -12px rgba(0,0,0,.8)', whiteSpace: 'nowrap' }}>
-          {toast}
-        </div>
-      )}
+      <AdminToast message={toast} />
     </div>
   );
 }

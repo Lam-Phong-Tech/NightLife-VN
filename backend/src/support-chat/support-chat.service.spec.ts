@@ -11,9 +11,13 @@ describe('SupportChatService', () => {
   const supportMessage = {
     create: jest.fn(),
   };
+  const notificationLog = {
+    create: jest.fn(),
+  };
   const prisma = {
     supportTicket,
     supportMessage,
+    notificationLog,
   } as unknown as PrismaService;
 
   let service: SupportChatService;
@@ -87,5 +91,61 @@ describe('SupportChatService', () => {
 
     expect(supportTicket.updateMany).not.toHaveBeenCalled();
     expect(supportMessage.create).not.toHaveBeenCalled();
+  });
+
+  it('creates an in-app notification when Admin replies to a signed-in customer', async () => {
+    supportTicket.findUnique.mockResolvedValue({
+      user: { id: 'member-1', email: 'member@example.com' },
+    });
+    notificationLog.create.mockResolvedValue({ id: 'notification-1' });
+
+    await service.createMemberReplyNotification({
+      ticketId: 'ticket-1',
+      messageId: 'message-1',
+      content: '  Admin đã phản hồi\nngay bây giờ.  ',
+    });
+
+    expect(notificationLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'member-1',
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'member@example.com',
+        templateKey: 'customer.support.reply.v1',
+        payload: {
+          supportTicketId: 'ticket-1',
+          messageId: 'message-1',
+          preview: 'Admin đã phản hồi ngay bây giờ.',
+        },
+      },
+    });
+  });
+
+  it('creates an admin notification when a customer sends a support message', async () => {
+    supportTicket.findUnique.mockResolvedValue({
+      user: { displayName: 'Khách Demo' },
+    });
+    notificationLog.create.mockResolvedValue({ id: 'notification-2' });
+
+    await service.createAdminCustomerMessageNotification({
+      ticketId: 'ticket-2',
+      messageId: 'message-2',
+      content: 'Xin Admin hỗ trợ giúp tôi.',
+    });
+
+    expect(notificationLog.create).toHaveBeenCalledWith({
+      data: {
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'ADMIN',
+        templateKey: 'admin.support.customer_message.v1',
+        payload: {
+          supportTicketId: 'ticket-2',
+          messageId: 'message-2',
+          customerName: 'Khách Demo',
+          preview: 'Xin Admin hỗ trợ giúp tôi.',
+        },
+      },
+    });
   });
 });

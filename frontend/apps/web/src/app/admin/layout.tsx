@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { logoutBrowserProfile } from '@/lib/api/auth';
 import { getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
+import { useSocket } from '@/components/providers/SocketProvider';
 import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, CheckCheck, LucideIcon } from 'lucide-react';
 import {
   adminTopbarFiltersVisibilityEvent,
@@ -271,6 +272,7 @@ function TopCategoryFilter() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { socket } = useSocket();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [badges, setBadges] = useState({ 
     pendingBills: 0, 
@@ -433,6 +435,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem đối tác',
           href: '/admin/partners',
           icon: Users
+        };
+      } else if (key === 'admin.support.customer_message.v1') {
+        const ticketId = log.payload?.supportTicketId;
+        const customerName = log.payload?.customerName || 'Khách hàng';
+        const preview = log.payload?.preview || 'đã gửi một tin nhắn mới.';
+        item = {
+          id: log.id,
+          tag: 'CHAT',
+          kind: 'gold',
+          title: 'Tin nhắn hỗ trợ mới',
+          body: `${customerName}: ${preview}`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'system',
+          action: 'Mở chat hỗ trợ',
+          href: ticketId ? `/admin/support-chat?ticketId=${encodeURIComponent(ticketId)}` : '/admin/support-chat',
+          icon: Bell
         };
       }
 
@@ -656,27 +675,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     document.documentElement.classList.toggle('vy-admin-light', nextTheme === 'light');
   };
 
-  useEffect(() => {
+  const refreshBadges = useCallback(async () => {
     if (pathname === '/admin/dang-nhap') return;
-    const fetchBadges = async () => {
+    try {
+      const data = await apiClient<any>('/admin/layout/badges');
+      if (data) setBadges(data);
+
       try {
-        const data = await apiClient<any>('/admin/layout/badges');
-        if (data) setBadges(data);
-        
-        try {
-          const usage = await apiClient<{ data: any }>('/admin/system-config/storage/usage');
-          if (usage && usage.data) {
-            setStorageUsage(usage.data);
-          }
-        } catch (e) {
-          // Ignore
+        const usage = await apiClient<{ data: any }>('/admin/system-config/storage/usage');
+        if (usage && usage.data) {
+          setStorageUsage(usage.data);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (e) {
+        // Ignore
       }
-    };
-    void fetchBadges();
+    } catch (err) {
+      console.error(err);
+    }
   }, [pathname]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      void refreshBadges();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshBadges]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleSupportChatNotification = () => {
+      void refreshBadges();
+    };
+    socket.on('admin_support_chat_notification_created', handleSupportChatNotification);
+    return () => {
+      socket.off('admin_support_chat_notification_created', handleSupportChatNotification);
+    };
+  }, [refreshBadges, socket]);
 
   if (pathname === '/admin/dang-nhap') {
     return <>{children}</>;

@@ -22,6 +22,13 @@ type AuthSocketData = {
   authUser?: AuthSocketUser;
 };
 
+const adminNotificationRoles = new Set([
+  'ADMIN',
+  'SUPER_ADMIN',
+  'STAFF',
+  'OPERATOR',
+]);
+
 export type SessionReplacedPayload = {
   reason: 'LOGIN_FROM_ANOTHER_BROWSER';
   role: string;
@@ -84,6 +91,12 @@ export class SocketGateway
     const authUser = (client.data as AuthSocketData).authUser;
     if (authUser) {
       void client.join(`session_${authUser.jti}`);
+      if (
+        authUser.role &&
+        adminNotificationRoles.has(authUser.role.toUpperCase())
+      ) {
+        void client.join('admin_notifications');
+      }
     }
     this.logger.log(`Client connected: ${client.id}`);
   }
@@ -135,6 +148,15 @@ export class SocketGateway
       .emit('member_notification_created', notification);
     this.logger.log(
       `Emitted member_notification_created to user_${userId} for notification ${notification.id}`,
+    );
+  }
+
+  notifyAdminSupportChatMessage(notification: any) {
+    this.server
+      .to('admin_notifications')
+      .emit('admin_support_chat_notification_created', notification);
+    this.logger.log(
+      `Emitted admin_support_chat_notification_created for ticket ${notification.ticketId}`,
     );
   }
 

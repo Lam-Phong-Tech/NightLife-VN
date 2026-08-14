@@ -8,6 +8,7 @@ import { getAuthUser, getAuthSessionToken, type AuthUser } from '@/lib/auth/sess
 import { recordSessionReplacedNotice } from '@/lib/auth/session-replaced-notice';
 import { getSupportSocketConfig, getApiBaseUrl } from '@/lib/socket-config';
 import { filterAdminSupportTickets, type AdminSupportTicketFilter } from './admin-support-ticket-filter';
+import { AdminToast } from '@/components/ui/AdminToast';
 
 type SupportMessagePayload = {
   id?: string;
@@ -361,8 +362,10 @@ export function AdminSupportDashboard() {
         border: '1px solid rgba(255,255,255,.06)',
       }}
     >
-      {/* Toast */}
-      {toast && <div className="fixed top-6 right-6 bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl z-50 animate-in slide-in-from-top-2 font-medium text-sm">{toast}</div>}
+      <AdminToast
+        message={toast}
+        tone={toast?.includes('Không thể') || toast?.includes('không hợp lệ') ? 'error' : 'success'}
+      />
 
       <div className="flex flex-1 min-h-0">
         {/* Cột trái: Pending Tickets / Hội thoại */}

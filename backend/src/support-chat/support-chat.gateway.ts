@@ -14,6 +14,7 @@ import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
 import { SupportSenderType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SocketGateway } from '../notifications/socket.gateway';
 import {
   requiresSinglePrivilegedSession,
   SESSION_REPLACED_ERROR,
@@ -94,6 +95,7 @@ export class SupportChatGateway
     private readonly supportChatService: SupportChatService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   afterInit(server: Server) {
@@ -227,6 +229,47 @@ export class SupportChatGateway
           messages: [message],
           latestMessage: message.content,
         });
+      }
+
+      try {
+        if (isAdminSender) {
+          const notification =
+            await this.supportChatService.createMemberReplyNotification({
+              ticketId: ticketId as string,
+              messageId: message.id,
+              content: message.content,
+            });
+          if (notification) {
+            this.socketGateway.notifyMemberNotificationCreated(
+              notification.userId as string,
+              {
+                id: notification.id,
+                templateKey: notification.templateKey,
+                category: 'system',
+                createdAt: notification.createdAt.toISOString(),
+              },
+            );
+          }
+        } else {
+          const notification =
+            await this.supportChatService.createAdminCustomerMessageNotification(
+              {
+                ticketId: ticketId as string,
+                messageId: message.id,
+                content: message.content,
+              },
+            );
+          this.socketGateway.notifyAdminSupportChatMessage({
+            id: notification.id,
+            ticketId: ticketId as string,
+            createdAt: notification.createdAt.toISOString(),
+          });
+        }
+      } catch (notificationError) {
+        console.error(
+          '[SupportChat] Could not create in-app notification:',
+          notificationError,
+        );
       }
 
       if (!isOnline && !isAdminSender) {
