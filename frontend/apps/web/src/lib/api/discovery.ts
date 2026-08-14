@@ -533,6 +533,7 @@ export const discoveryApi = {
       () =>
         apiClient<PublicCast[] | PublicDiscoveryListResponse<PublicCast>>("/casts", {
           params: toParams(params),
+          cache: "no-store",
         }).then((response): PublicDiscoveryCastListResponse => {
           if (Array.isArray(response)) {
             const casts = response.map(normalizePublicCast);
@@ -570,6 +571,7 @@ export const discoveryApi = {
   listCastsStrict: (params?: DiscoveryParams) =>
     apiClient<PublicCast[] | PublicDiscoveryListResponse<PublicCast>>("/casts", {
       params: toParams(params),
+      cache: "no-store",
     }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
 };
 

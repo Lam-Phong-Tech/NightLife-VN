@@ -438,7 +438,7 @@ function AdminCastsContent() {
   // Form states
   const [formData, setFormData] = useState<any>({
     stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
-    heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: true, status: 'ACTIVE',
+    heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: false, status: 'PENDING_REVIEW',
     youtubeLinks: []
   });
   
@@ -758,7 +758,7 @@ function AdminCastsContent() {
   const openNewDrawer = () => {
     setFormData({
       stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
-      heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: true, status: 'ACTIVE',
+      heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: false, status: 'PENDING_REVIEW',
       youtubeLinks: []
     });
     setAvatarImage(null);

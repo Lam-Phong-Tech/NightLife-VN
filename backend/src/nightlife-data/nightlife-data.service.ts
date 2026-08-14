@@ -24137,7 +24137,7 @@ export class NightlifeDataService {
           hobbies: dto.hobbies || [],
           tags: dto.tags || [],
           youtubeLinks: dto.youtubeLinks || [],
-          isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
+          isPublic: dto.isPublic !== undefined ? dto.isPublic : false,
           status: dto.status || 'DRAFT',
           ...(mediaIds.length > 0
             ? {
