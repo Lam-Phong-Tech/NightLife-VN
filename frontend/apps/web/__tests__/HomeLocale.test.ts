@@ -18,4 +18,11 @@ describe("homepage locale labels", () => {
     expect(getFilterCategoryLabel("RESTAURANT", "ja")).toBe("レストラン");
     expect(getFilterCategoryLabel("MASSAGE_SPA", "ja")).toBe("マッサージ");
   });
+  it("localizes dynamic admin ward labels without a network lookup", () => {
+    expect(getFilterAreaLabel("Phường Ba Đình", "en")).toBe("Ba Dinh Ward");
+    expect(getFilterAreaLabel("Phường Ba Đình", "ja")).toBe("Ba Dinh区");
+    expect(getFilterAreaLabel("Phường Bình Thạnh", "ko")).toBe("Binh Thanh 구");
+    expect(getFilterAreaLabel("Phường Tân Định", "zh")).toBe("Tan Dinh坊");
+    expect(getFilterAreaLabel("Phường Ba Đình", "vi")).toBe("Phường Ba Đình");
+  });
 });

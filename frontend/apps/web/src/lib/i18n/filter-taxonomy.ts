@@ -126,6 +126,37 @@ const areaLabelAliases = Object.fromEntries(
   ]),
 ) as Record<string, LocalizedLabels>;
 
+const stripAdministrativePrefix = (value: string) =>
+  value.replace(/^(?:Phường|Ward)\s+/i, '').trim();
+
+const stripVietnameseDiacritics = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/Đ/g, 'D')
+    .replace(/đ/g, 'd');
+
+/**
+ * Admin ward options come from provinces.open-api.vn and therefore include
+ * wards that are not present in the nightlife area seed. Keep this fallback
+ * local and deterministic: it translates the administrative label without
+ * adding a network request or shipping a second translation runtime.
+ */
+const translateDynamicWardLabel = (value: string, language: LanguageCode) => {
+  if (!/^(?:Phường|Ward)\s+/i.test(value.trim())) return null;
+  if (language === 'vi') return value;
+
+  const wardName = stripAdministrativePrefix(value);
+  const romanizedName = stripVietnameseDiacritics(wardName);
+
+  return {
+    en: `${romanizedName} Ward`,
+    ja: `${romanizedName}区`,
+    ko: `${romanizedName} 구`,
+    zh: `${romanizedName}坊`,
+  }[language];
+};
+
 export const getFilterCategoryLabel = (category: string, language: LanguageCode) =>
   categoryLabels[category]?.[language] ?? category;
 
@@ -136,4 +167,6 @@ export const getFilterCityLabel = (cityCode: string, language: LanguageCode) =>
   cityLabels[cityCode]?.[language] ?? cityCode;
 
 export const getFilterAreaLabel = (areaName: string, language: LanguageCode) =>
-  areaLabelAliases[normalizeLabelKey(areaName)]?.[language] ?? areaName;
+  areaLabelAliases[normalizeLabelKey(areaName)]?.[language] ??
+  translateDynamicWardLabel(areaName, language) ??
+  areaName;
