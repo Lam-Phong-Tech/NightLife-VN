@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useSyncExternalStore, useMemo } from 'react';
 import { authSessionChangeEvent, getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
+import { AdminToast } from '@/components/ui/AdminToast';
 
 const colors = {
   bg: '#0c0c0f',
@@ -365,16 +366,7 @@ export default function AdminPermissionsPage() {
 
       </div>
 
-      {toast && (
-        <div style={{ position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: 90, display: 'flex', alignItems: 'center', gap: '10px', background: '#17161c', border: `1px solid ${toast.type === 'success' ? 'rgba(127,211,162,0.3)' : 'rgba(255,77,79,0.3)'}`, color: '#f3f0ea', fontSize: '13.5px', fontWeight: 500, padding: '13px 22px', borderRadius: '12px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)' }}>
-          {toast.type === 'success' ? (
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          ) : (
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-          )}
-          {toast.msg}
-        </div>
-      )}
+      <AdminToast message={toast?.msg} tone={toast?.type} />
     </div>
   );
 }

@@ -15770,11 +15770,14 @@ export class NightlifeDataService {
       this.bookingTourTitle(bookingNote);
     const isTourBooking =
       templateKey === 'customer.booking.tour_created.v1' || Boolean(tourTitle);
-    const href = log.billId
-      ? `/gui-hoa-don?billId=${encodeURIComponent(log.billId)}`
-      : log.bookingId
-        ? `/lich-su-dat-cho?bookingId=${encodeURIComponent(log.bookingId)}`
-        : '/tai-khoan';
+    const href =
+      templateKey === 'customer.support.reply.v1'
+        ? ''
+        : log.billId
+          ? `/gui-hoa-don?billId=${encodeURIComponent(log.billId)}`
+          : log.bookingId
+            ? `/lich-su-dat-cho?bookingId=${encodeURIComponent(log.bookingId)}`
+            : '/tai-khoan';
 
     let title = 'Thông báo mới';
     let body = 'Bạn có cập nhật mới từ Vietyoru.';
@@ -15782,7 +15785,14 @@ export class NightlifeDataService {
     const category = this.customerNotificationCategory(templateKey);
     let actionLabel = 'Xem chi tiết';
 
-    if (templateKey === 'customer.bill.submitted.v1') {
+    if (templateKey === 'customer.support.reply.v1') {
+      title = 'Admin đã trả lời tin nhắn hỗ trợ';
+      body =
+        this.payloadString(payload, 'preview') ||
+        'Bạn có tin nhắn hỗ trợ mới từ Admin.';
+      tone = 'gold';
+      actionLabel = 'Mở chat hỗ trợ';
+    } else if (templateKey === 'customer.bill.submitted.v1') {
       title = 'Đã gửi hóa đơn';
       body = `Hóa đơn ${billNumber} tại ${storeName}${amountLabel} đã được gửi, đang chờ Admin duyệt.`;
       tone = 'amber';
@@ -23455,7 +23465,12 @@ export class NightlifeDataService {
     const rawLogs = await this.prisma.notificationLog
       .findMany({
         where: {
-          templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) as any },
+          templateKey: {
+            in: [
+              ...Object.values(ADMIN_TELEGRAM_TEMPLATES),
+              'admin.support.customer_message.v1',
+            ] as any,
+          },
         },
         take: 10,
         orderBy: { createdAt: 'desc' },

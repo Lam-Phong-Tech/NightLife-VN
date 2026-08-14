@@ -8,7 +8,9 @@ import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { authSessionChangeEvent, getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
+  buildBookingConfirmationFlashToast,
   buildBookingConfirmationPageFeedback,
+  readBookingConfirmationFlashToast,
   writeBookingConfirmationFlashToast,
   type BookingConfirmationFlashKind,
   type BookingConfirmationPageFeedback,
@@ -588,6 +590,22 @@ export default function Page() {
     [],
   );
 
+  useEffect(() => {
+    const flashToast = readBookingConfirmationFlashToast();
+    const localizedToast = flashToast
+      ? buildBookingConfirmationFlashToast(flashToast, activeLanguage)
+      : null;
+
+    if (!localizedToast) return;
+
+    feedback.showToast({
+      tone: localizedToast.tone,
+      title: localizedToast.title,
+      description: localizedToast.description,
+      durationMs: localizedToast.durationMs,
+    });
+  }, [activeLanguage, feedback]);
+
   const handleBookingResolution = useCallback(
     (previousBooking: BookingRecord | null, nextBooking: BookingRecord) => {
       const kind = bookingResolutionKind(previousBooking, nextBooking);
@@ -1045,16 +1063,28 @@ export default function Page() {
 
           <div className={styles.bottomActions}>
             {isBookingLoading && !booking ? null : booking && isGuestBooking ? (
-              <div className={styles.guestConfirmNotice}>
-                <Check size={16} />
-                <span>{guestConfirmationMessage}</span>
-              </div>
+              <>
+                <div className={styles.guestConfirmNotice}>
+                  <Check size={16} />
+                  <span>{guestConfirmationMessage}</span>
+                </div>
+                <div className={`${styles.confirmActionRow} ${styles.singleConfirmActionRow}`}>
+                  <Link href="/" className={styles.primaryCta}>
+                    <strong>{translateText("Về trang chủ", activeLanguage)}</strong>
+                  </Link>
+                </div>
+              </>
             ) : (
-              <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
-                <strong>
-                  {isTourBooking ? tourCopy.viewMyTour : translateText("Xem đặt chỗ của tôi", activeLanguage)}
-                </strong>
-              </Link>
+              <div className={styles.confirmActionRow}>
+                <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
+                  <strong>
+                    {isTourBooking ? tourCopy.viewMyTour : translateText("Xem đặt chỗ của tôi", activeLanguage)}
+                  </strong>
+                </Link>
+                <Link href="/" className={styles.secondaryCta}>
+                  <strong>{translateText("Về trang chủ", activeLanguage)}</strong>
+                </Link>
+              </div>
             )}
           </div>
         </div>

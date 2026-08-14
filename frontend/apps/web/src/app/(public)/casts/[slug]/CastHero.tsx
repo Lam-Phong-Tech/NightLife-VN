@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { ChevronLeft, ChevronRight, ImageOff, MapPin, Play, Star } from "lucide-react";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
-import { getCastProfileCopy } from "./cast-profile.copy";
+import { getCastProfileCopy, localizeZodiacSign } from "./cast-profile.copy";
 import { isPlaceholderCastMedia, mediaPreviewBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
@@ -24,8 +24,12 @@ type CastHeroProps = {
   onHeroPointerCancel?: () => void;
 };
 
-const profileSummary = (profile: CastProfile) =>
-  [profile.heightCm ? `${profile.heightCm} cm` : null, profile.measurements, profile.zodiacSign]
+const profileSummary = (profile: CastProfile, language: LanguageCode) =>
+  [
+    profile.heightCm ? `${profile.heightCm} cm` : null,
+    profile.measurements,
+    profile.zodiacSign ? localizeZodiacSign(profile.zodiacSign, language) : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -45,7 +49,7 @@ export function CastHero({
   onHeroPointerUp,
   onHeroPointerCancel,
 }: CastHeroProps) {
-  const summary = profileSummary(profile);
+  const summary = profileSummary(profile, language);
   const storeHref = `/stores/${profile.store.slug}`;
   const copy = getCastProfileCopy(language);
   const isPlaceholder = isPlaceholderCastMedia(activeMedia);

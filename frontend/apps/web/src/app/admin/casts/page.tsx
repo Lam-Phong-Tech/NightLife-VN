@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { DataSkeleton } from '@/components/ui/DataLoading';
+import { AdminToast } from '@/components/ui/AdminToast';
 
 const colors = {
   bg: '#0f0f13',
@@ -1163,11 +1164,7 @@ function AdminCastsContent() {
 
   return (
     <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
-      {toast && (
-        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', background: colors.surface1, border: `1px solid ${colors.gold}`, color: colors.gold, padding: '12px 24px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-          {toast}
-        </div>
-      )}
+      <AdminToast message={toast} />
 
       {fetchError && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', color: '#f87171' }}>

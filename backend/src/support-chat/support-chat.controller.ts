@@ -11,6 +11,7 @@ import {
 import type { Request } from 'express';
 import { SupportChatService } from './support-chat.service';
 import { SupportChatGateway } from './support-chat.gateway';
+import { SocketGateway } from '../notifications/socket.gateway';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
@@ -26,6 +27,7 @@ export class SupportChatController {
   constructor(
     private readonly supportChatService: SupportChatService,
     private readonly supportChatGateway: SupportChatGateway,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   @Get('history')
@@ -94,6 +96,25 @@ export class SupportChatController {
       this.supportChatGateway.server
         .to('support_admins')
         .emit('receive_message', message);
+    }
+
+    try {
+      const notification =
+        await this.supportChatService.createAdminCustomerMessageNotification({
+          ticketId,
+          messageId: message.id,
+          content: message.content,
+        });
+      this.socketGateway.notifyAdminSupportChatMessage({
+        id: notification.id,
+        ticketId,
+        createdAt: notification.createdAt.toISOString(),
+      });
+    } catch (notificationError) {
+      console.error(
+        '[SupportChat] Could not create in-app notification:',
+        notificationError,
+      );
     }
 
     return { ...message, ticketId };

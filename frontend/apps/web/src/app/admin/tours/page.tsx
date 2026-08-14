@@ -7,6 +7,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { DataSkeleton } from '@/components/ui/DataLoading';
+import { AdminToast } from '@/components/ui/AdminToast';
 import {
   getTourCoverImageValidationError,
   TOUR_COVER_IMAGE_ACCEPT,
@@ -1134,13 +1135,7 @@ function AdminToursContent() {
         </div>
       )}
 
-      {/* Custom toast notification */}
-      {toast && (
-        <div style={{ position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: 90, display: 'flex', alignItems: 'center', gap: '10px', background: '#17161c', border: '1px solid rgba(212,178,106,.3)', color: '#f3f0ea', fontSize: '13.5px', fontWeight: 500, padding: '13px 22px', borderRadius: '12px', boxShadow: '0 20px 44px -18px rgba(0,0,0,.85)' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-          {toast}
-        </div>
-      )}
+      <AdminToast message={toast} />
 
     </div>
   );

@@ -897,6 +897,18 @@
   margin-top: 16px;
 }
 
+.confirmActionRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.singleConfirmActionRow {
+  grid-template-columns: minmax(0, 360px);
+  justify-content: center;
+}
+
 .primaryCta,
 .secondaryCta,
 .ghostCta,
@@ -944,6 +956,13 @@
   border: 1px solid rgba(212, 178, 106, 0.28);
   background: rgba(255, 255, 255, 0.04);
   color: #e3c27e;
+}
+
+:global(html.vy-light) .secondaryCta {
+  border-color: rgba(168, 124, 52, 0.3);
+  background: rgba(255, 250, 242, 0.92);
+  color: #7f5b18;
+  box-shadow: 0 12px 24px -22px rgba(80, 55, 18, 0.45);
 }
 
 .ghostCta {
@@ -2243,6 +2262,11 @@
     margin: 0 auto;
   }
 
+  .confirmFrame .confirmActionRow .primaryCta,
+  .confirmFrame .confirmActionRow .secondaryCta {
+    width: 100%;
+  }
+
   .historyFrame .filterChips {
     padding: 16px 24px 10px;
   }
@@ -2378,6 +2402,11 @@
 
   .bottomActions {
     bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+
+  .confirmActionRow,
+  .singleConfirmActionRow {
+    grid-template-columns: 1fr;
   }
 
   .dialogOverlay {

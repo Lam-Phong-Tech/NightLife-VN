@@ -311,6 +311,7 @@ type NoticeTone = MemberNotificationTone;
 
 type Notice = {
   id: string;
+  templateKey?: string;
   group: "today" | "yesterday";
   title: string;
   body: string;
@@ -928,6 +929,7 @@ const toNotice = (notification: MemberNotification, language: LanguageCode): Not
 
   return {
     id: displayNotification.id,
+    templateKey: displayNotification.templateKey,
     group: isToday ? "today" : "yesterday",
     title: translateText(displayNotification.title, language),
     body: translateText(displayNotification.body, language),
@@ -1714,6 +1716,9 @@ export function SiteChrome({
   const handleNotificationSelect = useCallback(
     (notice: Notice) => {
       setIsNotificationOpen(false);
+      if (notice.templateKey === "customer.support.reply.v1") {
+        setIsChatOpen(true);
+      }
       if (!notice.unread) return;
 
       setMemberNotifications((items) =>
