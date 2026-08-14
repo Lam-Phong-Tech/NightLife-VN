@@ -1045,16 +1045,28 @@ export default function Page() {
 
           <div className={styles.bottomActions}>
             {isBookingLoading && !booking ? null : booking && isGuestBooking ? (
-              <div className={styles.guestConfirmNotice}>
-                <Check size={16} />
-                <span>{guestConfirmationMessage}</span>
-              </div>
+              <>
+                <div className={styles.guestConfirmNotice}>
+                  <Check size={16} />
+                  <span>{guestConfirmationMessage}</span>
+                </div>
+                <div className={`${styles.confirmActionRow} ${styles.singleConfirmActionRow}`}>
+                  <Link href="/" className={styles.primaryCta}>
+                    <strong>{translateText("Về trang chủ", activeLanguage)}</strong>
+                  </Link>
+                </div>
+              </>
             ) : (
-              <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
-                <strong>
-                  {isTourBooking ? tourCopy.viewMyTour : translateText("Xem đặt chỗ của tôi", activeLanguage)}
-                </strong>
-              </Link>
+              <div className={styles.confirmActionRow}>
+                <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
+                  <strong>
+                    {isTourBooking ? tourCopy.viewMyTour : translateText("Xem đặt chỗ của tôi", activeLanguage)}
+                  </strong>
+                </Link>
+                <Link href="/" className={styles.secondaryCta}>
+                  <strong>{translateText("Về trang chủ", activeLanguage)}</strong>
+                </Link>
+              </div>
             )}
           </div>
         </div>
