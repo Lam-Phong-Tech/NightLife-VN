@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import HomePageClient from '../src/app/HomePageClient';
 import { SystemFeedbackProvider } from '../src/components/ui/SystemFeedback';
+import { DEFAULT_APPEARANCE_CONFIG, type AppearanceConfig } from '../src/lib/api/appearance';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -16,6 +17,7 @@ const {
   listPublicCouponsMock,
   listStoresStrictMock,
   rankingsListMock,
+  getAppearanceConfigMock,
 } = vi.hoisted(() => ({
   contentHotVideosMock: vi.fn(),
   contentListMock: vi.fn(),
@@ -28,6 +30,7 @@ const {
   listPublicCouponsMock: vi.fn(),
   listStoresStrictMock: vi.fn(),
   rankingsListMock: vi.fn(),
+  getAppearanceConfigMock: vi.fn(),
 }));
 
 // Need to mock next/image and next/link since they have special behavior
@@ -70,7 +73,7 @@ vi.mock('@/lib/api/appearance', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/appearance')>();
   return {
     ...actual,
-    getAppearanceConfig: vi.fn().mockResolvedValue(actual.DEFAULT_APPEARANCE_CONFIG),
+    getAppearanceConfig: getAppearanceConfigMock,
   };
 });
 
@@ -114,9 +117,9 @@ const rankingMeta = {
   total: 1,
 };
 
-const renderHome = () => render(
+const renderHome = (props: React.ComponentProps<typeof HomePageClient> = {}) => render(
   <SystemFeedbackProvider>
-    <HomePageClient />
+    <HomePageClient {...props} />
   </SystemFeedbackProvider>,
 );
 
@@ -125,6 +128,7 @@ describe('Home Page', () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     delete process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS;
+    getAppearanceConfigMock.mockResolvedValue(DEFAULT_APPEARANCE_CONFIG);
 
     listStoresStrictMock.mockResolvedValue({
       stores: [],
@@ -361,6 +365,26 @@ describe('Home Page', () => {
 
     expect(screen.getByTestId('home-mobile-recommendations')).toBeInTheDocument();
     expect(screen.getAllByText('Đề xuất tối nay')).not.toHaveLength(0);
+  });
+
+  it('keeps server-provided appearance titles stable after hydration', async () => {
+    const initialAppearance: AppearanceConfig = {
+      ...DEFAULT_APPEARANCE_CONFIG,
+      titles: DEFAULT_APPEARANCE_CONFIG.titles.map((title) =>
+        title.id === 't1'
+          ? { ...title, label: "Tonight's Recommendations" }
+          : title,
+      ),
+    };
+
+    renderHome({ initialAppearance });
+
+    expect(screen.getAllByText("Tonight's Recommendations")).not.toHaveLength(0);
+    expect(screen.queryByText('Đề xuất tối nay')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Tonight's Recommendations")).not.toHaveLength(0));
+
+    const viewAllLink = screen.getAllByRole('link', { name: 'Xem tất cả' })[0];
+    expect(viewAllLink).toHaveStyle({ whiteSpace: 'nowrap', flex: '0 0 auto' });
   });
 
   it('loads home sections from backend APIs', async () => {
