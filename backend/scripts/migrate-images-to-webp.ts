@@ -5,6 +5,7 @@
 
 import 'dotenv/config';
 import { ContentType, Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { existsSync } from 'node:fs';
 import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -220,7 +221,13 @@ async function cleanupCreatedFiles(paths: string[]) {
 }
 
 async function main() {
-  const prisma = new PrismaClient();
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required');
+  }
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
   const manifest: MigrationManifest = {
     version: 2,
     startedAt: new Date().toISOString(),

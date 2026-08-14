@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -31,7 +32,13 @@ async function main() {
     throw new Error('Unsupported migration manifest');
   }
 
-  const prisma = new PrismaClient();
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required');
+  }
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
   let restored = 0;
   let skipped = 0;
   try {
