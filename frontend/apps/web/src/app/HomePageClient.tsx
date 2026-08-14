@@ -2491,6 +2491,10 @@ function RankingRow({ item, priority = false }: { item: RankedItem; priority?: b
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Xếp hạng"}
+        responsiveImage={item.responsiveImage}
+        sizes="64px"
+        width={64}
+        height={64}
         label=""
         priority={priority}
         style={{

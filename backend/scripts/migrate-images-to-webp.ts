@@ -29,9 +29,14 @@ if (APPLY && EXPLICIT_DRY_RUN) {
 }
 
 function option(name: string) {
-  return args
+  const inlineValue = args
     .find((argument) => argument.startsWith(`--${name}=`))
-    ?.split('=')[1];
+    ?.slice(name.length + 3);
+  if (inlineValue) return inlineValue;
+
+  const optionIndex = args.indexOf(`--${name}`);
+  const followingValue = optionIndex >= 0 ? args[optionIndex + 1] : undefined;
+  return followingValue && !followingValue.startsWith('--') ? followingValue : undefined;
 }
 
 function positiveIntegerOption(name: string, fallback: number) {
