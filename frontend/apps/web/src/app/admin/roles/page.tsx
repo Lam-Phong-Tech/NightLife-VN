@@ -22,6 +22,42 @@ const colors = {
   green: '#4ade80'
 };
 
+const ACCOUNT_NAME_MAX = 80;
+const ACCOUNT_EMAIL_MAX = 254;
+const ACCOUNT_PASSWORD_MIN = 8;
+const ACCOUNT_PASSWORD_MAX = 72;
+const accountNamePattern = /^[\p{L}\s]+$/u;
+const clampInput = (value: string, max: number) => value.slice(0, max);
+const normalizeAccountName = (value: string) => value.trim().replace(/\s+/g, ' ');
+const accountTextEllipsisStyle: React.CSSProperties = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
+const validateAccountName = (value: string) => {
+  const name = normalizeAccountName(value);
+  if (!name) return 'Nhập tên hiển thị';
+  if (name.length < 2) return 'Tên hiển thị tối thiểu 2 ký tự';
+  if (name.length > ACCOUNT_NAME_MAX) return `Tên hiển thị không được vượt quá ${ACCOUNT_NAME_MAX} ký tự`;
+  if (!accountNamePattern.test(name)) return 'Tên hiển thị chỉ được nhập chữ cái và khoảng trắng';
+  return '';
+};
+const validateAccountEmail = (value: string) => {
+  const email = value.trim();
+  if (!email) return 'Nhập email đăng nhập';
+  if (email.length > ACCOUNT_EMAIL_MAX) return `Email không được vượt quá ${ACCOUNT_EMAIL_MAX} ký tự`;
+  if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    return 'Email không đúng định dạng (ví dụ: name@domain.com)';
+  }
+  return '';
+};
+const validateAccountPassword = (value: string) => {
+  if (value.length < ACCOUNT_PASSWORD_MIN) return `Mật khẩu tối thiểu ${ACCOUNT_PASSWORD_MIN} ký tự`;
+  if (value.length > ACCOUNT_PASSWORD_MAX) return `Mật khẩu không được vượt quá ${ACCOUNT_PASSWORD_MAX} ký tự`;
+  return '';
+};
+
 export type AccountRec = {
   id: string;
   ini: string;
@@ -238,19 +274,21 @@ export default function AdminRolesPage() {
   const afPwBar2 = psc>=2?pCol:pOff;
   const afPwBar3 = psc>=3?pCol:pOff;
 
-  const isEmailValid = (email: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
-  const ok = !!(afName && afName.trim() && afEmail && isEmailValid(afEmail) && afPw.length>=8);
+  const isEmailValid = (email: string) => !validateAccountEmail(email);
+  const ok = !validateAccountName(afName) && !validateAccountEmail(afEmail) && !validateAccountPassword(afPw);
   const handleSave = async () => {
-    if(!afName||!afName.trim()) { showToast('Nhập tên hiển thị'); return; }
-    if(!afEmail||!afEmail.trim()) { showToast('Nhập email đăng nhập'); return; }
-    if(!isEmailValid(afEmail)) { showToast('Email không đúng định dạng (ví dụ: name@domain.com)'); return; }
-    if(afPw.length < 8) { showToast('Mật khẩu tối thiểu 8 ký tự'); return; }
+    const nameError = validateAccountName(afName);
+    const emailError = validateAccountEmail(afEmail);
+    const passwordError = validateAccountPassword(afPw);
+    if(nameError) { showToast(nameError); return; }
+    if(emailError) { showToast(emailError); return; }
+    if(passwordError) { showToast(passwordError); return; }
     try {
       setLoading(true);
       await createAdminUser({
-        email: afEmail.trim(),
+        email: afEmail.trim().toLowerCase(),
         password: afPw,
-        displayName: afName.trim(),
+        displayName: normalizeAccountName(afName),
         role: afKind.toUpperCase(),
         storeId: afStoreId || undefined
       });
@@ -326,7 +364,7 @@ export default function AdminRolesPage() {
                   {pg * PER + idx + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#f3f0ea' }}>{a.name}</div>
+                  <div style={{ ...accountTextEllipsisStyle, fontSize: '13.5px', fontWeight: 600, color: '#f3f0ea' }} title={a.name}>{a.name}</div>
                   <div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.email}</div>
                   {(a as any).storeName && (
                     <div style={{ fontSize: '11px', color: '#caa765', marginTop: '2.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
@@ -411,15 +449,20 @@ export default function AdminRolesPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên hiển thị</div>
-                <input value={afName} onChange={e => setAfName(e.target.value)} placeholder="VD: Lê Vận Hành" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <input value={afName} onChange={e => setAfName(clampInput(e.target.value, ACCOUNT_NAME_MAX))} maxLength={ACCOUNT_NAME_MAX} placeholder="VD: Lê Vận Hành" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${afName && validateAccountName(afName) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                {afName && validateAccountName(afName) && (
+                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '5px' }}>
+                    {validateAccountName(afName)}
+                  </div>
+                )}
               </div>
               
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
-                <input value={afEmail} onChange={e => setAfEmail(e.target.value)} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${afEmail && !isEmailValid(afEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
-                {afEmail && !isEmailValid(afEmail) && (
+                <input value={afEmail} onChange={e => setAfEmail(clampInput(e.target.value, ACCOUNT_EMAIL_MAX))} maxLength={ACCOUNT_EMAIL_MAX} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${afEmail && !isEmailValid(afEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                {afEmail && validateAccountEmail(afEmail) && (
                   <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '5px' }}>
-                    Email không đúng định dạng (ví dụ: name@domain.com)
+                    {validateAccountEmail(afEmail)}
                   </div>
                 )}
               </div>
@@ -428,7 +471,7 @@ export default function AdminRolesPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mật khẩu</div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <div style={{ position: 'relative', flex: 1 }}>
-                    <input value={afPw} onChange={e => setAfPw(e.target.value)} type={afPwShow ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự" autoComplete="new-password" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
+                    <input value={afPw} onChange={e => setAfPw(clampInput(e.target.value, ACCOUNT_PASSWORD_MAX))} maxLength={ACCOUNT_PASSWORD_MAX} type={afPwShow ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự" autoComplete="new-password" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${afPw && validateAccountPassword(afPw) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
                     <span onClick={() => setAfPwShow(!afPwShow)} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                       {afPwShow ? <EyeOff size={15} /> : <Eye size={15} />}
                     </span>
@@ -505,14 +548,19 @@ export default function AdminRolesPage() {
             <div style={{ padding: '20px 24px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên hiển thị</div>
-                <input value={edName} onChange={e => setEdName(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <input value={edName} onChange={e => setEdName(clampInput(e.target.value, ACCOUNT_NAME_MAX))} maxLength={ACCOUNT_NAME_MAX} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edName && validateAccountName(edName) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                {edName && validateAccountName(edName) && (
+                  <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '6px', fontWeight: 500 }}>
+                    {validateAccountName(edName)}
+                  </div>
+                )}
               </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
-                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edEmail && !isEmailValid(edEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
-                {edEmail && !isEmailValid(edEmail) && (
+                <input value={edEmail} onChange={e => setEdEmail(clampInput(e.target.value, ACCOUNT_EMAIL_MAX))} maxLength={ACCOUNT_EMAIL_MAX} placeholder="ten@vietyoru.vn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${edEmail && !isEmailValid(edEmail) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                {edEmail && validateAccountEmail(edEmail) && (
                   <div style={{ fontSize: '11px', color: '#e08a7e', marginTop: '6px', fontWeight: 500 }}>
-                    Email không đúng định dạng (ví dụ: name@domain.com)
+                    {validateAccountEmail(edEmail)}
                   </div>
                 )}
               </div>
@@ -545,34 +593,25 @@ export default function AdminRolesPage() {
               <span style={{ flex: 1 }}></span>
               <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
               <span onClick={async () => {
-                const trimmedName = edName.trim();
                 const trimmedEmail = edEmail.trim();
 
-                if (!trimmedName) {
-                  showToast('Nhập tên hiển thị');
-                  return;
-                }
-                if (!trimmedEmail) {
-                  showToast('Nhập email đăng nhập');
-                  return;
-                }
-                if (!isEmailValid(trimmedEmail)) {
-                  showToast('Email không đúng định dạng (ví dụ: name@domain.com)');
-                  return;
-                }
+                const nameError = validateAccountName(edName);
+                const emailError = validateAccountEmail(edEmail);
+                if (nameError) { showToast(nameError); return; }
+                if (emailError) { showToast(emailError); return; }
 
                 try {
                   setLoading(true);
-                  await updateAdminUser(edOrig, { displayName: trimmedName, email: trimmedEmail, storeId: edStoreId || null });
+                  await updateAdminUser(edOrig, { displayName: normalizeAccountName(edName), email: trimmedEmail.toLowerCase(), storeId: edStoreId || null });
                   setEdOpen(false);
-                  showToast('Đã lưu thay đổi cho ' + trimmedName);
+                  showToast('Đã lưu thay đổi cho ' + normalizeAccountName(edName));
                   setRefetchTrigger(r => r + 1);
                 } catch (e: any) {
                   showToast('Lỗi khi cập nhật: ' + (e?.response?.data?.message || e.message || 'Không thể cập nhật'));
                 } finally {
                   setLoading(false);
                 }
-              }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && isEmailValid(edEmail) ? 1 : 0.5 }}>
+              }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: !validateAccountName(edName) && !validateAccountEmail(edEmail) ? 1 : 0.5 }}>
                 Lưu thay đổi
               </span>
             </div>
@@ -606,15 +645,15 @@ export default function AdminRolesPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '10px 13px' }}>
                   <Key size={15} color="#caa765" />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea' }}>{cpName}</div>
-                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cpEmail}</div>
+                    <div style={{ ...accountTextEllipsisStyle, fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea' }} title={cpName}>{cpName}</div>
+                    <div style={{ ...accountTextEllipsisStyle, fontSize: '10.5px', color: '#8c8679', marginTop: '1px' }} title={cpEmail}>{cpEmail}</div>
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mật khẩu mới</div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <input value={cpPw} onChange={e => setCpPw(e.target.value)} type={cpPwShow ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự" autoComplete="new-password" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
+                      <input value={cpPw} onChange={e => setCpPw(clampInput(e.target.value, ACCOUNT_PASSWORD_MAX))} maxLength={ACCOUNT_PASSWORD_MAX} type={cpPwShow ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự" autoComplete="new-password" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: `1px solid ${cpPw && validateAccountPassword(cpPw) ? '#e08a7e' : 'rgba(255,255,255,.1)'}`, borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
                       <span onClick={() => setCpPwShow(!cpPwShow)} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                         {cpPwShow ? <EyeOff size={15} /> : <Eye size={15} />}
                       </span>
@@ -648,7 +687,7 @@ export default function AdminRolesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
                 <span style={{ flex: 1 }}></span>
                 <span onClick={() => setCpOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-                <span onClick={async () => { try { await changeAdminUserPassword(hdKey, { password: cpPw }); setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); } catch (e) { showToast('Lỗi đổi mật khẩu'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: cpPw.length >= 8 ? 1 : 0.45, pointerEvents: cpPw.length >= 8 ? 'auto' : 'none' }}>
+                <span onClick={async () => { const passwordError = validateAccountPassword(cpPw); if (passwordError) { showToast(passwordError); return; } try { await changeAdminUserPassword(hdKey, { password: cpPw }); setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); } catch (e) { showToast('Lỗi đổi mật khẩu'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: !validateAccountPassword(cpPw) ? 1 : 0.45, pointerEvents: !validateAccountPassword(cpPw) ? 'auto' : 'none' }}>
                   Đổi mật khẩu
                 </span>
               </div>
@@ -666,7 +705,7 @@ export default function AdminRolesPage() {
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#f3f0ea' }}>Xóa vĩnh viễn tài khoản?</div>
-                <div style={{ fontSize: '12px', color: '#c5c0b6', marginTop: '5px' }}>
+                <div style={{ ...accountTextEllipsisStyle, fontSize: '12px', color: '#c5c0b6', marginTop: '5px' }} title={`${hdName} · ${hdEmail}`}>
                   <b style={{ color: '#f3f0ea' }}>{hdName}</b> · {hdEmail}
                 </div>
               </div>

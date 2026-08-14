@@ -16,6 +16,9 @@ import { buildAdminAuditLog } from '../audit-logs/admin-audit';
 type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 72;
 
 const normalizeDisplayName = (value?: string | null) =>
   value?.trim().replace(/\s+/g, ' ') || undefined;
@@ -39,6 +42,26 @@ const assertValidDisplayName = (displayName: string | undefined) => {
     throw new BadRequestException(
       'Họ tên chỉ được nhập chữ cái và khoảng trắng.',
     );
+  }
+};
+
+const assertValidEmail = (email: string) => {
+  if (email.length > EMAIL_MAX_LENGTH) {
+    throw new BadRequestException('Email khong duoc vuot qua 254 ky tu');
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    throw new BadRequestException('Email khong dung dinh dang');
+  }
+};
+
+const assertValidPassword = (password: string) => {
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new BadRequestException('Mat khau toi thieu 8 ky tu');
+  }
+
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    throw new BadRequestException('Mat khau khong duoc vuot qua 72 ky tu');
   }
 };
 
@@ -97,6 +120,7 @@ export class UsersService {
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
+    assertValidEmail(email);
     if (!EMAIL_REGEX.test(email)) {
       throw new BadRequestException('Email không đúng định dạng');
     }
@@ -258,6 +282,7 @@ export class UsersService {
     password: string,
     auditActor?: AuthenticatedUser,
   ) {
+    assertValidPassword(password);
     const target = auditActor ? await this.findByIdOrThrow(id) : null;
     const passwordHash = await this.passwordService.hash(password);
 
@@ -315,10 +340,15 @@ export class UsersService {
     auditActor?: AuthenticatedUser,
   ) {
     const email = input.email.trim().toLowerCase();
+    assertValidEmail(email);
     if (!EMAIL_REGEX.test(email)) {
       throw new BadRequestException('Email không đúng định dạng');
     }
     const displayName = normalizeDisplayName(input.displayName);
+    if (auditActor || displayName) {
+      assertValidDisplayName(displayName);
+    }
+    assertValidPassword(input.password);
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email is already registered');
