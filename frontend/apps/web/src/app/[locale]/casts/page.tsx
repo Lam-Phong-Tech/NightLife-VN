@@ -7,6 +7,9 @@ import {
 import { createLocalizedPageMetadata } from "@/lib/seo/localized-page-metadata";
 import { discoveryApi } from "@/lib/api/discovery";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {
