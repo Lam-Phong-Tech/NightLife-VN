@@ -2193,84 +2193,15 @@ export function SiteChrome({
             ) : null}
           </div>
 
-          {isMobile ? (
-            /* ── Mobile: 3 icon buttons ── */
-            <div
-              className="nl-site-actions"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                flex: "none",
-              }}
-            >
-              <LanguagePicker isMobile={isMobile} />
-              <ThemeToggle isMobile={isMobile} />
-
-              {showSupportChat ? (
-                <SupportChatWidget
-                  isMobile={isMobile}
-                  isOpen={isChatOpen}
-                  currentUser={authUser}
-                  onOpen={() => setIsNotificationOpen(false)}
-                  onOpenChange={setIsChatOpen}
-                />
-              ) : null}
-
-              {showCustomerNotifications ? (
-                <NotificationBellButton
-                  isMobile={isMobile}
-                  isOpen={isNotificationOpen}
-                  unreadCount={notificationUnreadCount}
-                  onClick={(anchorRect) => {
-                    setNotificationAnchorRect(anchorRect);
-                    setIsChatOpen(false);
-                    setNotificationFilter("all");
-                    setIsNotificationOpen((open) => !open);
-                  }}
-                />
-              ) : null}
-
-              {!authUser ? (
-                <Link
-                  href={memberLoginHref}
-                  className="nl-site-action-control nl-site-login-link"
-                  aria-label={translateText("Đăng nhập", activeLanguage)}
-                  style={{
-                    minHeight: "36px",
-                    padding: "0 12px",
-                    borderRadius: "18px",
-                    border: 0,
-                    color: colors.onGold,
-                    background: "linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "11.5px",
-                    fontWeight: 900,
-                    fontFamily: "var(--nl-font-sans)",
-                    lineHeight: 1,
-                    letterSpacing: 0,
-                    textDecoration: "none",
-                    whiteSpace: "nowrap",
-                    boxShadow: "0 8px 20px rgba(212,178,106,.18)",
-                  }}
-                >
-                  {translateText("Đăng nhập", activeLanguage)}
-                </Link>
-              ) : null}
-            </div>
-          ) : (
-            /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
-            <div
-              className="nl-site-actions"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                flex: "none",
-              }}
-            >
+          <div
+            className="nl-site-actions"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              flex: "none",
+            }}
+          >
               <LanguagePicker isMobile={isMobile} />
               <ThemeToggle isMobile={isMobile} />
 
@@ -2303,6 +2234,7 @@ export function SiteChrome({
                 <Link
                   href={memberLoginHref}
                   className="nl-site-action-control nl-site-login-link"
+                  aria-label={translateText("Đăng nhập", activeLanguage)}
                   style={{
                     minHeight: "40px",
                     padding: "0 18px",
@@ -2320,7 +2252,7 @@ export function SiteChrome({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <LogIn size={16} style={{ flex: "none" }} />
+                  <LogIn className="nl-site-login-icon" size={16} style={{ flex: "none" }} />
                   {translateText("Đăng nhập", activeLanguage)}
                 </Link>
               ) : (
@@ -2362,8 +2294,7 @@ export function SiteChrome({
                   </span>
                 </Link>
               )}
-            </div>
-          )}
+          </div>
         </header>
 
 

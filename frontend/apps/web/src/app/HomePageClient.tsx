@@ -2241,9 +2241,9 @@ function VenueMiniCard({
       <PlaceholderMedia
         src={item.img}
         responsiveImage={item.responsiveImage}
-        sizes="64px"
-        width={64}
-        height={64}
+        sizes="(max-width: 767px) calc((100vw - 48px) / 2), (max-width: 1279px) calc((100vw - 100px) / 3), calc((100vw - 124px) / 4)"
+        width={800}
+        height={450}
         alt={item.name ?? "Địa điểm"}
         label="Ảnh quán"
         priority={priority}

@@ -1804,6 +1804,26 @@ textarea::placeholder {
     max-width: 22px !important;
   }
 
+  .nl-site-actions .nl-site-login-link {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-radius: 18px !important;
+    color: #17120b !important;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a) !important;
+    box-shadow: 0 8px 20px rgba(212, 178, 106, 0.18) !important;
+    font-size: 11.5px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .nl-site-actions .nl-site-login-icon,
+  .nl-site-actions .nl-site-user-link {
+    display: none !important;
+  }
+
   .nl-site-actions a:last-child {
     min-width: 0 !important;
     overflow: hidden !important;
