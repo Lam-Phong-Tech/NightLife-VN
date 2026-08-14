@@ -1100,7 +1100,7 @@ type ContentRecord = {
     name: string;
     slug: string;
   } | null;
-  media: ResponsiveMediaRecord[];
+  media?: ResponsiveMediaRecord[];
 };
 
 type SortablePublicBanner = {
@@ -21198,11 +21198,12 @@ export class NightlifeDataService {
 
   private mapContent(content: ContentRecord) {
     const metadata = this.asRecord(content.metadata) ?? {};
+    const media = content.media ?? [];
     const imageMediaId =
       typeof metadata.imageMediaId === 'string' ? metadata.imageMediaId : null;
     const imageMedia = imageMediaId
-      ? content.media.find((media) => media.id === imageMediaId)
-      : content.media[0];
+      ? media.find((item) => item.id === imageMediaId)
+      : media[0];
 
     return {
       id: content.id,
