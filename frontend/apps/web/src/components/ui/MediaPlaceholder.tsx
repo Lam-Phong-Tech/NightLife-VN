@@ -84,6 +84,7 @@ export function PlaceholderMedia({
         style={{
           position: "absolute",
           inset: 0,
+          zIndex: 0,
           background:
             "radial-gradient(circle at 18% 18%,rgba(212,178,106,.26),transparent 26%), radial-gradient(circle at 82% 70%,var(--vy-surface-3),transparent 24%)",
           opacity: isLight ? 0.8 : 1,
@@ -136,6 +137,7 @@ export function PlaceholderMedia({
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 0,
             width: "100%",
             height: "100%",
             objectFit: "cover",
@@ -144,7 +146,7 @@ export function PlaceholderMedia({
           }}
         />
       ) : null}
-      {children ? <div style={{ position: "relative", zIndex: 1, width: "100%", height: "100%" }}>{children}</div> : null}
+      {children ? <div style={{ position: "relative", zIndex: 3, width: "100%", height: "100%" }}>{children}</div> : null}
     </div>
   );
 }
