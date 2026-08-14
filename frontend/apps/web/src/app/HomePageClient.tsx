@@ -2006,7 +2006,19 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
       <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{title}</h2>
-      {action ? <Link href="/stores" style={{ color: colors.muted, fontSize: "12px" }}>{action}</Link> : null}
+      {action ? (
+        <Link
+          href="/stores"
+          style={{
+            color: colors.muted,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+            flex: "0 0 auto",
+          }}
+        >
+          {action}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -3185,7 +3197,13 @@ function BottomNav() {
   return null;
 }
 
-export default function HomePageClient({ initialBanners = [] }: { initialBanners?: CmsContentItem[] }) {
+export default function HomePageClient({
+  initialBanners = [],
+  initialAppearance = null,
+}: {
+  initialBanners?: CmsContentItem[];
+  initialAppearance?: AppearanceConfig | null;
+}) {
   const activeLanguage = useActiveLanguage();
   const feedback = useSystemFeedback();
   const userFeedback = useUserActionFeedback();
@@ -3217,7 +3235,9 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
   const [homeVideos, setHomeVideos] = useState<HomeVideoItem[]>([]);
   const [isHomeVideosLoading, setHomeVideosLoading] = useState(homeHotVideosEnabled);
   const [homeVideosError, setHomeVideosError] = useState("");
-  const [homeAppearance, setHomeAppearance] = useState<AppearanceConfig>(DEFAULT_APPEARANCE_CONFIG);
+  const [homeAppearance, setHomeAppearance] = useState<AppearanceConfig>(
+    initialAppearance ?? DEFAULT_APPEARANCE_CONFIG,
+  );
   const [homeContentItems, setHomeContentItems] = useState<HomeContentItem[]>([]);
   const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
@@ -3315,6 +3335,8 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
   }, [activeLanguage, feedback]);
 
   useEffect(() => {
+    if (initialAppearance) return;
+
     let cancelled = false;
 
     if (!hasMemberFavoriteAccess()) {
@@ -3378,7 +3400,7 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialAppearance]);
 
   useEffect(() => {
     let cancelled = false;
