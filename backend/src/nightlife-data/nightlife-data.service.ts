@@ -717,6 +717,7 @@ const bookingFreeAmountLabels: Record<BookingLocale, string> = {
   zh: '免费预订 - 无需押金',
 };
 const PARTNER_LISTING_DRAFT_KIND = 'PARTNER_LISTING_DRAFT';
+const PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX = 'partner-cast-edit-';
 const PARTNER_LISTING_CAST_STATUSES = new Set<CastStatus>([
   'DRAFT',
   'PENDING_REVIEW',
@@ -2765,6 +2766,8 @@ export class NightlifeDataService {
           slug: true,
           stageName: true,
           publicAlias: true,
+          isPublic: true,
+          status: true,
           tags: true,
           languages: true,
           hourlyRateVnd: true,
@@ -2801,47 +2804,54 @@ export class NightlifeDataService {
         },
       }),
     ]);
+    const pendingEditSourceIds =
+      await this.loadPendingPartnerListingCastEditSourceIds();
+    const pendingEditSourceIdSet = new Set(pendingEditSourceIds);
 
-    const mappedCasts = casts.map((cast) => ({
-      id: cast.id,
-      createdAt: cast.createdAt,
-      slug: cast.slug,
-      stageName: cast.stageName,
-      name: cast.publicAlias ?? cast.stageName,
-      publicAlias: cast.publicAlias,
-      tags: cast.tags,
-      languages: cast.languages,
-      hourlyRateVnd: cast.hourlyRateVnd,
-      thumbnailUrl: this.resolveCastAvatarImage(cast.media),
-      distanceKm: this.calculateDistanceKm(
-        coordinates,
-        cast.store.latitude,
-        cast.store.longitude,
-      ),
-      store: {
-        id: cast.store.id,
-        name: cast.store.name,
-        slug: cast.store.slug,
-        category: cast.store.category,
-        city: cast.store.city,
-        cityCode: cast.store.area?.code
-          ? this.cityCodeFromAreaCode(cast.store.area.code)
-          : this.normalizeCityCode(cast.store.city),
-        district: cast.store.district,
-        area: cast.store.area
-          ? {
-              id: cast.store.area.id,
-              code: cast.store.area.code,
-              name: cast.store.area.name,
-              city: cast.store.area.city,
-              district: cast.store.area.district,
-              cityCode: this.cityCodeFromAreaCode(cast.store.area.code),
-            }
-          : null,
-        latitude: this.toNumber(cast.store.latitude),
-        longitude: this.toNumber(cast.store.longitude),
-      },
-    }));
+    const mappedCasts = casts
+      .filter((cast) => !pendingEditSourceIdSet.has(cast.id))
+      .map((cast) => ({
+        id: cast.id,
+        createdAt: cast.createdAt,
+        slug: cast.slug,
+        stageName: cast.stageName,
+        name: cast.publicAlias ?? cast.stageName,
+        publicAlias: cast.publicAlias,
+        isPublic: cast.isPublic,
+        status: cast.status,
+        tags: cast.tags,
+        languages: cast.languages,
+        hourlyRateVnd: cast.hourlyRateVnd,
+        thumbnailUrl: this.resolveCastAvatarImage(cast.media),
+        distanceKm: this.calculateDistanceKm(
+          coordinates,
+          cast.store.latitude,
+          cast.store.longitude,
+        ),
+        store: {
+          id: cast.store.id,
+          name: cast.store.name,
+          slug: cast.store.slug,
+          category: cast.store.category,
+          city: cast.store.city,
+          cityCode: cast.store.area?.code
+            ? this.cityCodeFromAreaCode(cast.store.area.code)
+            : this.normalizeCityCode(cast.store.city),
+          district: cast.store.district,
+          area: cast.store.area
+            ? {
+                id: cast.store.area.id,
+                code: cast.store.area.code,
+                name: cast.store.area.name,
+                city: cast.store.area.city,
+                district: cast.store.area.district,
+                cityCode: this.cityCodeFromAreaCode(cast.store.area.code),
+              }
+            : null,
+          latitude: this.toNumber(cast.store.latitude),
+          longitude: this.toNumber(cast.store.longitude),
+        },
+      }));
     const rankedCasts =
       sort === 'priority'
         ? await this.loadRankingMap(
@@ -2856,7 +2866,12 @@ export class NightlifeDataService {
       rankedCasts,
     );
 
-    return this.buildPublicListResponse(data, total, pagination, sort);
+    return this.buildPublicListResponse(
+      data,
+      Math.max(0, total - (casts.length - mappedCasts.length)),
+      pagination,
+      sort,
+    );
   }
 
   async getPublicCastBySlug(slug: string) {
@@ -2958,6 +2973,9 @@ export class NightlifeDataService {
     });
 
     if (!cast) {
+      throw new NotFoundException('Cast not found');
+    }
+    if (await this.hasPendingPartnerListingCastEdit(cast.id)) {
       throw new NotFoundException('Cast not found');
     }
 
@@ -11808,6 +11826,9 @@ export class NightlifeDataService {
       if (!cast) {
         throw new NotFoundException('Cast not found');
       }
+      if (await this.hasPendingPartnerListingCastEdit(cast.id)) {
+        throw new NotFoundException('Cast not found');
+      }
 
       if (
         (storeId && cast.store.id !== storeId) ||
@@ -18738,7 +18759,7 @@ export class NightlifeDataService {
 
   private partnerListingCastEditSourceId(profile: { slug?: string | null }) {
     const slug = this.cleanNullableText(profile.slug);
-    const prefix = 'partner-cast-edit-';
+    const prefix = PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX;
 
     if (!slug?.startsWith(prefix)) {
       return null;
@@ -18746,6 +18767,47 @@ export class NightlifeDataService {
 
     const sourceId = slug.slice(prefix.length);
     return this.isUuid(sourceId) ? sourceId : null;
+  }
+
+  private async loadPendingPartnerListingCastEditSourceIds(
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const drafts = await client.cast.findMany({
+      where: {
+        deletedAt: null,
+        isPublic: false,
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
+        slug: { startsWith: PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX },
+      },
+      select: { slug: true },
+    });
+
+    if (!Array.isArray(drafts)) {
+      return [];
+    }
+
+    return [
+      ...new Set(
+        drafts
+          .map((draft) => this.partnerListingCastEditSourceId(draft))
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+  }
+
+  private async hasPendingPartnerListingCastEdit(castId: string) {
+    const expectedSlug = `${PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX}${castId}`;
+    const draft = await this.prisma.cast.findFirst({
+      where: {
+        deletedAt: null,
+        isPublic: false,
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] as CastStatus[] },
+        slug: expectedSlug,
+      },
+      select: { slug: true },
+    });
+
+    return draft?.slug === expectedSlug;
   }
 
   private partnerListingCastProfilesFromStore(

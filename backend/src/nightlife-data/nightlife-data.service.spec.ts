@@ -2333,6 +2333,45 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('hides public cast listings that have a pending partner edit draft', async () => {
+    prisma.cast.count.mockResolvedValue(1);
+    prisma.cast.findMany
+      .mockResolvedValueOnce([
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          createdAt: new Date('2026-07-09T00:00:00.000Z'),
+          slug: 'cast-moi-listing-abc12345-cast-1',
+          stageName: 'cast moi',
+          publicAlias: null,
+          isPublic: true,
+          status: 'ACTIVE',
+          tags: ['new'],
+          languages: ['VN'],
+          hourlyRateVnd: null,
+          media: [],
+          store: {
+            id: 'store-velvet',
+            name: 'Velvet Club',
+            slug: 'velvet-club',
+            category: 'CLUB',
+            city: 'Ho Chi Minh City',
+            district: 'Quan 1',
+            latitude: null,
+            longitude: null,
+            area: null,
+          },
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        { slug: 'partner-cast-edit-11111111-1111-4111-8111-111111111111' },
+      ] as never);
+
+    const result = await service.listPublicCasts({ city: 'all' });
+
+    expect(result.data).toEqual([]);
+    expect(result.meta.total).toBe(0);
+  });
+
   it('gets public cast detail by slug without exposing private fields', async () => {
     prisma.cast.findFirst.mockResolvedValue({
       id: 'cast-aya',
@@ -2653,6 +2692,17 @@ describe('NightlifeDataService', () => {
 
     await expect(
       service.getPublicCastBySlug('hidden-cast'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('returns 404 when a public cast detail has a pending partner edit draft', async () => {
+    const castId = '11111111-1111-4111-8111-111111111111';
+    prisma.cast.findFirst
+      .mockResolvedValueOnce({ id: castId })
+      .mockResolvedValueOnce({ slug: `partner-cast-edit-${castId}` });
+
+    await expect(
+      service.getPublicCastBySlug('cast-moi-listing-abc12345-cast-1'),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
