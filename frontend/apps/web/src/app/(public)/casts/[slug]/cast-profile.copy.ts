@@ -230,8 +230,99 @@ const castLabelTranslations: Record<string, Partial<Record<LanguageCode, string>
   "Tinh tế": { en: "Refined", ja: "洗練", ko: "세련됨", zh: "精致" },
 };
 
+const zodiacTranslations: Record<string, Record<LanguageCode, string>> = {
+  Aries: {
+    vi: "Bạch Dương",
+    en: "Aries",
+    ja: "牡羊座",
+    ko: "양자리",
+    zh: "白羊座",
+  },
+  Taurus: {
+    vi: "Kim Ngưu",
+    en: "Taurus",
+    ja: "牡牛座",
+    ko: "황소자리",
+    zh: "金牛座",
+  },
+  Gemini: {
+    vi: "Song Tử",
+    en: "Gemini",
+    ja: "双子座",
+    ko: "쌍둥이자리",
+    zh: "双子座",
+  },
+  Cancer: {
+    vi: "Cự Giải",
+    en: "Cancer",
+    ja: "蟹座",
+    ko: "게자리",
+    zh: "巨蟹座",
+  },
+  Leo: {
+    vi: "Sư Tử",
+    en: "Leo",
+    ja: "獅子座",
+    ko: "사자자리",
+    zh: "狮子座",
+  },
+  Virgo: {
+    vi: "Xử Nữ",
+    en: "Virgo",
+    ja: "乙女座",
+    ko: "처녀자리",
+    zh: "处女座",
+  },
+  Libra: {
+    vi: "Thiên Bình",
+    en: "Libra",
+    ja: "天秤座",
+    ko: "천칭자리",
+    zh: "天秤座",
+  },
+  Scorpio: {
+    vi: "Bọ Cạp",
+    en: "Scorpio",
+    ja: "蠍座",
+    ko: "전갈자리",
+    zh: "天蝎座",
+  },
+  Sagittarius: {
+    vi: "Nhân Mã",
+    en: "Sagittarius",
+    ja: "射手座",
+    ko: "사수자리",
+    zh: "射手座",
+  },
+  Capricorn: {
+    vi: "Ma Kết",
+    en: "Capricorn",
+    ja: "山羊座",
+    ko: "염소자리",
+    zh: "摩羯座",
+  },
+  Aquarius: {
+    vi: "Bảo Bình",
+    en: "Aquarius",
+    ja: "水瓶座",
+    ko: "물병자리",
+    zh: "水瓶座",
+  },
+  Pisces: {
+    vi: "Song Ngư",
+    en: "Pisces",
+    ja: "魚座",
+    ko: "물고기자리",
+    zh: "双鱼座",
+  },
+};
+
 export function getCastProfileCopy(language: LanguageCode) {
   return castProfileCopy[language] ?? castProfileCopy.vi;
+}
+
+export function localizeZodiacSign(value: string, language: LanguageCode) {
+  return zodiacTranslations[value]?.[language] ?? localizeCastText(value, language);
 }
 
 export function localizeCastText(value: string, language: LanguageCode) {

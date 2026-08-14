@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, ChevronRight, Sparkles, Star } from "lucide-react";
 import type { RelatedCast } from "@/lib/api/cast-detail";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
-import { getCastProfileCopy, localizeCastText } from "./cast-profile.copy";
+import { getCastProfileCopy, localizeCastText, localizeZodiacSign } from "./cast-profile.copy";
 import {
   formatMonth,
   formatOptional,
@@ -42,7 +42,7 @@ export function CastInfo({
 }: CastInfoProps) {
   const copy = getCastProfileCopy(language);
   const month = localizeCastText(formatMonth(profile.monthOfBirth), language);
-  const zodiac = localizeCastText(formatOptional(profile.zodiacSign), language);
+  const zodiac = localizeZodiacSign(formatOptional(profile.zodiacSign), language);
   const interests = profile.interests?.length
     ? profile.interests.map((interest) => localizeCastText(interest, language)).join(" · ")
     : profile.tags.slice(0, 3).map((tag) => localizeCastText(labelTag(tag), language)).join(" · ") ||
