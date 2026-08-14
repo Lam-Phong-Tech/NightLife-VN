@@ -93,3 +93,15 @@ export function referencedImageMediaIds(
     ),
   );
 }
+
+export function replaceStorageKeyInMediaUrl(
+  currentUrl: string | null | undefined,
+  storageKey: string,
+): string | null {
+  const value = currentUrl?.trim();
+  if (!value) return null;
+  const withoutSuffix = value.split(/[?#]/, 1)[0];
+  const slashIndex = withoutSuffix.lastIndexOf('/');
+  if (slashIndex < 0) return null;
+  return `${withoutSuffix.slice(0, slashIndex + 1)}${storageKey}`;
+}

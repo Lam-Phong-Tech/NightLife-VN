@@ -15,6 +15,7 @@ import {
   inspectImageFile,
   optimizedImageBaseKey,
   referencedImageMediaIds,
+  replaceStorageKeyInMediaUrl,
   storedVariantsAreValid,
   StoredMigrationVariant,
   withMigratedContentImageUrl,
@@ -348,7 +349,9 @@ async function main() {
           );
           createdPaths.push(...result.createdPaths);
           const accessSegment = record.access === 'PUBLIC' ? 'public' : 'files';
-          const newUrl = `${PUBLIC_BASE_URL}/storage/${accessSegment}/${result.primary.webpKey}`;
+          const newUrl =
+            replaceStorageKeyInMediaUrl(record.url, result.primary.webpKey) ??
+            `${PUBLIC_BASE_URL}/storage/${accessSegment}/${result.primary.webpKey}`;
           const nextMetadata = {
             ...metadata,
             variants: result.variants,

@@ -7,6 +7,7 @@ import {
   inspectImageFile,
   optimizedImageBaseKey,
   referencedImageMediaIds,
+  replaceStorageKeyInMediaUrl,
   storedVariantsAreValid,
   withMigratedContentImageUrl,
 } from './image-migration';
@@ -113,5 +114,22 @@ describe('image migration helpers', () => {
         { metadata: { imageUrl: '/legacy.png' } },
       ]),
     ).toEqual(['media-2', 'media-1']);
+  });
+
+  it('keeps the deployed storage URL prefix when assigning a new key', () => {
+    expect(
+      replaceStorageKeyInMediaUrl(
+        'https://vietyoru.com/api/backend/storage/public/legacy.webp?cache=1',
+        'media-opt-800.webp',
+      ),
+    ).toBe(
+      'https://vietyoru.com/api/backend/storage/public/media-opt-800.webp',
+    );
+    expect(
+      replaceStorageKeyInMediaUrl(
+        '/storage/public/legacy.webp',
+        'media-opt-800.webp',
+      ),
+    ).toBe('/storage/public/media-opt-800.webp');
   });
 });
