@@ -510,7 +510,7 @@ const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
-const scanToastDedupeMs = 5000;
+const scanToastDedupeMs = 8000;
 const billSubmitDeadlineMs = 10 * 24 * 60 * 60 * 1000;
 const signedQrTokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
@@ -1936,6 +1936,8 @@ export default function PartnerPage() {
         description,
         durationMs: 6500,
         placement: 'top-right',
+        dedupeKey: `partner-scan:${toastKey}`,
+        dedupeMs: scanToastDedupeMs,
       });
     },
     [feedback],
