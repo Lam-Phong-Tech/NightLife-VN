@@ -72,3 +72,24 @@ export function withMigratedContentImageUrl(
   if (current.imageMediaId !== mediaId) return current;
   return { ...current, imageUrl: newUrl };
 }
+
+export function referencedImageMediaIds(
+  contents: Array<{ metadata: unknown }>,
+): string[] {
+  return Array.from(
+    new Set(
+      contents.flatMap((content) => {
+        const metadata =
+          content.metadata &&
+          typeof content.metadata === 'object' &&
+          !Array.isArray(content.metadata)
+            ? (content.metadata as Record<string, unknown>)
+            : {};
+        const mediaId = metadata.imageMediaId;
+        return typeof mediaId === 'string' && mediaId.trim()
+          ? [mediaId.trim()]
+          : [];
+      }),
+    ),
+  );
+}

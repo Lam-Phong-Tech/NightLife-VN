@@ -14,6 +14,7 @@ import {
   imageContentHash,
   inspectImageFile,
   optimizedImageBaseKey,
+  referencedImageMediaIds,
   storedVariantsAreValid,
   StoredMigrationVariant,
   withMigratedContentImageUrl,
@@ -234,16 +235,28 @@ async function main() {
     uploadDir: UPLOAD_DIR,
     records: [],
   };
+  const contentMediaIds = FILTER_CONTENT_TYPE
+    ? referencedImageMediaIds(
+        await prisma.content.findMany({
+          where: { type: FILTER_CONTENT_TYPE },
+          select: { metadata: true },
+        }),
+      )
+    : undefined;
+  const idFilter: Prisma.MediaWhereInput['id'] = FILTER_MEDIA_ID
+    ? contentMediaIds && !contentMediaIds.includes(FILTER_MEDIA_ID)
+      ? { in: [] }
+      : FILTER_MEDIA_ID
+    : contentMediaIds
+      ? { in: contentMediaIds }
+      : undefined;
   const where: Prisma.MediaWhereInput = {
     deletedAt: null,
     status: { not: 'DELETED' },
     type: 'IMAGE',
     mimeType: { in: PROCESSABLE_MIME_TYPES },
     ...(FILTER_PURPOSE ? { purpose: FILTER_PURPOSE } : {}),
-    ...(FILTER_MEDIA_ID ? { id: FILTER_MEDIA_ID } : {}),
-    ...(FILTER_CONTENT_TYPE
-      ? { content: { is: { type: FILTER_CONTENT_TYPE } } }
-      : {}),
+    ...(idFilter ? { id: idFilter } : {}),
   };
 
   console.log(`Mode: ${APPLY ? 'APPLY' : 'DRY RUN'}`);

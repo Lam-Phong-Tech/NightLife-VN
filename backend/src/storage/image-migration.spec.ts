@@ -6,6 +6,7 @@ import {
   imageContentHash,
   inspectImageFile,
   optimizedImageBaseKey,
+  referencedImageMediaIds,
   storedVariantsAreValid,
   withMigratedContentImageUrl,
 } from './image-migration';
@@ -101,5 +102,16 @@ describe('image migration helpers', () => {
         '/new.webp',
       ),
     ).toEqual({ imageMediaId: 'other' });
+  });
+
+  it('collects unique imageMediaId values from content metadata', () => {
+    expect(
+      referencedImageMediaIds([
+        { metadata: { imageMediaId: 'media-2' } },
+        { metadata: { imageMediaId: ' media-1 ' } },
+        { metadata: { imageMediaId: 'media-2' } },
+        { metadata: { imageUrl: '/legacy.png' } },
+      ]),
+    ).toEqual(['media-2', 'media-1']);
   });
 });
