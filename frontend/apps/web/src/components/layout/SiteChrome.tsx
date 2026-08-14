@@ -2233,6 +2233,7 @@ export function SiteChrome({
               {!authUser ? (
                 <Link
                   href={memberLoginHref}
+                  prefetch={false}
                   className="nl-site-action-control nl-site-login-link"
                   aria-label={translateText("Đăng nhập", activeLanguage)}
                   style={{
