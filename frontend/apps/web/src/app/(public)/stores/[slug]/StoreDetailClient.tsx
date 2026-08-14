@@ -92,6 +92,7 @@ import {
   scrollBookingValidationFieldIntoView,
   type BookingFieldScrollSelectors,
 } from "@/lib/booking-field-scroll";
+import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
@@ -2383,7 +2384,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }
-      userFeedback.success({
+      writeBookingConfirmationFlashToast({
+        tone: "success",
         title: translateText(
           actionLabel === "đặt cast" ? "Đặt cast thành công" : "Đặt bàn thành công",
           activeLanguage,

@@ -8,7 +8,9 @@ import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { bookingApi, getLastBooking, rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { authSessionChangeEvent, getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
+  buildBookingConfirmationFlashToast,
   buildBookingConfirmationPageFeedback,
+  readBookingConfirmationFlashToast,
   writeBookingConfirmationFlashToast,
   type BookingConfirmationFlashKind,
   type BookingConfirmationPageFeedback,
@@ -587,6 +589,22 @@ export default function Page() {
     },
     [],
   );
+
+  useEffect(() => {
+    const flashToast = readBookingConfirmationFlashToast();
+    const localizedToast = flashToast
+      ? buildBookingConfirmationFlashToast(flashToast, activeLanguage)
+      : null;
+
+    if (!localizedToast) return;
+
+    feedback.showToast({
+      tone: localizedToast.tone,
+      title: localizedToast.title,
+      description: localizedToast.description,
+      durationMs: localizedToast.durationMs,
+    });
+  }, [activeLanguage, feedback]);
 
   const handleBookingResolution = useCallback(
     (previousBooking: BookingRecord | null, nextBooking: BookingRecord) => {

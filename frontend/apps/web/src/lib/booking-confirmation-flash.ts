@@ -355,7 +355,7 @@ export const buildBookingConfirmationFlashToast = (
   };
 };
 
-export const writeBookingConfirmationFlashToast = (toast: BookingConfirmationFlashToast) => {
+export const writeBookingConfirmationFlashToast = (toast: BookingConfirmationFlashPayload) => {
   if (typeof window === "undefined") return;
 
   try {

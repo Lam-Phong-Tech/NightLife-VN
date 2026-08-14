@@ -47,6 +47,7 @@ import {
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
 import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
+import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
@@ -712,7 +713,8 @@ export default function Page() {
       if (isMemberMode) {
         requestMemberNotificationsRefresh();
       }
-      userFeedback.success({
+      writeBookingConfirmationFlashToast({
+        tone: "success",
         title: translateText(
           actionLabel === "đặt cast" ? "Đặt cast thành công" : "Đặt bàn thành công",
           activeLanguage,
