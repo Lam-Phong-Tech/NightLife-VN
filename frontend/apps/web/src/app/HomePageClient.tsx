@@ -417,6 +417,7 @@ type HomeStoreCard = {
   cityCode: string;
   img?: string;
   image?: string;
+  responsiveImage?: PublicResponsiveImage | null;
   href: string;
   badgeText: string;
   priceLabel: string;
@@ -428,6 +429,7 @@ type HomeCouponItem = {
   value: string;
   place: string;
   img?: string;
+  responsiveImage?: PublicResponsiveImage | null;
   href: string;
   homePosition?: number;
 };
@@ -656,6 +658,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
     cityCode: item.cityCode ?? "",
     img: image ? `url(${JSON.stringify(image)}) center/cover` : undefined,
     image: image ?? undefined,
+    responsiveImage: item.responsiveImage,
     href: `/stores/${item.slug}`,
     badgeText: activeCouponName ? `Ưu đãi ${activeCouponName}` : index < 2 ? "Gợi ý hot" : categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
@@ -787,7 +790,7 @@ function mapCampaignToHomeItem(
   rates: CurrencyRateMap,
 ): HomeCouponItem {
   void index;
-  const storeImageUrl = campaign.targetStore?.media?.[0]?.url;
+  const storeImageUrl = campaign.targetStore?.thumbnailUrl ?? campaign.targetStore?.media?.[0]?.url;
   const value =
     campaign.discountType === "PERCENT"
       ? `-${campaign.discountValue}%`
@@ -806,6 +809,7 @@ function mapCampaignToHomeItem(
       .filter(Boolean)
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
+    responsiveImage: campaign.targetStore?.responsiveImage,
     href: `/stores/${store?.slug ?? ""}?couponId=${campaign.id}`,
     homePosition: campaign.homePosition ?? undefined,
   };
@@ -2293,6 +2297,10 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
     >
       <PlaceholderMedia
         src={item.img}
+        responsiveImage={item.responsiveImage}
+        sizes={compact ? "82px" : "120px"}
+        width={compact ? 82 : 120}
+        height={compact ? 62 : 82}
         alt={item.title ?? "Coupon"}
         label="Ảnh ưu đãi"
         style={{ height: compact ? "62px" : "82px", borderRadius: homeMediaRadius }}
@@ -2358,6 +2366,10 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
       />
       <PlaceholderMedia
         src={item.img}
+        responsiveImage={item.responsiveImage}
+        sizes={`${imageSize}px`}
+        width={imageSize}
+        height={imageSize}
         alt={item.title ?? "Coupon"}
         label="Ảnh ưu đãi"
         priority={priority}

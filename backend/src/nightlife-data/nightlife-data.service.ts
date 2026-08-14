@@ -18009,6 +18009,16 @@ export class NightlifeDataService {
       castId?: string | null;
     }>,
   ) {
+    return this.resolveStoreCoverMedia(media)?.url ?? null;
+  }
+
+  private resolveStoreCoverMedia<
+    T extends {
+      url: string;
+      purpose?: string | null;
+      castId?: string | null;
+    },
+  >(media: T[]): T | null {
     const coverPurposes = new Set([
       'store-hero',
       'hero',
@@ -18021,7 +18031,7 @@ export class NightlifeDataService {
       coverPurposes.has(String(item.purpose ?? '').trim()),
     );
 
-    return cover?.url ?? storeMedia[0]?.url ?? null;
+    return cover ?? storeMedia[0] ?? null;
   }
 
   private publicMediaUrl(url: string) {
@@ -25502,8 +25512,10 @@ export class NightlifeDataService {
             orderBy: { createdAt: 'desc' },
             take: 6,
             select: {
+              id: true,
               url: true,
               purpose: true,
+              metadata: true,
             },
           },
           coupons: {
@@ -25578,6 +25590,7 @@ export class NightlifeDataService {
         return pinnedStores.slice(0, limit).map((store, index) => {
           const viewCount = viewCountByStore.get(store.id) ?? 0;
           const bookingCount = bookingCountByStore.get(store.id) ?? 0;
+          const coverMedia = this.resolveStoreCoverMedia(store.media);
 
           return {
             id: store.id,
@@ -25592,7 +25605,8 @@ export class NightlifeDataService {
             district: store.district,
             ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
             area: this.mapPublicArea(store.area),
-            thumbnailUrl: this.resolveStoreCoverImage(store.media),
+            thumbnailUrl: coverMedia?.url ?? null,
+            responsiveImage: toPublicResponsiveImage(coverMedia),
             href: `/stores/${store.slug}`,
             score: 1000 - index,
             reason: 'Gợi ý nổi bật',
@@ -25677,8 +25691,10 @@ export class NightlifeDataService {
           orderBy: { createdAt: 'desc' },
           take: 6,
           select: {
+            id: true,
             url: true,
             purpose: true,
+            metadata: true,
           },
         },
         coupons: {
@@ -25730,6 +25746,7 @@ export class NightlifeDataService {
       .map((store, index) => {
         const viewCount = viewCountByStore.get(store.id) ?? 0;
         const bookingCount = bookingCountByStore.get(store.id) ?? 0;
+        const coverMedia = this.resolveStoreCoverMedia(store.media);
         const reasons: string[] = [];
         let score = 100 - index;
 
@@ -25769,7 +25786,8 @@ export class NightlifeDataService {
           district: store.district,
           ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
           area: this.mapPublicArea(store.area),
-          thumbnailUrl: this.resolveStoreCoverImage(store.media),
+          thumbnailUrl: coverMedia?.url ?? null,
+          responsiveImage: toPublicResponsiveImage(coverMedia),
           href: `/stores/${store.slug}`,
           score,
           reason:

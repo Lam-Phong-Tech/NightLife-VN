@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { PublicResponsiveImage } from './content';
 
 export interface CampaignItem {
   id: string;
@@ -26,6 +27,8 @@ export interface CampaignItem {
     district?: string | null;
     ward?: string | null;
     media?: Array<{ url: string }>;
+    thumbnailUrl?: string | null;
+    responsiveImage?: PublicResponsiveImage | null;
   } | null;
   startsAt?: string | null;
   endsAt?: string | null;
