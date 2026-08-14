@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { ResponsiveMedia } from "@/components/ui/ResponsiveMedia";
 
 describe("ResponsiveMedia", () => {
@@ -55,5 +55,39 @@ describe("ResponsiveMedia", () => {
       "/legacy.png",
     );
     expect(container.querySelector("source")).toBeNull();
+  });
+
+  it("retries the legacy source before reporting a broken image", () => {
+    const onError = vi.fn();
+    const { container } = render(
+      <ResponsiveMedia
+        src="/legacy.png"
+        alt="Fallback"
+        onError={onError}
+        responsiveImage={{
+          src: "/optimized.webp",
+          width: 800,
+          height: 450,
+          variants: [
+            {
+              width: 400,
+              webpUrl: "/missing.webp",
+              avifUrl: "/missing.avif",
+            },
+          ],
+        }}
+      />,
+    );
+
+    const image = screen.getByRole("img", { name: "Fallback" });
+    fireEvent.error(image);
+
+    expect(container.querySelector("source")).toBeNull();
+    expect(image).toHaveAttribute("src", "/legacy.png");
+    expect(image).not.toHaveAttribute("srcset");
+    expect(onError).not.toHaveBeenCalled();
+
+    fireEvent.error(image);
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });
