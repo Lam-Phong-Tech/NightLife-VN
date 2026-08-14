@@ -6994,8 +6994,8 @@ export default function PartnerPage() {
             style={{
               marginTop: '14px',
               borderRadius: '14px',
-              border: `1px solid ${colors.borderGold22}`,
-              background: 'rgba(224,105,122,.12)',
+              border: '1px solid rgba(224,105,122,.55)',
+              background: 'rgba(224,105,122,.18)',
               color: colors.danger,
               display: 'flex',
               gap: '10px',
@@ -7011,9 +7011,11 @@ export default function PartnerPage() {
           </div>
         )}
 
-        <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>
-          {scanMessage}
-        </div>
+        {staffCanUseQrTools ? (
+          <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>
+            {scanMessage}
+          </div>
+        ) : null}
       </PanelCard>
       ) : null}
 
