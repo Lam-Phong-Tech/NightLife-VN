@@ -1291,7 +1291,7 @@ export class NightlifeDataService {
       select: this.contentSelect(),
     });
 
-    const result = contents.map((content) => this.mapContent(content));
+    const result = await this.mapPublicContents(contents);
 
     if (type === 'BANNER') {
       result.sort(comparePublicBanners);
@@ -1320,7 +1320,7 @@ export class NightlifeDataService {
       throw new NotFoundException('Content not found');
     }
 
-    return this.mapContent(content);
+    return (await this.mapPublicContents([content]))[0];
   }
 
   async listAdminContents(query: AdminContentQueryDto = {}) {
@@ -21196,13 +21196,48 @@ export class NightlifeDataService {
     };
   }
 
-  private mapContent(content: ContentRecord) {
+  private async mapPublicContents(contents: ContentRecord[]) {
+    const imageMediaIds = Array.from(
+      new Set(
+        contents.flatMap((content) => {
+          const metadata = this.asRecord(content.metadata) ?? {};
+          const mediaId = metadata.imageMediaId;
+          return typeof mediaId === 'string' && mediaId.trim()
+            ? [mediaId.trim()]
+            : [];
+        }),
+      ),
+    );
+    const imageMedia = imageMediaIds.length
+      ? await this.prisma.media.findMany({
+          where: {
+            id: { in: imageMediaIds },
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          select: { id: true, url: true, metadata: true },
+        })
+      : [];
+    const imageMediaById = new Map(
+      imageMedia.map((media) => [media.id, media] as const),
+    );
+
+    return contents.map((content) => this.mapContent(content, imageMediaById));
+  }
+
+  private mapContent(
+    content: ContentRecord,
+    imageMediaById?: ReadonlyMap<string, ResponsiveMediaRecord>,
+  ) {
     const metadata = this.asRecord(content.metadata) ?? {};
     const media = content.media ?? [];
     const imageMediaId =
       typeof metadata.imageMediaId === 'string' ? metadata.imageMediaId : null;
     const imageMedia = imageMediaId
-      ? media.find((item) => item.id === imageMediaId)
+      ? (imageMediaById?.get(imageMediaId) ??
+        media.find((item) => item.id === imageMediaId))
       : media[0];
 
     return {
