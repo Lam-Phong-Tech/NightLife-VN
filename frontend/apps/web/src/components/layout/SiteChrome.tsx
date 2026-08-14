@@ -2348,6 +2348,7 @@ export function SiteChrome({
               <Link
                 key={item.href}
                 href={resolveHref(item.href, activeLanguage)}
+                prefetch={!loginPromptIntent}
                 onClick={(event) => {
                   if (authUser || !loginPromptIntent) return;
                   event.preventDefault();
