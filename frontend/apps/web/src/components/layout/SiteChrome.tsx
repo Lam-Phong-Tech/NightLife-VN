@@ -2298,7 +2298,10 @@ export function SiteChrome({
         </header>
 
 
-        <div key={`route-content-${pathname}`} className="nl-page-content">
+        <div
+          key={`route-content-${pathname}`}
+          className={`nl-page-content${isHomepageRoute ? " nl-page-content-home" : ""}`}
+        >
           {children}
         </div>
 

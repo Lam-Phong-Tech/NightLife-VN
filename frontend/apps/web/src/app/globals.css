@@ -779,6 +779,15 @@ body > .nl-language-picker-overlay {
   will-change: opacity, transform, filter;
 }
 
+.nl-page-content-home {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: none;
+  transition: none;
+  will-change: auto;
+}
+
 .nl-page-content > main:last-child {
   min-height: auto !important;
 }
