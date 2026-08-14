@@ -31,9 +31,15 @@ describe("ResponsiveMedia", () => {
     );
 
     const image = screen.getByRole("img", { name: "Hero" });
+    const picture = container.querySelector("picture");
     expect(image).toHaveAttribute("src", "/image-800.webp");
     expect(image).toHaveAttribute("loading", "eager");
     expect(image).toHaveAttribute("fetchpriority", "high");
+    expect(picture).toHaveStyle({
+      display: "block",
+      width: "100%",
+      height: "100%",
+    });
     expect(container.querySelector('source[type="image/avif"]')).toHaveAttribute(
       "srcset",
       expect.stringContaining("width=400&format=avif 400w"),

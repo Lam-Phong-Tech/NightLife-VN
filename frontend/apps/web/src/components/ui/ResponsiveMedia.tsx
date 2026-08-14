@@ -46,7 +46,7 @@ export function ResponsiveMedia({
   const webpSrcSet = createSrcSet(responsiveImage, "webp");
 
   return (
-    <picture>
+    <picture style={{ display: "block", width: "100%", height: "100%" }}>
       {avifSrcSet ? <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} /> : null}
       {webpSrcSet ? <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} /> : null}
       <img
