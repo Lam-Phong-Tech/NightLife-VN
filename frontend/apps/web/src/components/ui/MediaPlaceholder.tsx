@@ -90,11 +90,12 @@ export function PlaceholderMedia({
           opacity: isLight ? 0.8 : 1,
         }}
       />
-      {label ? (
+      {!showImage && label ? (
         <div
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 1,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -107,11 +108,12 @@ export function PlaceholderMedia({
           <ImageOff size={28} strokeWidth={1.8} />
           <span style={{ fontSize: "12px", fontWeight: 800, lineHeight: 1.3 }}>{label}</span>
         </div>
-      ) : (
+      ) : !showImage ? (
         <div
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
