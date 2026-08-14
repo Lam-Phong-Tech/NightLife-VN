@@ -2,6 +2,8 @@
 
 import { ImageOff } from "lucide-react";
 import React, { type CSSProperties, useMemo, useState } from "react";
+import type { PublicResponsiveImage } from "@/lib/api/content";
+import { ResponsiveMedia } from "./ResponsiveMedia";
 
 type PlaceholderMediaProps = {
   src?: string | null;
@@ -18,6 +20,10 @@ type PlaceholderMediaProps = {
    * Mặc định false → loading="lazy" (tiết kiệm bandwidth cho ảnh ngoài viewport).
    */
   priority?: boolean;
+  responsiveImage?: PublicResponsiveImage | null;
+  sizes?: string;
+  width?: number;
+  height?: number;
 };
 
 export function getImageUrlFromCss(value?: string | null) {
@@ -42,6 +48,10 @@ export function PlaceholderMedia({
   imageStyle,
   children,
   priority = false,
+  responsiveImage,
+  sizes,
+  width,
+  height,
 }: PlaceholderMediaProps) {
   const imageSrc = useMemo(() => getImageUrlFromCss(src), [src]);
   const [prevImageSrc, setPrevImageSrc] = useState(imageSrc);
@@ -110,19 +120,19 @@ export function PlaceholderMedia({
         </div>
       )}
       {showImage ? (
-        <img
+        <ResponsiveMedia
           src={imageSrc}
+          responsiveImage={responsiveImage}
           alt={alt}
           onError={() => setFailed(true)}
           // priority=true → eager + high-priority fetch hint cho ảnh đầu tiên visible
           // priority=false → lazy cho ảnh ngoài/dưới viewport (tiết kiệm bandwidth)
-          loading={priority ? "eager" : "lazy"}
-          // @ts-expect-error: fetchpriority là attribute HTML hợp lệ, TS chưa có type đầy đủ
-          fetchpriority={priority ? "high" : "auto"}
+          priority={priority}
           // width+height giúp browser biết aspect ratio trước khi ảnh load
           // → tránh layout shift (CLS), không cần giá trị pixel chính xác vì CSS override
-          width="100%"
-          height="100%"
+          sizes={sizes}
+          width={width}
+          height={height}
           style={{
             position: "absolute",
             inset: 0,

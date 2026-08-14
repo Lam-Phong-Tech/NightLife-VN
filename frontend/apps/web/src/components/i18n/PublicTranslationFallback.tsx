@@ -12,7 +12,10 @@ import {
   localizeHref,
 } from "@/lib/i18n/locales";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
-import { shouldSkipLanguageTranslation } from "./ClientLanguageTranslator";
+import {
+  isPublicHomepagePath,
+  shouldSkipLanguageTranslation,
+} from "./ClientLanguageTranslator";
 
 const googleTranslateElementId = "google_translate_element";
 const googleTranslateScriptId = "vietyoru-google-translate-sdk";
@@ -87,9 +90,7 @@ export function PublicTranslationFallback({
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
-
-    syncGoogleTranslateCookie(activeLanguage);
-    rewriteLocalizedLinks(activeLanguage);
+    if (isPublicHomepagePath(pathname)) return undefined;
 
     const resetBodyStyles = () => {
       if (document.body.style.top && document.body.style.top !== "0px") {
@@ -100,31 +101,40 @@ export function PublicTranslationFallback({
       }
     };
 
-    resetBodyStyles();
-    const linkObserver = new MutationObserver(() => {
+    let linkObserver: MutationObserver | null = null;
+    let idleHandle: number | null = null;
+    let fallbackTimer: number | null = null;
+    let started = false;
+    const googleWindow = window as GoogleTranslateWindow;
+    const start = () => {
+      if (started) return;
+      started = true;
+      syncGoogleTranslateCookie(activeLanguage);
       rewriteLocalizedLinks(activeLanguage);
       resetBodyStyles();
-    });
-    linkObserver.observe(document.body, { childList: true, subtree: true });
 
-    if (activeLanguage === "vi") {
-      delete document.documentElement.dataset.googleTranslateFallback;
-      return () => linkObserver.disconnect();
-    }
-
-    const googleWindow = window as GoogleTranslateWindow;
-    googleWindow[googleTranslateCallbackName] = () => {
-      initializeGoogleTranslate(activeLanguage);
-      resetBodyStyles();
-    };
-
-    const loadTimer = window.setTimeout(() => {
-      if (googleWindow.google?.translate?.TranslateElement) {
-        initializeGoogleTranslate(activeLanguage);
+      const translationRoot =
+        document.querySelector<HTMLElement>("[data-vietyoru-translator='true']") ??
+        document.body;
+      linkObserver = new MutationObserver(() => {
+        rewriteLocalizedLinks(activeLanguage);
         resetBodyStyles();
+      });
+      linkObserver.observe(translationRoot, { childList: true, subtree: true });
+
+      if (activeLanguage === "vi") {
+        delete document.documentElement.dataset.googleTranslateFallback;
         return;
       }
 
+      googleWindow[googleTranslateCallbackName] = () => {
+        initializeGoogleTranslate(activeLanguage);
+        resetBodyStyles();
+      };
+      if (googleWindow.google?.translate?.TranslateElement) {
+        initializeGoogleTranslate(activeLanguage);
+        return;
+      }
       if (document.getElementById(googleTranslateScriptId)) return;
 
       const script = document.createElement("script");
@@ -135,11 +145,28 @@ export function PublicTranslationFallback({
         document.documentElement.dataset.googleTranslateFallback = "unavailable";
       };
       document.head.appendChild(script);
-    }, 240);
+    };
+    const scheduleStart = () => {
+      const win = window as Window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+      };
+      if (typeof win.requestIdleCallback === "function") {
+        idleHandle = win.requestIdleCallback(start, { timeout: 2500 });
+      } else {
+        fallbackTimer = window.setTimeout(start, 1200);
+      }
+    };
+    if (document.readyState === "complete") scheduleStart();
+    else window.addEventListener("load", scheduleStart, { once: true });
 
     return () => {
-      window.clearTimeout(loadTimer);
-      linkObserver.disconnect();
+      window.removeEventListener("load", scheduleStart);
+      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+      if (idleHandle !== null) {
+        const win = window as Window & { cancelIdleCallback?: (handle: number) => void };
+        win.cancelIdleCallback?.(idleHandle);
+      }
+      linkObserver?.disconnect();
     };
   }, [activeLanguage, hostKind, pathname]);
 
@@ -147,7 +174,8 @@ export function PublicTranslationFallback({
     hostKind === "admin" ||
     hostKind === "partner" ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/partner")
+    pathname.startsWith("/partner") ||
+    isPublicHomepagePath(pathname)
   ) {
     return null;
   }

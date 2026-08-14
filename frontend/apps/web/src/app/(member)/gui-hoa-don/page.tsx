@@ -1,5 +1,7 @@
 "use client";
 
+import "../../bill-upload-mobile-fix.css";
+
 import { ConfigProvider, Select } from "antd";
 import enUS from "antd/locale/en_US";
 import jaJP from "antd/locale/ja_JP";

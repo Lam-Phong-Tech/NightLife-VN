@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "./bill-upload-mobile-fix.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { PublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import { SiteChrome } from "@/components/layout/SiteChrome";
@@ -25,7 +23,7 @@ import {
 // Giảm file WOFF2 Vietnamese từ ~86 KiB (7 weights) xuống ~49 KiB (~43% nhỏ hơn).
 const inter = Inter({
   subsets: ["vietnamese"],
-  weight: ["400", "500", "600", "700"],
+  weight: "variable",
   display: "swap",
   variable: "--font-inter",
   preload: true,
@@ -72,6 +70,7 @@ export const metadata: Metadata = {
   },
 };
 
+/* Bill-upload CSS is route-scoped in gui-hoa-don and partner.
 const criticalBillUploadStyles = `
   .nl-bill-page,
   .nl-bill-page .nl-bill-shell,
@@ -225,6 +224,8 @@ const criticalBillUploadStyles = `
     }
   }
 `;
+void criticalBillUploadStyles;
+*/
 
 export default async function RootLayout({
   children,
@@ -262,12 +263,6 @@ export default async function RootLayout({
             `,
           }}
         />
-        <style
-          id="critical-bill-upload-layout-fix"
-          dangerouslySetInnerHTML={{ __html: criticalBillUploadStyles }}
-        />
-        <Script src="/shared.js" strategy="beforeInteractive" />
-        <Script src="/support.js" strategy="beforeInteractive" />
         <script
           id="organization-jsonld"
           type="application/ld+json"
@@ -282,15 +277,6 @@ export default async function RootLayout({
             __html: JSON.stringify(jsonLdDocument(websiteJsonLd())),
           }}
         />
-        {/*
-         * Preconnect — thiết lập TCP/TLS sớm cho các origin quan trọng.
-         * translate.google.com: widget dịch trang (Google Translate).
-         * translateusercontent.com: CDN serving translated content.
-         * Lighthouse ước tính tiết kiệm ~300ms cho LCP.
-         */}
-        <link rel="preconnect" href="https://translate.google.com" />
-        <link rel="preconnect" href="https://translate.googleapis.com" />
-        <link rel="dns-prefetch" href="https://translateusercontent.com" />
       </head>
       <body suppressHydrationWarning>
         <GoogleAnalytics />

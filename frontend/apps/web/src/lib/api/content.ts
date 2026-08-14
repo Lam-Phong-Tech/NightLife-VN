@@ -3,6 +3,17 @@ import { apiClient } from "./client";
 export type CmsContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
 export type CmsContentType = "BLOG" | "POLICY" | "BANNER";
 
+export type PublicResponsiveImage = {
+  src: string;
+  width: number;
+  height: number;
+  variants: Array<{
+    width: number;
+    webpUrl: string;
+    avifUrl?: string;
+  }>;
+};
+
 export type CmsContentItem = {
   id: string;
   title: string;
@@ -13,6 +24,7 @@ export type CmsContentItem = {
   body?: string | null;
   metadata?: Record<string, unknown> | null;
   imageUrl?: string | null;
+  responsiveImage?: PublicResponsiveImage | null;
   noindex?: boolean;
   publishedAt?: string | null;
   createdAt: string;

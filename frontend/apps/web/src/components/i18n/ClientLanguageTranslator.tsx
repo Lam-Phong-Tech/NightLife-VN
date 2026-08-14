@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import React, { useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect } from "react";
 import {
   getVietnameseSource,
   languageChangedEvent,
@@ -132,7 +132,7 @@ function normalizeForComparison(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function applyTranslations(language: LanguageCode) {
+function applyTranslations(language: LanguageCode, root: HTMLElement = document.body) {
   document.documentElement.lang = languageHtmlLang[language];
   document.documentElement.dataset.vietyoruLanguage = language;
 
@@ -149,7 +149,7 @@ function applyTranslations(language: LanguageCode) {
 
   translateDocumentTitle(language);
 
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
   let currentNode = walker.nextNode();
 
@@ -159,7 +159,7 @@ function applyTranslations(language: LanguageCode) {
   }
 
   textNodes.forEach((node) => translateTextNode(node, language));
-  document
+  root
     .querySelectorAll<HTMLElement>(
       "[placeholder], [aria-label], [title], img[alt], input[readonly]",
     )
@@ -191,6 +191,10 @@ export function shouldSkipLanguageTranslation(
     pathname === "/xac-nhan";
 
   return isPortalHost || isAuthOrPortalPath;
+}
+
+export function isPublicHomepagePath(pathname: string) {
+  return /^\/(?:vi|en|ja|ko|zh)?\/?$/i.test(pathname);
 }
 
 export function ClientLanguageTranslator({
@@ -232,17 +236,24 @@ export function ClientLanguageTranslator({
     };
   }, [pathname, hostKind]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
+    if (isPublicHomepagePath(pathname)) return undefined;
 
     let language = readStoredLanguage();
     let frame = 0;
     let isScheduled = false;
     let backupTimer: number | null = null;
+    let idleHandle: number | null = null;
+    let started = false;
+    const translationRoot =
+      document.querySelector<HTMLElement>("[data-vietyoru-translator='true']") ??
+      document.body;
 
     const scheduleApply = () => {
+      if (!started) return;
       if (isScheduled) return;
       isScheduled = true;
 
@@ -250,14 +261,14 @@ export function ClientLanguageTranslator({
         window.cancelAnimationFrame(frame);
       }
       frame = window.requestAnimationFrame(() => {
-        applyTranslations(language);
+        applyTranslations(language, translationRoot);
         isScheduled = false;
       });
 
       if (backupTimer === null) {
         backupTimer = window.setTimeout(() => {
           backupTimer = null;
-          applyTranslations(language);
+          applyTranslations(language, translationRoot);
         }, 200);
       }
     };
@@ -265,26 +276,46 @@ export function ClientLanguageTranslator({
     const onLanguageChange = (event: Event) => {
       const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }>).detail?.language;
       language = nextLanguage ?? readStoredLanguage();
-      applyTranslations(language);
+      if (started) applyTranslations(language, translationRoot);
       scheduleApply();
     };
 
-    applyTranslations(language);
-    scheduleApply();
     window.addEventListener(languageChangedEvent, onLanguageChange);
 
     const observer = new MutationObserver(scheduleApply);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: [...translatedAttributes],
-    });
+    const start = () => {
+      if (started) return;
+      started = true;
+      applyTranslations(language, translationRoot);
+      observer.observe(translationRoot, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: [...translatedAttributes],
+      });
+    };
+    const scheduleStart = () => {
+      const win = window as Window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+      };
+      if (typeof win.requestIdleCallback === "function") {
+        idleHandle = win.requestIdleCallback(start, { timeout: 2000 });
+      } else {
+        backupTimer = window.setTimeout(start, 1000);
+      }
+    };
+    if (document.readyState === "complete") scheduleStart();
+    else window.addEventListener("load", scheduleStart, { once: true });
 
     return () => {
+      window.removeEventListener("load", scheduleStart);
       if (backupTimer !== null) {
         window.clearTimeout(backupTimer);
+      }
+      if (idleHandle !== null) {
+        const win = window as Window & { cancelIdleCallback?: (handle: number) => void };
+        win.cancelIdleCallback?.(idleHandle);
       }
       if (frame) {
         window.cancelAnimationFrame(frame);

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+import { ResponsiveMedia } from "@/components/ui/ResponsiveMedia";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 import { useSystemFeedback } from "@/components/ui/SystemFeedback";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
@@ -43,6 +44,7 @@ import {
   contentApi,
   getCmsContentImageUrl,
   type CmsContentItem,
+  type PublicResponsiveImage,
   type PublicHomeRecommendation,
   type PublicHotVideo,
 } from "@/lib/api/content";
@@ -358,6 +360,7 @@ type RankedItem = {
   area?: string;
   href?: string;
   sponsored?: boolean;
+  responsiveImage?: PublicResponsiveImage | null;
 };
 
 type HomeBanner = {
@@ -369,6 +372,7 @@ type HomeBanner = {
   statusLabel?: string | null;
   subtitle?: string | null;
   hasImage?: boolean;
+  responsiveImage?: PublicResponsiveImage | null;
 };
 
 type HomeBannerMetadata = {
@@ -666,6 +670,7 @@ function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
     area: storeAreaText(item.area, item.cityCode, item.city),
     href: item.href,
     sponsored: item.sponsored,
+    responsiveImage: item.responsiveImage,
   };
 }
 
@@ -1210,57 +1215,36 @@ function isHomeHotVideosEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS !== "false";
 }
 
-// Giảm từ 800ms xuống 200ms — các section rankings/coupons/services load sớm hơn ~600ms
-// requestIdleCallback (bên dưới) sẽ chạy người khóa CPU xong, tối đa chờ 200ms
-const homeSecondaryLoadDelayMs = process.env.NODE_ENV === "test" ? 0 : 200;
-
-function useHomeSecondaryLoadReady() {
+function useHomeSectionReady() {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [ready, setReady] = useState(() => process.env.NODE_ENV === "test");
 
   useEffect(() => {
     if (ready) return;
-
-    const win = window as Window & {
-      requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-
-    if (typeof win.requestIdleCallback === "function") {
-      const idleHandle = win.requestIdleCallback(() => setReady(true), {
-        timeout: homeSecondaryLoadDelayMs,
-      });
-
-      return () => {
-        win.cancelIdleCallback?.(idleHandle);
-      };
+    const node = sectionRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      const timer = window.setTimeout(() => setReady(true), 1000);
+      return () => window.clearTimeout(timer);
     }
 
-    const timer = window.setTimeout(() => setReady(true), homeSecondaryLoadDelayMs);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setReady(true);
+        observer.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
   }, [ready]);
 
-  return ready;
-}
-
-function getBannerBackgroundImage(value?: string | null) {
-  return value?.replace(/\s+center\/cover\s*$/i, "") || "var(--vy-hero-grad)";
+  return [sectionRef, ready] as const;
 }
 
 function getBannerSlideTransform(index: number, activeIndex: number) {
   if (index === activeIndex) return "translate3d(0,0,0) scale(1.03)";
   return `translate3d(${index < activeIndex ? "-" : ""}34%,0,0) scale(1.05)`;
-}
-
-function shouldLoadBannerSlideImage(index: number, activeIndex: number, bannerCount: number) {
-  // Chỉ load slide đang active và 1 slide kế tiếp để tránh tải ảnh đồng thời
-  // khi bannerCount nhỏ (trường hợp phổ biến 2-3 banners)
-  const nextIndex = (activeIndex + 1) % bannerCount;
-  const previousIndex = (activeIndex - 1 + bannerCount) % bannerCount;
-
-  return index === activeIndex || index === nextIndex || index === previousIndex;
 }
 
 const bannerPresetDelimiters = [" · ", " Â· ", " — ", " â€” ", " - "];
@@ -1307,17 +1291,45 @@ function translateBannerPresetText(value: string | null | undefined, language: L
 function BannerMediaSlides({
   activeBanner,
   banners,
+  priority = false,
+  sizes = "100vw",
 }: {
   activeBanner: number;
   banners: HomeBanner[];
+  priority?: boolean;
+  sizes?: string;
 }) {
-  const renderOnlyActiveBanner = process.env.NODE_ENV === "test";
+  const [loadedIndexes, setLoadedIndexes] = useState<Set<number>>(
+    () => new Set([0]),
+  );
+
+  const queueNextSlide = (index: number) => {
+    if (banners.length < 2) return;
+    const nextIndex = (index + 1) % banners.length;
+    const loadNext = () => {
+      setLoadedIndexes((current) => {
+        if (current.has(nextIndex)) return current;
+        const next = new Set(current);
+        next.add(nextIndex);
+        return next;
+      });
+    };
+    const win = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+    };
+    if (typeof win.requestIdleCallback === "function") {
+      win.requestIdleCallback(loadNext, { timeout: 1200 });
+    } else {
+      window.setTimeout(loadNext, 250);
+    }
+  };
 
   return (
     <React.Fragment>
       {banners.map((banner, index) => {
-        if (renderOnlyActiveBanner && index !== activeBanner) return null;
-        const shouldLoadImage = shouldLoadBannerSlideImage(index, activeBanner, banners.length);
+        if (!loadedIndexes.has(index) && index !== activeBanner) return null;
+        const imageSrc = banner.img?.trim();
+        if (!imageSrc) return null;
 
         return (
           <span
@@ -1328,16 +1340,27 @@ function BannerMediaSlides({
               inset: 0,
               borderRadius: "inherit",
               backgroundColor: "var(--vy-surface)",
-              backgroundImage: renderOnlyActiveBanner || !shouldLoadImage ? undefined : getBannerBackgroundImage(banner.img),
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-              backgroundSize: "cover",
               opacity: activeBanner === index ? 1 : 0,
               transform: getBannerSlideTransform(index, activeBanner),
               transition: homeBannerSlideTransition,
               willChange: "transform, opacity",
             }}
-          />
+          >
+            <ResponsiveMedia
+              src={imageSrc}
+              responsiveImage={banner.responsiveImage}
+              alt=""
+              sizes={sizes}
+              priority={priority && index === 0}
+              onLoad={priority && index === 0 ? () => queueNextSlide(index) : undefined}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </span>
         );
       })}
     </React.Fragment>
@@ -1493,7 +1516,8 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
         href: meta.link || "#",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: `url('${imageUrl}')`,
+        img: imageUrl,
+        responsiveImage: b.responsiveImage,
         hasImage: true,
       }];
     });
@@ -1614,7 +1638,12 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
         touchAction: "pan-y",
       }}
     >
-      <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
+      <BannerMediaSlides
+        activeBanner={activeBanner}
+        banners={banners}
+        priority
+        sizes="(max-width: 767px) calc(100vw - 36px), calc(100vw - 100px)"
+      />
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         {event.statusLabel && (
           <span
@@ -1731,7 +1760,8 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
         href: meta.link || "/uu-dai",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: `url('${imageUrl}') center/cover`,
+        img: imageUrl,
+        responsiveImage: banner.responsiveImage,
         hasImage: true,
       }];
     });
@@ -1849,7 +1879,11 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
         touchAction: "pan-y",
       }}
     >
-      <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
+      <BannerMediaSlides
+        activeBanner={activeBanner}
+        banners={banners}
+        sizes="(max-width: 767px) calc(100vw - 36px), calc(100vw - 100px)"
+      />
       <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         <div
           style={{
@@ -2179,6 +2213,10 @@ function VenueMiniCard({
     >
       <PlaceholderMedia
         src={item.img}
+        responsiveImage={item.responsiveImage}
+        sizes="64px"
+        width={64}
+        height={64}
         alt={item.name ?? "Địa điểm"}
         label="Ảnh quán"
         priority={priority}
@@ -3080,11 +3118,10 @@ function RankingListColumn({
 
       {list.length ? (
         <div style={{ display: "grid", alignSelf: "start", gap: "12px", minWidth: 0 }}>
-          {list.map((item, rowIndex) => (
+          {list.map((item) => (
             <RankingRow
               key={`${title}-${item.rank}-${item.href ?? item.name}`}
               item={item}
-              priority={rowIndex === 0}
             />
           ))}
         </div>
@@ -3165,7 +3202,13 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
   const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
   const [homeContentError, setHomeContentError] = useState("");
-  const canLoadSecondaryHomeData = useHomeSecondaryLoadReady();
+  const [recommendationsSectionRef, canLoadRecommendations] = useHomeSectionReady();
+  const [couponsSectionRef, canLoadCoupons] = useHomeSectionReady();
+  const [rankingsSectionRef, canLoadRankings] = useHomeSectionReady();
+  const [featuredSectionRef, canLoadFeatured] = useHomeSectionReady();
+  const [guideSectionRef, canLoadGuide] = useHomeSectionReady();
+  const [videoSectionRef, canLoadVideos] = useHomeSectionReady();
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
   );
@@ -3218,6 +3261,15 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     }), [homeBanners]);
   const svc = featuredServices;
   const videoList = homeVideos;
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncLayout = () => setIsDesktopLayout(mediaQuery.matches);
+    syncLayout();
+    mediaQuery.addEventListener("change", syncLayout);
+    return () => mediaQuery.removeEventListener("change", syncLayout);
+  }, []);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -3317,6 +3369,33 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
 
   useEffect(() => {
     let cancelled = false;
+    if (initialBanners.length > 0) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    contentApi
+      .list({ type: "BANNER", limit: 50 })
+      .then((response) => {
+        if (!cancelled) setHomeBanners(response.data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setHomeBanners([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHomeBannersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialBanners.length]);
+
+  useEffect(() => {
+    if (!canLoadRecommendations) return;
+
+    let cancelled = false;
     const behaviorSignals = getHomeBehaviorSignals();
 
     discoveryApi
@@ -3354,82 +3433,87 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
         if (!cancelled) setHomeRecommendationsLoading(false);
       });
 
-    // Nếu đã có initialBanners từ SSR, chỉ refresh ngầm (không block UI)
-    // Nếu chưa có thì fetch bình thường và hiện skeleton
-    contentApi
-      .list({ type: "BANNER", limit: 10 })
-      .then((res) => {
-        if (!cancelled && res.data) setHomeBanners(res.data);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage, canLoadRecommendations]);
+
+  useEffect(() => {
+    if (!canLoadCoupons) return;
+    let cancelled = false;
+
+    campaignsApi
+      .listPublicCampaigns({ limit: 6, home: true })
+      .then((campaigns) => {
+        if (!cancelled) {
+          setHomeCoupons(
+            campaigns
+              .slice(0, 6)
+              .map((campaign, index) =>
+                mapCampaignToHomeItem(campaign, index, activeLanguage, rates),
+              ),
+          );
+        }
       })
-      .catch((e) => console.error("Failed to load banners", e))
+      .catch(() => {
+        if (!cancelled) {
+          setHomeCoupons([]);
+          setHomeCouponsError("Chưa tải được ưu đãi từ API.");
+        }
+      })
       .finally(() => {
-        if (!cancelled) setHomeBannersLoading(false);
+        if (!cancelled) setHomeCouponsLoading(false);
       });
-
-    const secondaryLoadTimer = window.setTimeout(() => {
-      if (cancelled) return;
-
-      campaignsApi
-        .listPublicCampaigns({ limit: 6, home: true })
-        .then((campaigns) => {
-          if (!cancelled) {
-            setHomeCoupons(
-              campaigns
-                .slice(0, 6)
-                .map((campaign, index) => mapCampaignToHomeItem(campaign, index, activeLanguage, rates)),
-            );
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setHomeCoupons([]);
-            setHomeCouponsError("Chưa tải được ưu đãi từ API.");
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setHomeCouponsLoading(false);
-        });
-
-      Promise.all([
-        tourApi.list({
-          limit: 8,
-        }),
-        contentApi.list({ type: "BLOG", limit: 50 }),
-      ])
-        .then(([tourResponse, blogResponse]) => {
-          if (cancelled) return;
-          const tourItems = tourResponse.data.map((tour) => mapTourToHomeItem(tour, activeLanguage));
-          const tourImages = tourResponse.data.flatMap((tour) => [
-            tour.coverUrl,
-            ...tour.stops.flatMap((stop) => stop.store.media.map((media) => media.url)),
-          ]);
-          setHomeTours(tourItems);
-          const items = [...(blogResponse.data ?? [])]
-            .filter(isHomeGuideBlog)
-            .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
-            .slice(0, 8)
-            .map(mapContentToHomeItem);
-          setHomeContentItems(withApiImageFallbacks(items, tourImages));
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setHomeContentItems([]);
-            setHomeContentError("Chưa tải được nội dung CMS.");
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setHomeContentLoading(false);
-        });
-    }, homeSecondaryLoadDelayMs);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(secondaryLoadTimer);
     };
-  }, [activeLanguage, rates]);
+  }, [activeLanguage, canLoadCoupons, rates]);
 
   useEffect(() => {
-    if (!canLoadSecondaryHomeData) return;
+    if (!canLoadGuide) return;
+    let cancelled = false;
+
+    Promise.all([
+      tourApi.list({ limit: 8 }),
+      contentApi.list({ type: "BLOG", limit: 50 }),
+    ])
+      .then(([tourResponse, blogResponse]) => {
+        if (cancelled) return;
+        const tourItems = tourResponse.data.map((tour) =>
+          mapTourToHomeItem(tour, activeLanguage),
+        );
+        const tourImages = tourResponse.data.flatMap((tour) => [
+          tour.coverUrl,
+          ...tour.stops.flatMap((stop) =>
+            stop.store.media.map((media) => media.url),
+          ),
+        ]);
+        setHomeTours(tourItems);
+        const items = [...(blogResponse.data ?? [])]
+          .filter(isHomeGuideBlog)
+          .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
+          .slice(0, 8)
+          .map(mapContentToHomeItem);
+        setHomeContentItems(withApiImageFallbacks(items, tourImages));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeContentItems([]);
+          setHomeContentError("Chưa tải được nội dung CMS.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeContentLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLanguage, canLoadGuide]);
+
+  useEffect(() => {
+    if (!canLoadRankings) return;
 
     let cancelled = false;
     const city = regionToCityCode(activeRankRegion);
@@ -3464,10 +3548,10 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     return () => {
       cancelled = true;
     };
-  }, [activeRankRegion, canLoadSecondaryHomeData]);
+  }, [activeRankRegion, canLoadRankings]);
 
   useEffect(() => {
-    if (!canLoadSecondaryHomeData) return;
+    if (!canLoadFeatured) return;
 
     let cancelled = false;
     const category = activeSvcTab === "nhahang" ? "RESTAURANT" : "MASSAGE_SPA";
@@ -3532,10 +3616,10 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     return () => {
       cancelled = true;
     };
-  }, [activeSvcTab, activeServiceRegion, canLoadSecondaryHomeData]);
+  }, [activeSvcTab, activeServiceRegion, canLoadFeatured]);
 
   useEffect(() => {
-    if (!homeHotVideosEnabled || !canLoadSecondaryHomeData) return;
+    if (!homeHotVideosEnabled || !canLoadVideos) return;
 
     let cancelled = false;
     const cityCode = regionToCityCode(activeVideoRegion);
@@ -3565,7 +3649,7 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     return () => {
       cancelled = true;
     };
-  }, [activeVideoRegion, homeHotVideosEnabled, canLoadSecondaryHomeData]);
+  }, [activeVideoRegion, homeHotVideosEnabled, canLoadVideos]);
 
   useEffect(() => {
     if (!homeHotVideosEnabled || !homeVideos.length) return;
@@ -3661,6 +3745,241 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
     });
   };
 
+  const useLegacySplitHomeLayout = false;
+  if (!useLegacySplitHomeLayout) {
+    const deferredSectionStyle: CSSProperties = {
+      contentVisibility: "auto",
+      containIntrinsicSize: "600px",
+    };
+    const sectionGap = isDesktopLayout ? "34px" : "22px";
+    const cardColumns = isDesktopLayout ? "repeat(4, minmax(0, 1fr))" : "1fr 1fr";
+
+    return (
+      <div
+        className="nl-home-page nl-home-page-responsive"
+        data-testid="home-shell"
+        style={{ ...shellStyle, background: colors.ink }}
+      >
+        <div
+          data-testid="home-mobile-shell"
+          style={{
+            width: "100%",
+            maxWidth: isDesktopLayout ? "none" : "430px",
+            minHeight: "auto",
+            margin: "0 auto",
+            ...appStyle,
+            border: isDesktopLayout ? 0 : appStyle.border,
+            boxShadow: isDesktopLayout ? "none" : appStyle.boxShadow,
+          }}
+        >
+          <div data-testid="home-mobile-header">
+            <HeaderBar desktop={isDesktopLayout} />
+          </div>
+          <main style={{ padding: isDesktopLayout ? "10px 50px 0" : "0 18px" }}>
+            <div data-testid="home-mobile-search" style={{ marginTop: "12px" }}>
+              <SearchPanel />
+            </div>
+            <div data-testid="home-mobile-hero" style={{ marginTop: "16px" }}>
+              <EventHero
+                desktop={isDesktopLayout}
+                apiBanners={heroBanners}
+                isLoading={isHomeBannersLoading}
+              />
+            </div>
+            <div data-testid="home-mobile-categories" style={{ marginTop: isDesktopLayout ? "28px" : "22px" }}>
+              <CategoryGrid desktop={isDesktopLayout} items={homeCategoryItems} />
+            </div>
+
+            <section
+              ref={recommendationsSectionRef}
+              data-testid="home-mobile-recommendations"
+              style={{ marginTop: isDesktopLayout ? "34px" : "24px", ...deferredSectionStyle }}
+            >
+              <SectionHeading title={homeSectionTitles.recommend} action="Xem tất cả" />
+              {isHomeRecommendationsLoading && isHomeStoresLoading ? (
+                <HomeDataMessage text="Đang tải quán từ API..." compact={!isDesktopLayout} />
+              ) : recommendedCards.length ? (
+                <HomeCardCarousel
+                  ariaLabel="Home recommendations"
+                  gap={isDesktopLayout ? 16 : 12}
+                  getKey={(item) => item.slug}
+                  items={recommendedCards.slice(0, 8)}
+                  itemsPerSlide={isDesktopLayout ? 4 : 2}
+                  renderItem={(item) => (
+                    <VenueMiniCard
+                      item={item}
+                      compact={!isDesktopLayout}
+                      isFavorite={favoriteStoreSlugs.includes(item.slug)}
+                      onToggleFavorite={toggleHomeStoreFavorite}
+                    />
+                  )}
+                />
+              ) : (
+                <HomeDataMessage
+                  text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."}
+                  compact={!isDesktopLayout}
+                />
+              )}
+            </section>
+
+            <section
+              ref={couponsSectionRef}
+              data-testid="home-mobile-coupons"
+              style={{ marginTop: sectionGap, ...deferredSectionStyle }}
+            >
+              <SectionHeading title={homeSectionTitles.coupon} />
+              {isHomeCouponsLoading ? (
+                <HomeDataMessage text="Đang tải ưu đãi từ API..." compact={!isDesktopLayout} />
+              ) : homeCoupons.length ? (
+                <HomeCardCarousel
+                  ariaLabel="Coupon Hot"
+                  gap={isDesktopLayout ? 16 : 10}
+                  getKey={(item) => item.id}
+                  items={homeCoupons.slice(0, 6)}
+                  itemsPerSlide={isDesktopLayout ? 3 : 2}
+                  layoutDirection={isDesktopLayout ? "row" : "column"}
+                  renderItem={(item) => <CouponCard item={item} compact={!isDesktopLayout} />}
+                />
+              ) : (
+                <HomeDataMessage
+                  text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."}
+                  compact={!isDesktopLayout}
+                />
+              )}
+            </section>
+
+            <section
+              ref={rankingsSectionRef}
+              data-testid="home-mobile-ranking"
+              style={{ marginTop: sectionGap, ...deferredSectionStyle }}
+            >
+              <RankingSectionHeader
+                title={homeSectionTitles.ranking}
+                activeRegion={activeRankRegion}
+                onRegionChange={setActiveRankRegion}
+                language={activeLanguage}
+              />
+              {isRankingsLoading ? (
+                <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
+              ) : castRankItems.length || storeRankItems.length ? (
+                <RankingSplitPanel
+                  castItems={castRankItems}
+                  storeItems={storeRankItems}
+                  error={rankingsError}
+                  stacked={!isDesktopLayout}
+                />
+              ) : (
+                <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
+              )}
+            </section>
+
+            <div style={{ marginTop: sectionGap, ...deferredSectionStyle }}>
+              <MidPageBanner
+                desktop={isDesktopLayout}
+                apiBanners={midBanners}
+                isLoading={isHomeBannersLoading}
+              />
+            </div>
+
+            <section
+              ref={featuredSectionRef}
+              data-testid="home-mobile-featured"
+              style={{ marginTop: sectionGap, ...deferredSectionStyle }}
+            >
+              <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>
+                  {homeSectionTitles.featured}
+                </h2>
+              </div>
+              <ServiceFilterControls
+                activeTab={activeSvcTab}
+                onTabChange={setActiveSvcTab}
+                activeRegion={activeServiceRegion}
+                onRegionChange={setActiveServiceRegion}
+                items={dynamicServiceTabs}
+                language={activeLanguage}
+              />
+              <div style={{ display: "grid", gridTemplateColumns: cardColumns, gap: isDesktopLayout ? "16px" : "11px" }}>
+                {isFeaturedServicesLoading ? (
+                  <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." compact={!isDesktopLayout} />
+                ) : svc.length ? (
+                  <HomeCardCarousel
+                    ariaLabel="Featured services"
+                    gap={isDesktopLayout ? 16 : 11}
+                    getKey={(item) => item.slug}
+                    items={svc}
+                    itemsPerSlide={isDesktopLayout ? 4 : 2}
+                    renderItem={(item) => <ServiceCard item={item} compact={!isDesktopLayout} />}
+                  />
+                ) : (
+                  <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} compact={!isDesktopLayout} />
+                )}
+              </div>
+            </section>
+
+            <section
+              ref={guideSectionRef}
+              data-testid="home-mobile-guide"
+              style={{ marginTop: sectionGap, ...deferredSectionStyle }}
+            >
+              <SectionHeading title={homeSectionTitles.guide} />
+              {isHomeContentLoading ? (
+                <HomeDataMessage text="Đang tải nội dung CMS..." compact={!isDesktopLayout} />
+              ) : guideItems.length ? (
+                <HomeCardCarousel
+                  ariaLabel="Tour blog guide"
+                  gap={isDesktopLayout ? 16 : 12}
+                  getKey={(item) => item.id}
+                  items={guideItems}
+                  itemsPerSlide={isDesktopLayout ? 3 : 1}
+                  renderItem={(item) => <ContentPlaceholderCard item={item} compact={!isDesktopLayout} />}
+                />
+              ) : (
+                <HomeDataMessage text={homeContentError || "Chưa có bài viết được xuất bản."} compact={!isDesktopLayout} />
+              )}
+            </section>
+
+            <section
+              ref={videoSectionRef}
+              data-testid="home-mobile-video"
+              style={{ marginTop: sectionGap, ...deferredSectionStyle }}
+            >
+              <div style={{ ...sectionTitleStyle, marginBottom: isDesktopLayout ? "14px" : "12px" }}>
+                <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>
+                  {homeSectionTitles.video}
+                </h2>
+                <RankingRegionDropdown
+                  active={activeVideoRegion}
+                  onChange={setActiveVideoRegion}
+                  ariaLabel="Chọn khu vực video"
+                  language={activeLanguage}
+                />
+              </div>
+              {!homeHotVideosEnabled ? (
+                <HomeDataMessage text={homeHotVideosPlaceholderText} compact={!isDesktopLayout} />
+              ) : isHomeVideosLoading ? (
+                <HomeDataMessage text="Đang tải Video Hot từ API..." compact={!isDesktopLayout} />
+              ) : videoList.length ? (
+                <HomeCardCarousel
+                  ariaLabel="Video Hot"
+                  gap={isDesktopLayout ? 16 : 12}
+                  getKey={(item) => item.id}
+                  items={videoList}
+                  itemsPerSlide={isDesktopLayout ? 3 : 1}
+                  renderItem={(item) => <VideoCard item={item} compact={!isDesktopLayout} />}
+                />
+              ) : (
+                <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact={!isDesktopLayout} />
+              )}
+            </section>
+          </main>
+          <BottomNav />
+        </div>
+      </div>
+    );
+  }
+
+  /* Legacy split mobile/desktop tree retained in git history only.
   return (
     <React.Fragment>
       <div className="block md:hidden nl-home-page nl-home-page-mobile" style={shellStyle}>
@@ -3691,11 +4010,10 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={2}
-                    renderItem={(item, index) => (
+                    renderItem={(item) => (
                       <VenueMiniCard
                         item={item}
                         compact
-                        priority={index < 2}
                         isFavorite={favoriteStoreSlugs.includes(item.slug)}
                         onToggleFavorite={toggleHomeStoreFavorite}
                       />
@@ -3720,7 +4038,7 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     items={homeCoupons.slice(0, 6)}
                     itemsPerSlide={2}
                     layoutDirection="column"
-                    renderItem={(item, index) => <CouponCard item={item} compact priority={index < 2} />}
+                    renderItem={(item) => <CouponCard item={item} compact />}
                   />
                 ) : (
                   <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} compact />
@@ -3861,10 +4179,9 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
                     getKey={(item) => item.slug}
                     items={recommendedCards.slice(0, 8)}
                     itemsPerSlide={4}
-                    renderItem={(item, index) => (
+                    renderItem={(item) => (
                       <VenueMiniCard
                         item={item}
-                        priority={index < 4}
                         isFavorite={favoriteStoreSlugs.includes(item.slug)}
                         onToggleFavorite={toggleHomeStoreFavorite}
                       />
@@ -3997,4 +4314,5 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
       </div>
     </React.Fragment>
   );
+  */
 }

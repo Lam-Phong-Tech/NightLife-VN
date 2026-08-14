@@ -1,5 +1,7 @@
 'use client';
 
+import '../bill-upload-mobile-fix.css';
+
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';

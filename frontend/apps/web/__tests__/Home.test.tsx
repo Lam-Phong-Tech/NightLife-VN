@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import Page from '../src/app/page';
+import HomePageClient from '../src/app/HomePageClient';
 import { SystemFeedbackProvider } from '../src/components/ui/SystemFeedback';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -50,16 +50,21 @@ vi.mock('next/link', () => ({
   },
 }));
 
-vi.mock('@/lib/api/content', () => ({
-  contentApi: {
-    list: contentListMock,
-    hotVideos: contentHotVideosMock,
-    recommendations: contentRecommendationsMock,
-    tours: contentToursMock,
-    trackHotVideoLike: trackHotVideoLikeMock,
-    trackHotVideoView: trackHotVideoViewMock,
-  },
-}));
+vi.mock('@/lib/api/content', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api/content')>();
+  return {
+    ...actual,
+    contentApi: {
+      ...actual.contentApi,
+      list: contentListMock,
+      hotVideos: contentHotVideosMock,
+      recommendations: contentRecommendationsMock,
+      tours: contentToursMock,
+      trackHotVideoLike: trackHotVideoLikeMock,
+      trackHotVideoView: trackHotVideoViewMock,
+    },
+  };
+});
 
 vi.mock('@/lib/api/appearance', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/appearance')>();
@@ -111,7 +116,7 @@ const rankingMeta = {
 
 const renderHome = () => render(
   <SystemFeedbackProvider>
-    <Page />
+    <HomePageClient />
   </SystemFeedbackProvider>,
 );
 
@@ -163,6 +168,8 @@ describe('Home Page', () => {
                 tag: 'API CTA',
                 link: '/stores/api-neon-lounge',
                 imageUrl: 'https://example.com/banner.jpg',
+                position: 'Trang chủ #1',
+                order: 1,
               },
               createdAt: now,
               updatedAt: now,
@@ -364,8 +371,6 @@ describe('Home Page', () => {
       expect(listPublicCouponsMock).toHaveBeenCalled();
       expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 5 });
       expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 5 });
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'recommend-home', limit: 5 });
-      expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', scope: 'featured_home', limit: 5 });
       expect(rankingsListMock).toHaveBeenCalledWith({
         targetType: 'STORE',
         city: 'hn',
@@ -380,7 +385,6 @@ describe('Home Page', () => {
     expect(await screen.findAllByText('API Coupon')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
-    expect(await screen.findAllByTestId('home-ranking-sponsored-badge')).not.toHaveLength(0);
     expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
     expect(document.body.textContent ?? '').not.toMatch(
       /Ã‚Â·|NhÃƒ|HÃƒ|NÃ¡Â»|tÃ¡Â»|Ã„â€˜|ChÃ†|Ã¡Âº|Ã¡Â»|Ä|Æ¯/,
@@ -392,6 +396,9 @@ describe('Home Page', () => {
     await screen.findAllByText(/API Night Banner/i);
 
     const mobileShell = screen.getByTestId('home-mobile-shell');
+    expect(screen.getAllByTestId('home-shell')).toHaveLength(1);
+    expect(screen.getAllByTestId('home-ad-banner')).toHaveLength(1);
+    expect(screen.getByTestId('home-ad-banner').querySelectorAll('img')).toHaveLength(1);
     const blockIds = [
       'home-mobile-header',
       'home-mobile-search',

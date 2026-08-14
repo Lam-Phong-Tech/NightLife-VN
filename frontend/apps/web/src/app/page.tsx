@@ -46,39 +46,11 @@ async function fetchBannersOnServer(): Promise<CmsContentItem[]> {
   }
 }
 
-// Lấy URL ảnh đầu tiên của hero banner để inject preload hint
-function extractFirstHeroBannerImageUrl(banners: CmsContentItem[]): string | null {
-  for (const banner of banners) {
-    const meta = (banner.metadata ?? {}) as Record<string, unknown>;
-    const position = typeof meta.position === "string" ? meta.position : "";
-    // Chỉ lấy banner hero (Trang chủ #1) hoặc không có position
-    if (position && position !== "Trang chủ #1") continue;
-
-    const imageUrl = typeof meta.imageUrl === "string" && meta.imageUrl.trim()
-      ? meta.imageUrl.trim()
-      : null;
-    if (imageUrl) return imageUrl;
-  }
-  return null;
-}
-
 export default async function Page() {
-  // Pre-fetch banner ở server — chạy song song với HTML render
   const initialBanners = await fetchBannersOnServer();
-  const firstHeroBannerImageUrl = extractFirstHeroBannerImageUrl(initialBanners);
 
   return (
     <>
-      {/* Preload ảnh banner đầu tiên — browser tải ảnh trước khi JS parse xong */}
-      {firstHeroBannerImageUrl && (
-        <link
-          rel="preload"
-          as="image"
-          href={firstHeroBannerImageUrl}
-          // @ts-expect-error: fetchpriority là attribute hợp lệ nhưng TS chưa có type
-          fetchpriority="high"
-        />
-      )}
       <script
         id="home-webpage-jsonld"
         type="application/ld+json"

@@ -1,4 +1,5 @@
 import { apiClient, resolveClientUrl } from "./client";
+import type { PublicResponsiveImage } from "./content";
 
 export type RankingTargetType = "CAST" | "STORE";
 export type RankingCity = string;
@@ -19,6 +20,7 @@ export type PublicRankingItem = {
   name: string;
   slug: string;
   image?: string | null;
+  responsiveImage?: PublicResponsiveImage | null;
   area?: string | null;
   city: string;
   cityCode?: string;
@@ -64,6 +66,19 @@ const toParams = (params: RankingParams) => {
 const normalizeRankingItem = (item: PublicRankingItem): PublicRankingItem => ({
   ...item,
   image: resolveClientUrl(item.image),
+  responsiveImage: item.responsiveImage
+    ? {
+        ...item.responsiveImage,
+        src: resolveClientUrl(item.responsiveImage.src) ?? item.responsiveImage.src,
+        variants: item.responsiveImage.variants.map((variant) => ({
+          ...variant,
+          webpUrl: resolveClientUrl(variant.webpUrl) ?? variant.webpUrl,
+          avifUrl: variant.avifUrl
+            ? (resolveClientUrl(variant.avifUrl) ?? variant.avifUrl)
+            : undefined,
+        })),
+      }
+    : item.responsiveImage,
 });
 
 export const rankingsApi = {
