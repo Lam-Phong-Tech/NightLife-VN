@@ -5,6 +5,8 @@ import { jsonLdDocument, webPageJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 import HomePageClient from "./HomePageClient";
 import type { CmsContentItem } from "@/lib/api/content";
+import { HomeHeroPreload } from "@/components/home/HomeHeroPreload";
+import { selectHomeHeroBanner } from "@/lib/home-hero";
 
 export const metadata: Metadata = createPageMetadata({
   title: `${siteConfig.name} | ${siteConfig.tagline}`,
@@ -48,9 +50,11 @@ async function fetchBannersOnServer(): Promise<CmsContentItem[]> {
 
 export default async function Page() {
   const initialBanners = await fetchBannersOnServer();
+  const activeHeroBanner = selectHomeHeroBanner(initialBanners);
 
   return (
     <>
+      <HomeHeroPreload banner={activeHeroBanner} />
       <script
         id="home-webpage-jsonld"
         type="application/ld+json"

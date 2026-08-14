@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type SyntheticEvent } from "react";
 import type { PublicResponsiveImage } from "@/lib/api/content";
+import { createResponsiveImageSrcSet } from "@/lib/home-hero";
 
 type ResponsiveMediaProps = {
   src: string;
@@ -17,18 +18,6 @@ type ResponsiveMediaProps = {
   onError?: (event: SyntheticEvent<HTMLImageElement>) => void;
 };
 
-function createSrcSet(
-  image: PublicResponsiveImage | null | undefined,
-  format: "webp" | "avif",
-) {
-  if (!image?.variants?.length) return undefined;
-  const candidates = image.variants.flatMap((variant) => {
-    const url = format === "avif" ? variant.avifUrl : variant.webpUrl;
-    return url ? [`${url} ${variant.width}w`] : [];
-  });
-  return candidates.length ? candidates.join(", ") : undefined;
-}
-
 export function ResponsiveMedia({
   src,
   responsiveImage,
@@ -42,8 +31,8 @@ export function ResponsiveMedia({
   onLoad,
   onError,
 }: ResponsiveMediaProps) {
-  const avifSrcSet = createSrcSet(responsiveImage, "avif");
-  const webpSrcSet = createSrcSet(responsiveImage, "webp");
+  const avifSrcSet = createResponsiveImageSrcSet(responsiveImage, "avif");
+  const webpSrcSet = createResponsiveImageSrcSet(responsiveImage, "webp");
   const variantKey = `${src}|${avifSrcSet ?? ""}|${webpSrcSet ?? ""}`;
   const [failedVariantKey, setFailedVariantKey] = useState<string | null>(null);
   const useVariants = Boolean(avifSrcSet || webpSrcSet) && failedVariantKey !== variantKey;

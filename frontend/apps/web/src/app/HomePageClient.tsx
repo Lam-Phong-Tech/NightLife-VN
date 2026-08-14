@@ -82,6 +82,13 @@ import {
   readBookingConfirmationFlashToast,
 } from "@/lib/booking-confirmation-flash";
 import { useUserActionFeedback, userActionErrorMessage } from "@/lib/user-action-feedback";
+import {
+  getHomeBannerImageUrl,
+  getHomeBannerMetadata,
+  hasHomeBannerImage,
+  HOME_HERO_IMAGE_SIZES,
+  sortHomeHeroBanners,
+} from "@/lib/home-hero";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -374,38 +381,6 @@ type HomeBanner = {
   hasImage?: boolean;
   responsiveImage?: PublicResponsiveImage | null;
 };
-
-type HomeBannerMetadata = {
-  description?: string;
-  tag?: string;
-  link?: string;
-  statusLabel?: string;
-  subtitle?: string;
-  imageUrl?: string;
-  position?: string;
-  order?: number;
-};
-
-function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
-  const metadata = (content.metadata ?? {}) as HomeBannerMetadata;
-  if (metadata.link && metadata.link.startsWith("/quan/")) {
-    return {
-      ...metadata,
-      link: metadata.link.replace(/^\/quan\//, "/stores/"),
-    };
-  }
-  return metadata;
-}
-
-function getHomeBannerImageUrl(content: CmsContentItem) {
-  const imageUrl = getHomeBannerMetadata(content).imageUrl;
-
-  return typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : null;
-}
-
-function hasHomeBannerImage(content: CmsContentItem) {
-  return Boolean(getHomeBannerImageUrl(content));
-}
 
 type HomeStoreCard = {
   id: string;
@@ -1673,7 +1648,7 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
         activeBanner={activeBanner}
         banners={banners}
         priority
-        sizes="(max-width: 767px) calc(100vw - 36px), calc(100vw - 100px)"
+        sizes={HOME_HERO_IMAGE_SIZES}
       />
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         {event.statusLabel && (
@@ -1914,7 +1889,7 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
       <BannerMediaSlides
         activeBanner={activeBanner}
         banners={banners}
-        sizes="(max-width: 767px) calc(100vw - 36px), calc(100vw - 100px)"
+        sizes={HOME_HERO_IMAGE_SIZES}
       />
       <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         <div
@@ -3288,14 +3263,7 @@ export default function HomePageClient({ initialBanners = [] }: { initialBanners
         .slice(0, 8),
     [homeTours, homeContentItems],
   );
-  const heroBanners = useMemo(() => [...homeBanners]
-    .filter(hasHomeBannerImage)
-    .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position)
-    .sort((a, b) => {
-      const orderA = getHomeBannerMetadata(a).order;
-      const orderB = getHomeBannerMetadata(b).order;
-      return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
-    }), [homeBanners]);
+  const heroBanners = useMemo(() => sortHomeHeroBanners(homeBanners), [homeBanners]);
   const midBanners = useMemo(() => [...homeBanners]
     .filter(hasHomeBannerImage)
     .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #2")

@@ -55,6 +55,7 @@ import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 import { AuthRedirectNotice } from "@/components/auth/AuthRedirectNotice";
 import { SessionSecurityWatcher } from "@/components/auth/SessionSecurityWatcher";
+import { shouldResetPageScroll } from "@/lib/page-scroll";
 import {
   promptMemberLogin,
   type MemberLoginPromptIntent,
@@ -1771,6 +1772,16 @@ export function SiteChrome({
   useLayoutEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+    if (
+      !shouldResetPageScroll({
+        windowX: window.scrollX,
+        windowY: window.scrollY,
+        rootY: root.scrollTop,
+        bodyY: body.scrollTop,
+      })
+    ) {
+      return;
+    }
     const previousRootScrollBehavior = root.style.scrollBehavior;
     const previousBodyScrollBehavior = body.style.scrollBehavior;
 
