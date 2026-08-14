@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import React, { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -94,6 +94,10 @@ import {
   HOME_HERO_IMAGE_SIZES,
   sortHomeHeroBanners,
 } from "@/lib/home-hero";
+
+// Keep the server-safe mobile snapshot, but resolve the client breakpoint
+// before paint so desktop does not visibly flash the mobile geometry.
+const usePrePaintEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -3284,7 +3288,7 @@ export default function HomePageClient({
   const svc = featuredServices;
   const videoList = homeVideos;
 
-  useEffect(() => {
+  usePrePaintEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const mediaQuery = window.matchMedia("(min-width: 768px)");
     const syncLayout = () => setIsDesktopLayout(mediaQuery.matches);
