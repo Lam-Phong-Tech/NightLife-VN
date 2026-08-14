@@ -7,7 +7,7 @@ import {
 import { createLocalizedPageMetadata } from "@/lib/seo/localized-page-metadata";
 import { HomeHeroPreload } from "@/components/home/HomeHeroPreload";
 import { selectHomeHeroBanner } from "@/lib/home-hero";
-import { fetchHomeBannersOnServer } from "@/lib/home-server-data";
+import { fetchHomePageInitialData } from "@/lib/home-server-data";
 
 export async function generateMetadata({
   params,
@@ -18,13 +18,17 @@ export async function generateMetadata({
 }
 
 export default async function LocalizedHomePage() {
-  const initialBanners = await fetchHomeBannersOnServer();
+  const { banners: initialBanners, appearance: initialAppearance } =
+    await fetchHomePageInitialData();
   const activeHeroBanner = selectHomeHeroBanner(initialBanners);
 
   return (
     <>
       <HomeHeroPreload banner={activeHeroBanner} />
-      <HomePageClient initialBanners={initialBanners} />
+      <HomePageClient
+        initialBanners={initialBanners}
+        initialAppearance={initialAppearance}
+      />
     </>
   );
 }
