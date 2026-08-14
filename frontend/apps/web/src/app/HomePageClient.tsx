@@ -1475,7 +1475,13 @@ function CategoryGrid({
         const translatedLabel = translateText(item.label, activeLanguage);
 
         return (
-          <Link key={item.label} href={item.href} className="nl-home-category-link" style={{ color: colors.text, textAlign: "center" }}>
+          <Link
+            key={item.label}
+            href={item.href}
+            prefetch={!item.href.startsWith("/dang-nhap")}
+            className="nl-home-category-link"
+            style={{ color: colors.text, textAlign: "center" }}
+          >
             <span
               className="nl-home-category-icon"
               style={{
