@@ -20,6 +20,10 @@ import {
   StoredMigrationVariant,
   withMigratedContentImageUrl,
 } from '../src/storage/image-migration';
+import {
+  getImageBreakpoints,
+  getMissingImageVariantWidths,
+} from '../src/storage/image-breakpoints';
 
 const args = process.argv.slice(2);
 const APPLY = args.includes('--apply');
@@ -36,7 +40,9 @@ function option(name: string) {
 
   const optionIndex = args.indexOf(`--${name}`);
   const followingValue = optionIndex >= 0 ? args[optionIndex + 1] : undefined;
-  return followingValue && !followingValue.startsWith('--') ? followingValue : undefined;
+  return followingValue && !followingValue.startsWith('--')
+    ? followingValue
+    : undefined;
 }
 
 function positiveIntegerOption(name: string, fallback: number) {
@@ -89,25 +95,6 @@ const PROCESSABLE_MIME_TYPES = [
   'image/webp',
   'image/avif',
 ];
-const BREAKPOINTS_BY_PURPOSE: Record<string, readonly number[]> = {
-  'store-hero': [400, 800, 1200, 1600],
-  'store-cover': [400, 800, 1200, 1600],
-  STORE_COVER: [400, 800, 1200, 1600],
-  COVER_IMAGE: [400, 800, 1200, 1600],
-  PARTNER_STORE_COVER: [400, 800, 1200, 1600],
-  STORE_GALLERY: [400, 800, 1200],
-  PARTNER_STORE_GALLERY: [400, 800, 1200],
-  CAST_AVATAR: [200, 400, 800],
-  CAST_PHOTO: [200, 400, 800],
-  PARTNER_CAST_IMAGE: [200, 400, 800],
-  TOUR_COVER: [400, 800, 1200],
-  BLOG_COVER: [400, 800, 1200],
-  BANNER_GLOBAL: [400, 800, 1200],
-  STORE_MENU_ITEM: [200, 400, 800],
-  PARTNER_MENU_ITEM: [200, 400, 800],
-};
-const DEFAULT_BREAKPOINTS = [400, 800, 1200] as const;
-
 type JsonRecord = Record<string, unknown>;
 type ManifestContent = { id: string; metadata: Prisma.JsonValue | null };
 type ManifestRecord = {
@@ -137,14 +124,6 @@ type MigrationManifest = {
   records: ManifestRecord[];
 };
 
-function getBreakpoints(purpose: string | null, originalWidth: number) {
-  const configured =
-    (purpose ? BREAKPOINTS_BY_PURPOSE[purpose] : undefined) ??
-    DEFAULT_BREAKPOINTS;
-  const widths = configured.filter((width) => width <= originalWidth);
-  return widths.length ? [...widths] : [configured[0]];
-}
-
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as JsonRecord)
@@ -166,7 +145,7 @@ async function writeManifest(manifest: MigrationManifest) {
 async function processImage(
   sourcePath: string,
   baseKey: string,
-  purpose: string | null,
+  widths: readonly number[],
 ) {
   const pipeline = sharp(sourcePath, { failOn: 'error' }).rotate();
   const source = await inspectImageFile(sourcePath);
@@ -176,7 +155,7 @@ async function processImage(
 
   const variants: StoredMigrationVariant[] = [];
   const createdPaths: string[] = [];
-  for (const width of getBreakpoints(purpose, source.width)) {
+  for (const width of widths) {
     const resized = pipeline.clone().resize({
       width,
       withoutEnlargement: true,
@@ -306,17 +285,6 @@ async function main() {
 
         const metadata = asRecord(record.metadata);
         const currentVariants = storedVariants(metadata);
-        if (
-          currentVariants.length &&
-          (await storedVariantsAreValid(UPLOAD_DIR, currentVariants))
-        ) {
-          console.log(
-            `[SKIP] ${record.storageKey}: valid variants already exist`,
-          );
-          skipped += 1;
-          continue;
-        }
-
         const migration = asRecord(metadata.migration);
         const sourceStorageKey =
           typeof migration.originalStorageKey === 'string'
@@ -332,43 +300,77 @@ async function main() {
         }
 
         const source = await inspectImageFile(sourcePath);
+        const desiredWidths = getImageBreakpoints(record.purpose, source.width);
+        const currentVariantsAreValid =
+          currentVariants.length > 0 &&
+          (await storedVariantsAreValid(UPLOAD_DIR, currentVariants));
+        const missingWidths = currentVariantsAreValid
+          ? getMissingImageVariantWidths(desiredWidths, currentVariants)
+          : desiredWidths;
+        if (currentVariantsAreValid && missingWidths.length === 0) {
+          console.log(
+            `[SKIP] ${record.storageKey}: all desired variants already exist`,
+          );
+          skipped += 1;
+          continue;
+        }
+
         const contentHash = await imageContentHash(sourcePath);
         const baseKey = optimizedImageBaseKey(record.id, contentHash);
+        const operation = currentVariantsAreValid ? 'backfill' : 'migrate';
         console.log(
-          `[${APPLY ? 'APPLY' : 'DRY RUN'}] ${record.storageKey}: actual=${source.format} ${source.width}x${source.height} -> ${baseKey}`,
+          `[${APPLY ? 'APPLY' : 'DRY RUN'}] ${record.storageKey}: ${operation} actual=${source.format} ${source.width}x${source.height} -> ${baseKey}`,
         );
         if (!APPLY) {
-          console.log(
-            `  widths: ${getBreakpoints(record.purpose, source.width).join(', ')}`,
-          );
+          console.log(`  widths: ${missingWidths.join(', ')}`);
           processed += 1;
           continue;
         }
 
         const createdPaths: string[] = [];
         try {
-          const result = await processImage(
-            sourcePath,
-            baseKey,
-            record.purpose,
-          );
+          const result = await processImage(sourcePath, baseKey, missingWidths);
           createdPaths.push(...result.createdPaths);
+          const nextVariants = [
+            ...(currentVariantsAreValid ? currentVariants : []),
+            ...result.variants,
+          ].sort((left, right) => left.width - right.width);
+          if (!(await storedVariantsAreValid(UPLOAD_DIR, nextVariants))) {
+            throw new Error('Combined variants failed validation');
+          }
+          const primary =
+            nextVariants.find((variant) => variant.width === 800) ??
+            nextVariants[nextVariants.length - 1];
+          const keepCurrentPrimary = currentVariantsAreValid;
           const accessSegment = record.access === 'PUBLIC' ? 'public' : 'files';
-          const newUrl =
-            replaceStorageKeyInMediaUrl(record.url, result.primary.webpKey) ??
-            `${PUBLIC_BASE_URL}/storage/${accessSegment}/${result.primary.webpKey}`;
+          const newStorageKey = keepCurrentPrimary
+            ? record.storageKey
+            : primary.webpKey;
+          const newUrl = keepCurrentPrimary
+            ? record.url
+            : (replaceStorageKeyInMediaUrl(record.url, primary.webpKey) ??
+              `${PUBLIC_BASE_URL}/storage/${accessSegment}/${primary.webpKey}`);
+          const migratedAt = new Date().toISOString();
           const nextMetadata = {
             ...metadata,
-            variants: result.variants,
+            variants: nextVariants,
             originalWidth: result.source.width,
             originalHeight: result.source.height,
             migration: {
+              ...migration,
               version: 2,
-              migratedAt: new Date().toISOString(),
+              migratedAt:
+                typeof migration.migratedAt === 'string'
+                  ? migration.migratedAt
+                  : migratedAt,
               originalStorageKey: sourceStorageKey,
-              originalUrl: record.url,
+              originalUrl:
+                typeof migration.originalUrl === 'string'
+                  ? migration.originalUrl
+                  : record.url,
               detectedFormat: source.format,
               contentHash,
+              ...(keepCurrentPrimary ? { backfilledAt: migratedAt } : {}),
             },
           } as Prisma.InputJsonObject;
 
@@ -391,9 +393,11 @@ async function main() {
             await tx.media.update({
               where: { id: record.id },
               data: {
-                storageKey: result.primary.webpKey,
-                mimeType: 'image/webp',
-                sizeBytes: result.primary.webpSizeBytes,
+                storageKey: newStorageKey,
+                mimeType: keepCurrentPrimary ? record.mimeType : 'image/webp',
+                sizeBytes: keepCurrentPrimary
+                  ? record.sizeBytes
+                  : primary.webpSizeBytes,
                 url: newUrl,
                 metadata: nextMetadata,
               },
@@ -423,9 +427,11 @@ async function main() {
               metadata: record.metadata,
             },
             migrated: {
-              storageKey: result.primary.webpKey,
-              mimeType: 'image/webp',
-              sizeBytes: result.primary.webpSizeBytes,
+              storageKey: newStorageKey,
+              mimeType: keepCurrentPrimary ? record.mimeType : 'image/webp',
+              sizeBytes: keepCurrentPrimary
+                ? record.sizeBytes
+                : primary.webpSizeBytes,
               url: newUrl,
               metadata: nextMetadata,
             },

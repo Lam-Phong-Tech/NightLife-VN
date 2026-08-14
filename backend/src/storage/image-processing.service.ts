@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { join } from 'node:path';
 import { unlink } from 'node:fs/promises';
 import sharp from 'sharp';
+import { getImageBreakpoints } from './image-breakpoints';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,35 +33,6 @@ export type ProcessedImageResult = {
 // Purpose → breakpoint widths
 // ---------------------------------------------------------------------------
 
-const BREAKPOINTS_BY_PURPOSE: Record<string, readonly number[]> = {
-  // Large hero / cover images
-  'store-hero': [400, 800, 1200, 1600],
-  'store-cover': [400, 800, 1200, 1600],
-  STORE_COVER: [400, 800, 1200, 1600],
-  COVER_IMAGE: [400, 800, 1200, 1600],
-  PARTNER_STORE_COVER: [400, 800, 1200, 1600],
-
-  // Gallery
-  STORE_GALLERY: [400, 800, 1200],
-  PARTNER_STORE_GALLERY: [400, 800, 1200],
-
-  // Cast photos
-  CAST_AVATAR: [200, 400, 800],
-  CAST_PHOTO: [200, 400, 800],
-  PARTNER_CAST_IMAGE: [200, 400, 800],
-
-  // Tour / blog / banner
-  TOUR_COVER: [400, 800, 1200],
-  BLOG_COVER: [400, 800, 1200],
-  BANNER_GLOBAL: [400, 800, 1200],
-
-  // Menu / product items (smaller)
-  STORE_MENU_ITEM: [200, 400, 800],
-  PARTNER_MENU_ITEM: [200, 400, 800],
-};
-
-const DEFAULT_BREAKPOINTS: readonly number[] = [400, 800, 1200];
-
 /**
  * Purposes that must NOT be processed (preserve original file as-is).
  * Legal evidence, logos/icons, and SVGs should never be auto-converted.
@@ -76,7 +48,7 @@ const EXEMPT_PURPOSES = new Set([
  */
 const EXEMPT_MIME_TYPES = new Set([
   'image/svg+xml',
-  'image/gif',        // GIF animation would be lost
+  'image/gif', // GIF animation would be lost
   'video/mp4',
   'video/webm',
   'video/youtube',
@@ -140,7 +112,7 @@ export class ImageProcessingService {
     const originalWidth = metadata.width ?? 0;
     const originalHeight = metadata.height ?? 0;
 
-    const breakpoints = this.getBreakpoints(purpose, originalWidth);
+    const breakpoints = getImageBreakpoints(purpose, originalWidth);
 
     const createdPaths: string[] = [];
     const variants: ImageVariant[] = [];
@@ -217,25 +189,5 @@ export class ImageProcessingService {
         }),
       ),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
-
-  private getBreakpoints(purpose?: string, originalWidth?: number): number[] {
-    const configured: readonly number[] =
-      (purpose ? BREAKPOINTS_BY_PURPOSE[purpose] : null) ?? DEFAULT_BREAKPOINTS;
-
-    // Only generate variants up to original image width (no upscale)
-    const effectiveWidth = originalWidth ?? Infinity;
-    const filtered = configured.filter((w) => w <= effectiveWidth);
-
-    // Always include at least one size (smallest breakpoint)
-    if (filtered.length === 0) {
-      return [configured[0] as number];
-    }
-
-    return [...filtered];
   }
 }
