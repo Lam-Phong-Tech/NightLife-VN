@@ -365,11 +365,6 @@ const noticeToneStyle: Record<NoticeTone, { background: string; border: string; 
   },
 };
 
-const revealTargetSelector = [
-  ".nl-page-content main > *",
-  ".nl-page-content [data-scroll-reveal]",
-].join(",");
-
 function isActive(pathname: string, href: string) {
   const currentPath =
     stripLanguagePrefix(pathname.split(/[?#]/, 1)[0] || "/").replace(/\/+$/, "") || "/";
@@ -378,29 +373,6 @@ function isActive(pathname: string, href: string) {
 
   if (targetPath === "/") return currentPath === "/";
   return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
-}
-
-function isRevealTarget(element: HTMLElement) {
-  if (
-    element.closest(
-      ".nl-site-header, .nl-site-footer, .nl-mobile-bottom-nav, .nl-scroll-reveal-skip, [data-no-scroll-reveal]",
-    )
-  ) {
-    return false;
-  }
-
-  if (element.classList.contains("md:block") || element.classList.contains("md:hidden")) {
-    return false;
-  }
-
-  const rect = element.getBoundingClientRect();
-  if (rect.width < 72 || rect.height < 28) return false;
-
-  const style = window.getComputedStyle(element);
-  if (style.display === "none" || style.visibility === "hidden") return false;
-  if (style.position === "fixed" || style.position === "sticky") return false;
-
-  return true;
 }
 
 function NotificationBellButton({
@@ -1683,7 +1655,7 @@ export function SiteChrome({
     pathname !== "/line-login" &&
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/partner");
-  const enableScrollReveal = pathname === "/";
+  const isHomepageRoute = stripLanguagePrefix(pathname) === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showSupportChat = true; // Always show for both User and Guest
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
@@ -1938,6 +1910,8 @@ export function SiteChrome({
   }, [isNotificationOpen, refreshMemberNotifications]);
 
   useEffect(() => {
+    if (isHomepageRoute) return;
+
     const checkedElements = new WeakMap<HTMLElement, string>();
     const imageStatus = new Map<string, boolean>();
     let scanTimer: number | undefined;
@@ -2000,7 +1974,7 @@ export function SiteChrome({
       if (scanTimer) window.clearTimeout(scanTimer);
       observer.disconnect();
     };
-  }, [pathname]);
+  }, [isHomepageRoute, pathname]);
 
   useEffect(() => {
     const closeTimer = window.setTimeout(() => setIsNotificationOpen(false), 0);
@@ -2062,125 +2036,6 @@ export function SiteChrome({
       window.removeEventListener("scroll", updateNotificationAnchor, true);
     };
   }, [isNotificationOpen]);
-
-  useEffect(() => {
-    if (!enableScrollReveal) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
-
-    const root = document.documentElement;
-    const observed = new Set<HTMLElement>();
-    let scanTimer: number | undefined;
-    let lastScrollY = window.scrollY;
-    let scrollDirection: "up" | "down" = "down";
-    let observer: IntersectionObserver | null = null;
-
-    const revealElement = (element: HTMLElement, instant = false) => {
-      if (element.classList.contains("is-revealed")) return;
-
-      if (instant) {
-        element.dataset.revealInstant = "true";
-      } else {
-        delete element.dataset.revealInstant;
-      }
-
-      element.dataset.revealDir = "down";
-      element.classList.add("is-revealed");
-      observer?.unobserve(element);
-    };
-
-    const updateScrollDirection = () => {
-      const nextY = window.scrollY;
-      const delta = nextY - lastScrollY;
-      if (Math.abs(delta) < 2) return;
-
-      scrollDirection = delta < 0 ? "up" : "down";
-      lastScrollY = nextY;
-      root.dataset.scrollDirection = scrollDirection;
-
-      observed.forEach((element) => {
-        if (element.classList.contains("is-revealed")) return;
-
-        if (scrollDirection === "up") {
-          const rect = element.getBoundingClientRect();
-          if (rect.top < window.innerHeight + 180) {
-            revealElement(element, true);
-          }
-          return;
-        }
-
-        element.dataset.revealDir = "down";
-      });
-    };
-
-    observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-
-          const element = entry.target as HTMLElement;
-          revealElement(element, scrollDirection === "up");
-        });
-      },
-      {
-        rootMargin: "0px 0px 12% 0px",
-        threshold: 0.01,
-      },
-    );
-
-    const observeElement = (element: HTMLElement) => {
-      if (observed.has(element) || !isRevealTarget(element)) return;
-
-      element.classList.add("nl-scroll-reveal");
-      element.dataset.revealDir = "down";
-      element.style.setProperty("--nl-reveal-delay", `${(observed.size % 3) * 18}ms`);
-      observed.add(element);
-
-      const rect = element.getBoundingClientRect();
-      const shouldRevealImmediately =
-        scrollDirection === "up" || rect.bottom <= 0 || rect.top < window.innerHeight * 1.12;
-
-      if (shouldRevealImmediately) {
-        revealElement(element, true);
-        return;
-      }
-
-      observer?.observe(element);
-    };
-
-    const scan = () => {
-      scanTimer = undefined;
-      document.querySelectorAll<HTMLElement>(revealTargetSelector).forEach(observeElement);
-    };
-
-    const scheduleScan = () => {
-      if (scanTimer) window.clearTimeout(scanTimer);
-      scanTimer = window.setTimeout(scan, 90);
-    };
-
-    root.classList.add("nl-scroll-effects-ready");
-    updateScrollDirection();
-    scan();
-
-    window.addEventListener("scroll", updateScrollDirection, { passive: true });
-    window.addEventListener("resize", scheduleScan, { passive: true });
-
-    return () => {
-      root.classList.remove("nl-scroll-effects-ready");
-      delete root.dataset.scrollDirection;
-      if (scanTimer) window.clearTimeout(scanTimer);
-      observer?.disconnect();
-      window.removeEventListener("scroll", updateScrollDirection);
-      window.removeEventListener("resize", scheduleScan);
-      observed.forEach((element) => {
-        element.classList.remove("nl-scroll-reveal", "is-revealed");
-        element.style.removeProperty("--nl-reveal-delay");
-        delete element.dataset.revealDir;
-        delete element.dataset.revealInstant;
-      });
-    };
-  }, [enableScrollReveal]);
 
   if (hideChrome) {
     return (
