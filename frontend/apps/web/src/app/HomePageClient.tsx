@@ -75,6 +75,11 @@ import { storeImageForSlug } from "@/lib/demo-media";
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import {
+  getFilterAreaLabel,
+  getFilterCategoryLabel,
+  getFilterCityLabel,
+} from "@/lib/i18n/filter-taxonomy";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
 import {
@@ -339,14 +344,6 @@ const cityLabels: Record<string, string> = {
   hcm: "TP.HCM",
 };
 
-const areaLabels: Record<string, string> = {
-  "Hoan Kiem": "Hoàn Kiếm",
-  "Tay Ho": "Tây Hồ",
-  "Quan 1": "Quận 1",
-  "Quan 3": "Quận 3",
-  "Quan 7": "Quận 7",
-};
-
 const categoryPrices: Record<string, string> = {
   BAR: "từ 650.000đ",
   CLUB: "từ 2.500.000đ",
@@ -581,14 +578,14 @@ function storeAreaLabel(store: PublicStore, language: LanguageCode = "vi") {
       : !isGeneralAreaText(store.district)
       ? store.district
       : "";
-  const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
+  const readableArea = areaName ? getFilterAreaLabel(areaName, language) : "";
   const readableCity = getCityDisplay(store.cityCode, store.city, language);
 
   return [readableArea, readableCity].filter(Boolean).join(" · ");
 }
 
 function mapStoreToHomeCard(store: PublicStore, index: number, language: LanguageCode = "vi"): HomeStoreCard {
-  const categoryLabel = categoryLabels[store.category] ?? store.category;
+  const categoryLabel = getFilterCategoryLabel(store.category, language);
   const image = storeCardImage(store, index);
 
   return {
@@ -608,8 +605,8 @@ function mapStoreToHomeCard(store: PublicStore, index: number, language: Languag
 }
 
 function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: number, language: LanguageCode = "vi"): HomeStoreCard {
-  const categoryLabel = categoryLabels[item.category] ?? item.category;
-  const wardName = (item as any).ward ?? item.area?.ward;
+  const categoryLabel = getFilterCategoryLabel(item.category, language);
+  const wardName = item.ward ?? item.area?.ward;
   const areaName =
     wardName && !isGeneralAreaText(wardName)
       ? wardName
@@ -618,7 +615,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
       : !isGeneralAreaText(item.district)
       ? item.district
       : "";
-  const readableArea = areaName ? (areaLabels[areaName] ?? areaName) : "";
+  const readableArea = areaName ? getFilterAreaLabel(areaName, language) : "";
   const readableCity = getCityDisplay(item.cityCode, item.city, language);
   const activeCouponName = item.activeCoupon?.name;
   const image = resolveClientUrl(item.thumbnailUrl);
@@ -640,28 +637,28 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
   };
 }
 
-function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
+function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode): RankedItem {
   return {
     rank: item.rank ?? item.pinRank,
     img: backgroundFromUrl(item.image),
     name: item.name,
-    area: storeAreaText(item.area, item.cityCode, item.city),
+    area: storeAreaText(item.area, item.cityCode, item.city, language),
     href: item.href,
     sponsored: item.sponsored,
     responsiveImage: item.responsiveImage,
   };
 }
 
-function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStoreCard {
+function mapRankingToHomeCard(item: PublicRankingItem, index: number, language: LanguageCode): HomeStoreCard {
   void index;
-  const categoryLabel = categoryLabels[item.category] ?? item.category;
+  const categoryLabel = getFilterCategoryLabel(item.category, language);
   const image = resolveClientUrl(item.image);
 
   return {
     id: item.targetId,
     slug: item.slug,
     name: item.name,
-    area: storeAreaText(item.area, item.cityCode, item.city),
+    area: storeAreaText(item.area, item.cityCode, item.city, language),
     catLabel: categoryLabel,
     category: item.category,
     cityCode: item.cityCode ?? "",
@@ -680,23 +677,11 @@ function getCityDisplay(cityCode?: string | null, city?: string | null, language
   const isDn = normCity.includes("dn") || normCity.includes("da nang") || normCity.includes("đà nẵng");
 
   if (isHcm) {
-    return {
-      vi: "TP.HCM",
-      en: "Ho Chi Minh City",
-      ja: "ホーチミン市",
-      ko: "호찌민시",
-      zh: "胡志明市",
-    }[language] ?? "TP.HCM";
+    return getFilterCityLabel("hcm", language);
   }
 
   if (isHn) {
-    return {
-      vi: "Hà Nội",
-      en: "Hanoi",
-      ja: "ハノイ",
-      ko: "하노이",
-      zh: "河内",
-    }[language] ?? "Hà Nội";
+    return getFilterCityLabel("hn", language);
   }
 
   if (isDn) {
@@ -720,8 +705,12 @@ function storeAreaText(
   language?: LanguageCode,
   ward?: string | null,
 ) {
-  const selectedWard = ward && !isGeneralAreaText(ward) ? ward : null;
-  const selectedArea = area && !isGeneralAreaText(area) ? (areaLabels[area] ?? area) : null;
+  const selectedWard = ward && !isGeneralAreaText(ward)
+    ? getFilterAreaLabel(ward, language ?? "vi")
+    : null;
+  const selectedArea = area && !isGeneralAreaText(area)
+    ? getFilterAreaLabel(area, language ?? "vi")
+    : null;
   const readableArea = selectedWard ?? selectedArea ?? "";
   const readableCity = getCityDisplay(cityCode, city, language ?? "vi");
   const rawText = [readableArea, readableCity].filter(Boolean).join(" · ");
@@ -859,7 +848,7 @@ function mapTourToHomeItem(
   };
 }
 
-function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
+function mapContentToHomeItem(content: CmsContentItem, language: LanguageCode): HomeContentItem {
   const metadata = content.metadata ?? {};
   const image = firstContentImage(getCmsContentImageUrl(content));
   const category = typeof metadata.category === "string" && metadata.category.trim()
@@ -871,11 +860,11 @@ function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
 
   return {
     id: content.id,
-    title: content.title,
-    desc: content.excerpt || "Khám phá nội dung mới từ Vietyoru.",
+    title: translateText(content.title, language),
+    desc: translateText(content.excerpt || "Khám phá nội dung mới từ Vietyoru.", language),
     href: content.type === "BLOG" ? `/blog/${content.slug}` : `/legal/${content.slug}`,
     icon: content.type === "BLOG" ? Newspaper : BookOpen,
-    kicker: category,
+    kicker: translateText(category, language),
     meta: publishedDate,
     img: backgroundFromUrl(image),
     rank: getHomeGuideRank(content),
@@ -3268,8 +3257,8 @@ export default function HomePageClient({
     [homeSectionTitles],
   );
   const homeStoreCards = useMemo(
-    () => homeStores.map(mapStoreToHomeCard),
-    [homeStores],
+    () => homeStores.map((store, index) => mapStoreToHomeCard(store, index, activeLanguage)),
+    [activeLanguage, homeStores],
   );
   const recommendedCards = homeRecommendations.length ? homeRecommendations : homeStoreCards;
   const guideItems = useMemo(
@@ -3456,7 +3445,11 @@ export default function HomePageClient({
         storeSlugs: behaviorSignals.storeSlugs.join(","),
       })
       .then((items) => {
-        if (!cancelled) setHomeRecommendations(items.map(mapRecommendationToHomeCard));
+        if (!cancelled) {
+          setHomeRecommendations(
+            items.map((item, index) => mapRecommendationToHomeCard(item, index, activeLanguage)),
+          );
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -3529,7 +3522,7 @@ export default function HomePageClient({
           .filter(isHomeGuideBlog)
           .sort((a, b) => getHomeGuideRank(a) - getHomeGuideRank(b))
           .slice(0, 8)
-          .map(mapContentToHomeItem);
+          .map((content) => mapContentToHomeItem(content, activeLanguage));
         setHomeContentItems(withApiImageFallbacks(items, tourImages));
       })
       .catch(() => {
@@ -3566,8 +3559,8 @@ export default function HomePageClient({
     ])
       .then(([castResponse, storeItems]) => {
         if (cancelled) return;
-        setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
-        setStoreRankItems(storeItems.map(mapRankingToRankedItem));
+        setCastRankItems(castResponse.data.map((item) => mapRankingToRankedItem(item, activeLanguage)));
+        setStoreRankItems(storeItems.map((item) => mapRankingToRankedItem(item, activeLanguage)));
       })
       .catch(() => {
         if (!cancelled) {
@@ -3583,7 +3576,7 @@ export default function HomePageClient({
     return () => {
       cancelled = true;
     };
-  }, [activeRankRegion, canLoadRankings]);
+  }, [activeLanguage, activeRankRegion, canLoadRankings]);
 
   useEffect(() => {
     if (!canLoadFeatured) return;
@@ -3636,7 +3629,11 @@ export default function HomePageClient({
 
     loadFeaturedServices()
       .then((items) => {
-        if (!cancelled) setFeaturedServices(items.map(mapRankingToHomeCard));
+        if (!cancelled) {
+          setFeaturedServices(
+            items.map((item, index) => mapRankingToHomeCard(item, index, activeLanguage)),
+          );
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -3651,7 +3648,7 @@ export default function HomePageClient({
     return () => {
       cancelled = true;
     };
-  }, [activeSvcTab, activeServiceRegion, canLoadFeatured]);
+  }, [activeLanguage, activeSvcTab, activeServiceRegion, canLoadFeatured]);
 
   useEffect(() => {
     if (!homeHotVideosEnabled || !canLoadVideos) return;
@@ -3970,7 +3967,10 @@ export default function HomePageClient({
                   renderItem={(item) => <ContentPlaceholderCard item={item} compact={!isDesktopLayout} />}
                 />
               ) : (
-                <HomeDataMessage text={homeContentError || "Chưa có bài viết được xuất bản."} compact={!isDesktopLayout} />
+                <HomeDataMessage
+                  text={homeContentError || translateText("Chưa có bài viết được xuất bản.", activeLanguage)}
+                  compact={!isDesktopLayout}
+                />
               )}
             </section>
 
@@ -4146,7 +4146,10 @@ export default function HomePageClient({
                     renderItem={(item) => <ContentPlaceholderCard item={item} compact />}
                   />
                 ) : (
-                  <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} compact />
+                  <HomeDataMessage
+                    text={homeContentError || translateText("Chưa có bài viết/chính sách được xuất bản.", activeLanguage)}
+                    compact
+                  />
                 )}
               </div>
             </section>
@@ -4309,7 +4312,9 @@ export default function HomePageClient({
                     renderItem={(item) => <ContentPlaceholderCard item={item} />}
                   />
                 ) : (
-                  <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} />
+                  <HomeDataMessage
+                    text={homeContentError || translateText("Chưa có bài viết/chính sách được xuất bản.", activeLanguage)}
+                  />
                 )}
               </div>
             </section>

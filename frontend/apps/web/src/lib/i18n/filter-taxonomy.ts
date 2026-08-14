@@ -101,6 +101,7 @@ const areaLabels: Record<string, LocalizedLabels> = {
   "Thao Dien": { vi: "Thảo Điền", en: "Thao Dien", ja: "タオディエン", ko: "타오디엔", zh: "草田" },
   "Binh Thanh": { vi: "Bình Thạnh", en: "Binh Thanh", ja: "ビンタン", ko: "빈타인", zh: "平盛" },
   "Phu Nhuan": { vi: "Phú Nhuận", en: "Phu Nhuan", ja: "フーニュアン", ko: "푸년", zh: "富润" },
+  "Phường Sài Gòn": { vi: "Phường Sài Gòn", en: "Sai Gon Ward", ja: "サイゴン区", ko: "사이공 구", zh: "西贡坊" },
 };
 
 const normalizeLabelKey = (value: string) =>

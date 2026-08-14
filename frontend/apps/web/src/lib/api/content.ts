@@ -116,12 +116,14 @@ export type PublicHomeRecommendation = {
   description?: string | null;
   city: string;
   cityCode?: string;
+  ward?: string | null;
   district?: string | null;
   area?: {
     id: string;
     code: string;
     name: string;
     city: string;
+    ward?: string | null;
     district?: string | null;
     cityCode?: string;
   } | null;

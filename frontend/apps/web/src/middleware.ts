@@ -10,6 +10,7 @@ import {
   type AuthPortal,
 } from "@/lib/auth/hosts";
 import {
+  defaultLanguageCode,
   getPathLanguage,
   isLocalizedPublicRoute,
   stripLanguagePrefix,
@@ -172,7 +173,7 @@ export async function middleware(request: NextRequest) {
     request.cookies.get("vietyoru.language")?.value ??
     request.cookies.get("vietyoru_language")?.value;
   const preferredPublicLanguage =
-    storedLanguage && languageCodes.has(storedLanguage) ? storedLanguage : "vi";
+    storedLanguage && languageCodes.has(storedLanguage) ? storedLanguage : defaultLanguageCode;
   const memberPaths = ["/tai-khoan", "/bao-mat-tai-khoan", "/da-luu", "/gui-hoa-don", "/vi-uu-dai"];
   const isMemberPath = memberPaths.some((p) => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith("/partner");
@@ -379,7 +380,10 @@ export async function middleware(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-vietyoru-locale", requestedLanguage ?? "vi");
+  // Keep the server-rendered document on the language already selected by the
+  // visitor. This avoids rendering Vietnamese at / and switching to Japanese
+  // only after hydration when the language cookie is already present.
+  requestHeaders.set("x-vietyoru-locale", requestedLanguage ?? preferredPublicLanguage);
   requestHeaders.set("x-vietyoru-pathname", requestedPathname);
 
   if (requestedLanguage && !isLocalizedPublicRoute(pathname)) {
