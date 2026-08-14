@@ -271,6 +271,11 @@ html.vy-light .nl-site-brand-name {
   text-shadow: none !important;
 }
 
+.nl-site-brand-name,
+.nl-site-brand-tagline {
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
+}
+
 html.vy-light .nl-site-brand-tagline {
   color: #8f6a2a !important;
   opacity: 0.95 !important;
