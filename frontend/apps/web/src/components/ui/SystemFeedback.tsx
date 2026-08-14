@@ -6,6 +6,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -40,6 +41,8 @@ type ToastInput = {
   progress?: number;
   durationMs?: number;
   placement?: ToastPlacement;
+  dedupeKey?: string;
+  dedupeMs?: number;
 };
 
 type ToastState = ToastInput & {
@@ -199,6 +202,7 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
   const [modal, setModal] = useState<ModalInput | null>(null);
   const [sheet, setSheet] = useState<SheetInput | null>(null);
   const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(() => readStoredLanguage());
+  const toastDedupeRef = useRef(new Map<string, number>());
   const shouldTranslateFeedback = isUserFeedbackRoute();
 
   const dismissToast = useCallback((id: string) => {
@@ -215,9 +219,19 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback(
     (toast: ToastInput) => {
-      const id = createId("toast");
       const tone = toast.tone ?? "info";
       const placement = toast.placement ?? "top-right";
+      const dedupeMs = toast.dedupeMs ?? 1500;
+      const dedupeKey =
+        toast.dedupeKey ?? `${placement}:${tone}:${toast.title}:${toast.description ?? ""}`;
+      const now = Date.now();
+      const lastShownAt = toastDedupeRef.current.get(dedupeKey) ?? 0;
+      if (dedupeMs > 0 && now - lastShownAt < dedupeMs) {
+        return dedupeKey;
+      }
+
+      toastDedupeRef.current.set(dedupeKey, now);
+      const id = createId("toast");
       const nextToast: ToastState = { ...toast, id, tone, placement };
       setToasts((current) => [nextToast, ...current].slice(0, 5));
 
