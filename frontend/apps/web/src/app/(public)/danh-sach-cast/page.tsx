@@ -476,6 +476,19 @@ const nextFavoriteSlugs = (slugs: string[], slug: string, favorited: boolean) =>
     ? [slug, ...slugs.filter((item) => item !== slug)]
     : slugs.filter((item) => item !== slug);
 
+const partnerListingReviewCastSlugPattern = /-listing-[a-z0-9]{8}-cast-\d+$/i;
+
+const isPublicCastVisible = (cast: PublicCast) => {
+  const hasVisibilityState = cast.isPublic !== undefined || Boolean(cast.status);
+  const looksLikeListingReviewCast = partnerListingReviewCastSlugPattern.test(cast.slug);
+
+  return (
+    cast.isPublic !== false &&
+    (!cast.status || cast.status === "ACTIVE") &&
+    (hasVisibilityState || !looksLikeListingReviewCast)
+  );
+};
+
 const highlightMatch = (text: string, query: string) => {
   const normalizedQuery = query.trim().toLowerCase();
   const normalizedText = text.toLowerCase();
@@ -493,6 +506,10 @@ const highlightMatch = (text: string, query: string) => {
 };
 
 export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { initialCasts?: PublicCast[]; initialTotal?: number }) {
+  const visibleInitialCasts = useMemo(
+    () => initialCasts.filter(isPublicCastVisible),
+    [initialCasts],
+  );
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -514,8 +531,10 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
-  const [casts, setCasts] = useState<PublicCast[]>(initialCasts);
-  const [totalCasts, setTotalCasts] = useState(initialTotal);
+  const [casts, setCasts] = useState<PublicCast[]>(visibleInitialCasts);
+  const [totalCasts, setTotalCasts] = useState(
+    Math.max(0, initialTotal - (initialCasts.length - visibleInitialCasts.length)),
+  );
   // Nếu server đã cung cấp data ban đầu → không cần skeleton lần đầu
   const [isLoading, setIsLoading] = useState(initialCasts.length === 0);
   const [error, setError] = useState<string | null>(null);
@@ -582,8 +601,9 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
         })
         .then((result) => {
           if (!cancelled) {
-            setCasts(result.casts);
-            setTotalCasts(result.total);
+            const nextCasts = result.casts.filter(isPublicCastVisible);
+            setCasts(nextCasts);
+            setTotalCasts(Math.max(0, result.total - (result.casts.length - nextCasts.length)));
           }
         })
         .catch(() => {
@@ -795,7 +815,7 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
     ).slice(0, 4);
   }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
   const totalPages = Math.max(1, Math.ceil(totalCasts / castItemsPerPage));
-  const pagedCasts = casts;
+  const pagedCasts = visibleCasts;
   const cityLabel = getCastCityLabel(city, activeLanguage);
   const resultCityLabel = city ? cityLabel : copy.all;
   const localizedCityOptions = useMemo(
@@ -2340,11 +2360,13 @@ html.vy-light .cast-card-favorite.is-active {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(12, 12, 15, 0.02) 35%, rgba(12, 12, 15, 0.92) 100%);
+  z-index: 1;
 }
 
 .cast-rank-badge {
   position: absolute;
   top: 11px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2378,6 +2400,7 @@ html.vy-light .cast-card-favorite.is-active {
   position: absolute;
   left: 12px;
   right: 12px;
+  z-index: 2;
   min-width: 0;
 }
 

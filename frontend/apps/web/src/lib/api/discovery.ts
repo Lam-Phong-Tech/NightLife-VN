@@ -73,6 +73,8 @@ export type PublicCast = {
   stageName: string;
   name: string;
   publicAlias?: string | null;
+  isPublic?: boolean | null;
+  status?: string | null;
   tags: string[];
   languages: string[];
   hourlyRateVnd?: number | null;
