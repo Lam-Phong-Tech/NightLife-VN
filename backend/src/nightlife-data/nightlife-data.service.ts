@@ -46,6 +46,10 @@ import { SocketGateway } from '../notifications/socket.gateway';
 import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  ResponsiveMediaRecord,
+  toPublicResponsiveImage,
+} from '../storage/public-responsive-image';
+import {
   adminAuditActorFields,
   buildAdminAuditLog,
 } from '../audit-logs/admin-audit';
@@ -902,6 +906,7 @@ type PublicRankingItem = {
   name: string;
   slug: string;
   image: string | null;
+  responsiveImage?: ReturnType<typeof toPublicResponsiveImage>;
   area: string | null;
   city: string;
   cityCode?: string;
@@ -1023,8 +1028,10 @@ type RankingTargetSummary = {
 };
 
 type RankingImageMedia = {
+  id?: string;
   url: string;
   purpose?: string | null;
+  metadata?: Prisma.JsonValue | null;
 };
 
 function normalizeMediaPurpose(value?: string | null) {
@@ -1055,6 +1062,22 @@ function selectPreferredRankingImage(
   return media[0]?.url ?? null;
 }
 
+function selectPreferredRankingMedia(
+  media: RankingImageMedia[],
+  preferredPurposes: readonly string[],
+) {
+  const normalizedPreferredPurposes = preferredPurposes.map((purpose) =>
+    normalizeMediaPurpose(purpose),
+  );
+  for (const purpose of normalizedPreferredPurposes) {
+    const preferred = media.find(
+      (item) => normalizeMediaPurpose(item.purpose) === purpose,
+    );
+    if (preferred) return preferred;
+  }
+  return media[0] ?? null;
+}
+
 type ContentRecord = {
   id: string;
   title: string;
@@ -1077,7 +1100,42 @@ type ContentRecord = {
     name: string;
     slug: string;
   } | null;
+  media: ResponsiveMediaRecord[];
 };
+
+type SortablePublicBanner = {
+  id: string;
+  createdAt: string;
+  metadata: Record<string, unknown>;
+};
+
+function bannerPosition(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function bannerOrder(value: unknown) {
+  const order = Number(value);
+  return Number.isFinite(order) ? order : Number.MAX_SAFE_INTEGER;
+}
+
+export function comparePublicBanners(
+  left: SortablePublicBanner,
+  right: SortablePublicBanner,
+) {
+  const positionComparison = bannerPosition(left.metadata.position).localeCompare(
+    bannerPosition(right.metadata.position),
+    'vi',
+    { numeric: true, sensitivity: 'base' },
+  );
+  if (positionComparison !== 0) return positionComparison;
+
+  const orderComparison =
+    bannerOrder(left.metadata.order) - bannerOrder(right.metadata.order);
+  if (orderComparison !== 0) return orderComparison;
+
+  const dateComparison = left.createdAt.localeCompare(right.createdAt);
+  return dateComparison !== 0 ? dateComparison : left.id.localeCompare(right.id);
+}
 
 type BookingTarget = {
   store: {
@@ -1236,15 +1294,7 @@ export class NightlifeDataService {
     const result = contents.map((content) => this.mapContent(content));
 
     if (type === 'BANNER') {
-      result.sort((a, b) => {
-        const posA = (a.metadata as any)?.position || '';
-        const posB = (b.metadata as any)?.position || '';
-        if (posA.includes('Trang chủ #1') && !posB.includes('Trang chủ #1'))
-          return -1;
-        if (!posA.includes('Trang chủ #1') && posB.includes('Trang chủ #1'))
-          return 1;
-        return 0;
-      });
+      result.sort(comparePublicBanners);
     }
 
     return { data: result };
@@ -13769,6 +13819,20 @@ export class NightlifeDataService {
           total: totalStops,
         },
       },
+      media: {
+        where: {
+          deletedAt: null,
+          access: 'PUBLIC',
+          status: 'READY',
+          type: 'IMAGE',
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          url: true,
+          metadata: true,
+        },
+      },
     };
   }
 
@@ -17743,8 +17807,10 @@ export class NightlifeDataService {
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: {
+            id: true,
             url: true,
             purpose: true,
+            metadata: true,
           },
         },
       },
@@ -17791,8 +17857,10 @@ export class NightlifeDataService {
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: {
+            id: true,
             url: true,
             purpose: true,
+            metadata: true,
           },
         },
         store: {
@@ -17844,6 +17912,10 @@ export class NightlifeDataService {
     const cityCode = store.area?.code
       ? this.cityCodeFromAreaCode(store.area.code)
       : this.normalizeCityCode(store.city);
+    const imageMedia = selectPreferredRankingMedia(
+      store.media,
+      STORE_RANKING_IMAGE_PURPOSES,
+    );
 
     return {
       targetType: 'STORE',
@@ -17851,6 +17923,14 @@ export class NightlifeDataService {
       name: store.name,
       slug: store.slug,
       image: this.resolveRankingStoreImage(store.media),
+      responsiveImage:
+        imageMedia?.id && imageMedia.metadata !== undefined
+          ? toPublicResponsiveImage({
+              id: imageMedia.id,
+              url: imageMedia.url,
+              metadata: imageMedia.metadata,
+            })
+          : null,
       area: store.area?.name ?? store.district,
       city: store.area?.city ?? store.city,
       cityCode,
@@ -17888,6 +17968,10 @@ export class NightlifeDataService {
     const cityCode = cast.store.area?.code
       ? this.cityCodeFromAreaCode(cast.store.area.code)
       : this.normalizeCityCode(cast.store.city);
+    const imageMedia = selectPreferredRankingMedia(
+      cast.media,
+      CAST_RANKING_IMAGE_PURPOSES,
+    );
 
     return {
       targetType: 'CAST',
@@ -17895,6 +17979,14 @@ export class NightlifeDataService {
       name: cast.publicAlias ?? cast.stageName,
       slug: cast.slug,
       image: this.resolveRankingCastImage(cast.media),
+      responsiveImage:
+        imageMedia?.id && imageMedia.metadata !== undefined
+          ? toPublicResponsiveImage({
+              id: imageMedia.id,
+              url: imageMedia.url,
+              metadata: imageMedia.metadata,
+            })
+          : null,
       area: cast.store.area?.name ?? cast.store.district,
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
@@ -21106,6 +21198,11 @@ export class NightlifeDataService {
 
   private mapContent(content: ContentRecord) {
     const metadata = this.asRecord(content.metadata) ?? {};
+    const imageMediaId =
+      typeof metadata.imageMediaId === 'string' ? metadata.imageMediaId : null;
+    const imageMedia = imageMediaId
+      ? content.media.find((media) => media.id === imageMediaId)
+      : content.media[0];
 
     return {
       id: content.id,
@@ -21116,6 +21213,7 @@ export class NightlifeDataService {
       excerpt: content.excerpt,
       body: content.body,
       metadata,
+      responsiveImage: toPublicResponsiveImage(imageMedia),
       noindex: metadata.noindex === true,
       publishedAt: content.publishedAt?.toISOString() ?? null,
       createdAt: content.createdAt.toISOString(),
