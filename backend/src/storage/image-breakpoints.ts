@@ -9,8 +9,10 @@ export const IMAGE_BREAKPOINTS_BY_PURPOSE: Record<string, readonly number[]> = {
   COVER_IMAGE: [200, 400, 800, 1200, 1600],
   PARTNER_STORE_COVER: [200, 400, 800, 1200, 1600],
 
-  STORE_GALLERY: [400, 800, 1200],
-  PARTNER_STORE_GALLERY: [400, 800, 1200],
+  // Some legacy stores use a gallery image as the primary card/hero image.
+  // Keep the thumbnail candidate automatic for those uploads as well.
+  STORE_GALLERY: [200, 400, 800, 1200],
+  PARTNER_STORE_GALLERY: [200, 400, 800, 1200],
 
   CAST_AVATAR: [200, 400, 800],
   CAST_PHOTO: [200, 400, 800],

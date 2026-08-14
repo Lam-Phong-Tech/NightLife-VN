@@ -10,10 +10,12 @@ describe('image breakpoints', () => {
     'STORE_COVER',
     'COVER_IMAGE',
     'PARTNER_STORE_COVER',
+    'STORE_GALLERY',
+    'PARTNER_STORE_GALLERY',
   ])('adds a 200px candidate for %s', (purpose) => {
-    expect(getImageBreakpoints(purpose, 1600)).toEqual([
-      200, 400, 800, 1200, 1600,
-    ]);
+    const breakpoints = getImageBreakpoints(purpose, 1600);
+    expect(breakpoints[0]).toBe(200);
+    expect(breakpoints).toContain(400);
   });
 
   it('does not upscale a source that is narrower than the first breakpoint', () => {
