@@ -702,6 +702,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [refreshBadges]);
 
   useEffect(() => {
+    const handleSupportChatRead = () => {
+      void refreshBadges();
+    };
+
+    window.addEventListener('vy-admin-support-chat-read', handleSupportChatRead);
+    return () => window.removeEventListener('vy-admin-support-chat-read', handleSupportChatRead);
+  }, [refreshBadges]);
+
+  useEffect(() => {
     if (!socket) return;
     const handleSupportChatNotification = () => {
       void refreshBadges();

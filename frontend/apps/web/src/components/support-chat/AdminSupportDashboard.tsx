@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Search, Send, ArrowLeft } from 'lucide-react';
 
@@ -16,6 +16,7 @@ type SupportMessagePayload = {
   senderType?: 'GUEST' | 'USER' | 'ADMIN' | 'SYSTEM';
   content?: string;
   createdAt?: string;
+  isRead?: boolean;
 };
 
 type SupportTicketPayload = {
@@ -75,6 +76,42 @@ export function AdminSupportDashboard() {
   useEffect(() => {
     activeTicketIdRef.current = activeTicketId;
   }, [activeTicketId]);
+
+  const markTicketRead = useCallback(async (ticketId: string) => {
+    const token = getAuthSessionToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/support/tickets/read`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticketId }),
+      });
+
+      if (!response.ok) return;
+
+      setPendingTickets((prev) =>
+        prev.map((ticket) =>
+          ticket.id === ticketId
+            ? {
+                ...ticket,
+                messages: ticket.messages?.map((message) =>
+                  message.senderType === 'GUEST' || message.senderType === 'USER'
+                    ? { ...message, isRead: true }
+                    : message,
+                ),
+              }
+            : ticket,
+        ),
+      );
+      window.dispatchEvent(new CustomEvent('vy-admin-support-chat-read'));
+    } catch (error) {
+      console.error('[Admin Dashboard] Could not mark support ticket read:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -178,6 +215,9 @@ export function AdminSupportDashboard() {
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
+        if (msg.ticketId && (msg.senderType === 'GUEST' || msg.senderType === 'USER')) {
+          void markTicketRead(msg.ticketId);
+        }
       }
     });
 
@@ -217,7 +257,7 @@ export function AdminSupportDashboard() {
     return () => {
       newSocket.close();
     };
-  }, [currentUser]);
+  }, [currentUser, markTicketRead]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -251,6 +291,7 @@ export function AdminSupportDashboard() {
         const ticketInfo = pendingTickets.find((t) => t.id === ticketId);
         setActiveTicketInfo(ticketInfo ?? response.ticket ?? null);
         setActiveTicketId(ticketId);
+        void markTicketRead(ticketId);
         // Don't filter it out, keep it in the list as ACTIVE
         setPendingTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: 'ACTIVE' } : t)));
         fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)

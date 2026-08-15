@@ -27,6 +27,8 @@ import {
   RankingTargetType,
   StoreCategory,
   StoreStatus,
+  SupportSenderType,
+  SupportTicketStatus,
   UserTier,
 } from '@prisma/client';
 import {
@@ -23430,8 +23432,21 @@ export class NightlifeDataService {
     const pendingPartners = await this.prisma.user
       .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
       .catch(() => 0);
-    const pendingChats = await this.prisma.supportTicket
-      .count({ where: { status: 'PENDING' as any } })
+    const pendingChats = await this.prisma.supportMessage
+      .groupBy({
+        by: ['ticketId'],
+        where: {
+          isRead: false,
+          senderType: { in: [SupportSenderType.GUEST, SupportSenderType.USER] },
+          ticket: {
+            status: {
+              in: [SupportTicketStatus.PENDING, SupportTicketStatus.ACTIVE],
+            },
+          },
+        },
+        _count: { ticketId: true },
+      })
+      .then((items) => items.length)
       .catch(() => 0);
 
     const rawLogs = await this.prisma.notificationLog

@@ -10,6 +10,8 @@ describe('SupportChatService', () => {
   };
   const supportMessage = {
     create: jest.fn(),
+    groupBy: jest.fn(),
+    updateMany: jest.fn(),
   };
   const notificationLog = {
     create: jest.fn(),
@@ -146,6 +148,50 @@ describe('SupportChatService', () => {
           preview: 'Xin Admin hỗ trợ giúp tôi.',
         },
       },
+    });
+  });
+
+  it('counts support tickets with unread customer messages for admin badge', async () => {
+    supportMessage.groupBy.mockResolvedValue([
+      { ticketId: 'ticket-1', _count: { ticketId: 2 } },
+      { ticketId: 'ticket-2', _count: { ticketId: 1 } },
+    ]);
+
+    await expect(service.countUnreadAdminTickets()).resolves.toBe(2);
+
+    expect(supportMessage.groupBy).toHaveBeenCalledWith({
+      by: ['ticketId'],
+      where: {
+        isRead: false,
+        senderType: {
+          in: [SupportSenderType.GUEST, SupportSenderType.USER],
+        },
+        ticket: {
+          status: {
+            in: [SupportTicketStatus.PENDING, SupportTicketStatus.ACTIVE],
+          },
+        },
+      },
+      _count: { ticketId: true },
+    });
+  });
+
+  it('marks unread customer messages as read when admin opens a ticket', async () => {
+    supportMessage.updateMany.mockResolvedValue({ count: 3 });
+
+    await expect(service.markTicketReadByAdmin('ticket-1')).resolves.toEqual({
+      count: 3,
+    });
+
+    expect(supportMessage.updateMany).toHaveBeenCalledWith({
+      where: {
+        ticketId: 'ticket-1',
+        isRead: false,
+        senderType: {
+          in: [SupportSenderType.GUEST, SupportSenderType.USER],
+        },
+      },
+      data: { isRead: true },
     });
   });
 });

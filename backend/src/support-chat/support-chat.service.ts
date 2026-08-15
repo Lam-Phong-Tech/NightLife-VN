@@ -99,6 +99,33 @@ export class SupportChatService {
     });
   }
 
+  async countUnreadAdminTickets() {
+    const unreadTickets = await this.prisma.supportMessage.groupBy({
+      by: ['ticketId'],
+      where: {
+        isRead: false,
+        senderType: { in: [SupportSenderType.GUEST, SupportSenderType.USER] },
+        ticket: {
+          status: { in: this.openTicketStatuses },
+        },
+      },
+      _count: { ticketId: true },
+    });
+
+    return unreadTickets.length;
+  }
+
+  async markTicketReadByAdmin(ticketId: string) {
+    return this.prisma.supportMessage.updateMany({
+      where: {
+        ticketId,
+        isRead: false,
+        senderType: { in: [SupportSenderType.GUEST, SupportSenderType.USER] },
+      },
+      data: { isRead: true },
+    });
+  }
+
   async getPendingTickets() {
     return this.prisma.supportTicket.findMany({
       where: { status: SupportTicketStatus.PENDING },

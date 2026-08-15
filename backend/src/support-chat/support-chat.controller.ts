@@ -120,6 +120,20 @@ export class SupportChatController {
     return { ...message, ticketId };
   }
 
+  @Post('tickets/read')
+  @UseGuards(JwtAuthGuard)
+  async markTicketRead(@Body() body: { ticketId?: string }) {
+    if (!body.ticketId) {
+      throw new BadRequestException('Ticket ID is required');
+    }
+
+    const result = await this.supportChatService.markTicketReadByAdmin(
+      body.ticketId,
+    );
+
+    return { success: true, ticketId: body.ticketId, count: result.count };
+  }
+
   @Post('merge')
   @UseGuards(JwtAuthGuard)
   async mergeSession(

@@ -314,6 +314,31 @@ export class SupportChatGateway
     }
   }
 
+  @SubscribeMessage('mark_ticket_read')
+  async handleMarkTicketRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { ticketId: string },
+  ) {
+    try {
+      await this.requireAdmin(client);
+      if (!data.ticketId) {
+        return { success: false, error: 'Ticket ID is required' };
+      }
+
+      const result = await this.supportChatService.markTicketReadByAdmin(
+        data.ticketId,
+      );
+      this.socketGateway.notifyAdminSupportChatMessage({
+        ticketId: data.ticketId,
+        read: true,
+        createdAt: new Date().toISOString(),
+      });
+      return { success: true, count: result.count };
+    } catch {
+      return { success: false, error: 'UNAUTHORIZED' };
+    }
+  }
+
   @SubscribeMessage('claim_ticket')
   async handleClaimTicket(
     @ConnectedSocket() client: Socket,

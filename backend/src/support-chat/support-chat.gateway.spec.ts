@@ -7,8 +7,10 @@ import { SocketGateway } from '../notifications/socket.gateway';
 
 describe('SupportChatGateway', () => {
   const claimTicketMock = jest.fn();
+  const markTicketReadByAdminMock = jest.fn();
   const supportChatService = {
     claimTicket: claimTicketMock,
+    markTicketReadByAdmin: markTicketReadByAdminMock,
   } as unknown as jest.Mocked<SupportChatService>;
   const jwtService = {
     verifyAsync: jest.fn(),
@@ -210,6 +212,42 @@ describe('SupportChatGateway', () => {
       'ticket-1',
       'verified-admin-id',
     );
+  });
+
+  it('marks a support ticket as read from an authenticated admin socket', async () => {
+    markTicketReadByAdminMock.mockResolvedValue({ count: 2 });
+    const client = {
+      data: {
+        supportUser: {
+          id: 'verified-admin-id',
+          role: 'ADMIN',
+          jti: 'session-id',
+        },
+      },
+      join: jest.fn(),
+      disconnect: jest.fn(),
+    } as unknown as Socket;
+
+    await expect(
+      gateway.handleMarkTicketRead(client, { ticketId: 'ticket-1' }),
+    ).resolves.toEqual({ success: true, count: 2 });
+
+    expect(markTicketReadByAdminMock).toHaveBeenCalledWith('ticket-1');
+    expect(socketGateway.notifyAdminSupportChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ ticketId: 'ticket-1', read: true }),
+    );
+  });
+
+  it('rejects mark-read from an unauthenticated socket', async () => {
+    const client = {
+      data: {},
+      join: jest.fn(),
+    } as unknown as Socket;
+
+    await expect(
+      gateway.handleMarkTicketRead(client, { ticketId: 'ticket-1' }),
+    ).resolves.toEqual({ success: false, error: 'UNAUTHORIZED' });
+    expect(markTicketReadByAdminMock).not.toHaveBeenCalled();
   });
 
   it('disconnects an already-open admin socket after its session is replaced', async () => {
