@@ -138,6 +138,10 @@ function AdminDashboardContent() {
     if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M₫`.replace(".0", "");
     return `${val.toLocaleString("vi-VN")}₫`;
   };
+  const formatCompactVnd = (val: number) => {
+    if (val >= 1000000) return `${(val / 1000000).toFixed(1).replace(".0", "")}M₫`;
+    return `${val.toLocaleString("vi-VN")}₫`;
+  };
 
   const formatDateStr = () => {
     const d = new Date();
@@ -768,8 +772,7 @@ function AdminDashboardContent() {
                   letterSpacing: "-.5px",
                 }}
               >
-                {formatVnd(monthlyRevenue).replace("M₫", "")}
-                <span style={{ fontSize: "15px", fontWeight: 700 }}>M₫</span>
+                {formatCompactVnd(monthlyRevenue)}
               </div>
               <div className="nl-admin-stat-card-title" style={{ fontSize: "11.5px", color: "#f3f0ea", fontWeight: 600, marginTop: "1px" }}>
                 Tổng doanh thu
