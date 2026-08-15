@@ -36,6 +36,8 @@ export type AdminRankingTargetOption = {
   cityCode?: string | null;
   category: string;
   status: string;
+  /** Cast must be explicitly public before it may be ranked. */
+  isPublic?: boolean;
 };
 
 export type AdminRankingFormPayload = {

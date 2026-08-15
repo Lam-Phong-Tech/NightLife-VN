@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
+import type { AdminRankingTargetOption } from '@/lib/api/admin-rankings';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { DataSkeleton } from '@/components/ui/DataLoading';
 import {
@@ -270,7 +271,7 @@ function AdminRankingsClient() {
   
   const [showAddCast, setShowAddCast] = useState(false);
   const [castSearch, setCastSearch] = useState('');
-  const [castOptions, setCastOptions] = useState<any[]>([]);
+  const [castOptions, setCastOptions] = useState<AdminRankingTargetOption[]>([]);
   
   const [showAddStore, setShowAddStore] = useState(false);
   const [storeSearch, setStoreSearch] = useState('');
@@ -308,17 +309,19 @@ function AdminRankingsClient() {
         params: { targetType: type, city: cityCode, category: activeCategory, limit: 100 }
       });
       const items = Array.isArray(res) ? res : (res?.data || []);
-      if (type === 'CAST') setCastOptions(items);
+      if (type === 'CAST') setCastOptions(items as AdminRankingTargetOption[]);
       else setStoreOptions(items);
     } catch (e) {
       console.error(e);
     }
   }, [activeCategory, activeTab]);
 
-  // The endpoint only returns targets that the backend considers public/rankable.
-  // Do not re-evaluate approval fields in the browser: an incomplete response
-  // from a rolling deploy used to make every valid Cast disappear here.
+  // A Cast may be ranked only after it is active and explicitly public.
+  // This browser-side guard prevents an outdated API instance or cache from
+  // exposing a pending Cast in the admin selector.
   const filteredCastOptions = castOptions.filter(opt => 
+    opt.status === 'ACTIVE' &&
+    opt.isPublic === true &&
     !casts.find(c => c.targetId === opt.id) &&
     (!castSearch || opt.name.toLowerCase().includes(castSearch.toLowerCase()))
   );
@@ -328,7 +331,11 @@ function AdminRankingsClient() {
     (!storeSearch || opt.name.toLowerCase().includes(storeSearch.toLowerCase()))
   );
 
-  const handleAddCast = (option: any) => {
+  const handleAddCast = (option: AdminRankingTargetOption) => {
+    if (option.status !== 'ACTIVE' || option.isPublic !== true) {
+      showToast('Chỉ có Cast đã được duyệt và đang hiển thị mới được thêm vào Ranking.', 'warning');
+      return;
+    }
     if (casts.find(c => c.targetId === option.id)) return;
     if (casts.length >= 5) {
       showToast('Chỉ được xếp hạng tối đa 5 Cast.', 'warning');
@@ -339,7 +346,7 @@ function AdminRankingsClient() {
       targetId: option.id,
       targetType: 'CAST',
       name: option.name,
-      desc: option.store?.name || 'Cast',
+      desc: option.area || option.city || 'Cast',
       avatar: 'C',
       image: option.image || null,
       sponsored: false
@@ -722,7 +729,7 @@ function AdminRankingsClient() {
                     }}></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
-                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.store?.name || 'Cast'}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.area || opt.city || 'Cast'}</div>
                     </div>
                     <span onClick={() => handleAddCast(opt)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Thêm vào Top</span>
                   </div>
