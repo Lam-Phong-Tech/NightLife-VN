@@ -2415,7 +2415,7 @@ export function SiteChrome({
                 ) : (
                   <Icon size={21} />
                 )}
-                <span>{item.label}</span>
+                <span>{translateText(item.label, activeLanguage)}</span>
               </Link>
             );
           })}
