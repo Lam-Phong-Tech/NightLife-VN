@@ -6231,6 +6231,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "请输入正确格式的电子邮件地址，例如 name@example.com。",
   },
   {
+    vi: "Email này đang là tài khoản đối tác/quản trị. Hãy đăng nhập tại cổng phù hợp.",
+    en: "This email belongs to a partner or administrator account. Please use the appropriate login portal.",
+    ja: "このメールアドレスはパートナーまたは管理者アカウントです。該当するログインポータルをご利用ください。",
+    ko: "이 이메일은 파트너 또는 관리자 계정입니다. 해당 로그인 포털을 이용해 주세요.",
+    zh: "此邮箱属于合作伙伴或管理员账户。请使用相应的登录入口。",
+  },
+  {
     vi: "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.",
     en: "Each domain label after @ must not exceed 63 characters.",
     ja: "@より後の各ドメイン部分は63文字以内にしてください。",

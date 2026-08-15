@@ -194,7 +194,7 @@ const exactMessageTranslations: Record<string, string> = {
   "startsat must be before endsat": "Thời gian bắt đầu phải trước thời gian kết thúc.",
   "targettype must be cast or store": "Loại xếp hạng phải là cast hoặc quán.",
   "this google account is not a member account":
-    "Tài khoản Google này không phải tài khoản hội viên.",
+    "Email này đang là tài khoản đối tác/quản trị. Hãy đăng nhập tại cổng phù hợp.",
   "token has been revoked": "Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.",
   "token session is not active": "Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.",
   "too many booking requests. please try again shortly":

@@ -31,4 +31,18 @@ describe("API client messages", () => {
       "File không đúng định dạng. Chỉ chấp nhận ảnh JPG, JPEG, PNG, WebP, GIF, SVG; video MP4, WebM hoặc file PDF.",
     );
   });
+
+  it("explains Google member-portal role conflicts in the selected language", () => {
+    const viMessage = translateApiMessage(
+      "This Google account is not a member account",
+      403,
+    );
+
+    expect(viMessage).toBe(
+      "Email này đang là tài khoản đối tác/quản trị. Hãy đăng nhập tại cổng phù hợp.",
+    );
+    expect(translateText(viMessage, "ja")).toBe(
+      "このメールアドレスはパートナーまたは管理者アカウントです。該当するログインポータルをご利用ください。",
+    );
+  });
 });
