@@ -2094,8 +2094,8 @@ function HomeCardCarousel<T>({
   gap = 12,
   getKey,
   items,
-  itemsPerSlide: _itemsPerSlide,
-  layoutDirection: _layoutDirection = "row",
+  itemsPerSlide,
+  layoutDirection = "row",
   renderItem,
 }: {
   ariaLabel: string;
@@ -2107,31 +2107,75 @@ function HomeCardCarousel<T>({
   // index = vị trí toàn cục của item trong mảng gốc, dùng để quyết định priority load ảnh
   renderItem: (item: T, index: number) => React.ReactNode;
 }) {
+  const slides = useMemo(
+    () => chunkHomeCarouselItems(items, itemsPerSlide),
+    [items, itemsPerSlide],
+  );
+  const slideKey = useMemo(() => items.map(getKey).join("|"), [getKey, items]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const canAutoRotate = useUserInteractionStarted();
+  const swipeHandlers = useCarouselSwipe(slides.length, setActiveSlide);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setActiveSlide(0), 0);
+    return () => window.clearTimeout(timer);
+  }, [itemsPerSlide, slideKey, slides.length]);
+
+  useEffect(() => {
+    if (!canAutoRotate || slides.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % slides.length);
+    }, homeBannerAutoDelayMs);
+
+    return () => window.clearInterval(timer);
+  }, [canAutoRotate, slides.length]);
+
   return (
     <div
       className="nl-home-auto-carousel"
       aria-label={ariaLabel}
+      {...swipeHandlers}
       style={{
         gridColumn: "1 / -1",
-        overflowX: "auto",
+        overflow: "hidden",
         touchAction: "pan-y",
         width: "100%",
-        scrollbarWidth: "none",
       }}
     >
       <div
-        className="nl-home-carousel-track"
         style={{
-          display: "grid",
-          gridAutoFlow: "column",
-          gridAutoColumns: "calc((100% - 12px) / 2)",
-          gap,
+          display: "flex",
+          transform: `translate3d(-${activeSlide * 100}%,0,0)`,
+          transition: homeBannerSlideTransition,
+          willChange: "transform, opacity",
         }}
       >
-        {items.map((item, index) => (
-          <React.Fragment key={getKey(item)}>{renderItem(item, index)}</React.Fragment>
+        {slides.map((slide, slideIndex) => (
+          <div
+            key={`${slideIndex}-${slide.map(getKey).join("-")}`}
+            aria-hidden={activeSlide !== slideIndex}
+            inert={activeSlide !== slideIndex ? true : undefined}
+            style={{
+              flex: "0 0 100%",
+              display: "grid",
+              gridTemplateColumns: layoutDirection === "column" ? "1fr" : `repeat(${Math.max(1, itemsPerSlide)}, minmax(0, 1fr))`,
+              alignItems: layoutDirection === "column" ? "start" : undefined,
+              gap,
+              minWidth: 0,
+              paddingRight: slideIndex < slides.length - 1 ? gap : 0,
+              opacity: activeSlide === slideIndex ? 1 : 0.54,
+              transition: "opacity 960ms ease",
+            }}
+          >
+            {slide.map((item, itemIndexInSlide) => {
+              const globalIndex = slideIndex * itemsPerSlide + itemIndexInSlide;
+              return <React.Fragment key={getKey(item)}>{renderItem(item, globalIndex)}</React.Fragment>;
+            })}
+          </div>
         ))}
       </div>
+      <HomeCarouselDots activeSlide={activeSlide} setActiveSlide={setActiveSlide} slideCount={slides.length} />
     </div>
   );
 }
