@@ -2037,6 +2037,76 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('filters admin ranking cast options to active public casts on active stores', async () => {
+    prisma.cast.findMany.mockResolvedValue([]);
+
+    await service.listAdminRankingTargetOptions({
+      targetType: 'CAST',
+      city: 'hcm',
+      category: 'club',
+      q: 'mika',
+      limit: 10,
+    });
+
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: expect.objectContaining({
+            deletedAt: null,
+            status: 'ACTIVE',
+            category: 'CLUB',
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('hides saved admin ranking configs when their targets are no longer rankable', async () => {
+    const rankingId = '22222222-2222-4222-8222-222222222222';
+    const storeId = '11111111-1111-4111-8111-111111111111';
+
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        id: rankingId,
+        targetType: 'STORE',
+        targetId: storeId,
+        areaId: null,
+        cityCode: 'hn',
+        category: 'CLUB',
+        scope: 'global',
+        manualScore: 100,
+        pinRank: 1,
+        sponsored: false,
+        status: 'ACTIVE',
+        startsAt: null,
+        endsAt: null,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+        area: null,
+      },
+    ]);
+    prisma.store.findMany.mockResolvedValue([]);
+
+    const result = await service.listAdminRankingConfigs({
+      targetType: 'STORE',
+      city: 'hn',
+    });
+
+    expect(result).toEqual([]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: { in: [storeId] },
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+    );
+  });
+
   it('logs minimal audit and notification fields when updating a ranking config', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';

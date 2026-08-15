@@ -1771,6 +1771,7 @@ export class NightlifeDataService {
       }
       const stores = await this.prisma.store.findMany({
         where: {
+          deletedAt: null,
           status: 'ACTIVE',
           ...(category ? { category } : {}),
           ...(andFilters.length ? { AND: andFilters } : {}),
@@ -1829,6 +1830,8 @@ export class NightlifeDataService {
         status: 'ACTIVE',
         isPublic: true,
         store: {
+          deletedAt: null,
+          status: 'ACTIVE',
           ...(category ? { category } : {}),
           ...(cityCode
             ? {
@@ -17398,10 +17401,11 @@ export class NightlifeDataService {
   private async mapAdminRankingConfigs(configs: AdminRankingConfigRecord[]) {
     const targets = await this.loadAdminRankingTargets(configs);
 
-    return configs.map((config) => {
+    return configs.flatMap((config) => {
       const target = targets.get(`${config.targetType}:${config.targetId}`);
+      if (!target) return [];
 
-      return {
+      return [{
         id: config.id,
         targetType: config.targetType,
         targetId: config.targetId,
@@ -17425,7 +17429,7 @@ export class NightlifeDataService {
         endsAt: config.endsAt,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
-      };
+      }];
     });
   }
 
@@ -17464,7 +17468,7 @@ export class NightlifeDataService {
     const targetMap = new Map<string, RankingTargetSummary>();
     const stores: StoreTargetRecord[] = storeIds.length
       ? await this.prisma.store.findMany({
-          where: { id: { in: storeIds }, deletedAt: null },
+          where: { id: { in: storeIds }, deletedAt: null, status: 'ACTIVE' },
           select: {
             id: true,
             name: true,
@@ -17495,7 +17499,13 @@ export class NightlifeDataService {
       : [];
     const casts: CastTargetRecord[] = castIds.length
       ? await this.prisma.cast.findMany({
-          where: { id: { in: castIds }, deletedAt: null },
+          where: {
+            id: { in: castIds },
+            deletedAt: null,
+            status: 'ACTIVE',
+            isPublic: true,
+            store: { deletedAt: null, status: 'ACTIVE' },
+          },
           select: {
             id: true,
             slug: true,
@@ -17611,11 +17621,17 @@ export class NightlifeDataService {
     const target =
       targetType === 'STORE'
         ? await this.prisma.store.findFirst({
-            where: { id: targetId, deletedAt: null },
+            where: { id: targetId, deletedAt: null, status: 'ACTIVE' },
             select: { id: true },
           })
         : await this.prisma.cast.findFirst({
-            where: { id: targetId, deletedAt: null },
+            where: {
+              id: targetId,
+              deletedAt: null,
+              status: 'ACTIVE',
+              isPublic: true,
+              store: { deletedAt: null, status: 'ACTIVE' },
+            },
             select: { id: true },
           });
 
