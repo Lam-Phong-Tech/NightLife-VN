@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  hasNativeRouteLocale,
   isPublicHomepagePath,
   shouldSkipLanguageTranslation,
 } from "@/components/i18n/ClientLanguageTranslator";
@@ -60,5 +61,18 @@ describe("homepage translation isolation", () => {
 
   it("does not classify nested routes as the homepage", () => {
     expect(isPublicHomepagePath("/ja/stores")).toBe(false);
+  });
+});
+
+describe("native locale rendering", () => {
+  it.each(["/vi/stores", "/en/stores", "/ja/stores", "/ko/tour", "/zh/blog"])(
+    "does not run the DOM translator for %s",
+    (pathname) => {
+      expect(hasNativeRouteLocale(pathname)).toBe(true);
+    },
+  );
+
+  it("keeps unprefixed legacy routes eligible for the fallback", () => {
+    expect(hasNativeRouteLocale("/stores")).toBe(false);
   });
 });

@@ -65,7 +65,10 @@ function getLanguage(code: LanguageCode) {
 
 function storeLanguage(language: LanguageOption) {
   storeLanguagePreference(language.code);
-  syncGoogleTranslateCookie(language.code);
+  // Public pages are rendered natively from the locale in the URL. Clear the
+  // legacy Google Translate cookie so it cannot translate the page a second
+  // time after hydration and leave a mixed-language UI behind.
+  syncGoogleTranslateCookie("vi");
 
   const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   const localizedHref = localizeHref(currentHref, language.code);

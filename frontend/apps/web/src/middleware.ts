@@ -290,6 +290,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(localizedUrl, 308);
   }
 
+  // Keep the former singular route from pinning visitors to /vi/store. The
+  // canonical plural route is locale-aware and is rendered natively on the
+  // server, so a Japanese visitor always starts at /ja/stores.
+  if (
+    pathname === "/store" &&
+    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+  ) {
+    const localizedUrl = request.nextUrl.clone();
+    localizedUrl.pathname = `/${requestedLanguage ?? preferredPublicLanguage}/stores`;
+    return NextResponse.redirect(localizedUrl, 308);
+  }
+
   const legacyStoreSlug = pathname.match(/^\/stores\/([^/]+)$/)?.[1];
   const replacementStoreSlug = legacyStoreSlug
     ? legacyPublicStoreSlugRedirects[legacyStoreSlug]

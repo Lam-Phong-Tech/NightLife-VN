@@ -12,6 +12,7 @@ import {
   translateWithWhitespace,
   type LanguageCode,
 } from "@/lib/i18n/client-translations";
+import { getPathLanguage } from "@/lib/i18n/locales";
 import type { NightlifeHostKind } from "@/lib/auth/hosts";
 
 const textSourceMap = new WeakMap<Text, string>();
@@ -197,6 +198,10 @@ export function isPublicHomepagePath(pathname: string) {
   return /^\/(?:vi|en|ja|ko|zh)?\/?$/i.test(pathname);
 }
 
+export function hasNativeRouteLocale(pathname: string) {
+  return Boolean(getPathLanguage(pathname));
+}
+
 export function ClientLanguageTranslator({
   children,
   hostKind,
@@ -240,6 +245,7 @@ export function ClientLanguageTranslator({
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
+    if (hasNativeRouteLocale(pathname)) return undefined;
     if (isPublicHomepagePath(pathname)) return undefined;
 
     let language = readStoredLanguage();
