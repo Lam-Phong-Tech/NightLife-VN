@@ -1,5 +1,5 @@
-import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
-
 export default function Loading() {
-  return <LoadingSkeleton variant="home" />;
+  // The venue hero is the page's primary content. Do not replace it with the
+  // generic home-page skeleton while the server-rendered detail is streaming.
+  return null;
 }
