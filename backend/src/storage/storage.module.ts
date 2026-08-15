@@ -4,10 +4,11 @@ import { StorageController } from './storage.controller';
 import { StorageService } from './storage.service';
 import { SystemConfigModule } from '../system-config/system-config.module';
 import { ImageProcessingService } from './image-processing.service';
+import { R2StorageService } from './r2-storage.service';
 
 @Module({
   imports: [AccessModule, SystemConfigModule],
   controllers: [StorageController],
-  providers: [StorageService, ImageProcessingService],
+  providers: [StorageService, ImageProcessingService, R2StorageService],
 })
 export class StorageModule {}

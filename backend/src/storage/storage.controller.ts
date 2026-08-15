@@ -291,6 +291,23 @@ export class StorageController {
     response.set('Cache-Control', 'public, max-age=31536000, immutable');
     if (requestedFormat === 'auto') response.set('Vary', 'Accept');
 
+    if (this.storageService.isR2Enabled()) {
+      const selected = this.resolveVariantKey({
+        storageKey: mediaFile.storageKey,
+        metadata: mediaFile.metadata,
+        acceptHeader,
+        requestedWidth,
+        requestedFormat,
+        defaultMimeType: mediaFile.mimeType,
+      });
+      const object = await this.storageService.getR2Object(selected.storageKey);
+      response.type(selected.mimeType);
+      if (object.contentLength !== undefined) {
+        response.set('Content-Length', String(object.contentLength));
+      }
+      return object.body.pipe(response);
+    }
+
     const selected = this.resolveVariantPath({
       defaultPath: path,
       storageKey: mediaFile.storageKey,
@@ -336,6 +353,22 @@ export class StorageController {
     response.set('Cache-Control', 'private, max-age=300, must-revalidate');
     response.set('Vary', 'Accept');
 
+    if (this.storageService.isR2Enabled()) {
+      const selected = this.resolveVariantKey({
+        storageKey: mediaFile.storageKey,
+        metadata: mediaFile.metadata,
+        acceptHeader,
+        requestedFormat: 'auto',
+        defaultMimeType: mediaFile.mimeType,
+      });
+      const object = await this.storageService.getR2Object(selected.storageKey);
+      response.type(selected.mimeType);
+      if (object.contentLength !== undefined) {
+        response.set('Content-Length', String(object.contentLength));
+      }
+      return object.body.pipe(response);
+    }
+
     const selected = this.resolveVariantPath({
       defaultPath: path,
       storageKey: mediaFile.storageKey,
@@ -347,6 +380,52 @@ export class StorageController {
 
     response.type(selected.mimeType);
     return response.sendFile(selected.path);
+  }
+
+  private resolveVariantKey(options: {
+    storageKey: string;
+    metadata: unknown;
+    acceptHeader?: string;
+    requestedWidth?: number;
+    requestedFormat: RequestedImageFormat;
+    defaultMimeType: string;
+  }): { storageKey: string; mimeType: string } {
+    const meta = options.metadata as Record<string, unknown> | null;
+    const variants = Array.isArray(meta?.variants)
+      ? (meta.variants as PublicImageVariant[])
+      : [];
+    const variant =
+      selectImageVariant(options.metadata, options.requestedWidth) ??
+      variants.find((item) => item.webpKey === options.storageKey);
+
+    if (!variant) {
+      if (
+        (options.requestedFormat === 'avif' &&
+          options.defaultMimeType !== 'image/avif') ||
+        (options.requestedFormat === 'webp' &&
+          options.defaultMimeType !== 'image/webp')
+      ) {
+        throw new NotFoundException('Requested image variant is not available');
+      }
+      return {
+        storageKey: options.storageKey,
+        mimeType: options.defaultMimeType,
+      };
+    }
+
+    const wantsAvif =
+      options.requestedFormat === 'avif' ||
+      (options.requestedFormat === 'auto' &&
+        options.acceptHeader?.includes('image/avif'));
+    if (wantsAvif && variant.avifKey) {
+      return { storageKey: variant.avifKey, mimeType: 'image/avif' };
+    }
+    if (options.requestedFormat === 'avif') {
+      throw new NotFoundException(
+        'AVIF variant is not available for this image',
+      );
+    }
+    return { storageKey: variant.webpKey, mimeType: 'image/webp' };
   }
 
   /**

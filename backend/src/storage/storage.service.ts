@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SystemConfigService } from '../system-config/system-config.service';
 import { validateUploadedFile } from './upload-file-validation';
 import { ImageProcessingService } from './image-processing.service';
+import { R2StorageService } from './r2-storage.service';
 
 type UploadedFile = {
   filename: string;
@@ -50,7 +51,6 @@ const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
   'TOUR_COVER',
 ]);
 
-
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
@@ -61,7 +61,66 @@ export class StorageService implements OnModuleInit {
     private readonly accessService: AccessService,
     private readonly systemConfigService: SystemConfigService,
     private readonly imageProcessingService: ImageProcessingService,
+    private readonly r2Storage: R2StorageService,
   ) {}
+
+  isR2Enabled() {
+    return this.r2Storage.isEnabled();
+  }
+
+  getR2Object(storageKey: string) {
+    return this.r2Storage.getObject(storageKey);
+  }
+
+  private storageKeys(primaryKey: string, metadata: unknown): string[] {
+    const keys = new Set<string>([primaryKey]);
+    const visit = (value: unknown, property?: string) => {
+      if (typeof value === 'string' && property?.endsWith('Key'))
+        keys.add(value);
+      else if (Array.isArray(value)) value.forEach((item) => visit(item));
+      else if (value && typeof value === 'object') {
+        Object.entries(value as Record<string, unknown>).forEach(
+          ([name, item]) => visit(item, name),
+        );
+      }
+    };
+    visit(metadata);
+    return [...keys];
+  }
+
+  private async uploadToR2(
+    keys: string[],
+    mimeType: string,
+    uploadDir: string,
+  ) {
+    if (!this.isR2Enabled()) return;
+    await this.r2Storage.uploadFiles(
+      keys.map((key) => ({
+        key,
+        path: join(uploadDir, key),
+        contentType: key.endsWith('.avif')
+          ? 'image/avif'
+          : key.endsWith('.webp')
+            ? 'image/webp'
+            : mimeType,
+      })),
+    );
+  }
+
+  private async deleteFromR2(keys: string[]) {
+    if (this.isR2Enabled()) await this.r2Storage.deleteObjects(keys);
+  }
+
+  private async deleteLocalStoredFiles(keys: string[], uploadDir: string) {
+    if (!this.isR2Enabled()) return;
+    await Promise.all(
+      keys.map((key) =>
+        unlink(join(uploadDir, key)).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOENT') throw error;
+        }),
+      ),
+    );
+  }
 
   onModuleInit() {
     const uploadDir = this.getUploadDir();
@@ -207,6 +266,7 @@ export class StorageService implements OnModuleInit {
 
     // Tracks all extra files created during image processing for cleanup on error
     const processingCreatedPaths: string[] = [];
+    let uploadedR2Keys: string[] = [];
 
     try {
       await this.validateUploadPermissions(options);
@@ -241,7 +301,12 @@ export class StorageService implements OnModuleInit {
       let finalSizeBytes = file.size;
       let mediaMetadata: Record<string, unknown> | null = null;
 
-      if (this.imageProcessingService.shouldOptimize(purpose, validatedFile.mimeType)) {
+      if (
+        this.imageProcessingService.shouldOptimize(
+          purpose,
+          validatedFile.mimeType,
+        )
+      ) {
         try {
           const processed = await this.imageProcessingService.processImage(
             file.path,
@@ -260,12 +325,14 @@ export class StorageService implements OnModuleInit {
             variants: processed.variants,
             originalWidth: processed.originalWidth,
             originalHeight: processed.originalHeight,
-          } as Prisma.InputJsonObject;
+          };
 
           // Delete the raw original upload — no longer needed
           await unlink(file.path).catch((err: NodeJS.ErrnoException) => {
             if (err.code !== 'ENOENT') {
-              this.logger.warn(`Could not delete original upload ${file.path}: ${err.message}`);
+              this.logger.warn(
+                `Could not delete original upload ${file.path}: ${err.message}`,
+              );
             }
           });
         } catch (error) {
@@ -305,20 +372,30 @@ export class StorageService implements OnModuleInit {
         purpose,
         type: this.resolveMediaType(finalMimeType),
         access,
-        metadata: mediaMetadata !== null ? (mediaMetadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+        metadata:
+          mediaMetadata !== null
+            ? (mediaMetadata as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         url: `${publicBaseUrl}/storage/${
           access === MediaAccess.PUBLIC ? 'public' : 'files'
         }/${storageKey}`,
       };
 
+      uploadedR2Keys = this.storageKeys(storageKey, mediaMetadata);
+      await this.uploadToR2(uploadedR2Keys, finalMimeType, uploadDir);
+
       const shouldReplaceBillEvidence = Boolean(
         options.userRole === 'USER' &&
-          relationIds.billId &&
-          purpose === 'bill-evidence',
+        relationIds.billId &&
+        purpose === 'bill-evidence',
       );
 
       if (!shouldReplaceBillEvidence) {
-        return await this.prisma.media.create({ data: mediaData });
+        const createdMedia = await this.prisma.media.create({
+          data: mediaData,
+        });
+        await this.deleteLocalStoredFiles(uploadedR2Keys, uploadDir);
+        return createdMedia;
       }
 
       const replacement = await this.prisma.$transaction(async (tx) => {
@@ -356,11 +433,16 @@ export class StorageService implements OnModuleInit {
           if (media.mimeType === 'video/youtube') return;
           // Delete all variant files stored in metadata (if any)
           const meta = media.metadata as Record<string, unknown> | null;
-          const variants = meta?.variants as Array<{ webpKey: string; avifKey: string }> | undefined;
+          const variants = meta?.variants as
+            | Array<{ webpKey: string; avifKey: string }>
+            | undefined;
           if (variants?.length) {
             await this.deleteVariantFiles(variants, uploadDir);
           }
           // Delete the primary file itself
+          await this.deleteFromR2(
+            this.storageKeys(media.storageKey, media.metadata),
+          );
           try {
             await unlink(join(uploadDir, media.storageKey));
           } catch (error) {
@@ -374,12 +456,14 @@ export class StorageService implements OnModuleInit {
         }),
       );
 
+      await this.deleteLocalStoredFiles(uploadedR2Keys, uploadDir);
       return replacement.createdMedia;
     } catch (error) {
       // Clean up the original upload file
       await unlink(file.path).catch(() => undefined);
       // Clean up any variant files created before the error
       await this.imageProcessingService.cleanupFiles(processingCreatedPaths);
+      await this.deleteFromR2(uploadedR2Keys).catch(() => undefined);
       throw error;
     }
   }
@@ -421,7 +505,16 @@ export class StorageService implements OnModuleInit {
       );
     }
 
-    return this.prisma.media.create({
+    const thumbnailPrimaryKey =
+      thumbnailMeta && typeof thumbnailMeta.primaryKey === 'string'
+        ? thumbnailMeta.primaryKey
+        : storageKey;
+    const thumbnailKeys = thumbnailMeta
+      ? this.storageKeys(thumbnailPrimaryKey, thumbnailMeta)
+      : [];
+    await this.uploadToR2(thumbnailKeys, 'image/webp', this.getUploadDir());
+
+    const createdExternalMedia = await this.prisma.media.create({
       data: {
         ownerId: options.ownerId,
         storeId: relationIds.storeId,
@@ -443,6 +536,8 @@ export class StorageService implements OnModuleInit {
             : Prisma.JsonNull,
       },
     });
+    await this.deleteLocalStoredFiles(thumbnailKeys, this.getUploadDir());
+    return createdExternalMedia;
   }
 
   async deleteMedia(mediaId: string, user: StorageUser) {
@@ -532,6 +627,7 @@ export class StorageService implements OnModuleInit {
       );
     }
 
+    await this.deleteFromR2(this.storageKeys(media.storageKey, media.metadata));
     return { id: media.id, deleted: true };
   }
 
@@ -577,7 +673,7 @@ export class StorageService implements OnModuleInit {
     // Allow a member (USER) to view protected evidence of their own bill,
     // even if the file was uploaded by a partner or operator.
     if (user.role === 'USER' && mediaFile.bill) {
-      const bill = mediaFile.bill as { storeId: string; userId: string | null; submittedByUserId: string | null };
+      const bill = mediaFile.bill;
       if (bill.userId === user.id || bill.submittedByUserId === user.id) {
         return resolvedFile;
       }
@@ -595,7 +691,9 @@ export class StorageService implements OnModuleInit {
       where: { storageKey },
       include: {
         booking: { select: { storeId: true } },
-        bill: { select: { storeId: true, userId: true, submittedByUserId: true } },
+        bill: {
+          select: { storeId: true, userId: true, submittedByUserId: true },
+        },
         cast: { select: { storeId: true } },
         content: { select: { storeId: true } },
       },
@@ -636,10 +734,7 @@ export class StorageService implements OnModuleInit {
         const res = await fetch(thumbUrl, {
           signal: AbortSignal.timeout(8000),
         });
-        if (
-          res.ok &&
-          res.headers.get('content-type')?.startsWith('image/')
-        ) {
+        if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
           imageBuffer = Buffer.from(await res.arrayBuffer());
           this.logger.debug(`YouTube thumbnail fetched from ${thumbUrl}`);
           break;
@@ -667,8 +762,8 @@ export class StorageService implements OnModuleInit {
 
       return {
         primaryKey: processed.primaryStorageKey,
-        variants:   processed.variants as Prisma.InputJsonValue,
-        originalWidth:  processed.originalWidth,
+        variants: processed.variants as Prisma.InputJsonValue,
+        originalWidth: processed.originalWidth,
         originalHeight: processed.originalHeight,
       };
     } finally {
@@ -683,16 +778,24 @@ export class StorageService implements OnModuleInit {
   ): Promise<void> {
     await Promise.all(
       variants.flatMap((v) => [
-        unlink(join(uploadDir, v.webpKey)).catch((err: NodeJS.ErrnoException) => {
-          if (err.code !== 'ENOENT') {
-            this.logger.warn(`Could not delete variant ${v.webpKey}: ${err.message}`);
-          }
-        }),
-        unlink(join(uploadDir, v.avifKey)).catch((err: NodeJS.ErrnoException) => {
-          if (err.code !== 'ENOENT') {
-            this.logger.warn(`Could not delete variant ${v.avifKey}: ${err.message}`);
-          }
-        }),
+        unlink(join(uploadDir, v.webpKey)).catch(
+          (err: NodeJS.ErrnoException) => {
+            if (err.code !== 'ENOENT') {
+              this.logger.warn(
+                `Could not delete variant ${v.webpKey}: ${err.message}`,
+              );
+            }
+          },
+        ),
+        unlink(join(uploadDir, v.avifKey)).catch(
+          (err: NodeJS.ErrnoException) => {
+            if (err.code !== 'ENOENT') {
+              this.logger.warn(
+                `Could not delete variant ${v.avifKey}: ${err.message}`,
+              );
+            }
+          },
+        ),
       ]),
     );
   }
