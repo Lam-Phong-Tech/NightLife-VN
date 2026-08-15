@@ -2035,8 +2035,8 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/layout/badges')
-  async getAdminLayoutBadges() {
-    return this.nightlifeDataService.getAdminLayoutBadges();
+  async getAdminLayoutBadges(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.getAdminLayoutBadges(request.user);
   }
 
   @ActionPolicy('canViewAdminDashboard')

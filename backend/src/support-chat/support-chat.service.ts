@@ -99,14 +99,20 @@ export class SupportChatService {
     });
   }
 
-  async countUnreadAdminTickets() {
+  async countUnreadAdminTickets(adminId?: string) {
     const unreadTickets = await this.prisma.supportMessage.groupBy({
       by: ['ticketId'],
       where: {
         isRead: false,
         senderType: { in: [SupportSenderType.GUEST, SupportSenderType.USER] },
         ticket: {
-          status: { in: this.openTicketStatuses },
+          OR: [
+            { status: SupportTicketStatus.PENDING },
+            {
+              status: SupportTicketStatus.ACTIVE,
+              assignedAdminId: adminId ?? '',
+            },
+          ],
         },
       },
       _count: { ticketId: true },

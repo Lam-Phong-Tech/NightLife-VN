@@ -157,7 +157,7 @@ describe('SupportChatService', () => {
       { ticketId: 'ticket-2', _count: { ticketId: 1 } },
     ]);
 
-    await expect(service.countUnreadAdminTickets()).resolves.toBe(2);
+    await expect(service.countUnreadAdminTickets('admin-1')).resolves.toBe(2);
 
     expect(supportMessage.groupBy).toHaveBeenCalledWith({
       by: ['ticketId'],
@@ -167,9 +167,13 @@ describe('SupportChatService', () => {
           in: [SupportSenderType.GUEST, SupportSenderType.USER],
         },
         ticket: {
-          status: {
-            in: [SupportTicketStatus.PENDING, SupportTicketStatus.ACTIVE],
-          },
+          OR: [
+            { status: SupportTicketStatus.PENDING },
+            {
+              status: SupportTicketStatus.ACTIVE,
+              assignedAdminId: 'admin-1',
+            },
+          ],
         },
       },
       _count: { ticketId: true },

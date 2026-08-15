@@ -23422,7 +23422,7 @@ export class NightlifeDataService {
     };
   }
 
-  async getAdminLayoutBadges() {
+  async getAdminLayoutBadges(user?: AuthenticatedUser) {
     const pendingBills = await this.prisma.bill
       .count({ where: { status: 'SUBMITTED' as any } })
       .catch(() => 0);
@@ -23439,9 +23439,13 @@ export class NightlifeDataService {
           isRead: false,
           senderType: { in: [SupportSenderType.GUEST, SupportSenderType.USER] },
           ticket: {
-            status: {
-              in: [SupportTicketStatus.PENDING, SupportTicketStatus.ACTIVE],
-            },
+            OR: [
+              { status: SupportTicketStatus.PENDING },
+              {
+                status: SupportTicketStatus.ACTIVE,
+                assignedAdminId: user?.id ?? '',
+              },
+            ],
           },
         },
         _count: { ticketId: true },
