@@ -23934,6 +23934,9 @@ export class NightlifeDataService {
     const includeDeleted = ['1', 'true', 'yes', 'all'].includes(
       String(query.includeDeleted ?? '').toLowerCase(),
     );
+    const eligibleOnly = ['1', 'true'].includes(
+      String(query.eligibleOnly ?? '').toLowerCase(),
+    );
 
     let prismaCategory: import('@prisma/client').StoreCategory | undefined;
     if (type && type !== 'all') {
@@ -23949,7 +23952,11 @@ export class NightlifeDataService {
     }
 
     const where: import('@prisma/client').Prisma.StoreWhereInput = {
-      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...(eligibleOnly
+        ? { deletedAt: null, status: 'ACTIVE' }
+        : includeDeleted
+          ? {}
+          : { deletedAt: null }),
       ...(prismaCategory && { category: prismaCategory }),
       ...(search &&
         (searchField === 'name'
@@ -24217,10 +24224,24 @@ export class NightlifeDataService {
     };
   }
 
+  private async assertAdminCastStoreIsActive(storeId: string) {
+    const store = await this.prisma.store.findFirst({
+      where: { id: storeId, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (!store) {
+      throw new BadRequestException(
+        'Cast chỉ có thể thuộc quán đã được duyệt và đang hoạt động.',
+      );
+    }
+  }
+
   async createAdminCast(
     user: AuthenticatedUser,
     dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
   ) {
+    await this.assertAdminCastStoreIsActive(dto.storeId);
     const mediaIds = await this.resolveAdminCastMediaIds(dto.mediaIds);
     const slug = await this.resolveUniqueAdminCastSlug(dto.stageName);
 
@@ -24281,6 +24302,9 @@ export class NightlifeDataService {
     const existing = await this.prisma.cast.findUniqueOrThrow({
       where: { id },
     });
+    if (dto.storeId !== undefined && dto.storeId !== existing.storeId) {
+      await this.assertAdminCastStoreIsActive(dto.storeId);
+    }
     const partnerEditSourceId = this.partnerListingCastEditSourceId(existing);
 
     if (
@@ -26441,11 +26465,34 @@ export class NightlifeDataService {
 
   // ── Admin Coupon (独立 QR flow) ──────────────────────────────────
 
+  private async assertAdminCouponTargetStoresAreActive(storeIds?: string[]) {
+    const uniqueStoreIds = Array.from(new Set(storeIds ?? []));
+    if (!uniqueStoreIds.length) {
+      return;
+    }
+
+    const activeStores = await this.prisma.store.findMany({
+      where: {
+        id: { in: uniqueStoreIds },
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: { id: true },
+    });
+
+    if (activeStores.length !== uniqueStoreIds.length) {
+      throw new BadRequestException(
+        'Coupon chỉ có thể áp dụng cho các quán đã được duyệt và đang hoạt động.',
+      );
+    }
+  }
+
   async createAdminCoupon(
     user: AuthenticatedUser,
     dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
     const { randomUUID, createHash } = await import('crypto');
+    await this.assertAdminCouponTargetStoresAreActive(dto.targetStores);
 
     // Generate unique code from name
     const baseCode = dto.name
@@ -26584,6 +26631,8 @@ export class NightlifeDataService {
       updateData.discountType = dto.discountType;
     if (dto.discountValue !== undefined)
       updateData.discountValue = dto.discountValue;
+    if (dto.targetStores !== undefined)
+      await this.assertAdminCouponTargetStoresAreActive(dto.targetStores);
     if (dto.targetStores !== undefined)
       updateData.targetStores = dto.targetStores;
     if (dto.targetAudiences !== undefined)

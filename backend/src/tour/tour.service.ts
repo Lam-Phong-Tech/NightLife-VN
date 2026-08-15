@@ -449,9 +449,36 @@ export class TourService {
     return tour;
   }
 
+  private async assertTourStopsAreActive(
+    stops?: Array<{ storeId: string }>,
+  ) {
+    const storeIds = Array.from(
+      new Set((stops ?? []).map((stop) => stop.storeId)),
+    );
+    if (!storeIds.length) {
+      return;
+    }
+
+    const activeStores = await this.prisma.store.findMany({
+      where: {
+        id: { in: storeIds },
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: { id: true },
+    });
+
+    if (activeStores.length !== storeIds.length) {
+      throw new BadRequestException(
+        'Điểm dừng tour chỉ có thể là quán đã được duyệt và đang hoạt động.',
+      );
+    }
+  }
+
   async create(dto: CreateTourDto, actor: AuthenticatedUser) {
     const { stops, ...tourData } = dto;
     await this.validateTourCoverUrl(tourData.coverUrl);
+    await this.assertTourStopsAreActive(stops);
 
     const departureSchedule = normalizeTourDepartureSchedule(
       tourData.departureSchedule,
@@ -521,6 +548,9 @@ export class TourService {
   async update(id: string, dto: UpdateTourDto, actor: AuthenticatedUser) {
     const { stops, ...tourData } = dto;
     await this.validateTourCoverUrl(tourData.coverUrl);
+    if (stops !== undefined) {
+      await this.assertTourStopsAreActive(stops);
+    }
 
     let departureSchedule: TourDepartureSchedule | undefined;
     if (tourData.departureSchedule !== undefined) {

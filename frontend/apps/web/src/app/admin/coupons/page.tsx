@@ -81,6 +81,7 @@ export default function AdminCouponsPage() {
           limit: storeSearch.trim() ? 50 : 1000,
           search: storeSearch.trim() || undefined,
           searchField: storeSearch.trim() ? 'name' : undefined,
+          eligibleOnly: 'true',
         },
       })
         .then(res => {

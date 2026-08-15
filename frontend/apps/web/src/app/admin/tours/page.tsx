@@ -250,7 +250,9 @@ function AdminToursContent() {
 
   const fetchStores = async () => {
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { limit: 1000 } });
+      const res = await apiClient<any>('/admin/stores', {
+        params: { limit: 1000, eligibleOnly: 'true' },
+      });
       if (res && res.data) {
         // Lọc bỏ Spa/Massage theo yêu cầu
         const filtered = res.data.filter((s: any) => s.category !== 'MASSAGE_SPA' && s.status === 'ACTIVE');
@@ -283,7 +285,12 @@ function AdminToursContent() {
       try {
         setIsSearchingVenues(true);
         const res = await apiClient<any>('/admin/stores', {
-          params: { search: query, searchField: 'name', limit: 20 },
+          params: {
+            search: query,
+            searchField: 'name',
+            limit: 20,
+            eligibleOnly: 'true',
+          },
         });
         if (cancelled) return;
         const data = Array.isArray(res?.data) ? res.data : [];

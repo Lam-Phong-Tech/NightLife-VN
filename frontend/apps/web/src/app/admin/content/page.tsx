@@ -628,7 +628,9 @@ export default function AdminContentPage() {
     }
     try {
       setIsSearchingRecommend(true);
-      const res = await apiClient<{ data: SearchStoreItem[] }>('/admin/stores', { params: { search: q, limit: 10 } });
+      const res = await apiClient<{ data: SearchStoreItem[] }>('/admin/stores', {
+        params: { search: q, limit: 10, eligibleOnly: 'true' },
+      });
       if (res && res.data) {
         const mapped: AdminRankingTargetOption[] = (res.data || [])
           .filter((s: SearchStoreItem) => s.status === 'ACTIVE')
@@ -1473,7 +1475,9 @@ export default function AdminContentPage() {
     setBannerStoreSearch(q);
     if (!q.trim()) { setBannerStoreResults([]); return; }
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { search: q, limit: 6 } });
+      const res = await apiClient<any>('/admin/stores', {
+        params: { search: q, limit: 6, eligibleOnly: 'true' },
+      });
       if (res?.data) setBannerStoreResults(res.data);
     } catch (e) { console.error(e); }
   };
@@ -1482,7 +1486,9 @@ export default function AdminContentPage() {
     setCampaignStoreSearch(q);
     if (!q.trim()) { setCampaignStoreResults([]); return; }
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { search: q, limit: 6 } });
+      const res = await apiClient<any>('/admin/stores', {
+        params: { search: q, limit: 6, eligibleOnly: 'true' },
+      });
       if (res?.data) setCampaignStoreResults(res.data);
     } catch (e) { console.error(e); }
   };

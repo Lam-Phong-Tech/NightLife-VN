@@ -507,7 +507,9 @@ function AdminCastsContent() {
   const fetchStores = async () => {
     try {
       // Dùng chung endpoint và cách lấy data y hệt như trang stores/page.tsx
-      const res = await apiClient<any>('/admin/stores', { params: { limit: 1000 } });
+      const res = await apiClient<any>('/admin/stores', {
+        params: { limit: 1000, eligibleOnly: 'true' },
+      });
       const arr = normalizeListResponse(res);
       
       if (arr.length === 0) {

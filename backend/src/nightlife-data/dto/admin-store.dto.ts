@@ -135,6 +135,14 @@ export class AdminStoreQueryDto {
   @IsOptional()
   @IsString()
   includeDeleted?: string;
+
+  /**
+   * Used only by admin pickers that configure public or operational features.
+   * The normal admin list deliberately continues to include records awaiting review.
+   */
+  @IsOptional()
+  @IsIn(['true', 'false', '1', '0'])
+  eligibleOnly?: string;
 }
 
 export class CreateAdminStoreDto {
