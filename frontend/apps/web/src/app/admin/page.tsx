@@ -1088,7 +1088,7 @@ function AdminDashboardContent() {
                     className="nl-admin-recent-head"
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1.4fr 1.4fr .7fr 1fr",
+                      gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(58px, .7fr) minmax(86px, 1fr)",
                       gap: "10px",
                       fontSize: "10px",
                       fontWeight: 700,
@@ -1129,7 +1129,7 @@ function AdminDashboardContent() {
                         key={b.id}
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "1.4fr 1.4fr .7fr 1fr",
+                          gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1.4fr) minmax(58px, .7fr) minmax(86px, 1fr)",
                           gap: "10px",
                           alignItems: "center",
                           padding: "12px 4px",
@@ -1137,15 +1137,26 @@ function AdminDashboardContent() {
                           fontSize: "13px",
                         }}
                       >
-                        <div>
-                          <div style={{ color: "#f3f0ea", fontWeight: 500 }}>{b.customerName}</div>
-                          <div style={{ fontSize: "10.5px", color: "#57534b" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            title={b.customerName}
+                            style={{
+                              color: "#f3f0ea",
+                              fontWeight: 500,
+                              lineHeight: 1.35,
+                              overflowWrap: "anywhere",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {b.customerName}
+                          </div>
+                          <div style={{ fontSize: "10.5px", color: "#57534b", overflowWrap: "anywhere" }}>
                             {b.partySize} khách · Telegram
                           </div>
                         </div>
-                        <div style={{ color: "#c5c0b6" }}>
-                          {b.store.name}
-                          <div style={{ fontSize: "10.5px", color: "#8c8679" }}>
+                        <div style={{ color: "#c5c0b6", minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                          <span title={b.store.name}>{b.store.name}</span>
+                          <div style={{ fontSize: "10.5px", color: "#8c8679", overflowWrap: "anywhere" }}>
                             {b.cast ? `Cast: ${b.cast.stageName}` : "Không cast"}
                           </div>
                         </div>
