@@ -102,7 +102,9 @@ const rankingSaveErrorMessage = (error: unknown) => {
 
 const isActiveRankingOption = (option: any) => {
   const status = String(option?.status ?? option?.targetStatus ?? '').trim().toUpperCase();
-  return !status || status === 'ACTIVE';
+  // Ranking is public-facing. Fail closed when an older API response omits
+  // status instead of accidentally allowing an unreviewed target.
+  return status === 'ACTIVE';
 };
 
 function SortableRankingItem(props: {
@@ -322,7 +324,7 @@ function AdminRankingsClient() {
 
   const filteredCastOptions = castOptions.filter(opt => 
     isActiveRankingOption(opt) &&
-    opt?.isPublic !== false &&
+    opt?.isPublic === true &&
     !casts.find(c => c.targetId === opt.id) &&
     (!castSearch || opt.name.toLowerCase().includes(castSearch.toLowerCase()))
   );
