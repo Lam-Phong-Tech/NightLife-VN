@@ -1932,6 +1932,8 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
 }
 
 function SectionHeading({ title, action }: { title: string; action?: string }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <div style={sectionTitleStyle}>
       <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>{title}</h2>
@@ -1945,7 +1947,7 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
             flex: "0 0 auto",
           }}
         >
-          {action}
+          {translateText(action, activeLanguage)}
         </Link>
       ) : null}
     </div>
@@ -1976,7 +1978,7 @@ function HomeCarouselDots({
 
   return (
     <div
-      aria-label="Choose slide"
+      aria-label={translateText("Chọn slide", activeLanguage)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -2134,6 +2136,8 @@ function VenueMiniCard({
   priority?: boolean;
   onToggleFavorite?: (item: HomeStoreCard) => void;
 }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <Link
       href={item.href}
@@ -2163,13 +2167,13 @@ function VenueMiniCard({
         width={800}
         height={450}
         alt={item.name ?? "Địa điểm"}
-        label="Ảnh quán"
+        label={translateText("Ảnh quán", activeLanguage)}
         priority={priority}
         style={{ height: compact ? "112px" : "156px", position: "relative" }}
       >
         <FavoriteButton
           isFavorite={isFavorite}
-          label={isFavorite ? "Bo luu quan" : "Luu quan"}
+          label={translateText(isFavorite ? "Bỏ lưu quán" : "Lưu quán", activeLanguage)}
           className="home-favorite-button"
           size="card"
           onClick={(event) => {
@@ -2195,12 +2199,14 @@ function VenueMiniCard({
 }
 
 function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <Link
       href={item.href}
       className="nl-home-card nl-home-legacy-coupon-card"
       data-testid="home-coupon-cta"
-      aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
+      aria-label={`${translateText("Xem ưu đãi", activeLanguage)}: ${item.title} — ${item.place}`}
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "82px 1fr auto" : "120px 1fr auto",
@@ -2220,7 +2226,7 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
         width={compact ? 82 : 120}
         height={compact ? 62 : 82}
         alt={item.title ?? "Coupon"}
-        label="Ảnh ưu đãi"
+        label={translateText("Ảnh ưu đãi", activeLanguage)}
         style={{ height: compact ? "62px" : "82px", borderRadius: homeMediaRadius }}
       />
       <div style={{ minWidth: 0 }}>
@@ -2237,13 +2243,14 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
         className="nl-home-coupon-action"
         style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".03em" }}
       >
-        Xem ưu đãi
+        {translateText("Xem ưu đãi", activeLanguage)}
       </span>
     </Link>
   );
 }
 
 function CouponCard({ item, compact = false, priority = false }: { item: HomeCouponItem; compact?: boolean; priority?: boolean }) {
+  const activeLanguage = useActiveLanguage();
   const imageSize = compact ? 78 : 92;
 
   return (
@@ -2251,7 +2258,7 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
       href={item.href}
       className="nl-home-card nl-home-coupon-card"
       data-testid="home-coupon-cta"
-      aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
+      aria-label={`${translateText("Xem ưu đãi", activeLanguage)}: ${item.title} — ${item.place}`}
       style={{
         position: "relative",
         display: "grid",
@@ -2289,7 +2296,7 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
         width={imageSize}
         height={imageSize}
         alt={item.title ?? "Coupon"}
-        label="Ảnh ưu đãi"
+        label={translateText("Ảnh ưu đãi", activeLanguage)}
         priority={priority}
         style={{
           width: imageSize,
@@ -2363,7 +2370,7 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
             letterSpacing: ".01em",
           }}
         >
-          Xem ưu đãi
+          {translateText("Xem ưu đãi", activeLanguage)}
           <ChevronRight size={compact ? 13 : 14} strokeWidth={2.6} />
         </span>
       </div>
@@ -2372,6 +2379,7 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
 }
 
 function RankingRow({ item, priority = false }: { item: RankedItem; priority?: boolean }) {
+  const activeLanguage = useActiveLanguage();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
@@ -2388,7 +2396,7 @@ function RankingRow({ item, priority = false }: { item: RankedItem; priority?: b
       href={item.href ?? "/xep-hang"}
       className="nl-home-ranking-row"
       data-rank-tier={isPodium ? rankNumber : undefined}
-      aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
+      aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
       style={{
         display: "grid",
         gridTemplateColumns: "64px minmax(0, 1fr) 30px",
@@ -2477,7 +2485,7 @@ function RankingRow({ item, priority = false }: { item: RankedItem; priority?: b
                 whiteSpace: "nowrap",
               }}
             >
-              Tài trợ
+              {translateText("Tài trợ", activeLanguage)}
             </span>
           ) : null}
         </div>
@@ -2534,6 +2542,8 @@ function RankingRow({ item, priority = false }: { item: RankedItem; priority?: b
 }
 
 function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?: boolean }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <Link
       href={item.href}
@@ -2549,7 +2559,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Dịch vụ"}
-        label="Ảnh dịch vụ"
+        label={translateText("Ảnh dịch vụ", activeLanguage)}
         style={{ height: compact ? "92px" : "132px", position: "relative" }}
       >
         <span className="nl-home-media-pill" style={{ position: "absolute", top: 10, left: 10, ...pillStyle, background: "rgba(12,12,15,.66)", color: colors.goldSoft }}>
@@ -2566,12 +2576,14 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
 }
 
 function LegacyVideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: boolean }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <Link href={item.href} className="nl-home-video-card" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}
-        label="Ảnh video"
+        label={translateText("Ảnh video", activeLanguage)}
         style={{ height: compact ? "96px" : "138px", borderRadius: homeCardRadius, position: "relative" }}
       >
         <span style={{ position: "absolute", inset: 0, background: "rgba(12,12,15,.22)" }} />
@@ -2656,6 +2668,7 @@ function ContentPlaceholderCard({
   item: HomeContentItem;
   compact?: boolean;
 }) {
+  const activeLanguage = useActiveLanguage();
   const Icon = item.icon;
   const hasImage = Boolean(item.img);
   const cardBackground = hasImage
@@ -2721,7 +2734,7 @@ function ContentPlaceholderCard({
           {item.meta}
         </span>
         <span className="nl-home-content-card-link" style={{ color: hasImage ? "#f7e6b4" : colors.gold, fontSize: "12px", fontWeight: 900, whiteSpace: "nowrap" }}>
-          Xem chi tiết
+          {translateText("Xem chi tiết", activeLanguage)}
         </span>
       </div>
     </Link>
@@ -3187,10 +3200,12 @@ export default function HomePageClient({
     () => homeAppearance.quick.map(mapAppearanceQuickItem),
     [homeAppearance.quick],
   );
-  const homeSectionTitles = useMemo(
-    () => getHomeSectionTitles(homeAppearance),
-    [homeAppearance],
-  );
+  const homeSectionTitles = useMemo(() => {
+    const titles = getHomeSectionTitles(homeAppearance);
+    return Object.fromEntries(
+      Object.entries(titles).map(([key, value]) => [key, translateText(value, activeLanguage)]),
+    ) as typeof titles;
+  }, [activeLanguage, homeAppearance]);
   const dynamicServiceTabs = useMemo(
     () => [
       { id: "nhahang", label: homeSectionTitles.featured_restaurant },

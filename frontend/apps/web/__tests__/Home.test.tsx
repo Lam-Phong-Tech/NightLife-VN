@@ -364,7 +364,7 @@ describe('Home Page', () => {
     await screen.findAllByText(/API Night Banner/i);
 
     expect(screen.getByTestId('home-mobile-recommendations')).toBeInTheDocument();
-    expect(screen.getAllByText('Đề xuất tối nay')).not.toHaveLength(0);
+    expect(screen.getAllByText('今夜のおすすめ')).not.toHaveLength(0);
   });
 
   it('keeps server-provided appearance titles stable after hydration', async () => {
@@ -383,7 +383,7 @@ describe('Home Page', () => {
     expect(screen.queryByText('Đề xuất tối nay')).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Tonight's Recommendations")).not.toHaveLength(0));
 
-    const viewAllLink = screen.getAllByRole('link', { name: 'Xem tất cả' })[0];
+    const viewAllLink = screen.getAllByRole('link', { name: 'すべて見る' })[0];
     expect(viewAllLink).toHaveStyle({ whiteSpace: 'nowrap', flex: '0 0 auto' });
   });
 
@@ -452,7 +452,7 @@ describe('Home Page', () => {
     await screen.findAllByText('API Coupon', {}, { timeout: 5000 });
 
     const couponCta = screen.getAllByTestId('home-coupon-cta')[0] as HTMLAnchorElement;
-    expect(couponCta).toHaveTextContent('Xem ưu đãi');
+    expect(couponCta).toHaveTextContent('特典を見る');
     expect(couponCta).toHaveAttribute('href', '/stores/api-neon-lounge?couponId=coupon-api-1');
 
     fireEvent.click(couponCta);

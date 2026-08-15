@@ -515,6 +515,80 @@ const unknownPriceLabel = (language: LanguageCode) =>
     zh: "咨询",
   })[language];
 
+const venueFavoriteCopy = (language: LanguageCode) =>
+  ({
+    vi: {
+      addedTitle: "Đã thêm quán yêu thích",
+      removedTitle: "Đã bỏ lưu quán",
+      updateErrorTitle: "Không cập nhật được yêu thích",
+      retry: "Vui lòng thử lại sau.",
+      saveTitle: "Lưu quán yêu thích?",
+      removeTitle: "Bỏ lưu quán?",
+      saveLabel: "Lưu quán",
+      removeLabel: "Bỏ lưu",
+      addedDescription: (name: string) => `${name} đã được lưu vào danh sách yêu thích.`,
+      removedDescription: (name: string) => `${name} đã được gỡ khỏi danh sách yêu thích.`,
+      saveDescription: (name: string) => `Thêm ${name} vào danh sách yêu thích của bạn.`,
+      removeDescription: (name: string) => `Gỡ ${name} khỏi danh sách yêu thích của bạn.`,
+    },
+    en: {
+      addedTitle: "Venue saved",
+      removedTitle: "Venue removed",
+      updateErrorTitle: "Could not update favorites",
+      retry: "Please try again later.",
+      saveTitle: "Save this venue?",
+      removeTitle: "Remove saved venue?",
+      saveLabel: "Save venue",
+      removeLabel: "Remove",
+      addedDescription: (name: string) => `${name} has been added to your favorites.`,
+      removedDescription: (name: string) => `${name} has been removed from your favorites.`,
+      saveDescription: (name: string) => `Add ${name} to your favorites.`,
+      removeDescription: (name: string) => `Remove ${name} from your favorites.`,
+    },
+    ja: {
+      addedTitle: "お気に入りに追加しました",
+      removedTitle: "保存を解除しました",
+      updateErrorTitle: "お気に入りを更新できません",
+      retry: "しばらくしてからもう一度お試しください。",
+      saveTitle: "この店舗を保存しますか？",
+      removeTitle: "保存した店舗を解除しますか？",
+      saveLabel: "保存する",
+      removeLabel: "解除する",
+      addedDescription: (name: string) => `「${name}」をお気に入りに追加しました。`,
+      removedDescription: (name: string) => `「${name}」をお気に入りから削除しました。`,
+      saveDescription: (name: string) => `「${name}」をお気に入りに追加します。`,
+      removeDescription: (name: string) => `「${name}」をお気に入りから削除します。`,
+    },
+    ko: {
+      addedTitle: "즐겨찾기에 추가했습니다",
+      removedTitle: "저장을 해제했습니다",
+      updateErrorTitle: "즐겨찾기를 업데이트할 수 없습니다",
+      retry: "잠시 후 다시 시도해 주세요.",
+      saveTitle: "이 매장을 저장할까요?",
+      removeTitle: "저장한 매장을 해제할까요?",
+      saveLabel: "저장",
+      removeLabel: "해제",
+      addedDescription: (name: string) => `${name}을(를) 즐겨찾기에 추가했습니다.`,
+      removedDescription: (name: string) => `${name}을(를) 즐겨찾기에서 제거했습니다.`,
+      saveDescription: (name: string) => `${name}을(를) 즐겨찾기에 추가합니다.`,
+      removeDescription: (name: string) => `${name}을(를) 즐겨찾기에서 제거합니다.`,
+    },
+    zh: {
+      addedTitle: "已添加到收藏",
+      removedTitle: "已取消收藏",
+      updateErrorTitle: "无法更新收藏",
+      retry: "请稍后重试。",
+      saveTitle: "收藏此场所？",
+      removeTitle: "取消收藏此场所？",
+      saveLabel: "收藏",
+      removeLabel: "取消收藏",
+      addedDescription: (name: string) => `已将“${name}”加入收藏。`,
+      removedDescription: (name: string) => `已将“${name}”取消收藏。`,
+      saveDescription: (name: string) => `将“${name}”加入收藏。`,
+      removeDescription: (name: string) => `将“${name}”从收藏中移除。`,
+    },
+  })[language];
+
 const formatVenuePriceTier = (value: string | number | null | undefined, language: LanguageCode) => {
   const price = formatPriceTier(value);
   return price === "Liên hệ" ? unknownPriceLabel(language) : price;
@@ -629,6 +703,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
+  const favoriteCopy = useMemo(() => venueFavoriteCopy(activeLanguage), [activeLanguage]);
   const isCategoryLocked = Boolean(fixedCategory);
   const effectiveCategory = fixedCategory || category;
 
@@ -1176,10 +1251,10 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         : await storeFavoriteApi.unfavorite(venue.id);
       applyFavorite(state.favorited);
       userFeedback.success({
-        title: state.favorited ? "Đã thêm quán yêu thích" : "Đã bỏ lưu quán",
+        title: state.favorited ? favoriteCopy.addedTitle : favoriteCopy.removedTitle,
         description: state.favorited
-          ? `${venue.name} đã được lưu vào danh sách yêu thích.`
-          : `${venue.name} đã được gỡ khỏi danh sách yêu thích.`,
+          ? favoriteCopy.addedDescription(venue.name)
+          : favoriteCopy.removedDescription(venue.name),
       });
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
@@ -1190,8 +1265,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
       applyFavorite(!nextValue);
       userFeedback.error({
-        title: "Không cập nhật được yêu thích",
-        description: userActionErrorMessage(error, "Vui lòng thử lại sau."),
+        title: favoriteCopy.updateErrorTitle,
+        description: userActionErrorMessage(error, favoriteCopy.retry),
       });
     }
   };
@@ -1203,11 +1278,11 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
     const nextValue = !favoriteStoreSlugs.includes(venue.id);
     userFeedback.confirmAction({
-      title: nextValue ? "Lưu quán yêu thích?" : "Bỏ lưu quán?",
+      title: nextValue ? favoriteCopy.saveTitle : favoriteCopy.removeTitle,
       description: nextValue
-        ? `Thêm ${venue.name} vào danh sách yêu thích của bạn.`
-        : `Gỡ ${venue.name} khỏi danh sách yêu thích của bạn.`,
-      confirmLabel: nextValue ? "Lưu quán" : "Bỏ lưu",
+        ? favoriteCopy.saveDescription(venue.name)
+        : favoriteCopy.removeDescription(venue.name),
+      confirmLabel: nextValue ? favoriteCopy.saveLabel : favoriteCopy.removeLabel,
       tone: nextValue ? "gold" : "warning",
       destructive: !nextValue,
       onConfirm: () => applyVenueFavorite(venue, nextValue),
@@ -1615,10 +1690,14 @@ function VenueSearchSuggestions({
   onSearchSubmitted: (value: string) => void;
 }) {
   return (
-    <div className="venue-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
+    <div
+      className="venue-suggestions"
+      role="listbox"
+      aria-label={translateText("Gợi ý tìm kiếm", language)}
+    >
       {venues.length ? (
         <>
-          <div className="venue-suggestion-label">Gợi ý quán</div>
+          <div className="venue-suggestion-label">{translateText("Gợi ý quán", language)}</div>
           {venues.map((venue) => (
             <Link
               key={venue.id}
@@ -1642,14 +1721,18 @@ function VenueSearchSuggestions({
           ))}
         </>
       ) : (
-        <div className="venue-suggestion-empty">Không có gợi ý trùng khớp.</div>
+        <div className="venue-suggestion-empty">
+          {translateText("Không có gợi ý trùng khớp.", language)}
+        </div>
       )}
 
       {recentSearches.length ? (
         <>
           <div className="venue-suggestion-split">
-            <span>Tìm gần đây</span>
-            <button type="button" onClick={onClearRecent}>Xóa lịch sử</button>
+            <span>{translateText("Tìm gần đây", language)}</span>
+            <button type="button" onClick={onClearRecent}>
+              {translateText("Xóa lịch sử", language)}
+            </button>
           </div>
           <div className="venue-suggestion-tags">
             {recentSearches.map((item) => (
