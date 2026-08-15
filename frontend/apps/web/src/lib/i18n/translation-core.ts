@@ -2490,6 +2490,13 @@ const entries: TranslationEntry[] = [
     zh: "暂无已发布的文章或政策。",
   },
   {
+    vi: "Chưa có bài viết được xuất bản.",
+    en: "No published posts yet.",
+    ja: "公開済みの記事はまだありません。",
+    ko: "아직 게시된 글이 없습니다.",
+    zh: "暂无已发布的文章。",
+  },
+  {
     vi: "Đang tải nội dung",
     en: "Loading content",
     ja: "コンテンツを読み込み中",

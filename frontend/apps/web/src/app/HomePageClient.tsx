@@ -1784,7 +1784,7 @@ function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: 
   if (!event) {
     return (
       <HomeDataMessage
-        text={translateText("Chưa có banner nổi bật.", activeLanguage)}
+        text="Chưa có banner nổi bật."
         minHeight={desktop ? 310 : 208}
       />
     );
@@ -3913,7 +3913,7 @@ export default function HomePageClient({
                 />
               ) : (
                 <HomeDataMessage
-                  text={homeContentError || translateText("Chưa có bài viết được xuất bản.", activeLanguage)}
+                  text={homeContentError || "Chưa có bài viết được xuất bản."}
                   compact={!isDesktopLayout}
                 />
               )}
@@ -4092,7 +4092,7 @@ export default function HomePageClient({
                   />
                 ) : (
                   <HomeDataMessage
-                    text={homeContentError || translateText("Chưa có bài viết/chính sách được xuất bản.", activeLanguage)}
+                    text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."}
                     compact
                   />
                 )}
@@ -4258,7 +4258,7 @@ export default function HomePageClient({
                   />
                 ) : (
                   <HomeDataMessage
-                    text={homeContentError || translateText("Chưa có bài viết/chính sách được xuất bản.", activeLanguage)}
+                    text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."}
                   />
                 )}
               </div>
