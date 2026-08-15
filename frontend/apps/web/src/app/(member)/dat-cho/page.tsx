@@ -651,6 +651,8 @@ export default function Page() {
     !isServiceOnlyBooking && context.castName
       ? context.castName
       : context.storeName;
+  const isCastBookingContext = !isServiceOnlyBooking && Boolean(context.castSlug || context.castName);
+  const bookingPageTitle = isCastBookingContext ? "Đặt bàn theo cast" : "Đặt bàn";
   const isMemberMode = mode === "member";
   const parsedGuestInput = Number(guestInput);
   const stepperGuestCount =
@@ -846,7 +848,7 @@ export default function Page() {
               <ChevronLeft size={18} />
             </Link>
             <div className={styles.headerCopy}>
-              <h1 className={styles.headerTitle}>{translateText("Đặt bàn", activeLanguage)}</h1>
+              <h1 className={styles.headerTitle}>{translateText(bookingPageTitle, activeLanguage)}</h1>
               <p className={styles.headerSubtitle}>
                 {translateText("Gửi yêu cầu · Admin xác nhận", activeLanguage)}
               </p>

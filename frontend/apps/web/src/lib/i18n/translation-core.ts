@@ -96,6 +96,13 @@ const entries: TranslationEntry[] = [
     zh: "订桌成功",
   },
   {
+    vi: "Đặt bàn theo cast",
+    en: "Book table with Cast",
+    ja: "キャスト付き席予約",
+    ko: "캐스트와 테이블 예약",
+    zh: "预约 Cast 陪同订桌",
+  },
+  {
     vi: "Đặt chỗ thất bại",
     en: "Reservation failed",
     ja: "予約失敗",
