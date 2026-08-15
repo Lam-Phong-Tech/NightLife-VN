@@ -1974,6 +1974,8 @@ function HomeCarouselDots({
   setActiveSlide: React.Dispatch<React.SetStateAction<number>>;
   slideCount: number;
 }) {
+  const activeLanguage = useActiveLanguage();
+
   if (slideCount < 2) return null;
 
   return (
