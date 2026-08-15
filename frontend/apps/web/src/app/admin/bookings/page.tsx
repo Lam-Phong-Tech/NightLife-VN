@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
@@ -50,6 +50,7 @@ function AdminBookingsContent() {
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
   const category = searchParams.get('category') || '';
+  const targetBookingId = searchParams.get('bookingId')?.trim() || '';
   const [activeTab, setActiveTab] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<AdminBookingRecord | null>(null);
   const [bookings, setBookings] = useState<AdminBookingRecord[]>([]);
@@ -64,6 +65,7 @@ function AdminBookingsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [bookingSearch, setBookingSearch] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const openedTargetBookingRef = useRef('');
 
   const handleUpdateStatus = async (bookingId: string, status: string) => {
     try {
@@ -108,6 +110,29 @@ function AdminBookingsContent() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  useEffect(() => {
+    if (!targetBookingId) {
+      openedTargetBookingRef.current = '';
+      return;
+    }
+
+    setActiveTab('all');
+    setCurrentPage(1);
+    setBookingSearch((current) => (current === targetBookingId ? current : targetBookingId));
+  }, [targetBookingId]);
+
+  useEffect(() => {
+    if (!targetBookingId || openedTargetBookingRef.current === targetBookingId) return;
+
+    const targetBooking = bookings.find(
+      (booking) => booking.id === targetBookingId || booking.bookingCode === targetBookingId,
+    );
+    if (!targetBooking) return;
+
+    openedTargetBookingRef.current = targetBookingId;
+    setSelectedBooking(targetBooking);
+  }, [bookings, targetBookingId]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);

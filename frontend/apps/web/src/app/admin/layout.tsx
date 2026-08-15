@@ -353,6 +353,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       let item: any = null;
 
       if (key === 'telegram.admin.booking.created.v1') {
+        const bookingId = typeof log.booking?.id === 'string' ? log.booking.id : '';
         item = {
           id: log.id,
           tag: 'BK',
@@ -363,10 +364,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           group: isToday ? 'today' : 'yesterday',
           category: 'booking',
           action: 'Xem lịch đặt',
-          href: '/admin/bookings',
+          href: bookingId ? `/admin/bookings?bookingId=${encodeURIComponent(bookingId)}` : '/admin/bookings',
           icon: Calendar
         };
       } else if (key === 'telegram.admin.booking.cancelled.v1') {
+        const bookingId = typeof log.booking?.id === 'string' ? log.booking.id : '';
         item = {
           id: log.id,
           tag: 'BK',
@@ -377,7 +379,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           group: isToday ? 'today' : 'yesterday',
           category: 'booking',
           action: 'Xem lịch đặt',
-          href: '/admin/bookings',
+          href: bookingId ? `/admin/bookings?bookingId=${encodeURIComponent(bookingId)}` : '/admin/bookings',
           icon: Calendar
         };
       } else if (key === 'telegram.admin.bill.submitted.v1') {
