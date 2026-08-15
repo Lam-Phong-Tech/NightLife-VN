@@ -100,6 +100,11 @@ const rankingSaveErrorMessage = (error: unknown) => {
   return message || 'Lỗi khi lưu ranking. Vui lòng thử lại.';
 };
 
+const isActiveRankingOption = (option: any) => {
+  const status = String(option?.status ?? option?.targetStatus ?? '').trim().toUpperCase();
+  return !status || status === 'ACTIVE';
+};
+
 function SortableRankingItem(props: {
   item: RankingItem;
   index: number;
@@ -316,16 +321,23 @@ function AdminRankingsClient() {
   }, [activeCategory, activeTab]);
 
   const filteredCastOptions = castOptions.filter(opt => 
+    isActiveRankingOption(opt) &&
+    opt?.isPublic !== false &&
     !casts.find(c => c.targetId === opt.id) &&
     (!castSearch || opt.name.toLowerCase().includes(castSearch.toLowerCase()))
   );
 
   const filteredStoreOptions = storeOptions.filter(opt => 
+    isActiveRankingOption(opt) &&
     !stores.find(s => s.targetId === opt.id) &&
     (!storeSearch || opt.name.toLowerCase().includes(storeSearch.toLowerCase()))
   );
 
   const handleAddCast = (option: any) => {
+    if (!isActiveRankingOption(option) || option?.isPublic === false) {
+      showToast('Cast chưa được duyệt hoặc chưa cho phép hiển thị nên không thể xếp hạng.', 'warning');
+      return;
+    }
     if (casts.find(c => c.targetId === option.id)) return;
     if (casts.length >= 5) {
       showToast('Chỉ được xếp hạng tối đa 5 Cast.', 'warning');
@@ -345,6 +357,10 @@ function AdminRankingsClient() {
   };
 
   const handleAddStore = (option: any) => {
+    if (!isActiveRankingOption(option)) {
+      showToast('Quán chưa được duyệt nên không thể xếp hạng.', 'warning');
+      return;
+    }
     if (stores.find(s => s.targetId === option.id)) return;
     if (stores.length >= 5) {
       showToast('Chỉ được xếp hạng tối đa 5 Quán.', 'warning');
@@ -398,6 +414,7 @@ function AdminRankingsClient() {
         else storeItems.push(obj);
       });
       
+      setCasts(castItems.slice(0, 5));
       setStores(storeItems.slice(0, 5));
     } catch (e: any) {
       console.error(e);
