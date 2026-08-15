@@ -1498,9 +1498,7 @@ function CategoryGrid({
   );
 }
 
-function EventHero({ apiBanners = [], isLoading = false }: { apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
-  // Layout is CSS-driven so SSR never has to guess the viewport.
-  const desktop = false;
+function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const canAutoRotate = useUserInteractionStarted();
@@ -1746,8 +1744,7 @@ function EventHero({ apiBanners = [], isLoading = false }: { apiBanners?: CmsCon
   );
 }
 
-function MidPageBanner({ apiBanners = [], isLoading = false }: { apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
-  const desktop = false;
+function MidPageBanner({ desktop = false, apiBanners = [], isLoading = false }: { desktop?: boolean; apiBanners?: CmsContentItem[]; isLoading?: boolean }) {
   const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const canAutoRotate = useUserInteractionStarted();
@@ -3243,6 +3240,7 @@ export default function HomePageClient({
   const [featuredSectionRef, canLoadFeatured] = useHomeSectionReady();
   const [guideSectionRef, canLoadGuide] = useHomeSectionReady();
   const [videoSectionRef, canLoadVideos] = useHomeSectionReady();
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
   );
@@ -3288,6 +3286,17 @@ export default function HomePageClient({
     }), [homeBanners]);
   const svc = featuredServices;
   const videoList = homeVideos;
+
+  // CSS owns the shell's first paint. This state only restores the distinct
+  // desktop carousel/card compositions once React has hydrated.
+  usePrePaintEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncLayout = () => setIsDesktopLayout(mediaQuery.matches);
+    syncLayout();
+    mediaQuery.addEventListener("change", syncLayout);
+    return () => mediaQuery.removeEventListener("change", syncLayout);
+  }, []);
 
 
   useEffect(() => {
@@ -3780,7 +3789,7 @@ export default function HomePageClient({
       contentVisibility: "auto",
       containIntrinsicSize: "600px",
     };
-    const sectionGap = "22px";
+    const sectionGap = isDesktopLayout ? "34px" : "22px";
 
     return (
       <div
@@ -3802,41 +3811,42 @@ export default function HomePageClient({
           }}
         >
           <div data-testid="home-mobile-header">
-            <HeaderBar />
+            <HeaderBar desktop={isDesktopLayout} />
           </div>
-          <main className="nl-home-main" style={{ padding: "0 18px" }}>
+          <main className="nl-home-main" style={{ padding: isDesktopLayout ? "10px 50px 0" : "0 18px" }}>
             <div data-testid="home-mobile-search" style={{ marginTop: "12px" }}>
               <SearchPanel />
             </div>
             <div data-testid="home-mobile-hero" style={{ marginTop: "16px" }}>
               <EventHero
+                desktop={isDesktopLayout}
                 apiBanners={heroBanners}
                 isLoading={isHomeBannersLoading}
               />
             </div>
-            <div data-testid="home-mobile-categories" className="nl-home-categories" style={{ marginTop: "22px" }}>
-              <CategoryGrid items={homeCategoryItems} />
+            <div data-testid="home-mobile-categories" className="nl-home-categories" style={{ marginTop: isDesktopLayout ? "28px" : "22px" }}>
+              <CategoryGrid desktop={isDesktopLayout} items={homeCategoryItems} />
             </div>
 
             <section
               ref={recommendationsSectionRef}
               data-testid="home-mobile-recommendations"
-              style={{ marginTop: "24px", ...deferredSectionStyle }}
+              style={{ marginTop: isDesktopLayout ? "34px" : "24px", ...deferredSectionStyle }}
             >
               <SectionHeading title={homeSectionTitles.recommend} action="Xem tất cả" />
               {isHomeRecommendationsLoading && isHomeStoresLoading ? (
-                <HomeDataMessage text="Đang tải quán từ API..." compact />
+                <HomeDataMessage text="Đang tải quán từ API..." compact={!isDesktopLayout} />
               ) : recommendedCards.length ? (
                 <HomeCardCarousel
                   ariaLabel="Home recommendations"
-                  gap={12}
+                  gap={isDesktopLayout ? 16 : 12}
                   getKey={(item) => item.slug}
                   items={recommendedCards.slice(0, 8)}
-                  itemsPerSlide={2}
+                  itemsPerSlide={isDesktopLayout ? 4 : 2}
                   renderItem={(item) => (
                     <VenueMiniCard
                       item={item}
-                      compact
+                      compact={!isDesktopLayout}
                       isFavorite={favoriteStoreSlugs.includes(item.slug)}
                       onToggleFavorite={toggleHomeStoreFavorite}
                     />
@@ -3845,7 +3855,7 @@ export default function HomePageClient({
               ) : (
                 <HomeDataMessage
                   text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."}
-                  compact
+                  compact={!isDesktopLayout}
                 />
               )}
             </section>
@@ -3857,21 +3867,21 @@ export default function HomePageClient({
             >
               <SectionHeading title={homeSectionTitles.coupon} />
               {isHomeCouponsLoading ? (
-                <HomeDataMessage text="Đang tải ưu đãi từ API..." compact />
+                <HomeDataMessage text="Đang tải ưu đãi từ API..." compact={!isDesktopLayout} />
               ) : homeCoupons.length ? (
                 <HomeCardCarousel
                   ariaLabel="Coupon Hot"
-                  gap={10}
+                  gap={isDesktopLayout ? 16 : 10}
                   getKey={(item) => item.id}
                   items={homeCoupons.slice(0, 6)}
-                  itemsPerSlide={2}
-                  layoutDirection="column"
-                  renderItem={(item) => <CouponCard item={item} compact />}
+                  itemsPerSlide={isDesktopLayout ? 3 : 2}
+                  layoutDirection={isDesktopLayout ? "row" : "column"}
+                  renderItem={(item) => <CouponCard item={item} compact={!isDesktopLayout} />}
                 />
               ) : (
                 <HomeDataMessage
                   text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."}
-                  compact
+                  compact={!isDesktopLayout}
                 />
               )}
             </section>
@@ -3894,7 +3904,7 @@ export default function HomePageClient({
                   castItems={castRankItems}
                   storeItems={storeRankItems}
                   error={rankingsError}
-                  stacked
+                  stacked={!isDesktopLayout}
                 />
               ) : (
                 <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
@@ -3903,6 +3913,7 @@ export default function HomePageClient({
 
             <div style={{ marginTop: sectionGap, ...deferredSectionStyle }}>
               <MidPageBanner
+                desktop={isDesktopLayout}
                 apiBanners={midBanners}
                 isLoading={isHomeBannersLoading}
               />
@@ -3926,20 +3937,20 @@ export default function HomePageClient({
                 items={dynamicServiceTabs}
                 language={activeLanguage}
               />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isDesktopLayout ? "repeat(4, minmax(0, 1fr))" : "1fr 1fr", gap: isDesktopLayout ? "16px" : "11px" }}>
                 {isFeaturedServicesLoading ? (
-                  <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." compact />
+                  <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." compact={!isDesktopLayout} />
                 ) : svc.length ? (
                   <HomeCardCarousel
                     ariaLabel="Featured services"
-                  gap={11}
+                  gap={isDesktopLayout ? 16 : 11}
                     getKey={(item) => item.slug}
                     items={svc}
-                  itemsPerSlide={2}
-                  renderItem={(item) => <ServiceCard item={item} compact />}
+                  itemsPerSlide={isDesktopLayout ? 4 : 2}
+                  renderItem={(item) => <ServiceCard item={item} compact={!isDesktopLayout} />}
                   />
                 ) : (
-                  <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} compact />
+                  <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} compact={!isDesktopLayout} />
                 )}
               </div>
             </section>
@@ -3951,20 +3962,20 @@ export default function HomePageClient({
             >
               <SectionHeading title={homeSectionTitles.guide} />
               {isHomeContentLoading ? (
-                <HomeDataMessage text="Đang tải nội dung CMS..." compact />
+                <HomeDataMessage text="Đang tải nội dung CMS..." compact={!isDesktopLayout} />
               ) : guideItems.length ? (
                 <HomeCardCarousel
                   ariaLabel="Tour blog guide"
-                  gap={12}
+                  gap={isDesktopLayout ? 16 : 12}
                   getKey={(item) => item.id}
                   items={guideItems}
-                  itemsPerSlide={1}
-                  renderItem={(item) => <ContentPlaceholderCard item={item} compact />}
+                  itemsPerSlide={isDesktopLayout ? 3 : 1}
+                  renderItem={(item) => <ContentPlaceholderCard item={item} compact={!isDesktopLayout} />}
                 />
               ) : (
                 <HomeDataMessage
                   text={homeContentError || translateText("Chưa có bài viết được xuất bản.", activeLanguage)}
-                  compact
+                  compact={!isDesktopLayout}
                 />
               )}
             </section>
@@ -3974,7 +3985,7 @@ export default function HomePageClient({
               data-testid="home-mobile-video"
               style={{ marginTop: sectionGap, ...deferredSectionStyle }}
             >
-              <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
+              <div style={{ ...sectionTitleStyle, marginBottom: isDesktopLayout ? "14px" : "12px" }}>
                 <h2 className="nl-home-section-title notranslate" translate="no" data-no-translate="true" style={homeSectionTitleTextStyle}>
                   {homeSectionTitles.video}
                 </h2>
@@ -3986,20 +3997,20 @@ export default function HomePageClient({
                 />
               </div>
               {!homeHotVideosEnabled ? (
-                <HomeDataMessage text={homeHotVideosPlaceholderText} compact />
+                <HomeDataMessage text={homeHotVideosPlaceholderText} compact={!isDesktopLayout} />
               ) : isHomeVideosLoading ? (
-                <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
+                <HomeDataMessage text="Đang tải Video Hot từ API..." compact={!isDesktopLayout} />
               ) : videoList.length ? (
                 <HomeCardCarousel
                   ariaLabel="Video Hot"
-                  gap={12}
+                  gap={isDesktopLayout ? 16 : 12}
                   getKey={(item) => item.id}
                   items={videoList}
-                  itemsPerSlide={1}
-                  renderItem={(item) => <VideoCard item={item} compact />}
+                  itemsPerSlide={isDesktopLayout ? 3 : 1}
+                  renderItem={(item) => <VideoCard item={item} compact={!isDesktopLayout} />}
                 />
               ) : (
-                <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact />
+                <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact={!isDesktopLayout} />
               )}
             </section>
           </main>
