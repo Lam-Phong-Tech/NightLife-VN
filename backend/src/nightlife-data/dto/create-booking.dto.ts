@@ -14,8 +14,6 @@ import {
   MaxLength,
   Min,
   MinLength,
-  ValidateBy,
-  type ValidationOptions,
 } from 'class-validator';
 
 const trimOptionalString = ({ value }: TransformFnParams): unknown => {
@@ -34,31 +32,6 @@ const trimLowerEmail = ({ value }: TransformFnParams): unknown => {
   const trimmed = value.trim().toLowerCase();
   return trimmed || undefined;
 };
-
-const isGmailAddress = (value: string) => {
-  const domainPart = value.trim().toLowerCase().split('@')[1] ?? '';
-
-  return domainPart === 'gmail.com';
-};
-
-const IsGmailAddress = (validationOptions?: ValidationOptions) =>
-  ValidateBy(
-    {
-      name: 'isGmailAddress',
-      validator: {
-        validate(value: unknown) {
-          if (value === undefined || value === null || value === '')
-            return true;
-
-          return typeof value === 'string' && isGmailAddress(value);
-        },
-        defaultMessage() {
-          return 'email must be a gmail.com address';
-        },
-      },
-    },
-    validationOptions,
-  );
 
 export const supportedBookingLocales = ['vi', 'en', 'ja', 'ko', 'zh'] as const;
 
@@ -135,16 +108,13 @@ export class CreateBookingDto {
   displayName: string;
 
   @ApiPropertyOptional({
-    example: 'guest@gmail.com',
+    example: 'guest@example.com',
     description:
       'Email used for guest booking confirmation and QR delivery. Required for new guest booking forms.',
   })
   @Transform(trimLowerEmail)
   @IsOptional()
   @IsEmail()
-  @IsGmailAddress({
-    message: 'email must be a gmail.com address',
-  })
   @MaxLength(254)
   email?: string;
 

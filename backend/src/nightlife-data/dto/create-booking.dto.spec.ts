@@ -7,7 +7,7 @@ import { CreateBookingDto } from './create-booking.dto';
 
 const validBookingPayload = {
   displayName: 'Nguyen Van A',
-  email: 'guest@gmail.com',
+  email: 'guest@example.com',
   partySize: 4,
   scheduledAt: '2099-07-08T14:00:00.000Z',
   storeSlug: 'tokyo-kitchen',
@@ -23,25 +23,29 @@ describe('CreateBookingDto', () => {
     return validate(dto);
   };
 
-  it('rejects non-gmail booking email domains', async () => {
+  it('accepts valid booking email domains', async () => {
     for (const email of [
-      'guest@gmai.com',
-      'guest@gmeo.com',
-      'guest@gmail.con',
+      'guest@gmail.com',
+      'guest@outlook.com',
       'guest@yahoo.com',
+      'guest@company.vn',
     ]) {
       const errors = await validateBookingEmail(email);
-      const emailError = errors.find((error) => error.property === 'email');
 
-      expect(emailError?.constraints).toMatchObject({
-        isGmailAddress: 'email must be a gmail.com address',
-      });
+      expect(errors).toHaveLength(0);
     }
   });
 
-  it('accepts a normalized valid booking email domain', async () => {
+  it('accepts a normalized booking email address', async () => {
     await expect(
-      validateBookingEmail(' Guest@Gmail.COM '),
+      validateBookingEmail(' Guest@Company.VN '),
     ).resolves.toHaveLength(0);
+  });
+
+  it('rejects invalid booking email addresses', async () => {
+    const errors = await validateBookingEmail('guest@company');
+    const emailError = errors.find((error) => error.property === 'email');
+
+    expect(emailError?.constraints).toHaveProperty('isEmail');
   });
 });

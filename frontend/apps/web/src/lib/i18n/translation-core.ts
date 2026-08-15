@@ -6224,11 +6224,11 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "@ 后面必须是有效域名，例如 company.com。",
   },
   {
-    vi: "Vui lòng nhập email Gmail đúng định dạng, ví dụ name@gmail.com.",
-    en: "Please enter a valid Gmail address, for example name@gmail.com.",
-    ja: "name@gmail.com のような有効な Gmail アドレスを入力してください。",
-    ko: "name@gmail.com 형식의 올바른 Gmail 주소를 입력해 주세요.",
-    zh: "请输入正确格式的 Gmail 地址，例如 name@gmail.com。",
+    vi: "Vui lòng nhập email đúng định dạng, ví dụ name@example.com.",
+    en: "Please enter a valid email address, for example name@example.com.",
+    ja: "name@example.com のような有効なメールアドレスを入力してください。",
+    ko: "name@example.com 형식의 올바른 이메일 주소를 입력해 주세요.",
+    zh: "请输入正确格式的电子邮件地址，例如 name@example.com。",
   },
   {
     vi: "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.",
