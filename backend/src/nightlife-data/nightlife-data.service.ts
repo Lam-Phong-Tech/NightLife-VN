@@ -1825,13 +1825,24 @@ export class NightlifeDataService {
     }
 
     const casts = await this.prisma.cast.findMany({
-      where: {
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: {
-          deletedAt: null,
-          status: 'ACTIVE',
+      where: this.publicCastEligibilityWhere(
+        {
+          ...(q
+            ? {
+                OR: [
+                  { stageName: this.containsInsensitive(q) },
+                  { publicAlias: this.containsInsensitive(q) },
+                  { slug: this.containsInsensitive(this.normalizeToken(q)) },
+                  {
+                    store: {
+                      name: this.containsInsensitive(q),
+                    },
+                  },
+                ],
+              }
+            : {}),
+        },
+        {
           ...(category ? { category } : {}),
           ...(cityCode
             ? {
@@ -1855,21 +1866,7 @@ export class NightlifeDataService {
               }
             : {}),
         },
-        ...(q
-          ? {
-              OR: [
-                { stageName: this.containsInsensitive(q) },
-                { publicAlias: this.containsInsensitive(q) },
-                { slug: this.containsInsensitive(this.normalizeToken(q)) },
-                {
-                  store: {
-                    name: this.containsInsensitive(q),
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
+      ),
       orderBy: [{ stageName: 'asc' }],
       take: limit,
       select: {
@@ -2728,37 +2725,34 @@ export class NightlifeDataService {
     const searchToken = this.normalizeToken(searchTerm);
     const language = this.normalizeToken(query.language);
     const tag = this.normalizeToken(query.tag);
-    const where: Prisma.CastWhereInput = {
-      deletedAt: null,
-      status: 'ACTIVE',
-      isPublic: true,
-      store: this.buildPublicStoreWhere(query, { includeTextSearch: false }),
-      ...(language ? { languages: { has: language } } : {}),
-      ...(tag ? { tags: { has: tag } } : {}),
-      ...(searchTerm
-        ? {
-            OR: [
-              { stageName: this.containsInsensitive(searchTerm) },
-              { publicAlias: this.containsInsensitive(searchTerm) },
-              { bio: this.containsInsensitive(searchTerm) },
-              { publicBio: this.containsInsensitive(searchTerm) },
-              ...(searchToken
-                ? [
-                    { tags: { has: searchToken } },
-                    { languages: { has: searchToken } },
-                  ]
-                : []),
-              {
-                store: {
-                  name: this.containsInsensitive(searchTerm),
-                  deletedAt: null,
-                  status: 'ACTIVE',
+    const where: Prisma.CastWhereInput = this.publicCastEligibilityWhere(
+      {
+        ...(language ? { languages: { has: language } } : {}),
+        ...(tag ? { tags: { has: tag } } : {}),
+        ...(searchTerm
+          ? {
+              OR: [
+                { stageName: this.containsInsensitive(searchTerm) },
+                { publicAlias: this.containsInsensitive(searchTerm) },
+                { bio: this.containsInsensitive(searchTerm) },
+                { publicBio: this.containsInsensitive(searchTerm) },
+                ...(searchToken
+                  ? [
+                      { tags: { has: searchToken } },
+                      { languages: { has: searchToken } },
+                    ]
+                  : []),
+                {
+                  store: {
+                    name: this.containsInsensitive(searchTerm),
+                  },
                 },
-              },
-            ],
-          }
-        : {}),
-    };
+              ],
+            }
+          : {}),
+      },
+      this.buildPublicStoreWhere(query, { includeTextSearch: false }),
+    );
     const [total, casts] = await Promise.all([
       this.prisma.cast.count({ where }),
       this.prisma.cast.findMany({
@@ -2886,16 +2880,7 @@ export class NightlifeDataService {
     }
 
     const cast = await this.prisma.cast.findFirst({
-      where: {
-        slug: normalizedSlug,
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: {
-          deletedAt: null,
-          status: 'ACTIVE',
-        },
-      },
+      where: this.publicCastEligibilityWhere({ slug: normalizedSlug }),
       select: {
         id: true,
         slug: true,
@@ -11801,16 +11786,9 @@ export class NightlifeDataService {
 
     if (castId || castSlug) {
       const cast = await this.prisma.cast.findFirst({
-        where: {
+        where: this.publicCastEligibilityWhere({
           ...(castId ? { id: castId } : { slug: castSlug }),
-          deletedAt: null,
-          status: 'ACTIVE',
-          isPublic: true,
-          store: {
-            deletedAt: null,
-            status: 'ACTIVE',
-          },
-        },
+        }),
         select: {
           id: true,
           slug: true,
@@ -16869,16 +16847,7 @@ export class NightlifeDataService {
     }
 
     const casts = await this.prisma.cast.findMany({
-      where: {
-        id: { in: rankedIds },
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: {
-          deletedAt: null,
-          status: 'ACTIVE',
-        },
-      },
+      where: this.publicCastEligibilityWhere({ id: { in: rankedIds } }),
       select: PUBLIC_RELATED_CAST_SELECT,
     });
     const castById = new Map(casts.map((item) => [item.id, item]));
@@ -16930,16 +16899,7 @@ export class NightlifeDataService {
     }
 
     const cast = await this.prisma.cast.findFirst({
-      where: {
-        slug: normalizedSlug,
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: {
-          deletedAt: null,
-          status: 'ACTIVE',
-        },
-      },
+      where: this.publicCastEligibilityWhere({ slug: normalizedSlug }),
       select: {
         id: true,
         slug: true,
@@ -17627,13 +17587,7 @@ export class NightlifeDataService {
             select: { id: true },
           })
         : await this.prisma.cast.findFirst({
-            where: {
-              id: targetId,
-              deletedAt: null,
-              status: 'ACTIVE',
-              isPublic: true,
-              store: { deletedAt: null, status: 'ACTIVE' },
-            },
+            where: this.publicCastEligibilityWhere({ id: targetId }),
             select: { id: true },
           });
 
@@ -24223,6 +24177,28 @@ export class NightlifeDataService {
       total: total - (items.length - visibleItems.length),
       page,
       limit,
+    };
+  }
+
+  /**
+   * One eligibility rule for every public-facing Cast flow. A venue being
+   * active never makes an unapproved Cast visible: the Cast itself must be
+   * active and explicitly public first.
+   */
+  private publicCastEligibilityWhere(
+    castWhere: Prisma.CastWhereInput = {},
+    storeWhere: Prisma.StoreWhereInput = {},
+  ): Prisma.CastWhereInput {
+    return {
+      ...castWhere,
+      deletedAt: null,
+      status: 'ACTIVE',
+      isPublic: true,
+      store: {
+        ...storeWhere,
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
     };
   }
 
