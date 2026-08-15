@@ -66,6 +66,7 @@ describe('StorageController public responsive files', () => {
       writeFile(join(directory, 'image-800.avif'), Buffer.from('avif')),
     ]);
     const storageService = {
+      isR2Enabled: jest.fn().mockReturnValue(false),
       resolvePublicLocalFile: jest.fn().mockResolvedValue({
         path: defaultPath,
         mediaFile: {
@@ -113,6 +114,7 @@ describe('StorageController public responsive files', () => {
       const defaultPath = join(directory, 'legacy.png');
       await writeFile(defaultPath, Buffer.from('png'));
       const controller = new StorageController({
+        isR2Enabled: jest.fn().mockReturnValue(false),
         resolvePublicLocalFile: jest.fn().mockResolvedValue({
           path: defaultPath,
           mediaFile: {

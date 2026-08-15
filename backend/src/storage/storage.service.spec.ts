@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from './storage.service';
 import { validateUploadedFile } from './upload-file-validation';
 import { ImageProcessingService } from './image-processing.service';
+import { R2StorageService } from './r2-storage.service';
 
 jest.mock('./upload-file-validation', () => ({
   validateUploadedFile: jest.fn(),
@@ -70,6 +71,13 @@ describe('StorageService', () => {
     cleanupFiles: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<ImageProcessingService>;
 
+  const r2Storage = {
+    isEnabled: jest.fn().mockReturnValue(false),
+    uploadFiles: jest.fn(),
+    getObject: jest.fn(),
+    deleteObjects: jest.fn(),
+  } as unknown as jest.Mocked<R2StorageService>;
+
   let service: StorageService;
 
   beforeEach(() => {
@@ -87,6 +95,7 @@ describe('StorageService', () => {
       accessService as never,
       systemConfigService as never,
       imageProcessingService,
+      r2Storage,
     );
   });
 
