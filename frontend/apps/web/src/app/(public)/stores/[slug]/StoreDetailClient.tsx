@@ -2610,11 +2610,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <strong className="notranslate" translate="no" data-no-translate="true">{priceText}</strong>
                 <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
-              <i />
-              <div>
-                <strong>{formatStoreCastCount(store.casts.length || 0, activeLanguage)}</strong>
-                <span>{translateText("Đang phục vụ", activeLanguage)}</span>
-              </div>
+              {!isServiceOnlyBooking ? (
+                <>
+                  <i />
+                  <div>
+                    <strong>{formatStoreCastCount(store.casts.length || 0, activeLanguage)}</strong>
+                    <span>{translateText("Đang phục vụ", activeLanguage)}</span>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <div className="secondary-actions">
