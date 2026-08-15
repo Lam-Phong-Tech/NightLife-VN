@@ -1536,77 +1536,10 @@ function EventHero({ desktop = false, apiBanners = [], isLoading = false }: { de
     return () => window.clearInterval(timer);
   }, [banners.length, canAutoRotate]);
 
-  if (isLoading) {
-    return (
-      <div
-        className="nl-home-hero is-loading"
-        style={{
-          minHeight: desktop ? "310px" : "208px",
-          borderRadius: homeCardRadius,
-          overflow: "hidden",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          padding: desktop ? "34px" : "18px 18px 42px",
-          background: "var(--vy-surface-2)",
-          border: `1px solid ${colors.line}`,
-          boxShadow: "var(--vy-shadow-card)",
-        }}
-      >
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
-          <span
-            className="nl-data-skeleton-block"
-            style={{
-              width: "120px",
-              height: "20px",
-              borderRadius: "4px",
-            }}
-          />
-          <span
-            className="nl-data-skeleton-block"
-            style={{
-              width: desktop ? "480px" : "220px",
-              height: desktop ? "42px" : "28px",
-              borderRadius: "6px",
-              marginTop: "8px",
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              marginTop: "12px",
-            }}
-          >
-            <span
-              className="nl-data-skeleton-block"
-              style={{
-                width: desktop ? "320px" : "140px",
-                height: "16px",
-                borderRadius: "4px",
-              }}
-            />
-            <span
-              className="nl-data-skeleton-block"
-              style={{
-                width: "90px",
-                height: "36px",
-                borderRadius: "999px",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!event) {
     return (
       <HomeDataMessage
-        text="Chưa có banner trang chủ."
+        text={isLoading ? "Đang cập nhật banner trang chủ." : "Chưa có banner trang chủ."}
         minHeight={desktop ? 310 : 208}
       />
     );
@@ -2660,6 +2593,7 @@ function VideoCard({
 }) {
   const title = item.name.split(" · ")[0] || item.name;
   const cardHeight = compact ? 218 : 244;
+  const canAutoPlay = useUserInteractionStarted();
 
   return (
     <Link
@@ -2684,7 +2618,7 @@ function VideoCard({
         label="Video"
         style={{ minHeight: cardHeight, height: "100%", borderRadius: homeCardRadius, position: "relative", overflow: "hidden" }}
       >
-        {item.videoUrl ? (
+        {item.videoUrl && canAutoPlay ? (
           <video
             src={item.videoUrl}
             muted

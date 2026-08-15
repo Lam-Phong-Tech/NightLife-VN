@@ -34,27 +34,9 @@ describe("HybridPreloader", () => {
     vi.useRealTimers();
   });
 
-  it("shows the branded intro once and records the current session", () => {
+  it("does not render a branded intro", () => {
     render(<HybridPreloader />);
 
-    expect(screen.getByLabelText("Đang mở Vietyoru")).toBeInTheDocument();
-    expect(window.sessionStorage.getItem("vy-brand-intro-seen")).toBe("1");
-
-    act(() => vi.advanceTimersByTime(280));
-    expect(screen.getByLabelText("Đang mở Vietyoru")).toHaveAttribute(
-      "data-phase",
-      "leaving",
-    );
-
-    act(() => vi.advanceTimersByTime(280));
-    expect(screen.queryByLabelText("Đang mở Vietyoru")).not.toBeInTheDocument();
-  });
-
-  it("skips the branded intro after it has appeared in the session", () => {
-    window.sessionStorage.setItem("vy-brand-intro-seen", "1");
-    render(<HybridPreloader />);
-
-    act(() => vi.advanceTimersByTime(0));
     expect(screen.queryByLabelText("Đang mở Vietyoru")).not.toBeInTheDocument();
   });
 

@@ -1,14 +1,6 @@
-import { HomeLoadingSkeleton } from "@/components/ui/LoadingSkeleton";
-
 export default function Loading() {
-  return (
-    <>
-      <div className="block md:hidden">
-        <HomeLoadingSkeleton mobile />
-      </div>
-      <div className="hidden md:block">
-        <HomeLoadingSkeleton />
-      </div>
-    </>
-  );
+  // Do not replace the home route with a page-sized skeleton while its server
+  // data streams in. The hero is the page's primary/LCP content, so a blank
+  // fallback is less disruptive than showing a fake hero that cannot be used.
+  return null;
 }

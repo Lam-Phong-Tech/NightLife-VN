@@ -3,11 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const INTRO_SESSION_KEY = "vy-brand-intro-seen";
 const ROUTE_PROGRESS_DELAY = 130;
 const ROUTE_PROGRESS_TIMEOUT = 12_000;
-
-type IntroPhase = "visible" | "leaving" | "hidden";
 
 function currentLocationKey() {
   return `${window.location.pathname}${window.location.search}`;
@@ -15,7 +12,6 @@ function currentLocationKey() {
 
 export function HybridPreloader() {
   const pathname = usePathname() || "/";
-  const [introPhase, setIntroPhase] = useState<IntroPhase>("visible");
   const [routeVisible, setRouteVisible] = useState(false);
   const [routeProgress, setRouteProgress] = useState(0);
 
@@ -118,39 +114,6 @@ export function HybridPreloader() {
   );
 
   useEffect(() => {
-    let introSeen = false;
-
-    try {
-      introSeen = window.sessionStorage.getItem(INTRO_SESSION_KEY) === "1";
-      if (!introSeen) window.sessionStorage.setItem(INTRO_SESSION_KEY, "1");
-    } catch {
-      // Continue with the intro when session storage is unavailable.
-    }
-
-    if (introSeen) {
-      const hideSeenIntroTimer = window.setTimeout(() => setIntroPhase("hidden"), 0);
-      return () => window.clearTimeout(hideSeenIntroTimer);
-    }
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const leaveTimer = window.setTimeout(
-      () => setIntroPhase("leaving"),
-      reduceMotion ? 80 : 280,
-    );
-    const hideTimer = window.setTimeout(
-      () => setIntroPhase("hidden"),
-      reduceMotion ? 180 : 560,
-    );
-    const hardTimeout = window.setTimeout(() => setIntroPhase("hidden"), 800);
-
-    return () => {
-      window.clearTimeout(leaveTimer);
-      window.clearTimeout(hideTimer);
-      window.clearTimeout(hardTimeout);
-    };
-  }, []);
-
-  useEffect(() => {
     if (previousPathnameRef.current === pathname) return;
     previousPathnameRef.current = pathname;
     finishRouteProgress();
@@ -206,27 +169,6 @@ export function HybridPreloader() {
 
   return (
     <>
-      {introPhase !== "hidden" ? (
-        <div
-          className="nl-brand-intro"
-          data-phase={introPhase}
-          role="status"
-          aria-live="polite"
-          aria-label="Đang mở Vietyoru"
-        >
-          <div className="nl-brand-intro-inner">
-            <div className="nl-brand-intro-orbit" aria-hidden="true">
-              <span />
-            </div>
-            <div className="nl-brand-intro-wordmark">Vietyoru</div>
-            <div className="nl-brand-intro-tagline">Vietnam Nightlife Guide</div>
-            <div className="nl-brand-intro-line" aria-hidden="true">
-              <span />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div
         className="nl-navigation-progress"
         data-visible={routeVisible ? "true" : "false"}

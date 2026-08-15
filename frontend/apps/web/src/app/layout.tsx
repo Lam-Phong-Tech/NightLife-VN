@@ -255,9 +255,6 @@ export default async function RootLayout({
                   } else if (t === 'dark') {
                     document.documentElement.classList.remove(isAdmin ? 'vy-admin-light' : 'vy-light');
                   }
-                  if (sessionStorage.getItem('vy-brand-intro-seen') === '1') {
-                    document.documentElement.classList.add('nl-brand-intro-seen');
-                  }
                 } catch (e) { /* private mode */ }
               })();
             `,
