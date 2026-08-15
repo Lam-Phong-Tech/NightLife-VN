@@ -1878,6 +1878,7 @@ export class NightlifeDataService {
         stageName: true,
         publicAlias: true,
         status: true,
+        isPublic: true,
         media: {
           where: {
             deletedAt: null,
@@ -1921,6 +1922,7 @@ export class NightlifeDataService {
         : this.normalizeCityCode(cast.store.city),
       category: cast.store.category,
       status: cast.status,
+      isPublic: cast.isPublic,
     }));
   }
 

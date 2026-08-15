@@ -2060,6 +2060,10 @@ describe('NightlifeDataService', () => {
             category: 'CLUB',
           }),
         }),
+        select: expect.objectContaining({
+          status: true,
+          isPublic: true,
+        }),
       }),
     );
   });
