@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { Express } from 'express';
 import { AppModule } from './app.module';
 import { createSecurityHeadersMiddleware } from './security/security-headers.middleware';
+import { getAllowedOrigins } from './security/cors-origins';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,32 +14,8 @@ async function bootstrap() {
   app.use(
     createSecurityHeadersMiddleware(process.env.NODE_ENV === 'production'),
   );
-  const productionOrigins = [
-    'https://demonightlight.test9.io.vn',
-    'https://www.demonightlight.test9.io.vn',
-    'https://partner.demonightlight.test9.io.vn',
-    'https://admin.demonightlight.test9.io.vn',
-    'https://auth.demonightlight.test9.io.vn',
-    'https://demonightlight.test9io.vn',
-    'https://www.demonightlight.test9io.vn',
-    'https://nightlife.lptech.info.vn',
-    'https://vietoru.com',
-    'https://www.vietoru.com',
-  ];
-  const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      ...productionOrigins,
-      ...configuredOrigins,
-    ],
+    origin: getAllowedOrigins(),
     credentials: true,
   });
 

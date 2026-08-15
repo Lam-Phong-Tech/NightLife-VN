@@ -11,6 +11,7 @@ describe('SupportChatGateway', () => {
   const supportChatService = {
     claimTicket: claimTicketMock,
     markTicketReadByAdmin: markTicketReadByAdminMock,
+    createCustomerMessage: jest.fn(),
   } as unknown as jest.Mocked<SupportChatService>;
   const jwtService = {
     verifyAsync: jest.fn(),
@@ -19,6 +20,7 @@ describe('SupportChatGateway', () => {
     user: { findUnique: jest.fn() },
     tokenBlacklist: { findUnique: jest.fn() },
     userSession: { findUnique: jest.fn() },
+    supportTicket: { findUnique: jest.fn() },
   } as unknown as jest.Mocked<PrismaService>;
   const socketGateway = {
     notifyMemberNotificationCreated: jest.fn(),
@@ -305,5 +307,27 @@ describe('SupportChatGateway', () => {
       error: 'Phiên đăng nhập quản trị không hợp lệ. Vui lòng đăng nhập lại.',
     });
     expect(claimTicketMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a guest message addressed to a ticket outside its session', async () => {
+    (prisma.supportTicket.findUnique as jest.Mock).mockResolvedValue({
+      userId: null,
+      guestSessionId: 'another-session',
+    });
+    const client = {
+      data: {},
+      handshake: { query: { guestSessionId: 'guest-session-1' } },
+      broadcast: { to: jest.fn() },
+      join: jest.fn(),
+    } as unknown as Socket;
+
+    await expect(
+      gateway.handleSendMessage(client, {
+        ticketId: 'ticket-1',
+        content: 'Unauthorized message',
+      }),
+    ).resolves.toEqual({ error: 'UNAUTHORIZED' });
+
+    expect(supportChatService.createCustomerMessage).not.toHaveBeenCalled();
   });
 });

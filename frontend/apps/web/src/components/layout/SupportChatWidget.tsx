@@ -94,10 +94,7 @@ function mapSupportMessageToChatMessage(
 ): ChatMessage {
   return {
     id: message.id ?? `message-${Date.now().toString()}`,
-    from:
-      message.senderType === "USER" || message.senderType === "GUEST"
-        ? "user"
-        : "support",
+    from: message.senderType === "USER" || message.senderType === "GUEST" ? "user" : "support",
     text: message.content ?? "",
     time: formatChatTime(new Date(message.createdAt ?? Date.now()), language),
   };
@@ -271,7 +268,15 @@ function ChatBubble({
   );
 }
 
-function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMessage[]; isMobile: boolean; isLoadingHistory?: boolean }) {
+function ChatThread({
+  messages,
+  isMobile,
+  isLoadingHistory,
+}: {
+  messages: ChatMessage[];
+  isMobile: boolean;
+  isLoadingHistory?: boolean;
+}) {
   const activeLanguage = useActiveLanguage();
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -321,11 +326,7 @@ function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMe
         />
       )}
       {messages.map((message) => (
-        <ChatBubble
-          key={message.id}
-          message={message}
-          isMobile={isMobile}
-        />
+        <ChatBubble key={message.id} message={message} isMobile={isMobile} />
       ))}
     </div>
   );
@@ -416,7 +417,7 @@ function DesktopSupportChatPanel({
   draft: string;
   messages: ChatMessage[];
   isLoadingHistory?: boolean;
-  connectionStatus: 'connected' | 'disconnected' | 'error';
+  connectionStatus: "connected" | "disconnected" | "error";
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -473,11 +474,20 @@ function DesktopSupportChatPanel({
           >
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
-          <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "1px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              color: connectionStatus === "connected" ? "#7fd3a2" : "#f87171",
+              marginTop: "1px",
+            }}
+          >
             {supportConnectionLabel(connectionStatus, activeLanguage)}
           </div>
         </div>
-        <IconCircleButton label={translateText("Đóng chat hỗ trợ", activeLanguage)} onClick={onClose}>
+        <IconCircleButton
+          label={translateText("Đóng chat hỗ trợ", activeLanguage)}
+          onClick={onClose}
+        >
           <X size={13} strokeWidth={2.4} />
         </IconCircleButton>
       </div>
@@ -505,7 +515,7 @@ function MobileSupportChatPanel({
   draft: string;
   messages: ChatMessage[];
   isLoadingHistory?: boolean;
-  connectionStatus: 'connected' | 'disconnected' | 'error';
+  connectionStatus: "connected" | "disconnected" | "error";
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -574,7 +584,13 @@ function MobileSupportChatPanel({
           >
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
-          <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "2px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              color: connectionStatus === "connected" ? "#7fd3a2" : "#f87171",
+              marginTop: "2px",
+            }}
+          >
             {supportConnectionLabel(connectionStatus, activeLanguage)}
           </div>
         </div>
@@ -646,7 +662,9 @@ export function SupportChatWidget({
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string>("");
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "error">(
+    "disconnected",
+  );
   const [hasOpened, setHasOpened] = useState(false);
   const hasLoadedSessionHistoryRef = useRef(false);
   const closedTicketIdsRef = useRef<Set<string>>(new Set());
@@ -767,20 +785,15 @@ export function SupportChatWidget({
     const historyTicketId = ticketId;
     setIsLoadingHistory(true);
     fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((data: unknown) => {
         if (closedTicketIdsRef.current.has(historyTicketId)) return;
 
         if (Array.isArray(data)) {
           const mapped = data.map((message) =>
-            mapSupportMessageToChatMessage(
-              message as SupportMessagePayload,
-              activeLanguage,
-            ),
+            mapSupportMessageToChatMessage(message as SupportMessagePayload, activeLanguage),
           );
-          setMessages((currentMessages) =>
-            mergeSupportChatHistory(currentMessages, mapped),
-          );
+          setMessages((currentMessages) => mergeSupportChatHistory(currentMessages, mapped));
         }
       })
       .catch(console.error)
@@ -794,22 +807,22 @@ export function SupportChatWidget({
 
   useEffect(() => {
     if (!socket || !ticketId) return;
-    
+
     // Update query for future reconnects without disconnecting now
-    socket.io.opts.query = { ticketId };
-    
+    socket.io.opts.query = { ticketId, guestSessionId };
+
     const onReconnect = () => {
-      socket.emit('rejoin_ticket', { ticketId });
+      socket.emit("rejoin_ticket", { ticketId });
     };
-    
-    socket.on('connect', onReconnect);
-    
+
+    socket.on("connect", onReconnect);
+
     if (socket.connected) {
       onReconnect();
     }
-    
+
     return () => {
-      socket.off('connect', onReconnect);
+      socket.off("connect", onReconnect);
     };
   }, [socket, ticketId]);
 
@@ -819,35 +832,32 @@ export function SupportChatWidget({
     const socketConfig = getSupportSocketConfig();
     const token = currentUser?.id ? getAuthSessionToken() : "";
 
-    const newSocket = io(socketConfig.host + '/support', {
+    const newSocket = io(socketConfig.host + "/support", {
       path: socketConfig.path,
-      query: ticketId ? { ticketId } : undefined,
+      query: ticketId ? { ticketId, guestSessionId } : { guestSessionId },
       auth: token ? { token } : undefined,
     });
     setSocket(newSocket);
-    
-    newSocket.on('connect', () => setConnectionStatus('connected'));
-    newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
-    newSocket.on('connect_error', () => setConnectionStatus('error'));
 
-    newSocket.on('receive_message', (msg: SupportMessagePayload) => {
+    newSocket.on("connect", () => setConnectionStatus("connected"));
+    newSocket.on("disconnect", () => setConnectionStatus("disconnected"));
+    newSocket.on("connect_error", () => setConnectionStatus("error"));
+
+    newSocket.on("receive_message", (msg: SupportMessagePayload) => {
       if (msg.ticketId && closedTicketIdsRef.current.has(msg.ticketId)) return;
 
-      setMessages(prev => {
+      setMessages((prev) => {
         // Prevent duplicate if we already have it from optimistic UI
-        if (msg.id && prev.some(m => m.id === msg.id)) return prev;
-        return [
-          ...prev,
-          mapSupportMessageToChatMessage(msg, activeLanguageRef.current),
-        ];
+        if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, mapSupportMessageToChatMessage(msg, activeLanguageRef.current)];
       });
     });
 
-    newSocket.on('system_message', (msg: SupportMessagePayload) => {
+    newSocket.on("system_message", (msg: SupportMessagePayload) => {
       if (msg.ticketId && closedTicketIdsRef.current.has(msg.ticketId)) return;
 
-      setMessages(prev => {
-        if (msg.id && prev.some(m => m.id === msg.id)) return prev;
+      setMessages((prev) => {
+        if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
         return [
           ...prev,
           mapSupportMessageToChatMessage(
@@ -858,7 +868,7 @@ export function SupportChatWidget({
       });
     });
 
-    newSocket.on('ticket_closed', (data?: SupportTicketClosedPayload) => {
+    newSocket.on("ticket_closed", (data?: SupportTicketClosedPayload) => {
       if (data?.ticketId) {
         closedTicketIdsRef.current.add(data.ticketId);
       }
@@ -920,32 +930,28 @@ export function SupportChatWidget({
 
     setDraft("");
 
-    const localTempId = 'temp-' + Date.now().toString();
-    setMessages(prev => [
+    const localTempId = "temp-" + Date.now().toString();
+    setMessages((prev) => [
       ...prev,
       {
         id: localTempId,
-        from: 'user',
+        from: "user",
         text,
         time: formatChatTime(new Date(), activeLanguageRef.current),
-      }
+      },
     ]);
 
     const payload: SendSupportMessagePayload = {
       ticketId,
       content: text,
       guestSessionId,
-      userId: currentUser?.id
+      userId: currentUser?.id,
     };
     const confirmPersistedMessage = (response?: SupportMessagePayload) => {
       const persistedMessageId = response?.id;
       if (persistedMessageId) {
         setMessages((currentMessages) =>
-          confirmOptimisticSupportMessage(
-            currentMessages,
-            localTempId,
-            persistedMessageId,
-          ),
+          confirmOptimisticSupportMessage(currentMessages, localTempId, persistedMessageId),
         );
       }
 
@@ -980,18 +986,16 @@ export function SupportChatWidget({
       return;
     }
 
-    socket.timeout(8000).emit(
-      "send_message",
-      payload,
-      (error: Error | null, response?: SupportMessagePayload) => {
+    socket
+      .timeout(8000)
+      .emit("send_message", payload, (error: Error | null, response?: SupportMessagePayload) => {
         if (error || response?.error) {
           void persistByHttp();
           return;
         }
 
         confirmPersistedMessage(response);
-      },
-    );
+      });
   };
 
   const panel = isMobile ? (

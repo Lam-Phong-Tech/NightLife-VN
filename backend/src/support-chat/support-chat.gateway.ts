@@ -16,6 +16,10 @@ import { SupportSenderType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocketGateway } from '../notifications/socket.gateway';
 import {
+  allowSocketRequest,
+  socketCorsOptions,
+} from '../security/cors-origins';
+import {
   requiresSinglePrivilegedSession,
   SESSION_REPLACED_ERROR,
 } from '../auth/session-policy';
@@ -35,6 +39,7 @@ type SupportSocketUser = {
 
 type SupportSocketData = {
   supportUser?: SupportSocketUser;
+  guestSessionId?: string;
 };
 
 const supportAdminRoles = new Set([
@@ -44,37 +49,10 @@ const supportAdminRoles = new Set([
   'OPERATOR',
 ]);
 
-const productionOrigins = [
-  'https://demonightlight.test9.io.vn',
-  'https://www.demonightlight.test9.io.vn',
-  'https://partner.demonightlight.test9.io.vn',
-  'https://admin.demonightlight.test9.io.vn',
-  'https://auth.demonightlight.test9.io.vn',
-  'https://demonightlight.test9io.vn',
-  'https://www.demonightlight.test9io.vn',
-  'https://nightlife.lptech.info.vn',
-  'https://vietoru.com',
-  'https://www.vietoru.com',
-];
-
-const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
 @WebSocketGateway({
   namespace: '/support',
-  cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      ...productionOrigins,
-      ...configuredOrigins,
-    ],
-    credentials: true,
-  },
+  cors: socketCorsOptions(),
+  allowRequest: allowSocketRequest,
 })
 export class SupportChatGateway
   implements
@@ -139,7 +117,7 @@ export class SupportChatGateway
     }
   }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const supportUser = this.getSocketUser(client);
     const isAdmin = Boolean(
       supportUser && supportAdminRoles.has(supportUser.role),
@@ -156,8 +134,8 @@ export class SupportChatGateway
       );
     }
 
-    const ticketId = client.handshake.query.ticketId as string;
-    if (ticketId) {
+    const ticketId = this.handshakeString(client, 'ticketId');
+    if (ticketId && (await this.canJoinTicket(client, ticketId))) {
       void client.join(`ticket_${ticketId}`);
     }
   }
@@ -203,6 +181,20 @@ export class SupportChatGateway
       if (isAdminSender && !data.ticketId) {
         return { error: 'Ticket ID is required' };
       }
+      if (
+        !isAdminSender &&
+        data.ticketId &&
+        !(await this.canJoinTicket(client, data.ticketId))
+      ) {
+        return { error: 'UNAUTHORIZED' };
+      }
+
+      const guestSessionId = socketUser
+        ? undefined
+        : this.handshakeString(client, 'guestSessionId');
+      if (!isAdminSender && !socketUser && !guestSessionId) {
+        return { error: 'UNAUTHORIZED' };
+      }
 
       const { ticket, ticketId, message } = isAdminSender
         ? {
@@ -217,6 +209,7 @@ export class SupportChatGateway
           }
         : await this.supportChatService.createCustomerMessage({
             ...data,
+            guestSessionId,
             userId: socketUser?.id,
           });
 
@@ -306,7 +299,7 @@ export class SupportChatGateway
       if (this.isAdminSocket(client)) {
         await this.requireAdmin(client);
       }
-      if (data.ticketId) {
+      if (data.ticketId && (await this.canJoinTicket(client, data.ticketId))) {
         void client.join(`ticket_${data.ticketId}`);
       }
     } catch {
@@ -393,6 +386,26 @@ export class SupportChatGateway
 
   private getSocketUser(client: Socket): SupportSocketUser | undefined {
     return (client.data as SupportSocketData).supportUser;
+  }
+
+  private handshakeString(client: Socket, key: string) {
+    const value = client.handshake.query[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : '';
+  }
+
+  private async canJoinTicket(client: Socket, ticketId: string) {
+    const socketUser = this.getSocketUser(client);
+    if (socketUser && supportAdminRoles.has(socketUser.role)) return true;
+
+    const guestSessionId = this.handshakeString(client, 'guestSessionId');
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: { userId: true, guestSessionId: true },
+    });
+
+    if (!ticket) return false;
+    if (socketUser) return ticket.userId === socketUser.id;
+    return Boolean(guestSessionId && ticket.guestSessionId === guestSessionId);
   }
 
   private isAdminSocket(client: Socket) {

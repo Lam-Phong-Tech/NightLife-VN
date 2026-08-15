@@ -1,16 +1,17 @@
 import { JwtService } from '@nestjs/jwt';
 import type { Server, Socket } from 'socket.io';
+import { PrismaService } from '../prisma/prisma.service';
 import { SocketGateway } from './socket.gateway';
 
-type SocketMiddleware = (
-  client: Socket,
-  next: (error?: Error) => void,
-) => void;
+type SocketMiddleware = (client: Socket, next: (error?: Error) => void) => void;
 
 describe('SocketGateway', () => {
   const jwtService = {
     verifyAsync: jest.fn(),
   } as unknown as jest.Mocked<JwtService>;
+  const prisma = {
+    booking: { findFirst: jest.fn() },
+  } as unknown as jest.Mocked<PrismaService>;
 
   let gateway: SocketGateway;
 
@@ -40,7 +41,7 @@ describe('SocketGateway', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    gateway = new SocketGateway(jwtService);
+    gateway = new SocketGateway(jwtService, prisma);
   });
 
   it('joins the session room for a socket with a valid token', async () => {
@@ -51,8 +52,9 @@ describe('SocketGateway', () => {
     } as never);
 
     const middleware = captureMiddleware();
-    const clientData: { authUser?: { id: string; role?: string; jti: string } } =
-      {};
+    const clientData: {
+      authUser?: { id: string; role?: string; jti: string };
+    } = {};
     const join = jest.fn();
     const client = {
       id: 'socket-1',
@@ -140,21 +142,47 @@ describe('SocketGateway', () => {
     expect(emit).toHaveBeenCalledWith('session_replaced', payload);
   });
 
-  it('keeps join_room limited to user and booking rooms', () => {
+  it('only joins rooms owned by the authenticated user', async () => {
+    (prisma.booking.findFirst as jest.Mock).mockResolvedValue({
+      id: 'booking-3',
+    });
     const join = jest.fn();
     const client = {
       id: 'socket-4',
-      data: {},
+      data: { authUser: { id: 'user-9', jti: 'session-9' } },
       join,
     } as unknown as Socket;
 
-    gateway.handleJoinRoom(client, {
-      userId: 'user-9',
-      bookingId: 'booking-3',
-    });
+    await expect(
+      gateway.handleJoinRoom(client, {
+        userId: 'user-9',
+        bookingId: 'booking-3',
+      }),
+    ).resolves.toEqual({ ok: true });
 
     expect(join).toHaveBeenCalledWith('user_user-9');
     expect(join).toHaveBeenCalledWith('booking_booking-3');
     expect(join).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: { id: 'booking-3', userId: 'user-9', deletedAt: null },
+      select: { id: true },
+    });
+  });
+
+  it('rejects unauthenticated sockets and never trusts a supplied user ID', async () => {
+    const join = jest.fn();
+    const guest = { id: 'guest', data: {}, join } as unknown as Socket;
+    const member = {
+      id: 'socket-5',
+      data: { authUser: { id: 'user-1', jti: 'session-1' } },
+      join,
+    } as unknown as Socket;
+
+    await expect(
+      gateway.handleJoinRoom(guest, { userId: 'user-9' }),
+    ).resolves.toEqual({ ok: false, error: 'UNAUTHORIZED' });
+    await gateway.handleJoinRoom(member, { userId: 'user-9' });
+
+    expect(join).not.toHaveBeenCalled();
   });
 });

@@ -35,7 +35,10 @@ describe('security headers middleware', () => {
     );
 
     expect(headers.get('Content-Security-Policy')).toContain(
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+    );
+    expect(headers.get('Content-Security-Policy')).toContain(
+      "connect-src 'self' https://cloudflareinsights.com",
     );
     expect(headers.get('Content-Security-Policy')).toContain(
       "frame-ancestors 'none'",

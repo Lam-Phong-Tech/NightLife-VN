@@ -15,7 +15,8 @@ const documentationContentSecurityPolicy = [
   "frame-ancestors 'none'",
   "img-src 'self' data:",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+  "connect-src 'self' https://cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
 ].join('; ');
 

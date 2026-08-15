@@ -38,6 +38,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "https://translate-pa.googleapis.com",
     "https://www.gstatic.com",
     "https://www.googletagmanager.com",
+    "https://static.cloudflareinsights.com",
   ];
   const connectSources = [
     "'self'",
@@ -50,6 +51,7 @@ export function createContentSecurityPolicy(isProduction: boolean) {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://*.googletagmanager.com",
+    "https://cloudflareinsights.com",
     "https://translate.google.com",
     "https://translate.googleapis.com",
     "https://translate-pa.googleapis.com",

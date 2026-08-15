@@ -11,6 +11,11 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  allowSocketRequest,
+  socketCorsOptions,
+} from '../security/cors-origins';
 
 type AuthSocketUser = {
   id: string;
@@ -40,9 +45,8 @@ export type SessionReplacedPayload = {
 };
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  cors: socketCorsOptions(),
+  allowRequest: allowSocketRequest,
 })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -52,7 +56,10 @@ export class SocketGateway
 
   private readonly logger = new Logger(SocketGateway.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   afterInit(server: Server) {
     server.use((client, next) => {
@@ -106,21 +113,39 @@ export class SocketGateway
   }
 
   @SubscribeMessage('join_room')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { userId?: string; bookingId?: string },
   ) {
-    if (payload.userId) {
-      client.join(`user_${payload.userId}`);
-      this.logger.log(`Client ${client.id} joined room user_${payload.userId}`);
+    const authUser = (client.data as AuthSocketData).authUser;
+    if (!authUser) {
+      return { ok: false, error: 'UNAUTHORIZED' };
+    }
+
+    if (payload.userId && payload.userId === authUser.id) {
+      await client.join(`user_${authUser.id}`);
+      this.logger.log(`Client ${client.id} joined own user room`);
     }
 
     if (payload.bookingId) {
-      client.join(`booking_${payload.bookingId}`);
-      this.logger.log(
-        `Client ${client.id} joined room booking_${payload.bookingId}`,
-      );
+      const booking = await this.prisma.booking.findFirst({
+        where: {
+          id: payload.bookingId,
+          userId: authUser.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (booking) {
+        await client.join(`booking_${booking.id}`);
+        this.logger.log(
+          `Client ${client.id} joined an authorized booking room`,
+        );
+      }
     }
+
+    return { ok: true };
   }
 
   notifySessionReplaced(
