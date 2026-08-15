@@ -2099,6 +2099,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     date: selectedDate.iso,
     time: selectedTime,
     category: store.category,
+    ...(store.area?.name || store.district
+      ? { area: store.area?.name ?? store.district ?? "" }
+      : {}),
     ...(activeSelectedCastSlug ? { castSlug: activeSelectedCastSlug } : {}),
     ...(selectedBookingCast?.label ? { castName: selectedBookingCast.label } : {}),
     ...(activeCouponId ? { couponId: activeCouponId } : {}),

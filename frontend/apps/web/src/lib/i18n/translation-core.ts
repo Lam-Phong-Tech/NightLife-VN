@@ -1076,6 +1076,13 @@ const entries: TranslationEntry[] = [
     zh: "使用 Google 继续",
   },
   {
+    vi: "Đang tải thông tin quán",
+    en: "Loading venue details",
+    ja: "店舗情報を読み込み中",
+    ko: "매장 정보를 불러오는 중",
+    zh: "正在加载店铺信息",
+  },
+  {
     vi: "Đăng nhập bằng LINE",
     en: "Continue with LINE",
     ja: "LINEで続行",

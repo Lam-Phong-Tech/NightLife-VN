@@ -49,6 +49,7 @@ import {
 import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
+import { getFilterAreaLabel, getFilterCategoryLabel } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import { isNearStartTime, useUserActionFeedback } from "@/lib/user-action-feedback";
@@ -245,9 +246,9 @@ const parseContext = () => {
   return {
     context: {
       storeSlug,
-      storeName: params.get("storeName") || defaultContext.storeName,
+      storeName: params.get("storeName") || (storeSlug ? "" : defaultContext.storeName),
       category,
-      area: params.get("area") || defaultContext.area,
+      area: params.get("area") || (storeSlug ? undefined : defaultContext.area),
       castSlug,
       castName: isServiceOnlyBooking ? undefined : params.get("castName") || undefined,
       couponId,
@@ -278,6 +279,7 @@ export default function Page() {
   const [note, setNote] = useState("");
   const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
   const [storeCasts, setStoreCasts] = useState<StoreDetailCast[]>([]);
+  const [venueImageUrl, setVenueImageUrl] = useState<string | null>(null);
   const [resolvedCastOption, setResolvedCastOption] = useState<StoreDetailCast | null>(null);
   const [storeHoursResolved, setStoreHoursResolved] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -403,6 +405,7 @@ export default function Page() {
       if (!cancelled) {
         setStoreCasts([]);
         setStoreHoursResolved(false);
+        setVenueImageUrl(null);
       }
     });
 
@@ -410,17 +413,21 @@ export default function Page() {
       .then((store) => {
         if (cancelled) return;
         const isStoreServiceOnly = isServiceOnlyBookingCategory(store.category);
+        const primaryVenueImage = store.gallery.find(
+          (media) => media.type === "IMAGE" && Boolean(media.thumbnailUrl || media.url),
+        );
         setStoreOpeningHours(store.openingHours ?? null);
         setStoreCasts(isStoreServiceOnly ? [] : (store.casts ?? []));
+        setVenueImageUrl(primaryVenueImage?.thumbnailUrl ?? primaryVenueImage?.url ?? null);
         setContext((current) => {
           if (current.storeSlug !== store.slug) return current;
           const selectedCast = store.casts.find((cast) => cast.slug === current.castSlug);
 
           return {
             ...current,
-            category: store.category ?? current.category,
-            storeName: current.storeName || store.name,
-            area: current.area ?? store.area?.name ?? store.district ?? undefined,
+            category: store.category,
+            storeName: store.name,
+            area: store.area?.name ?? store.district ?? undefined,
             castSlug: isStoreServiceOnly ? undefined : current.castSlug,
             castName: isStoreServiceOnly
               ? undefined
@@ -436,6 +443,7 @@ export default function Page() {
       .catch(() => {
         if (!cancelled) {
           setStoreOpeningHours(null);
+          setVenueImageUrl(null);
         }
       })
       .finally(() => {
@@ -650,7 +658,13 @@ export default function Page() {
   const targetLabel =
     !isServiceOnlyBooking && context.castName
       ? context.castName
-      : context.storeName;
+      : context.storeName || translateText("Đang tải thông tin quán", activeLanguage);
+  const venueCategoryLabel = context.category
+    ? getFilterCategoryLabel(context.category, activeLanguage)
+    : translateText("Đang tải thông tin quán", activeLanguage);
+  const venueAreaLabel = context.area
+    ? getFilterAreaLabel(context.area, activeLanguage)
+    : translateText("Đang tải thông tin quán", activeLanguage);
   const isCastBookingContext = !isServiceOnlyBooking && Boolean(context.castSlug || context.castName);
   const bookingPageTitle = isCastBookingContext ? "Đặt bàn theo cast" : "Đặt bàn";
   const isMemberMode = mode === "member";
@@ -860,15 +874,14 @@ export default function Page() {
               <span
                 className={styles.venueImage}
                 style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=160&q=72')",
+                  backgroundImage: venueImageUrl ? `url("${venueImageUrl}")` : undefined,
                 }}
               />
               <div className={styles.venueCopy}>
                 <div className={`${styles.venueName} notranslate`} translate="no" data-no-translate="true">{targetLabel}</div>
                 <div className={styles.venueMeta}>
-                  {!isServiceOnlyBooking && context.castName ? <span className="notranslate" translate="no" data-no-translate="true">{context.storeName}</span> : translateText("Lounge cao cấp", activeLanguage)}{" "}
-                  · {context.area ? translateText(context.area, activeLanguage) : "NightLife"}
+                  {!isServiceOnlyBooking && context.castName ? <span className="notranslate" translate="no" data-no-translate="true">{context.storeName}</span> : venueCategoryLabel}{" "}
+                  · {venueAreaLabel}
                 </div>
                 {context.couponIssueId || context.couponId ? (
                   <div className={styles.venueMeta}>
