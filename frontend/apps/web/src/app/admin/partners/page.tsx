@@ -326,6 +326,24 @@ const formatOpeningHours = (
   return cleanText(summary, "");
 };
 
+const normalizeCompareValue = (value?: string | null) =>
+  cleanText(value, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("vi");
+
+const hasFieldChanged = (current?: string | null, proposed?: string | null) =>
+  normalizeCompareValue(current) !== normalizeCompareValue(proposed);
+
+type ChangeComparisonRow = {
+  key: string;
+  label: string;
+  current?: string | null;
+  proposed?: string | null;
+  corrupted?: boolean;
+  changed: boolean;
+};
+
 const matchesTab = (request: ApiPartnerRequest, tab: PartnerTab) => {
   if (tab === "APPROVED" || tab === "REJECTED") return request.status === tab;
   if (request.status !== "PENDING_REVIEW") return false;
@@ -394,6 +412,7 @@ export default function AdminPartnersPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewReason, setReviewReason] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showOnlyChangedFields, setShowOnlyChangedFields] = useState(false);
 
   const loadRequests = useCallback(async () => {
     setIsLoading(true);
@@ -527,6 +546,81 @@ export default function AdminPartnersPage() {
   const selectedHasCorruptedContent = selectedRequest
     ? hasCorruptedContent(selectedRequest)
     : false;
+  const changeComparisonRows = useMemo<ChangeComparisonRow[]>(() => {
+    if (!selectedRequest || getRequestType(selectedRequest) !== "LISTING_UPDATE") return [];
+
+    const currentOpeningHours =
+      typeof selectedRequest.originalStore?.openingHours === "object"
+        ? formatOpeningHours(
+            (selectedRequest.originalStore.openingHours as { summary?: string | null })?.summary,
+            (selectedRequest.originalStore.openingHours as { days?: OpeningHourItem[] })?.days,
+          )
+        : String(selectedRequest.originalStore?.openingHours || "");
+
+    const rows: Array<Omit<ChangeComparisonRow, "changed">> = [
+      {
+        key: "name",
+        label: "Tên quán",
+        current: selectedRequest.originalStore?.name,
+        proposed: safeRequestValue(
+          selectedRequest.businessName ?? selectedRequest.draftStoreName,
+          selectedRequest.originalStore?.name,
+        ),
+        corrupted: looksEncodingCorrupted(selectedRequest.businessName ?? selectedRequest.draftStoreName),
+      },
+      {
+        key: "address",
+        label: "Địa chỉ",
+        current: selectedRequest.originalStore?.address,
+        proposed: displayAddress(selectedRequest),
+        corrupted:
+          looksEncodingCorrupted(selectedRequest.storeAddress) ||
+          looksEncodingCorrupted(selectedRequest.streetAddress) ||
+          looksEncodingCorrupted(selectedRequest.ward) ||
+          looksEncodingCorrupted(selectedRequest.storeDistrict) ||
+          looksEncodingCorrupted(selectedRequest.storeCity),
+      },
+      {
+        key: "category",
+        label: "Loại hình",
+        current: selectedRequest.originalStore?.category,
+        proposed: selectedRequest.businessType ?? selectedRequest.draftStoreCategory,
+      },
+      {
+        key: "phone",
+        label: "Số điện thoại",
+        current: selectedRequest.originalStore?.phone,
+        proposed: selectedRequest.phone ?? selectedRequest.contactPhone,
+      },
+      {
+        key: "map",
+        label: "Google Maps",
+        current: selectedRequest.originalStore?.mapUrl,
+        proposed: selectedRequest.mapUrl,
+      },
+      {
+        key: "opening-hours",
+        label: "Giờ mở cửa",
+        current: currentOpeningHours,
+        proposed: formatOpeningHours(selectedRequest.openingHours, selectedRequest.openingHourItems),
+      },
+      {
+        key: "tags",
+        label: "Tags",
+        current: selectedRequest.originalStore?.tags?.join(", "),
+        proposed: selectedRequest.tags?.join(", "),
+      },
+    ];
+
+    return rows.map((row) => ({
+      ...row,
+      changed: hasFieldChanged(row.current, row.proposed),
+    }));
+  }, [selectedRequest]);
+  const changedComparisonRows = changeComparisonRows.filter((row) => row.changed);
+  const visibleComparisonRows = showOnlyChangedFields
+    ? changedComparisonRows
+    : changeComparisonRows;
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100dvh-80px)] w-full max-w-full overflow-x-hidden">
@@ -842,87 +936,60 @@ export default function AdminPartnersPage() {
               <Section title="So sánh thay đổi">
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                     gap: 12,
+                    marginBottom: 12,
+                    flexWrap: "wrap",
                   }}
                 >
-                  <ComparisonField
-                    label="Tên quán hiện tại"
-                    value={selectedRequest.originalStore?.name}
-                  />
-                  <ComparisonField
-                    label="Tên quán đề xuất"
-                    value={safeRequestValue(
-                      selectedRequest.businessName ?? selectedRequest.draftStoreName,
-                      selectedRequest.originalStore?.name,
-                    )}
-                    corrupted={looksEncodingCorrupted(
-                      selectedRequest.businessName ?? selectedRequest.draftStoreName,
-                    )}
-                  />
-                  <ComparisonField
-                    label="Địa chỉ hiện tại"
-                    value={selectedRequest.originalStore?.address}
-                  />
-                  <ComparisonField
-                    label="Địa chỉ đề xuất"
-                    value={displayAddress(selectedRequest)}
-                    corrupted={
-                      looksEncodingCorrupted(selectedRequest.storeAddress) ||
-                      looksEncodingCorrupted(selectedRequest.streetAddress) ||
-                      looksEncodingCorrupted(selectedRequest.ward) ||
-                      looksEncodingCorrupted(selectedRequest.storeDistrict) ||
-                      looksEncodingCorrupted(selectedRequest.storeCity)
-                    }
-                  />
-                  <ComparisonField
-                    label="Loại hình hiện tại"
-                    value={selectedRequest.originalStore?.category}
-                  />
-                  <ComparisonField
-                    label="Loại hình đề xuất"
-                    value={selectedRequest.businessType ?? selectedRequest.draftStoreCategory}
-                  />
-                  <ComparisonField
-                    label="Số điện thoại hiện tại"
-                    value={selectedRequest.originalStore?.phone}
-                  />
-                  <ComparisonField
-                    label="Số điện thoại đề xuất"
-                    value={selectedRequest.phone ?? selectedRequest.contactPhone}
-                  />
-                  <ComparisonField
-                    label="Google Maps hiện tại"
-                    value={selectedRequest.originalStore?.mapUrl}
-                  />
-                  <ComparisonField
-                    label="Google Maps đề xuất"
-                    value={selectedRequest.mapUrl}
-                  />
-                  <ComparisonField
-                    label="Giờ mở cửa hiện tại"
-                    value={
-                      typeof selectedRequest.originalStore?.openingHours === "object"
-                        ? formatOpeningHours(
-                            (selectedRequest.originalStore.openingHours as { summary?: string | null })?.summary,
-                            (selectedRequest.originalStore.openingHours as { days?: OpeningHourItem[] })?.days,
-                          )
-                        : String(selectedRequest.originalStore?.openingHours || "")
-                    }
-                  />
-                  <ComparisonField
-                    label="Giờ mở cửa đề xuất"
-                    value={formatOpeningHours(selectedRequest.openingHours, selectedRequest.openingHourItems)}
-                  />
-                  <ComparisonField
-                    label="Tags hiện tại"
-                    value={selectedRequest.originalStore?.tags?.join(", ")}
-                  />
-                  <ComparisonField
-                    label="Tags đề xuất"
-                    value={selectedRequest.tags?.join(", ")}
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                      color: colors.text2,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: changedComparisonRows.length ? colors.onGold : colors.muted,
+                        background: changedComparisonRows.length ? colors.goldGrad : "rgba(255,255,255,.04)",
+                        borderRadius: 999,
+                        padding: "5px 10px",
+                      }}
+                    >
+                      {changedComparisonRows.length} trường thay đổi
+                    </span>
+                    <span style={{ color: colors.muted }}>
+                      {changeComparisonRows.length - changedComparisonRows.length} trường không đổi
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOnlyChangedFields((current) => !current)}
+                    style={{
+                      border: `1px solid ${showOnlyChangedFields ? colors.borderGold22 : colors.borderSoft}`,
+                      borderRadius: 999,
+                      background: showOnlyChangedFields ? "rgba(212,178,106,.1)" : "rgba(255,255,255,.03)",
+                      color: showOnlyChangedFields ? colors.gold : colors.text2,
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "7px 12px",
+                    }}
+                  >
+                    {showOnlyChangedFields ? "Hiện tất cả" : "Chỉ hiện thay đổi"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {visibleComparisonRows.map((row) => (
+                    <ComparisonRow key={row.key} row={row} />
+                  ))}
                 </div>
                 <div
                   style={{
@@ -1254,9 +1321,19 @@ export default function AdminPartnersPage() {
         )}
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .admin-spin {
           animation: admin-spin 0.8s linear infinite;
+        }
+
+        .partner-comparison-row {
+          grid-template-columns: minmax(104px, 0.55fr) minmax(0, 1fr) 24px minmax(0, 1fr);
+        }
+
+        @media (max-width: 720px) {
+          .partner-comparison-row {
+            grid-template-columns: 1fr;
+          }
         }
 
         @keyframes admin-spin {
@@ -1306,30 +1383,92 @@ function InfoCard({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function ComparisonField({
+function ComparisonRow({ row }: { row: ChangeComparisonRow }) {
+  return (
+    <div
+      className="partner-comparison-row"
+      style={{
+        display: "grid",
+        gap: 10,
+        alignItems: "stretch",
+        padding: 12,
+        borderRadius: 12,
+        border: `1px solid ${row.corrupted ? "rgba(248,113,113,.35)" : row.changed ? "rgba(212,178,106,.36)" : colors.borderSoft}`,
+        background: row.changed ? "rgba(212,178,106,.055)" : colors.surface1,
+      }}
+    >
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+        <div style={{ fontSize: 12, color: row.changed ? colors.gold : colors.text2, fontWeight: 800 }}>
+          {row.label}
+        </div>
+        <span
+          style={{
+            alignSelf: "flex-start",
+            fontSize: 10,
+            fontWeight: 800,
+            borderRadius: 999,
+            padding: "3px 8px",
+            color: row.changed ? colors.onGold : colors.muted,
+            background: row.changed ? colors.goldGrad : "rgba(255,255,255,.04)",
+            border: row.changed ? "1px solid transparent" : `1px solid ${colors.borderSoft}`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {row.changed ? "Đã thay đổi" : "Không đổi"}
+        </span>
+      </div>
+      <ComparisonValue label="Hiện tại" value={row.current} />
+      <div
+        aria-hidden="true"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: row.changed ? colors.gold : colors.muted,
+          fontWeight: 900,
+          fontSize: 16,
+        }}
+      >
+        →
+      </div>
+      <ComparisonValue label="Đề xuất" value={row.proposed} changed={row.changed} corrupted={row.corrupted} />
+    </div>
+  );
+}
+
+function ComparisonValue({
   label,
   value,
+  changed = false,
   corrupted = false,
 }: {
   label: string;
   value?: string | null;
+  changed?: boolean;
   corrupted?: boolean;
 }) {
   return (
     <div
       style={{
-        padding: 14,
+        minWidth: 0,
+        padding: 12,
         borderRadius: 10,
-        border: `1px solid ${corrupted ? "rgba(248,113,113,.35)" : colors.borderSoft}`,
-        background: colors.surface1,
+        border: `1px solid ${corrupted ? "rgba(248,113,113,.35)" : changed ? "rgba(212,178,106,.34)" : "rgba(255,255,255,.045)"}`,
+        background: corrupted
+          ? "rgba(248,113,113,.08)"
+          : changed
+            ? "rgba(212,178,106,.1)"
+            : "rgba(255,255,255,.025)",
       }}
     >
-      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 14, color: colors.text2, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 10, color: changed ? colors.gold : colors.muted, marginBottom: 6, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".6px" }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 13, color: changed ? colors.text : colors.text2, lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
         {cleanText(value)}
       </div>
       {corrupted ? (
-        <div style={{ marginTop: 6, color: colors.red, fontSize: 11 }}>
+        <div style={{ marginTop: 7, color: colors.red, fontSize: 11, lineHeight: 1.45 }}>
           Bản đề xuất bị lỗi mã hóa — đang hiển thị dữ liệu hiện tại
         </div>
       ) : null}
