@@ -3704,3 +3704,114 @@ input[type="search"] {
   -webkit-appearance: none;
   appearance: none;
 }
+/* Homepage responsive layout is intentionally resolved by CSS during SSR. */
+.nl-home-auto-carousel {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nl-home-auto-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.nl-home-carousel-track > * {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* SiteChrome renders its mobile-nav spacer in SSR.  Restrict it to mobile with
+   CSS so hydration does not insert it later and shift the page height. */
+.nl-mobile-footer-spacer {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .nl-site-footer {
+    display: none !important;
+  }
+
+  .nl-mobile-footer-spacer {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .nl-home-page-responsive .nl-home-shell-inner {
+    max-width: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .nl-home-page-responsive .nl-home-main {
+    padding: 10px 50px 0 !important;
+  }
+
+  .nl-home-page-responsive .nl-home-categories {
+    margin-top: 28px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-category-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-category-icon {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-category-link > div {
+    font-size: 13px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero,
+  .nl-home-page-responsive .nl-home-mid-banner {
+    min-height: 310px !important;
+    padding: 34px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-copy h1 {
+    max-width: 620px !important;
+    font-size: 48px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-status {
+    font-size: 12px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-subtitle {
+    font-size: 13px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-details {
+    margin-top: 22px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-description {
+    max-width: none !important;
+    font-size: 15px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-cta {
+    padding: 13px 22px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-hero-dots {
+    bottom: 18px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-ranking-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  .nl-home-page-responsive .nl-home-carousel-track {
+    grid-auto-columns: calc((100% - 48px) / 4) !important;
+  }
+
+  .nl-home-page-responsive .nl-home-auto-carousel[aria-label="Coupon Hot"] .nl-home-carousel-track,
+  .nl-home-page-responsive .nl-home-auto-carousel[aria-label="Tour blog guide"] .nl-home-carousel-track,
+  .nl-home-page-responsive .nl-home-auto-carousel[aria-label="Video Hot"] .nl-home-carousel-track {
+    grid-auto-columns: calc((100% - 32px) / 3) !important;
+  }
+}

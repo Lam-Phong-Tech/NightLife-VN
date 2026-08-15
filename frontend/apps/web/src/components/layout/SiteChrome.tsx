@@ -1651,7 +1651,9 @@ export function SiteChrome({
     pathname.startsWith("/tour/") ||
     pathname.startsWith("/dat-cho") ||
     pathname === "/xac-nhan";
-  const showMobileFooterSpacer = isMobile && hideFooter && !hasManagedMobileBottomSpacing;
+  // Reserve mobile bottom-nav space in the SSR markup. CSS decides whether it is
+  // visible, so the page height does not change once matchMedia has run.
+  const showMobileFooterSpacer = !hasManagedMobileBottomSpacing;
   const customerRouteMotionEnabled =
     hostKind !== "admin" &&
     hostKind !== "partner" &&
