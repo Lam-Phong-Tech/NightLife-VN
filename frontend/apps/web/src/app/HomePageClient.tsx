@@ -3101,6 +3101,7 @@ function RankingSplitPanel({
   error?: string;
   stacked?: boolean;
 }) {
+  const activeLanguage = useActiveLanguage();
   const emptyText = error || "Chưa có dữ liệu xếp hạng.";
 
   return (
@@ -3114,7 +3115,11 @@ function RankingSplitPanel({
       }}
     >
       <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} />
-      <RankingListColumn title="Quán" items={storeItems} emptyText={emptyText} />
+      <RankingListColumn
+        title={translateText("Quán", activeLanguage)}
+        items={storeItems}
+        emptyText={emptyText}
+      />
     </div>
   );
 }
