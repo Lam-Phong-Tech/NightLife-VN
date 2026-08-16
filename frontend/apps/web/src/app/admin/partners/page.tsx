@@ -271,8 +271,11 @@ const displayAddress = (request: ApiPartnerRequest) => {
         (other, otherIndex) =>
           otherIndex < index && other.toLocaleLowerCase("vi").includes(part.toLocaleLowerCase("vi")),
       ),
-  ).join(", ");
+  ).map(displayVietnameseCity).join(", ");
 };
+
+const displayVietnameseCity = (value: string) =>
+  value.replace(/\b(?:thành phố\s+)?hồ chí minh\b|\bho chi minh city\b/gi, "Thành phố Hồ Chí Minh");
 
 const normalizeMediaKey = (value?: string | null) => {
   const url = value?.trim();
@@ -309,12 +312,40 @@ const uniqueMediaUrls = (values: Array<string | null | undefined>) => {
   return result;
 };
 
+const openingDayLabels: Record<string, string> = {
+  "thứ 2": "Thứ 2", "thu 2": "Thứ 2",
+  "thứ 3": "Thứ 3", "thu 3": "Thứ 3",
+  "thứ 4": "Thứ 4", "thu 4": "Thứ 4",
+  "thứ 5": "Thứ 5", "thu 5": "Thứ 5",
+  "thứ 6": "Thứ 6", "thu 6": "Thứ 6",
+  "thứ 7": "Thứ 7", "thu 7": "Thứ 7",
+  cn: "CN", "chủ nhật": "CN", "chu nhat": "CN",
+  monday: "Thứ 2", mon: "Thứ 2",
+  tuesday: "Thứ 3", tue: "Thứ 3",
+  wednesday: "Thứ 4", wed: "Thứ 4",
+  thursday: "Thứ 5", thu: "Thứ 5",
+  friday: "Thứ 6", fri: "Thứ 6",
+  saturday: "Thứ 7", sat: "Thứ 7",
+  sunday: "CN", sun: "CN",
+};
+
 const formatOpeningHours = (
-  summary?: string | null,
+  value?: unknown,
   items?: OpeningHourItem[] | null,
 ) => {
-  if (items?.length) {
-    return items
+  const record = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+  const normalizedItems = items?.length
+    ? items
+    : Array.isArray(record?.days)
+      ? record.days as OpeningHourItem[]
+      : Array.isArray(record?.items)
+        ? record.items as OpeningHourItem[]
+        : [];
+
+  if (normalizedItems.length) {
+    return normalizedItems
       .map((item) =>
         item.isOff
           ? `${cleanText(item.day)}: Nghỉ`
@@ -323,14 +354,36 @@ const formatOpeningHours = (
       .filter((line) => !line.endsWith(": "))
       .join("\n");
   }
-  return cleanText(summary, "");
+
+  const directDays = Object.entries(record ?? {})
+    .map(([key, item]) => {
+      const day = openingDayLabels[key.toLowerCase()];
+      if (!day || !item || typeof item !== "object" || Array.isArray(item)) return "";
+      const entry = item as Record<string, unknown>;
+      const isOff = entry.isOff === true || entry.closed === true;
+      const hours = typeof entry.hours === "string"
+        ? entry.hours
+        : typeof entry.open === "string" && typeof entry.close === "string"
+          ? `${entry.open} - ${entry.close}`
+          : "";
+      return isOff ? `${day}: Nghỉ` : hours ? `${day}: ${hours}` : "";
+    })
+    .filter(Boolean);
+  if (directDays.length) return directDays.join("\n");
+
+  return cleanText(typeof value === "string" ? value : typeof record?.summary === "string" ? record.summary : "", "");
 };
 
-const normalizeCompareValue = (value?: string | null) =>
-  cleanText(value, "")
+const normalizeCompareValue = (value?: string | null) => {
+  const normalized = cleanText(value, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
     .replace(/\s+/g, " ")
     .trim()
     .toLocaleLowerCase("vi");
+  return normalized.replace(/\b(?:thanh pho )?ho chi minh\b(?: city)?/g, "hcm");
+};
 
 const hasFieldChanged = (current?: string | null, proposed?: string | null) =>
   normalizeCompareValue(current) !== normalizeCompareValue(proposed);
@@ -549,13 +602,7 @@ export default function AdminPartnersPage() {
   const changeComparisonRows = useMemo<ChangeComparisonRow[]>(() => {
     if (!selectedRequest || getRequestType(selectedRequest) !== "LISTING_UPDATE") return [];
 
-    const currentOpeningHours =
-      typeof selectedRequest.originalStore?.openingHours === "object"
-        ? formatOpeningHours(
-            (selectedRequest.originalStore.openingHours as { summary?: string | null })?.summary,
-            (selectedRequest.originalStore.openingHours as { days?: OpeningHourItem[] })?.days,
-          )
-        : String(selectedRequest.originalStore?.openingHours || "");
+    const currentOpeningHours = formatOpeningHours(selectedRequest.originalStore?.openingHours);
 
     const rows: Array<Omit<ChangeComparisonRow, "changed">> = [
       {
