@@ -248,6 +248,8 @@ type PartnerListingCast = {
   languages?: string[];
   birthMonth?: number;
   zodiacSign?: string | null;
+  avatarUrl?: string | null;
+  albumImageUrls?: string[];
   heightCm?: number;
   measurements?: string | null;
   hobbies?: string[];
@@ -523,20 +525,12 @@ const listingBirthMonthOptions = Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
   label: `Tháng ${index + 1}`,
 }));
-const listingZodiacOptions = [
-  { value: 'Aries', label: 'Bạch Dương' },
-  { value: 'Taurus', label: 'Kim Ngưu' },
-  { value: 'Gemini', label: 'Song Tử' },
-  { value: 'Cancer', label: 'Cự Giải' },
-  { value: 'Leo', label: 'Sư Tử' },
-  { value: 'Virgo', label: 'Xử Nữ' },
-  { value: 'Libra', label: 'Thiên Bình' },
-  { value: 'Scorpio', label: 'Bọ Cạp' },
-  { value: 'Sagittarius', label: 'Nhân Mã' },
-  { value: 'Capricorn', label: 'Ma Kết' },
-  { value: 'Aquarius', label: 'Bảo Bình' },
-  { value: 'Pisces', label: 'Song Ngư' },
+const listingZodiacByBirthMonth = [
+  'Ma Kết', 'Bảo Bình', 'Song Ngư', 'Bạch Dương', 'Kim Ngưu', 'Song Tử',
+  'Cự Giải', 'Sư Tử', 'Xử Nữ', 'Thiên Bình', 'Bọ Cạp', 'Nhân Mã',
 ];
+const listingZodiacForBirthMonth = (birthMonth?: number) =>
+  birthMonth ? listingZodiacByBirthMonth[birthMonth - 1] ?? '' : '';
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
 const staffPermissionOptions = [
   { key: 'coupon.scan', label: 'Quét coupon' },
@@ -1095,6 +1089,7 @@ const isListingVideoUrl = (value: string) => {
 };
 
 const castAvatarUrl = (cast: PartnerListingCast) => {
+  if (cast.avatarUrl && isValidUrl(cast.avatarUrl)) return cast.avatarUrl;
   const urls = cast.mediaUrls ?? [];
   return (
     urls.find((url) => isValidUrl(url) && !isListingVideoUrl(url)) ??
@@ -1314,6 +1309,8 @@ const validateListingDraft = (
         cast.languages?.length ||
         cast.hobbies?.length ||
         cast.youtubeLinks?.length ||
+        cast.avatarUrl ||
+        cast.albumImageUrls?.length ||
         cast.mediaUrls?.length,
     );
     if (!rowHasData) return;
@@ -1337,6 +1334,11 @@ const validateListingDraft = (
     splitInlineList(cast.mediaUrls?.join(',')).forEach((url, urlIndex) => {
       if (!isValidUrl(url)) {
         errors[`castProfiles.${index}.mediaUrls`] = `Ảnh cast URL thứ ${urlIndex + 1} không hợp lệ.`;
+      }
+    });
+    [cast.avatarUrl, ...(cast.albumImageUrls ?? [])].filter(Boolean).forEach((url, urlIndex) => {
+      if (!isValidUrl(url!)) {
+        errors[`castProfiles.${index}.albumImageUrls`] = `Ảnh cast URL thứ ${urlIndex + 1} không hợp lệ.`;
       }
     });
   });
@@ -1809,7 +1811,6 @@ export default function PartnerPage() {
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
   const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
-  const [activeCastLanguageInputIndex, setActiveCastLanguageInputIndex] = useState<number | null>(null);
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const castTableRef = useRef<HTMLDivElement | null>(null);
@@ -4197,11 +4198,15 @@ export default function PartnerPage() {
           storeName: safeListingText(cast.storeName),
           bio: safeListingText(cast.bio),
           zodiacSign: safeListingText(cast.zodiacSign),
+          avatarUrl: safeListingText(cast.avatarUrl),
+          albumImageUrls: normalizeListingUrlList(cast.albumImageUrls),
           measurements: safeListingText(cast.measurements),
           tags: normalizeListingTextList(cast.tags),
           languages: normalizeListingTextList(cast.languages),
           hobbies: normalizeListingTextList(cast.hobbies),
-          mediaUrls: normalizeListingUrlList(cast.mediaUrls),
+          // Legacy drafts kept all media in one list. New drafts retain only video
+          // URLs here; avatar and album are distinct fields so they cannot swap.
+          mediaUrls: normalizeListingUrlList(cast.mediaUrls).filter(isListingVideoUrl),
           youtubeLinks: normalizeListingUrlList(cast.youtubeLinks),
           isPublic: typeof cast.isPublic === 'boolean' ? cast.isPublic : true,
           status: safeListingText(cast.status) || 'ACTIVE',
@@ -4673,7 +4678,7 @@ export default function PartnerPage() {
   const updateCastProfile = (
     index: number,
     key: keyof PartnerListingCast,
-    value: string | string[] | number | boolean | undefined,
+    value: string | string[] | number | boolean | null | undefined,
   ) => {
     clearListingErrorsFor(`castProfiles.${index}.${String(key)}`);
     setListingDraft((current) => ({
@@ -4791,29 +4796,7 @@ export default function PartnerPage() {
     addCastListValues(index, field, event.currentTarget.value);
   };
 
-  const closeCastLanguageInput = (index: number) => {
-    clearCastChipInputValue(index, 'languages');
-    setActiveCastLanguageInputIndex((current) => (current === index ? null : current));
-  };
-
-  const commitCastLanguageInput = (index: number, rawValue: string) => {
-    addCastListValues(index, 'languages', rawValue);
-    clearCastChipInputValue(index, 'languages');
-    setActiveCastLanguageInputIndex((current) => (current === index ? null : current));
-  };
-
-  const handleCastLanguageKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeCastLanguageInput(index);
-      return;
-    }
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    commitCastLanguageInput(index, event.currentTarget.value);
-  };
-
-  const castMediaEntries = (cast: PartnerListingCast, kind: 'image' | 'video') =>
+  const castMediaEntries = (cast: PartnerListingCast, kind: 'video') =>
     (cast.mediaUrls ?? [])
       .map((url, mediaIndex) => ({ url, mediaIndex }))
       .filter(({ url }) => {
@@ -4821,7 +4804,7 @@ export default function PartnerPage() {
         return kind === 'video' ? isVideo : !isVideo;
       });
 
-  const removeCastMediaUrl = (index: number, mediaIndex: number) => {
+  const removeCastVideoUrl = (index: number, mediaIndex: number) => {
     clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
     setListingDraft((current) => ({
       ...current,
@@ -4833,7 +4816,7 @@ export default function PartnerPage() {
     }));
   };
 
-  const appendCastMediaUrls = (index: number, urls: string[]) => {
+  const appendCastVideoUrls = (index: number, urls: string[]) => {
     clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
     setListingDraft((current) => ({
       ...current,
@@ -4845,18 +4828,40 @@ export default function PartnerPage() {
     }));
   };
 
-  const replaceCastAvatarUrl = (index: number, mediaIndex: number | null, url: string) => {
-    clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+  const replaceCastAvatarUrl = (index: number, url: string) => {
+    clearListingErrorsFor(`castProfiles.${index}.avatarUrl`);
     setListingDraft((current) => ({
       ...current,
       castProfiles: current.castProfiles.map((item, itemIndex) => {
         if (itemIndex !== index) return item;
-        const currentUrls = item.mediaUrls ?? [];
-        const nextUrls = mediaIndex === null
-          ? currentUrls
-          : currentUrls.filter((_, currentIndex) => currentIndex !== mediaIndex);
-        return { ...item, mediaUrls: [url, ...nextUrls.filter(Boolean)] };
+        return { ...item, avatarUrl: url };
       }),
+    }));
+  };
+
+  const removeCastAvatarUrl = (index: number) => updateCastProfile(index, 'avatarUrl', null);
+
+  const appendCastAlbumImageUrls = (index: number, urls: string[]) => {
+    clearListingErrorsFor(`castProfiles.${index}.albumImageUrls`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, albumImageUrls: [...(item.albumImageUrls ?? []), ...urls.filter(Boolean)] }
+          : item,
+      ),
+    }));
+  };
+
+  const removeCastAlbumImageUrl = (index: number, albumIndex: number) => {
+    clearListingErrorsFor(`castProfiles.${index}.albumImageUrls`);
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, albumImageUrls: (item.albumImageUrls ?? []).filter((_, currentIndex) => currentIndex !== albumIndex) }
+          : item,
+      ),
     }));
   };
 
@@ -4871,7 +4876,7 @@ export default function PartnerPage() {
     !(cast.languages?.length) &&
     !(cast.hobbies?.length) &&
     !(cast.youtubeLinks?.length) &&
-    !(cast.mediaUrls?.length);
+    !(cast.avatarUrl || cast.albumImageUrls?.length || cast.mediaUrls?.length);
 
   const addCastProfile = () => {
     clearListingErrorsFor('castProfiles');
@@ -5809,12 +5814,6 @@ export default function PartnerPage() {
   };
 
   const renderCastLanguageField = (cast: PartnerListingCast, index: number) => {
-    const customLanguages = (cast.languages ?? []).filter(
-      (language) => !listingCastLanguageOptions.includes(language),
-    );
-    const isAddingCustomLanguage = activeCastLanguageInputIndex === index;
-    const inputValue = castChipInputValue(index, 'languages');
-
     return (
       <FormField label="Ngôn ngữ">
         <div className="partner-cast-token-row">
@@ -5831,40 +5830,6 @@ export default function PartnerPage() {
               </button>
             );
           })}
-          <button
-            type="button"
-            className="partner-cast-token partner-cast-add-language"
-            aria-label="Thêm ngôn ngữ"
-            onClick={() => {
-              setActiveCastLanguageInputIndex(index);
-              setCastChipInputValue(index, 'languages', '');
-            }}
-          >
-            <Plus size={15} />
-          </button>
-          {isAddingCustomLanguage ? (
-            <input
-              autoFocus
-              className="partner-cast-language-input"
-              value={inputValue}
-              onBlur={(event) => commitCastLanguageInput(index, event.currentTarget.value)}
-              onChange={(event) => setCastChipInputValue(index, 'languages', event.target.value)}
-              onKeyDown={(event) => handleCastLanguageKeyDown(event, index)}
-              placeholder="Nhập ngôn ngữ..."
-            />
-          ) : null}
-          {customLanguages.map((language) => (
-            <span className="partner-cast-language-chip" key={`custom-language-${language}`}>
-              <span>{language}</span>
-              <button
-                type="button"
-                aria-label={`Xóa ${language}`}
-                onClick={() => removeCastListValue(index, 'languages', language)}
-              >
-                <XCircle size={13} />
-              </button>
-            </span>
-          ))}
         </div>
         {listingErrorText(`castProfiles.${index}.languages`)}
       </FormField>
@@ -5901,9 +5866,8 @@ export default function PartnerPage() {
   };
 
   const renderCastMediaSections = (cast: PartnerListingCast, index: number) => {
-    const imageEntries = castMediaEntries(cast, 'image');
-    const avatarEntry = imageEntries[0] ?? null;
-    const albumEntries = imageEntries.slice(1);
+    const avatarUrl = cast.avatarUrl;
+    const albumEntries = cast.albumImageUrls ?? [];
     const videoEntries = castMediaEntries(cast, 'video');
     const youtubeInput = castChipInputValue(index, 'youtubeLinks');
 
@@ -5914,7 +5878,7 @@ export default function PartnerPage() {
           <div className="partner-cast-media-panel partner-cast-avatar-panel">
             <div className="partner-cast-media-panel-head">
               <strong>Ảnh đại diện</strong>
-              {avatarEntry ? (
+              {avatarUrl ? (
                 renderListingUploadButton({
                   key: `cast-avatar-replace-${index}`,
                   label: 'Đổi ảnh',
@@ -5924,17 +5888,17 @@ export default function PartnerPage() {
                   successLabel: 'ảnh đại diện',
                   onUploaded: ([url]) => {
                     if (!url) return;
-                    replaceCastAvatarUrl(index, avatarEntry.mediaIndex, url);
+                    replaceCastAvatarUrl(index, url);
                   },
                 })
               ) : null}
             </div>
             <div className="partner-cast-media-grid partner-cast-avatar-grid">
-              {avatarEntry ? (
-                renderListingImagePreview(avatarEntry.url, {
+              {avatarUrl ? (
+                renderListingImagePreview(avatarUrl, {
                   label: 'Xóa ảnh đại diện cast',
                   aspectRatio: '3 / 4',
-                  onRemove: () => removeCastMediaUrl(index, avatarEntry.mediaIndex),
+                  onRemove: () => removeCastAvatarUrl(index),
                 })
               ) : (
                 renderListingUploadTile({
@@ -5947,7 +5911,7 @@ export default function PartnerPage() {
                   aspectRatio: '3 / 4',
                   onUploaded: ([url]) => {
                     if (!url) return;
-                    replaceCastAvatarUrl(index, null, url);
+                    replaceCastAvatarUrl(index, url);
                   },
                 })
               )}
@@ -5959,12 +5923,12 @@ export default function PartnerPage() {
               <strong>Album ảnh</strong>
             </div>
             <div className="partner-cast-media-grid">
-              {albumEntries.map((entry) => (
-                <div key={`cast-album-${entry.mediaIndex}`}>
-                  {renderListingImagePreview(entry.url, {
-                    label: `Xóa ảnh album cast ${entry.mediaIndex + 1}`,
+              {albumEntries.map((url, albumIndex) => (
+                <div key={`cast-album-${albumIndex}`}>
+                  {renderListingImagePreview(url, {
+                    label: `Xóa ảnh album cast ${albumIndex + 1}`,
                     aspectRatio: '3 / 4',
-                    onRemove: () => removeCastMediaUrl(index, entry.mediaIndex),
+                    onRemove: () => removeCastAlbumImageUrl(index, albumIndex),
                   })}
                 </div>
               ))}
@@ -5978,7 +5942,7 @@ export default function PartnerPage() {
                 successLabel: 'ảnh cast',
                 aspectRatio: '3 / 4',
                 remainingSlots: PARTNER_CAST_ALBUM_MAX_IMAGES - albumEntries.length,
-                onUploaded: (urls) => appendCastMediaUrls(index, urls),
+                onUploaded: (urls) => appendCastAlbumImageUrls(index, urls),
               })}
             </div>
           </div>
@@ -5994,7 +5958,7 @@ export default function PartnerPage() {
                 multiple: true,
                 purpose: 'PARTNER_CAST_VIDEO',
                 successLabel: 'video cast',
-                onUploaded: (urls) => appendCastMediaUrls(index, urls),
+                onUploaded: (urls) => appendCastVideoUrls(index, urls),
               })}
             </div>
             <div className="partner-cast-video-grid">
@@ -6004,7 +5968,7 @@ export default function PartnerPage() {
                     {renderCastVideoCard(
                       entry.url,
                       `Xóa video cast ${entry.mediaIndex + 1}`,
-                      () => removeCastMediaUrl(index, entry.mediaIndex),
+                      () => removeCastVideoUrl(index, entry.mediaIndex),
                     )}
                   </div>
                 ))
@@ -7551,7 +7515,15 @@ export default function PartnerPage() {
           <FormField label="Tháng sinh">
             <ThemedListingSelect
               value={cast.birthMonth ? String(cast.birthMonth) : ''}
-              onChange={(value) => updateCastProfile(index, 'birthMonth', value ? Number(value) : undefined)}
+              onChange={(value) => {
+                const birthMonth = value ? Number(value) : undefined;
+                updateCastProfile(index, 'birthMonth', birthMonth);
+                updateCastProfile(
+                  index,
+                  'zodiacSign',
+                  birthMonth ? listingZodiacForBirthMonth(birthMonth) : null,
+                );
+              }}
               placeholder="-- Chọn tháng --"
               options={listingBirthMonthOptions}
               hasError={Boolean(listingErrors[`castProfiles.${index}.birthMonth`])}
@@ -7559,12 +7531,11 @@ export default function PartnerPage() {
             {listingErrorText(`castProfiles.${index}.birthMonth`)}
           </FormField>
           <FormField label="Cung Hoàng Đạo">
-            <ThemedListingSelect
-              value={cast.zodiacSign ?? ''}
-              onChange={(value) => updateCastProfile(index, 'zodiacSign', value)}
-              placeholder="-- Chọn cung --"
-              options={listingZodiacOptions}
-              hasError={Boolean(listingErrors[`castProfiles.${index}.zodiacSign`])}
+            <input
+              readOnly
+              value={listingZodiacForBirthMonth(cast.birthMonth)}
+              placeholder="Tự động theo tháng sinh"
+              style={{ ...listingInputStyle(`castProfiles.${index}.zodiacSign`), cursor: 'default', color: colors.text2 }}
             />
             {listingErrorText(`castProfiles.${index}.zodiacSign`)}
           </FormField>

@@ -120,6 +120,18 @@ export class PartnerListingCastDto {
   @IsEnum(CastStatus)
   status?: CastStatus;
 
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/casts/yuki-avatar.jpg' })
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  avatarUrl?: string;
+
+  @ApiPropertyOptional({ example: ['https://cdn.example.com/casts/yuki-1.jpg'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsUrl({ require_tld: false }, { each: true })
+  albumImageUrls?: string[];
+
   @ApiPropertyOptional({
     example: ['https://cdn.example.com/casts/yuki.jpg'],
     description:

@@ -3716,10 +3716,7 @@ export class NightlifeDataService {
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
-          const purpose = this.partnerListingCastMediaPurpose(
-            castMediaUrls,
-            mediaIndex,
-          );
+          const purpose = this.partnerListingCastMediaPurpose(castProfile, mediaIndex);
           const uploadedDraftMedia = await tx.media.findFirst({
             where: {
               ownerId: user.id,
@@ -8703,10 +8700,7 @@ export class NightlifeDataService {
               url,
               index: mediaIndex,
               castId: cast.id,
-              purpose: this.partnerListingCastMediaPurpose(
-                castProfile.mediaUrls,
-                mediaIndex,
-              ),
+              purpose: this.partnerListingCastMediaPurpose(castProfile, mediaIndex),
             },
             tx,
           );
@@ -18690,7 +18684,7 @@ export class NightlifeDataService {
     return nextParts.join(', ');
   }
 
-  private partnerListingCastMediaUrls(
+  private partnerListingCastMedia(
     media: Array<{
       url: string;
       purpose: string | null;
@@ -18708,7 +18702,7 @@ export class NightlifeDataService {
       PARTNER_CAST_VIDEO: 5,
     };
 
-    return media
+    const orderedMedia = media
       .filter((item) => item.castId === castId)
       .map((item, index) => ({ ...item, index }))
       .sort((first, second) => {
@@ -18725,13 +18719,38 @@ export class NightlifeDataService {
 
         return first.index - second.index;
       })
-      .map((item) => item.url);
+      .map((item) => item);
+    const imageMedia = orderedMedia.filter((item) => item.type === 'IMAGE');
+    const avatar =
+      imageMedia.find((item) => item.purpose === 'CAST_AVATAR') ??
+      imageMedia[0];
+
+    return {
+      avatarUrl: avatar?.url,
+      albumImageUrls: imageMedia
+        .filter((item) => item.url !== avatar?.url)
+        .map((item) => item.url)
+        .slice(0, 10),
+      mediaUrls: orderedMedia
+        .filter((item) => item.type === 'VIDEO')
+        .map((item) => item.url),
+    };
   }
 
-  private partnerListingCastMediaPurpose(mediaUrls: string[], index: number) {
+  private partnerListingCastMediaPurpose(
+    profile: Pick<PartnerListingCastDto, 'avatarUrl' | 'albumImageUrls' | 'mediaUrls'>,
+    index: number,
+  ) {
+    const mediaUrls = profile.mediaUrls ?? [];
     const url = mediaUrls[index];
     if (this.partnerRequestMediaType(url) === 'VIDEO') {
       return 'CAST_VIDEO';
+    }
+
+    const hasExplicitImagePartition =
+      profile.avatarUrl !== undefined || profile.albumImageUrls !== undefined;
+    if (hasExplicitImagePartition) {
+      return profile.avatarUrl === url ? 'CAST_AVATAR' : 'CAST_PHOTO';
     }
 
     const imagePosition = mediaUrls
@@ -18825,7 +18844,10 @@ export class NightlifeDataService {
         tags: this.cleanPartnerListingStringArray(cast.tags, 12),
         languages: this.cleanPartnerListingStringArray(cast.languages, 8),
         birthMonth: cast.birthMonth ?? undefined,
-        zodiacSign: this.cleanPartnerListingText(cast.zodiacSign) ?? undefined,
+        zodiacSign:
+          this.zodiacSignForBirthMonth(cast.birthMonth) ??
+          this.cleanPartnerListingText(cast.zodiacSign) ??
+          undefined,
         heightCm: cast.heightCm ?? undefined,
         measurements:
           this.cleanPartnerListingText(cast.measurements) ?? undefined,
@@ -18836,7 +18858,7 @@ export class NightlifeDataService {
           : undefined,
         isPublic: cast.isPublic,
         status: cast.status,
-        mediaUrls: this.partnerListingCastMediaUrls(castMedia, cast.id),
+        ...this.partnerListingCastMedia(castMedia, cast.id),
       });
     });
 
@@ -18917,6 +18939,8 @@ export class NightlifeDataService {
     const hobbies = list(profile.hobbies, 12);
     const youtubeLinks = list(profile.youtubeLinks, 8);
     const mediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
+    const avatarUrl = text(profile.avatarUrl);
+    const albumImageUrls = this.cleanPartnerListingStringArray(profile.albumImageUrls, 10);
     const profileClientKey = text(profile.clientKey);
     const stableProfileClientKey =
       profileClientKey && !profileClientKey.startsWith('legacy-cast-')
@@ -18941,7 +18965,11 @@ export class NightlifeDataService {
       languages: languages.length ? languages : (storeProfile?.languages ?? []),
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
       zodiacSign:
-        text(profile.zodiacSign) ?? text(storeProfile?.zodiacSign) ?? undefined,
+        profile.zodiacSign !== undefined
+          ? this.zodiacSignForBirthMonth(profile.birthMonth) ?? text(profile.zodiacSign) ?? undefined
+          : this.zodiacSignForBirthMonth(storeProfile?.birthMonth) ??
+            text(storeProfile?.zodiacSign) ??
+            undefined,
       heightCm: profile.heightCm ?? storeProfile?.heightCm,
       measurements:
         text(profile.measurements) ??
@@ -18954,6 +18982,12 @@ export class NightlifeDataService {
       hourlyRateVnd: profile.hourlyRateVnd ?? storeProfile?.hourlyRateVnd,
       isPublic: profile.isPublic ?? storeProfile?.isPublic ?? true,
       status: profile.status ?? storeProfile?.status ?? 'ACTIVE',
+      avatarUrl:
+        profile.avatarUrl !== undefined ? avatarUrl : storeProfile?.avatarUrl,
+      albumImageUrls:
+        profile.albumImageUrls !== undefined
+          ? albumImageUrls
+          : (storeProfile?.albumImageUrls ?? []),
       mediaUrls: mediaUrls.length ? mediaUrls : (storeProfile?.mediaUrls ?? []),
     };
   }
@@ -19014,6 +19048,8 @@ export class NightlifeDataService {
       youtubeLinks: this.partnerListingCastStringArray(profile.youtubeLinks, 8),
       hourlyRateVnd: profile.hourlyRateVnd ?? null,
       mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
+      avatarUrl: this.cleanPartnerListingText(profile.avatarUrl) ?? null,
+      albumImageUrls: this.cleanPartnerListingStringArray(profile.albumImageUrls, 10),
       isPublic: profile.isPublic ?? true,
       status: profile.status ?? 'ACTIVE',
     };
@@ -20741,6 +20777,16 @@ export class NightlifeDataService {
       : undefined;
   }
 
+  private zodiacSignForBirthMonth(birthMonth?: number | null) {
+    const signs = [
+      'Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus', 'Gemini',
+      'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius',
+    ];
+    return birthMonth && birthMonth >= 1 && birthMonth <= 12
+      ? signs[birthMonth - 1]
+      : undefined;
+  }
+
   private normalizePartnerRequestCasts(
     castProfiles?: PartnerRequestCastDto[] | null,
   ) {
@@ -20774,6 +20820,26 @@ export class NightlifeDataService {
           profile.heightCm >= 0
             ? Math.trunc(profile.heightCm)
             : undefined;
+        const incomingProfile = profile as PartnerListingCastDto;
+        const hasExplicitImagePartition =
+          incomingProfile.avatarUrl !== undefined ||
+          incomingProfile.albumImageUrls !== undefined;
+        const legacyMediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
+        const legacyImageUrls = legacyMediaUrls.filter(
+          (url) => this.partnerRequestMediaType(url) === 'IMAGE',
+        );
+        const videoUrls = legacyMediaUrls.filter(
+          (url) => this.partnerRequestMediaType(url) === 'VIDEO',
+        );
+        const avatarUrl = hasExplicitImagePartition
+          ? this.cleanPartnerListingText(incomingProfile.avatarUrl)
+          : legacyImageUrls[0];
+        const albumImageUrls = hasExplicitImagePartition
+          ? this.cleanPartnerListingStringArray(incomingProfile.albumImageUrls, 10)
+          : legacyImageUrls.slice(1, 11);
+        const mediaUrls = Array.from(
+          new Set([avatarUrl, ...albumImageUrls, ...videoUrls].filter(Boolean)),
+        );
 
         return {
           id: id && this.isUuid(id) ? id : undefined,
@@ -20784,7 +20850,11 @@ export class NightlifeDataService {
           tags: this.cleanPartnerListingStringArray(profile.tags, 12),
           languages: this.cleanPartnerListingStringArray(profile.languages, 8),
           birthMonth,
-          zodiacSign: this.cleanPartnerListingText(profile.zodiacSign),
+          zodiacSign:
+            this.zodiacSignForBirthMonth(birthMonth) ??
+            (incomingProfile.zodiacSign === null
+              ? null
+              : this.cleanPartnerListingText(profile.zodiacSign)),
           heightCm,
           measurements: this.cleanPartnerListingText(profile.measurements),
           hobbies: this.cleanPartnerListingStringArray(profile.hobbies, 12),
@@ -20793,7 +20863,9 @@ export class NightlifeDataService {
             8,
           ),
           hourlyRateVnd,
-          mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
+          avatarUrl,
+          albumImageUrls,
+          mediaUrls: this.cleanPartnerListingCastMediaUrls(mediaUrls),
           isPublic:
             typeof profile.isPublic === 'boolean'
               ? profile.isPublic
