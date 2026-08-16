@@ -173,7 +173,12 @@ export default function Page() {
       <main style={{ background: colors.bg, color: colors.text }}>
         <section style={{ maxWidth: 1120, margin: "0 auto", padding: "42px 18px" }}>
           <div style={{ color: colors.muted, fontSize: 14, fontWeight: 800 }}>
-            {authStatus === "redirecting" ? "Đang chuyển về trang đăng nhập..." : "Đang kiểm tra phiên đăng nhập..."}
+            {translateText(
+              authStatus === "redirecting"
+                ? "Đang chuyển về trang đăng nhập..."
+                : "Đang kiểm tra phiên đăng nhập...",
+              activeLanguage,
+            )}
           </div>
         </section>
       </main>

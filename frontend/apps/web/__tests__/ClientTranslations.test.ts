@@ -47,6 +47,9 @@ describe("client translations", () => {
       translateText("Coupon & khuyến mãi từ các quán đối tác · Hà Nội", "ja"),
     ).toBe("提携店舗のクーポン・キャンペーン · ハノイ");
     expect(translateText("Guest Discount 5%", "ja")).toBe("ゲスト割引 5%");
+    expect(translateText("Đang chuyển về trang đăng nhập...", "ja")).toBe(
+      "ログインページへ移動しています...",
+    );
     expect(
       translateText("Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: MEMBER.", "ja"),
     ).toBe("請求書を承認後にポイントが加算されます。現在の会員ランク: MEMBER。");

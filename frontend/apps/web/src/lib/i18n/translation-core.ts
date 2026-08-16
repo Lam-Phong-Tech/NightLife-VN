@@ -558,6 +558,20 @@ const entries: TranslationEntry[] = [
     zh: "密码修改成功。正在跳转到登录页...",
   },
   {
+    vi: "Đang chuyển về trang đăng nhập...",
+    en: "Redirecting to the login page...",
+    ja: "ログインページへ移動しています...",
+    ko: "로그인 페이지로 이동 중입니다...",
+    zh: "正在跳转到登录页...",
+  },
+  {
+    vi: "Đang kiểm tra phiên đăng nhập...",
+    en: "Checking your login session...",
+    ja: "ログインセッションを確認しています...",
+    ko: "로그인 세션을 확인하고 있습니다...",
+    zh: "正在检查登录会话...",
+  },
+  {
     vi: "Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.",
     en: "Password changed successfully. Please sign in with your new password.",
     ja: "パスワードを変更しました。新しいパスワードでログインしてください。",
