@@ -4509,6 +4509,7 @@ describe('NightlifeDataService', () => {
       bookings: [
         {
           id: 'child-1',
+          bookingCode: 'BK-TOUR-1',
           storeId: 'store-1',
           tourStopOrder: 1,
           status: 'REQUESTED',
@@ -4558,6 +4559,7 @@ describe('NightlifeDataService', () => {
           expect.objectContaining({
             order: 1,
             storeName: 'Neon Club',
+            bookingCode: 'BK-TOUR-1',
             castName: null,
           }),
         ],

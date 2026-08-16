@@ -23,6 +23,7 @@ export type BookingQrEmailInput = {
   tourItinerary?: Array<{
     order: number;
     storeName: string;
+    bookingCode?: string | null;
     castName?: string | null;
   }>;
   qrPayload: string;
@@ -606,7 +607,7 @@ export class EmailNotificationService {
       .sort((first, second) => first.order - second.order)
       .map(
         (stop) =>
-          `${stop.order}. ${stop.storeName} — ${stop.castName || template.labels.noCast}`,
+          `${stop.order}. ${stop.storeName}${stop.bookingCode ? ` (${stop.bookingCode})` : ''} — ${stop.castName || template.labels.noCast}`,
       )
       .join('\n');
   }
@@ -623,7 +624,10 @@ export class EmailNotificationService {
         (stop) => `<tr>
           <td style="width:30px;padding:10px 0;color:#f5d982;font-size:14px;font-weight:800;vertical-align:top;">${stop.order}.</td>
           <td style="padding:10px 0;color:#fff;font-size:14px;font-weight:700;line-height:1.45;">
-            ${this.escapeHtml(stop.storeName)}
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span>${this.escapeHtml(stop.storeName)}</span>
+              ${stop.bookingCode ? `<span style="color:#f5d982;font-size:11px;white-space:nowrap;">${this.escapeHtml(stop.bookingCode)}</span>` : ''}
+            </div>
             <div style="margin-top:2px;color:#b8b1a1;font-size:12px;font-weight:400;">${this.escapeHtml(stop.castName || template.labels.noCast)}</div>
           </td>
         </tr>`,

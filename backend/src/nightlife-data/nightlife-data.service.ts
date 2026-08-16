@@ -15140,12 +15140,14 @@ export class NightlifeDataService {
       ? tourBooking.bookings.map((booking: any, index: number) => ({
           order: booking.tourStopOrder ?? index + 1,
           storeName: booking.store?.name ?? 'Vietyoru',
+          bookingCode: booking.bookingCode ?? null,
           castName:
             booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
         }))
       : (tourBooking.tour?.stops ?? []).map((stop: any, index: number) => ({
           order: stop.order ?? index + 1,
           storeName: stop.storeName ?? 'Vietyoru',
+          bookingCode: stop.bookingCode ?? null,
           castName: stop.casts?.[0]?.name ?? null,
         }));
 
