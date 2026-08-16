@@ -2977,7 +2977,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .store-detail-page {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
-          --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
+          /* The booking CTA already sits above the bottom navigation. Reserve
+             only the CTA itself so the final section is not followed by a
+             large empty mobile scroll area. */
+          --store-mobile-fixed-space: var(--store-mobile-cta-height);
           --store-hero-control-bg: rgba(17, 17, 20, .6);
           --store-hero-control-bg-strong: rgba(17, 17, 20, .72);
           --store-hero-control-border: rgba(255, 255, 255, .16);
@@ -3003,7 +3006,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .nl-page-content:has(.store-detail-page) {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
-          --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
+          --store-mobile-fixed-space: var(--store-mobile-cta-height);
           padding-bottom: 0 !important;
           scroll-padding-bottom: calc(152px + env(safe-area-inset-bottom)) !important;
         }
