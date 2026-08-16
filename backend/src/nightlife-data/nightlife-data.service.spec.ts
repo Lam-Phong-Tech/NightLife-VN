@@ -3626,6 +3626,10 @@ describe('NightlifeDataService', () => {
 
   it('creates a guest booking with an optional coupon campaign link', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    // This case verifies a regular coupon. Reset queued campaign mock values from
+    // preceding cases so the supplied coupon ID is not interpreted as a campaign.
+    prisma.campaign.findFirst.mockReset();
+    prisma.campaign.findFirst.mockResolvedValue(null);
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
