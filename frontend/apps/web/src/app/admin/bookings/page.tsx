@@ -20,6 +20,7 @@ type AdminBookingRecord = {
   id: string;
   bookingNumber: number;
   bookingCode?: string | null;
+  tourBookingCode?: string | null;
   customerName: string;
   customerEmail?: string | null;
   store: (string & { name?: string | null }) | null;
@@ -344,6 +345,9 @@ function AdminBookingsContent() {
               </div>
               <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Email</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>{formatEmail(bk.customerEmail)}</span></div>
+                {bk.tourBookingCode && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Mã đặt tour</span><span style={{ fontSize: '13px', color: '#d4b26a', fontWeight: 700 }}>{bk.tourBookingCode}</span></div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Quán</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.store?.name || bk.store}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Cast chỉ định</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{typeof bk.cast === 'object' ? (bk.cast ? bk.cast.stageName : 'Không có') : (bk.cast === 'Không cast' ? 'Không có' : bk.cast.replace('Cast: ', ''))}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số người</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.partySize} khách</span></div>

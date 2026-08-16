@@ -1198,6 +1198,11 @@ function TourVenueSummary({ booking, language }: { booking: BookingRecord; langu
                 )}
               </span>
             </span>
+            {stop.bookingCode ? (
+              <span className={`${styles.tourVenueBookingCode} notranslate`} translate="no" data-no-translate="true">
+                {stop.bookingCode}
+              </span>
+            ) : null}
           </div>
         ))}
       </div>

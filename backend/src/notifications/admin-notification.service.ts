@@ -12,6 +12,7 @@ import {
 
 export const ADMIN_TELEGRAM_TEMPLATES = {
   bookingCreated: 'telegram.admin.booking.created.v1',
+  tourBookingCreated: 'telegram.admin.tour-booking.created.v1',
   bookingCancelled: 'telegram.admin.booking.cancelled.v1',
   billSubmitted: 'telegram.admin.bill.submitted.v1',
   billVerified: 'telegram.admin.bill.verified.v1',
@@ -42,6 +43,8 @@ type AdminTelegramNotification = AdminNotificationRelations & {
 
 export type BookingAdminNotification = {
   id: string;
+  /** Stable, auto-incremented number displayed as STT in the Admin booking list. */
+  bookingNumber?: number | null;
   bookingSequenceCode?: string | null;
   bookingCode?: string | null;
   tourBookingId?: string | null;
@@ -77,9 +80,25 @@ export type BookingAdminNotification = {
     publicAlias?: string | null;
   } | null;
   coupon?: {
+    code?: string | null;
     discountType?: string | null;
     discountValue?: number | null;
   } | null;
+  couponIssue?: { code?: string | null } | null;
+};
+
+export type TourBookingAdminNotification = {
+  id: string;
+  bookingCode?: string | null;
+  status: string;
+  scheduledAt?: Date | string | null;
+  partySize?: number | null;
+  note?: string | null;
+  titleSnapshot?: string | null;
+  tour?: { id: string; title: string } | null;
+  user?: BookingAdminNotification['user'];
+  guest?: BookingAdminNotification['guest'];
+  bookings: Array<BookingAdminNotification & { tourStopOrder?: number | null }>;
 };
 
 export type BillAdminNotification = {
@@ -188,6 +207,75 @@ export class AdminNotificationService {
         ['Ghi chú', booking.note],
       ],
       payload: this.bookingPayload(booking, bookingSequenceCode),
+    });
+  }
+
+  async notifyTourBookingCreated(tourBooking: TourBookingAdminNotification) {
+    const stops = [...tourBooking.bookings].sort(
+      (first, second) =>
+        (first.tourStopOrder ?? Number.MAX_SAFE_INTEGER) -
+        (second.tourStopOrder ?? Number.MAX_SAFE_INTEGER),
+    );
+    const primaryBooking = stops[0];
+    const tourTitle =
+      tourBooking.tour?.title ?? tourBooking.titleSnapshot ?? 'Nightlife Tour';
+    const itinerary = stops
+      .map((booking, index) => {
+        const order = booking.tourStopOrder ?? index + 1;
+        const cast = this.castLabel(booking.cast);
+        return `${order}. ${booking.store?.name ?? 'Quán'} · ${booking.bookingCode ?? booking.id}${cast ? ` · Cast: ${cast}` : ''}`;
+      })
+      .join('\n');
+    const couponCode =
+      primaryBooking?.coupon?.code ?? primaryBooking?.couponIssue?.code ?? null;
+    const discount = primaryBooking
+      ? this.bookingDiscountLabel(primaryBooking)
+      : null;
+
+    return this.notifyAdmin({
+      templateKey: ADMIN_TELEGRAM_TEMPLATES.tourBookingCreated,
+      title: 'Yêu cầu đặt tour mới',
+      userId: tourBooking.user?.id,
+      guestId: tourBooking.guest?.id,
+      bookingId: primaryBooking?.id,
+      cmsPath: primaryBooking?.id
+        ? `/admin/bookings?bookingId=${encodeURIComponent(primaryBooking.id)}`
+        : '/admin/bookings',
+      webPath: tourBooking.tour?.id
+        ? `/tour/${encodeURIComponent(tourBooking.tour.id)}`
+        : '/tour',
+      lines: [
+        ['Mã đặt tour', tourBooking.bookingCode],
+        ['Tên tour', tourTitle],
+        ['Lịch trình tour', itinerary],
+        ['Thời gian', this.formatDateTime(tourBooking.scheduledAt)],
+        ['Số người', tourBooking.partySize],
+        ['Người đặt', this.customerName(tourBooking)],
+        ['Email', this.customerEmail(tourBooking)],
+        ['Mã ưu đãi', couponCode],
+        ['Mức giảm', discount],
+        ['Ghi chú', tourBooking.note],
+      ],
+      payload: {
+        tourBookingId: tourBooking.id,
+        tourBookingCode: tourBooking.bookingCode ?? null,
+        tourId: tourBooking.tour?.id ?? null,
+        tourTitle,
+        status: tourBooking.status,
+        scheduledAt: this.toIso(tourBooking.scheduledAt),
+        partySize: tourBooking.partySize ?? null,
+        customer: this.customerPayload(tourBooking),
+        couponCode,
+        discountLabel: discount,
+        stops: stops.map((booking, index) => ({
+          order: booking.tourStopOrder ?? index + 1,
+          bookingId: booking.id,
+          bookingCode: booking.bookingCode ?? null,
+          storeId: booking.store?.id ?? null,
+          storeName: booking.store?.name ?? null,
+          castName: this.castLabel(booking.cast),
+        })),
+      },
     });
   }
 
@@ -572,6 +660,17 @@ export class AdminNotificationService {
   }
 
   private async bookingSequenceNumber(booking: BookingAdminNotification) {
+    // The Admin screen uses Booking.bookingNumber.  Reuse that immutable value
+    // for Telegram instead of deriving a number from createdAt: several
+    // bookings can share the same timestamp and would then receive one STT.
+    if (
+      typeof booking.bookingNumber === 'number' &&
+      Number.isInteger(booking.bookingNumber) &&
+      booking.bookingNumber > 0
+    ) {
+      return booking.bookingNumber;
+    }
+
     let anchorCreatedAt = this.toValidDate(booking.createdAt);
 
     if (booking.tourBookingId) {

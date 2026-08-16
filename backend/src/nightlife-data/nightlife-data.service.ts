@@ -13837,6 +13837,14 @@ export class NightlifeDataService {
       });
     });
 
+    await Promise.resolve(
+      this.adminNotificationService?.notifyTourBookingCreated(created),
+    ).catch((error) =>
+      this.logger.warn(
+        `Failed to notify tour booking ${created.id}: ${this.errorMessage(error)}`,
+      ),
+    );
+
     for (const child of created.bookings) {
       await Promise.resolve(
         this.adminNotificationService?.notifyBookingCreated(child),
@@ -13935,6 +13943,7 @@ export class NightlifeDataService {
           return {
             order: booking.tourStopOrder ?? snapshot?.order ?? index + 1,
             bookingId: booking.id,
+            bookingCode: booking.bookingCode,
             storeId: booking.store.id,
             storeSlug: booking.store.slug,
             storeName: booking.store.name,
@@ -15127,6 +15136,13 @@ export class NightlifeDataService {
       tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
     const effectiveTourBookingId = tourBooking.tourBookingId || tourBooking.id;
+    const tourItinerary = (tourBooking.bookings ?? []).map(
+      (booking: any, index: number) => ({
+        order: booking.tourStopOrder ?? index + 1,
+        storeName: booking.store?.name ?? 'Vietyoru',
+        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+      }),
+    );
 
     const payload = {
       bookingId: effectiveTourBookingId,
@@ -15144,6 +15160,7 @@ export class NightlifeDataService {
       qrImageUrl,
       isTourBooking: true,
       tourTitle,
+      tourItinerary,
     } satisfies Prisma.InputJsonObject;
 
     let log: { id: string };
@@ -15186,6 +15203,7 @@ export class NightlifeDataService {
         discountLabel,
         discountValueLabel,
         note: tourBooking.note,
+        tourItinerary,
         qrPayload,
         qrImageUrl,
         qrImageDataUrl,
@@ -15689,6 +15707,7 @@ export class NightlifeDataService {
   private bookingNotificationSelect() {
     return {
       id: true,
+      bookingNumber: true,
       bookingCode: true,
       tourBookingId: true,
       storeId: true,
@@ -25960,7 +25979,13 @@ export class NightlifeDataService {
         skip,
         take: limit,
         orderBy,
-        include: { store: true, cast: true, user: true, guest: true },
+        include: {
+          store: true,
+          cast: true,
+          user: true,
+          guest: true,
+          tourBooking: { select: { bookingCode: true } },
+        },
       }),
       this.prisma.booking.count({ where: baseWhere }),
       this.prisma.booking.count({
@@ -25981,6 +26006,7 @@ export class NightlifeDataService {
       id: bk.id,
       bookingNumber: bk.bookingNumber,
       bookingCode: bk.bookingCode,
+      tourBookingCode: bk.tourBooking?.bookingCode ?? null,
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       customerPhone: bk.user?.phone || bk.guest?.phone || '',

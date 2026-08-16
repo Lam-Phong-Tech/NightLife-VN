@@ -1103,7 +1103,7 @@
 
 .tourVenueItem {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-columns: 26px minmax(0, 1fr) auto;
   gap: 9px;
   align-items: flex-start;
   padding: 9px 10px;
@@ -1136,6 +1136,15 @@
   color: var(--vy-text);
   font-size: 12.5px;
   line-height: 1.25;
+}
+
+.tourVenueBookingCode {
+  align-self: center;
+  color: var(--vy-gold-hi);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .2px;
+  white-space: nowrap;
 }
 
 .tourVenueCasts {

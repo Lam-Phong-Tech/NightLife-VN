@@ -75,6 +75,16 @@ export class TelegramService {
   }
 
   private async bookingSequenceNumber(booking: any) {
+    // Keep Telegram STT identical to the Admin list. Counting records by
+    // createdAt is not unique when multiple bookings are created together.
+    if (
+      typeof booking?.bookingNumber === 'number' &&
+      Number.isInteger(booking.bookingNumber) &&
+      booking.bookingNumber > 0
+    ) {
+      return booking.bookingNumber;
+    }
+
     let anchorCreatedAt = this.toValidDate(booking?.createdAt);
 
     if (booking?.tourBookingId) {

@@ -126,6 +126,7 @@ export type BookingRecord = {
     stops: Array<{
       order: number;
       bookingId?: string;
+      bookingCode?: string;
       storeId: string;
       storeSlug: string;
       storeName: string;

@@ -20,6 +20,11 @@ export type BookingQrEmailInput = {
   discountLabel?: string | null;
   discountValueLabel?: string | null;
   note?: string | null;
+  tourItinerary?: Array<{
+    order: number;
+    storeName: string;
+    castName?: string | null;
+  }>;
   qrPayload: string;
   qrImageUrl: string;
   qrImageDataUrl?: string | null;
@@ -66,6 +71,8 @@ type BookingEmailTemplate = {
     deliveryInfo: string;
     status: string;
     note: string;
+    tourItinerary: string;
+    noCast: string;
   };
   defaults: {
     store: string;
@@ -111,6 +118,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       deliveryInfo: 'Thông tin nhận mã',
       status: 'Trạng thái',
       note: 'Ghi chú',
+      tourItinerary: 'Lịch trình tour',
+      noCast: 'Không chọn cast',
     },
     defaults: {
       store: 'Vietyoru',
@@ -136,7 +145,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: 'Mã QR đặt chỗ đã được đính kèm trong email này.',
     textQrBackup: 'QR dự phòng',
     textArrival: 'Vui lòng đưa mã QR cho nhân viên khi tới nơi.',
-    codeOnlyHint: 'Vui lòng cung cấp mã đặt chỗ này cho nhân viên khi cần xác nhận.',
+    codeOnlyHint:
+      'Vui lòng cung cấp mã đặt chỗ này cho nhân viên khi cần xác nhận.',
   },
   en: {
     htmlLang: 'en',
@@ -161,6 +171,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       deliveryInfo: 'Delivery information',
       status: 'Status',
       note: 'Note',
+      tourItinerary: 'Tour itinerary',
+      noCast: 'No cast selected',
     },
     defaults: {
       store: 'Vietyoru',
@@ -186,7 +198,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: 'Your reservation QR code is attached to this email.',
     textQrBackup: 'Backup QR',
     textArrival: 'Please show the QR code to the venue staff when you arrive.',
-    codeOnlyHint: 'Please provide this reservation code to the venue staff when confirmation is needed.',
+    codeOnlyHint:
+      'Please provide this reservation code to the venue staff when confirmation is needed.',
   },
   ja: {
     htmlLang: 'ja',
@@ -210,6 +223,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       deliveryInfo: 'QRコードのご案内',
       status: '予約状況',
       note: 'ご要望',
+      tourItinerary: 'ツアー行程',
+      noCast: 'キャスト指定なし',
     },
     defaults: {
       store: 'Vietyoru',
@@ -235,7 +250,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: '予約用QRコードを本メールに添付しております。',
     textQrBackup: '予備QRコード',
     textArrival: 'ご来店時にQRコードを店舗スタッフへご提示ください。',
-    codeOnlyHint: '確認が必要な場合は、この予約番号を店舗スタッフにお伝えください。',
+    codeOnlyHint:
+      '確認が必要な場合は、この予約番号を店舗スタッフにお伝えください。',
   },
   ko: {
     htmlLang: 'ko',
@@ -259,6 +275,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       deliveryInfo: '수령 정보',
       status: '상태',
       note: '요청 사항',
+      tourItinerary: '투어 일정',
+      noCast: 'Cast 미선택',
     },
     defaults: {
       store: 'Vietyoru',
@@ -308,6 +326,8 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
       deliveryInfo: '接收信息',
       status: '预约状态',
       note: '备注',
+      tourItinerary: '行程安排',
+      noCast: '未选择 Cast',
     },
     defaults: {
       store: 'Vietyoru',
@@ -370,7 +390,12 @@ export class EmailNotificationService {
       to: input.to,
       subject: template.subject(input.bookingCode),
       text: this.bookingEmailText(input, template, includeQr),
-      html: this.bookingEmailHtml(input, Boolean(qrAttachment), template, includeQr),
+      html: this.bookingEmailHtml(
+        input,
+        Boolean(qrAttachment),
+        template,
+        includeQr,
+      ),
       attachments: qrAttachment ? [qrAttachment] : undefined,
     });
 
@@ -446,14 +471,23 @@ export class EmailNotificationService {
   ) {
     const guestName = input.guestName?.trim() || template.guestFallback;
     const rows = this.bookingEmailRows(input, template);
+    const itinerary = this.bookingEmailItineraryText(input, template);
 
     return [
       template.intro(guestName),
       '',
       ...rows.map(([label, value]) => `${label}: ${value}`),
+      ...(itinerary
+        ? ['', `${template.labels.tourItinerary}:`, itinerary]
+        : []),
       '',
       ...(includeQr
-        ? [template.textQrAttached, `${template.textQrBackup}: ${input.qrImageUrl}`, '', template.textArrival]
+        ? [
+            template.textQrAttached,
+            `${template.textQrBackup}: ${input.qrImageUrl}`,
+            '',
+            template.textArrival,
+          ]
         : [template.codeOnlyHint]),
     ].join('\n');
   }
@@ -467,6 +501,7 @@ export class EmailNotificationService {
     const qrSrc = hasQrAttachment ? 'cid:booking-qr' : input.qrImageUrl;
     const guestName = input.guestName?.trim() || template.guestFallback;
     const rows = this.bookingEmailRows(input, template);
+    const itinerary = this.bookingEmailItineraryHtml(input, template);
 
     return `<!doctype html>
 <html lang="${this.escapeAttribute(template.htmlLang)}">
@@ -489,11 +524,16 @@ export class EmailNotificationService {
             )
             .join('')}
         </table>
-        ${includeQr ? `<div style="text-align:center;margin:22px 0;">
+        ${itinerary}
+        ${
+          includeQr
+            ? `<div style="text-align:center;margin:22px 0;">
           <img src="${this.escapeAttribute(qrSrc)}" alt="${this.escapeAttribute(template.qrAlt(input.bookingCode))}" width="220" height="220" style="display:inline-block;border-radius:12px;background:#fff;padding:10px;" />
           <p style="margin:12px 0 18px;color:#b8b1a1;font-size:13px;">${this.escapeHtml(template.qrHint)}</p>
           <a href="${this.escapeAttribute(input.qrImageUrl)}" style="display:inline-block;background:#f5d982;color:#1d1607;text-decoration:none;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:800;">${this.escapeHtml(template.ctaLabel)}</a>
-        </div>` : `<p style="margin:22px 0;color:#b8b1a1;font-size:14px;line-height:1.55;">${this.escapeHtml(template.codeOnlyHint)}</p>`}
+        </div>`
+            : `<p style="margin:22px 0;color:#b8b1a1;font-size:14px;line-height:1.55;">${this.escapeHtml(template.codeOnlyHint)}</p>`
+        }
         <p style="margin:18px 0 0;color:#8d8577;font-size:12px;line-height:1.5;">
           ${this.escapeHtml(template.footerNote)}
         </p>
@@ -511,7 +551,9 @@ export class EmailNotificationService {
       [template.labels.bookingCode, input.bookingCode],
       [template.labels.store, input.storeName || template.defaults.store],
       ...(input.storeAddress
-        ? ([[template.labels.storeAddress, input.storeAddress]] as Array<[string, string]>)
+        ? ([[template.labels.storeAddress, input.storeAddress]] as Array<
+            [string, string]
+          >)
         : []),
       ...(input.castName
         ? ([[template.labels.cast, input.castName]] as Array<[string, string]>)
@@ -544,12 +586,54 @@ export class EmailNotificationService {
       [template.labels.paymentMethod, template.defaults.paymentMethod],
       [
         template.labels.deliveryInfo,
-        input.includeQr === false ? template.codeOnlyHint : template.defaults.deliveryInfo,
+        input.includeQr === false
+          ? template.codeOnlyHint
+          : template.defaults.deliveryInfo,
       ],
       ...(input.note
         ? ([[template.labels.note, input.note]] as Array<[string, string]>)
         : []),
     ];
+  }
+
+  private bookingEmailItineraryText(
+    input: BookingQrEmailInput,
+    template: BookingEmailTemplate,
+  ) {
+    if (!input.tourItinerary?.length) return '';
+
+    return input.tourItinerary
+      .sort((first, second) => first.order - second.order)
+      .map(
+        (stop) =>
+          `${stop.order}. ${stop.storeName} — ${stop.castName || template.labels.noCast}`,
+      )
+      .join('\n');
+  }
+
+  private bookingEmailItineraryHtml(
+    input: BookingQrEmailInput,
+    template: BookingEmailTemplate,
+  ) {
+    if (!input.tourItinerary?.length) return '';
+
+    const stops = [...input.tourItinerary]
+      .sort((first, second) => first.order - second.order)
+      .map(
+        (stop) => `<tr>
+          <td style="width:30px;padding:10px 0;color:#f5d982;font-size:14px;font-weight:800;vertical-align:top;">${stop.order}.</td>
+          <td style="padding:10px 0;color:#fff;font-size:14px;font-weight:700;line-height:1.45;">
+            ${this.escapeHtml(stop.storeName)}
+            <div style="margin-top:2px;color:#b8b1a1;font-size:12px;font-weight:400;">${this.escapeHtml(stop.castName || template.labels.noCast)}</div>
+          </td>
+        </tr>`,
+      )
+      .join('');
+
+    return `<div style="margin:-2px 0 20px;padding:14px 16px;border:1px solid rgba(245,217,130,.22);border-radius:12px;background:rgba(245,217,130,.05);">
+      <div style="margin:0 0 5px;color:#f5d982;font-size:14px;font-weight:800;">${this.escapeHtml(template.labels.tourItinerary)}</div>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">${stops}</table>
+    </div>`;
   }
 
   private formatBookingAmount(
