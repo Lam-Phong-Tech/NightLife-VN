@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
-import { unlink, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { rename, unlink, writeFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
 import { MediaAccess, MediaType, Prisma } from '@prisma/client';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -300,6 +300,20 @@ export class StorageService implements OnModuleInit {
       let finalMimeType: string = validatedFile.mimeType;
       let finalSizeBytes = file.size;
       let mediaMetadata: Record<string, unknown> | null = null;
+
+      // Multer's generated filename has no extension. Keep the validated
+      // extension on uploaded videos so clients can reliably identify and
+      // render them after the upload response is saved in a listing draft.
+      if (validatedFile.mimeType.startsWith('video/')) {
+        const extension = extname(validatedFile.originalName).toLowerCase();
+        if (extension && !file.filename.toLowerCase().endsWith(extension)) {
+          storageKey = `${file.filename}${extension}`;
+          const storagePath = join(uploadDir, storageKey);
+          await rename(file.path, storagePath);
+          file.filename = storageKey;
+          file.path = storagePath;
+        }
+      }
 
       if (
         this.imageProcessingService.shouldOptimize(
