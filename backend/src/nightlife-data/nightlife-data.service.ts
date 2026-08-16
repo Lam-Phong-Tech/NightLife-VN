@@ -13838,7 +13838,7 @@ export class NightlifeDataService {
     });
 
     await Promise.resolve(
-      this.adminNotificationService?.notifyTourBookingCreated(created),
+      this.adminNotificationService?.notifyTourBookingCreated?.(created),
     ).catch((error) =>
       this.logger.warn(
         `Failed to notify tour booking ${created.id}: ${this.errorMessage(error)}`,
