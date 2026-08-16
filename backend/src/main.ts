@@ -1,5 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  type ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { Express } from 'express';
 import { AppModule } from './app.module';
@@ -24,6 +28,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       whitelist: true,
+      exceptionFactory: (errors: ValidationError[] = []) => {
+        const fieldErrors = collectValidationFieldErrors(errors);
+        return new BadRequestException({
+          message: 'Thông tin nhập vào chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.',
+          fieldErrors,
+        });
+      },
     }),
   );
 
@@ -51,6 +62,23 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3001);
 }
 void bootstrap();
+
+function collectValidationFieldErrors(
+  errors: ValidationError[],
+  parentPath = '',
+): Record<string, string> {
+  return errors.reduce<Record<string, string>>((result, error) => {
+    const path = parentPath ? `${parentPath}.${error.property}` : error.property;
+    const message = error.constraints ? Object.values(error.constraints)[0] : undefined;
+
+    if (message) {
+      result[path] = message;
+    }
+
+    Object.assign(result, collectValidationFieldErrors(error.children ?? [], path));
+    return result;
+  }, {});
+}
 
 function trustProxySetting(): boolean | number | string {
   const configuredValue = process.env.TRUST_PROXY?.trim();

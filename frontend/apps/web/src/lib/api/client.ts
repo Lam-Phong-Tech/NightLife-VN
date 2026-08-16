@@ -10,6 +10,7 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public code?: string,
+    public fieldErrors?: Record<string, string>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -66,6 +67,18 @@ const readApiErrorCode = (errorData: unknown): string | undefined => {
     }
   }
   return undefined;
+};
+
+const readApiFieldErrors = (errorData: unknown): Record<string, string> | undefined => {
+  if (!errorData || typeof errorData !== "object") return undefined;
+  const value = (errorData as { fieldErrors?: unknown }).fieldErrors;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[0] === "string" && typeof entry[1] === "string" && Boolean(entry[1].trim()),
+  );
+  return entries.length ? Object.fromEntries(entries) : undefined;
 };
 
 const genericStatusMessages: Record<number, string> = {
@@ -547,15 +560,17 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
       "Không tải được dữ liệu. Vui lòng thử lại.",
     );
     let errorCode: string | undefined;
+    let fieldErrors: Record<string, string> | undefined;
     try {
       const errorData = await response.json();
       errorCode = readApiErrorCode(errorData);
+      fieldErrors = readApiFieldErrors(errorData);
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
     } catch {
       // Ignored
     }
     clearStaleSessionOnUnauthorized(endpoint, response.status, token, errorCode);
-    throw new ApiError(response.status, errorMessage, errorCode);
+    throw new ApiError(response.status, errorMessage, errorCode, fieldErrors);
   }
 
   // Handle empty responses (like 204 No Content)
@@ -595,15 +610,17 @@ export const apiFormDataClient = async <T>(
       "Không tải file lên được. Vui lòng thử lại.",
     );
     let errorCode: string | undefined;
+    let fieldErrors: Record<string, string> | undefined;
     try {
       const errorData = await response.json();
       errorCode = readApiErrorCode(errorData);
+      fieldErrors = readApiFieldErrors(errorData);
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
     } catch {
       // Ignored
     }
     clearStaleSessionOnUnauthorized(endpoint, response.status, token, errorCode);
-    throw new ApiError(response.status, errorMessage, errorCode);
+    throw new ApiError(response.status, errorMessage, errorCode, fieldErrors);
   }
 
   if (response.status === 204) {

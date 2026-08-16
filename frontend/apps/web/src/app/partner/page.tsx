@@ -531,6 +531,22 @@ const listingZodiacByBirthMonth = [
 ];
 const listingZodiacForBirthMonth = (birthMonth?: number) =>
   birthMonth ? listingZodiacByBirthMonth[birthMonth - 1] ?? '' : '';
+const listingZodiacLabels: Record<string, string> = {
+  Aries: 'Bạch Dương',
+  Taurus: 'Kim Ngưu',
+  Gemini: 'Song Tử',
+  Cancer: 'Cự Giải',
+  Leo: 'Sư Tử',
+  Virgo: 'Xử Nữ',
+  Libra: 'Thiên Bình',
+  Scorpio: 'Bọ Cạp',
+  Sagittarius: 'Nhân Mã',
+  Capricorn: 'Ma Kết',
+  Aquarius: 'Bảo Bình',
+  Pisces: 'Song Ngư',
+};
+const listingZodiacLabel = (value?: string | null) =>
+  listingZodiacLabels[safeListingText(value)] ?? safeListingText(value) ?? '---';
 const listingCastLanguageOptions = ['VN', 'EN', 'JP', 'KR', 'CN'];
 const staffPermissionOptions = [
   { key: 'coupon.scan', label: 'Quét coupon' },
@@ -1792,6 +1808,7 @@ export default function PartnerPage() {
   const requestedPanel = searchParams.get('panel');
   const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>(() => readStoredPartnerTheme());
   const [stores, setStores] = useState<PartnerStore[]>([]);
+  const [isLoadingPartnerData, setIsLoadingPartnerData] = useState(true);
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
   const [bills, setBills] = useState<PartnerBill[]>([]);
@@ -2868,6 +2885,7 @@ export default function PartnerPage() {
     let isMounted = true;
 
     const loadPartnerData = async () => {
+      setIsLoadingPartnerData(true);
       try {
         const storeData = await apiClient<PartnerStore[]>('/partner/stores');
 
@@ -2943,6 +2961,10 @@ export default function PartnerPage() {
         }
 
         setStatusMessage('Chưa kết nối được backend. Kiểm tra backend hoặc cấu hình API URL.');
+      } finally {
+        if (isMounted) {
+          setIsLoadingPartnerData(false);
+        }
       }
     };
 
@@ -3018,8 +3040,12 @@ export default function PartnerPage() {
   }, [scanCouponPayload, searchParams]);
 
   const activePartnerStore = stores.find((store) => store.id === listingStoreId) ?? stores[0] ?? null;
-  const storeName = activePartnerStore?.name ?? bookings[0]?.store.name ?? bills[0]?.store?.name ?? 'Chưa gán quán';
-  const activeStoreStatus = activePartnerStore?.status ?? (stores.length ? 'ACTIVE' : 'Chưa gán quán');
+  const storeName = isLoadingPartnerData
+    ? 'Đang tải thông tin quán…'
+    : activePartnerStore?.name ?? bookings[0]?.store.name ?? bills[0]?.store?.name ?? 'Chưa gán quán';
+  const activeStoreStatus = isLoadingPartnerData
+    ? 'Đang tải…'
+    : activePartnerStore?.status ?? (stores.length ? 'ACTIVE' : 'Chưa gán quán');
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
   const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
@@ -5127,6 +5153,17 @@ export default function PartnerPage() {
     });
   };
 
+  const applyListingApiFieldErrors = (error: unknown) => {
+    if (!(error instanceof ApiError) || !error.fieldErrors) return false;
+
+    setListingErrors(error.fieldErrors);
+    const firstPath = Object.keys(error.fieldErrors)[0];
+    if (firstPath) {
+      setListingTab(tabFromListingErrorPath(firstPath));
+    }
+    return true;
+  };
+
   const partnerCastStatusView = (cast: PartnerListingCast) => {
     const status = safeListingText(cast.status).toUpperCase();
     const hasName = Boolean(cast.stageName.trim());
@@ -5228,7 +5265,16 @@ export default function PartnerPage() {
         );
         form.append('storeId', storeId);
 
-        const response = await apiFormDataClient<StorageUploadResponse>('/storage/upload', form);
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 30_000);
+        let response: StorageUploadResponse;
+        try {
+          response = await apiFormDataClient<StorageUploadResponse>('/storage/upload', form, {
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeout);
+        }
         const uploadedUrl = response.url?.trim();
         if (!uploadedUrl) {
           throw new Error('Không lấy được URL sau khi tải file lên.');
@@ -5237,9 +5283,17 @@ export default function PartnerPage() {
       }
 
       options.onUploaded(urls);
-      setListingNotice(`Đã tải ${options.successLabel}. Bấm Lưu nháp hoặc Gửi duyệt để lưu vào bản đăng tin.`);
+      const message = `Đã tải ${options.successLabel}. Bấm Lưu nháp hoặc Gửi duyệt để lưu vào bản đăng tin.`;
+      setListingNotice(message);
+      listingActionToast('success', 'Tải tệp thành công', message);
     } catch (error) {
-      setListingNotice(error instanceof Error ? error.message : 'Không tải file lên được.');
+      const message = error instanceof DOMException && error.name === 'AbortError'
+        ? 'Tải file quá 30 giây. Vui lòng thử lại với file nhỏ hơn hoặc kiểm tra kết nối.'
+        : error instanceof Error
+          ? error.message
+          : 'Không tải file lên được.';
+      setListingNotice(message);
+      listingActionToast('error', 'Không tải được tệp', message);
     } finally {
       setListingUploadKey(null);
     }
@@ -6154,6 +6208,7 @@ export default function PartnerPage() {
         returnToCastTable();
       }
     } catch (error) {
+      applyListingApiFieldErrors(error);
       const message = error instanceof ApiError ? error.message : 'Không lưu được bản nháp.';
       setListingNotice(message);
       listingActionToast('error', 'Không lưu được bản nháp', message);
@@ -6228,6 +6283,7 @@ export default function PartnerPage() {
         },
       });
     } catch (error) {
+      applyListingApiFieldErrors(error);
       setListingNotice(
         error instanceof ApiError ? error.message : 'Không gửi duyệt được bản nháp.',
       );
@@ -6301,6 +6357,7 @@ export default function PartnerPage() {
       );
       returnToCastTable();
     } catch (error) {
+      applyListingApiFieldErrors(error);
       const message = error instanceof ApiError ? error.message : 'Không gửi duyệt được cast.';
       setListingNotice(message);
       listingActionToast('error', 'Không gửi duyệt được cast', message);
@@ -7780,7 +7837,7 @@ export default function PartnerPage() {
                           </span>
                           <span style={{ minWidth: 0 }}>
                             <span className="partner-cast-name">{hasRequiredName || 'Draft cast'}</span>
-                            <span className="partner-cast-sub">{cast.zodiacSign || '---'}</span>
+                            <span className="partner-cast-sub">{listingZodiacLabel(cast.zodiacSign)}</span>
                           </span>
                         </div>
                       </td>
@@ -7839,7 +7896,7 @@ export default function PartnerPage() {
                     <span className="partner-cast-mobile-title">
                       <span className="partner-cast-mobile-index">#{index + 1}</span>
                       <strong>{hasRequiredName || 'Draft cast'}</strong>
-                      <small>{cast.zodiacSign || '---'}</small>
+                      <small>{listingZodiacLabel(cast.zodiacSign)}</small>
                     </span>
                     <StatusPill tone={statusView.tone}>
                       {statusView.label}
