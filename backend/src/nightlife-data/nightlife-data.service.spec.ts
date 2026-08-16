@@ -283,7 +283,7 @@ describe('NightlifeDataService', () => {
   let service: NightlifeDataService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
     prisma.campaign.findFirst.mockResolvedValue(null);
     prisma.media.findFirst.mockResolvedValue(null);
