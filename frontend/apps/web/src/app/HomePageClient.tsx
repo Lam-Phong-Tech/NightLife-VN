@@ -347,11 +347,6 @@ const categoryLabels: Record<string, string> = {
   CASINO: "Casino",
 };
 
-const cityLabels: Record<string, string> = {
-  hn: "Hà Nội",
-  hcm: "TP.HCM",
-};
-
 const categoryPrices: Record<string, string> = {
   BAR: "từ 650.000đ",
   CLUB: "từ 2.500.000đ",
@@ -702,8 +697,13 @@ function getCityDisplay(cityCode?: string | null, city?: string | null, language
     }[language] ?? "Đà Nẵng";
   }
 
-  const fallback = cityLabels[cityCode ?? ""] ?? city ?? "";
-  return language ? translateText(fallback, language) : fallback;
+  if (cityCode) {
+    const localizedCity = getFilterCityLabel(cityCode, language);
+    if (localizedCity !== cityCode) return localizedCity;
+  }
+
+  const fallback = city ?? "";
+  return fallback ? getFilterAreaLabel(fallback, language) : "";
 }
 
 function storeAreaText(
@@ -829,11 +829,11 @@ function mapTourToHomeItem(
   const stopImage = tour.stops
     .flatMap((stop) => stop.store.media)
     .find((media) => isUsableContentImage(media.url))?.url;
-  const cityLabel =
-    cityLabels[tour.city] ??
-    tour.stops[0]?.store.area?.city ??
-    tour.stops[0]?.store.city ??
-    tour.city;
+  const cityLabel = getCityDisplay(
+    tour.city,
+    tour.stops[0]?.store.area?.city ?? tour.stops[0]?.store.city ?? tour.city,
+    language,
+  );
   const meta = [
     cityLabel,
     tour.durationHours ? `${tour.durationHours} giờ` : "",
@@ -3314,7 +3314,7 @@ export default function HomePageClient({
           categoryLabel: translateText(categoryLabels[item.store.category] ?? item.store.category, activeLanguage),
           areaLabel: [
             item.store.area?.name ?? item.store.district,
-            cityLabels[item.store.cityCode ?? ""] ?? item.store.city,
+            getCityDisplay(item.store.cityCode, item.store.city, activeLanguage),
           ]
             .filter(Boolean)
             .join(" · "),

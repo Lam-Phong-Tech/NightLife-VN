@@ -1,4 +1,5 @@
 import type { LanguageCode } from "./client-translations";
+import { vietnamLocationLatinNames } from "./generated-vietnam-location-labels";
 
 type LocalizedLabels = Record<LanguageCode, string>;
 
@@ -90,6 +91,43 @@ const cityLabels: Record<string, LocalizedLabels> = {
   vietnam: { vi: "Việt Nam", en: "Vietnam", ja: "ベトナム", ko: "베트남", zh: "越南" },
 };
 
+const vietnamCityNames: Record<string, string> = {
+  caobang: "Cao Bằng",
+  dienbien: "Điện Biên",
+  hatinh: "Hà Tĩnh",
+  laichau: "Lai Châu",
+  langson: "Lạng Sơn",
+  nghean: "Nghệ An",
+  quangninh: "Quảng Ninh",
+  sonla: "Sơn La",
+  thanhhoa: "Thanh Hóa",
+  hn: "Hà Nội",
+  hue: "Huế",
+  laocai: "Lào Cai",
+  thainguyen: "Thái Nguyên",
+  phutho: "Phú Thọ",
+  bacninh: "Bắc Ninh",
+  hungyen: "Hưng Yên",
+  hp: "Hải Phòng",
+  ninhbinh: "Ninh Bình",
+  quangtri: "Quảng Trị",
+  dn: "Đà Nẵng",
+  quangngai: "Quảng Ngãi",
+  gialai: "Gia Lai",
+  khanhhoa: "Khánh Hòa",
+  lamdong: "Lâm Đồng",
+  daklak: "Đắk Lắk",
+  hcm: "Hồ Chí Minh",
+  dongnai: "Đồng Nai",
+  tayninh: "Tây Ninh",
+  cantho: "Cần Thơ",
+  vinhlong: "Vĩnh Long",
+  dongthap: "Đồng Tháp",
+  camau: "Cà Mau",
+  angiang: "An Giang",
+  tuyenquang: "Tuyên Quang",
+};
+
 const areaLabels: Record<string, LocalizedLabels> = {
   "Ba Dinh": { vi: "Ba Đình", en: "Ba Dinh", ja: "バーディン", ko: "바딘", zh: "巴亭" },
   "Tay Ho": { vi: "Tây Hồ", en: "Tay Ho", ja: "タイホー", ko: "떠이호", zh: "西湖" },
@@ -141,6 +179,41 @@ const stripVietnameseDiacritics = (value: string) =>
     .replace(/Đ/g, 'D')
     .replace(/đ/g, 'd');
 
+const vietnamLocationLatinName = (value: string) =>
+  vietnamLocationLatinNames[normalizeLabelKey(value)] ??
+  stripVietnameseDiacritics(value);
+
+const administrativeLocationPrefix = [
+  { pattern: /^tỉnh\s+/i, en: "Province", ja: "県", ko: "주", zh: "省" },
+  { pattern: /^thành phố\s+/i, en: "City", ja: "市", ko: "시", zh: "市" },
+  { pattern: /^quận\s+/i, en: "District", ja: "区", ko: "구", zh: "郡" },
+  { pattern: /^huyện\s+/i, en: "District", ja: "郡", ko: "군", zh: "县" },
+  { pattern: /^thị xã\s+/i, en: "Town", ja: "市", ko: "시", zh: "市" },
+  { pattern: /^thị trấn\s+/i, en: "Township", ja: "町", ko: "읍", zh: "镇" },
+  { pattern: /^phường\s+/i, en: "Ward", ja: "区", ko: "구", zh: "坊" },
+  { pattern: /^xã\s+/i, en: "Commune", ja: "村", ko: "면", zh: "乡" },
+  { pattern: /^ấp\s+/i, en: "Hamlet", ja: "集落", ko: "마을", zh: "邑" },
+] as const;
+
+const translateVietnamAdministrativeLabel = (
+  value: string,
+  language: LanguageCode,
+) => {
+  if (language === "vi") return value;
+
+  const prefix = administrativeLocationPrefix.find(({ pattern }) =>
+    pattern.test(value.trim()),
+  );
+
+  if (!prefix) return vietnamLocationLatinName(value);
+
+  const baseName = vietnamLocationLatinName(
+    value.replace(prefix.pattern, "").trim(),
+  );
+  if (language === "en") return `${baseName} ${prefix.en}`;
+  return `${baseName}${prefix[language]}`;
+};
+
 /**
  * Admin ward options come from provinces.open-api.vn and therefore include
  * wards that are not present in the nightlife area seed. Keep this fallback
@@ -169,12 +242,15 @@ export const getFilterLanguageLabel = (languageCode: string, language: LanguageC
   languageLabels[languageCode]?.[language] ?? languageCode.toUpperCase();
 
 export const getFilterCityLabel = (cityCode: string, language: LanguageCode) =>
-  cityLabels[cityCode]?.[language] ?? cityCode;
+  cityLabels[cityCode]?.[language] ??
+  (vietnamCityNames[cityCode]
+    ? translateVietnamAdministrativeLabel(vietnamCityNames[cityCode], language)
+    : cityCode);
 
 export const getFilterAreaLabel = (areaName: string, language: LanguageCode) =>
   areaLabelAliases[normalizeLabelKey(areaName)]?.[language] ??
   translateDynamicWardLabel(areaName, language) ??
-  areaName;
+  translateVietnamAdministrativeLabel(areaName, language);
 
 const generalAreaValues = new Set([
   "",

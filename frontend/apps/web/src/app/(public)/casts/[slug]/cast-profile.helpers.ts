@@ -1,11 +1,8 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
+import { getFilterAreaLabel, getFilterCityLabel } from "@/lib/i18n/filter-taxonomy";
+import type { LanguageCode } from "@/lib/i18n/locales";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
-
-export const cityLabels: Record<string, string> = {
-  hn: "Hà Nội",
-  hcm: "TP.HCM",
-};
 
 export const languageLabels: Record<string, string> = {
   vi: "Tiếng Việt",
@@ -210,7 +207,7 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
   };
 }
 
-export function buildCastArea(profile: CastProfile) {
+export function buildCastArea(profile: CastProfile, language: LanguageCode = "vi") {
   const isGenVal = (v?: string | null) => {
     if (!v) return true;
     const n = v.trim().toLowerCase();
@@ -243,9 +240,13 @@ export function buildCastArea(profile: CastProfile) {
     : !isGenVal(profile.store.district)
     ? profile.store.district
     : null;
-  const city = cityLabels[profile.store.cityCode ?? ""] ?? profile.store.city;
+  const city = profile.store.cityCode
+    ? getFilterCityLabel(profile.store.cityCode, language)
+    : profile.store.city
+      ? getFilterAreaLabel(profile.store.city, language)
+      : "";
 
-  return [rawWard, city].filter(Boolean).join(" · ");
+  return [rawWard ? getFilterAreaLabel(rawWard, language) : "", city].filter(Boolean).join(" · ");
 }
 
 export function buildBookingHref(profile: CastProfile, area: string) {

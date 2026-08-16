@@ -20,6 +20,18 @@ describe("homepage locale labels", () => {
     expect(getFilterAreaLabel("Sơn Trà", "ja")).toBe("ソンチャ");
   });
 
+  it("localizes Vietnam-wide administrative names with a safe Latin fallback", () => {
+    expect(getFilterCityLabel("nghean", "en")).toBe("Nghe An");
+    expect(getFilterCityLabel("nghean", "ja")).toBe("Nghe An");
+    expect(getFilterAreaLabel("Quận Ngô Quyền", "en")).toBe(
+      "Ngo Quyen District",
+    );
+    expect(getFilterAreaLabel("Phường Dịch Vọng Hậu", "ja")).toBe(
+      "Dich Vong Hau区",
+    );
+    expect(getFilterAreaLabel("Bến Nghé", "zh")).toBe("Ben Nghe");
+  });
+
   it("localizes category labels without a network lookup", () => {
     expect(getFilterCategoryLabel("RESTAURANT", "ja")).toBe("レストラン");
     expect(getFilterCategoryLabel("MASSAGE_SPA", "ja")).toBe("マッサージ");

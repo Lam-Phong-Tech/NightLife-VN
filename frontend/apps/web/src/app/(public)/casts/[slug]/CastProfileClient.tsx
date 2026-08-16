@@ -142,9 +142,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const videoGallery = allMedia.filter((media) => media.type === "VIDEO");
   const gallery = photoGallery.length ? photoGallery : placeholderGallery;
   const shouldRenderPhotoGallery = photoGallery.length > 0 || videoGallery.length === 0;
-  const area = buildCastArea(profile);
+  const rawArea = buildCastArea(profile);
+  const area = buildCastArea(profile, activeLanguage);
   const storeHref = `/stores/${profile.store.slug}`;
-  const bookingHref = buildBookingHref(profile, area);
+  const bookingHref = buildBookingHref(profile, rawArea);
   const copy = getCastProfileCopy(activeLanguage);
   const languageText = profile.languages
     .map((language) => localizeCastText(labelLanguage(language), activeLanguage))
