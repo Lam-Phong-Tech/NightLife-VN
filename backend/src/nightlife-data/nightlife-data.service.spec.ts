@@ -7924,6 +7924,89 @@ describe('NightlifeDataService', () => {
     logSpy.mockRestore();
   });
 
+  it('completes requested restaurant and massage bookings 10 days after their scheduled time', async () => {
+    const now = new Date('2026-03-18T01:00:00.000Z');
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        id: 'booking-restaurant-stale-1',
+        bookingCode: 'BK-REST10',
+        tourBookingId: null,
+        storeId: 'store-restaurant-1',
+        castId: null,
+        status: 'REQUESTED',
+        scheduledAt: new Date('2026-03-08T01:00:00.000Z'),
+        partySize: 3,
+        subtotalVnd: 0,
+        discountVnd: 0,
+        totalVnd: 0,
+        discountSnapshot: null,
+        note: null,
+        cancelledAt: null,
+        createdAt: new Date('2026-03-01T01:00:00.000Z'),
+        store: {
+          id: 'store-restaurant-1',
+          name: 'Inzan',
+          slug: 'inzan',
+          category: 'RESTAURANT',
+          address: null,
+          openingHours: null,
+          bookingCancelCutoffMinutes: 60,
+          media: [],
+        },
+        cast: null,
+        user: null,
+        guest: null,
+        coupon: null,
+        couponIssue: null,
+        qr: null,
+      },
+    ] as never);
+    prisma.booking.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      service.completeStaleServiceOnlyBookingsEveryFiveMinutes(now),
+    ).resolves.toEqual({ count: 1 });
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'REQUESTED',
+          tourBookingId: null,
+          scheduledAt: { lte: new Date('2026-03-08T01:00:00.000Z') },
+          store: {
+            category: { in: ['MASSAGE_SPA', 'RESTAURANT'] },
+          },
+        }),
+      }),
+    );
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-restaurant-stale-1',
+        status: 'REQUESTED',
+        deletedAt: null,
+        tourBookingId: null,
+      },
+      data: { status: 'COMPLETED' },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'SYSTEM',
+        targetId: 'booking-restaurant-stale-1',
+        metadata: expect.objectContaining({
+          previousStatus: 'REQUESTED',
+          nextStatus: 'COMPLETED',
+          scheduledAt: '2026-03-08T01:00:00.000Z',
+          reason: 'SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_EXPIRED',
+        }),
+      }),
+    });
+    expect(logSpy).toHaveBeenCalledWith(
+      'Completed 1 massage/restaurant booking(s) after the 10-day scheduled booking deadline.',
+    );
+    logSpy.mockRestore();
+  });
+
   it('lists admin coupon issues by store, coupon, and status', async () => {
     prisma.couponIssue.findMany.mockResolvedValue([
       {

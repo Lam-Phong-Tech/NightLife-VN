@@ -153,6 +153,9 @@ import { tourDepartureSlotForInstant } from '../tour/tour-departure-schedule';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
+const SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS = 10;
+const SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_MS =
+  SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS * DAY_MS;
 const BILL_SUBMISSION_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const BILL_SUBMISSION_RATE_LIMIT = 5;
 const BILL_DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
@@ -7555,6 +7558,113 @@ export class NightlifeDataService {
     if (count > 0) {
       this.logger.log(
         `Completed ${count} checked-in booking(s) after the ${BILL_SUBMISSION_DEADLINE_DAYS}-day bill submission deadline.`,
+      );
+    }
+
+    return { count };
+  }
+
+  @Cron('*/5 * * * *')
+  async completeStaleServiceOnlyBookingsEveryFiveMinutes(now = new Date()) {
+    const cutoff = new Date(
+      now.getTime() - SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_MS,
+    );
+    const candidates = await this.prisma.booking.findMany({
+      where: {
+        status: 'REQUESTED',
+        deletedAt: null,
+        tourBookingId: null,
+        scheduledAt: { lte: cutoff },
+        store: {
+          category: { in: ['MASSAGE_SPA', 'RESTAURANT'] },
+        },
+      },
+      select: this.bookingNotificationSelect(),
+    });
+
+    let count = 0;
+    for (const booking of candidates) {
+      if (
+        !isServiceOnlyBookingCategory(booking.store?.category) ||
+        booking.scheduledAt.getTime() > cutoff.getTime()
+      ) {
+        continue;
+      }
+
+      const completed = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: 'REQUESTED',
+            deletedAt: null,
+            tourBookingId: null,
+          },
+          data: { status: 'COMPLETED' },
+        });
+        if (updated.count !== 1) {
+          return false;
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorType: 'SYSTEM',
+            actorRole: 'SYSTEM',
+            module: 'Booking',
+            action: 'BOOKING_STATUS_CHANGED',
+            targetType: 'Booking',
+            targetId: booking.id,
+            entityDisplayCode: this.bookingCodeFor(booking),
+            changedFields: ['status'],
+            changeSummary: `Đã tự động đổi trạng thái lịch đặt ${booking.store?.category === 'RESTAURANT' ? 'Restaurant' : 'Massage'} từ REQUESTED sang COMPLETED sau ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} ngày kể từ giờ hẹn`,
+            reason: `Service-only booking was still requested ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} days after scheduledAt`,
+            result: 'SUCCESS',
+            beforeJson: this.buildBookingCancelAuditSnapshot(booking),
+            afterJson: this.buildBookingCancelAuditSnapshot({
+              ...booking,
+              status: 'COMPLETED',
+            }),
+            metadata: this.toPrismaJson({
+              actorType: 'SYSTEM',
+              previousStatus: 'REQUESTED',
+              nextStatus: 'COMPLETED',
+              scheduledAt: booking.scheduledAt.toISOString(),
+              deadlineAt: new Date(
+                booking.scheduledAt.getTime() +
+                  SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_MS,
+              ).toISOString(),
+              completedAt: now.toISOString(),
+              reason: 'SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_EXPIRED',
+            }),
+          },
+        });
+        return true;
+      });
+
+      if (!completed) {
+        continue;
+      }
+
+      count += 1;
+      const completedBooking = { ...booking, status: 'COMPLETED' as const };
+      await this.notifyBookingCustomerStatusChange(completedBooking, {
+        actorType: 'SYSTEM',
+        reason: `Quá ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} ngày kể từ giờ hẹn mà booking chưa được xử lý`,
+      }).catch((error) => {
+        this.logger.warn(
+          `Failed to queue service booking completion notification for booking ${booking.id}: ${this.errorMessage(error)}`,
+        );
+      });
+      if (completedBooking.user?.id) {
+        this.socketGateway?.notifyBookingStatusUpdate(
+          completedBooking.user.id,
+          completedBooking,
+        );
+      }
+    }
+
+    if (count > 0) {
+      this.logger.log(
+        `Completed ${count} massage/restaurant booking(s) after the ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS}-day scheduled booking deadline.`,
       );
     }
 
