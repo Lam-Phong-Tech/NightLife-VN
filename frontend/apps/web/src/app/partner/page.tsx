@@ -8214,12 +8214,10 @@ export default function PartnerPage() {
                 onChange={(code) => {
                   if (code === '__current') return;
                   const province = provinces.find((item) => String(item.code) === code);
-                  const city =
-                    code === '79'
-                      ? 'Ho Chi Minh City'
-                      : code === '1'
-                        ? 'Hanoi'
-                        : province?.name ?? '';
+                  // Persist the official Vietnamese province/city label instead
+                  // of an English legacy alias. The backend still accepts old
+                  // aliases and normalizes them for existing drafts.
+                  const city = province?.name ?? '';
                   setSelectedProvinceCode(code);
                   setSelectedWardCode('');
                   setWards([]);

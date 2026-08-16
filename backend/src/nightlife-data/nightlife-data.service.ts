@@ -19433,8 +19433,9 @@ export class NightlifeDataService {
       ...videoUrls,
       ...this.cleanStringArray(dto.mediaUrls, 12),
     ]);
-    const requestedStoreCity =
-      this.cleanPartnerListingText(dto.storeCity) ?? store.city;
+    const requestedStoreCity = this.canonicalPartnerListingCity(
+      this.cleanPartnerListingText(dto.storeCity) ?? store.city,
+    );
     const hasExplicitAddressParts =
       dto.streetAddress !== undefined ||
       dto.ward !== undefined ||
@@ -20884,6 +20885,25 @@ export class NightlifeDataService {
     }
 
     return text;
+  }
+
+  /**
+   * Partner drafts may contain old English labels (for example, "Ho Chi Minh
+   * City"). Store and review the official Vietnamese label instead so a
+   * language-only alias never appears as an address change in Admin.
+   */
+  private canonicalPartnerListingCity(value?: string | null) {
+    const text = this.cleanPartnerListingText(value);
+    if (!text) {
+      return '';
+    }
+
+    const area = resolveVietnamProvinceArea(text);
+    if (!area) {
+      return text;
+    }
+
+    return area.cityCode === 'hcm' ? 'Thành phố Hồ Chí Minh' : area.city;
   }
 
   private cleanPartnerListingStringArray(values?: string[] | null, limit = 12) {
