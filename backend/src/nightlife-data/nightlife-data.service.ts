@@ -20838,7 +20838,11 @@ export class NightlifeDataService {
           ? this.cleanPartnerListingStringArray(incomingProfile.albumImageUrls, 10)
           : legacyImageUrls.slice(1, 11);
         const mediaUrls = Array.from(
-          new Set([avatarUrl, ...albumImageUrls, ...videoUrls].filter(Boolean)),
+          new Set(
+            [avatarUrl, ...albumImageUrls, ...videoUrls].filter(
+              (url): url is string => Boolean(url),
+            ),
+          ),
         );
 
         return {

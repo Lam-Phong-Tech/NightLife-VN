@@ -123,7 +123,7 @@ export class PartnerListingCastDto {
   @ApiPropertyOptional({ example: 'https://cdn.example.com/casts/yuki-avatar.jpg' })
   @IsOptional()
   @IsUrl({ require_tld: false })
-  avatarUrl?: string;
+  avatarUrl?: string | null;
 
   @ApiPropertyOptional({ example: ['https://cdn.example.com/casts/yuki-1.jpg'] })
   @IsOptional()
