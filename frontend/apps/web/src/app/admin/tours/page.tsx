@@ -921,14 +921,14 @@ function AdminToursContent() {
                       : [''];
                     const toggleStyle = isOff
                       ? {
-                          color: '#e08a7e',
-                          background: 'rgba(224,138,126,.1)',
-                          border: '1px solid rgba(224,138,126,.25)',
-                        }
-                      : {
                           color: '#7fd3a2',
                           background: 'rgba(127,211,162,.1)',
                           border: '1px solid rgba(127,211,162,.25)',
+                        }
+                      : {
+                          color: '#e08a7e',
+                          background: 'rgba(224,138,126,.1)',
+                          border: '1px solid rgba(224,138,126,.25)',
                         };
 
                     return (
@@ -1037,7 +1037,7 @@ function AdminToursContent() {
                           onClick={() => toggleDepartureDay(day)}
                           style={{ ...toggleStyle, flex: 'none', fontSize: '10.5px', fontWeight: 700, borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' }}
                         >
-                          {isOff ? 'Nghỉ' : 'Chạy'}
+                          {isOff ? 'Chạy' : 'Nghỉ'}
                         </span>
                       </div>
                     );

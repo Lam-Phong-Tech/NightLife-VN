@@ -931,6 +931,8 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                 {tour.stops.map((stop) => {
                   const stopDescription = cleanRichText(stop.store.description);
                   const couponName = cleanRichText(stop.store.applicableCoupon?.name);
+                  const stopWard =
+                    stop.store.area?.ward || formatCity(tour);
 
                   return (
                     <article key={stop.id} className={styles.stopCard}>
@@ -944,7 +946,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                       <div className={styles.stopCopy}>
                         <div className={styles.stopMeta}>
                           <span>{t(categoryLabels[stop.store.category] ?? stop.store.category)}</span>
-                          <span>{stop.store.area?.name || stop.store.district || formatCity(tour)}</span>
+                          <span>{t(stopWard)}</span>
                         </div>
                         <h3 className={`${styles.stopTitle} notranslate`} translate="no" data-no-translate="true">{stop.store.name}</h3>
                         {stopDescription ? <p className={styles.stopText}>{stopDescription}</p> : null}
