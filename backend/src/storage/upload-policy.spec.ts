@@ -16,6 +16,12 @@ describe('appearance logo upload policy', () => {
       '5MB',
     );
   });
+
+  it('allows JPG uploads for appearance logos', () => {
+    expect(getUploadPolicy('APPEARANCE_LOGO')?.allowedMimeTypes).toContain(
+      'image/jpeg',
+    );
+  });
 });
 
 describe('video and appearance icon upload policies', () => {
@@ -36,6 +42,12 @@ describe('video and appearance icon upload policies', () => {
     );
     expect(humanReadableUploadSize(MAX_APPEARANCE_ICON_SIZE_BYTES)).toBe(
       '512KB',
+    );
+  });
+
+  it('allows JPG uploads for appearance icons', () => {
+    expect(getUploadPolicy('APPEARANCE_ICON')?.allowedMimeTypes).toContain(
+      'image/jpeg',
     );
   });
 });

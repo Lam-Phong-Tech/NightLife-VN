@@ -75,11 +75,11 @@ const uploadPolicies: Record<string, UploadPolicy> = {
     maxSizeBytes: MAX_DOCUMENT_UPLOAD_SIZE_BYTES,
   },
   APPEARANCE_ICON: {
-    allowedMimeTypes: ['image/png', 'image/svg+xml'],
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/svg+xml'],
     maxSizeBytes: MAX_APPEARANCE_ICON_SIZE_BYTES,
   },
   APPEARANCE_LOGO: {
-    allowedMimeTypes: ['image/png', 'image/svg+xml'],
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/svg+xml'],
     maxSizeBytes: MAX_APPEARANCE_LOGO_SIZE_BYTES,
   },
 };

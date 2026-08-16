@@ -126,10 +126,16 @@ describe('other admin media validation', () => {
     ).toContain('JPG, JPEG hoặc PNG');
   });
 
-  it('accepts PNG and SVG for appearance with purpose-specific limits', () => {
+  it('accepts JPG, PNG and SVG for appearance with purpose-specific limits', () => {
     expect(
       getAppearanceImageValidationError(
         mediaFile('icon.svg', 'image/svg+xml'),
+        'icon',
+      ),
+    ).toBeNull();
+    expect(
+      getAppearanceImageValidationError(
+        mediaFile('favicon.jpg', 'image/jpeg'),
         'icon',
       ),
     ).toBeNull();

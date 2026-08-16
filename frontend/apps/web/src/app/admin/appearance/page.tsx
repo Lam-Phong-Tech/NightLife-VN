@@ -686,7 +686,7 @@ export default function AppearancePage() {
                 style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '20px', textAlign: 'center', cursor: uploadingIcon ? 'wait' : 'pointer', opacity: uploadingIcon ? .65 : 1 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingIcon ? 'Đang tải icon...' : 'Kéo thả file .svg / .png vào đây'}</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingIcon ? 'Đang tải icon...' : 'Kéo thả file .svg / .png / .jpg vào đây'}</div>
                 <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>hoặc bấm để chọn từ máy</div>
               </div>
             </div>
@@ -763,8 +763,8 @@ export default function AppearancePage() {
                 style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '22px', textAlign: 'center', cursor: uploadingLogo ? 'wait' : 'pointer', opacity: uploadingLogo ? .65 : 1 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingLogo ? 'Đang tải logo...' : 'Kéo thả file .svg / .png vào đây'}</div>
-                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · &lt; 5 MB</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingLogo ? 'Đang tải logo...' : 'Kéo thả file .svg / .png / .jpg vào đây'}</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · JPG/JPEG có nền đục · &lt; 5 MB</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
@@ -855,7 +855,7 @@ export default function AppearancePage() {
                 style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '24px 18px', textAlign: 'center', cursor: uploadingFavicon ? 'wait' : 'pointer', opacity: uploadingFavicon ? .65 : 1 }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '7px' }}>{uploadingFavicon ? 'Đang tải favicon...' : 'Kéo thả file .svg / .png vào đây'}</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '7px' }}>{uploadingFavicon ? 'Đang tải favicon...' : 'Kéo thả file .svg / .png / .jpg vào đây'}</div>
                 <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '4px' }}>hoặc bấm để chọn từ máy · tối đa 512 KB</div>
               </div>
             </div>
@@ -863,7 +863,7 @@ export default function AppearancePage() {
             <div style={{ display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '11px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
               <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.55 }}>
-                <b style={{ color: '#f0dda8' }}>Chuẩn favicon:</b> dùng ảnh vuông 1:1, ít chi tiết và có vùng an toàn quanh biểu tượng. Ưu tiên SVG có viewBox vuông; nếu dùng PNG, nên xuất tối thiểu 64×64px để nét trên màn hình mật độ cao. Trình duyệt thường hiển thị favicon ở 16–32px.
+                <b style={{ color: '#f0dda8' }}>Chuẩn favicon:</b> dùng ảnh vuông 1:1, ít chi tiết và có vùng an toàn quanh biểu tượng. Ưu tiên SVG có viewBox vuông; nếu dùng PNG hoặc JPG/JPEG, nên xuất tối thiểu 64×64px để nét trên màn hình mật độ cao. Trình duyệt thường hiển thị favicon ở 16–32px.
               </span>
             </div>
 
@@ -984,9 +984,9 @@ export default function AppearancePage() {
               <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#e3c27e' }}>Chuẩn kỹ thuật khi thay logo</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>SVG</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Định dạng:</b> SVG (vector) ưu tiên — sắc nét mọi màn hình, nhẹ. Fallback PNG-24 nền trong suốt. Tránh JPG (dính nền trắng).</span></div>
+              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>SVG</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Định dạng:</b> SVG (vector) ưu tiên — sắc nét mọi màn hình, nhẹ. PNG-24 nền trong suốt là lựa chọn thay thế tốt; JPG/JPEG dùng được nhưng sẽ có nền đục.</span></div>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>PX</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Kích thước:</b> PNG xuất @2x ≥ 480×120px (logo ngang ~4:1). Hiển thị thật: cao 28px desktop · 22px mobile — tránh chi tiết quá nhỏ.</span></div>
-              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>FAV</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Favicon:</b> tải riêng bản vuông SVG hoặc PNG; nên kiểm tra ở 16px và 32px trước khi áp dụng.</span></div>
+              <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>FAV</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Favicon:</b> tải riêng bản vuông SVG, PNG hoặc JPG/JPEG; nên kiểm tra ở 16px và 32px trước khi áp dụng.</span></div>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>MB</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Dung lượng:</b> &lt; 5 MB (SVG thường &lt; 20 KB).</span></div>
               <div style={{ display: 'flex', gap: '9px' }}><span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, color: '#241a0a', background: '#d4b26a', borderRadius: '5px', padding: '2px 6px', height: 'fit-content', marginTop: '1px' }}>HEX</span><span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}><b style={{ color: '#f0dda8' }}>Màu:</b> dùng bản sáng (trắng / vàng #D4B26A) vì nền hệ thống tối #0C0C0F.</span></div>
             </div>

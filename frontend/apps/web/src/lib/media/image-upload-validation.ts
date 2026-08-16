@@ -11,7 +11,7 @@ export const ADMIN_VIDEO_ACCEPT = 'video/mp4,video/webm,.mp4,.webm';
 export const CONTENT_IMAGE_ACCEPT =
   'image/jpeg,image/png,.jpg,.jpeg,.png';
 export const APPEARANCE_IMAGE_ACCEPT =
-  'image/png,image/svg+xml,.png,.svg';
+  'image/jpeg,image/png,image/svg+xml,.jpg,.jpeg,.png,.svg';
 
 type FileFormatPolicy = {
   mimeTypes: ReadonlySet<string>;
@@ -50,8 +50,9 @@ const videoPolicy: FileFormatPolicy = {
 };
 
 const appearancePolicy: FileFormatPolicy = {
-  mimeTypes: new Set(['image/png', 'image/svg+xml']),
+  mimeTypes: new Set(['image/jpeg', 'image/png', 'image/svg+xml']),
   extensionsByMimeType: {
+    'image/jpeg': ['jpg', 'jpeg'],
     'image/png': ['png'],
     'image/svg+xml': ['svg'],
   },
@@ -148,7 +149,7 @@ export const getAppearanceImageValidationError = (
   const formatError = getFormatValidationError(
     file,
     appearancePolicy,
-    'PNG hoặc SVG',
+    'JPG, JPEG, PNG hoặc SVG',
   );
   if (formatError) return formatError;
   return kind === 'icon'
