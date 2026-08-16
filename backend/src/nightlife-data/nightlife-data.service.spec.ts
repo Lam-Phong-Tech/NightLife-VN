@@ -3626,34 +3626,45 @@ describe('NightlifeDataService', () => {
 
   it('creates a guest booking with an optional coupon campaign link', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
-    // This case verifies a regular coupon. Reset queued campaign mock values from
-    // preceding cases so the supplied coupon ID is not interpreted as a campaign.
-    prisma.campaign.findFirst.mockReset();
-    prisma.campaign.findFirst.mockResolvedValue(null);
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
       slug: 'neon-club',
     });
-    prisma.coupon.findFirst.mockResolvedValue({
-      id: 'coupon-1',
-      code: 'WELCOME',
-      name: 'Welcome',
+    prisma.campaign.findFirst.mockResolvedValue({
+      id: 'campaign-1',
+      name: 'Welcome campaign',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      targetStoreId: 'store-1',
+      startsAt: new Date('2026-06-01T00:00:00.000Z'),
+      endsAt: new Date('2026-07-31T00:00:00.000Z'),
+      status: 'ACTIVE',
+    });
+    prisma.coupon.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ code: 'CAMPAIGN-campaign-1' })
+      .mockResolvedValueOnce({ id: 'coupon-campaign-1' })
+      .mockResolvedValue({
+      id: 'coupon-campaign-1',
+      code: 'CAMPAIGN-campaign-1',
+      name: 'Welcome campaign',
       storeId: 'store-1',
       discountType: 'PERCENT',
       discountValue: 5,
       maxDiscountVnd: null,
       minSpendVnd: null,
-      endsAt: null,
+      endsAt: new Date('2026-07-31T00:00:00.000Z'),
       usageLimit: null,
       usedCount: 0,
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
     });
+    prisma.coupon.create.mockResolvedValue({ id: 'coupon-campaign-1' });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.couponIssue.create.mockResolvedValue({
       id: 'issue-1',
       code: 'GUEST-code',
-      couponId: 'coupon-1',
+      couponId: 'coupon-campaign-1',
       status: 'ISSUED',
       metadata: {},
       coupon: { storeId: 'store-1' },
@@ -3665,20 +3676,23 @@ describe('NightlifeDataService', () => {
 
     await service.createGuestBooking({
       storeSlug: 'neon-club',
-      couponId: 'coupon-1',
+      couponId: 'campaign-1',
       displayName: 'Guest Name',
       phone: '+84901234567',
       scheduledAt: '2026-06-30T14:00:00.000Z',
       partySize: 4,
     });
 
-    expect(prisma.coupon.findFirst).toHaveBeenCalledWith(
+    expect(prisma.campaign.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          id: 'coupon-1',
+        where: expect.objectContaining({ id: 'campaign-1', status: 'ACTIVE' }),
+      }),
+    );
+    expect(prisma.coupon.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
           storeId: 'store-1',
-          status: 'ACTIVE',
-          deletedAt: null,
+          code: 'CAMPAIGN-campaign-1',
         }),
       }),
     );
@@ -3686,10 +3700,10 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           storeId: 'store-1',
-          couponId: 'coupon-1',
+          couponId: 'coupon-campaign-1',
           couponIssueId: 'issue-1',
           discountSnapshot: {
-            couponId: 'coupon-1',
+            couponId: 'coupon-campaign-1',
             couponIssueId: 'issue-1',
           },
         }),
