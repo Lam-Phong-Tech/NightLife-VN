@@ -5091,6 +5091,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           width: 52px;
           height: 52px;
           top: 50%;
+          z-index: 1;
           transform: translateY(-50%);
           transition: none;
           animation: none;
