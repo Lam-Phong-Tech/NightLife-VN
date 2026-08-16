@@ -429,6 +429,69 @@ const tourUiCopy = {
   },
 } satisfies Record<string, Record<LanguageCode, string>>;
 
+const tourConfirmationCopy: Record<
+  LanguageCode,
+  {
+    title: string;
+    nearStartTitle: string;
+    description: (targetLabel: string, bookingTime: string, bookingDate: string) => string;
+    nearStartDescription: (bookingTime: string, bookingDate: string) => string;
+    confirmLabel: string;
+    nearStartConfirmLabel: string;
+  }
+> = {
+  vi: {
+    title: "Xác nhận đặt tour",
+    nearStartTitle: "Xác nhận đặt tour sát giờ",
+    description: (targetLabel, bookingTime, bookingDate) =>
+      `Bạn có chắc muốn gửi yêu cầu đặt tour ${targetLabel} lúc ${bookingTime} ngày ${bookingDate}?`,
+    nearStartDescription: (bookingTime, bookingDate) =>
+      `Lịch tour ${bookingTime} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn đặt giờ này không?`,
+    confirmLabel: "Xác nhận đặt tour",
+    nearStartConfirmLabel: "Vẫn đặt tour",
+  },
+  en: {
+    title: "Confirm tour booking",
+    nearStartTitle: "Confirm last-minute tour booking",
+    description: (targetLabel, bookingTime, bookingDate) =>
+      `Are you sure you want to send a booking request for ${targetLabel} at ${bookingTime} on ${bookingDate}?`,
+    nearStartDescription: (bookingTime, bookingDate) =>
+      `The tour at ${bookingTime} on ${bookingDate} is very close to its start time. Do you still want to book it?`,
+    confirmLabel: "Confirm tour booking",
+    nearStartConfirmLabel: "Book anyway",
+  },
+  ja: {
+    title: "ツアー予約を確認する",
+    nearStartTitle: "直前のツアー予約を確認する",
+    description: (targetLabel, bookingTime, bookingDate) =>
+      `${bookingDate}の${bookingTime}に${targetLabel}の予約リクエストを送信してもよろしいですか？`,
+    nearStartDescription: (bookingTime, bookingDate) =>
+      `${bookingDate}の${bookingTime}のツアーは開始時刻が近づいています。この時間で予約してもよろしいですか？`,
+    confirmLabel: "ツアー予約を確認する",
+    nearStartConfirmLabel: "このまま予約する",
+  },
+  ko: {
+    title: "투어 예약 확인",
+    nearStartTitle: "임박한 투어 예약 확인",
+    description: (targetLabel, bookingTime, bookingDate) =>
+      `${bookingDate} ${bookingTime}에 ${targetLabel} 예약 요청을 보내시겠습니까?`,
+    nearStartDescription: (bookingTime, bookingDate) =>
+      `${bookingDate} ${bookingTime} 투어의 시작 시간이 얼마 남지 않았습니다. 이 시간으로 예약하시겠습니까?`,
+    confirmLabel: "투어 예약 확인",
+    nearStartConfirmLabel: "그래도 예약하기",
+  },
+  zh: {
+    title: "确认预订行程",
+    nearStartTitle: "确认临近出发时间的行程预订",
+    description: (targetLabel, bookingTime, bookingDate) =>
+      `确定要在${bookingDate}${bookingTime}提交${targetLabel}的预订请求吗？`,
+    nearStartDescription: (bookingTime, bookingDate) =>
+      `${bookingDate}${bookingTime}的行程即将开始。确定要预订这个时间吗？`,
+    confirmLabel: "确认预订行程",
+    nearStartConfirmLabel: "仍然预订",
+  },
+};
+
 type TourUiCopyKey = keyof typeof tourUiCopy;
 
 const tourUiText = (key: TourUiCopyKey, language: LanguageCode) => tourUiCopy[key][language] ?? tourUiCopy[key].vi;
@@ -790,13 +853,15 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
     };
 
     const nearStart = isNearStartTime(scheduledAt);
+    const confirmationCopy = tourConfirmationCopy[activeLanguage];
 
     userFeedback.confirmAction({
-      title: nearStart ? "Xác nhận đặt tour sát giờ" : "Xác nhận đặt tour",
+      title: nearStart ? confirmationCopy.nearStartTitle : confirmationCopy.title,
       description: nearStart
-        ? `Lịch tour ${bookingTime} ngày ${bookingDate} đang rất gần giờ bắt đầu. Bạn có chắc muốn đặt giờ này không?`
-        : `Bạn có chắc muốn gửi yêu cầu đặt tour ${targetLabel} lúc ${bookingTime} ngày ${bookingDate}?`,
-      confirmLabel: nearStart ? "Vẫn đặt tour" : "Xác nhận đặt tour",
+        ? confirmationCopy.nearStartDescription(bookingTime, bookingDate)
+        : confirmationCopy.description(targetLabel ?? "", bookingTime, bookingDate),
+      confirmLabel: nearStart ? confirmationCopy.nearStartConfirmLabel : confirmationCopy.confirmLabel,
+      localized: true,
       tone: nearStart ? "warning" : "gold",
       onConfirm: () => createTourBooking(payload, normalizedEmail),
     });

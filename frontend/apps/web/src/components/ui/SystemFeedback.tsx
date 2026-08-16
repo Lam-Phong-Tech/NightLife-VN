@@ -57,6 +57,7 @@ type ModalInput = {
   description: ReactNode;
   primaryLabel?: string;
   secondaryLabel?: string;
+  isLocalized?: boolean;
   onPrimary?: () => void;
   onSecondary?: () => void;
   destructive?: boolean;
@@ -350,7 +351,7 @@ export function SystemFeedbackProvider({ children }: { children: ReactNode }) {
           modal={modal}
           onClose={closeModal}
           language={activeLanguage}
-          shouldTranslate={shouldTranslateFeedback}
+          shouldTranslate={shouldTranslateFeedback && !modal.isLocalized}
         />
       ) : null}
       {sheet ? (

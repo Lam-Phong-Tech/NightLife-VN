@@ -11,6 +11,7 @@ type ConfirmUserActionOptions = {
   description: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  localized?: boolean;
   tone?: UserActionTone;
   destructive?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -59,6 +60,7 @@ export const useUserActionFeedback = () => {
         description,
         confirmLabel = confirmActionDefaults[activeLanguage].confirm,
         cancelLabel = confirmActionDefaults[activeLanguage].cancel,
+        localized = false,
         tone = "gold",
         destructive = false,
         onConfirm,
@@ -70,6 +72,7 @@ export const useUserActionFeedback = () => {
         description,
         primaryLabel: confirmLabel,
         secondaryLabel: cancelLabel,
+        isLocalized: localized,
         destructive,
         onPrimary: () => {
           void onConfirm();
