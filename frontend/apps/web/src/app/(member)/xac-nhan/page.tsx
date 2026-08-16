@@ -759,6 +759,8 @@ export default function Page() {
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) || isPartnerApproved : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
+  const bookedStoreName = booking?.store?.name ?? title;
+  const bookedCastName = booking?.cast?.publicAlias ?? booking?.cast?.stageName ?? null;
   const isTourBooking = Boolean(booking?.tour);
   const bookingStoreCategory = booking?.store?.category?.trim() || resolvedStoreCategory;
   const isCodeOnlyBooking = Boolean(
@@ -1015,7 +1017,13 @@ export default function Page() {
                 </>
               ) : (
                 <>
-                  <SummaryRow label={translateText("Quán", activeLanguage)} value={<span className="notranslate" translate="no" data-no-translate="true">{title}</span>} />
+                  <SummaryRow label={translateText("Quán", activeLanguage)} value={<span className="notranslate" translate="no" data-no-translate="true">{bookedStoreName}</span>} />
+                  {bookedCastName ? (
+                    <SummaryRow
+                      label="Cast"
+                      value={<span className="notranslate" translate="no" data-no-translate="true">{bookedCastName}</span>}
+                    />
+                  ) : null}
                   {bookedStoreAddress ? (
                     <SummaryRow
                       label={translateText("Địa chỉ", activeLanguage)}

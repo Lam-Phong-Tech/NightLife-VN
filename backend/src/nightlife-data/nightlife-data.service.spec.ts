@@ -3358,7 +3358,12 @@ describe('NightlifeDataService', () => {
         discountPercent: 5,
       },
       storeId: 'store-1',
-      store: { id: 'store-1', name: 'Golden Voice KTV', slug: 'golden-voice' },
+      store: {
+        id: 'store-1',
+        name: 'Golden Voice KTV',
+        slug: 'golden-voice',
+        address: '12 Nguyễn Huệ, Quận 1, Thành phố Hồ Chí Minh',
+      },
       cast: null,
       user: null,
       guest: {
@@ -3383,7 +3388,9 @@ describe('NightlifeDataService', () => {
         templateKey: 'customer.booking.qr_email.v1',
         payload: expect.objectContaining({
           amountLabel: 'Free reservation - no deposit required',
-          discountLabel: 'GUEST5 · 5%',
+          discountLabel: 'GUEST5',
+          discountValueLabel: '5%',
+          storeAddress: '12 Nguyễn Huệ, Quận 1, Thành phố Hồ Chí Minh',
         }),
       }),
     });
@@ -3392,7 +3399,9 @@ describe('NightlifeDataService', () => {
         to: 'guest@example.com',
         bookingId: 'booking-guest-discount',
         amountLabel: 'Free reservation - no deposit required',
-        discountLabel: 'GUEST5 · 5%',
+        discountLabel: 'GUEST5',
+        discountValueLabel: '5%',
+        storeAddress: '12 Nguyễn Huệ, Quận 1, Thành phố Hồ Chí Minh',
       }),
     );
   });

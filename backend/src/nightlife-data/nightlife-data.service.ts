@@ -287,6 +287,7 @@ type BookingNotificationRecord = {
     id: string;
     name?: string | null;
     slug?: string | null;
+    address?: string | null;
     bookingCancelCutoffMinutes?: number | null;
     openingHours?: Prisma.JsonValue | null;
   } | null;
@@ -14847,7 +14848,9 @@ export class NightlifeDataService {
       : '';
     const locale = this.normalizeBookingLocale(booking.locale);
     const amountLabel = this.bookingAmountLabel(booking, locale);
-    const discountLabel = this.bookingDiscountEmailLabel(booking);
+    const discountDetails = this.bookingDiscountEmailDetails(booking);
+    const discountLabel = discountDetails.code;
+    const discountValueLabel = discountDetails.valueLabel;
     const payload = {
       bookingId: booking.id,
       bookingCode,
@@ -14856,6 +14859,7 @@ export class NightlifeDataService {
       scheduledAt: this.toAuditIso(booking.scheduledAt),
       partySize: booking.partySize ?? null,
       storeName: booking.store?.name ?? null,
+      storeAddress: booking.store?.address ?? null,
       storeSlug: booking.store?.slug ?? null,
       castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
       guestName:
@@ -14866,6 +14870,7 @@ export class NightlifeDataService {
           : null,
       amountLabel,
       discountLabel,
+      discountValueLabel,
       couponCode: booking.coupon?.code ?? null,
       couponIssueCode: booking.couponIssue?.code ?? null,
       qrPayload,
@@ -14909,6 +14914,7 @@ export class NightlifeDataService {
         status: booking.status,
         locale,
         storeName: booking.store?.name,
+        storeAddress: booking.store?.address,
         storeSlug: booking.store?.slug,
         castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
         scheduledAt: booking.scheduledAt,
@@ -14919,6 +14925,7 @@ export class NightlifeDataService {
             : null,
         amountLabel,
         discountLabel,
+        discountValueLabel,
         note: booking.note,
         qrPayload,
         qrImageUrl,
@@ -14984,7 +14991,9 @@ export class NightlifeDataService {
       tourBooking.tour?.title || tourBooking.titleSnapshot || 'Nightlife Tour';
     const storeName = `Tour: ${tourTitle}`;
     const amountLabel = this.bookingAmountLabel(tourBooking, locale);
-    const discountLabel = this.bookingDiscountEmailLabel(tourBooking);
+    const discountDetails = this.bookingDiscountEmailDetails(tourBooking);
+    const discountLabel = discountDetails.code;
+    const discountValueLabel = discountDetails.valueLabel;
     const guestName =
       tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
@@ -15001,6 +15010,7 @@ export class NightlifeDataService {
       guestName,
       amountLabel,
       discountLabel,
+      discountValueLabel,
       qrPayload,
       qrImageUrl,
       isTourBooking: true,
@@ -15045,6 +15055,7 @@ export class NightlifeDataService {
         partySize: tourBooking.partySize,
         amountLabel,
         discountLabel,
+        discountValueLabel,
         note: tourBooking.note,
         qrPayload,
         qrImageUrl,
@@ -15128,7 +15139,7 @@ export class NightlifeDataService {
     return bookingFreeAmountLabels[locale];
   }
 
-  private bookingDiscountEmailLabel(booking: BookingNotificationRecord) {
+  private bookingDiscountEmailDetails(booking: BookingNotificationRecord) {
     const snapshot = this.asRecord(booking.discountSnapshot);
     const discountType =
       this.cleanText(this.recordString(snapshot, 'discountType')) ||
@@ -15141,7 +15152,7 @@ export class NightlifeDataService {
       booking.coupon?.discountValue;
 
     if (typeof discountValue !== 'number' || discountValue <= 0) {
-      return null;
+      return { code: null, valueLabel: null };
     }
 
     const code =
@@ -15153,7 +15164,7 @@ export class NightlifeDataService {
         ? this.formatVnd(discountValue)
         : `${discountValue}%`;
 
-    return [code, valueLabel].filter(Boolean).join(' · ');
+    return { code: code || null, valueLabel };
   }
 
   private recordString(

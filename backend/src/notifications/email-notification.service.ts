@@ -10,6 +10,7 @@ export type BookingQrEmailInput = {
   bookingCode: string;
   status: string;
   storeName?: string | null;
+  storeAddress?: string | null;
   storeSlug?: string | null;
   castName?: string | null;
   scheduledAt?: Date | string | null;
@@ -17,6 +18,7 @@ export type BookingQrEmailInput = {
   amountVnd?: number | null;
   amountLabel?: string | null;
   discountLabel?: string | null;
+  discountValueLabel?: string | null;
   note?: string | null;
   qrPayload: string;
   qrImageUrl: string;
@@ -53,11 +55,13 @@ type BookingEmailTemplate = {
   labels: {
     bookingCode: string;
     store: string;
+    storeAddress: string;
     cast: string;
     scheduledAt: string;
     partySize: string;
     amount: string;
     discount: string;
+    discountValue: string;
     paymentMethod: string;
     deliveryInfo: string;
     status: string;
@@ -96,11 +100,13 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     labels: {
       bookingCode: 'Mã đặt chỗ',
       store: 'Địa điểm',
+      storeAddress: 'Địa chỉ',
       cast: 'Cast',
       scheduledAt: 'Thời gian',
       partySize: 'Số khách',
       amount: 'Chi phí',
       discount: 'Ưu đãi',
+      discountValue: 'Mức giảm',
       paymentMethod: 'Phương thức thanh toán',
       deliveryInfo: 'Thông tin nhận mã',
       status: 'Trạng thái',
@@ -144,11 +150,13 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     labels: {
       bookingCode: 'Reservation code',
       store: 'Venue',
+      storeAddress: 'Address',
       cast: 'Cast',
       scheduledAt: 'Date and time',
       partySize: 'Guests',
       amount: 'Amount',
       discount: 'Discount',
+      discountValue: 'Discount amount',
       paymentMethod: 'Payment method',
       deliveryInfo: 'Delivery information',
       status: 'Status',
@@ -191,11 +199,13 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     labels: {
       bookingCode: '予約番号',
       store: '店舗',
+      storeAddress: '住所',
       cast: 'キャスト',
       scheduledAt: 'ご来店日時',
       partySize: '人数',
       amount: '料金',
       discount: '割引',
+      discountValue: '割引額',
       paymentMethod: 'お支払い方法',
       deliveryInfo: 'QRコードのご案内',
       status: '予約状況',
@@ -238,11 +248,13 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     labels: {
       bookingCode: '예약 코드',
       store: '장소',
+      storeAddress: '주소',
       cast: 'Cast',
       scheduledAt: '방문 일시',
       partySize: '인원',
       amount: '금액',
       discount: '할인',
+      discountValue: '할인 금액',
       paymentMethod: '결제 방법',
       deliveryInfo: '수령 정보',
       status: '상태',
@@ -285,11 +297,13 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     labels: {
       bookingCode: '预约编号',
       store: '店铺',
+      storeAddress: '地址',
       cast: 'Cast',
       scheduledAt: '到店时间',
       partySize: '人数',
       amount: '费用',
       discount: '优惠',
+      discountValue: '折扣金额',
       paymentMethod: '支付方式',
       deliveryInfo: '接收信息',
       status: '预约状态',
@@ -496,6 +510,9 @@ export class EmailNotificationService {
     return [
       [template.labels.bookingCode, input.bookingCode],
       [template.labels.store, input.storeName || template.defaults.store],
+      ...(input.storeAddress
+        ? ([[template.labels.storeAddress, input.storeAddress]] as Array<[string, string]>)
+        : []),
       ...(input.castName
         ? ([[template.labels.cast, input.castName]] as Array<[string, string]>)
         : []),
@@ -516,6 +533,11 @@ export class EmailNotificationService {
       [template.labels.amount, this.formatBookingAmount(input, template)],
       ...(input.discountLabel
         ? ([[template.labels.discount, input.discountLabel]] as Array<
+            [string, string]
+          >)
+        : []),
+      ...(input.discountValueLabel
+        ? ([[template.labels.discountValue, input.discountValueLabel]] as Array<
             [string, string]
           >)
         : []),
