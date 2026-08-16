@@ -4,7 +4,7 @@ export function CastProfileStyles() {
       .cast-page {
         --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
         --cast-mobile-cta-height: 76px;
-        --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
+        --cast-mobile-fixed-space: var(--cast-mobile-cta-height);
         --cast-hero-control-bg: transparent;
         --cast-hero-control-bg-strong: transparent;
         --cast-hero-control-border: transparent;
@@ -35,7 +35,7 @@ export function CastProfileStyles() {
       .nl-page-content:has(.cast-page) {
         --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
         --cast-mobile-cta-height: 76px;
-        --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
+        --cast-mobile-fixed-space: var(--cast-mobile-cta-height);
         padding-bottom: 0 !important;
         scroll-padding-bottom: 0 !important;
       }
