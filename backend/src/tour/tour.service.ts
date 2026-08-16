@@ -370,7 +370,6 @@ export class TourService {
                       deletedAt: null,
                       OR: [
                         { name: { contains: search, mode: 'insensitive' } },
-                        { category: { contains: search, mode: 'insensitive' } },
                         { city: { contains: search, mode: 'insensitive' } },
                         { district: { contains: search, mode: 'insensitive' } },
                         {
