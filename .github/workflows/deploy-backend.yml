@@ -93,8 +93,8 @@ jobs:
           KNOWN_HOSTS="$HOME/.ssh/known_hosts"
           ssh-keyscan -T 30 -p "$SSH_PORT" -H "$SSH_HOST" >> "$KNOWN_HOSTS" || echo "::warning::ssh-keyscan khong lay duoc host key, tiep tuc voi StrictHostKeyChecking=accept-new."
           SSH_CMD="ssh -i $HOME/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=30 -o ServerAliveInterval=15"
-          DEPLOY_DIR="/var/www/api.demonightlight.test9.io.vn"
-          SNAPSHOT_ROOT="/var/www/releases/api.demonightlight.test9.io.vn"
+          DEPLOY_DIR="/var/www/api.vietyoru.com"
+          SNAPSHOT_ROOT="/var/www/releases/api.vietyoru.com"
           SNAPSHOT_STAMP="$(TZ=Asia/Bangkok date +%Y%m%d-%H%M%S)"
           $SSH_CMD "$USER@$SSH_HOST" "set -e; mkdir -p '$DEPLOY_DIR' '$SNAPSHOT_ROOT'; if [ -d '$DEPLOY_DIR' ] && [ -n \"\$(find '$DEPLOY_DIR' -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)\" ]; then snapshot='$SNAPSHOT_ROOT/backend-$SNAPSHOT_STAMP.tgz'; tar -czf \"\$snapshot\" --exclude='./node_modules' --exclude='./.git' -C '$DEPLOY_DIR' .; echo \"\$snapshot\" > '$SNAPSHOT_ROOT/latest-backend-snapshot.txt'; echo \"Created backend deploy snapshot: \$snapshot\"; else echo 'No previous backend deployment to snapshot.'; fi"
           rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:$DEPLOY_DIR"
@@ -109,16 +109,17 @@ jobs:
           script: |
             set -e
             DEPLOY_STAMP="$(TZ=Asia/Bangkok date +%Y%m%d-%H%M%S)"
-            BACKEND_DIR="/var/www/api.demonightlight.test9.io.vn"
-            FRONTEND_DIR="/var/www/demonightlight.test9.io.vn"
-            SNAPSHOT_ROOT="/var/www/releases/api.demonightlight.test9.io.vn"
-            BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/nightlife/demo-uat}"
+            BACKEND_DIR="/var/www/api.vietyoru.com"
+            FRONTEND_DIR="/var/www/vietyoru.com"
+            SNAPSHOT_ROOT="/var/www/releases/api.vietyoru.com"
+            BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/vietyoru}"
             BACKUP_STORAGE_PATHS="${BACKUP_STORAGE_PATHS:-uploads public/uploads}"
-            PUBLIC_FRONTEND_URL="${PUBLIC_FRONTEND_URL:-https://demonightlight.test9.io.vn}"
-            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://api.demonightlight.test9.io.vn}"
-            BACKEND_PM2_NAME="app-api.demonightlight.test9.io.vn"
-            BACKEND_PORT="3012"
-            FRONTEND_PORT="3009"
+            PUBLIC_FRONTEND_URL="${PUBLIC_FRONTEND_URL:-https://vietyoru.com}"
+            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://api.vietyoru.com}"
+            BACKEND_PM2_NAME="api.vietyoru.com"
+            FRONTEND_PM2_NAME="vietyoru.com"
+            BACKEND_PORT="3015"
+            FRONTEND_PORT="3016"
             EVIDENCE_DIR="$BACKEND_DIR/deploy-evidence"
             SMOKE_RESULTS="/tmp/nightlife-smoke-$DEPLOY_STAMP.txt"
             : > "$SMOKE_RESULTS"
@@ -387,51 +388,23 @@ jobs:
             fi
 
             command -v psql >/dev/null 2>&1 || {
-              echo "::error::psql is required to verify demo/UAT database before backup."
+              echo "::error::psql is required to verify the production database before backup."
               exit 1
             }
 
-            DATABASE_REPOINTED="false"
             DATABASE_REPOINTED_FROM="$(extract_database_name_from_url "$DATABASE_URL")"
             DATABASE_REPOINTED_TO="$DATABASE_REPOINTED_FROM"
-            DATABASE_REPOINT_BACKUP="none"
-            DATABASE_BOOTSTRAP_APPLIED="false"
-            DATABASE_BOOTSTRAP_REASON="not_needed"
-            DEMO_UAT_DATABASE_NAME="${DEMO_UAT_DATABASE_NAME:-backend_db}"
+            EXPECTED_DATABASE_NAME="vietyoru_db"
+            if [ "$DATABASE_REPOINTED_FROM" != "$EXPECTED_DATABASE_NAME" ]; then
+              echo "::error::Production deployment requires DATABASE_URL to target $EXPECTED_DATABASE_NAME; found $DATABASE_REPOINTED_FROM."
+              exit 1
+            fi
             DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
             MIGRATION_BASELINE_APPLIED="false"
             MIGRATION_BASELINE_REASON="not_run"
             MIGRATION_BASELINE_MARKED="none"
 
-            if nightlife_counts_ready "$DATABASE_DATA_COUNTS"; then
-              echo "Demo/UAT database is ready: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
-            else
-              CANDIDATE_DATABASE_URL="$(replace_database_name_in_url "$DATABASE_URL" "$DEMO_UAT_DATABASE_NAME")"
-              CANDIDATE_COUNTS=""
-              if [ "$DATABASE_REPOINTED_FROM" != "$DEMO_UAT_DATABASE_NAME" ]; then
-                CANDIDATE_COUNTS="$(nightlife_table_counts "$CANDIDATE_DATABASE_URL" || true)"
-              fi
-
-              if nightlife_counts_ready "$CANDIDATE_COUNTS"; then
-                DATABASE_REPOINT_BACKUP=".env.pre-db-repoint-$DEPLOY_STAMP"
-                cp .env "$DATABASE_REPOINT_BACKUP"
-                write_env_var DATABASE_URL "$CANDIDATE_DATABASE_URL" .env
-                DATABASE_URL="$CANDIDATE_DATABASE_URL"
-                export DATABASE_URL
-                DATABASE_REPOINTED="true"
-                DATABASE_REPOINTED_TO="$DEMO_UAT_DATABASE_NAME"
-                DATABASE_DATA_COUNTS="$CANDIDATE_COUNTS"
-                echo "Repointed demo/UAT DATABASE_URL from db=$DATABASE_REPOINTED_FROM to db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
-                echo "Previous .env backup: $BACKEND_DIR/$DATABASE_REPOINT_BACKUP"
-              elif [ "$DATABASE_REPOINTED_FROM" = "$DEMO_UAT_DATABASE_NAME" ] && nightlife_counts_empty "$DATABASE_DATA_COUNTS"; then
-                DATABASE_BOOTSTRAP_APPLIED="pending"
-                DATABASE_BOOTSTRAP_REASON="empty_default_demo_uat_database"
-                echo "::warning::Current demo/UAT database $DATABASE_REPOINTED_FROM is empty. Continuing with guarded migrate + seed bootstrap."
-              else
-                echo "::error::Cannot safely repoint demo/UAT database. Current db=$DATABASE_REPOINTED_FROM counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}; candidate db=$DEMO_UAT_DATABASE_NAME counts(users,stores,areas)=${CANDIDATE_COUNTS:-unavailable}. Refusing to create or deploy against an empty database."
-                exit 1
-              fi
-            fi
+            echo "Production database verified: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}"
 
             mkdir -p "$EVIDENCE_DIR" "$BACKUP_ROOT"
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
@@ -472,17 +445,6 @@ jobs:
 
             baseline_legacy_migrations_if_schema_matches
             pnpm exec prisma migrate deploy
-            if [ "$DATABASE_BOOTSTRAP_APPLIED" = "pending" ]; then
-              pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
-              pnpm run seed
-              DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
-              if ! nightlife_counts_ready "$DATABASE_DATA_COUNTS"; then
-                echo "::error::Demo/UAT database seed bootstrap did not create required data. Counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}"
-                exit 1
-              fi
-              DATABASE_BOOTSTRAP_APPLIED="true"
-              echo "Demo/UAT seed bootstrap completed: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
-            fi
             export PORT="$BACKEND_PORT"
             pm2 restart "$BACKEND_PM2_NAME" --update-env 2>/dev/null || pm2 start dist/src/main.js --name "$BACKEND_PM2_NAME" --update-env
             pm2 save
@@ -493,7 +455,7 @@ jobs:
             echo "backend_booking_validation=400 http://127.0.0.1:$BACKEND_PORT/bookings" | tee -a "$SMOKE_RESULTS"
 
             if [ -d "$FRONTEND_DIR" ]; then
-              PORT="$FRONTEND_PORT" pm2 restart app-demonightlight.test9.io.vn --update-env 2>/dev/null || (cd "$FRONTEND_DIR" && PORT="$FRONTEND_PORT" pm2 start pnpm --name app-demonightlight.test9.io.vn --update-env -- --dir apps/web run start) 2>/dev/null || true
+              PORT="$FRONTEND_PORT" pm2 restart "$FRONTEND_PM2_NAME" --update-env 2>/dev/null || (cd "$FRONTEND_DIR" && PORT="$FRONTEND_PORT" pm2 start pnpm --name "$FRONTEND_PM2_NAME" --update-env -- --dir apps/web run start) 2>/dev/null || true
               check_url frontend_home_local "http://127.0.0.1:$FRONTEND_PORT/"
               check_url frontend_admin_local "http://127.0.0.1:$FRONTEND_PORT/admin"
               check_url frontend_partner_local "http://127.0.0.1:$FRONTEND_PORT/partner"
@@ -509,7 +471,7 @@ jobs:
             {
               echo "nightlife_release_timestamp=$DEPLOY_STAMP"
               echo "commit_sha=${{ github.sha }}"
-              echo "env_profile=demo-uat"
+              echo "env_profile=production"
               echo "frontend_url=$PUBLIC_FRONTEND_URL"
               echo "backend_url=$PUBLIC_BACKEND_URL"
               echo "backend_path=$BACKEND_DIR"
@@ -518,13 +480,9 @@ jobs:
               echo "frontend_port=$FRONTEND_PORT"
               echo "backend_pm2=$BACKEND_PM2_NAME"
               echo "database_name=$DATABASE_REPOINTED_TO"
-              echo "database_repointed=$DATABASE_REPOINTED"
               echo "database_repointed_from=$DATABASE_REPOINTED_FROM"
               echo "database_repointed_to=$DATABASE_REPOINTED_TO"
-              echo "database_repoint_env_backup=$DATABASE_REPOINT_BACKUP"
               echo "database_data_counts_users_stores_areas=$DATABASE_DATA_COUNTS"
-              echo "database_bootstrap_applied=$DATABASE_BOOTSTRAP_APPLIED"
-              echo "database_bootstrap_reason=$DATABASE_BOOTSTRAP_REASON"
               echo "migration_baseline_applied=$MIGRATION_BASELINE_APPLIED"
               echo "migration_baseline_reason=$MIGRATION_BASELINE_REASON"
               echo "migration_baseline_marked=$MIGRATION_BASELINE_MARKED"
