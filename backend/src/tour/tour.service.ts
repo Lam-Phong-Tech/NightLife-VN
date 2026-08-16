@@ -42,6 +42,10 @@ const TOUR_TIER_COUPON_RULES: Record<
   VIP: { code: 'VIP10', label: 'VIP Discount 10%', discountValue: 10 },
 };
 
+const PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX = 'partner-cast-edit-';
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class TourService {
   constructor(private prisma: PrismaService) {}
@@ -106,7 +110,11 @@ export class TourService {
     }
   }
 
-  private publicTourStoreSelect(now: Date, audience: TourCouponAudience) {
+  private publicTourStoreSelect(
+    now: Date,
+    audience: TourCouponAudience,
+    pendingCastEditSourceIds: string[],
+  ) {
     const tierCouponCode = TOUR_TIER_COUPON_RULES[audience].code;
 
     return {
@@ -168,8 +176,12 @@ export class TourService {
       },
       casts: {
         where: {
+          deletedAt: null,
           status: 'ACTIVE',
           isPublic: true,
+          ...(pendingCastEditSourceIds.length
+            ? { id: { notIn: pendingCastEditSourceIds } }
+            : {}),
         },
         orderBy: { createdAt: 'desc' },
         take: 4,
@@ -202,7 +214,11 @@ export class TourService {
     } satisfies Prisma.StoreSelect;
   }
 
-  private publicTourInclude(now: Date, audience: TourCouponAudience) {
+  private publicTourInclude(
+    now: Date,
+    audience: TourCouponAudience,
+    pendingCastEditSourceIds: string[],
+  ) {
     return {
       stops: {
         where: {
@@ -214,7 +230,11 @@ export class TourService {
         orderBy: { order: 'asc' },
         include: {
           store: {
-            select: this.publicTourStoreSelect(now, audience),
+            select: this.publicTourStoreSelect(
+              now,
+              audience,
+              pendingCastEditSourceIds,
+            ),
           },
         },
       },
@@ -235,6 +255,28 @@ export class TourService {
     }
 
     return 'GUEST';
+  }
+
+  private async pendingPartnerListingCastEditSourceIds() {
+    const drafts = await this.prisma.cast.findMany({
+      where: {
+        deletedAt: null,
+        isPublic: false,
+        status: { in: ['DRAFT', 'PENDING_REVIEW'] },
+        slug: { startsWith: PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX },
+      },
+      select: { slug: true },
+    });
+
+    return [
+      ...new Set(
+        drafts
+          .map((draft) =>
+            draft.slug.slice(PARTNER_LISTING_CAST_EDIT_DRAFT_PREFIX.length),
+          )
+          .filter((id) => uuidPattern.test(id)),
+      ),
+    ];
   }
 
   private isTierCouponCode(code: string, audience: TourCouponAudience) {
@@ -298,6 +340,8 @@ export class TourService {
     const { skip = 0, take = 20, city, user } = params;
     const now = new Date();
     const audience = this.resolveTourCouponAudience(user);
+    const pendingCastEditSourceIds =
+      await this.pendingPartnerListingCastEditSourceIds();
     const where: Prisma.TourWhereInput = {
       status: 'ACTIVE',
       deletedAt: null,
@@ -313,7 +357,11 @@ export class TourService {
           { homeRank: { sort: 'asc', nulls: 'last' } },
           { createdAt: 'desc' },
         ],
-        include: this.publicTourInclude(now, audience),
+        include: this.publicTourInclude(
+          now,
+          audience,
+          pendingCastEditSourceIds,
+        ),
       }),
       this.prisma.tour.count({ where }),
     ]);
@@ -331,13 +379,15 @@ export class TourService {
   async findPublicOne(id: string, user?: AuthenticatedUser) {
     const now = new Date();
     const audience = this.resolveTourCouponAudience(user);
+    const pendingCastEditSourceIds =
+      await this.pendingPartnerListingCastEditSourceIds();
     const tour = await this.prisma.tour.findFirst({
       where: {
         id,
         status: 'ACTIVE',
         deletedAt: null,
       },
-      include: this.publicTourInclude(now, audience),
+      include: this.publicTourInclude(now, audience, pendingCastEditSourceIds),
     });
 
     if (!tour || tour.stops.length === 0) {
