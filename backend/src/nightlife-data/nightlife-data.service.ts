@@ -15136,13 +15136,18 @@ export class NightlifeDataService {
       tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
     const effectiveTourBookingId = tourBooking.tourBookingId || tourBooking.id;
-    const tourItinerary = (tourBooking.bookings ?? []).map(
-      (booking: any, index: number) => ({
-        order: booking.tourStopOrder ?? index + 1,
-        storeName: booking.store?.name ?? 'Vietyoru',
-        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
-      }),
-    );
+    const tourItinerary = Array.isArray(tourBooking.bookings)
+      ? tourBooking.bookings.map((booking: any, index: number) => ({
+          order: booking.tourStopOrder ?? index + 1,
+          storeName: booking.store?.name ?? 'Vietyoru',
+          castName:
+            booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+        }))
+      : (tourBooking.tour?.stops ?? []).map((stop: any, index: number) => ({
+          order: stop.order ?? index + 1,
+          storeName: stop.storeName ?? 'Vietyoru',
+          castName: stop.casts?.[0]?.name ?? null,
+        }));
 
     const payload = {
       bookingId: effectiveTourBookingId,

@@ -4554,6 +4554,13 @@ describe('NightlifeDataService', () => {
         bookingId: 'tb-1',
         bookingCode: 'TB-123456',
         storeName: 'Tour: Hanoi Night Crawl',
+        tourItinerary: [
+          expect.objectContaining({
+            order: 1,
+            storeName: 'Neon Club',
+            castName: null,
+          }),
+        ],
       }),
     );
   });
