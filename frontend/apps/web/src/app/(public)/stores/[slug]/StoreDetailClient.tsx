@@ -94,6 +94,7 @@ import {
 } from "@/lib/booking-field-scroll";
 import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
+import { getPreferredStoreAreaName } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import {
   hasMemberFavoriteAccess,
@@ -2098,6 +2099,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     );
   };
 
+  const bookingArea = getPreferredStoreAreaName({
+    ward: store.ward,
+    areaWard: store.area?.ward,
+    areaName: store.area?.name,
+    district: store.district,
+  });
   const bookingQuery = new URLSearchParams({
     storeId: store.id,
     storeSlug: store.slug,
@@ -2106,9 +2113,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     date: selectedDate.iso,
     time: selectedTime,
     category: store.category,
-    ...(store.area?.name || store.district
-      ? { area: store.area?.name ?? store.district ?? "" }
-      : {}),
+    ...(bookingArea ? { area: bookingArea } : {}),
     ...(activeSelectedCastSlug ? { castSlug: activeSelectedCastSlug } : {}),
     ...(selectedBookingCast?.label ? { castName: selectedBookingCast.label } : {}),
     ...(activeCouponId ? { couponId: activeCouponId } : {}),
