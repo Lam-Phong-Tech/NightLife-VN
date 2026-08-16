@@ -22,6 +22,7 @@ import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { bookingApi, rememberLastBooking, type CreateTourBookingPayload } from "@/lib/api/bookings";
 import { ApiError, getAuthToken, translateApiMessage } from "@/lib/api/client";
+import { discoveryApi, type PublicCast } from "@/lib/api/discovery";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { tourApi, type PublicTour, type TourStopStore, type TourStoreCast } from "@/lib/api/tours";
 import { getAuthUser } from "@/lib/auth/session";
@@ -101,6 +102,20 @@ type TourCastOption = TourStoreCast & {
   storeName: string;
   storeOpeningHours?: Record<string, unknown> | null;
 };
+
+const publicCastToTourCast = (cast: PublicCast, store: TourStopStore): TourCastOption => ({
+  id: cast.id,
+  slug: cast.slug,
+  stageName: cast.stageName,
+  publicAlias: cast.publicAlias,
+  thumbnailUrl: cast.thumbnailUrl,
+  languages: cast.languages,
+  tags: cast.tags,
+  storeId: store.id,
+  storeSlug: store.slug,
+  storeName: store.name,
+  storeOpeningHours: store.openingHours,
+});
 
 type TourDetailClientProps = {
   tour: PublicTour;
@@ -433,6 +448,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
   const [guestInput, setGuestInput] = useState("2");
   const [note, setNote] = useState("");
   const [selectedCastKeys, setSelectedCastKeys] = useState<string[]>([]);
+  const [tourCasts, setTourCasts] = useState<TourCastOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
@@ -459,22 +475,41 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
     };
   }, [initialTour.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    // Use the same canonical public-Cast source as table booking.  Do not use
+    // the Casts embedded in the tour response: they can be stale after a Cast
+    // is deleted or submitted for approval.
+    setTourCasts([]);
+    Promise.all(
+      tour.stops.map(async (stop) => {
+        try {
+          const casts = await discoveryApi.listCastsStrict({
+            city: "all",
+            limit: 100,
+            storeSlug: stop.store.slug,
+          });
+
+          return casts.map((cast) => publicCastToTourCast(cast, stop.store));
+        } catch {
+          // Fail closed so an unavailable Cast endpoint cannot expose stale
+          // Casts from the tour payload.
+          return [] as TourCastOption[];
+        }
+      }),
+    ).then((castsByStop) => {
+      if (!cancelled) setTourCasts(castsByStop.flat());
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tour.stops]);
+
   const firstStop = tour.stops[0];
   const firstStore = firstStop?.store;
   const cleanSubtitle = cleanRichText(tour.subtitle);
-  const tourCasts = useMemo<TourCastOption[]>(
-    () =>
-      tour.stops.flatMap((stop) =>
-        stop.store.casts.map((cast) => ({
-          ...cast,
-          storeId: stop.store.id,
-          storeSlug: stop.store.slug,
-          storeName: stop.store.name,
-          storeOpeningHours: stop.store.openingHours,
-        })),
-      ),
-    [tour.stops],
-  );
   const selectedCasts = useMemo(
     () =>
       selectedCastKeys
