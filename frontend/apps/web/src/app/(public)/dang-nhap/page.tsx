@@ -15,12 +15,7 @@ import {
 import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { LoginPageSessionRedirect } from "@/components/auth/LoginPageSessionRedirect";
 import { getNightlifeHostKind, nightlifeOrigins } from "@/lib/auth/hosts";
-import {
-  buildLineLiffUrl,
-  buildLineWebLoginUrl,
-  isInvalidLineOAuthState,
-  normalizeLineLoginRedirect,
-} from "@/lib/auth/line-login";
+import { buildLineWebLoginUrl, normalizeLineLoginRedirect } from "@/lib/auth/line-login";
 import { normalizeEmailAddress, validateEmailAddress } from "@/lib/email-validation";
 import {
   isLanguageCode,
@@ -218,7 +213,6 @@ export default function Page() {
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
   const [isLineWebOAuthConfigured, setIsLineWebOAuthConfigured] = useState(false);
-  const [lineLiffId, setLineLiffId] = useState("");
   const [queryMessage] = useState(getInitialQueryMessage);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
@@ -227,13 +221,6 @@ export default function Page() {
 
     return normalizeLineLoginRedirect(
       new URLSearchParams(window.location.search).get("redirect"),
-    );
-  }, []);
-  const shouldRecoverLineStateWithLiff = useMemo(() => {
-    if (typeof window === "undefined") return false;
-
-    return isInvalidLineOAuthState(
-      new URLSearchParams(window.location.search).get("line_error"),
     );
   }, []);
 
@@ -441,7 +428,6 @@ export default function Page() {
         }
 
         setIsLineWebOAuthConfigured(Boolean(config.webOAuthConfigured));
-        setLineLiffId(config.liffId || "");
       })
       .catch(() => {
         if (!mounted) {
@@ -449,7 +435,6 @@ export default function Page() {
         }
 
         setIsLineWebOAuthConfigured(false);
-        setLineLiffId("");
       })
       .finally(() => {
         if (mounted) {
@@ -578,11 +563,6 @@ export default function Page() {
       getNightlifeHostKind(window.location.hostname) === "local"
         ? window.location.origin
         : nightlifeOrigins.public;
-
-    if (shouldRecoverLineStateWithLiff && lineLiffId) {
-      window.location.assign(buildLineLiffUrl(lineLiffId, redirectTo));
-      return;
-    }
 
     window.location.assign(buildLineWebLoginUrl(appOrigin, redirectTo));
   };
