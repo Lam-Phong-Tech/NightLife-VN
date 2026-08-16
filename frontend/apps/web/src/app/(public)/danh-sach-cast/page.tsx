@@ -538,6 +538,8 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>(visibleInitialCasts);
+  const [suggestionCasts, setSuggestionCasts] = useState<PublicCast[]>([]);
+  const [isSuggestionLoading, setSuggestionLoading] = useState(false);
   const [totalCasts, setTotalCasts] = useState(
     Math.max(0, initialTotal - (initialCasts.length - visibleInitialCasts.length)),
   );
@@ -572,6 +574,50 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
       cancelled = true;
     };
   }, [city]);
+
+  useEffect(() => {
+    const suggestionQuery = query.trim().replace(/\s+/g, " ");
+    if (!suggestionQuery) {
+      queueMicrotask(() => {
+        setSuggestionCasts([]);
+        setSuggestionLoading(false);
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestionCasts([]);
+    setSuggestionLoading(true);
+    const timer = window.setTimeout(() => {
+      discoveryApi
+        .listCastsStrict({
+          q: suggestionQuery,
+          city,
+          area,
+          category,
+          language,
+          storeSlug,
+          hasActiveCoupon,
+          limit: 12,
+          page: 1,
+          sort: "newest",
+        })
+        .then((result) => {
+          if (!cancelled) setSuggestionCasts(result.filter(isPublicCastVisible));
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestionCasts([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSuggestionLoading(false);
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [area, category, city, hasActiveCoupon, language, query, storeSlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -804,7 +850,7 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
     if (!suggestionQuery) return [];
 
     return sortBySearchRelevance(
-      casts
+      suggestionCasts
         .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
         .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug))
         .filter((cast) =>
@@ -819,7 +865,7 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
         primary: [cast.name, cast.publicAlias, cast.stageName],
       }),
     ).slice(0, 4);
-  }, [casts, query, storeSlug, topRankingOnly, topRankingOrder]);
+  }, [query, storeSlug, suggestionCasts, topRankingOnly, topRankingOrder]);
   const totalPages = Math.max(1, Math.ceil(totalCasts / castItemsPerPage));
   const pagedCasts = visibleCasts;
   const cityLabel = getCastCityLabel(city, activeLanguage);
@@ -1110,6 +1156,7 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
             {showSuggestions ? (
               <SearchSuggestions
                 casts={suggestions}
+                isLoading={isSuggestionLoading}
                 language={activeLanguage}
                 query={query}
                 rankBySlug={topRankingOrder}
@@ -1435,6 +1482,7 @@ function CastDropdown({
 
 function SearchSuggestions({
   casts,
+  isLoading,
   language,
   query,
   rankBySlug,
@@ -1444,6 +1492,7 @@ function SearchSuggestions({
   onSearchSubmitted,
 }: {
   casts: PublicCast[];
+  isLoading: boolean;
   language: LanguageCode;
   query: string;
   rankBySlug: ReadonlyMap<string, number>;
@@ -1458,7 +1507,11 @@ function SearchSuggestions({
       role="listbox"
       aria-label={translateText("Gợi ý tìm kiếm", language)}
     >
-      {casts.length ? (
+      {isLoading ? (
+        <div className="cast-suggestion-empty">
+          {translateText("Đang tìm cast...", language)}
+        </div>
+      ) : casts.length ? (
         <>
           <div className="cast-suggestion-label">
             {translateText("Gợi ý cast", language)}
