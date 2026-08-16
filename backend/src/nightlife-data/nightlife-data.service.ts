@@ -20898,6 +20898,12 @@ export class NightlifeDataService {
       return '';
     }
 
+    // Existing Vietnamese labels (for example, "Tỉnh Tuyên Quang") are
+    // already valid display data, so preserve their wording exactly.
+    if (/[^\u0000-\u007f]/.test(text)) {
+      return text;
+    }
+
     const area = resolveVietnamProvinceArea(text);
     if (!area) {
       return text;

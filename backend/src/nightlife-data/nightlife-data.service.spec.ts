@@ -6402,7 +6402,7 @@ describe('NightlifeDataService', () => {
               ward: 'Phuong Sai Gon',
               streetAddress: '123 Nguyen Hue',
               storeAddress:
-                '123 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
+                '123 Nguyen Hue, Phuong Sai Gon, Quan 1, Thành phố Hồ Chí Minh',
             }),
           }),
         }),
@@ -10128,8 +10128,8 @@ describe('NightlifeDataService', () => {
         where: { id: 'store-draft-1' },
         data: expect.objectContaining({
           name: 'New Club',
-          address: '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Ho Chi Minh City',
-          city: 'Ho Chi Minh City',
+          address: '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Thành phố Hồ Chí Minh',
+          city: 'Thành phố Hồ Chí Minh',
           district: 'Quan 1',
           areaId: 'area-sai-gon',
           status: 'ACTIVE',
