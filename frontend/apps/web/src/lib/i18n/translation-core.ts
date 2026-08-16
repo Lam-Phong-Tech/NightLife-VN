@@ -4677,6 +4677,34 @@ const entries: TranslationEntry[] = [
 
 const dynamicPhraseEntries: TranslationEntry[] = [
   {
+    vi: "Admin đã xác nhận với quán. Vui lòng dùng mã đặt chỗ khi cần xác nhận tại quán.",
+    en: "The venue has been confirmed by the admin. Please use your booking code if confirmation is needed at the venue.",
+    ja: "管理者が店舗との確認を完了しました。店舗で確認が必要な場合は予約番号をご利用ください。",
+    ko: "관리자가 매장 확인을 완료했습니다. 매장에서 확인이 필요하면 예약 코드를 사용해 주세요.",
+    zh: "管理员已与店铺确认。如需在店铺核实，请使用您的预约码。",
+  },
+  {
+    vi: "Yêu cầu đã gửi thành công. Vui lòng lưu mã đặt chỗ để quán xác nhận khi cần.",
+    en: "Your request has been sent. Please save your booking code in case the venue needs to confirm it.",
+    ja: "リクエストを送信しました。店舗での確認が必要な場合に備えて予約番号を保存してください。",
+    ko: "요청이 전송되었습니다. 매장 확인이 필요할 수 있으니 예약 코드를 저장해 주세요.",
+    zh: "请求已成功发送。请保存您的预约码，以便店铺需要确认时使用。",
+  },
+  {
+    vi: "Mã đặt chỗ của bạn hiển thị bên dưới. Vui lòng lưu mã này để quán xác nhận khi cần.",
+    en: "Your booking code is shown below. Please save it in case the venue needs to confirm your reservation.",
+    ja: "予約番号は以下に表示されています。店舗での確認が必要な場合に備えて保存してください。",
+    ko: "예약 코드가 아래에 표시됩니다. 매장 확인이 필요할 수 있으니 저장해 주세요.",
+    zh: "您的预约码显示在下方。请保存此码，以便店铺需要确认时使用。",
+  },
+  {
+    vi: "Vui lòng cung cấp mã đặt chỗ này cho quán khi cần xác nhận.",
+    en: "Please provide this booking code to the venue when confirmation is needed.",
+    ja: "確認が必要な場合は、この予約番号を店舗にお伝えください。",
+    ko: "확인이 필요할 때 이 예약 코드를 매장에 알려주세요.",
+    zh: "如需确认，请向店铺提供此预约码。",
+  },
+  {
     vi: "Lưu quán",
     en: "Save venue",
     ja: "店舗を保存",

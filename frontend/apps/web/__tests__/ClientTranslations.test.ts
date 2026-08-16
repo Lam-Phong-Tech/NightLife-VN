@@ -130,6 +130,12 @@ describe("client translations", () => {
     expect(translateText("Đang tìm quán...", "ja")).toBe("店舗を検索中...");
     expect(translateText("Đang tìm cast...", "ja")).toBe("キャストを検索中...");
     expect(
+      translateText("Mã đặt chỗ của bạn hiển thị bên dưới. Vui lòng lưu mã này để quán xác nhận khi cần.", "ja"),
+    ).toBe("予約番号は以下に表示されています。店舗での確認が必要な場合に備えて保存してください。");
+    expect(
+      translateText("Vui lòng cung cấp mã đặt chỗ này cho quán khi cần xác nhận.", "ja"),
+    ).toBe("確認が必要な場合は、この予約番号を店舗にお伝えください。");
+    expect(
       translateText("Chưa tải được thông báo. Vui lòng thử lại.", "ja"),
     ).toBe("通知を読み込めませんでした。もう一度お試しください。");
     expect(translateText("Hóa đơn", "ja")).toBe("請求書");

@@ -4358,7 +4358,9 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    await this.notifyGuestBookingQrEmail(booking);
+    if (!isServiceOnlyBookingCategory(booking.store?.category)) {
+      await this.notifyGuestBookingQrEmail(booking);
+    }
 
     return booking;
   }
@@ -4432,7 +4434,9 @@ export class NightlifeDataService {
         tourTitle: this.bookingTourTitle(contact.note),
       },
     );
-    await this.notifyGuestBookingQrEmail(booking);
+    if (!isServiceOnlyBookingCategory(booking.store?.category)) {
+      await this.notifyGuestBookingQrEmail(booking);
+    }
 
     return booking;
   }
@@ -12066,6 +12070,15 @@ export class NightlifeDataService {
     const couponIssueId = this.cleanText(input.dto.couponIssueId);
     const adminCouponIssueId = this.cleanText(input.dto.adminCouponIssueId);
     const adminCouponIssueCode = this.cleanText(input.dto.adminCouponIssueCode);
+
+    if (
+      isServiceOnlyBookingCategory(input.target.store.category) &&
+      (couponId || couponIssueId || adminCouponIssueId || adminCouponIssueCode)
+    ) {
+      throw new BadRequestException(
+        'Coupons are not available for massage and restaurant bookings',
+      );
+    }
 
     if (
       isServiceOnlyBookingCategory(input.target.store.category) &&

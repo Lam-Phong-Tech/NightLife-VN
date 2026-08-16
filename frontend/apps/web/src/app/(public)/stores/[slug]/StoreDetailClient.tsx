@@ -1889,7 +1889,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       ),
     [store.casts],
   );
-  const activeCouponId = couponId;
+  const activeCouponId = isServiceOnlyBooking ? undefined : couponId;
   const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
   const favoriteCityLabel = store.cityCode ?? store.city;
   const heroFavoriteImage = galleryImageUrl(heroImage);

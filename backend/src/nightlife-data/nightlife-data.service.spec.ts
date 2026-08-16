@@ -3460,7 +3460,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('links an explicit fixed amount campaign coupon for service-only store bookings', async () => {
+  it('rejects explicit coupons for service-only store bookings', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-restaurant-1',
@@ -3529,58 +3529,20 @@ describe('NightlifeDataService', () => {
       status: 'REQUESTED',
     });
 
-    await service.createGuestBooking({
-      storeSlug: 'tokyo-kitchen',
-      couponId: 'campaign-fixed-1',
-      displayName: 'Guest Name',
-      email: 'guest@example.com',
-      scheduledAt: '2026-06-30T14:00:00.000Z',
-      partySize: 4,
-    });
+    await expect(
+      service.createGuestBooking({
+        storeSlug: 'tokyo-kitchen',
+        couponId: 'campaign-fixed-1',
+        displayName: 'Guest Name',
+        email: 'guest@example.com',
+        scheduledAt: '2026-06-30T14:00:00.000Z',
+        partySize: 4,
+      }),
+    ).rejects.toThrow('Coupons are not available for massage and restaurant bookings');
 
-    expect(prisma.coupon.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        storeId: 'store-restaurant-1',
-        code: 'CAMPAIGN-campaign-fixed-1',
-        discountType: 'FIXED_AMOUNT',
-        discountValue: 150000,
-      }),
-      select: { id: true },
-    });
-    expect(prisma.couponIssue.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          couponId: 'coupon-campaign-1',
-          metadata: expect.objectContaining({
-            discountRuleSnapshot: expect.objectContaining({
-              type: 'FIXED_AMOUNT',
-              value: 150000,
-            }),
-            campaignSnapshot: expect.objectContaining({
-              name: 'Global Premium Lounge Discount',
-            }),
-          }),
-        }),
-      }),
-    );
-    expect(prisma.booking.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          storeId: 'store-restaurant-1',
-          castId: undefined,
-          couponId: 'coupon-campaign-1',
-          couponIssueId: 'issue-campaign-1',
-          discountSnapshot: expect.objectContaining({
-            couponId: 'coupon-campaign-1',
-            couponIssueId: 'issue-campaign-1',
-            code: 'CAMPAIGN-campaign-fixed-1',
-            name: 'Global Premium Lounge Discount',
-            type: 'FIXED_AMOUNT',
-            value: 150000,
-          }),
-        }),
-      }),
-    );
+    expect(prisma.coupon.create).not.toHaveBeenCalled();
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('normalizes Vietnamese guest names before creating a booking', async () => {

@@ -18,6 +18,7 @@ import {
 import { getStoreDetail } from "@/lib/api/store-detail";
 import { translateText } from "@/lib/i18n/client-translations";
 import { intlLocaleByLanguage, useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import styles from "../booking-flow.module.css";
 
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
@@ -756,14 +757,17 @@ export default function Page() {
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
+  const isCodeOnlyBooking = Boolean(
+    !isTourBooking && isServiceOnlyBookingCategory(booking?.store?.category),
+  );
   const bookedStoreAddress = !isTourBooking ? adminStoreAddress : "";
-  const canShowQr = booking ? !isCancelled : false;
+  const canShowQr = booking ? !isCancelled && !isCodeOnlyBooking : false;
   const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
   const discountLabelText = formatDiscountText(discountInfo, activeLanguage);
   const couponLabelText = booking ? bookingCouponLabel(booking) : null;
-  const shouldShowDiscountSummary = Boolean(couponLabelText || discountLabelText);
+  const shouldShowDiscountSummary = !isCodeOnlyBooking && Boolean(couponLabelText || discountLabelText);
   const guestEmailLabel =
     booking?.guest?.email ??
     booking?.user?.email ??
@@ -771,7 +775,9 @@ export default function Page() {
     (isTourBooking ? tourCopy.guestEmailFallback : translateText("email của bạn", activeLanguage));
   const guestConfirmationMessage = isTourBooking
     ? `${tourCopy.emailSentPrefix} ${guestEmailLabel}. ${tourCopy.adminWillContact}`
-    : `${translateText(
+    : isCodeOnlyBooking
+      ? translateText("Mã đặt chỗ của bạn hiển thị bên dưới. Vui lòng lưu mã này để quán xác nhận khi cần.", activeLanguage)
+      : `${translateText(
         "Thông tin đặt chỗ và mã QR đã được gửi về",
         activeLanguage,
       )} ${guestEmailLabel}. ${translateText("Vui lòng kiểm tra email trước khi tới quán.", activeLanguage)}`;
@@ -797,7 +803,18 @@ export default function Page() {
       : isConfirmed
         ? tourCopy.confirmedText
         : tourCopy.pendingText
-    : translateText(
+    : isCodeOnlyBooking
+      ? translateText(
+          !booking
+            ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
+            : isCancelled
+              ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
+              : isConfirmed
+                ? "Admin đã xác nhận với quán. Vui lòng dùng mã đặt chỗ khi cần xác nhận tại quán."
+                : "Yêu cầu đã gửi thành công. Vui lòng lưu mã đặt chỗ để quán xác nhận khi cần.",
+          activeLanguage,
+        )
+      : translateText(
         !booking
           ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
           : isCancelled
@@ -815,7 +832,20 @@ export default function Page() {
         : isConfirmed
         ? tourCopy.statusConfirmed
         : tourCopy.statusPending
-    : translateText(
+    : isCodeOnlyBooking
+      ? translateText(
+          !booking
+            ? "Không có dữ liệu"
+            : isCancelled
+              ? "Đã hủy"
+              : isPartnerApproved
+                ? "Đã xác nhận tại quán"
+                : isConfirmed
+                  ? "Đã xác nhận"
+                  : "Mới",
+          activeLanguage,
+        )
+      : translateText(
         !booking
           ? "Không có dữ liệu"
           : isCancelled
@@ -1063,7 +1093,9 @@ export default function Page() {
                 : translateText(
                     canShowQr
                       ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
-                      : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
+                      : isCodeOnlyBooking
+                        ? "Vui lòng cung cấp mã đặt chỗ này cho quán khi cần xác nhận."
+                        : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ.",
                     activeLanguage,
                   )}
             </span>

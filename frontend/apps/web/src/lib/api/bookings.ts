@@ -39,6 +39,7 @@ export type BookingRecord = {
     id: string;
     name: string;
     slug: string;
+    category?: string | null;
     address?: string | null;
     bookingCancelCutoffMinutes?: number | null;
     openingHours?: Record<string, unknown> | null;

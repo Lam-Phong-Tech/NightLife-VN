@@ -821,8 +821,8 @@ export default function Page() {
     }
 
     const bookingCastSlug = isServiceOnlyBooking ? undefined : context.castSlug;
-    const bookingCouponId = context.couponId;
-    const bookingCouponIssueId = context.couponIssueId;
+    const bookingCouponId = isServiceOnlyBooking ? undefined : context.couponId;
+    const bookingCouponIssueId = isServiceOnlyBooking ? undefined : context.couponIssueId;
 
     if (!context.storeSlug && !bookingCastSlug) {
       setErrorMessage(translateText("Thiếu thông tin quán hoặc cast để đặt chỗ.", activeLanguage));
@@ -898,7 +898,7 @@ export default function Page() {
                   {!isServiceOnlyBooking && context.castName ? <span className="notranslate" translate="no" data-no-translate="true">{context.storeName}</span> : venueCategoryLabel}{" "}
                   · {venueAreaLabel}
                 </div>
-                {context.couponIssueId || context.couponId ? (
+                {!isServiceOnlyBooking && (context.couponIssueId || context.couponId) ? (
                   <div className={styles.venueMeta}>
                     Coupon link: {(context.couponIssueId ?? context.couponId)?.slice(0, 8)}
                   </div>

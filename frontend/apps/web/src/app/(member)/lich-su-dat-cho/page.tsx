@@ -50,6 +50,7 @@ import {
   getTodayBookingDate,
   toBookingDateInputValue,
 } from "@/lib/booking-date";
+import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import {
   intlLocaleByLanguage,
   useActiveLanguage,
@@ -385,6 +386,12 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language:
 
   if (group === "Đã hủy") {
     return translateText("Đã hủy trước giờ hẹn · không thu cọc", language);
+  }
+
+  if (isServiceOnlyBookingCategory(booking.store?.category)) {
+    return isConfirmedStatus(booking.status)
+      ? `${booking.bookingCode} · ${translateText("Đặt chỗ đã xác nhận", language)}`
+      : `${booking.bookingCode} · ${translateText("Admin đang điều phối", language)}`;
   }
 
   return isConfirmedStatus(booking.status)
@@ -1257,7 +1264,8 @@ function BookingCard({
   const group = bookingRecordStatusGroup(booking);
   const isOpenBooking = group === "Mới";
   const tourBooking = isTourBooking(booking);
-  const hasQr = isConfirmedStatus(booking.status);
+  const isCodeOnlyBooking = !tourBooking && isServiceOnlyBookingCategory(booking.store?.category);
+  const hasQr = !isCodeOnlyBooking && isConfirmedStatus(booking.status);
   const isMemberActionBooking =
     isMember && Boolean(booking.user?.id) && (!memberUserId || booking.user?.id === memberUserId);
   const hasCancelIdentity = isMemberActionBooking || Boolean(booking.guest?.phone?.trim());
@@ -1267,6 +1275,7 @@ function BookingCard({
     isMemberActionBooking &&
     group === "Hoàn tất" &&
     booking.status.trim().toUpperCase() === "CHECKED_IN" &&
+    !isCodeOnlyBooking &&
     !hasSubmittedBill(booking) &&
     !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());
   const canReschedule = !tourBooking && cancelAllowed;
