@@ -69,16 +69,6 @@ export default function LineLoginPage() {
     const params = new URLSearchParams({ redirect: redirectTo });
     return `/api/backend/auth/line/start?${params.toString()}`;
   }, [redirectTo]);
-  const liffRedirectUri = useMemo(() => {
-    if (typeof window === "undefined") return "";
-
-    // Keep this URL under the LIFF Endpoint URL configured in LINE Console.
-    // Do not reuse window.location.href because LIFF may add transient
-    // authorization parameters to it during an app-to-browser transition.
-    const url = new URL("/line-login", window.location.origin);
-    url.searchParams.set("redirect", redirectTo);
-    return url.toString();
-  }, [redirectTo]);
   const loginErrorHref = useMemo(() => {
     const params = new URLSearchParams({
       redirect: redirectTo,
@@ -124,10 +114,11 @@ export default function LineLoginPage() {
 
         await window.liff.init({
           liffId: config.liffId,
+          withLoginOnExternalBrowser: true,
         });
 
         if (!window.liff.isLoggedIn()) {
-          window.liff.login({ redirectUri: liffRedirectUri });
+          window.liff.login({ redirectUri: window.location.href });
           return;
         }
 
@@ -153,7 +144,7 @@ export default function LineLoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [fallbackHref, liffRedirectUri, loginErrorHref, redirectTo]);
+  }, [fallbackHref, loginErrorHref, redirectTo]);
 
   return (
     <main
