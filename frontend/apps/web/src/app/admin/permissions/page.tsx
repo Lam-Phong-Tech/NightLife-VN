@@ -287,10 +287,6 @@ export default function AdminPermissionsPage() {
 
   return (
     <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ padding: '12px 16px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', marginBottom: '20px', color: colors.text2, fontSize: '13px' }}>
-        Nhân viên quán (Staff) được phân quyền riêng theo từng cửa hàng, không qua ma trận này.
-      </div>
-      
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <span style={{ fontSize: '18px', fontWeight: 600, color: '#f3f0ea' }}>Bảng phân quyền chi tiết (Matrix)</span>
         <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
