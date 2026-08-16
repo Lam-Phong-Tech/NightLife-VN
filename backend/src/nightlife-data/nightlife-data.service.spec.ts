@@ -338,6 +338,7 @@ describe('NightlifeDataService', () => {
     prisma.area.findMany.mockResolvedValue([] as never);
     prisma.cast.count.mockResolvedValue(1);
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' });
+    prisma.cast.findMany.mockResolvedValue([] as never);
     prisma.cast.findFirst.mockResolvedValue(null);
     prisma.cast.update.mockResolvedValue({ id: 'cast-draft-1' });
     prisma.cast.updateMany.mockResolvedValue({ count: 1 });
@@ -1469,6 +1470,79 @@ describe('NightlifeDataService', () => {
               ]),
             }),
           }),
+        }),
+      }),
+    );
+  });
+
+  it('excludes a public Cast while its partner edit is pending review', async () => {
+    const pendingSourceId = '11111111-1111-4111-8111-111111111111';
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-neon',
+      areaId: null,
+      createdAt: new Date('2026-06-20T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-21T00:00:00.000Z'),
+      name: 'Neon Club',
+      slug: 'neon-club',
+      category: 'CLUB',
+      description: null,
+      address: null,
+      city: 'Ha Noi',
+      district: 'Tay Ho',
+      phone: null,
+      latitude: null,
+      longitude: null,
+      openingHours: null,
+      holidaySchedule: null,
+      pricingInfo: null,
+      mapUrl: null,
+      googlePlaceId: null,
+      tags: [],
+      area: null,
+      media: [],
+      casts: [
+        {
+          id: pendingSourceId,
+          slug: 'cast-moi',
+          stageName: 'Cast moi',
+          publicAlias: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          tags: [],
+          languages: [],
+          hourlyRateVnd: null,
+          media: [],
+        },
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          slug: 'aya',
+          stageName: 'Aya',
+          publicAlias: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          tags: [],
+          languages: [],
+          hourlyRateVnd: null,
+          media: [],
+        },
+      ],
+      coupons: [],
+    } as never);
+    prisma.store.findMany.mockResolvedValue([] as never);
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        slug: `partner-cast-edit-${pendingSourceId}`,
+      },
+    ] as never);
+
+    const result = await service.getPublicStoreBySlug('neon-club');
+
+    expect(result.casts.map((cast) => cast.slug)).toEqual(['aya']);
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: ['DRAFT', 'PENDING_REVIEW'] },
+          isPublic: false,
         }),
       }),
     );

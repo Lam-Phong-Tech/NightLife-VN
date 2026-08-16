@@ -2634,6 +2634,17 @@ export class NightlifeDataService {
       },
     });
 
+    // A partner edit is kept as a private draft while it awaits review.  The
+    // source Cast may still be ACTIVE from its last approved version, so the
+    // status flags alone are not enough to make it eligible for this public
+    // store response.
+    const pendingEditSourceIdSet = new Set(
+      await this.loadPendingPartnerListingCastEditSourceIds(),
+    );
+    const publicCasts = store.casts.filter(
+      (cast) => !pendingEditSourceIdSet.has(cast.id),
+    );
+
     const menuImageKeys = new Set(
       this.buildStoreMenuPriceItems(this.asRecord(store.pricingInfo))
         .map((item) => item.imageUrl)
@@ -2719,7 +2730,7 @@ export class NightlifeDataService {
       openingHours: store.openingHours,
       holidaySchedule: store.holidaySchedule,
       gallery,
-      casts: store.casts.map((cast) => ({
+      casts: publicCasts.map((cast) => ({
         id: cast.id,
         slug: cast.slug,
         stageName: cast.stageName,
@@ -2733,7 +2744,7 @@ export class NightlifeDataService {
       })),
       priceReference: this.buildStorePriceReference(
         store.pricingInfo,
-        store.casts,
+        publicCasts,
       ),
       activeCoupons,
       campaigns: activeCoupons.map((coupon) => ({
