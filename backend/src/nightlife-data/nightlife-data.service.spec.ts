@@ -285,6 +285,7 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.campaign.findFirst.mockResolvedValue(null);
     prisma.media.findFirst.mockResolvedValue(null);
     prisma.rankingConfig.count.mockResolvedValue(0);
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
