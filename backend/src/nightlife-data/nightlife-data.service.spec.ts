@@ -1436,6 +1436,17 @@ describe('NightlifeDataService', () => {
           status: 'ACTIVE',
         },
         select: expect.objectContaining({
+          casts: expect.objectContaining({
+            where: {
+              deletedAt: null,
+              status: 'ACTIVE',
+              isPublic: true,
+            },
+            select: expect.objectContaining({
+              status: true,
+              isPublic: true,
+            }),
+          }),
           media: expect.objectContaining({
             where: expect.objectContaining({
               castId: null,

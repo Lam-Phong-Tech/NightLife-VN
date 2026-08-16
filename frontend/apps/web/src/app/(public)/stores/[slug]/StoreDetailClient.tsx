@@ -1881,6 +1881,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     activeLanguage,
   );
   const isServiceOnlyBooking = isServiceOnlyBookingCategory(store.category);
+  const visibleCasts = useMemo(
+    () =>
+      store.casts.filter(
+        (cast) => cast.status === "ACTIVE" && cast.isPublic === true,
+      ),
+    [store.casts],
+  );
   const activeCouponId = couponId;
   const favoriteAreaLabel = store.area?.name ?? store.district ?? "";
   const favoriteCityLabel = store.cityCode ?? store.city;
@@ -1912,13 +1919,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const priceText = priceRangeText(store, activeLanguage);
   const bookingCastOptions = useMemo<BookingCastOption[]>(
     () =>
-      store.casts.map((cast) => ({
+      visibleCasts.map((cast) => ({
         slug: cast.slug,
         label: storeCastOptionLabel(cast),
         meta: storeCastOptionMeta(cast, activeLanguage),
         thumbnailUrl: cast.thumbnailUrl,
       })),
-    [activeLanguage, store.casts],
+    [activeLanguage, visibleCasts],
   );
   const serviceBookingCastOptions = isServiceOnlyBooking ? [] : bookingCastOptions;
   const activeSelectedCastSlug = serviceBookingCastOptions.some(
@@ -1935,7 +1942,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     [activeLanguage, introLines],
   );
   const nationalityNames = Array.from(
-    new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
+    new Set(visibleCasts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
   )
     .slice(0, 3)
     .map((nationality) => translateText(nationality, activeLanguage));
@@ -1947,14 +1954,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       : nationalityText;
   const languageCards = useMemo<LanguageStatCard[]>(() => {
     const languageCounts = new Map<string, number>();
-    store.casts.forEach((cast) => {
+    visibleCasts.forEach((cast) => {
       cast.languages.forEach((language) => {
         const label = canonicalSpokenLanguageKey(language);
         languageCounts.set(label, (languageCounts.get(label) ?? 0) + 1);
       });
     });
 
-    const totalCasts = Math.max(store.casts.length, 1);
+    const totalCasts = Math.max(visibleCasts.length, 1);
     const cards = [...languageCounts.entries()]
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
@@ -1971,7 +1978,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         title: nationalityText || undefined,
       },
     ];
-  }, [activeLanguage, nationalityCardText, nationalityText, store.casts]);
+  }, [activeLanguage, nationalityCardText, nationalityText, visibleCasts]);
 
   const dateOptions = useMemo(
     () =>
@@ -2614,7 +2621,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <>
                   <i />
                   <div>
-                    <strong>{formatStoreCastCount(store.casts.length || 0, activeLanguage)}</strong>
+                    <strong>{formatStoreCastCount(visibleCasts.length, activeLanguage)}</strong>
                     <span>{translateText("Đang phục vụ", activeLanguage)}</span>
                   </div>
                 </>
@@ -2737,7 +2744,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
               {!isServiceOnlyBooking ? (
                 <div>
-                  <strong>{formatStoreCastCount(store.casts.length, activeLanguage)}</strong>
+                  <strong>{formatStoreCastCount(visibleCasts.length, activeLanguage)}</strong>
                   <span>{translateText("Đang phục vụ", activeLanguage)}</span>
                 </div>
               ) : null}
@@ -2843,9 +2850,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <section>
                 <SectionTitle
                   title={translateText("Cast đang làm", activeLanguage)}
-                  meta={formatStoreCastCount(store.casts.length, activeLanguage)}
+                  meta={formatStoreCastCount(visibleCasts.length, activeLanguage)}
                 />
-                <CastRail store={store} />
+                <CastRail store={{ ...store, casts: visibleCasts }} />
               </section>
             ) : null}
 
