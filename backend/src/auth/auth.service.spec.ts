@@ -640,6 +640,67 @@ describe('AuthService', () => {
     );
   });
 
+  it('retries LINE OAuth without auto login after an invalid callback state', async () => {
+    useLineConfig();
+
+    const response = {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as jest.Mocked<Response>;
+
+    await service.handleLineCallback(
+      {
+        code: 'invalid-line-code',
+        state: 'unexpected-state',
+      },
+      {
+        headers: {
+          cookie: 'line_oauth_state=original-state; line_oauth_redirect=%2Ftai-khoan',
+        },
+      } as never,
+      response,
+    );
+
+    const redirectUrl = new URL(String(response.redirect.mock.calls[0][0]));
+    expect(redirectUrl.origin).toBe('https://access.line.me');
+    expect(redirectUrl.searchParams.get('disable_auto_login')).toBe('true');
+    expect(response.cookie).toHaveBeenCalledWith(
+      'line_oauth_auto_login_disabled',
+      'true',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
+    );
+  });
+
+  it('shows an error instead of retrying the web login fallback twice', async () => {
+    useLineConfig();
+
+    const response = {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as jest.Mocked<Response>;
+
+    await service.handleLineCallback(
+      {
+        code: 'invalid-line-code',
+        state: 'unexpected-state',
+      },
+      {
+        headers: {
+          cookie:
+            'line_oauth_state=original-state; line_oauth_redirect=%2Ftai-khoan; line_oauth_auto_login_disabled=true',
+        },
+      } as never,
+      response,
+    );
+
+    expect(response.redirect).toHaveBeenCalledWith(
+      expect.stringContaining('/dang-nhap?'),
+    );
+    expect(String(response.redirect.mock.calls[0][0])).toContain('line_error=');
+  });
+
   it('logs in a LINE member from a LIFF ID token', async () => {
     useLineConfig();
     global.fetch = jest.fn().mockResolvedValue({

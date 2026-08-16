@@ -138,6 +138,7 @@ type LoginMethod = 'PASSWORD' | 'GOOGLE' | 'LINE';
 const lineStateCookie = 'line_oauth_state';
 const lineNonceCookie = 'line_oauth_nonce';
 const lineRedirectCookie = 'line_oauth_redirect';
+const lineAutoLoginDisabledCookie = 'line_oauth_auto_login_disabled';
 const lineFallbackEmailDomain = 'line.vietyoru.local';
 const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 const oauthCookieMaxAgeMs = 10 * 60 * 1000;
@@ -366,7 +367,11 @@ export class AuthService {
     return this.authenticateLineMember(lineAccount, sessionContext);
   }
 
-  redirectToLineLogin(redirect: string | undefined, response: Response) {
+  redirectToLineLogin(
+    redirect: string | undefined,
+    response: Response,
+    disableAutoLogin = false,
+  ) {
     const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
     const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');
 
@@ -382,6 +387,11 @@ export class AuthService {
     response.cookie(lineStateCookie, state, cookieOptions);
     response.cookie(lineNonceCookie, nonce, cookieOptions);
     response.cookie(lineRedirectCookie, redirectPath, cookieOptions);
+    response.cookie(
+      lineAutoLoginDisabledCookie,
+      disableAutoLogin ? 'true' : 'false',
+      cookieOptions,
+    );
 
     const authorizationUrl = new URL(
       'https://access.line.me/oauth2/v2.1/authorize',
@@ -392,6 +402,9 @@ export class AuthService {
     authorizationUrl.searchParams.set('state', state);
     authorizationUrl.searchParams.set('scope', 'profile openid email');
     authorizationUrl.searchParams.set('nonce', nonce);
+    if (disableAutoLogin) {
+      authorizationUrl.searchParams.set('disable_auto_login', 'true');
+    }
 
     return response.redirect(authorizationUrl.toString());
   }
@@ -421,6 +434,17 @@ export class AuthService {
       !query.state ||
       query.state !== cookies[lineStateCookie]
     ) {
+      // LINE documents that auto login can return an invalid state/code in
+      // private browsing. Retry once in the current browser context without
+      // opening the LINE app, so the user can continue with web login/SSO.
+      if (
+        query.code &&
+        query.state &&
+        cookies[lineAutoLoginDisabledCookie] !== 'true'
+      ) {
+        return this.redirectToLineLogin(redirectPath, response, true);
+      }
+
       this.clearLineOAuthCookies(response);
       return this.redirectLineLoginError(
         response,
@@ -1347,6 +1371,7 @@ export class AuthService {
     response.clearCookie(lineStateCookie, options);
     response.clearCookie(lineNonceCookie, options);
     response.clearCookie(lineRedirectCookie, options);
+    response.clearCookie(lineAutoLoginDisabledCookie, options);
   }
 
   private redirectLineLoginError(
