@@ -4358,9 +4358,9 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    if (!isServiceOnlyBookingCategory(booking.store?.category)) {
-      await this.notifyGuestBookingQrEmail(booking);
-    }
+    await this.notifyGuestBookingQrEmail(booking, {
+      includeQr: !isServiceOnlyBookingCategory(booking.store?.category),
+    });
 
     return booking;
   }
@@ -4434,9 +4434,9 @@ export class NightlifeDataService {
         tourTitle: this.bookingTourTitle(contact.note),
       },
     );
-    if (!isServiceOnlyBookingCategory(booking.store?.category)) {
-      await this.notifyGuestBookingQrEmail(booking);
-    }
+    await this.notifyGuestBookingQrEmail(booking, {
+      includeQr: !isServiceOnlyBookingCategory(booking.store?.category),
+    });
 
     return booking;
   }
@@ -14826,17 +14826,25 @@ export class NightlifeDataService {
     }
   }
 
-  private async notifyGuestBookingQrEmail(booking: BookingNotificationRecord) {
+  private async notifyGuestBookingQrEmail(
+    booking: BookingNotificationRecord,
+    options: { includeQr?: boolean } = {},
+  ) {
     const email = this.cleanEmail(booking.guest?.email || booking.user?.email);
 
     if (!email) {
       return;
     }
 
+    const includeQr = options.includeQr !== false;
     const bookingCode = this.bookingCodeFor(booking);
-    const qrPayload = this.bookingQrPayload(booking);
-    const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=24&data=${encodeURIComponent(qrPayload)}`;
+    const qrPayload = includeQr ? this.bookingQrPayload(booking) : '';
+    const qrImageDataUrl = includeQr
+      ? await this.buildBookingQrImageDataUrl(qrPayload)
+      : null;
+    const qrImageUrl = includeQr
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=24&data=${encodeURIComponent(qrPayload)}`
+      : '';
     const locale = this.normalizeBookingLocale(booking.locale);
     const amountLabel = this.bookingAmountLabel(booking, locale);
     const discountLabel = this.bookingDiscountEmailLabel(booking);
@@ -14875,7 +14883,9 @@ export class NightlifeDataService {
           channel: 'EMAIL',
           status: 'QUEUED',
           recipient: email,
-          templateKey: 'customer.booking.qr_email.v1',
+          templateKey: includeQr
+            ? 'customer.booking.qr_email.v1'
+            : 'customer.booking.code_email.v1',
           payload,
         },
       });
@@ -14913,6 +14923,7 @@ export class NightlifeDataService {
         qrPayload,
         qrImageUrl,
         qrImageDataUrl,
+        includeQr,
       });
 
       await this.prisma.notificationLog.update({

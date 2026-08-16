@@ -21,6 +21,7 @@ export type BookingQrEmailInput = {
   qrPayload: string;
   qrImageUrl: string;
   qrImageDataUrl?: string | null;
+  includeQr?: boolean;
 };
 
 export type EmailDeliveryResult = {
@@ -78,6 +79,7 @@ type BookingEmailTemplate = {
   textQrAttached: string;
   textQrBackup: string;
   textArrival: string;
+  codeOnlyHint: string;
 };
 
 const defaultEmailLocale: EmailLocale = 'ja';
@@ -128,6 +130,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: 'Mã QR đặt chỗ đã được đính kèm trong email này.',
     textQrBackup: 'QR dự phòng',
     textArrival: 'Vui lòng đưa mã QR cho nhân viên khi tới nơi.',
+    codeOnlyHint: 'Vui lòng cung cấp mã đặt chỗ này cho nhân viên khi cần xác nhận.',
   },
   en: {
     htmlLang: 'en',
@@ -175,6 +178,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: 'Your reservation QR code is attached to this email.',
     textQrBackup: 'Backup QR',
     textArrival: 'Please show the QR code to the venue staff when you arrive.',
+    codeOnlyHint: 'Please provide this reservation code to the venue staff when confirmation is needed.',
   },
   ja: {
     htmlLang: 'ja',
@@ -221,6 +225,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: '予約用QRコードを本メールに添付しております。',
     textQrBackup: '予備QRコード',
     textArrival: 'ご来店時にQRコードを店舗スタッフへご提示ください。',
+    codeOnlyHint: '確認が必要な場合は、この予約番号を店舗スタッフにお伝えください。',
   },
   ko: {
     htmlLang: 'ko',
@@ -267,6 +272,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: '예약 QR 코드가 이 이메일에 첨부되어 있습니다.',
     textQrBackup: '예비 QR',
     textArrival: '방문 시 직원에게 QR 코드를 보여 주세요.',
+    codeOnlyHint: '확인이 필요할 때 이 예약 코드를 매장 직원에게 알려 주세요.',
   },
   zh: {
     htmlLang: 'zh-CN',
@@ -313,6 +319,7 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
     textQrAttached: '预约二维码已附在本邮件中。',
     textQrBackup: '备用二维码',
     textArrival: '到店时请向工作人员出示二维码。',
+    codeOnlyHint: '如需确认，请向店铺工作人员提供此预约码。',
   },
 };
 
@@ -340,15 +347,16 @@ export class EmailNotificationService {
       secure,
       auth: user ? { user, pass } : undefined,
     });
-    const qrAttachment = this.qrAttachment(input);
+    const includeQr = input.includeQr !== false;
+    const qrAttachment = includeQr ? this.qrAttachment(input) : null;
     const locale = this.normalizeLocale(input.locale);
     const template = bookingEmailTemplates[locale];
     const message = await transporter.sendMail({
       from,
       to: input.to,
       subject: template.subject(input.bookingCode),
-      text: this.bookingEmailText(input, template),
-      html: this.bookingEmailHtml(input, Boolean(qrAttachment), template),
+      text: this.bookingEmailText(input, template, includeQr),
+      html: this.bookingEmailHtml(input, Boolean(qrAttachment), template, includeQr),
       attachments: qrAttachment ? [qrAttachment] : undefined,
     });
 
@@ -420,6 +428,7 @@ export class EmailNotificationService {
   private bookingEmailText(
     input: BookingQrEmailInput,
     template: BookingEmailTemplate,
+    includeQr: boolean,
   ) {
     const guestName = input.guestName?.trim() || template.guestFallback;
     const rows = this.bookingEmailRows(input, template);
@@ -429,10 +438,9 @@ export class EmailNotificationService {
       '',
       ...rows.map(([label, value]) => `${label}: ${value}`),
       '',
-      template.textQrAttached,
-      `${template.textQrBackup}: ${input.qrImageUrl}`,
-      '',
-      template.textArrival,
+      ...(includeQr
+        ? [template.textQrAttached, `${template.textQrBackup}: ${input.qrImageUrl}`, '', template.textArrival]
+        : [template.codeOnlyHint]),
     ].join('\n');
   }
 
@@ -440,6 +448,7 @@ export class EmailNotificationService {
     input: BookingQrEmailInput,
     hasQrAttachment: boolean,
     template: BookingEmailTemplate,
+    includeQr: boolean,
   ) {
     const qrSrc = hasQrAttachment ? 'cid:booking-qr' : input.qrImageUrl;
     const guestName = input.guestName?.trim() || template.guestFallback;
@@ -466,11 +475,11 @@ export class EmailNotificationService {
             )
             .join('')}
         </table>
-        <div style="text-align:center;margin:22px 0;">
+        ${includeQr ? `<div style="text-align:center;margin:22px 0;">
           <img src="${this.escapeAttribute(qrSrc)}" alt="${this.escapeAttribute(template.qrAlt(input.bookingCode))}" width="220" height="220" style="display:inline-block;border-radius:12px;background:#fff;padding:10px;" />
           <p style="margin:12px 0 18px;color:#b8b1a1;font-size:13px;">${this.escapeHtml(template.qrHint)}</p>
           <a href="${this.escapeAttribute(input.qrImageUrl)}" style="display:inline-block;background:#f5d982;color:#1d1607;text-decoration:none;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:800;">${this.escapeHtml(template.ctaLabel)}</a>
-        </div>
+        </div>` : `<p style="margin:22px 0;color:#b8b1a1;font-size:14px;line-height:1.55;">${this.escapeHtml(template.codeOnlyHint)}</p>`}
         <p style="margin:18px 0 0;color:#8d8577;font-size:12px;line-height:1.5;">
           ${this.escapeHtml(template.footerNote)}
         </p>
@@ -511,7 +520,10 @@ export class EmailNotificationService {
           >)
         : []),
       [template.labels.paymentMethod, template.defaults.paymentMethod],
-      [template.labels.deliveryInfo, template.defaults.deliveryInfo],
+      [
+        template.labels.deliveryInfo,
+        input.includeQr === false ? template.codeOnlyHint : template.defaults.deliveryInfo,
+      ],
       ...(input.note
         ? ([[template.labels.note, input.note]] as Array<[string, string]>)
         : []),
