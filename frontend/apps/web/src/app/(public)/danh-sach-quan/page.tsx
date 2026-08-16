@@ -821,7 +821,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
 
   useEffect(() => {
     const suggestionQuery = query.trim().replace(/\s+/g, " ");
-    if (suggestionQuery.length < 2) {
+    if (!suggestionQuery) {
       queueMicrotask(() => {
         setSuggestionStores([]);
         setSuggestionLoading(false);
