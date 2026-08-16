@@ -383,10 +383,18 @@ function CampaignDealCard({
         <div className="coupon-header-row">
           <span className="coupon-discount">{discountText}</span>
           {isVip && <span className="coupon-vip-badge">VIP</span>}
-          {!isVip && <span className="coupon-title-inline">{campaignName}</span>}
+          {!isVip && (
+            <span className="coupon-title-inline notranslate" translate="no" data-no-translate="true">
+              {campaignName}
+            </span>
+          )}
         </div>
         
-        {isVip && <div className="coupon-title-block">{campaignName}</div>}
+        {isVip && (
+          <div className="coupon-title-block notranslate" translate="no" data-no-translate="true">
+            {campaignName}
+          </div>
+        )}
         
         <div className="coupon-store-info">
           <span className="notranslate" translate="no" data-no-translate="true">{storeName}</span>

@@ -144,8 +144,8 @@ type HomeFavoriteFeedbackKey =
 type HomeFavoriteFeedbackCopy = Record<HomeFavoriteFeedbackKey, string> & {
   addedDescription: (storeName: string) => string;
   removedDescription: (storeName: string) => string;
-  saveConfirmDescription: (storeName: string) => string;
-  removeConfirmDescription: (storeName: string) => string;
+  saveConfirmDescription: (storeName: React.ReactNode) => React.ReactNode;
+  removeConfirmDescription: (storeName: React.ReactNode) => React.ReactNode;
 };
 
 const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> = {
@@ -160,8 +160,8 @@ const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> =
     removeConfirmLabel: "Bỏ lưu",
     addedDescription: (storeName) => `${storeName} đã được lưu vào danh sách yêu thích.`,
     removedDescription: (storeName) => `${storeName} đã được gỡ khỏi danh sách yêu thích.`,
-    saveConfirmDescription: (storeName) => `Thêm ${storeName} vào danh sách yêu thích của bạn.`,
-    removeConfirmDescription: (storeName) => `Gỡ ${storeName} khỏi danh sách yêu thích của bạn.`,
+    saveConfirmDescription: (storeName) => <>Thêm <OriginalStoreName>{storeName}</OriginalStoreName> vào danh sách yêu thích của bạn.</>,
+    removeConfirmDescription: (storeName) => <>Gỡ <OriginalStoreName>{storeName}</OriginalStoreName> khỏi danh sách yêu thích của bạn.</>,
   },
   en: {
     addedTitle: "Venue saved",
@@ -174,8 +174,8 @@ const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> =
     removeConfirmLabel: "Remove",
     addedDescription: (storeName) => `${storeName} has been added to your favorites.`,
     removedDescription: (storeName) => `${storeName} has been removed from your favorites.`,
-    saveConfirmDescription: (storeName) => `Add ${storeName} to your favorites.`,
-    removeConfirmDescription: (storeName) => `Remove ${storeName} from your favorites.`,
+    saveConfirmDescription: (storeName) => <>Add <OriginalStoreName>{storeName}</OriginalStoreName> to your favorites.</>,
+    removeConfirmDescription: (storeName) => <>Remove <OriginalStoreName>{storeName}</OriginalStoreName> from your favorites.</>,
   },
   ja: {
     addedTitle: "お気に入りに追加しました",
@@ -188,8 +188,8 @@ const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> =
     removeConfirmLabel: "解除する",
     addedDescription: (storeName) => `「${storeName}」をお気に入りに追加しました。`,
     removedDescription: (storeName) => `「${storeName}」をお気に入りから削除しました。`,
-    saveConfirmDescription: (storeName) => `「${storeName}」をお気に入りに追加します。`,
-    removeConfirmDescription: (storeName) => `「${storeName}」をお気に入りから削除します。`,
+    saveConfirmDescription: (storeName) => <>「<OriginalStoreName>{storeName}</OriginalStoreName>」をお気に入りに追加します。</>,
+    removeConfirmDescription: (storeName) => <>「<OriginalStoreName>{storeName}</OriginalStoreName>」をお気に入りから削除します。</>,
   },
   ko: {
     addedTitle: "즐겨찾기에 추가했습니다",
@@ -202,8 +202,8 @@ const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> =
     removeConfirmLabel: "해제",
     addedDescription: (storeName) => `${storeName}이(가) 즐겨찾기에 추가되었습니다.`,
     removedDescription: (storeName) => `${storeName}이(가) 즐겨찾기에서 제거되었습니다.`,
-    saveConfirmDescription: (storeName) => `${storeName}을(를) 즐겨찾기에 추가합니다.`,
-    removeConfirmDescription: (storeName) => `${storeName}을(를) 즐겨찾기에서 제거합니다.`,
+    saveConfirmDescription: (storeName) => <><OriginalStoreName>{storeName}</OriginalStoreName>을(를) 즐겨찾기에 추가합니다.</>,
+    removeConfirmDescription: (storeName) => <><OriginalStoreName>{storeName}</OriginalStoreName>을(를) 즐겨찾기에서 제거합니다.</>,
   },
   zh: {
     addedTitle: "已加入收藏",
@@ -216,10 +216,14 @@ const homeFavoriteFeedbackCopy: Record<LanguageCode, HomeFavoriteFeedbackCopy> =
     removeConfirmLabel: "取消收藏",
     addedDescription: (storeName) => `${storeName} 已加入你的收藏。`,
     removedDescription: (storeName) => `${storeName} 已从你的收藏中移除。`,
-    saveConfirmDescription: (storeName) => `将 ${storeName} 加入你的收藏。`,
-    removeConfirmDescription: (storeName) => `将 ${storeName} 从你的收藏中移除。`,
+    saveConfirmDescription: (storeName) => <>将 <OriginalStoreName>{storeName}</OriginalStoreName> 加入你的收藏。</>,
+    removeConfirmDescription: (storeName) => <>将 <OriginalStoreName>{storeName}</OriginalStoreName> 从你的收藏中移除。</>,
   },
 };
+
+function OriginalStoreName({ children }: { children: React.ReactNode }) {
+  return <span className="notranslate" translate="no" data-no-translate="true">{children}</span>;
+}
 
 const homeFavoriteFeedbackText = (language: LanguageCode) =>
   homeFavoriteFeedbackCopy[language] ?? homeFavoriteFeedbackCopy.vi;

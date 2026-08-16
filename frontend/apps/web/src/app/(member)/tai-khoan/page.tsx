@@ -273,12 +273,10 @@ export default function Page() {
                     ? <InlineLoading label={translateText("Đang cập nhật điểm thưởng", activeLanguage)} />
                     : pointSummaryError
                       ? translateText("Chưa tải được điểm thật, vui lòng thử lại.", activeLanguage)
-                      : (
-                        <>
-                          {translateText("Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ", activeLanguage)}
-                          <span className="notranslate" translate="no">{tier}</span>.
-                        </>
-                      )}
+                      : translateText(
+                          `Điểm được cộng sau khi Admin duyệt hóa đơn. Hạng khách hiện tại: ${tier}.`,
+                          activeLanguage,
+                        )}
                 </p>
               </div>
             </section>
