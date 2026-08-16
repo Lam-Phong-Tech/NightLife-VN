@@ -1125,11 +1125,12 @@ export function comparePublicBanners(
   left: SortablePublicBanner,
   right: SortablePublicBanner,
 ) {
-  const positionComparison = bannerPosition(left.metadata.position).localeCompare(
-    bannerPosition(right.metadata.position),
-    'vi',
-    { numeric: true, sensitivity: 'base' },
-  );
+  const positionComparison = bannerPosition(
+    left.metadata.position,
+  ).localeCompare(bannerPosition(right.metadata.position), 'vi', {
+    numeric: true,
+    sensitivity: 'base',
+  });
   if (positionComparison !== 0) return positionComparison;
 
   const orderComparison =
@@ -1137,7 +1138,9 @@ export function comparePublicBanners(
   if (orderComparison !== 0) return orderComparison;
 
   const dateComparison = left.createdAt.localeCompare(right.createdAt);
-  return dateComparison !== 0 ? dateComparison : left.id.localeCompare(right.id);
+  return dateComparison !== 0
+    ? dateComparison
+    : left.id.localeCompare(right.id);
 }
 
 type BookingTarget = {
@@ -2269,88 +2272,119 @@ export class NightlifeDataService {
     const coordinates = this.parseCoordinates(query);
     const pagination = this.resolvePagination(query);
     const sort = this.resolveSort(query.sort, coordinates);
-    const readArgs = this.resolvePublicReadArgs(sort, pagination);
+    const readArgs =
+      sort === 'priority' ? null : this.resolvePublicReadArgs(sort, pagination);
     const where = this.buildPublicStoreWhere(query, { includeCastName: true });
     const now = new Date();
-    const [total, stores] = await Promise.all([
-      this.prisma.store.count({ where }),
-      this.prisma.store.findMany({
+    const total = await this.prisma.store.count({ where });
+    let priorityPageIds: string[] | null = null;
+    let priorityRankings = new Map<string, RankingScore>();
+
+    if (sort === 'priority') {
+      // Rank the complete eligible result set before selecting a page. Ranking a
+      // growing read window per page makes records shift and repeat between pages.
+      const priorityCandidates = await this.prisma.store.findMany({
         where,
-        // Keep pagination stable when several venues are created at the same time.
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        ...readArgs,
-        select: {
-          id: true,
-          createdAt: true,
-          name: true,
-          slug: true,
-          category: true,
-          description: true,
-          address: true,
-          city: true,
-          district: true,
-          tags: true,
-          latitude: true,
-          longitude: true,
-          openingHours: true,
-          pricingInfo: true,
-          area: {
+        select: { id: true, createdAt: true },
+      });
+      priorityRankings = await this.loadRankingMap(
+        'STORE',
+        priorityCandidates.map((store) => store.id),
+      );
+      priorityPageIds = this.sortPublicItems(
+        priorityCandidates.map((store) => ({
+          ...store,
+          distanceKm: null,
+        })),
+        sort,
+        priorityRankings,
+      )
+        .slice(pagination.offset, pagination.offset + pagination.limit)
+        .map((store) => store.id);
+    }
+
+    const stores =
+      priorityPageIds?.length === 0
+        ? []
+        : await this.prisma.store.findMany({
+            where: priorityPageIds
+              ? { AND: [where, { id: { in: priorityPageIds } }] }
+              : where,
+            // Keep pagination stable when several venues are created at the same time.
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            ...(readArgs ?? {}),
             select: {
               id: true,
-              code: true,
+              createdAt: true,
               name: true,
+              slug: true,
+              category: true,
+              description: true,
+              address: true,
               city: true,
               district: true,
-              ward: true,
+              tags: true,
+              latitude: true,
+              longitude: true,
+              openingHours: true,
+              pricingInfo: true,
+              area: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  city: true,
+                  district: true,
+                  ward: true,
+                },
+              },
+              media: {
+                where: this.storeMediaWhere({
+                  access: 'PUBLIC',
+                  status: 'READY',
+                  type: 'IMAGE',
+                }),
+                orderBy: { createdAt: 'desc' },
+                take: 8,
+                select: {
+                  url: true,
+                  purpose: true,
+                },
+              },
+              casts: {
+                where: {
+                  deletedAt: null,
+                  status: 'ACTIVE',
+                  isPublic: true,
+                },
+                select: {
+                  hourlyRateVnd: true,
+                },
+              },
+              coupons: {
+                where: this.buildActiveCouponWhere(now, {
+                  includeDefaultTierCoupons: false,
+                }),
+                orderBy: { startsAt: 'desc' },
+                take: 1,
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  description: true,
+                  discountType: true,
+                  discountValue: true,
+                  maxDiscountVnd: true,
+                  minSpendVnd: true,
+                  startsAt: true,
+                  endsAt: true,
+                  usageLimit: true,
+                  usedCount: true,
+                },
+              },
             },
-          },
-          media: {
-            where: this.storeMediaWhere({
-              access: 'PUBLIC',
-              status: 'READY',
-              type: 'IMAGE',
-            }),
-            orderBy: { createdAt: 'desc' },
-            take: 8,
-            select: {
-              url: true,
-              purpose: true,
-            },
-          },
-          casts: {
-            where: {
-              deletedAt: null,
-              status: 'ACTIVE',
-              isPublic: true,
-            },
-            select: {
-              hourlyRateVnd: true,
-            },
-          },
-          coupons: {
-            where: this.buildActiveCouponWhere(now, {
-              includeDefaultTierCoupons: false,
-            }),
-            orderBy: { startsAt: 'desc' },
-            take: 1,
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              description: true,
-              discountType: true,
-              discountValue: true,
-              maxDiscountVnd: true,
-              minSpendVnd: true,
-              startsAt: true,
-              endsAt: true,
-              usageLimit: true,
-              usedCount: true,
-            },
-          },
-        },
-      }),
-    ]);
+          });
 
     const mappedStores = stores.map((store) => ({
       id: store.id,
@@ -2365,7 +2399,10 @@ export class NightlifeDataService {
         ? this.cityCodeFromAreaCode(store.area.code)
         : this.normalizeCityCode(store.city),
       district: store.district,
-      ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+      ward:
+        (store as any).ward ??
+        (store.area as any)?.ward ??
+        this.extractWardFromStoreAddress((store as any).address),
       tags: store.tags ?? [],
       area: store.area
         ? {
@@ -2407,19 +2444,25 @@ export class NightlifeDataService {
         store.longitude,
       ),
     }));
-    const rankedStores =
-      sort === 'priority'
-        ? await this.loadRankingMap(
-            'STORE',
-            mappedStores.map((store) => store.id),
-          )
-        : new Map<string, RankingScore>();
-    const data = this.finalizePublicItems(
-      mappedStores,
-      sort,
-      pagination,
-      rankedStores,
-    );
+    const data = priorityPageIds
+      ? (() => {
+          const storesById = new Map(
+            mappedStores.map((store) => [store.id, store]),
+          );
+          return priorityPageIds.flatMap((id) => {
+            const store = storesById.get(id);
+            if (!store) return [];
+            const { createdAt: _createdAt, ...item } = store;
+            void _createdAt;
+            return [item];
+          });
+        })()
+      : this.finalizePublicItems(
+          mappedStores,
+          sort,
+          pagination,
+          priorityRankings,
+        );
 
     return this.buildPublicListResponse(data, total, pagination, sort);
   }
@@ -2614,7 +2657,9 @@ export class NightlifeDataService {
 
         const isVideo =
           media.type === 'VIDEO' ||
-          ['PARTNER_STORE_VIDEO', 'STORE_VIDEO'].includes(media.purpose ?? '') ||
+          ['PARTNER_STORE_VIDEO', 'STORE_VIDEO'].includes(
+            media.purpose ?? '',
+          ) ||
           Boolean(media.mimeType?.startsWith('video/')) ||
           /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(media.url || '') ||
           (media.url || '').includes('youtube.com') ||
@@ -2659,7 +2704,10 @@ export class NightlifeDataService {
         ? this.cityCodeFromAreaCode(store.area.code)
         : this.normalizeCityCode(store.city),
       district: store.district,
-      ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+      ward:
+        (store as any).ward ??
+        (store.area as any)?.ward ??
+        this.extractWardFromStoreAddress((store as any).address),
       phone: store.phone,
       tags: store.tags ?? [],
       latitude: this.toNumber(store.latitude),
@@ -3153,8 +3201,16 @@ export class NightlifeDataService {
       },
     });
 
-    const extractWardFromAddress = (address?: string | null, areaWard?: string | null): string | null => {
-      if (areaWard && areaWard.trim() && areaWard.toLowerCase() !== 'tổng hợp' && areaWard.toLowerCase() !== 'tong hop') {
+    const extractWardFromAddress = (
+      address?: string | null,
+      areaWard?: string | null,
+    ): string | null => {
+      if (
+        areaWard &&
+        areaWard.trim() &&
+        areaWard.toLowerCase() !== 'tổng hợp' &&
+        areaWard.toLowerCase() !== 'tong hop'
+      ) {
         return areaWard.trim();
       }
       if (!address) return null;
@@ -3717,7 +3773,10 @@ export class NightlifeDataService {
 
         const castMediaUrls = castProfile.mediaUrls ?? [];
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
-          const purpose = this.partnerListingCastMediaPurpose(castProfile, mediaIndex);
+          const purpose = this.partnerListingCastMediaPurpose(
+            castProfile,
+            mediaIndex,
+          );
           const uploadedDraftMedia = await tx.media.findFirst({
             where: {
               ownerId: user.id,
@@ -6631,7 +6690,14 @@ export class NightlifeDataService {
         rejectReason: true,
         usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
-        booking: { select: { id: true, bookingCode: true, status: true, scheduledAt: true } },
+        booking: {
+          select: {
+            id: true,
+            bookingCode: true,
+            status: true,
+            scheduledAt: true,
+          },
+        },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {
@@ -6680,7 +6746,14 @@ export class NightlifeDataService {
         rejectReason: true,
         usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
-        booking: { select: { id: true, status: true, scheduledAt: true, bookingCode: true } },
+        booking: {
+          select: {
+            id: true,
+            status: true,
+            scheduledAt: true,
+            bookingCode: true,
+          },
+        },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
         media: {
@@ -7165,7 +7238,10 @@ export class NightlifeDataService {
             ? this.cityCodeFromAreaCode(store.area.code)
             : this.normalizeCityCode(store.city),
           district: store.district,
-          ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+          ward:
+            (store as any).ward ??
+            (store.area as any)?.ward ??
+            this.extractWardFromStoreAddress((store as any).address),
           tags: store.tags ?? [],
           area: this.mapPublicArea(store.area),
           latitude: this.toNumber(store.latitude),
@@ -8331,7 +8407,8 @@ export class NightlifeDataService {
             'rejectReason',
           ],
           changeSummary: `Đã gửi lại hóa đơn "${updatedBill.billNumber ?? updatedBill.id}"`,
-          reason: rejectedBill.rejectReason ?? 'Partner corrected rejected bill',
+          reason:
+            rejectedBill.rejectReason ?? 'Partner corrected rejected bill',
           result: 'SUCCESS',
           beforeJson: this.toPrismaJson(beforeSnapshot),
           afterJson: this.toPrismaJson(afterSnapshot),
@@ -8701,7 +8778,10 @@ export class NightlifeDataService {
               url,
               index: mediaIndex,
               castId: cast.id,
-              purpose: this.partnerListingCastMediaPurpose(castProfile, mediaIndex),
+              purpose: this.partnerListingCastMediaPurpose(
+                castProfile,
+                mediaIndex,
+              ),
             },
             tx,
           );
@@ -12278,9 +12358,12 @@ export class NightlifeDataService {
       const confirmedUsageAt =
         context.booking.qr?.usedAt ??
         context.booking.couponIssue?.usedAt ??
-        ((context.requireCheckedInBooking
-          ? String(context.booking.status ?? '').toUpperCase() === 'CHECKED_IN'
-          : this.isBookingAdminConfirmedForBill(context.booking.status))
+        ((
+          context.requireCheckedInBooking
+            ? String(context.booking.status ?? '').toUpperCase() ===
+              'CHECKED_IN'
+            : this.isBookingAdminConfirmedForBill(context.booking.status)
+        )
           ? context.booking.updatedAt
           : null) ??
         null;
@@ -14733,7 +14816,8 @@ export class NightlifeDataService {
       storeName: booking.store?.name ?? null,
       storeSlug: booking.store?.slug ?? null,
       castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
-      guestName: booking.guest?.displayName ?? booking.user?.displayName ?? null,
+      guestName:
+        booking.guest?.displayName ?? booking.user?.displayName ?? null,
       amountVnd:
         typeof booking.totalVnd === 'number' && booking.totalVnd > 0
           ? booking.totalVnd
@@ -14857,12 +14941,9 @@ export class NightlifeDataService {
     const amountLabel = this.bookingAmountLabel(tourBooking, locale);
     const discountLabel = this.bookingDiscountEmailLabel(tourBooking);
     const guestName =
-      tourBooking.guest?.displayName ||
-      tourBooking.user?.displayName ||
-      null;
+      tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
-    const effectiveTourBookingId =
-      tourBooking.tourBookingId || tourBooking.id;
+    const effectiveTourBookingId = tourBooking.tourBookingId || tourBooking.id;
 
     const payload = {
       bookingId: effectiveTourBookingId,
@@ -17253,8 +17334,11 @@ export class NightlifeDataService {
         }
 
         const createdAtDiff =
-          this.createdAtMs(second.createdAt) - this.createdAtMs(first.createdAt);
-        return createdAtDiff !== 0 ? createdAtDiff : first.id.localeCompare(second.id);
+          this.createdAtMs(second.createdAt) -
+          this.createdAtMs(first.createdAt);
+        return createdAtDiff !== 0
+          ? createdAtDiff
+          : first.id.localeCompare(second.id);
       });
     }
 
@@ -17364,31 +17448,33 @@ export class NightlifeDataService {
       const target = targets.get(`${config.targetType}:${config.targetId}`);
       if (!target) return [];
 
-      return [{
-        id: config.id,
-        targetType: config.targetType,
-        targetId: config.targetId,
-        targetName: target?.name ?? 'Unknown target',
-        targetSlug: target?.slug ?? null,
-        targetImage: target?.image ?? null,
-        targetStatus: target?.status ?? null,
-        targetCategory: target?.category ?? config.category,
-        targetCity: target?.city ?? null,
-        targetArea: target?.area ?? config.area?.name ?? null,
-        cityCode: config.cityCode,
-        areaId: config.areaId,
-        area: config.area,
-        category: config.category,
-        scope: config.scope,
-        manualScore: config.manualScore,
-        pinRank: config.pinRank,
-        sponsored: config.sponsored,
-        status: config.status,
-        startsAt: config.startsAt,
-        endsAt: config.endsAt,
-        createdAt: config.createdAt,
-        updatedAt: config.updatedAt,
-      }];
+      return [
+        {
+          id: config.id,
+          targetType: config.targetType,
+          targetId: config.targetId,
+          targetName: target?.name ?? 'Unknown target',
+          targetSlug: target?.slug ?? null,
+          targetImage: target?.image ?? null,
+          targetStatus: target?.status ?? null,
+          targetCategory: target?.category ?? config.category,
+          targetCity: target?.city ?? null,
+          targetArea: target?.area ?? config.area?.name ?? null,
+          cityCode: config.cityCode,
+          areaId: config.areaId,
+          area: config.area,
+          category: config.category,
+          scope: config.scope,
+          manualScore: config.manualScore,
+          pinRank: config.pinRank,
+          sponsored: config.sponsored,
+          status: config.status,
+          startsAt: config.startsAt,
+          endsAt: config.endsAt,
+          createdAt: config.createdAt,
+          updatedAt: config.updatedAt,
+        },
+      ];
     });
   }
 
@@ -18739,7 +18825,10 @@ export class NightlifeDataService {
   }
 
   private partnerListingCastMediaPurpose(
-    profile: Pick<PartnerListingCastDto, 'avatarUrl' | 'albumImageUrls' | 'mediaUrls'>,
+    profile: Pick<
+      PartnerListingCastDto,
+      'avatarUrl' | 'albumImageUrls' | 'mediaUrls'
+    >,
     index: number,
   ) {
     const mediaUrls = profile.mediaUrls ?? [];
@@ -18941,7 +19030,10 @@ export class NightlifeDataService {
     const youtubeLinks = list(profile.youtubeLinks, 8);
     const mediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
     const avatarUrl = text(profile.avatarUrl);
-    const albumImageUrls = this.cleanPartnerListingStringArray(profile.albumImageUrls, 10);
+    const albumImageUrls = this.cleanPartnerListingStringArray(
+      profile.albumImageUrls,
+      10,
+    );
     const profileClientKey = text(profile.clientKey);
     const stableProfileClientKey =
       profileClientKey && !profileClientKey.startsWith('legacy-cast-')
@@ -18967,10 +19059,12 @@ export class NightlifeDataService {
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
       zodiacSign:
         profile.zodiacSign !== undefined
-          ? this.zodiacSignForBirthMonth(profile.birthMonth) ?? text(profile.zodiacSign) ?? undefined
-          : this.zodiacSignForBirthMonth(storeProfile?.birthMonth) ??
+          ? (this.zodiacSignForBirthMonth(profile.birthMonth) ??
+            text(profile.zodiacSign) ??
+            undefined)
+          : (this.zodiacSignForBirthMonth(storeProfile?.birthMonth) ??
             text(storeProfile?.zodiacSign) ??
-            undefined,
+            undefined),
       heightCm: profile.heightCm ?? storeProfile?.heightCm,
       measurements:
         text(profile.measurements) ??
@@ -19050,7 +19144,10 @@ export class NightlifeDataService {
       hourlyRateVnd: profile.hourlyRateVnd ?? null,
       mediaUrls: this.cleanPartnerListingCastMediaUrls(profile.mediaUrls),
       avatarUrl: this.cleanPartnerListingText(profile.avatarUrl) ?? null,
-      albumImageUrls: this.cleanPartnerListingStringArray(profile.albumImageUrls, 10),
+      albumImageUrls: this.cleanPartnerListingStringArray(
+        profile.albumImageUrls,
+        10,
+      ),
       isPublic: profile.isPublic ?? true,
       status: profile.status ?? 'ACTIVE',
     };
@@ -20780,8 +20877,18 @@ export class NightlifeDataService {
 
   private zodiacSignForBirthMonth(birthMonth?: number | null) {
     const signs = [
-      'Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus', 'Gemini',
-      'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius',
+      'Capricorn',
+      'Aquarius',
+      'Pisces',
+      'Aries',
+      'Taurus',
+      'Gemini',
+      'Cancer',
+      'Leo',
+      'Virgo',
+      'Libra',
+      'Scorpio',
+      'Sagittarius',
     ];
     return birthMonth && birthMonth >= 1 && birthMonth <= 12
       ? signs[birthMonth - 1]
@@ -20825,7 +20932,9 @@ export class NightlifeDataService {
         const hasExplicitImagePartition =
           incomingProfile.avatarUrl !== undefined ||
           incomingProfile.albumImageUrls !== undefined;
-        const legacyMediaUrls = this.cleanPartnerListingCastMediaUrls(profile.mediaUrls);
+        const legacyMediaUrls = this.cleanPartnerListingCastMediaUrls(
+          profile.mediaUrls,
+        );
         const legacyImageUrls = legacyMediaUrls.filter(
           (url) => this.partnerRequestMediaType(url) === 'IMAGE',
         );
@@ -20836,7 +20945,10 @@ export class NightlifeDataService {
           ? this.cleanPartnerListingText(incomingProfile.avatarUrl)
           : legacyImageUrls[0];
         const albumImageUrls = hasExplicitImagePartition
-          ? this.cleanPartnerListingStringArray(incomingProfile.albumImageUrls, 10)
+          ? this.cleanPartnerListingStringArray(
+              incomingProfile.albumImageUrls,
+              10,
+            )
           : legacyImageUrls.slice(1, 11);
         const mediaUrls = Array.from(
           new Set(
@@ -23364,13 +23476,16 @@ export class NightlifeDataService {
       let guestType = 'Member';
       const isPartnerSubmit = bill.submitterType === 'PARTNER';
       const sender = isPartnerSubmit
-        ? (bill.submittedByUser?.displayName || bill.user?.displayName || bill.guest?.displayName || 'Partner')
-        : (bill.user?.displayName || bill.guest?.displayName || 'Guest');
+        ? bill.submittedByUser?.displayName ||
+          bill.user?.displayName ||
+          bill.guest?.displayName ||
+          'Partner'
+        : bill.user?.displayName || bill.guest?.displayName || 'Guest';
       const submitterName = isPartnerSubmit
-        ? (bill.submittedByUser?.displayName || null)
+        ? bill.submittedByUser?.displayName || null
         : null;
       const submitterStoreName = isPartnerSubmit
-        ? (bill.store?.name || null)
+        ? bill.store?.name || null
         : null;
       if (bill.user) guestType = bill.user.tier || 'Member';
       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
@@ -25794,7 +25909,10 @@ export class NightlifeDataService {
               ? this.cityCodeFromAreaCode(store.area.code)
               : this.normalizeCityCode(store.city),
             district: store.district,
-            ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+            ward:
+              (store as any).ward ??
+              (store.area as any)?.ward ??
+              this.extractWardFromStoreAddress((store as any).address),
             area: this.mapPublicArea(store.area),
             thumbnailUrl: coverMedia?.url ?? null,
             responsiveImage: toPublicResponsiveImage(coverMedia),
@@ -25975,7 +26093,10 @@ export class NightlifeDataService {
             ? this.cityCodeFromAreaCode(store.area.code)
             : this.normalizeCityCode(store.city),
           district: store.district,
-          ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+          ward:
+            (store as any).ward ??
+            (store.area as any)?.ward ??
+            this.extractWardFromStoreAddress((store as any).address),
           area: this.mapPublicArea(store.area),
           thumbnailUrl: coverMedia?.url ?? null,
           responsiveImage: toPublicResponsiveImage(coverMedia),
@@ -26148,7 +26269,10 @@ export class NightlifeDataService {
             description: store.description,
             city: store.city,
             district: store.district,
-            ward: (store as any).ward ?? (store.area as any)?.ward ?? this.extractWardFromStoreAddress((store as any).address),
+            ward:
+              (store as any).ward ??
+              (store.area as any)?.ward ??
+              this.extractWardFromStoreAddress((store as any).address),
             area: this.mapPublicArea(store.area),
             thumbnailUrl: this.resolveStoreCoverImage(store.media),
             href: `/stores/${store.slug}`,

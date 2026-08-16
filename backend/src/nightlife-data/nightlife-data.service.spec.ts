@@ -1615,6 +1615,12 @@ describe('NightlifeDataService', () => {
       'top-priority-store',
       'low-priority-store',
     ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, createdAt: true },
+      }),
+    );
     expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
