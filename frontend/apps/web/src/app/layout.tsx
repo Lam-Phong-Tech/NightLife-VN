@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { PublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+import { AppearanceFavicon } from "@/components/providers/AppearanceFavicon";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
@@ -12,10 +13,7 @@ import { SITE_FAVICON_URL } from "@/lib/appearance-favicon";
 import { siteConfig } from "@/lib/site";
 import { headers } from "next/headers";
 import { getNightlifeHostKind } from "@/lib/auth/hosts";
-import {
-  isLanguageCode,
-  languageHtmlLang,
-} from "@/lib/i18n/locales";
+import { isLanguageCode, languageHtmlLang } from "@/lib/i18n/locales";
 
 // Font Inter được next/font tự download lúc build — self-hosted cùng origin, không còn
 // DNS lookup / request chặn render tới fonts.googleapis.com (~750ms).
@@ -28,7 +26,6 @@ const inter = Inter({
   variable: "--font-inter",
   preload: true,
 });
-
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -239,7 +236,11 @@ export default async function RootLayout({
   const documentLanguage = isLanguageCode(requestedLocale) ? requestedLocale : "vi";
 
   return (
-    <html lang={languageHtmlLang[documentLanguage]} className={inter.variable} suppressHydrationWarning>
+    <html
+      lang={languageHtmlLang[documentLanguage]}
+      className={inter.variable}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -276,6 +277,7 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        <AppearanceFavicon />
         <GoogleAnalytics />
         <ClientLanguageTranslator hostKind={hostKind}>
           <PublicTranslationFallback hostKind={hostKind} />
