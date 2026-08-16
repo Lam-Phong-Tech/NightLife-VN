@@ -688,6 +688,7 @@ describe('NightlifeDataService', () => {
     );
     expect(prisma.store.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         where: expect.objectContaining({
           deletedAt: null,
           status: 'ACTIVE',

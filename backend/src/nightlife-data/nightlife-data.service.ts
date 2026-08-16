@@ -2276,7 +2276,8 @@ export class NightlifeDataService {
       this.prisma.store.count({ where }),
       this.prisma.store.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        // Keep pagination stable when several venues are created at the same time.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         ...readArgs,
         select: {
           id: true,
@@ -17251,9 +17252,9 @@ export class NightlifeDataService {
           return scoreDiff;
         }
 
-        return (
-          this.createdAtMs(second.createdAt) - this.createdAtMs(first.createdAt)
-        );
+        const createdAtDiff =
+          this.createdAtMs(second.createdAt) - this.createdAtMs(first.createdAt);
+        return createdAtDiff !== 0 ? createdAtDiff : first.id.localeCompare(second.id);
       });
     }
 

@@ -834,7 +834,13 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         })
         .then((result) => {
           if (!cancelled) {
-            setStores(result.stores);
+            // A public page must never render the same venue twice, even if a
+            // transient response from an older API instance contains duplicates.
+            const uniqueStores = result.stores.filter(
+              (store, index, items) =>
+                items.findIndex((candidate) => candidate.id === store.id) === index,
+            );
+            setStores(uniqueStores);
             setTotalStores(result.total);
           }
         })
