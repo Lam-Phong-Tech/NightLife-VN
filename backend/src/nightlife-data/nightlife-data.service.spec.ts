@@ -5231,8 +5231,9 @@ describe('NightlifeDataService', () => {
               hourlyRateVnd: 1200000,
               isPublic: true,
               status: 'ACTIVE',
+              avatarUrl: 'https://cdn.example.com/aoi.jpg',
+              albumImageUrls: [],
               mediaUrls: [
-                'https://cdn.example.com/aoi.jpg',
                 'https://cdn.example.com/aoi.mp4',
               ],
             }),
