@@ -3793,10 +3793,11 @@ export class NightlifeDataService {
         );
         draftCastIds.push(cast.id);
 
-        const castMediaUrls = castProfile.mediaUrls ?? [];
+        const castMediaUrls = this.partnerListingCastMediaUrls(castProfile);
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
           const purpose = this.partnerListingCastMediaPurpose(
             castProfile,
+            url,
             mediaIndex,
           );
           const uploadedDraftMedia = await tx.media.findFirst({
@@ -3848,6 +3849,21 @@ export class NightlifeDataService {
           where: { id: { in: draftMediaIds } },
           data: { status: 'READY', access: 'PUBLIC' },
         });
+        const promotedMedia = await tx.media.findMany({
+          where: { id: { in: draftMediaIds } },
+          select: { id: true, url: true },
+        });
+        await Promise.all(
+          promotedMedia.map((media) => {
+            const publicUrl = this.publicMediaUrl(media.url);
+            return publicUrl === media.url
+              ? Promise.resolve()
+              : tx.media.update({
+                  where: { id: media.id },
+                  data: { url: publicUrl },
+                });
+          }),
+        );
       }
 
       return {
@@ -8797,7 +8813,9 @@ export class NightlifeDataService {
         });
         draftCastIds.push(cast.id);
 
-        for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+        for (const [mediaIndex, url] of this.partnerListingCastMediaUrls(
+          castProfile,
+        ).entries()) {
           const media = await this.createPartnerRequestMedia(
             {
               requestId,
@@ -8806,6 +8824,7 @@ export class NightlifeDataService {
               castId: cast.id,
               purpose: this.partnerListingCastMediaPurpose(
                 castProfile,
+                url,
                 mediaIndex,
               ),
             },
@@ -18895,25 +18914,64 @@ export class NightlifeDataService {
       PartnerListingCastDto,
       'avatarUrl' | 'albumImageUrls' | 'mediaUrls'
     >,
+    url: string,
     index: number,
   ) {
-    const mediaUrls = profile.mediaUrls ?? [];
-    const url = mediaUrls[index];
-    if (this.partnerRequestMediaType(url) === 'VIDEO') {
+    const key = this.partnerMediaUrlKey(url);
+    const hasExplicitImagePartition =
+      profile.avatarUrl !== undefined || profile.albumImageUrls !== undefined;
+    const isExplicitVideo =
+      hasExplicitImagePartition &&
+      Boolean(
+        key &&
+          (profile.mediaUrls ?? []).some(
+            (mediaUrl) => this.partnerMediaUrlKey(mediaUrl) === key,
+          ),
+      );
+    if (this.partnerRequestMediaType(url) === 'VIDEO' || isExplicitVideo) {
       return 'CAST_VIDEO';
     }
 
-    const hasExplicitImagePartition =
-      profile.avatarUrl !== undefined || profile.albumImageUrls !== undefined;
-    if (hasExplicitImagePartition) {
-      return profile.avatarUrl === url ? 'CAST_AVATAR' : 'CAST_PHOTO';
+    if (
+      key &&
+      profile.avatarUrl &&
+      this.partnerMediaUrlKey(profile.avatarUrl) === key
+    ) {
+      return 'CAST_AVATAR';
     }
 
+    if (
+      key &&
+      (profile.albumImageUrls ?? []).some(
+        (imageUrl) => this.partnerMediaUrlKey(imageUrl) === key,
+      )
+    ) {
+      return 'CAST_PHOTO';
+    }
+
+    if (hasExplicitImagePartition) {
+      return 'CAST_PHOTO';
+    }
+
+    const mediaUrls = profile.mediaUrls ?? [];
     const imagePosition = mediaUrls
       .slice(0, index + 1)
       .filter((item) => this.partnerRequestMediaType(item) === 'IMAGE').length;
 
     return imagePosition <= 1 ? 'CAST_AVATAR' : 'CAST_PHOTO';
+  }
+
+  private partnerListingCastMediaUrls(
+    profile: Pick<
+      PartnerListingCastDto,
+      'avatarUrl' | 'albumImageUrls' | 'mediaUrls'
+    >,
+  ) {
+    return this.uniqueMediaUrls([
+      profile.avatarUrl,
+      ...(profile.albumImageUrls ?? []),
+      ...(profile.mediaUrls ?? []),
+    ]);
   }
 
   private partnerListingCastEditSourceId(profile: { slug?: string | null }) {

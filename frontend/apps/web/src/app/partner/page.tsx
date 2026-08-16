@@ -6309,6 +6309,12 @@ export default function PartnerPage() {
         castIsPublic: false,
         castProfileKey: castProfileKeyToSubmit,
       });
+      const selectedCastProfiles = payload.castProfiles.filter(
+        (cast) => castProfileKey(cast) === castProfileKeyToSubmit,
+      );
+      if (!selectedCastProfiles.length) {
+        throw new Error('Không tìm thấy cast cần gửi duyệt. Vui lòng thử lại.');
+      }
       const response = await apiClient<{
         id: string;
         status: string;
@@ -6320,7 +6326,9 @@ export default function PartnerPage() {
           contentCount?: number;
         };
       }>(`/partner/listing-draft/${encodeURIComponent(listingStoreId)}/casts/submit`, {
-        data: { castProfiles: payload.castProfiles },
+        // Submit only the cast being edited. Existing active casts must never
+        // be re-submitted merely because they are present in the local form.
+        data: { castProfiles: selectedCastProfiles },
       });
       setListingReview({
         id: response.id,
