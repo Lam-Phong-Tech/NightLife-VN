@@ -335,17 +335,64 @@ export class TourService {
     skip?: number;
     take?: number;
     city?: string;
+    q?: string;
     user?: AuthenticatedUser;
   }) {
-    const { skip = 0, take = 20, city, user } = params;
+    const { skip = 0, take = 20, city, q, user } = params;
     const now = new Date();
     const audience = this.resolveTourCouponAudience(user);
     const pendingCastEditSourceIds =
       await this.pendingPartnerListingCastEditSourceIds();
+    const search = q?.trim();
+    const visibleStopWhere: Prisma.TourStopWhereInput = {
+      store: {
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+    };
     const where: Prisma.TourWhereInput = {
       status: 'ACTIVE',
       deletedAt: null,
       ...(city ? { city } : {}),
+      stops: { some: visibleStopWhere },
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { subtitle: { contains: search, mode: 'insensitive' } },
+              { city: { contains: search, mode: 'insensitive' } },
+              {
+                stops: {
+                  some: {
+                    ...visibleStopWhere,
+                    store: {
+                      status: 'ACTIVE',
+                      deletedAt: null,
+                      OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { category: { contains: search, mode: 'insensitive' } },
+                        { city: { contains: search, mode: 'insensitive' } },
+                        { district: { contains: search, mode: 'insensitive' } },
+                        {
+                          area: {
+                            is: {
+                              OR: [
+                                { name: { contains: search, mode: 'insensitive' } },
+                                { city: { contains: search, mode: 'insensitive' } },
+                                { district: { contains: search, mode: 'insensitive' } },
+                                { ward: { contains: search, mode: 'insensitive' } },
+                              ],
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
 
     const [data, total] = await Promise.all([

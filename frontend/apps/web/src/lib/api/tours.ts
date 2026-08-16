@@ -98,6 +98,7 @@ export type PublicTourListResponse = {
 
 export type PublicTourListParams = {
   city?: string;
+  q?: string;
   page?: number;
   limit?: number;
 };

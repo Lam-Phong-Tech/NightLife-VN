@@ -18,6 +18,7 @@ export class PublicTourController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('city') city?: string,
+    @Query('q') q?: string,
     @Req() req?: RequestWithOptionalUser,
   ) {
     const skip = page ? (Number(page) - 1) * (Number(limit) || 20) : 0;
@@ -27,6 +28,7 @@ export class PublicTourController {
       skip,
       take,
       city,
+      q,
       user: req?.user,
     });
   }

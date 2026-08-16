@@ -61,6 +61,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
   searchPlaceholder: string;
   cityAria: string;
   searchButton: string;
+  suggestionLabel: string;
+  suggestionsLoading: string;
+  suggestionsEmpty: string;
   reset: string;
   loadFailed: string;
   listAria: string;
@@ -81,6 +84,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
     searchPlaceholder: "Tìm tour, quán hoặc khu vực...",
     cityAria: "Chọn thành phố",
     searchButton: "Tìm",
+    suggestionLabel: "Gợi ý tour",
+    suggestionsLoading: "Đang tìm tour...",
+    suggestionsEmpty: "Không có gợi ý trùng khớp.",
     reset: "Đặt lại",
     loadFailed: "Chưa tải được danh sách tour. Vui lòng thử lại sau.",
     listAria: "Danh sách tour",
@@ -101,6 +107,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
     searchPlaceholder: "Search tours, venues, or areas...",
     cityAria: "Choose city",
     searchButton: "Search",
+    suggestionLabel: "Tour suggestions",
+    suggestionsLoading: "Searching tours...",
+    suggestionsEmpty: "No matching suggestions.",
     reset: "Reset",
     loadFailed: "Could not load the tour list. Please try again later.",
     listAria: "Tour list",
@@ -121,6 +130,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
     searchPlaceholder: "ツアー、店舗、エリアを検索...",
     cityAria: "都市を選択",
     searchButton: "検索",
+    suggestionLabel: "ツアー候補",
+    suggestionsLoading: "ツアーを検索中...",
+    suggestionsEmpty: "一致する候補がありません。",
     reset: "リセット",
     loadFailed: "ツアー一覧を読み込めませんでした。後でもう一度お試しください。",
     listAria: "ツアー一覧",
@@ -141,6 +153,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
     searchPlaceholder: "투어, 매장 또는 지역 검색...",
     cityAria: "도시 선택",
     searchButton: "검색",
+    suggestionLabel: "투어 추천",
+    suggestionsLoading: "투어를 검색 중...",
+    suggestionsEmpty: "일치하는 추천이 없습니다.",
     reset: "초기화",
     loadFailed: "투어 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     listAria: "투어 목록",
@@ -161,6 +176,9 @@ const tourDirectoryCopy: Record<LanguageCode, {
     searchPlaceholder: "搜索行程、店铺或区域...",
     cityAria: "选择城市",
     searchButton: "搜索",
+    suggestionLabel: "行程推荐",
+    suggestionsLoading: "正在搜索行程...",
+    suggestionsEmpty: "没有匹配的推荐。",
     reset: "重置",
     loadFailed: "无法加载行程列表。请稍后重试。",
     listAria: "行程列表",
@@ -249,6 +267,9 @@ export function TourClient() {
   const copy = getTourDirectoryCopy(activeLanguage);
   const [city, setCity] = useState<CityFilter>("all");
   const [query, setQuery] = useState("");
+  const [suggestionTours, setSuggestionTours] = useState<PublicTour[]>([]);
+  const [isSuggestionLoading, setSuggestionLoading] = useState(false);
+  const [isSearchFocused, setSearchFocused] = useState(false);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [tours, setTours] = useState<PublicTour[]>([]);
   const [totalTours, setTotalTours] = useState(0);
@@ -271,6 +292,7 @@ export function TourClient() {
     tourApi
       .list({
         city: selectedCity.value || undefined,
+        q: query.trim() || undefined,
         page: currentPage,
         limit: tourItemsPerPage,
       })
@@ -294,7 +316,43 @@ export function TourClient() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCity.value, currentPage]);
+  }, [selectedCity.value, currentPage, query]);
+
+  useEffect(() => {
+    const suggestionQuery = query.trim().replace(/\s+/g, " ");
+    if (!suggestionQuery) {
+      setSuggestionTours([]);
+      setSuggestionLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestionTours([]);
+    setSuggestionLoading(true);
+    const timer = window.setTimeout(() => {
+      tourApi
+        .list({
+          city: selectedCity.value || undefined,
+          q: suggestionQuery,
+          page: 1,
+          limit: 12,
+        })
+        .then((response) => {
+          if (!cancelled) setSuggestionTours(response.data);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestionTours([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSuggestionLoading(false);
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, selectedCity.value]);
 
   // Scroll lên đầu danh sách khi chuyển trang
   useEffect(() => {
@@ -302,13 +360,22 @@ export function TourClient() {
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [currentPage]);
 
-  const visibleTours = useMemo(() => {
+  const suggestions = useMemo(() => {
     const normalizedQuery = normalizeSearch(query);
-    return tours.filter((tour) => {
-      const matchesQuery = !normalizedQuery || tourSearchText(tour).includes(normalizedQuery);
-      return matchesQuery;
-    });
-  }, [query, tours]);
+    if (!normalizedQuery) return [];
+
+    return suggestionTours
+      .filter((tour) => tourSearchText(tour).includes(normalizedQuery))
+      .sort((left, right) => {
+        const leftTitle = normalizeSearch(left.title);
+        const rightTitle = normalizeSearch(right.title);
+        const leftScore = leftTitle === normalizedQuery ? 0 : leftTitle.startsWith(normalizedQuery) ? 1 : 2;
+        const rightScore = rightTitle === normalizedQuery ? 0 : rightTitle.startsWith(normalizedQuery) ? 1 : 2;
+        return leftScore - rightScore || left.title.localeCompare(right.title);
+      })
+      .slice(0, 4);
+  }, [query, suggestionTours]);
+  const showSuggestions = isSearchFocused && query.trim().length > 0;
 
   const totalPages = Math.max(1, Math.ceil(totalTours / tourItemsPerPage));
   const hasActiveFilter = city !== "all" || query.trim().length > 0;
@@ -349,9 +416,19 @@ export function TourClient() {
             <input
               value={query}
               onChange={(event) => { setQuery(event.target.value); setCurrentPage(1); }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
               placeholder={copy.searchPlaceholder}
               autoComplete="off"
             />
+            {showSuggestions ? (
+              <TourSearchSuggestions
+                copy={copy}
+                language={activeLanguage}
+                isLoading={isSuggestionLoading}
+                tours={suggestions}
+              />
+            ) : null}
           </label>
 
           <div
@@ -417,8 +494,8 @@ export function TourClient() {
         <section className="tour-list" aria-label={copy.listAria} ref={listRef}>
           {isLoading ? (
             <TourSkeletons />
-          ) : visibleTours.length > 0 ? (
-            visibleTours.map((tour) => (
+          ) : tours.length > 0 ? (
+            tours.map((tour) => (
               <TourResultCard key={tour.id} tour={tour} language={activeLanguage} />
             ))
           ) : (
@@ -542,6 +619,46 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
   );
 }
 
+function TourSearchSuggestions({
+  copy,
+  language,
+  isLoading,
+  tours,
+}: {
+  copy: ReturnType<typeof getTourDirectoryCopy>;
+  language: LanguageCode;
+  isLoading: boolean;
+  tours: PublicTour[];
+}) {
+  return (
+    <div className="tour-suggestions" role="listbox" aria-label={copy.suggestionLabel}>
+      {isLoading ? (
+        <div className="tour-suggestion-empty">{copy.suggestionsLoading}</div>
+      ) : tours.length ? (
+        <>
+          <div className="tour-suggestion-label">{copy.suggestionLabel}</div>
+          {tours.map((tour) => (
+            <Link key={tour.id} href={`/tour/${tour.id}`} className="tour-suggestion-row">
+              <span
+                className="tour-suggestion-thumb"
+                aria-hidden="true"
+                style={{ backgroundImage: `url(${JSON.stringify(tourImage(tour))})` }}
+              />
+              <span>
+                <b className="notranslate" translate="no" data-no-translate="true">{tour.title}</b>
+                <small>{[tourCityLabel(tour, language), formatStopCount(tour.stops.length, language)].filter(Boolean).join(" · ")}</small>
+              </span>
+              <ChevronRight size={15} />
+            </Link>
+          ))}
+        </>
+      ) : (
+        <div className="tour-suggestion-empty">{copy.suggestionsEmpty}</div>
+      )}
+    </div>
+  );
+}
+
 function TourSkeletons() {
   return (
     <>
@@ -651,6 +768,60 @@ const tourDirectoryCss = `
     gap: 14px;
     padding: 0 18px;
   }
+
+  .tour-search-input { position: relative; }
+
+  .tour-suggestions {
+    position: absolute;
+    z-index: 230;
+    top: calc(100% + 8px);
+    left: 0;
+    width: min(100%, 680px);
+    overflow: hidden;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 14px;
+    background: #17151b;
+    box-shadow: 0 22px 48px -24px rgba(0, 0, 0, .88);
+  }
+
+  .tour-suggestion-label,
+  .tour-suggestion-empty {
+    color: var(--vy-muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .tour-suggestion-label { padding: 11px 14px 7px; text-transform: uppercase; letter-spacing: .08em; }
+  .tour-suggestion-empty { padding: 17px 14px; }
+
+  .tour-suggestion-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 62px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    color: var(--vy-text);
+    padding: 8px 12px;
+    text-decoration: none;
+  }
+
+  .tour-suggestion-row:hover,
+  .tour-suggestion-row:focus-visible { background: rgba(212, 178, 106, .1); outline: none; }
+
+  .tour-suggestion-thumb {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border-radius: 9px;
+    background: #29252d center / cover no-repeat;
+  }
+
+  .tour-suggestion-row > span:nth-child(2) { display: grid; min-width: 0; gap: 3px; }
+  .tour-suggestion-row b,
+  .tour-suggestion-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tour-suggestion-row b { font-size: 13px; }
+  .tour-suggestion-row small { color: var(--vy-muted); font-size: 11px; }
+  .tour-suggestion-row > svg { margin-left: auto; color: var(--vy-gold); flex: none; }
 
   .tour-search-input svg,
   .tour-city-trigger svg {
@@ -771,6 +942,9 @@ const tourDirectoryCss = `
     background: linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(246, 238, 219, .88));
     box-shadow: 0 24px 70px -42px rgba(84, 62, 25, .34);
   }
+
+  html.vy-light .tour-suggestions { background: #fffaf2; box-shadow: 0 18px 44px -28px rgba(86, 62, 18, .36); }
+  html.vy-light .tour-suggestion-row { border-color: rgba(87, 67, 36, .1); }
 
   html.vy-light .tour-city-menu {
     background: #fffaf2;
