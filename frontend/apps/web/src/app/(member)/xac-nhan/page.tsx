@@ -566,6 +566,7 @@ export default function Page() {
   const [isBookingLoading, setIsBookingLoading] = useState(true);
   const [redirectFeedback, setRedirectFeedback] = useState<BookingResolutionFeedback | null>(null);
   const [adminStoreAddress, setAdminStoreAddress] = useState("");
+  const [resolvedStoreCategory, setResolvedStoreCategory] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => getAuthUser());
   const latestBookingRef = useRef<BookingRecord | null>(null);
   const handledResolutionRef = useRef<string | null>(null);
@@ -734,6 +735,7 @@ export default function Page() {
     let alive = true;
 
     setAdminStoreAddress(bookingStoreAddress);
+    setResolvedStoreCategory(booking?.store?.category ?? null);
 
     if (!bookingStoreSlug) {
       return () => {
@@ -745,23 +747,30 @@ export default function Page() {
       .then((store) => {
         if (!alive) return;
         setAdminStoreAddress(store.address?.trim() || bookingStoreAddress);
+        setResolvedStoreCategory(store.category ?? null);
       })
       .catch(() => undefined);
 
     return () => {
       alive = false;
     };
-  }, [bookingStoreAddress, bookingStoreSlug]);
+  }, [booking?.store?.category, bookingStoreAddress, bookingStoreSlug]);
 
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) || isPartnerApproved : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
   const title = bookingTitle(booking);
   const isTourBooking = Boolean(booking?.tour);
+  const bookingStoreCategory = booking?.store?.category?.trim() || resolvedStoreCategory;
   const isCodeOnlyBooking = Boolean(
-    !isTourBooking && isServiceOnlyBookingCategory(booking?.store?.category),
+    !isTourBooking && isServiceOnlyBookingCategory(bookingStoreCategory),
   );
   const bookedStoreAddress = !isTourBooking ? adminStoreAddress : "";
-  const canShowQr = booking ? !isCancelled && !isCodeOnlyBooking : false;
+  const isStoreCategoryResolving = Boolean(
+    booking && !isTourBooking && bookingStoreSlug && !bookingStoreCategory,
+  );
+  const canShowQr = booking
+    ? !isCancelled && !isCodeOnlyBooking && !isStoreCategoryResolving
+    : false;
   const qrImageUrl = booking && canShowQr ? bookingQrImageUrl(booking) : "";
   const isGuestBooking = Boolean(booking && !booking.user?.id);
   const discountInfo = booking ? bookingDiscountText(booking) : null;
