@@ -4,6 +4,7 @@ export type BookingTelegramMessageInput = {
   bookingSequenceCode?: string | null;
   bookingCode?: string | null;
   storeName?: string | null;
+  storeCategory?: string | null;
   customerName?: string | null;
   customerEmail?: string | null;
   customerType?: string | null;
@@ -58,12 +59,13 @@ export function formatBookingRequestTelegramMessage(
   input: BookingTelegramMessageInput,
 ) {
   const customerType = normalizeCustomerType(input.customerType);
+  const supportsCast = !isServiceOnlyBookingCategory(input.storeCategory);
 
   return compactLines([
     '🆕 [BOOKING MỚI]',
     '',
-    ...bookingDetailLines(input, customerType),
-    `⚠️ Lưu ý: ${bookingCastNotice}`,
+    ...bookingDetailLines(input, customerType, supportsCast),
+    supportsCast ? `⚠️ Lưu ý: ${bookingCastNotice}` : null,
   ]);
 }
 
@@ -71,13 +73,14 @@ export function formatBookingCancelledTelegramMessage(
   input: BookingTelegramMessageInput,
 ) {
   const customerType = normalizeCustomerType(input.customerType);
+  const supportsCast = !isServiceOnlyBookingCategory(input.storeCategory);
 
   return compactLines([
     '⚠️ [BOOKING ĐÃ HỦY]',
     '',
-    ...bookingDetailLines(input, customerType),
+    ...bookingDetailLines(input, customerType, supportsCast),
     input.reason ? `📝 Lý do hủy: ${input.reason}` : null,
-    `⚠️ Lưu ý: ${bookingCancelledNotice}`,
+    supportsCast ? `⚠️ Lưu ý: ${bookingCancelledNotice}` : null,
   ]);
 }
 
@@ -185,6 +188,7 @@ function formatPartySizeNumber(value?: number | null) {
 function bookingDetailLines(
   input: BookingTelegramMessageInput,
   customerType: string,
+  supportsCast: boolean,
 ) {
   return [
     input.bookingSequenceCode ? `🔢 STT: ${input.bookingSequenceCode}` : null,
@@ -194,13 +198,18 @@ function bookingDetailLines(
     `🏷️ Loại khách: ${customerType}`,
     `🎟️ Mức giảm: ${input.discountLabel || discountLabelForCustomerType(customerType)}`,
     `🏪 Quán: ${valueOrFallback(input.storeName)}`,
-    `👑 Cast mong muốn: ${input.castName || noValueText}`,
+    supportsCast ? `👑 Cast mong muốn: ${input.castName || noValueText}` : null,
     `🗓️ Ngày giờ đến: ${formatBookingArrivalDateTime(input.scheduledAt, input.timeZone)}`,
     `👥 Số người: ${formatPartySizeNumber(input.partySize)}`,
     `💬 Ghi chú: ${input.note || noValueText}`,
     `🔳 QR: ${input.qrStatus || defaultBookingQrStatus}`,
     `📌 Trạng thái booking: ${input.bookingStatusLabel || bookingStatusLabel(input.status)}`,
   ];
+}
+
+function isServiceOnlyBookingCategory(category?: string | null) {
+  const normalized = category?.trim().toUpperCase();
+  return normalized === 'RESTAURANT' || normalized === 'MASSAGE_SPA';
 }
 
 function normalizeCustomerType(value?: string | null) {

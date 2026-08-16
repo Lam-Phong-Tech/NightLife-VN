@@ -80,4 +80,28 @@ describe('admin telegram message formatter', () => {
       ].join('\n'),
     );
   });
+
+  it.each(['RESTAURANT', 'MASSAGE_SPA'])(
+    'omits cast-only lines for %s bookings',
+    (storeCategory) => {
+      const message = formatBookingRequestTelegramMessage({
+        bookingCode: 'BK-SERVICE',
+        customerName: 'Khách A',
+        customerEmail: 'guest@example.com',
+        customerType: 'Guest',
+        storeName: 'Service Store',
+        storeCategory,
+        castName: 'Không được hiển thị',
+        scheduledAt: '2026-07-05T13:00:00.000Z',
+        partySize: 2,
+        note: 'Bàn gần cửa sổ',
+        status: 'REQUESTED',
+        timeZone: 'Asia/Bangkok',
+      });
+
+      expect(message).not.toContain('Cast mong muốn');
+      expect(message).not.toContain('⚠️ Lưu ý:');
+      expect(message).toContain('💬 Ghi chú: Bàn gần cửa sổ');
+    },
+  );
 });

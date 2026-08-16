@@ -33,6 +33,7 @@ export class TelegramService {
         bookingSequenceCode,
         bookingCode: booking.bookingCode,
         storeName: booking.store?.name,
+        storeCategory: booking.store?.category,
         customerName: booking.user?.displayName ?? booking.guest?.displayName,
         customerEmail: booking.guest?.email ?? booking.user?.email,
         customerType: booking.user

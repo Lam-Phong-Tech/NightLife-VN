@@ -63,7 +63,12 @@ export type BookingAdminNotification = {
     phone?: string | null;
     email?: string | null;
   } | null;
-  store?: { id: string; name: string; slug: string } | null;
+  store?: {
+    id: string;
+    name: string;
+    slug: string;
+    category?: string | null;
+  } | null;
   cast?: {
     id: string;
     slug: string;
@@ -660,6 +665,7 @@ export class AdminNotificationService {
       bookingSequenceCode,
       bookingCode: booking.bookingCode,
       storeName: booking.store?.name,
+      storeCategory: booking.store?.category,
       customerName: this.customerName(booking),
       customerEmail: this.customerEmail(booking),
       customerType: this.customerType(booking),
