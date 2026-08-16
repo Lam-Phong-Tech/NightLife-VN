@@ -5678,6 +5678,27 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "正在加载通知...",
   },
   {
+    vi: "Chưa tải được thông báo. Vui lòng thử lại.",
+    en: "Could not load notifications. Please try again.",
+    ja: "通知を読み込めませんでした。もう一度お試しください。",
+    ko: "알림을 불러오지 못했습니다. 다시 시도해 주세요.",
+    zh: "无法加载通知，请重试。",
+  },
+  {
+    vi: "Đang tìm quán...",
+    en: "Searching venues...",
+    ja: "店舗を検索中...",
+    ko: "매장을 검색하는 중...",
+    zh: "正在搜索店铺...",
+  },
+  {
+    vi: "Đang tìm cast...",
+    en: "Searching Cast...",
+    ja: "キャストを検索中...",
+    ko: "캐스트를 검색하는 중...",
+    zh: "正在搜索陪伴人员...",
+  },
+  {
     vi: "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây.",
     en: "No new notifications. Results will appear here when Admin reviews a bill.",
     ja: "新しい通知はありません。管理者が請求書を確認すると、結果がここに表示されます。",

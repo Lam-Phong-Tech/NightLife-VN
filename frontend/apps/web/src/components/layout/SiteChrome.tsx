@@ -465,11 +465,13 @@ function NotificationTabs({
   isMobile,
   unreadCount,
   activeFilter,
+  language,
   onFilterChange,
 }: {
   isMobile: boolean;
   unreadCount: number;
   activeFilter: NotificationFilter;
+  language: LanguageCode;
   onFilterChange: (filter: NotificationFilter) => void;
 }) {
   const tabs: Array<{ key: NotificationFilter; label: string }> = isMobile
@@ -534,7 +536,7 @@ function NotificationTabs({
               boxSizing: "border-box",
             }}
           >
-            {tab.label}
+            {translateText(tab.label, language)}
             {showAllBadge ? (
               <b
                 style={{
@@ -951,19 +953,28 @@ type NotificationPanelProps = {
   isLoading: boolean;
   error: string;
   activeFilter: NotificationFilter;
+  language: LanguageCode;
   onFilterChange: (filter: NotificationFilter) => void;
   onMarkAllRead: () => void;
   onNoticeSelect: (notice: Notice) => void;
 };
 
-function NotificationEmptyState({ isLoading, error }: { isLoading: boolean; error: string }) {
+function NotificationEmptyState({
+  isLoading,
+  error,
+  language,
+}: {
+  isLoading: boolean;
+  error: string;
+  language: LanguageCode;
+}) {
   if (isLoading) {
     return (
       <DataSkeleton
         variant="list"
         count={3}
         compact
-        ariaLabel="Đang tải thông báo"
+        ariaLabel={translateText("Đang tải thông báo...", language)}
         style={{ padding: "12px 16px" }}
       />
     );
@@ -979,7 +990,10 @@ function NotificationEmptyState({ isLoading, error }: { isLoading: boolean; erro
         lineHeight: 1.55,
       }}
     >
-      {error || "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây."}
+      {translateText(
+        error || "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây.",
+        language,
+      )}
     </div>
   );
 }
@@ -990,6 +1004,7 @@ function DesktopNotificationDropdown({
   isLoading,
   error,
   activeFilter,
+  language,
   onFilterChange,
   onMarkAllRead,
   onNoticeSelect,
@@ -1065,7 +1080,7 @@ function DesktopNotificationDropdown({
             id="notification-panel-title"
             style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: colors.text }}
           >
-            Thông báo
+            {translateText("Thông báo", language)}
           </h2>
           <button
             type="button"
@@ -1087,7 +1102,7 @@ function DesktopNotificationDropdown({
             }}
           >
             <CheckCheck size={14} strokeWidth={2.2} />
-            Đánh dấu tất cả đã đọc
+            {translateText("Đánh dấu tất cả đã đọc", language)}
           </button>
         </div>
 
@@ -1095,6 +1110,7 @@ function DesktopNotificationDropdown({
           isMobile={false}
           unreadCount={unreadCount}
           activeFilter={activeFilter}
+          language={language}
           onFilterChange={onFilterChange}
         />
         <div
@@ -1108,20 +1124,20 @@ function DesktopNotificationDropdown({
           {visibleNotices.length ? (
             <>
               <NoticeGroup
-                label="Hôm nay"
+                label={translateText("Hôm nay", language)}
                 notices={todayNotices}
                 isMobile={false}
                 onSelect={onNoticeSelect}
               />
               <NoticeGroup
-                label="Trước đó"
+                label={translateText("Trước đó", language)}
                 notices={previousNotices}
                 isMobile={false}
                 onSelect={onNoticeSelect}
               />
             </>
           ) : (
-            <NotificationEmptyState isLoading={isLoading} error={error} />
+            <NotificationEmptyState isLoading={isLoading} error={error} language={language} />
           )}
         </div>
 
@@ -1149,7 +1165,7 @@ function DesktopNotificationDropdown({
               textDecoration: "none",
             }}
           >
-            Xem hóa đơn của tôi
+            {translateText("Xem hóa đơn của tôi", language)}
           </Link>
         </div>
       </section>
@@ -1164,6 +1180,7 @@ function MobileNotificationPanel({
   isLoading,
   error,
   activeFilter,
+  language,
   onFilterChange,
   onMarkAllRead,
   onNoticeSelect,
@@ -1210,7 +1227,7 @@ function MobileNotificationPanel({
       >
         <button
           type="button"
-          aria-label="Đóng thông báo"
+          aria-label={translateText("Đóng thông báo", language)}
           onClick={onClose}
           style={{
             width: "36px",
@@ -1234,7 +1251,7 @@ function MobileNotificationPanel({
             id="mobile-notification-title"
             style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: colors.text }}
           >
-            Thông báo
+            {translateText("Thông báo", language)}
           </h2>
         </div>
       </div>
@@ -1250,7 +1267,7 @@ function MobileNotificationPanel({
         }}
       >
         <span style={{ fontSize: "11.5px", color: colors.muted }}>
-          <b style={{ color: colors.goldPale }}>{unreadCount}</b> thông báo chưa đọc
+          {translateText(`${unreadCount} thông báo chưa đọc`, language)}
         </span>
         <button
           type="button"
@@ -1273,7 +1290,7 @@ function MobileNotificationPanel({
           }}
         >
           <CheckCheck size={13} strokeWidth={2.2} />
-          Đánh dấu đã đọc
+          {translateText("Đánh dấu đã đọc", language)}
         </button>
       </div>
 
@@ -1281,6 +1298,7 @@ function MobileNotificationPanel({
         isMobile
         unreadCount={unreadCount}
         activeFilter={activeFilter}
+        language={language}
         onFilterChange={onFilterChange}
       />
 
@@ -1296,20 +1314,20 @@ function MobileNotificationPanel({
         {visibleNotices.length ? (
           <>
             <NoticeGroup
-              label="Hôm nay"
+              label={translateText("Hôm nay", language)}
               notices={todayNotices}
               isMobile
               onSelect={onNoticeSelect}
             />
             <NoticeGroup
-              label="Hôm qua"
+              label={translateText("Hôm qua", language)}
               notices={previousNotices}
               isMobile
               onSelect={onNoticeSelect}
             />
           </>
         ) : (
-          <NotificationEmptyState isLoading={isLoading} error={error} />
+          <NotificationEmptyState isLoading={isLoading} error={error} language={language} />
         )}
       </div>
     </section>
@@ -2430,6 +2448,7 @@ export function SiteChrome({
                 isLoading={isNotificationsLoading}
                 error={notificationsError}
                 activeFilter={notificationFilter}
+                language={activeLanguage}
                 onFilterChange={setNotificationFilter}
                 onMarkAllRead={markAllNotificationsRead}
                 onNoticeSelect={handleNotificationSelect}

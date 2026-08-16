@@ -127,6 +127,11 @@ describe("client translations", () => {
   it("translates notification, footer, and discovery list leftovers", () => {
     expect(translateText("Thông báo", "ja")).toBe("通知");
     expect(translateText("Đánh dấu tất cả đã đọc", "ja")).toBe("すべて既読にする");
+    expect(translateText("Đang tìm quán...", "ja")).toBe("店舗を検索中...");
+    expect(translateText("Đang tìm cast...", "ja")).toBe("キャストを検索中...");
+    expect(
+      translateText("Chưa tải được thông báo. Vui lòng thử lại.", "ja"),
+    ).toBe("通知を読み込めませんでした。もう一度お試しください。");
     expect(translateText("Hóa đơn", "ja")).toBe("請求書");
     expect(translateText("Đặt chỗ", "ja")).toBe("予約");
     expect(translateText("HÔM NAY", "ja")).toBe("今日");
