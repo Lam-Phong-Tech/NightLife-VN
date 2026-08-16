@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { APPEARANCE_CONFIG_CACHE_KEY } from "@/lib/appearance-favicon";
 
 export type AppearanceItem = {
   id: string;
@@ -73,10 +74,7 @@ export const DEFAULT_APPEARANCE_CONFIG: AppearanceConfig = {
   },
 };
 
-const mergeAppearanceItems = (
-  value: AppearanceItem[] | undefined,
-  fallback: AppearanceItem[],
-) =>
+const mergeAppearanceItems = (value: AppearanceItem[] | undefined, fallback: AppearanceItem[]) =>
   fallback.map((fallbackItem, index) => {
     const item = Array.isArray(value)
       ? value.find((candidate) => candidate.id === fallbackItem.id)
@@ -87,14 +85,14 @@ const mergeAppearanceItems = (
       label: item?.label?.trim() || fallbackItem.label,
       icon: item?.icon?.trim() || fallbackItem.icon,
       color: normalizeAppearanceColor(item?.color) || normalizeAppearanceColor(fallbackItem.color),
-      featured: typeof item?.featured === "boolean" ? item.featured : (fallbackItem.featured || fallbackItem.id === "q8" || fallbackItem.icon === "star"),
+      featured:
+        typeof item?.featured === "boolean"
+          ? item.featured
+          : fallbackItem.featured || fallbackItem.id === "q8" || fallbackItem.icon === "star",
     };
   });
 
-const mergeAppearanceTitles = (
-  value: AppearanceTitle[] | undefined,
-  fallback: AppearanceTitle[],
-) =>
+const mergeAppearanceTitles = (value: AppearanceTitle[] | undefined, fallback: AppearanceTitle[]) =>
   fallback.map((fallbackItem, index) => {
     const item = Array.isArray(value)
       ? value.find((candidate) => candidate.id === fallbackItem.id)
@@ -107,7 +105,9 @@ const mergeAppearanceTitles = (
     };
   });
 
-export function normalizeAppearanceConfig(value?: Partial<AppearanceConfig> | null): AppearanceConfig {
+export function normalizeAppearanceConfig(
+  value?: Partial<AppearanceConfig> | null,
+): AppearanceConfig {
   if (!value) return DEFAULT_APPEARANCE_CONFIG;
 
   return {
@@ -123,12 +123,10 @@ export function normalizeAppearanceConfig(value?: Partial<AppearanceConfig> | nu
   };
 }
 
-const CACHE_KEY = "nightlife_appearance_config";
-
 export function getCachedAppearanceConfig(): AppearanceConfig | null {
   if (typeof window === "undefined") return null;
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
+    const cached = localStorage.getItem(APPEARANCE_CONFIG_CACHE_KEY);
     if (cached) {
       return JSON.parse(cached) as AppearanceConfig;
     }
@@ -141,7 +139,7 @@ export function getCachedAppearanceConfig(): AppearanceConfig | null {
 export function cacheAppearanceConfig(config: AppearanceConfig) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(config));
+    localStorage.setItem(APPEARANCE_CONFIG_CACHE_KEY, JSON.stringify(config));
   } catch (e) {
     // Ignore error
   }
@@ -154,10 +152,6 @@ export async function getAppearanceConfig() {
   return config;
 }
 
-export function findAppearanceTitle(
-  titles: AppearanceTitle[],
-  id: string,
-  fallback: string,
-) {
+export function findAppearanceTitle(titles: AppearanceTitle[], id: string, fallback: string) {
   return titles.find((item) => item.id === id)?.label?.trim() || fallback;
 }

@@ -1,20 +1,15 @@
 export const DEFAULT_FAVICON_URL = "/favicon.svg";
 export const SITE_FAVICON_URL = "/site-favicon";
+export const APPEARANCE_CONFIG_CACHE_KEY = "nightlife_appearance_config";
 
-export function applyAppearanceFavicon(
-  cacheKey: string | number = Date.now(),
-) {
+export function applyAppearanceFavicon(cacheKey: string | number = Date.now()) {
   if (typeof document === "undefined") return;
 
   const href = `${SITE_FAVICON_URL}?v=${encodeURIComponent(String(cacheKey))}`;
   const existing = Array.from(
-    document.head.querySelectorAll<HTMLLinkElement>(
-      'link[rel="icon"], link[rel="shortcut icon"]',
-    ),
+    document.head.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]'),
   );
-  const links = existing.length > 0
-    ? existing
-    : [document.createElement("link")];
+  const links = existing.length > 0 ? existing : [document.createElement("link")];
 
   links.forEach((link) => {
     if (!link.parentNode) {

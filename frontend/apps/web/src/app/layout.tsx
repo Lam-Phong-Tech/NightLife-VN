@@ -9,7 +9,7 @@ import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { jsonLdDocument, organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
-import { SITE_FAVICON_URL } from "@/lib/appearance-favicon";
+import { APPEARANCE_CONFIG_CACHE_KEY, SITE_FAVICON_URL } from "@/lib/appearance-favicon";
 import { siteConfig } from "@/lib/site";
 import { headers } from "next/headers";
 import { getNightlifeHostKind } from "@/lib/auth/hosts";
@@ -242,6 +242,32 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var raw = localStorage.getItem(${JSON.stringify(APPEARANCE_CONFIG_CACHE_KEY)});
+                  var faviconUrl = raw && JSON.parse(raw)?.brand?.faviconUrl;
+                  if (!faviconUrl) return;
+                  var href = ${JSON.stringify(SITE_FAVICON_URL)} + '?v=' + encodeURIComponent(faviconUrl);
+                  var links = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+                  if (!links.length) {
+                    var link = document.createElement('link');
+                    link.rel = 'icon';
+                    document.head.appendChild(link);
+                    links = [link];
+                  }
+                  Array.prototype.forEach.call(links, function (link) {
+                    link.href = href;
+                    link.setAttribute('data-appearance-favicon', 'true');
+                    link.removeAttribute('type');
+                  });
+                } catch (e) { /* Ignore unavailable or malformed browser storage. */ }
+              })();
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
