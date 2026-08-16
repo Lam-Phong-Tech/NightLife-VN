@@ -694,6 +694,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [stores, setStores] = useState<PublicStore[]>([]);
+  const [suggestionStores, setSuggestionStores] = useState<PublicStore[]>([]);
+  const [isSuggestionLoading, setSuggestionLoading] = useState(false);
   const [totalStores, setTotalStores] = useState(0);
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
@@ -816,6 +818,47 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       cancelled = true;
     };
   }, [city]);
+
+  useEffect(() => {
+    const suggestionQuery = query.trim().replace(/\s+/g, " ");
+    if (suggestionQuery.length < 2) {
+      queueMicrotask(() => {
+        setSuggestionStores([]);
+        setSuggestionLoading(false);
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setSuggestionStores([]);
+    setSuggestionLoading(true);
+    const timer = window.setTimeout(() => {
+      discoveryApi
+        .listStoresStrict({
+          q: suggestionQuery,
+          city,
+          area,
+          category: effectiveCategory,
+          limit: 12,
+          page: 1,
+          sort: "newest",
+        })
+        .then((result) => {
+          if (!cancelled) setSuggestionStores(result.stores);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestionStores([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSuggestionLoading(false);
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [area, city, effectiveCategory, query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1165,7 +1208,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     if (!suggestionQuery) return [];
 
     return sortBySearchRelevance(
-      stores.filter((store) =>
+      suggestionStores.filter((store) =>
         Number.isFinite(
           searchRelevanceScore(suggestionQuery, {
             primary: [store.name],
@@ -1179,7 +1222,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     )
       .slice(0, 4)
       .map((store) => toVenueView(store, activeLanguage, openingNow));
-  }, [activeLanguage, openingNow, query, stores]);
+  }, [activeLanguage, openingNow, query, suggestionStores]);
   const totalPages = Math.max(1, Math.ceil(totalStores / venueItemsPerPage));
   const pagedVenues = venues;
 
@@ -1385,6 +1428,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 query={query}
                 recentSearches={recentVenueSearches}
                 venues={suggestions}
+                isLoading={isSuggestionLoading}
               />
             ) : null}
 
@@ -1689,6 +1733,7 @@ function VenueSearchSuggestions({
   recentSearches,
   onClearRecent,
   venues,
+  isLoading,
   onSearchSubmitted,
 }: {
   language: LanguageCode;
@@ -1697,6 +1742,7 @@ function VenueSearchSuggestions({
   recentSearches: string[];
   onClearRecent: () => void;
   venues: VenueView[];
+  isLoading: boolean;
   onSearchSubmitted: (value: string) => void;
 }) {
   return (
@@ -1705,7 +1751,11 @@ function VenueSearchSuggestions({
       role="listbox"
       aria-label={translateText("Gợi ý tìm kiếm", language)}
     >
-      {venues.length ? (
+      {isLoading ? (
+        <div className="venue-suggestion-empty">
+          {translateText("Đang tìm quán...", language)}
+        </div>
+      ) : venues.length ? (
         <>
           <div className="venue-suggestion-label">{translateText("Gợi ý quán", language)}</div>
           {venues.map((venue) => (
