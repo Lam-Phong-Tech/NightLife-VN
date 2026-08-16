@@ -355,7 +355,7 @@ function AdminBookingsContent() {
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', padding: '12px 14px', background: 'rgba(111,159,216,.06)', border: '1px solid rgba(111,159,216,.2)', borderRadius: '11px' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
-                  <span style={{ fontSize: '11.5px', color: '#a9c4e6', lineHeight: 1.55 }}>Khách đổi giờ/số người → hủy &amp; đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ (BOO-08).</span>
+                  <span style={{ fontSize: '11.5px', color: '#a9c4e6', lineHeight: 1.55 }}>Khách đổi giờ/số người → hủy &amp; đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ.</span>
                 </div>
               </div>
               <div style={{ padding: '16px 24px 26px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
