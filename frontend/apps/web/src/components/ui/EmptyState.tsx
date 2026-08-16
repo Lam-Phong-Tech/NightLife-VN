@@ -12,6 +12,7 @@ interface EmptyStateProps {
   variant?: EmptyVariant;
   ctaLabel?: string;
   ctaHref?: string;
+  onCtaClick?: () => void;
   compact?: boolean;
 }
 
@@ -73,6 +74,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   variant = "search",
   ctaLabel,
   ctaHref,
+  onCtaClick,
   compact = false,
 }) => {
   const config = emptyConfig[variant];
@@ -95,7 +97,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       </div>
       <h3 style={titleStyle}>{title ?? config.title}</h3>
       <p style={descriptionStyle}>{description ?? config.description}</p>
-      {(ctaLabel ?? config.ctaLabel) && (ctaHref ?? config.ctaHref) ? (
+      {(ctaLabel ?? config.ctaLabel) && onCtaClick ? (
+        <button type="button" onClick={onCtaClick} style={ctaButtonStyle}>
+          {ctaLabel ?? config.ctaLabel}
+        </button>
+      ) : (ctaLabel ?? config.ctaLabel) && (ctaHref ?? config.ctaHref) ? (
         <Link href={ctaHref ?? config.ctaHref} style={ctaStyle}>
           {ctaLabel ?? config.ctaLabel}
         </Link>
@@ -159,4 +165,11 @@ const ctaStyle: CSSProperties = {
   fontSize: "13.5px",
   fontWeight: 900,
   textDecoration: "none",
+};
+
+const ctaButtonStyle: CSSProperties = {
+  ...ctaStyle,
+  border: 0,
+  cursor: "pointer",
+  fontFamily: "inherit",
 };

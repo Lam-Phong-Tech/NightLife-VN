@@ -1245,7 +1245,12 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
               ))}
             </div>
           ) : (
-            <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
+            <EmptyState
+              title={copy.emptyTitle}
+              description={copy.emptyDescription}
+              ctaLabel={translateText("Xóa bộ lọc", activeLanguage)}
+              onCtaClick={resetFilters}
+            />
           )}
           {!isResultsLoading && totalPages > 1 ? (
             <CastPagination
