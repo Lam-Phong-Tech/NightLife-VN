@@ -1481,7 +1481,9 @@ function SearchSuggestions({
           })}
         </>
       ) : (
-        <div className="cast-suggestion-empty">Không có gợi ý trùng khớp.</div>
+        <div className="cast-suggestion-empty">
+          {translateText("Không có gợi ý trùng khớp.", language)}
+        </div>
       )}
 
       {recentSearches.length ? (
