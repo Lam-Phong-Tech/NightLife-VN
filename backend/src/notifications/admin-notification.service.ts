@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { request as httpsRequest } from 'node:https';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   formatBillTelegramMessage,
@@ -478,21 +479,84 @@ export class AdminNotificationService {
       body.message_thread_id = threadId;
     }
 
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+    const payload = JSON.stringify(body);
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        const response = await this.postToTelegram(
+          `/bot${token}/sendMessage`,
+          payload,
+        );
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw new Error(
+            `Telegram sendMessage failed with ${response.statusCode}${response.body ? `: ${response.body}` : ''}`,
+          );
+        }
+
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 3 || !this.shouldRetryTelegramError(error)) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Telegram notification attempt ${attempt} failed; retrying over IPv4. ${this.errorMessage(error)}`,
+        );
+        await this.delay(attempt * 750);
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  private postToTelegram(path: string, payload: string) {
+    return new Promise<{ statusCode: number; body: string }>(
+      (resolve, reject) => {
+        const request = httpsRequest(
+          {
+            hostname: 'api.telegram.org',
+            port: 443,
+            path,
+            method: 'POST',
+            family: 4,
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(payload),
+            },
+          },
+          (response) => {
+            const chunks: Buffer[] = [];
+            response.on('data', (chunk: Buffer) => chunks.push(chunk));
+            response.on('end', () => {
+              resolve({
+                statusCode: response.statusCode ?? 0,
+                body: Buffer.concat(chunks).toString('utf8'),
+              });
+            });
+          },
+        );
+
+        request.setTimeout(15_000, () => {
+          request.destroy(
+            new Error('Telegram request timed out after 15000ms'),
+          );
+        });
+        request.once('error', reject);
+        request.end(payload);
       },
     );
+  }
 
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(
-        `Telegram sendMessage failed with ${response.status}${detail ? `: ${detail}` : ''}`,
-      );
-    }
+  private shouldRetryTelegramError(error: unknown) {
+    const message = this.errorMessage(error);
+    return !/Telegram sendMessage failed with 4(?!29)/.test(message);
+  }
+
+  private delay(milliseconds: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
   }
 
   private async bookingSequenceCode(booking: BookingAdminNotification) {
