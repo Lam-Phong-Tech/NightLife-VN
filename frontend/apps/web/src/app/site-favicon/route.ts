@@ -4,15 +4,12 @@ import { DEFAULT_FAVICON_URL } from "@/lib/appearance-favicon";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const PUBLIC_STORAGE_PATHS = [
-  "/api/backend/storage/public/",
-  "/storage/public/",
-];
+const PUBLIC_STORAGE_PATHS = ["/api/backend/storage/public/", "/storage/public/"];
 
 const isSupportedImage = (contentType: string | null) =>
   Boolean(contentType?.toLowerCase().startsWith("image/"));
 
-const configuredFaviconUrl = (value: unknown, origin: string) => {
+const configuredFaviconUrl = (value: unknown, origin: string, backendApiUrl?: string) => {
   if (typeof value !== "string" || !value.trim()) return null;
 
   try {
@@ -22,9 +19,18 @@ const configuredFaviconUrl = (value: unknown, origin: string) => {
     );
     if (!publicStoragePrefix) return null;
 
-    const pathname = publicStoragePrefix === "/storage/public/"
-      ? `/api/backend${candidate.pathname}`
-      : candidate.pathname;
+    if (backendApiUrl) {
+      const pathname =
+        publicStoragePrefix === "/storage/public/"
+          ? candidate.pathname
+          : candidate.pathname.replace(/^\/api\/backend/, "");
+      return new URL(`${pathname}${candidate.search}`, backendApiUrl);
+    }
+
+    const pathname =
+      publicStoragePrefix === "/storage/public/"
+        ? `/api/backend${candidate.pathname}`
+        : candidate.pathname;
     return new URL(`${pathname}${candidate.search}`, origin);
   } catch {
     return null;
@@ -33,22 +39,23 @@ const configuredFaviconUrl = (value: unknown, origin: string) => {
 
 const loadConfiguredFavicon = async (request: NextRequest) => {
   try {
-    const configUrl = new URL(
-      "/api/backend/system-config/appearance",
-      request.nextUrl.origin,
-    );
+    const backendApiUrl = process.env.BACKEND_API_URL?.trim().replace(/\/$/, "");
+    const configUrl = backendApiUrl
+      ? new URL("/system-config/appearance", backendApiUrl)
+      : new URL("/api/backend/system-config/appearance", request.nextUrl.origin);
     const configResponse = await fetch(configUrl, {
       cache: "no-store",
       headers: { accept: "application/json" },
     });
     if (!configResponse.ok) return null;
 
-    const payload = await configResponse.json() as {
+    const payload = (await configResponse.json()) as {
       data?: { brand?: { faviconUrl?: unknown } };
     };
     return configuredFaviconUrl(
       payload.data?.brand?.faviconUrl,
       request.nextUrl.origin,
+      backendApiUrl,
     );
   } catch {
     return null;
@@ -69,11 +76,9 @@ const loadImage = async (url: URL) => {
 
 export async function GET(request: NextRequest) {
   const configuredUrl = await loadConfiguredFavicon(request);
-  const configuredImage = configuredUrl
-    ? await loadImage(configuredUrl)
-    : null;
+  const configuredImage = configuredUrl ? await loadImage(configuredUrl) : null;
   const fallbackUrl = new URL(DEFAULT_FAVICON_URL, request.nextUrl.origin);
-  const image = configuredImage ?? await loadImage(fallbackUrl);
+  const image = configuredImage ?? (await loadImage(fallbackUrl));
 
   if (!image) {
     return new NextResponse(null, { status: 404 });
