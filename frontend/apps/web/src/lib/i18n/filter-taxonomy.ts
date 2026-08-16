@@ -85,6 +85,8 @@ const languageLabels: Record<string, LocalizedLabels> = {
 const cityLabels: Record<string, LocalizedLabels> = {
   hn: { vi: "Hà Nội", en: "Hanoi", ja: "ハノイ", ko: "하노이", zh: "河内" },
   hcm: { vi: "TP.HCM", en: "Ho Chi Minh City", ja: "ホーチミン市", ko: "호찌민시", zh: "胡志明市" },
+  hp: { vi: "Hải Phòng", en: "Hai Phong", ja: "ハイフォン", ko: "하이퐁", zh: "海防" },
+  dn: { vi: "Đà Nẵng", en: "Da Nang", ja: "ダナン", ko: "다낭", zh: "岘港" },
   vietnam: { vi: "Việt Nam", en: "Vietnam", ja: "ベトナム", ko: "베트남", zh: "越南" },
 };
 
@@ -110,6 +112,9 @@ const areaLabels: Record<string, LocalizedLabels> = {
   "Ngọc Hà": { vi: "Ngọc Hà", en: "Ngoc Ha", ja: "ゴックハ", ko: "응옥하", zh: "玉河" },
   "Phường Hai Bà Trưng": { vi: "Phường Hai Bà Trưng", en: "Hai Ba Trung Ward", ja: "ハイバーチュン区", ko: "하이바쯩 구", zh: "二征夫人坊" },
   "Hai Bà Trưng": { vi: "Hai Bà Trưng", en: "Hai Ba Trung", ja: "ハイバーチュン", ko: "하이바쯩", zh: "二征夫人" },
+  "Hồng Bàng": { vi: "Hồng Bàng", en: "Hong Bang", ja: "ホンバン", ko: "홍방", zh: "鸿庞" },
+  "Hải Châu": { vi: "Hải Châu", en: "Hai Chau", ja: "ハイチャウ", ko: "하이쩌우", zh: "海洲" },
+  "Sơn Trà": { vi: "Sơn Trà", en: "Son Tra", ja: "ソンチャ", ko: "선짜", zh: "山茶" },
 };
 
 const normalizeLabelKey = (value: string) =>

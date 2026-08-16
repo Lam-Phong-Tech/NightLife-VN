@@ -10,9 +10,14 @@ describe("homepage locale labels", () => {
   it("renders common ranking and recommendation locations in Japanese", () => {
     expect(getFilterCityLabel("hn", "ja")).toBe("ハノイ");
     expect(getFilterCityLabel("hcm", "ja")).toBe("ホーチミン市");
+    expect(getFilterCityLabel("hp", "ja")).toBe("ハイフォン");
+    expect(getFilterCityLabel("dn", "ja")).toBe("ダナン");
     expect(getFilterAreaLabel("Phường Sài Gòn", "ja")).toBe("サイゴン区");
     expect(getFilterAreaLabel("Phường Giảng Võ", "ja")).toBe("ザンボー区");
     expect(getFilterAreaLabel("Cống Vị", "ja")).toBe("コンビ");
+    expect(getFilterAreaLabel("Hồng Bàng", "ja")).toBe("ホンバン");
+    expect(getFilterAreaLabel("Hải Châu", "ja")).toBe("ハイチャウ");
+    expect(getFilterAreaLabel("Sơn Trà", "ja")).toBe("ソンチャ");
   });
 
   it("localizes category labels without a network lookup", () => {

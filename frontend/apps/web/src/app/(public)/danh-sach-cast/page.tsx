@@ -435,7 +435,10 @@ const castFavoriteFeedbackCopy = (
 
 const castAreaLabel = (cast: PublicCast, language: LanguageCode) =>
   [
-    cast.store.area?.name ?? cast.store.district,
+    getFilterAreaLabel(
+      cast.store.area?.name ?? cast.store.district ?? "",
+      language,
+    ),
     getCastCityLabel(cast.store.cityCode ?? "", language),
   ]
     .filter(Boolean)
@@ -462,7 +465,10 @@ const favoriteSnapshotFromApi = (
   storeName: item.cast.store.name,
   categoryLabel: getCastCategoryLabel(item.cast.store.category, language),
   areaLabel: [
-    item.cast.store.area?.name ?? item.cast.store.district,
+    getFilterAreaLabel(
+      item.cast.store.area?.name ?? item.cast.store.district ?? "",
+      language,
+    ),
     getCastCityLabel(item.cast.store.cityCode ?? "", language),
   ]
     .filter(Boolean)
@@ -1447,13 +1453,24 @@ function SearchSuggestions({
   onSearchSubmitted: (value: string) => void;
 }) {
   return (
-    <div className="cast-suggestions" role="listbox" aria-label="Gợi ý tìm kiếm">
+    <div
+      className="cast-suggestions"
+      role="listbox"
+      aria-label={translateText("Gợi ý tìm kiếm", language)}
+    >
       {casts.length ? (
         <>
-          <div className="cast-suggestion-label">Gợi ý cast</div>
+          <div className="cast-suggestion-label">
+            {translateText("Gợi ý cast", language)}
+          </div>
           {casts.map((cast) => {
             const rank = rankBySlug.get(cast.slug);
-            const meta = rank ? `#${rank} Ranking` : (cast.store.area?.name ?? cast.store.district);
+            const meta = rank
+              ? `#${rank} Ranking`
+              : getFilterAreaLabel(
+                  cast.store.area?.name ?? cast.store.district ?? "",
+                  language,
+                );
 
             return (
               <Link
@@ -1489,8 +1506,10 @@ function SearchSuggestions({
       {recentSearches.length ? (
         <>
           <div className="cast-suggestion-split">
-            <span>Tìm gần đây</span>
-            <button type="button" onClick={onClearRecent}>Xóa lịch sử</button>
+            <span>{translateText("Tìm gần đây", language)}</span>
+            <button type="button" onClick={onClearRecent}>
+              {translateText("Xóa lịch sử", language)}
+            </button>
           </div>
           <div className="cast-suggestion-tags">
             {recentSearches.map((item) => (
@@ -1536,7 +1555,10 @@ function CastDiscoveryCard({
   };
   const image = cast.thumbnailUrl;
   const areaLabel = [
-    cast.store.area?.name ?? cast.store.district,
+    getFilterAreaLabel(
+      cast.store.area?.name ?? cast.store.district ?? "",
+      language,
+    ),
     getCastCityLabel(cast.store.cityCode ?? "", language),
   ]
     .filter(Boolean)
