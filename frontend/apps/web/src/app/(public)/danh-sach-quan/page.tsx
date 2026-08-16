@@ -528,8 +528,8 @@ const venueFavoriteCopy = (language: LanguageCode) =>
       removeLabel: "Bỏ lưu",
       addedDescription: (name: string) => `${name} đã được lưu vào danh sách yêu thích.`,
       removedDescription: (name: string) => `${name} đã được gỡ khỏi danh sách yêu thích.`,
-      saveDescription: (name: string) => `Thêm ${name} vào danh sách yêu thích của bạn.`,
-      removeDescription: (name: string) => `Gỡ ${name} khỏi danh sách yêu thích của bạn.`,
+      saveDescription: (name: string) => <>Thêm <OriginalVenueName>{name}</OriginalVenueName> vào danh sách yêu thích của bạn.</>,
+      removeDescription: (name: string) => <>Gỡ <OriginalVenueName>{name}</OriginalVenueName> khỏi danh sách yêu thích của bạn.</>,
     },
     en: {
       addedTitle: "Venue saved",
@@ -542,8 +542,8 @@ const venueFavoriteCopy = (language: LanguageCode) =>
       removeLabel: "Remove",
       addedDescription: (name: string) => `${name} has been added to your favorites.`,
       removedDescription: (name: string) => `${name} has been removed from your favorites.`,
-      saveDescription: (name: string) => `Add ${name} to your favorites.`,
-      removeDescription: (name: string) => `Remove ${name} from your favorites.`,
+      saveDescription: (name: string) => <>Add <OriginalVenueName>{name}</OriginalVenueName> to your favorites.</>,
+      removeDescription: (name: string) => <>Remove <OriginalVenueName>{name}</OriginalVenueName> from your favorites.</>,
     },
     ja: {
       addedTitle: "お気に入りに追加しました",
@@ -556,8 +556,8 @@ const venueFavoriteCopy = (language: LanguageCode) =>
       removeLabel: "解除する",
       addedDescription: (name: string) => `「${name}」をお気に入りに追加しました。`,
       removedDescription: (name: string) => `「${name}」をお気に入りから削除しました。`,
-      saveDescription: (name: string) => `「${name}」をお気に入りに追加します。`,
-      removeDescription: (name: string) => `「${name}」をお気に入りから削除します。`,
+      saveDescription: (name: string) => <>「<OriginalVenueName>{name}</OriginalVenueName>」をお気に入りに追加します。</>,
+      removeDescription: (name: string) => <>「<OriginalVenueName>{name}</OriginalVenueName>」をお気に入りから削除します。</>,
     },
     ko: {
       addedTitle: "즐겨찾기에 추가했습니다",
@@ -570,8 +570,8 @@ const venueFavoriteCopy = (language: LanguageCode) =>
       removeLabel: "해제",
       addedDescription: (name: string) => `${name}을(를) 즐겨찾기에 추가했습니다.`,
       removedDescription: (name: string) => `${name}을(를) 즐겨찾기에서 제거했습니다.`,
-      saveDescription: (name: string) => `${name}을(를) 즐겨찾기에 추가합니다.`,
-      removeDescription: (name: string) => `${name}을(를) 즐겨찾기에서 제거합니다.`,
+      saveDescription: (name: string) => <><OriginalVenueName>{name}</OriginalVenueName>을(를) 즐겨찾기에 추가합니다.</>,
+      removeDescription: (name: string) => <><OriginalVenueName>{name}</OriginalVenueName>을(를) 즐겨찾기에서 제거합니다.</>,
     },
     zh: {
       addedTitle: "已添加到收藏",
@@ -584,10 +584,14 @@ const venueFavoriteCopy = (language: LanguageCode) =>
       removeLabel: "取消收藏",
       addedDescription: (name: string) => `已将“${name}”加入收藏。`,
       removedDescription: (name: string) => `已将“${name}”取消收藏。`,
-      saveDescription: (name: string) => `将“${name}”加入收藏。`,
-      removeDescription: (name: string) => `将“${name}”从收藏中移除。`,
+      saveDescription: (name: string) => <>将“<OriginalVenueName>{name}</OriginalVenueName>”加入收藏。</>,
+      removeDescription: (name: string) => <>将“<OriginalVenueName>{name}</OriginalVenueName>”从收藏中移除。</>,
     },
   })[language];
+
+function OriginalVenueName({ children }: { children: React.ReactNode }) {
+  return <span className="notranslate" translate="no" data-no-translate="true">{children}</span>;
+}
 
 const formatVenuePriceTier = (value: string | number | null | undefined, language: LanguageCode) => {
   const price = formatPriceTier(value);
