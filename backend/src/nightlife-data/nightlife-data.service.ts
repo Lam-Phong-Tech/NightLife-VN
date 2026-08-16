@@ -1911,21 +1911,27 @@ export class NightlifeDataService {
       },
     });
 
-    return casts.map((cast) => ({
-      id: cast.id,
-      targetType: 'CAST' as const,
-      name: cast.publicAlias ?? cast.stageName,
-      slug: cast.slug,
-      image: this.resolveRankingCastImage(cast.media),
-      area: cast.store.area?.name ?? cast.store.district,
-      city: cast.store.area?.city ?? cast.store.city,
-      cityCode: cast.store.area?.code
-        ? this.cityCodeFromAreaCode(cast.store.area.code)
-        : this.normalizeCityCode(cast.store.city),
-      category: cast.store.category,
-      status: cast.status,
-      isPublic: cast.isPublic,
-    }));
+    const pendingEditSourceIdSet = new Set(
+      await this.loadPendingPartnerListingCastEditSourceIds(),
+    );
+
+    return casts
+      .filter((cast) => !pendingEditSourceIdSet.has(cast.id))
+      .map((cast) => ({
+        id: cast.id,
+        targetType: 'CAST' as const,
+        name: cast.publicAlias ?? cast.stageName,
+        slug: cast.slug,
+        image: this.resolveRankingCastImage(cast.media),
+        area: cast.store.area?.name ?? cast.store.district,
+        city: cast.store.area?.city ?? cast.store.city,
+        cityCode: cast.store.area?.code
+          ? this.cityCodeFromAreaCode(cast.store.area.code)
+          : this.normalizeCityCode(cast.store.city),
+        category: cast.store.category,
+        status: cast.status,
+        isPublic: cast.isPublic,
+      }));
   }
 
   async createAdminRankingConfig(
@@ -17612,18 +17618,23 @@ export class NightlifeDataService {
         status: store.status,
       });
     });
-    casts.forEach((cast) => {
-      targetMap.set(`CAST:${cast.id}`, {
-        id: cast.id,
-        name: cast.publicAlias ?? cast.stageName,
-        slug: cast.slug,
-        image: this.resolveRankingCastImage(cast.media),
-        city: cast.store.area?.city ?? cast.store.city,
-        area: cast.store.area?.name ?? cast.store.district,
-        category: cast.store.category,
-        status: cast.status,
+    const pendingEditSourceIdSet = new Set(
+      await this.loadPendingPartnerListingCastEditSourceIds(),
+    );
+    casts
+      .filter((cast) => !pendingEditSourceIdSet.has(cast.id))
+      .forEach((cast) => {
+        targetMap.set(`CAST:${cast.id}`, {
+          id: cast.id,
+          name: cast.publicAlias ?? cast.stageName,
+          slug: cast.slug,
+          image: this.resolveRankingCastImage(cast.media),
+          city: cast.store.area?.city ?? cast.store.city,
+          area: cast.store.area?.name ?? cast.store.district,
+          category: cast.store.category,
+          status: cast.status,
+        });
       });
-    });
 
     return targetMap;
   }
@@ -17689,7 +17700,11 @@ export class NightlifeDataService {
             select: { id: true },
           });
 
-    if (!target) {
+    if (
+      !target ||
+      (targetType === 'CAST' &&
+        (await this.hasPendingPartnerListingCastEdit(targetId)))
+    ) {
       throw new NotFoundException('Ranking target not found');
     }
   }

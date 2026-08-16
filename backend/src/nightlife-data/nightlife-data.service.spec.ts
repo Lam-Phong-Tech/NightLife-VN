@@ -2160,6 +2160,53 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('excludes Casts with pending partner edits from ranking options', async () => {
+    const pendingSourceId = '11111111-1111-4111-8111-111111111111';
+    prisma.cast.findMany
+      .mockResolvedValueOnce([
+        {
+          id: pendingSourceId,
+          slug: 'cast-moi',
+          stageName: 'Cast moi',
+          publicAlias: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          media: [],
+          store: {
+            category: 'CLUB',
+            city: 'Ha Noi',
+            district: 'Tay Ho',
+            area: null,
+          },
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        { slug: `partner-cast-edit-${pendingSourceId}` },
+      ] as never);
+
+    await expect(
+      service.listAdminRankingTargetOptions({ targetType: 'CAST' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('rejects adding a Cast to ranking while its partner edit is pending', async () => {
+    const pendingSourceId = '11111111-1111-4111-8111-111111111111';
+    prisma.cast.findFirst
+      .mockResolvedValueOnce({ id: pendingSourceId } as never)
+      .mockResolvedValueOnce({
+        slug: `partner-cast-edit-${pendingSourceId}`,
+      } as never);
+
+    await expect(
+      service.createAdminRankingConfig(adminActor, {
+        targetType: 'CAST',
+        targetId: pendingSourceId,
+        cityCode: 'hn',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
+  });
+
   it('hides saved admin ranking configs when their targets are no longer rankable', async () => {
     const rankingId = '22222222-2222-4222-8222-222222222222';
     const storeId = '11111111-1111-4111-8111-111111111111';
@@ -2201,6 +2248,55 @@ describe('NightlifeDataService', () => {
         },
       }),
     );
+  });
+
+  it('hides saved cast rankings while their partner edits are pending', async () => {
+    const rankingId = '22222222-2222-4222-8222-222222222222';
+    const pendingSourceId = '11111111-1111-4111-8111-111111111111';
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        id: rankingId,
+        targetType: 'CAST',
+        targetId: pendingSourceId,
+        areaId: null,
+        cityCode: 'hn',
+        category: 'CLUB',
+        scope: 'global',
+        manualScore: 100,
+        pinRank: 1,
+        sponsored: false,
+        status: 'ACTIVE',
+        startsAt: null,
+        endsAt: null,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+        area: null,
+      },
+    ] as never);
+    prisma.cast.findMany
+      .mockResolvedValueOnce([
+        {
+          id: pendingSourceId,
+          slug: 'cast-moi',
+          stageName: 'Cast moi',
+          publicAlias: null,
+          status: 'ACTIVE',
+          media: [],
+          store: {
+            category: 'CLUB',
+            city: 'Ha Noi',
+            district: 'Tay Ho',
+            area: null,
+          },
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        { slug: `partner-cast-edit-${pendingSourceId}` },
+      ] as never);
+
+    await expect(
+      service.listAdminRankingConfigs({ targetType: 'CAST' }),
+    ).resolves.toEqual([]);
   });
 
   it('logs minimal audit and notification fields when updating a ranking config', async () => {
