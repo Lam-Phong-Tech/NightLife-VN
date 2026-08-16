@@ -3,6 +3,7 @@ import {
   getFilterAreaLabel,
   getFilterCategoryLabel,
   getFilterCityLabel,
+  getPreferredStoreAreaName,
 } from "../src/lib/i18n/filter-taxonomy";
 
 describe("homepage locale labels", () => {
@@ -24,5 +25,16 @@ describe("homepage locale labels", () => {
     expect(getFilterAreaLabel("Phường Bình Thạnh", "ko")).toBe("Binh Thanh 구");
     expect(getFilterAreaLabel("Phường Tân Định", "zh")).toBe("Tan Dinh坊");
     expect(getFilterAreaLabel("Phường Ba Đình", "vi")).toBe("Phường Ba Đình");
+  });
+
+  it("prefers a store ward over a generic area label for booking metadata", () => {
+    const area = getPreferredStoreAreaName({
+      ward: "Phường Sài Gòn",
+      areaName: "Tổng hợp",
+      district: "Quận 1",
+    });
+
+    expect(area).toBe("Phường Sài Gòn");
+    expect(getFilterAreaLabel(area ?? "", "ja")).toBe("サイゴン区");
   });
 });

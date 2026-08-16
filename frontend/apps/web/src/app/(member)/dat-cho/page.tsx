@@ -49,7 +49,11 @@ import {
 import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
 import { translateText } from "@/lib/i18n/client-translations";
-import { getFilterAreaLabel, getFilterCategoryLabel } from "@/lib/i18n/filter-taxonomy";
+import {
+  getFilterAreaLabel,
+  getFilterCategoryLabel,
+  getPreferredStoreAreaName,
+} from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import { isNearStartTime, useUserActionFeedback } from "@/lib/user-action-feedback";
@@ -363,7 +367,13 @@ export default function Page() {
             castName: isCastStoreServiceOnly ? undefined : (current.castName ?? castName),
             storeSlug: cast.store.slug ?? current.storeSlug,
             storeName: cast.store.name || current.storeName,
-            area: current.area ?? cast.store.area?.name ?? cast.store.district ?? undefined,
+            area:
+              getPreferredStoreAreaName({
+                ward: cast.store.ward,
+                areaWard: cast.store.area?.ward,
+                areaName: cast.store.area?.name,
+                district: cast.store.district,
+              }) ?? current.area,
             couponId: current.couponId,
             couponIssueId: current.couponIssueId,
             fromHref: isCastStoreServiceOnly
@@ -427,7 +437,12 @@ export default function Page() {
             ...current,
             category: store.category,
             storeName: store.name,
-            area: store.area?.name ?? store.district ?? undefined,
+            area: getPreferredStoreAreaName({
+              ward: store.ward,
+              areaWard: store.area?.ward,
+              areaName: store.area?.name,
+              district: store.district,
+            }),
             castSlug: isStoreServiceOnly ? undefined : current.castSlug,
             castName: isStoreServiceOnly
               ? undefined

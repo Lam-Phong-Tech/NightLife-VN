@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../src/app/(member)/xac-nhan/page";
+import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
 
 const mocks = vi.hoisted(() => ({
@@ -22,6 +23,13 @@ vi.mock("@/lib/api/bookings", async () => {
     },
   };
 });
+
+const renderPage = () =>
+  render(
+    <SystemFeedbackProvider>
+      <Page />
+    </SystemFeedbackProvider>,
+  );
 
 const tourBooking: BookingRecord = {
   id: "tour-confirm-1",
@@ -80,7 +88,7 @@ describe("BookingConfirmTour", () => {
   it("shows tour summary with the booking QR panel", async () => {
     rememberLastBooking(tourBooking);
 
-    render(<Page />);
+    renderPage();
 
     expect(await screen.findByText("Busy Night Tour")).toBeInTheDocument();
     expect(screen.getByText("Tokyo Kitchen")).toBeInTheDocument();
@@ -114,12 +122,36 @@ describe("BookingConfirmTour", () => {
     rememberLastBooking(cachedBooking);
     mocks.bookingApi.listMemberBookings.mockResolvedValue([latestBooking]);
 
-    render(<Page />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("BK-NEW21")).toBeInTheDocument());
     expect(mocks.bookingApi.listMemberBookings).toHaveBeenCalled();
     expect(screen.queryByText("BK-OLD17")).not.toBeInTheDocument();
     expect(document.body.textContent ?? "").toMatch(/(?:21.*2030|2030.*21)/);
     expect(document.body.textContent ?? "").not.toMatch(/(?:17.*2030|2030.*17)/);
+  });
+
+  it("keeps a guest deal code out of automatic translation", async () => {
+    const guestBooking: BookingRecord = {
+      ...tourBooking,
+      id: "booking-guest-code-1",
+      bookingCode: "BK-GUEST1",
+      tour: undefined,
+      couponIssue: {
+        id: "coupon-issue-guest-1",
+        code: "Guest-c360003e-95c0-46aa-8ec1-aab863f53d9e",
+        status: "ISSUED",
+        usedAt: null,
+      },
+    };
+
+    window.history.pushState({}, "", "/xac-nhan?bookingId=booking-guest-code-1");
+    rememberLastBooking(guestBooking);
+
+    renderPage();
+
+    const code = await screen.findByText(guestBooking.couponIssue!.code);
+    expect(code).toHaveAttribute("translate", "no");
+    expect(code).toHaveAttribute("data-no-translate", "true");
   });
 });

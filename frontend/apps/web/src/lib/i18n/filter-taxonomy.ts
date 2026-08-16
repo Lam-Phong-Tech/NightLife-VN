@@ -170,3 +170,34 @@ export const getFilterAreaLabel = (areaName: string, language: LanguageCode) =>
   areaLabelAliases[normalizeLabelKey(areaName)]?.[language] ??
   translateDynamicWardLabel(areaName, language) ??
   areaName;
+
+const generalAreaValues = new Set([
+  "",
+  "tổng hợp",
+  "tong hop",
+  "tong_hop",
+  "theo khu vực",
+  "theo khu vuc",
+  "all",
+  "trung tâm",
+  "trung tam",
+]);
+
+/**
+ * Pick the most specific usable location returned by public store APIs.
+ * Store records can keep a generic area such as "Tổng hợp" alongside their
+ * actual ward, which must not be surfaced in customer-facing venue metadata.
+ */
+export const getPreferredStoreAreaName = (values: {
+  ward?: string | null;
+  areaWard?: string | null;
+  areaName?: string | null;
+  district?: string | null;
+}) => {
+  const candidates = [values.ward, values.areaWard, values.areaName, values.district];
+
+  return candidates.find((value) => {
+    if (!value?.trim()) return false;
+    return !generalAreaValues.has(normalizeLabelKey(value).replace(/\s+/g, " "));
+  }) ?? undefined;
+};

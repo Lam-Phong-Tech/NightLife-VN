@@ -1001,7 +1001,15 @@ export default function Page() {
                 <>
                   <SummaryRow
                     label={translateText("Mã ưu đãi", activeLanguage)}
-                    value={<span className={styles.bookingCode}>{couponLabelText ?? translateText("Ưu đãi", activeLanguage)}</span>}
+                    value={
+                      <span
+                        className={`${styles.bookingCode} notranslate`}
+                        translate="no"
+                        data-no-translate="true"
+                      >
+                        {couponLabelText ?? translateText("Ưu đãi", activeLanguage)}
+                      </span>
+                    }
                   />
                   {discountLabelText !== null ? (
                     <SummaryRow
