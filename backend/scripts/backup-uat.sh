@@ -188,8 +188,15 @@ if [ "$storage_found" -eq 1 ]; then
   # though the archive itself is usable. Ignore that transient read warning;
   # database/media metadata remains covered by the database dump and the next
   # scheduled backup will capture any file written during this run.
+  set +e
   tar --ignore-failed-read --warning=no-file-changed \
     -czf "$STORAGE_BACKUP" "${storage_args[@]}"
+  tar_status=$?
+  set -e
+  if [ "$tar_status" -gt 1 ]; then
+    echo "Storage archive failed with tar exit code $tar_status" >&2
+    exit "$tar_status"
+  fi
   test -s "$STORAGE_BACKUP"
 else
   echo "No storage paths found from STORAGE_PATHS=$STORAGE_PATHS" | tee "$STORAGE_SKIPPED" >/dev/null
