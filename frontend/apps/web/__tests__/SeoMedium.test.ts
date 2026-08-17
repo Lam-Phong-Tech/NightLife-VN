@@ -2,7 +2,7 @@
  * SeoMedium.test.ts
  *
  * TDD — RED phase tests for 3 Medium-priority SEO issues:
- * #10 — createPageMetadata() missing hreflang for en/ja/ko/zh
+ * #10 — unprefixed pages must not advertise locale URLs after they redirect
  * #11 — site.webmanifest wrong "purpose" field + missing PNG icons
  * #12 — /blog-chi-tiet/ route should not exist (deleted)
  */
@@ -11,10 +11,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Issue #10 — createPageMetadata() must include all 5 hreflang codes
+// Issue #10 — only localized pages may emit hreflang alternates.
 // ─────────────────────────────────────────────────────────────────────────────
-describe("createPageMetadata hreflang alternates", () => {
-  it("should include hreflang alternates for en, ja, ko, zh-CN in addition to vi and x-default", async () => {
+describe("createPageMetadata canonical metadata", () => {
+  it("keeps only the canonical URL for an unprefixed route", async () => {
     const { createPageMetadata } = await import("@/lib/seo/page-metadata");
     const meta = createPageMetadata({
       title: "Test Page",
@@ -22,31 +22,8 @@ describe("createPageMetadata hreflang alternates", () => {
       path: "/danh-sach-quan",
     });
 
-    const languages = meta.alternates?.languages as Record<string, string> | undefined;
-
-    expect(languages).toBeDefined();
-    expect(languages).toHaveProperty("vi");
-    expect(languages).toHaveProperty("en");      // ❌ currently MISSING
-    expect(languages).toHaveProperty("ja");      // ❌ currently MISSING
-    expect(languages).toHaveProperty("ko");      // ❌ currently MISSING
-    expect(languages).toHaveProperty("zh-CN");   // ❌ currently MISSING
-    expect(languages).toHaveProperty("x-default");
-  });
-
-  it("each language alternate URL should contain the canonical path", async () => {
-    const { createPageMetadata } = await import("@/lib/seo/page-metadata");
-    const meta = createPageMetadata({
-      title: "Test",
-      description: "Test",
-      path: "/spa",
-    });
-
-    const languages = meta.alternates?.languages as Record<string, string>;
-
-    expect(languages["en"]).toContain("/spa");
-    expect(languages["ja"]).toContain("/spa");
-    expect(languages["ko"]).toContain("/spa");
-    expect(languages["zh-CN"]).toContain("/spa");
+    expect(meta.alternates?.canonical).toBe("/danh-sach-quan");
+    expect(meta.alternates?.languages).toBeUndefined();
   });
 });
 

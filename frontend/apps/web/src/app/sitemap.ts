@@ -9,13 +9,13 @@ import type { PublicCast, PublicStore } from "@/lib/api/discovery";
 import { getPublishedLegalSections } from "@/lib/content/legal";
 import { absoluteSiteUrl } from "@/lib/site";
 import {
+  defaultLanguageCode,
   languageAlternates,
   languageCodes,
   localizePathname,
 } from "@/lib/i18n/locales";
 
-// Cache sitemap for 1 hour via ISR — prevents hammering the API on every bot crawl
-export const dynamic = "force-dynamic";
+// Cache sitemap data for one hour to avoid fetching both discovery endpoints on every crawl.
 export const revalidate = 3600;
 
 const staticRoutes: Array<{
@@ -34,12 +34,24 @@ const staticRoutes: Array<{
   { path: "/blog", changeFrequency: "weekly", priority: 0.72 },
 ];
 
+const buildSitemapAlternates = (path: string) => ({
+  languages: {
+    ...Object.fromEntries(
+      Object.entries(languageAlternates(path)).map(([locale, alternatePath]) => [
+        locale,
+        absoluteSiteUrl(alternatePath),
+      ]),
+    ),
+    "x-default": absoluteSiteUrl(localizePathname(path, defaultLanguageCode)),
+  },
+});
+
 async function loadSitemapDiscovery<T>(endpoint: "/stores" | "/casts") {
   const backendBaseUrl =
     process.env.BACKEND_API_URL?.replace(/\/api\/?$/, "").replace(/\/$/, "") ||
     "https://api.vietyoru.com";
   const response = await fetch(`${backendBaseUrl}${endpoint}?limit=100&sort=priority`, {
-    cache: "no-store",
+    next: { revalidate },
   });
 
   if (!response.ok) {
@@ -51,7 +63,6 @@ async function loadSitemapDiscovery<T>(endpoint: "/stores" | "/casts") {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
   let stores: PublicStore[] = [];
   let casts: PublicCast[] = [];
 
@@ -71,68 +82,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const legalSections = await getPublishedLegalSections();
   const shouldIndexLegal = legalSections.length > 0 && legalSections.every((section) => !section.noindex);
   const indexableLegalSections = legalSections.filter((section) => !section.noindex);
-  const indexableStaticRoutes = shouldIndexLegal
-    ? [
-        ...staticRoutes,
-        { path: "/legal", changeFrequency: "monthly" as const, priority: 0.48 },
-      ]
-    : staticRoutes;
-
   return [
-    ...indexableStaticRoutes.map((route) => ({
-      url: absoluteSiteUrl(route.path),
-      lastModified: now,
-      changeFrequency: route.changeFrequency,
-      priority: route.priority,
-    })),
     ...staticRoutes.flatMap((route) =>
       languageCodes.map((language) => ({
         url: absoluteSiteUrl(localizePathname(route.path, language)),
-        lastModified: now,
         changeFrequency: route.changeFrequency,
         priority: route.priority,
-        alternates: {
-          languages: Object.fromEntries(
-            Object.entries(languageAlternates(route.path)).map(([locale, path]) => [
-              locale,
-              absoluteSiteUrl(path),
-            ]),
-          ),
-        },
+        alternates: buildSitemapAlternates(route.path),
       })),
     ),
+    ...(shouldIndexLegal
+      ? [
+          {
+            url: absoluteSiteUrl("/legal"),
+            changeFrequency: "monthly" as const,
+            priority: 0.48,
+          },
+        ]
+      : []),
     ...stores.flatMap((store) => {
       const path = `/stores/${store.slug}`;
       return languageCodes.map((language) => ({
         url: absoluteSiteUrl(localizePathname(path, language)),
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.82,
-        alternates: {
-          languages: Object.fromEntries(
-            Object.entries(languageAlternates(path)).map(([locale, alternatePath]) => [
-              locale,
-              absoluteSiteUrl(alternatePath),
-            ]),
-          ),
-        },
+        alternates: buildSitemapAlternates(path),
       }));
     }),
     ...casts.flatMap((cast) => {
       const path = `/casts/${cast.slug}`;
       return languageCodes.map((language) => ({
         url: absoluteSiteUrl(localizePathname(path, language)),
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.78,
-        alternates: {
-          languages: Object.fromEntries(
-            Object.entries(languageAlternates(path)).map(([locale, alternatePath]) => [
-              locale,
-              absoluteSiteUrl(alternatePath),
-            ]),
-          ),
-        },
+        alternates: buildSitemapAlternates(path),
       }));
     }),
     ...blogPosts.map((post) => ({
@@ -143,13 +126,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...blogCategories.map((category) => ({
       url: absoluteSiteUrl(`/blog/category/${slugifyBlogTerm(category)}`),
-      lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.58,
     })),
     ...blogTags.map((tag) => ({
       url: absoluteSiteUrl(`/blog/tag/${slugifyBlogTerm(tag)}`),
-      lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.54,
     })),

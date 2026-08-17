@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  defaultLanguageCode,
   languageAlternates,
   languageOpenGraphLocale,
   localizePathname,
@@ -300,7 +301,7 @@ export function createLocalizedPageMetadata(
       canonical,
       languages: {
         ...languageAlternates(path),
-        "x-default": `/vi${path === "/" ? "" : path}`,
+        "x-default": localizePathname(path, defaultLanguageCode),
       },
     },
     robots: {

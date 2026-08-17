@@ -89,6 +89,18 @@ describe("cast detail generateMetadata", () => {
 
     expect(meta.robots).toMatchObject({ index: false, follow: false });
   });
+
+  it("uses the Japanese route as x-default", async () => {
+    const { buildCastMetadata } = await import("@/lib/seo/cast-metadata");
+    const meta = buildCastMetadata(
+      makeCast() as Parameters<typeof buildCastMetadata>[0],
+      "en",
+    );
+
+    expect(meta.alternates?.languages).toMatchObject({
+      "x-default": "/ja/casts/aya-velvet",
+    });
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -44,7 +44,7 @@ describe("localized public routes", () => {
       ja: "/ja/tour",
       ko: "/ko/tour",
       "zh-CN": "/zh/tour",
-      "x-default": "/vi/tour",
+      "x-default": "/ja/tour",
     });
     expect(languageAlternates("/tour")).toMatchObject({
       vi: "/vi/tour",

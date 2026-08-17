@@ -1,5 +1,8 @@
+const fallbackSiteUrl =
+  process.env.NODE_ENV === "production" ? "https://vietyoru.com" : "http://localhost:3000";
+
 const configuredSiteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || fallbackSiteUrl;
 
 const normalizedSiteUrl = /^https?:\/\//i.test(configuredSiteUrl)
   ? configuredSiteUrl

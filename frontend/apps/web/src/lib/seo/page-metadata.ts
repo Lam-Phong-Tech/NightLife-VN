@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { absoluteSiteUrl, siteConfig } from "@/lib/site";
-import { languageAlternates } from "@/lib/i18n/locales";
 
 type PageMetadataOptions = {
   title: string;
@@ -36,10 +35,6 @@ export const createPageMetadata = ({
     description,
     alternates: {
       canonical,
-      languages: {
-        ...languageAlternates(canonical),
-        "x-default": canonical,
-      },
     },
     robots: {
       index,
@@ -89,4 +84,3 @@ export async function createI18nNoindexMetadata(
     translatedDescription,
   );
 }
-

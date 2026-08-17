@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { languageAlternates } from "@/lib/i18n/locales";
+import {
+  defaultLanguageCode,
+  languageAlternates,
+  localizePathname,
+} from "@/lib/i18n/locales";
 
 export const TOUR_PAGE_METADATA: Metadata = {
   title: "Danh sách tour nightlife",
@@ -9,7 +13,7 @@ export const TOUR_PAGE_METADATA: Metadata = {
     canonical: "/tour",
     languages: {
       ...languageAlternates("/tour"),
-      "x-default": "/vi/tour",
+      "x-default": localizePathname("/tour", defaultLanguageCode),
     },
   },
 };

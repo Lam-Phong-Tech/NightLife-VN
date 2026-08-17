@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  defaultLanguageCode,
   languageAlternates,
   localizePathname,
   type LanguageCode,
@@ -33,7 +34,7 @@ export function buildStoreMetadata(
       canonical: canonicalPath,
       languages: {
         ...languageAlternates(detailPath),
-        "x-default": localizePathname(detailPath, "vi"),
+        "x-default": localizePathname(detailPath, defaultLanguageCode),
       },
     },
     openGraph: {

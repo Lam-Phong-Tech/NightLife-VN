@@ -13,6 +13,7 @@ import {
   defaultLanguageCode,
   getPathLanguage,
   isLocalizedPublicRoute,
+  localizePathname,
   stripLanguagePrefix,
 } from "@/lib/i18n/locales";
 
@@ -280,25 +281,24 @@ export async function middleware(request: NextRequest) {
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  if (
-    !requestedLanguage &&
-    (pathname === "/stores" || pathname === "/casts") &&
-    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
-  ) {
+  const isPublicRoutingHost =
+    hostKind === "local" || hostKind === "unknown" || hostKind === "public";
+
+  // Permanent SEO redirects must not vary by cookie. All public, unprefixed
+  // URLs have one canonical Japanese destination.
+  if (!requestedLanguage && isPublicRoutingHost && isLocalizedPublicRoute(pathname)) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${preferredPublicLanguage}${pathname}`;
+    localizedUrl.pathname = localizePathname(pathname, defaultLanguageCode);
     return NextResponse.redirect(localizedUrl, 308);
   }
 
-  // Keep the former singular route from pinning visitors to /vi/store. The
-  // canonical plural route is locale-aware and is rendered natively on the
-  // server, so a Japanese visitor always starts at /ja/stores.
+  // Keep the former singular route on the canonical plural Japanese route.
   if (
     pathname === "/store" &&
-    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+    isPublicRoutingHost
   ) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${requestedLanguage ?? preferredPublicLanguage}/stores`;
+    localizedUrl.pathname = `/${requestedLanguage ?? defaultLanguageCode}/stores`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 
@@ -308,20 +308,10 @@ export async function middleware(request: NextRequest) {
     : undefined;
   if (
     replacementStoreSlug &&
-    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
+    isPublicRoutingHost
   ) {
     const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${requestedLanguage ?? preferredPublicLanguage}/stores/${replacementStoreSlug}`;
-    return NextResponse.redirect(localizedUrl, 308);
-  }
-
-  if (
-    !requestedLanguage &&
-    (hostKind === "local" || hostKind === "unknown" || hostKind === "public") &&
-    /^\/(?:stores|casts)\/[^/]+$/.test(pathname)
-  ) {
-    const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${preferredPublicLanguage}${pathname}`;
+    localizedUrl.pathname = `/${requestedLanguage ?? defaultLanguageCode}/stores/${replacementStoreSlug}`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 
