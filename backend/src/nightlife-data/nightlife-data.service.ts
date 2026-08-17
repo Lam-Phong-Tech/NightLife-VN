@@ -24802,9 +24802,11 @@ export class NightlifeDataService {
           },
         });
 
-        if (!targetCast) {
-          throw new NotFoundException('Original cast for review was not found');
-        }
+        // Recovery for legacy review drafts created before cast submissions were
+        // limited to the selected profile. If their original cast was later
+        // removed, publish this draft itself instead of leaving it impossible
+        // for an administrator to save.
+        const publishTarget = targetCast ?? existing;
 
         const draftMediaIds = (
           await tx.media.findMany({
@@ -24816,7 +24818,7 @@ export class NightlifeDataService {
           requestedMediaIds !== undefined ? requestedMediaIds : draftMediaIds;
 
         const updatedTarget = await tx.cast.update({
-          where: { id: targetCast.id },
+          where: { id: publishTarget.id },
           data: {
             stageName: dto.stageName ?? existing.stageName,
             storeId: dto.storeId ?? existing.storeId,
@@ -24847,7 +24849,7 @@ export class NightlifeDataService {
 
         await tx.media.updateMany({
           where: {
-            castId: targetCast.id,
+            castId: publishTarget.id,
             deletedAt: null,
             ...(mediaIdsToPublish.length
               ? { id: { notIn: mediaIdsToPublish } }
@@ -24864,7 +24866,7 @@ export class NightlifeDataService {
           await tx.media.updateMany({
             where: { id: { in: mediaIdsToPublish }, deletedAt: null },
             data: {
-              castId: targetCast.id,
+              castId: publishTarget.id,
               storeId: null,
               status: 'READY',
               access: 'PUBLIC',
@@ -24872,18 +24874,20 @@ export class NightlifeDataService {
           });
         }
 
-        await tx.cast.update({
-          where: { id: existing.id },
-          data: {
-            status: 'DELETED',
-            isPublic: false,
-            deletedAt: now,
-          },
-          select: { id: true },
-        });
+        if (publishTarget.id !== existing.id) {
+          await tx.cast.update({
+            where: { id: existing.id },
+            data: {
+              status: 'DELETED',
+              isPublic: false,
+              deletedAt: now,
+            },
+            select: { id: true },
+          });
+        }
 
         await this.syncAdminCastMediaPurposes(
-          targetCast.id,
+          publishTarget.id,
           mediaIdsToPublish,
           tx,
         );
@@ -24896,7 +24900,7 @@ export class NightlifeDataService {
             targetType: 'Cast',
             targetId: updatedTarget.id,
             entityDisplayCode: updatedTarget.stageName,
-            before: pickAdminAuditSnapshot(targetCast, CAST_AUDIT_FIELDS),
+            before: pickAdminAuditSnapshot(publishTarget, CAST_AUDIT_FIELDS),
             after: pickAdminAuditSnapshot(updatedTarget, CAST_AUDIT_FIELDS),
             changeSummary: `Đã duyệt và cập nhật nhân viên "${updatedTarget.stageName}"`,
           }),

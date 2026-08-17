@@ -6217,6 +6217,53 @@ describe('NightlifeDataService', () => {
     ).toBe(false);
   });
 
+  it('recovers a legacy partner cast edit draft when its original cast is missing', async () => {
+    const missingSourceCastId = '11111111-1111-4111-8111-111111111111';
+    const draftCastId = '22222222-2222-4222-8222-222222222222';
+
+    prisma.cast.findUniqueOrThrow.mockResolvedValueOnce({
+      id: draftCastId,
+      storeId: 'store-velvet',
+      stageName: 'Hanh',
+      slug: `partner-cast-edit-${missingSourceCastId}`,
+      bio: 'Updated host',
+      publicBio: 'Updated host',
+      birthMonth: 7,
+      zodiacSign: 'Cancer',
+      heightCm: 170,
+      measurements: '80-80-80',
+      languages: ['VN'],
+      hobbies: ['hat'],
+      tags: ['sang'],
+      youtubeLinks: [],
+      status: 'PENDING_REVIEW',
+      isPublic: false,
+      deletedAt: null,
+    });
+    prisma.cast.findFirst.mockResolvedValueOnce(null);
+    prisma.cast.update.mockResolvedValueOnce({
+      id: draftCastId,
+      stageName: 'Hanh',
+      status: 'ACTIVE',
+    });
+    prisma.media.findMany.mockResolvedValue([]);
+
+    const result = await service.updateAdminCast(adminActor, draftCastId, {
+      status: 'ACTIVE',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({ id: draftCastId, status: 'ACTIVE' }),
+    );
+    expect(prisma.cast.update).toHaveBeenCalledTimes(1);
+    expect(prisma.cast.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: draftCastId },
+        data: expect.objectContaining({ status: 'ACTIVE', isPublic: true }),
+      }),
+    );
+  });
+
   it('does not submit cast-only changes through the partner listing store review flow', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';
