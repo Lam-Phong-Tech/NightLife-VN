@@ -737,11 +737,8 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
   })();
 
   const targetLabel = tour.title || firstStore?.name;
-  // Tour titles are dynamic API content. Translate every displayed instance
-  // explicitly so the booking card does not miss the initial Google fallback
-  // pass after client hydration.
-  const displayTourTitle = t(tour.title);
-  const displayTargetLabel = targetLabel ? t(targetLabel) : targetLabel;
+  const displayTourTitle = tour.title;
+  const displayTargetLabel = targetLabel;
   const canSubmit = Boolean(firstStore && bookingStore && bookingTimeOptions.length);
 
   const createTourBooking = async (
@@ -880,7 +877,9 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
           <ChevronRight size={14} />
           <Link href="/tour">Tour</Link>
           <ChevronRight size={14} />
-          <strong>{displayTourTitle}</strong>
+          <strong className="notranslate" translate="no" data-no-translate="true">
+            {displayTourTitle}
+          </strong>
         </nav>
 
         <div className={styles.layout}>
@@ -899,7 +898,13 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                     <span className={styles.eyebrow}>
                       <Sparkles size={14} /> {tx("experienceTour")}
                     </span>
-                    <h1 className={styles.heroTitle}>{displayTourTitle}</h1>
+                    <h1
+                      className={`${styles.heroTitle} notranslate`}
+                      translate="no"
+                      data-no-translate="true"
+                    >
+                      {displayTourTitle}
+                    </h1>
                     {cleanSubtitle ? <p className={styles.heroText}>{cleanSubtitle}</p> : null}
                   </div>
                 </div>
@@ -1035,7 +1040,9 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                     <span className="notranslate" translate="no" data-no-translate="true">
                       {tx("bookingPoint")}:
                     </span>{" "}
-                    <span>{displayTargetLabel}</span>
+                    <span className="notranslate" translate="no" data-no-translate="true">
+                      {displayTargetLabel}
+                    </span>
                   </p>
                 ) : (
                   <p>{tx("invalidTour")}</p>
