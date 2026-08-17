@@ -3596,8 +3596,15 @@ export class NightlifeDataService {
     // an older approval is reflected without overwriting a newer Partner edit.
     if (draft?.updatedAt) {
       const liveCastProfiles = this.partnerListingCastProfilesFromStore(store);
+      const castRows = await this.prisma.cast.findMany({
+        where: { storeId: store.id, deletedAt: null },
+        select: { id: true, updatedAt: true },
+      });
       const liveCastUpdatedAt = new Map(
-        store.casts.map((cast) => [cast.id, cast.updatedAt]),
+        (Array.isArray(castRows) ? castRows : []).map((cast) => [
+          cast.id,
+          cast.updatedAt,
+        ]),
       );
       const reconciledCastProfiles = payload.castProfiles.map((profile) => {
         const liveProfile = liveCastProfiles.find(
