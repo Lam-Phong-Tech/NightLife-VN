@@ -3826,6 +3826,10 @@ export class NightlifeDataService {
             store,
           )
         : this.partnerListingDraftPayloadFromContent(draft, store);
+    const existingListingDraft = await this.findPartnerListingDraft(store.id);
+    const existingListingPayload = existingListingDraft
+      ? this.partnerListingDraftPayloadFromContent(existingListingDraft, store)
+      : this.normalizePartnerListingDraft({}, store);
     const livePayload = this.normalizePartnerListingDraft({}, store);
     const liveCastProfiles = livePayload.castProfiles.filter(
       (profile) =>
@@ -3981,6 +3985,50 @@ export class NightlifeDataService {
         );
       }
 
+      // Cast-only submissions must also update the shared Partner draft.
+      // Otherwise a reload reads the previous Content snapshot and restores
+      // stale status/IDs over the Cast data that was just submitted.
+      const submittedById = new Map(
+        castProfiles
+          .map((profile) => [this.cleanNullableText(profile.id), profile] as const)
+          .filter(([id]) => Boolean(id)),
+      );
+      const submittedByName = new Map(
+        castProfiles.map((profile) => [
+          this.normalizeToken(profile.stageName),
+          profile,
+        ]),
+      );
+      const mergedCastProfiles = existingListingPayload.castProfiles.map(
+        (profile) =>
+          submittedById.get(this.cleanNullableText(profile.id) ?? '') ??
+          submittedByName.get(this.normalizeToken(profile.stageName)) ??
+          profile,
+      );
+      const mergedKeys = new Set(
+        mergedCastProfiles.map((profile) =>
+          this.cleanNullableText(profile.id) ??
+          this.normalizeToken(profile.stageName),
+        ),
+      );
+      for (const profile of castProfiles) {
+        const key =
+          this.cleanNullableText(profile.id) ??
+          this.normalizeToken(profile.stageName);
+        if (!mergedKeys.has(key)) {
+          mergedCastProfiles.push(profile);
+          mergedKeys.add(key);
+        }
+      }
+      if (existingListingDraft) {
+        await this.upsertPartnerListingDraftContent(
+          user,
+          store,
+          { ...existingListingPayload, castProfiles: mergedCastProfiles },
+          tx,
+        );
+      }
+
       return {
         draftCastIds,
         draftMediaIds,
@@ -4038,7 +4086,16 @@ export class NightlifeDataService {
     });
 
     if (result.count !== 1) {
-      throw new NotFoundException('Partner listing cast not found');
+      // Partner may still hold an older draft containing a cast ID that was
+      // already soft-deleted from Admin. Treat that state as already deleted
+      // so the stale draft can be cleaned up instead of returning a false 404.
+      const existingCast = await this.prisma.cast.findFirst({
+        where: { id, storeId: store.id },
+        select: { id: true },
+      });
+      if (!existingCast) {
+        throw new NotFoundException('Partner listing cast not found');
+      }
     }
 
     const draft = await this.findPartnerListingDraft(store.id);
