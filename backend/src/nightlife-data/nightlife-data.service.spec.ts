@@ -5450,6 +5450,47 @@ describe('NightlifeDataService', () => {
     ).toThrow('Each cast can have one avatar and up to 10 album images.');
   });
 
+  it('keeps explicitly partitioned cast images out of the video media list', () => {
+    const normalizeCasts = (
+      service as unknown as {
+        normalizePartnerRequestCasts(
+          profiles: Array<Record<string, unknown>>,
+        ): Array<Record<string, unknown>>;
+      }
+    ).normalizePartnerRequestCasts.bind(service);
+    const mediaPurpose = (
+      service as unknown as {
+        partnerListingCastMediaPurpose(
+          profile: Record<string, unknown>,
+          url: string,
+          index: number,
+        ): string;
+      }
+    ).partnerListingCastMediaPurpose.bind(service);
+    const avatarUrl = 'https://cdn.example.com/avatar.jpg';
+    const albumUrl = 'https://cdn.example.com/album.jpg';
+    const videoUrl = 'https://cdn.example.com/profile.mp4';
+    const [profile] = normalizeCasts([
+      {
+        stageName: 'Aoi',
+        avatarUrl,
+        albumImageUrls: [albumUrl],
+        mediaUrls: [videoUrl],
+      },
+    ]);
+
+    expect(profile).toEqual(
+      expect.objectContaining({
+        avatarUrl,
+        albumImageUrls: [albumUrl],
+        mediaUrls: [videoUrl],
+      }),
+    );
+    expect(mediaPurpose(profile, avatarUrl, 0)).toBe('CAST_AVATAR');
+    expect(mediaPurpose(profile, albumUrl, 1)).toBe('CAST_PHOTO');
+    expect(mediaPurpose(profile, videoUrl, 2)).toBe('CAST_VIDEO');
+  });
+
   it('keeps draft cast status attached to its stable client key when store casts are reordered', () => {
     const mergeCastProfiles = (
       service as unknown as {

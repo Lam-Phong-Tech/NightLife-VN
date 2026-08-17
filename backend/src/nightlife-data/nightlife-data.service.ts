@@ -19056,17 +19056,6 @@ export class NightlifeDataService {
     const key = this.partnerMediaUrlKey(url);
     const hasExplicitImagePartition =
       profile.avatarUrl !== undefined || profile.albumImageUrls !== undefined;
-    const isExplicitVideo =
-      hasExplicitImagePartition &&
-      Boolean(
-        key &&
-          (profile.mediaUrls ?? []).some(
-            (mediaUrl) => this.partnerMediaUrlKey(mediaUrl) === key,
-          ),
-      );
-    if (this.partnerRequestMediaType(url) === 'VIDEO' || isExplicitVideo) {
-      return 'CAST_VIDEO';
-    }
 
     if (
       key &&
@@ -19083,6 +19072,17 @@ export class NightlifeDataService {
       )
     ) {
       return 'CAST_PHOTO';
+    }
+
+    if (
+      (hasExplicitImagePartition &&
+        key &&
+        (profile.mediaUrls ?? []).some(
+          (mediaUrl) => this.partnerMediaUrlKey(mediaUrl) === key,
+        )) ||
+      this.partnerRequestMediaType(url) === 'VIDEO'
+    ) {
+      return 'CAST_VIDEO';
     }
 
     if (hasExplicitImagePartition) {
@@ -21236,13 +21236,17 @@ export class NightlifeDataService {
               10,
             )
           : legacyImageUrls.slice(1, 11);
-        const mediaUrls = Array.from(
-          new Set(
-            [avatarUrl, ...albumImageUrls, ...videoUrls].filter(
-              (url): url is string => Boolean(url),
-            ),
-          ),
-        );
+        // Explicit Partner fields carry image roles. Keep mediaUrls video-only
+        // so an avatar or album image can never be promoted as a video.
+        const mediaUrls = hasExplicitImagePartition
+          ? videoUrls
+          : Array.from(
+              new Set(
+                [avatarUrl, ...albumImageUrls, ...videoUrls].filter(
+                  (url): url is string => Boolean(url),
+                ),
+              ),
+            );
 
         return {
           id: id && this.isUuid(id) ? id : undefined,

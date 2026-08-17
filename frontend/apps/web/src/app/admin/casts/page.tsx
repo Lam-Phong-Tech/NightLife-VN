@@ -681,8 +681,12 @@ function AdminCastsContent() {
     const purpose = normalizeMediaPurpose(media?.purpose);
     const url = String(media?.url || '').split('?')[0] || '';
 
+    // File type takes precedence over a stale purpose from legacy review data.
+    // This keeps an image out of the Video section even if it was mislabeled.
+    if (media?.type === 'IMAGE') return true;
+    if (media?.type === 'VIDEO') return false;
+
     return (
-      media?.type === 'IMAGE' ||
       [
         'cast-avatar',
         'cast-photo',
@@ -704,8 +708,10 @@ function AdminCastsContent() {
     const purpose = normalizeMediaPurpose(media?.purpose);
     const url = String(media?.url || '').split('?')[0] || '';
 
+    if (media?.type === 'VIDEO') return true;
+    if (media?.type === 'IMAGE') return false;
+
     return (
-      media?.type === 'VIDEO' ||
       ['cast-video', 'partner-cast-video', 'video'].includes(purpose) ||
       /\.(mp4|webm|ogg|mov|m4v)$/i.test(url)
     );
