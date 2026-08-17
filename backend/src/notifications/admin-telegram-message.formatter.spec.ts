@@ -82,7 +82,7 @@ describe('admin telegram message formatter', () => {
   });
 
   it.each(['RESTAURANT', 'MASSAGE_SPA'])(
-    'omits cast-only lines for %s bookings',
+    'omits cast, discount, and QR lines for %s bookings',
     (storeCategory) => {
       const message = formatBookingRequestTelegramMessage({
         bookingCode: 'BK-SERVICE',
@@ -100,6 +100,8 @@ describe('admin telegram message formatter', () => {
       });
 
       expect(message).not.toContain('Cast mong muốn');
+      expect(message).not.toContain('Mức giảm');
+      expect(message).not.toContain('🔳 QR:');
       expect(message).not.toContain('⚠️ Lưu ý:');
       expect(message).toContain('💬 Ghi chú: Bàn gần cửa sổ');
     },

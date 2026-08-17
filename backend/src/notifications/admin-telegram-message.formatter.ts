@@ -196,13 +196,15 @@ function bookingDetailLines(
     `👤 Khách: ${valueOrFallback(input.customerName)}`,
     `📧 Email: ${valueOrFallback(input.customerEmail)}`,
     `🏷️ Loại khách: ${customerType}`,
-    `🎟️ Mức giảm: ${input.discountLabel || discountLabelForCustomerType(customerType)}`,
+    supportsCast
+      ? `🎟️ Mức giảm: ${input.discountLabel || discountLabelForCustomerType(customerType)}`
+      : null,
     `🏪 Quán: ${valueOrFallback(input.storeName)}`,
     supportsCast ? `👑 Cast mong muốn: ${input.castName || noValueText}` : null,
     `🗓️ Ngày giờ đến: ${formatBookingArrivalDateTime(input.scheduledAt, input.timeZone)}`,
     `👥 Số người: ${formatPartySizeNumber(input.partySize)}`,
     `💬 Ghi chú: ${input.note || noValueText}`,
-    `🔳 QR: ${input.qrStatus || defaultBookingQrStatus}`,
+    supportsCast ? `🔳 QR: ${input.qrStatus || defaultBookingQrStatus}` : null,
     `📌 Trạng thái booking: ${input.bookingStatusLabel || bookingStatusLabel(input.status)}`,
   ];
 }
