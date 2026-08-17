@@ -3575,13 +3575,25 @@ export class NightlifeDataService {
   async getPartnerListingDraft(user: AuthenticatedUser, storeId: string) {
     const store = await this.getPartnerListingStore(user, storeId);
     const draft = await this.findPartnerListingDraft(store.id);
-    const payload = this.partnerListingDraftPayloadFromContent(draft, store);
+    const review = await this.getLatestPartnerListingReview(store.id);
+    const draftIsOlderThanApprovedReview = Boolean(
+      review?.status === 'APPROVED' &&
+        review.reviewedAt &&
+        (!draft?.updatedAt || review.reviewedAt >= draft.updatedAt.toISOString()),
+    );
+    // An approved Partner request publishes cast/store/media records, while
+    // the shared listing Content row can still contain the pre-review draft.
+    // Once the review is newer than that row, expose the published store data
+    // so a reload cannot revert the Partner UI to DRAFT or lose its media.
+    const payload = draftIsOlderThanApprovedReview
+      ? this.normalizePartnerListingDraft({}, store)
+      : this.partnerListingDraftPayloadFromContent(draft, store);
 
     return this.partnerListingDraftResponse(store, draft, payload, {
       message: draft
         ? 'Partner listing draft loaded'
         : 'Current store data loaded as listing draft',
-      review: await this.getLatestPartnerListingReview(store.id),
+      review,
     });
   }
 
