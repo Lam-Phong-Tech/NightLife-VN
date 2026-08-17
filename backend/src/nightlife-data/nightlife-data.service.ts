@@ -18550,9 +18550,9 @@ export class NightlifeDataService {
       coverPurposes.has(String(item.purpose ?? '').trim()),
     );
 
-    // Only use an explicitly selected cover from admin. Do not promote the
-    // first gallery image to cover when the store has no configured cover.
-    return cover ?? null;
+    // Prefer the explicitly selected cover, but retain the public API's
+    // gallery fallback for stores that have no configured cover yet.
+    return cover ?? storeMedia[0] ?? null;
   }
 
   private publicMediaUrl(url: string) {
