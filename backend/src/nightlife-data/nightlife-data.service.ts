@@ -26618,9 +26618,9 @@ export class NightlifeDataService {
       store: bk.store.name,
       cast: (() => {
         const itinerary = bk.tourBooking?.itinerarySnapshot;
-        const stop = Array.isArray(itinerary)
+        const stop = (Array.isArray(itinerary)
           ? itinerary.find((item: any) => item?.storeId === bk.storeId)
-          : null;
+          : null) as unknown as { casts?: unknown } | null;
         const tourCastNames = Array.isArray(stop?.casts)
           ? stop.casts
               .map((cast: any) => cast?.name)
