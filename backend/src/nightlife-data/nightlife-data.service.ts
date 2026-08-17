@@ -19244,10 +19244,7 @@ export class NightlifeDataService {
         tags: this.cleanPartnerListingStringArray(cast.tags, 12),
         languages: this.cleanPartnerListingStringArray(cast.languages, 8),
         birthMonth: cast.birthMonth ?? undefined,
-        zodiacSign:
-          this.zodiacSignForBirthMonth(cast.birthMonth) ??
-          this.cleanPartnerListingText(cast.zodiacSign) ??
-          undefined,
+        zodiacSign: this.cleanPartnerListingText(cast.zodiacSign) ?? undefined,
         heightCm: cast.heightCm ?? undefined,
         measurements:
           this.cleanPartnerListingText(cast.measurements) ?? undefined,
@@ -19374,12 +19371,8 @@ export class NightlifeDataService {
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
       zodiacSign:
         profile.zodiacSign !== undefined
-          ? (this.zodiacSignForBirthMonth(profile.birthMonth) ??
-            text(profile.zodiacSign) ??
-            undefined)
-          : (this.zodiacSignForBirthMonth(storeProfile?.birthMonth) ??
-            text(storeProfile?.zodiacSign) ??
-            undefined),
+          ? (text(profile.zodiacSign) ?? undefined)
+          : (text(storeProfile?.zodiacSign) ?? undefined),
       heightCm: profile.heightCm ?? storeProfile?.heightCm,
       measurements:
         text(profile.measurements) ??
@@ -21218,26 +21211,6 @@ export class NightlifeDataService {
       : undefined;
   }
 
-  private zodiacSignForBirthMonth(birthMonth?: number | null) {
-    const signs = [
-      'Capricorn',
-      'Aquarius',
-      'Pisces',
-      'Aries',
-      'Taurus',
-      'Gemini',
-      'Cancer',
-      'Leo',
-      'Virgo',
-      'Libra',
-      'Scorpio',
-      'Sagittarius',
-    ];
-    return birthMonth && birthMonth >= 1 && birthMonth <= 12
-      ? signs[birthMonth - 1]
-      : undefined;
-  }
-
   private normalizePartnerRequestCasts(
     castProfiles?: PartnerRequestCastDto[] | null,
   ) {
@@ -21324,10 +21297,9 @@ export class NightlifeDataService {
             : undefined,
           birthMonth,
           zodiacSign:
-            this.zodiacSignForBirthMonth(birthMonth) ??
-            (incomingProfile.zodiacSign === null
+            incomingProfile.zodiacSign === null
               ? null
-              : this.cleanPartnerListingText(profile.zodiacSign)),
+              : this.cleanPartnerListingText(profile.zodiacSign),
           heightCm,
           measurements: this.cleanPartnerListingText(profile.measurements),
           hobbies: hasHobbies

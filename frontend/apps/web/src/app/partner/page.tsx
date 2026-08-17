@@ -525,12 +525,22 @@ const listingBirthMonthOptions = Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
   label: `Tháng ${index + 1}`,
 }));
-const listingZodiacByBirthMonth = [
-  'Ma Kết', 'Bảo Bình', 'Song Ngư', 'Bạch Dương', 'Kim Ngưu', 'Song Tử',
-  'Cự Giải', 'Sư Tử', 'Xử Nữ', 'Thiên Bình', 'Bọ Cạp', 'Nhân Mã',
-];
-const listingZodiacForBirthMonth = (birthMonth?: number) =>
-  birthMonth ? listingZodiacByBirthMonth[birthMonth - 1] ?? '' : '';
+const listingZodiacOptionsByBirthMonth: Record<number, { value: string; label: string }[]> = {
+  1: [{ value: 'Capricorn', label: 'Ma Kết' }, { value: 'Aquarius', label: 'Bảo Bình' }],
+  2: [{ value: 'Aquarius', label: 'Bảo Bình' }, { value: 'Pisces', label: 'Song Ngư' }],
+  3: [{ value: 'Pisces', label: 'Song Ngư' }, { value: 'Aries', label: 'Bạch Dương' }],
+  4: [{ value: 'Aries', label: 'Bạch Dương' }, { value: 'Taurus', label: 'Kim Ngưu' }],
+  5: [{ value: 'Taurus', label: 'Kim Ngưu' }, { value: 'Gemini', label: 'Song Tử' }],
+  6: [{ value: 'Gemini', label: 'Song Tử' }, { value: 'Cancer', label: 'Cự Giải' }],
+  7: [{ value: 'Cancer', label: 'Cự Giải' }, { value: 'Leo', label: 'Sư Tử' }],
+  8: [{ value: 'Leo', label: 'Sư Tử' }, { value: 'Virgo', label: 'Xử Nữ' }],
+  9: [{ value: 'Virgo', label: 'Xử Nữ' }, { value: 'Libra', label: 'Thiên Bình' }],
+  10: [{ value: 'Libra', label: 'Thiên Bình' }, { value: 'Scorpio', label: 'Bọ Cạp' }],
+  11: [{ value: 'Scorpio', label: 'Bọ Cạp' }, { value: 'Sagittarius', label: 'Nhân Mã' }],
+  12: [{ value: 'Sagittarius', label: 'Nhân Mã' }, { value: 'Capricorn', label: 'Ma Kết' }],
+};
+const listingZodiacOptionsForBirthMonth = (birthMonth?: number) =>
+  birthMonth ? listingZodiacOptionsByBirthMonth[birthMonth] ?? [] : [];
 const listingZodiacLabels: Record<string, string> = {
   Aries: 'Bạch Dương',
   Taurus: 'Kim Ngưu',
@@ -1350,6 +1360,10 @@ const validateListingDraft = (
     }
     if (cast.birthMonth !== undefined && (cast.birthMonth < 1 || cast.birthMonth > 12)) {
       errors[`castProfiles.${index}.birthMonth`] = 'Tháng sinh phải từ 1 đến 12.';
+    }
+    const zodiacOptions = listingZodiacOptionsForBirthMonth(cast.birthMonth);
+    if (cast.birthMonth && !zodiacOptions.some((option) => option.value === cast.zodiacSign)) {
+      errors[`castProfiles.${index}.zodiacSign`] = 'Chọn cung hoàng đạo phù hợp với tháng sinh.';
     }
     if (cast.heightCm !== undefined && (cast.heightCm <= 0 || cast.heightCm < 50 || cast.heightCm > 250)) {
       errors[`castProfiles.${index}.heightCm`] = 'Chiều cao không hợp lệ (phải trong khoảng 50 - 250 cm).';
@@ -7668,11 +7682,14 @@ export default function PartnerPage() {
               value={cast.birthMonth ? String(cast.birthMonth) : ''}
               onChange={(value) => {
                 const birthMonth = value ? Number(value) : undefined;
+                const zodiacOptions = listingZodiacOptionsForBirthMonth(birthMonth);
                 updateCastProfile(index, 'birthMonth', birthMonth);
                 updateCastProfile(
                   index,
                   'zodiacSign',
-                  birthMonth ? listingZodiacForBirthMonth(birthMonth) : null,
+                  zodiacOptions.some((option) => option.value === cast.zodiacSign)
+                    ? cast.zodiacSign
+                    : null,
                 );
               }}
               placeholder="-- Chọn tháng --"
@@ -7682,11 +7699,13 @@ export default function PartnerPage() {
             {listingErrorText(`castProfiles.${index}.birthMonth`)}
           </FormField>
           <FormField label="Cung Hoàng Đạo">
-            <input
-              readOnly
-              value={listingZodiacForBirthMonth(cast.birthMonth)}
-              placeholder="Tự động theo tháng sinh"
-              style={{ ...listingInputStyle(`castProfiles.${index}.zodiacSign`), cursor: 'default', color: colors.text2 }}
+            <ThemedListingSelect
+              value={cast.zodiacSign ?? ''}
+              onChange={(value) => updateCastProfile(index, 'zodiacSign', value || null)}
+              placeholder={cast.birthMonth ? '-- Chọn cung --' : 'Chọn tháng sinh trước'}
+              options={listingZodiacOptionsForBirthMonth(cast.birthMonth)}
+              disabled={!cast.birthMonth}
+              hasError={Boolean(listingErrors[`castProfiles.${index}.zodiacSign`])}
             />
             {listingErrorText(`castProfiles.${index}.zodiacSign`)}
           </FormField>
