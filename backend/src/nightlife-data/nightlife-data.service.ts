@@ -3663,6 +3663,29 @@ export class NightlifeDataService {
       payload,
     );
 
+    // Store media uploaded from Partner is draft-only until an Admin approves
+    // the listing request. Older clients uploaded these files as PUBLIC, so
+    // lock matching draft media here as a backwards-compatible safeguard.
+    if (payload.mediaUrls.length) {
+      await this.prisma.media.updateMany({
+        where: {
+          ownerId: user.id,
+          storeId: store.id,
+          castId: null,
+          deletedAt: null,
+          url: { in: payload.mediaUrls },
+          purpose: {
+            in: [
+              'PARTNER_STORE_COVER',
+              'PARTNER_STORE_GALLERY',
+              'PARTNER_STORE_VIDEO',
+            ],
+          },
+        },
+        data: { access: 'PROTECTED', status: 'HIDDEN' },
+      });
+    }
+
     return this.partnerListingDraftResponse(store, draft, payload, {
       message: 'Partner listing draft saved',
       review: await this.getLatestPartnerListingReview(store.id),

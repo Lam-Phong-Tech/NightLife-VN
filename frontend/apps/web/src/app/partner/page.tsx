@@ -5468,9 +5468,7 @@ export default function PartnerPage() {
         form.append('purpose', options.purpose);
         form.append(
           'access',
-          options.purpose === 'PARTNER_CAST_IMAGE' || options.purpose === 'PARTNER_CAST_VIDEO'
-            ? 'PROTECTED'
-            : 'PUBLIC',
+          'PROTECTED',
         );
         form.append('storeId', storeId);
 

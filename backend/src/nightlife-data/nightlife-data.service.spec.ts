@@ -6638,7 +6638,15 @@ describe('NightlifeDataService', () => {
       tags: [],
       partnerAccountId: null,
       ownerId: null,
-      media: [],
+      media: [
+        {
+          id: 'draft-cover-media',
+          url: 'https://cdn.example.com/draft-cover.jpg',
+          purpose: 'PARTNER_STORE_COVER',
+          type: 'IMAGE',
+          castId: null,
+        },
+      ],
       casts: [],
     });
     prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
@@ -6652,8 +6660,21 @@ describe('NightlifeDataService', () => {
         storeDistrict: 'Quan 1',
         ward: 'Phuong Sai Gon',
         streetAddress: '123 Nguyen Hue',
+        coverImageUrl: 'https://cdn.example.com/draft-cover.jpg',
       },
     );
+
+    expect(prisma.media.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        ownerId: 'partner-a',
+        storeId: '11111111-1111-4111-8111-111111111111',
+        url: { in: ['https://cdn.example.com/draft-cover.jpg'] },
+        purpose: {
+          in: ['PARTNER_STORE_COVER', 'PARTNER_STORE_GALLERY', 'PARTNER_STORE_VIDEO'],
+        },
+      }),
+      data: { access: 'PROTECTED', status: 'HIDDEN' },
+    });
 
     expect(prisma.content.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
