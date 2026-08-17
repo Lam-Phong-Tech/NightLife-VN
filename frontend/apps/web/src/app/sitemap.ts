@@ -50,16 +50,39 @@ async function loadSitemapDiscovery<T>(endpoint: "/stores" | "/casts") {
   const backendBaseUrl =
     process.env.BACKEND_API_URL?.replace(/\/api\/?$/, "").replace(/\/$/, "") ||
     "https://api.vietyoru.com";
-  const response = await fetch(`${backendBaseUrl}${endpoint}?limit=100&sort=priority`, {
-    next: { revalidate },
-  });
+  const allItems: T[] = [];
+  let page = 1;
+  let hasMore = true;
 
-  if (!response.ok) {
-    throw new Error(`Unable to load sitemap ${endpoint}`);
+  while (hasMore) {
+    const searchParams = new URLSearchParams({
+      limit: "100",
+      page: String(page),
+      sort: "priority",
+    });
+    const response = await fetch(`${backendBaseUrl}${endpoint}?${searchParams}`, {
+      next: { revalidate },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unable to load sitemap ${endpoint}`);
+    }
+
+    const payload = (await response.json()) as
+      | T[]
+      | { data?: T[]; meta?: { hasMore?: boolean } };
+    if (Array.isArray(payload)) {
+      allItems.push(...payload);
+      break;
+    }
+
+    const pageItems = payload.data ?? [];
+    allItems.push(...pageItems);
+    hasMore = Boolean(payload.meta?.hasMore) && pageItems.length > 0;
+    page += 1;
   }
 
-  const payload = (await response.json()) as T[] | { data?: T[] };
-  return Array.isArray(payload) ? payload : payload.data ?? [];
+  return allItems;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

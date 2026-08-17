@@ -284,6 +284,16 @@ export async function middleware(request: NextRequest) {
   const isPublicRoutingHost =
     hostKind === "local" || hostKind === "unknown" || hostKind === "public";
 
+  const legacyStoreSlug = pathname.match(/^\/stores\/([^/]+)$/)?.[1];
+  const replacementStoreSlug = legacyStoreSlug
+    ? legacyPublicStoreSlugRedirects[legacyStoreSlug]
+    : undefined;
+  if (replacementStoreSlug && isPublicRoutingHost) {
+    const localizedUrl = request.nextUrl.clone();
+    localizedUrl.pathname = `/${requestedLanguage ?? defaultLanguageCode}/stores/${replacementStoreSlug}`;
+    return NextResponse.redirect(localizedUrl, 308);
+  }
+
   // Permanent SEO redirects must not vary by cookie. All public, unprefixed
   // URLs have one canonical Japanese destination.
   if (!requestedLanguage && isPublicRoutingHost && isLocalizedPublicRoute(pathname)) {
@@ -299,19 +309,6 @@ export async function middleware(request: NextRequest) {
   ) {
     const localizedUrl = request.nextUrl.clone();
     localizedUrl.pathname = `/${requestedLanguage ?? defaultLanguageCode}/stores`;
-    return NextResponse.redirect(localizedUrl, 308);
-  }
-
-  const legacyStoreSlug = pathname.match(/^\/stores\/([^/]+)$/)?.[1];
-  const replacementStoreSlug = legacyStoreSlug
-    ? legacyPublicStoreSlugRedirects[legacyStoreSlug]
-    : undefined;
-  if (
-    replacementStoreSlug &&
-    isPublicRoutingHost
-  ) {
-    const localizedUrl = request.nextUrl.clone();
-    localizedUrl.pathname = `/${requestedLanguage ?? defaultLanguageCode}/stores/${replacementStoreSlug}`;
     return NextResponse.redirect(localizedUrl, 308);
   }
 
