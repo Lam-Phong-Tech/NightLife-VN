@@ -1205,7 +1205,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('gets public store detail by slug with gallery, casts, coupons, related stores, and seo', async () => {
-    prisma.store.findFirst.mockResolvedValue({
+    prisma.store.findFirst.mockResolvedValueOnce({
       id: 'store-neon',
       areaId: 'area-hn',
       createdAt: new Date('2026-06-20T00:00:00.000Z'),
@@ -5364,6 +5364,19 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+
+    expect(prisma.store.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          media: expect.objectContaining({
+            where: expect.objectContaining({
+              access: 'PUBLIC',
+              status: 'READY',
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it('loads admin store menu groups into the partner listing when no partner menu draft exists', async () => {
@@ -6621,7 +6634,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('normalizes the partner ward into the canonical store address', async () => {
-    prisma.store.findFirst.mockResolvedValueOnce({
+    prisma.store.findFirst.mockResolvedValue({
       id: '11111111-1111-4111-8111-111111111111',
       name: 'Partner A Store',
       slug: 'partner-a-store',

@@ -3686,7 +3686,12 @@ export class NightlifeDataService {
       });
     }
 
-    return this.partnerListingDraftResponse(store, draft, payload, {
+    // Re-read the store after hiding draft media. The initial store snapshot
+    // may still contain media that was READY before the update above, which
+    // would otherwise leak into the response's Go Live payload.
+    const liveStore = await this.getPartnerListingStore(user, store.id);
+
+    return this.partnerListingDraftResponse(liveStore, draft, payload, {
       message: 'Partner listing draft saved',
       review: await this.getLatestPartnerListingReview(store.id),
     });
@@ -18868,7 +18873,9 @@ export class NightlifeDataService {
         partnerAccountId: true,
         ownerId: true,
         media: {
-          where: this.storeMediaWhere(),
+          // Protected READY media uploaded by Partner belongs to the editable
+          // draft and must never be included in the Go Live snapshot.
+          where: this.storeMediaWhere({ access: 'PUBLIC' }),
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
