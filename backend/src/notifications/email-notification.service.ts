@@ -624,9 +624,9 @@ export class EmailNotificationService {
         (stop) => `<tr>
           <td style="width:30px;padding:10px 0;color:#f5d982;font-size:14px;font-weight:800;vertical-align:top;">${stop.order}.</td>
           <td style="padding:10px 0;color:#fff;font-size:14px;font-weight:700;line-height:1.45;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div>
               <span>${this.escapeHtml(stop.storeName)}</span>
-              ${stop.bookingCode ? `<span style="color:#f5d982;font-size:11px;white-space:nowrap;">${this.escapeHtml(stop.bookingCode)}</span>` : ''}
+              ${stop.bookingCode ? `<span style="display:inline-block;margin-left:12px;color:#f5d982;font-size:11px;white-space:nowrap;">${this.escapeHtml(stop.bookingCode)}</span>` : ''}
             </div>
             <div style="margin-top:2px;color:#b8b1a1;font-size:12px;font-weight:400;">${this.escapeHtml(stop.castName || template.labels.noCast)}</div>
           </td>

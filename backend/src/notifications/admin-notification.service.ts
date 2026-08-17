@@ -48,7 +48,10 @@ export type BookingAdminNotification = {
   bookingSequenceCode?: string | null;
   bookingCode?: string | null;
   tourBookingId?: string | null;
-  tourBooking?: { bookingCode?: string | null } | null;
+  tourBooking?: {
+    bookingCode?: string | null;
+    itinerarySnapshot?: unknown;
+  } | null;
   status: string;
   scheduledAt?: Date | string | null;
   createdAt?: Date | string | null;
@@ -840,7 +843,7 @@ export class AdminNotificationService {
       contact: this.customerContact(booking),
       scheduledAt: booking.scheduledAt,
       partySize: booking.partySize,
-      castName: this.castLabel(booking.cast),
+      castName: this.tourCastNames(booking) ?? this.castLabel(booking.cast),
       note: booking.note,
       status: booking.status,
       qrStatus: this.bookingQrStatus(),
@@ -862,6 +865,35 @@ export class AdminNotificationService {
       rejectReason: bill.rejectReason,
       timeZone: this.telegramNotificationTimeZone(),
     };
+  }
+
+  private tourCastNames(booking: BookingAdminNotification) {
+    const itinerary = booking.tourBooking?.itinerarySnapshot;
+    if (!Array.isArray(itinerary) || !booking.storeId) {
+      return null;
+    }
+
+    const stop = itinerary.find(
+      (item): item is { storeId?: unknown; casts?: unknown } =>
+        Boolean(item) &&
+        typeof item === 'object' &&
+        (item as { storeId?: unknown }).storeId === booking.storeId,
+    );
+    if (!Array.isArray(stop?.casts)) {
+      return null;
+    }
+
+    const castNames = stop.casts
+      .map((cast) =>
+        cast &&
+        typeof cast === 'object' &&
+        typeof (cast as { name?: unknown }).name === 'string'
+          ? (cast as { name: string }).name.trim()
+          : '',
+      )
+      .filter(Boolean);
+
+    return castNames.length ? castNames.join(', ') : null;
   }
 
   private customerName(input: {

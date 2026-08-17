@@ -15179,19 +15179,48 @@ export class NightlifeDataService {
       tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
     const effectiveTourBookingId = tourBooking.tourBookingId || tourBooking.id;
+    const itinerarySnapshot = Array.isArray(tourBooking.itinerarySnapshot)
+      ? tourBooking.itinerarySnapshot
+      : [];
+    const castNamesForStop = (booking: any, index: number) => {
+      const snapshot = itinerarySnapshot.find(
+        (stop: any) =>
+          stop?.storeId === booking.storeId ||
+          stop?.order === (booking.tourStopOrder ?? index + 1),
+      );
+      const castNames = Array.isArray(snapshot?.casts)
+        ? snapshot.casts
+            .map((cast: any) => cast?.name)
+            .filter(
+              (name: unknown): name is string =>
+                typeof name === 'string' && Boolean(name.trim()),
+            )
+        : [];
+
+      return castNames.length
+        ? castNames.join(', ')
+        : (booking.cast?.publicAlias ?? booking.cast?.stageName ?? null);
+    };
     const tourItinerary = Array.isArray(tourBooking.bookings)
       ? tourBooking.bookings.map((booking: any, index: number) => ({
           order: booking.tourStopOrder ?? index + 1,
           storeName: booking.store?.name ?? 'Vietyoru',
           bookingCode: booking.bookingCode ?? null,
-          castName:
-            booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+          castName: castNamesForStop(booking, index),
         }))
       : (tourBooking.tour?.stops ?? []).map((stop: any, index: number) => ({
           order: stop.order ?? index + 1,
           storeName: stop.storeName ?? 'Vietyoru',
           bookingCode: stop.bookingCode ?? null,
-          castName: stop.casts?.[0]?.name ?? null,
+          castName: Array.isArray(stop.casts)
+            ? stop.casts
+                .map((cast: any) => cast?.name)
+                .filter(
+                  (name: unknown): name is string =>
+                    typeof name === 'string' && Boolean(name.trim()),
+                )
+                .join(', ') || null
+            : null,
         }));
 
     const payload = {
@@ -15760,7 +15789,7 @@ export class NightlifeDataService {
       bookingNumber: true,
       bookingCode: true,
       tourBookingId: true,
-      tourBooking: { select: { bookingCode: true } },
+      tourBooking: { select: { bookingCode: true, itinerarySnapshot: true } },
       storeId: true,
       castId: true,
       status: true,
