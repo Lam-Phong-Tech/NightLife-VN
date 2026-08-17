@@ -510,6 +510,7 @@ export class TourService {
           include: {
             store: {
               include: {
+                area: true,
                 casts: {
                   where: { status: 'ACTIVE' },
                   select: {
