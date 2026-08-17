@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/api/backend/stores",
           "/api/backend/casts",
           "/api/backend/system-config/appearance",
+          "/api/backend/storage/public/",
           "/api/currency/rates",
         ],
         disallow: [
