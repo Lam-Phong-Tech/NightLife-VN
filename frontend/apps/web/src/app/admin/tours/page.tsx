@@ -133,7 +133,7 @@ type AdminTourForm = {
   stops: {
     storeId: string;
     order: number;
-    store?: { name: string; category: string; district: string };
+    store?: { name: string; category: string; ward?: string | null };
   }[];
 };
 
@@ -213,7 +213,7 @@ function AdminToursContent() {
     coverUrl: '',
     status: 'ACTIVE', // 'ACTIVE' or 'HIDDEN'
     departureSchedule: createDefaultTourDepartureSchedule(),
-    stops: [] as { storeId: string; order: number; store?: { name: string; category: string; district: string } }[]
+    stops: [] as { storeId: string; order: number; store?: { name: string; category: string; ward?: string | null } }[]
   });
 
   const [venueSearch, setVenueSearch] = useState('');
@@ -360,7 +360,7 @@ function AdminToursContent() {
             store: stop.store ? {
               name: stop.store.name,
               category: stop.store.category,
-              district: stop.store.district
+              ward: stop.store.ward ?? stop.store.area?.ward
             } : undefined
           }))
         });
@@ -441,7 +441,7 @@ function AdminToursContent() {
       store: {
         name: store.name,
         category: store.category,
-        district: store.district
+        ward: store.ward
       }
     });
     setFormData(prev => ({ ...prev, stops: nextStops }));
@@ -1032,7 +1032,7 @@ function AdminToursContent() {
                       </div>
                       <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ color: '#f3f0ea', fontWeight: 700, fontSize: '12.5px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{stop.store?.name}</div>
-                        <div style={{ color: '#8c8679', fontSize: '10.5px', marginTop: '2px' }}>{stop.store?.category} · {stop.store?.district}</div>
+                        <div style={{ color: '#8c8679', fontSize: '10.5px', marginTop: '2px' }}>{stop.store?.category} · {stop.store?.ward}</div>
                       </div>
                       
                       {/* Move & Action triggers */}
@@ -1073,7 +1073,7 @@ function AdminToursContent() {
                           >
                             <div>
                               <div style={{ color: '#f3f0ea', fontSize: '12.5px', fontWeight: 700 }}>{store.name}</div>
-                              <div style={{ color: '#8c8679', fontSize: '10.5px', marginTop: '2px' }}>{store.category} · {store.district}</div>
+                              <div style={{ color: '#8c8679', fontSize: '10.5px', marginTop: '2px' }}>{store.category} · {store.ward}</div>
                             </div>
                             <span style={{ fontSize: '11px', fontWeight: 700, color: '#caa765' }}>Chọn</span>
                           </div>
