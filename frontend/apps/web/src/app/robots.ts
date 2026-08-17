@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
           "/api/backend/rankings",
           "/api/backend/stores",
           "/api/backend/casts",
+          "/api/backend/tours",
           "/api/backend/system-config/appearance",
           "/api/backend/storage/public/",
           "/api/currency/rates",
