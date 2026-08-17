@@ -5332,6 +5332,68 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('loads admin store menu groups into the partner listing when no partner menu draft exists', async () => {
+    prisma.store.findFirst.mockResolvedValueOnce({
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Menu Store',
+      slug: 'menu-store',
+      status: 'ACTIVE',
+      category: 'CLUB',
+      description: null,
+      address: '123 Nguyen Hue, Quan 1, Ho Chi Minh City',
+      city: 'Ho Chi Minh City',
+      district: 'Quan 1',
+      phone: null,
+      openingHours: null,
+      pricingInfo: {
+        groups: [
+          {
+            name: 'Set menu',
+            items: [
+              {
+                name: 'Combo đêm',
+                desc: 'Phục vụ 2 người',
+                priceTier: '$$$',
+                hot: true,
+              },
+            ],
+          },
+        ],
+      },
+      mapUrl: null,
+      tags: [],
+      partnerAccountId: 'partner-a',
+      ownerId: null,
+    });
+    prisma.content.findFirst.mockResolvedValueOnce(null);
+    prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.getPartnerListingDraft(
+        { id: 'partner-a', role: 'PARTNER' },
+        '11111111-1111-4111-8111-111111111111',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          menuGroups: [
+            {
+              name: 'Set menu',
+              items: [
+                {
+                  name: 'Combo đêm',
+                  description: 'Phục vụ 2 người',
+                  priceTier: '$$$',
+                  isHot: true,
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    );
+  });
+
   it('maps live admin cast fields into the partner listing draft', async () => {
     prisma.store.findFirst.mockResolvedValueOnce({
       id: '11111111-1111-4111-8111-111111111111',

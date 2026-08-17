@@ -19109,6 +19109,70 @@ export class NightlifeDataService {
       .slice(0, 12);
   }
 
+  private partnerListingMenuGroupsFromPricingInfo(
+    pricingInfo?: Record<string, unknown> | null,
+  ): PartnerListingMenuGroupDto[] {
+    if (!pricingInfo) {
+      return [];
+    }
+
+    const rawGroups = Array.isArray(pricingInfo.groups)
+      ? pricingInfo.groups
+      : Array.isArray(pricingInfo.items)
+        ? [
+            {
+              name:
+                this.cleanNullableText(String(pricingInfo.summary ?? '')) ??
+                'Menu',
+              items: pricingInfo.items,
+            },
+          ]
+        : [];
+
+    return rawGroups
+      .map((group) => {
+        const groupRecord = this.asRecord(group);
+        if (!groupRecord) {
+          return null;
+        }
+
+        const items = Array.isArray(groupRecord.items)
+          ? groupRecord.items
+          : [];
+
+        return {
+          name: this.cleanText(
+            String(groupRecord.name ?? groupRecord.label ?? ''),
+          ),
+          items: items.map((item) => {
+            const itemRecord = this.asRecord(item) ?? {};
+            const description =
+              itemRecord.description ?? itemRecord.desc ?? undefined;
+            const imageUrl = itemRecord.imageUrl ?? itemRecord.thumb ?? undefined;
+
+            return {
+              name: this.cleanText(
+                String(
+                  itemRecord.name ?? itemRecord.label ?? itemRecord.title ?? '',
+                ),
+              ),
+              description:
+                typeof description === 'string' ? description : undefined,
+              priceTier:
+                typeof itemRecord.priceTier === 'string'
+                  ? itemRecord.priceTier
+                  : undefined,
+              isHot: itemRecord.isHot === true || itemRecord.hot === true,
+              imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
+            };
+          }),
+        };
+      })
+      .filter(
+        (group): group is PartnerListingMenuGroupDto => group !== null,
+      );
+  }
+
   private extractWardFromStoreAddress(address?: string | null) {
     const parts =
       this.cleanNullableText(address)
@@ -19824,7 +19888,11 @@ export class NightlifeDataService {
     const priceRange =
       this.cleanNullableText(dto.priceRange) ??
       this.cleanNullableText(String(pricingRecord?.summary ?? ''));
-    const menuGroups = this.normalizePartnerListingMenuGroups(dto.menuGroups);
+    const menuGroups = this.normalizePartnerListingMenuGroups(
+      dto.menuGroups !== undefined
+        ? dto.menuGroups
+        : this.partnerListingMenuGroupsFromPricingInfo(pricingRecord),
+    );
     const coverImageUrl =
       this.cleanNullableText(dto.coverImageUrl) ??
       storeMedia.find(
