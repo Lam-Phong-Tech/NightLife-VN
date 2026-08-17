@@ -6,7 +6,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: [
+          "/",
+          // Public data requested by the locale homepages during rendering.
+          "/api/backend/content/",
+          "/api/backend/contents",
+          "/api/backend/public/",
+          "/api/backend/rankings",
+        ],
         disallow: [
           "/admin",
           "/partner",
