@@ -99,9 +99,7 @@
   flex-direction: column;
   justify-content: flex-end;
   padding: clamp(20px, 3.5vw, 36px);
-  background:
-    linear-gradient(180deg, rgba(12, 12, 15, 0.1) 0%, rgba(12, 12, 15, 0.7) 50%, rgba(12, 12, 15, 0.96) 100%),
-    linear-gradient(90deg, rgba(12, 12, 15, 0.86), rgba(12, 12, 15, 0.2));
+  background: transparent;
 }
 
 .heroCopy {
