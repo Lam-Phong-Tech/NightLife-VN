@@ -631,6 +631,7 @@ type PartnerRequestCmsRecord = {
     name: string;
     slug: string;
     status: StoreStatus;
+    updatedAt: Date;
     category: StoreCategory;
     partnerAccountId: string | null;
     ownerId: string | null;
@@ -3606,6 +3607,25 @@ export class NightlifeDataService {
     let payload = draftIsOlderThanApprovedReview
       ? this.normalizePartnerListingDraft({}, store)
       : this.partnerListingDraftPayloadFromContent(draft, store);
+
+    // Admin menu edits are saved directly to Store.pricingInfo, while the
+    // Partner editable snapshot lives in Content.metadata. When the live
+    // store was updated after the draft and there is no review in progress,
+    // expose the current menu in the editable payload without replacing the
+    // Partner's other unsaved fields.
+    const liveMenuWasUpdatedAfterDraft = Boolean(
+      draft?.updatedAt &&
+      store.updatedAt > draft.updatedAt &&
+      review?.status !== 'PENDING_REVIEW',
+    );
+    if (liveMenuWasUpdatedAfterDraft && !draftIsOlderThanApprovedReview) {
+      const liveMenuGroups = this.normalizePartnerListingMenuGroups(
+        this.partnerListingMenuGroupsFromPricingInfo(
+          this.asRecord(store.pricingInfo),
+        ),
+      );
+      payload = { ...payload, menuGroups: liveMenuGroups };
+    }
 
     // Cast-only submissions are reviewed directly from the Admin Cast screen
     // and do not create a new PartnerRequest. In that flow the shared Content
@@ -19006,6 +19026,7 @@ export class NightlifeDataService {
         name: true,
         slug: true,
         status: true,
+        updatedAt: true,
         category: true,
         description: true,
         address: true,
@@ -20870,6 +20891,7 @@ export class NightlifeDataService {
           name: true,
           slug: true,
           status: true,
+          updatedAt: true,
           category: true,
           partnerAccountId: true,
           ownerId: true,
