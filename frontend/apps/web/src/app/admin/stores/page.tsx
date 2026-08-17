@@ -2103,12 +2103,23 @@ function AdminStoresContent() {
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Video quán</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {videos.map((vd: any) => {
-                  const videoUrl = vd.thumb || vd.url;
+                  const videoUrl = vd.url || vd.thumb;
                   const isYoutube = videoUrl?.includes('youtube.com') || videoUrl?.includes('youtu.be');
+                  const videoSource = resolveClientUrl(videoUrl) || videoUrl;
+                  const previewImage = vd.thumbnailUrl || (isYoutube ? getYoutubeThumb(videoUrl) : '');
                   const metaText = vd.meta || (isYoutube ? 'YouTube' : 'Tải lên');
                   return (
                   <div key={vd.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: videoUrl ? (videoUrl.startsWith('linear-gradient') ? videoUrl : `url(${resolveClientUrl(getYoutubeThumb(videoUrl))}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 74, height: 44, flex: 'none', position: 'relative', overflow: 'hidden', borderRadius: 8, background: previewImage ? `url("${resolveClientUrl(previewImage) || previewImage}") center/cover no-repeat` : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {!previewImage && videoSource && !isYoutube && (
+                        <video
+                          src={videoSource}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      )}
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
                       </span>
