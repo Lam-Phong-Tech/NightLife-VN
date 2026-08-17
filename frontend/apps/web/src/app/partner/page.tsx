@@ -1856,6 +1856,9 @@ export default function PartnerPage() {
   const [castChipInputs, setCastChipInputs] = useState<Record<string, string>>({});
   const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
+  const [persistedCastProfileKeys, setPersistedCastProfileKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   const castTableRef = useRef<HTMLDivElement | null>(null);
   const [castListPage, setCastListPage] = useState(1);
   const [castFilterTab, setCastFilterTab] = useState<'all' | 'pending' | 'visible' | 'hidden'>('all');
@@ -4287,10 +4290,19 @@ export default function PartnerPage() {
       };
     };
 
+    const parsedDraft = parseDraft(response.draft);
     setListingContentId(response.contentId);
     setListingReview(response.review);
     setListingErrors({});
-    setListingDraft(parseDraft(response.draft));
+    setListingDraft(parsedDraft);
+    setPersistedCastProfileKeys(
+      new Set(
+        parsedDraft.castProfiles
+          .filter((cast) => Boolean(cast.id) || Boolean(response.contentId))
+          .map((cast) => castProfileKey(cast))
+          .filter(Boolean),
+      ),
+    );
     setLiveData(response.live ? parseDraft(response.live) : null);
     setListingNotice(
       response.message === 'Partner listing draft loaded' ||
@@ -5007,16 +5019,21 @@ export default function PartnerPage() {
       return;
     }
 
+    const castKey = castProfileKey(cast);
+    if (!persistedCastProfileKeys.has(castKey)) {
+      return;
+    }
+
     const castName = cast.stageName.trim() || `cast #${index + 1}`;
     const isSavedCast = Boolean(cast.id);
 
     feedback.showModal({
       tone: 'warning',
-      title: isSavedCast ? 'Xác nhận xóa mềm cast' : 'Xác nhận xóa cast',
+      title: isSavedCast ? 'Xác nhận xóa mềm cast' : 'Xác nhận xóa cast khỏi bản nháp',
       description: isSavedCast
         ? `Cast "${castName}" sẽ được xóa mềm như bên admin và không hiển thị trong danh sách hoạt động.`
-        : `Cast "${castName}" chưa lưu vào hệ thống, thao tác này sẽ gỡ khỏi bản nháp hiện tại.`,
-      primaryLabel: isSavedCast ? 'Xóa mềm' : 'Xóa cast',
+        : `Cast "${castName}" sẽ được gỡ khỏi bản nháp đã lưu.`,
+      primaryLabel: isSavedCast ? 'Xóa mềm' : 'Xóa khỏi nháp',
       secondaryLabel: 'Hủy',
       destructive: true,
       onPrimary: async () => {
@@ -5027,8 +5044,23 @@ export default function PartnerPage() {
               `/partner/listing-draft/${encodeURIComponent(listingStoreId)}/casts/${encodeURIComponent(cast.id)}`,
               { method: 'DELETE' },
             );
+            removeCastProfile(index);
+          } else {
+            const payload = listingPayload();
+            payload.castProfiles = payload.castProfiles.filter(
+              (profile) => castProfileKey(profile) !== castKey,
+            );
+            const response = await apiClient<PartnerListingDraftResponse>(
+              `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
+              { method: 'PUT', data: payload },
+            );
+            applyListingDraftResponse(response);
           }
-          removeCastProfile(index);
+          setPersistedCastProfileKeys((current) => {
+            const next = new Set(current);
+            next.delete(castKey);
+            return next;
+          });
           returnToCastTable();
           setListingNotice(isSavedCast ? 'Đã xóa mềm cast.' : 'Đã xóa cast khỏi bản nháp.');
           feedback.showToast({
@@ -6412,6 +6444,11 @@ export default function PartnerPage() {
       });
       if (castProfileKeyToSubmit) {
         markEnteredCastProfile('PENDING_REVIEW', false, castProfileKeyToSubmit);
+        setPersistedCastProfileKeys((current) => {
+          const next = new Set(current);
+          next.add(castProfileKeyToSubmit);
+          return next;
+        });
       }
       setListingNotice('Đã gửi cast cho Admin duyệt. Cast sẽ hiển thị sau khi được duyệt.');
       listingActionToast(
@@ -8621,6 +8658,9 @@ export default function PartnerPage() {
     !isViewingLive && listingTab === 'cast' ? activeCastProfileIndex : null;
   const activeEditableCast =
     activeEditableCastIndex === null ? null : draftState.castProfiles[activeEditableCastIndex];
+  const canDeleteActiveCast = Boolean(
+    activeEditableCast && persistedCastProfileKeys.has(castProfileKey(activeEditableCast)),
+  );
   const showListingActionFooter =
     !isViewingLive && (listingTab !== 'cast' || activeEditableCastIndex !== null);
 
@@ -8737,7 +8777,7 @@ export default function PartnerPage() {
             marginTop: '18px',
           }}
         >
-          {activeEditableCastIndex !== null ? (
+          {activeEditableCastIndex !== null && canDeleteActiveCast ? (
             <GhostButton
               disabled={!canWriteListing || isDeletingCastProfile}
               onClick={() => deleteCastProfile(activeEditableCastIndex)}
