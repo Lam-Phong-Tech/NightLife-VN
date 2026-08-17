@@ -1903,8 +1903,20 @@ export function PartnerLiteDashboardContract() {
     ApiQuery({
       name: 'period',
       required: false,
-      enum: ['today', 'seven', 'thirty'],
+      enum: ['today', 'seven', 'thirty', 'custom'],
       example: 'seven',
+    }),
+    ApiQuery({
+      name: 'from',
+      required: false,
+      description: 'Custom period start date (YYYY-MM-DD), used with period=custom.',
+      example: '2026-08-01',
+    }),
+    ApiQuery({
+      name: 'to',
+      required: false,
+      description: 'Custom period end date (YYYY-MM-DD), used with period=custom.',
+      example: '2026-08-07',
     }),
     ApiOkResponse({
       description: 'Partner lite dashboard metrics.',

@@ -432,7 +432,7 @@ type CouponClaimContext = {
   sessionId?: string | null;
 };
 
-type PartnerDashboardPeriod = 'today' | 'seven' | 'thirty';
+type PartnerDashboardPeriod = 'today' | 'seven' | 'thirty' | 'custom';
 
 type AdminDashboardQuery = {
   timeframe?: string;
@@ -4135,9 +4135,18 @@ export class NightlifeDataService {
     };
   }
 
-  async getPartnerLiteDashboard(user: AuthenticatedUser, periodInput?: string) {
+  async getPartnerLiteDashboard(
+    user: AuthenticatedUser,
+    periodInput?: string,
+    fromInput?: string,
+    toInput?: string,
+  ) {
     const period = this.resolvePartnerDashboardPeriod(periodInput);
-    const { from, to } = this.resolvePartnerDashboardWindow(period);
+    const { from, to } = this.resolvePartnerDashboardWindow(
+      period,
+      fromInput,
+      toInput,
+    );
     const arrivalSource = this.resolvePartnerArrivalSource();
     const storeIds = await this.accessService.getAccessibleStoreIds(
       user,
@@ -4247,6 +4256,25 @@ export class NightlifeDataService {
       }),
     );
 
+    const previousWindow = this.resolvePreviousPartnerDashboardWindow(from, to);
+    const [previousBookingCount, previousProfileViewCount] = await Promise.all([
+      this.prisma.booking.count({
+        where: this.partnerBookingCountWhere(
+          scopedStoreIds,
+          previousWindow.from,
+          previousWindow.to,
+        ),
+      }),
+      this.prisma.auditLog.count({
+        where: this.partnerProfileViewWhere(
+          scopedStoreIds,
+          scopedCastIds,
+          previousWindow.from,
+          previousWindow.to,
+        ),
+      }),
+    ]);
+
     return {
       period,
       from: from.toISOString(),
@@ -4258,6 +4286,8 @@ export class NightlifeDataService {
       customerArrivalSource: arrivalSource,
       qrUsedCount,
       billApprovedCount,
+      previousBookingCount,
+      previousProfileViewCount,
       storeCount: scopedStores.length,
       stores,
       weeklyBookings: this.mapPartnerWeeklyBookings(bookingRows, to),
@@ -6914,6 +6944,7 @@ export class NightlifeDataService {
         rejectedById: true,
         rejectReason: true,
         usedAt: true,
+        createdAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: {
           select: {
@@ -23575,14 +23606,32 @@ export class NightlifeDataService {
   private resolvePartnerDashboardPeriod(
     input?: string,
   ): PartnerDashboardPeriod {
-    if (input === 'today' || input === 'seven' || input === 'thirty') {
+    if (input === 'today' || input === 'seven' || input === 'thirty' || input === 'custom') {
       return input;
     }
 
     return 'seven';
   }
 
-  private resolvePartnerDashboardWindow(period: PartnerDashboardPeriod) {
+  private resolvePartnerDashboardWindow(
+    period: PartnerDashboardPeriod,
+    fromInput?: string,
+    toInput?: string,
+  ) {
+    if (period === 'custom') {
+      const parsedFrom = fromInput ? new Date(`${fromInput}T00:00:00`) : null;
+      const parsedTo = toInput ? new Date(`${toInput}T23:59:59.999`) : null;
+      if (
+        parsedFrom &&
+        parsedTo &&
+        Number.isFinite(parsedFrom.getTime()) &&
+        Number.isFinite(parsedTo.getTime()) &&
+        parsedFrom <= parsedTo
+      ) {
+        return { from: parsedFrom, to: parsedTo };
+      }
+    }
+
     const to = new Date();
     const from = new Date(to);
     from.setHours(0, 0, 0, 0);
@@ -23596,6 +23645,14 @@ export class NightlifeDataService {
     }
 
     return { from, to };
+  }
+
+  private resolvePreviousPartnerDashboardWindow(from: Date, to: Date) {
+    const durationMs = Math.max(1, to.getTime() - from.getTime() + 1);
+    return {
+      from: new Date(from.getTime() - durationMs),
+      to: new Date(from.getTime() - 1),
+    };
   }
 
   private resolvePartnerArrivalSource(): PartnerCustomerArrivalSource {
@@ -23612,6 +23669,7 @@ export class NightlifeDataService {
     return {
       deletedAt: null,
       storeId: { in: storeIds },
+      status: { in: ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'] },
       createdAt: { gte: from, lte: to },
     };
   }

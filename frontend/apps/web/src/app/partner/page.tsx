@@ -384,6 +384,7 @@ type PartnerBill = {
   submittedAt: string | null;
   rejectReason?: string | null;
   usedAt?: string | null;
+  createdAt?: string | null;
   submitterType?: string | null;
   store?: { id?: string | null; name: string; slug?: string | null } | null;
   booking?: { id: string; bookingCode?: string | null; status: string; scheduledAt?: string | null } | null;
@@ -407,7 +408,7 @@ type DiscountRuleSnapshot = {
 };
 
 type PartnerLiteDashboard = {
-  period: 'today' | 'seven' | 'thirty';
+  period: 'today' | 'seven' | 'thirty' | 'custom';
   from: string;
   to: string;
   bookingCount: number;
@@ -416,6 +417,8 @@ type PartnerLiteDashboard = {
   customerArrivalSource: 'QR_USED' | 'BILL_APPROVED';
   qrUsedCount: number;
   billApprovedCount: number;
+  previousBookingCount?: number;
+  previousProfileViewCount?: number;
   storeCount: number;
   stores: {
     id: string;
@@ -3011,8 +3014,13 @@ export default function PartnerPage() {
           return;
         }
 
+        const dashboardQuery = new URLSearchParams({ period });
+        if (period === 'custom') {
+          if (overviewFromDate) dashboardQuery.set('from', overviewFromDate);
+          if (overviewToDate) dashboardQuery.set('to', overviewToDate);
+        }
         const dashboardData = await apiClient<PartnerLiteDashboard>(
-          `/partner/dashboard-lite?period=${encodeURIComponent(period)}`
+          `/partner/dashboard-lite?${dashboardQuery.toString()}`
         ).catch(() => null);
 
         if (!isMounted) return;
@@ -3067,7 +3075,7 @@ export default function PartnerPage() {
     return () => {
       isMounted = false;
     };
-  }, [period, isStaffAccount]);
+  }, [period, isStaffAccount, overviewFromDate, overviewToDate]);
 
   useEffect(() => {
     if (isStaffAccount && !isStaffPanelKey(activePanel)) {
@@ -3142,19 +3150,36 @@ export default function PartnerPage() {
     : activePartnerStore?.status ?? (stores.length ? 'ACTIVE' : 'Chưa gán quán');
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
-  const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
-  const pendingSettlementBillCount = bills.filter((bill) =>
+  const dashboardFromMs = dashboard?.from ? Date.parse(dashboard.from) : null;
+  const dashboardToMs = dashboard?.to ? Date.parse(dashboard.to) : null;
+  const dashboardBills = bills.filter((bill) => {
+    if (dashboardFromMs === null || dashboardToMs === null) return true;
+    const billDate = bill.submittedAt ?? bill.createdAt ?? bill.usedAt;
+    const billDateMs = billDate ? Date.parse(billDate) : Number.NaN;
+    return Number.isFinite(billDateMs) && billDateMs >= dashboardFromMs && billDateMs <= dashboardToMs;
+  });
+  const totalDiscount = dashboardBills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
+  const pendingSettlementBillCount = dashboardBills.filter((bill) =>
     ['SUBMITTED', 'PENDING', 'PENDING_REVIEW', 'REVIEWING', 'PENDING_PM_BA'].includes(
       bill.status.toUpperCase(),
     ),
   ).length;
-  const bookingMetricCount = dashboard?.bookingCount ?? bookings.length;
+  const confirmedBookingCount = bookings.filter((booking) =>
+    ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(booking.status.trim().toUpperCase()),
+  ).length;
+  const bookingMetricCount = dashboard?.bookingCount ?? confirmedBookingCount;
   const profileViewMetricCount = dashboard?.profileViewCount ?? 0;
   const customerArrivalMetricCount = dashboard?.customerArrivalCount ?? usedCouponCount;
   const customerArrivalSourceLabel =
     dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Hóa đơn đã duyệt' : 'QR đã sử dụng';
   const scopedStoreCount = dashboard?.storeCount ?? stores.length;
-  const completedBookings = dashboard ? bookingMetricCount : bookings.length;
+  const completedBookings = bookingMetricCount;
+  const calculateTrend = (current: number, previous?: number) => {
+    if (previous === undefined || previous === null) return 'Trong kỳ đã chọn';
+    if (previous === 0) return current > 0 ? '+100% so với kỳ trước' : 'Không đổi so với kỳ trước';
+    const change = Math.round(((current - previous) / previous) * 100);
+    return `${change >= 0 ? '+' : ''}${change}% so với kỳ trước`;
+  };
   const scannedCustomerLabel = scanIssue?.customer?.label ?? 'Khách đã ẩn';
   const scannedExpiryLabel = scanIssue?.expiresAt
     ? new Date(scanIssue.expiresAt).toLocaleString('vi-VN')
@@ -4262,14 +4287,14 @@ export default function PartnerPage() {
         label: 'Đặt chỗ tại quán',
         value: bookingMetricCount.toLocaleString('vi-VN'),
         sub: `${completedBookings} lượt đã xác nhận`,
-        trend: '+12% tuần này',
+        trend: calculateTrend(bookingMetricCount, dashboard?.previousBookingCount),
         icon: TicketCheck,
       },
       {
         label: 'Lượt xem trang',
         value: profileViewMetricCount.toLocaleString('vi-VN'),
-        sub: 'Ước tính từ hoạt động partner',
-        trend: stores.length ? '+8% so với kỳ trước' : 'Chờ dữ liệu',
+        sub: 'Lượt ghi nhận trong kỳ',
+        trend: calculateTrend(profileViewMetricCount, dashboard?.previousProfileViewCount),
         icon: Eye,
       },
       {
@@ -4294,6 +4319,8 @@ export default function PartnerPage() {
       completedBookings,
       customerArrivalMetricCount,
       profileViewMetricCount,
+      dashboard?.previousBookingCount,
+      dashboard?.previousProfileViewCount,
       coupons.length,
       stores.length,
       totalDiscount,

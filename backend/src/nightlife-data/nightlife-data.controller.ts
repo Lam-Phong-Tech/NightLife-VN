@@ -652,10 +652,14 @@ export class NightlifeDataController {
   getPartnerLiteDashboard(
     @Req() request: RequestWithUser,
     @Query('period') period?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     return this.nightlifeDataService.getPartnerLiteDashboard(
       request.user,
       period,
+      from,
+      to,
     );
   }
 
