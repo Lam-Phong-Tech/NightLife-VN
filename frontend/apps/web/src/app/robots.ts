@@ -13,6 +13,10 @@ export default function robots(): MetadataRoute.Robots {
           "/api/backend/contents",
           "/api/backend/public/",
           "/api/backend/rankings",
+          "/api/backend/stores",
+          "/api/backend/casts",
+          "/api/backend/system-config/appearance",
+          "/api/currency/rates",
         ],
         disallow: [
           "/admin",
