@@ -913,7 +913,9 @@ const feedbackStyles = `
   @media (max-width: 767px) {
     .nl-toast-top-right,
     .nl-toast-top {
-      top: calc(88px + env(safe-area-inset-top));
+      /* Keep feedback in the safe area instead of below the page header.
+         A fixed toast then remains at the top while a long mobile form scrolls. */
+      top: calc(10px + env(safe-area-inset-top));
       left: 12px;
       right: 12px;
       transform: none;
