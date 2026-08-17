@@ -313,6 +313,10 @@ const normalizeMediaKey = (value?: string | null) => {
           : "";
     if (youtubeId) return `youtube:${youtubeId.toLowerCase()}`;
     parsed.hash = "";
+    parsed.pathname = parsed.pathname.replace(
+      /^\/storage\/(?:files|public)\//,
+      "/storage/media/",
+    );
     parsed.pathname = parsed.pathname.replace(/\/+$/g, "");
     return parsed.toString().toLowerCase();
   } catch {
@@ -414,6 +418,8 @@ type ChangeComparisonRow = {
   label: string;
   current?: string | null;
   proposed?: string | null;
+  currentMedia?: string[];
+  proposedMedia?: string[];
   corrupted?: boolean;
   changed: boolean;
 };
@@ -624,8 +630,31 @@ export default function AdminPartnersPage() {
     if (!selectedRequest || getRequestType(selectedRequest) !== "LISTING_UPDATE") return [];
 
     const currentOpeningHours = formatOpeningHours(selectedRequest.originalStore?.openingHours);
+    const currentMediaItems = (selectedRequest.originalStore?.media ?? [])
+      .filter((item) => item.type?.toUpperCase() === "IMAGE" && item.url)
+      .map((item) => ({ url: item.url as string, purpose: item.purpose ?? "" }));
+    const currentImages = uniqueMediaUrls(currentMediaItems.map((item) => item.url));
+    const currentCover =
+      currentMediaItems.find((item) => /cover|hero|b[iì]a/i.test(item.purpose))?.url ??
+      currentImages[0] ??
+      "";
+    const currentGallery = currentImages.filter(
+      (url) => normalizeMediaKey(url) !== normalizeMediaKey(currentCover),
+    );
+    const submittedMedia = uniqueMediaUrls(selectedRequest.mediaUrls ?? []);
+    const submittedImages = submittedMedia.filter((url) => !/\.(mp4|webm|ogg)(?:\?|$)/i.test(url));
+    const proposedCover = selectedRequest.coverImageUrl?.trim() || submittedImages[0] || "";
+    const explicitProposedGallery = uniqueMediaUrls(selectedRequest.galleryUrls ?? []);
+    const proposedGallery = (explicitProposedGallery.length
+      ? explicitProposedGallery
+      : submittedImages
+    ).filter(
+      (url) => normalizeMediaKey(url) !== normalizeMediaKey(proposedCover),
+    );
+    const mediaChanged = (current: string[], proposed: string[]) =>
+      current.map(normalizeMediaKey).join("|") !== proposed.map(normalizeMediaKey).join("|");
 
-    const rows: Array<Omit<ChangeComparisonRow, "changed">> = [
+    const rows: Array<Omit<ChangeComparisonRow, "changed"> & { mediaChanged?: boolean }> = [
       {
         key: "name",
         label: "Tên quán",
@@ -678,11 +707,29 @@ export default function AdminPartnersPage() {
         current: selectedRequest.originalStore?.tags?.join(", "),
         proposed: selectedRequest.tags?.join(", "),
       },
+      {
+        key: "cover-image",
+        label: "Ảnh bìa",
+        current: currentCover ? "Đã có ảnh bìa" : "Chưa có ảnh bìa",
+        proposed: proposedCover ? "Đã có ảnh bìa" : "Chưa có ảnh bìa",
+        currentMedia: currentCover ? [currentCover] : [],
+        proposedMedia: proposedCover ? [proposedCover] : [],
+        mediaChanged: mediaChanged(currentCover ? [currentCover] : [], proposedCover ? [proposedCover] : []),
+      },
+      {
+        key: "gallery-images",
+        label: "Album ảnh",
+        current: `${currentGallery.length} ảnh`,
+        proposed: `${proposedGallery.length} ảnh`,
+        currentMedia: currentGallery,
+        proposedMedia: proposedGallery,
+        mediaChanged: mediaChanged(currentGallery, proposedGallery),
+      },
     ];
 
     return rows.map((row) => ({
       ...row,
-      changed: hasFieldChanged(row.current, row.proposed),
+      changed: row.mediaChanged ?? hasFieldChanged(row.current, row.proposed),
     }));
   }, [selectedRequest]);
   const changedComparisonRows = changeComparisonRows.filter((row) => row.changed);
@@ -1485,7 +1532,7 @@ function ComparisonRow({ row }: { row: ChangeComparisonRow }) {
           {row.changed ? "Đã thay đổi" : "Không đổi"}
         </span>
       </div>
-      <ComparisonValue label="Hiện tại" value={row.current} />
+      <ComparisonValue label="Hiện tại" value={row.current} media={row.currentMedia} />
       <div
         aria-hidden="true"
         style={{
@@ -1499,7 +1546,13 @@ function ComparisonRow({ row }: { row: ChangeComparisonRow }) {
       >
         →
       </div>
-      <ComparisonValue label="Đề xuất" value={row.proposed} changed={row.changed} corrupted={row.corrupted} />
+      <ComparisonValue
+        label="Đề xuất"
+        value={row.proposed}
+        media={row.proposedMedia}
+        changed={row.changed}
+        corrupted={row.corrupted}
+      />
     </div>
   );
 }
@@ -1507,11 +1560,13 @@ function ComparisonRow({ row }: { row: ChangeComparisonRow }) {
 function ComparisonValue({
   label,
   value,
+  media,
   changed = false,
   corrupted = false,
 }: {
   label: string;
   value?: string | null;
+  media?: string[];
   changed?: boolean;
   corrupted?: boolean;
 }) {
@@ -1535,6 +1590,19 @@ function ComparisonValue({
       <div style={{ fontSize: 13, color: changed ? colors.text : colors.text2, lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
         {cleanText(value)}
       </div>
+      {media?.length ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 6, marginTop: 8 }}>
+          {media.map((url, index) => (
+            <a key={`${url}-${index}`} href={resolveAdminMediaUrl(url)} target="_blank" rel="noreferrer">
+              <img
+                src={resolveAdminMediaUrl(url)}
+                alt={`${label} ${index + 1}`}
+                style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 7, display: "block" }}
+              />
+            </a>
+          ))}
+        </div>
+      ) : null}
       {corrupted ? (
         <div style={{ marginTop: 7, color: colors.red, fontSize: 11, lineHeight: 1.45 }}>
           Bản đề xuất bị lỗi mã hóa — đang hiển thị dữ liệu hiện tại

@@ -9284,9 +9284,39 @@ export class NightlifeDataService {
       this.prisma,
       records,
     );
+    const reviewedRequestIds = records
+      .filter((request) => request.status !== 'PENDING_REVIEW')
+      .map((request) => request.id);
+    const historyByRequestId = new Map<string, Record<string, unknown>>();
+    if (reviewedRequestIds.length) {
+      const reviewAudits =
+        (await this.prisma.auditLog.findMany({
+          where: {
+            targetType: 'PARTNER_REQUEST',
+            targetId: { in: reviewedRequestIds },
+            action: {
+              in: ['PARTNER_REQUEST_APPROVED', 'PARTNER_REQUEST_REJECTED'],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { targetId: true, beforeJson: true },
+        })) ?? [];
+      for (const audit of reviewAudits) {
+        const snapshot = this.asRecord(
+          this.asRecord(audit.beforeJson)?.storeSnapshot,
+        );
+        if (snapshot && !historyByRequestId.has(audit.targetId)) {
+          historyByRequestId.set(audit.targetId, snapshot);
+        }
+      }
+    }
 
     return records.map((request) =>
-      this.mapPartnerRequestRecord(request, listingPayloads.get(request.id)),
+      this.mapPartnerRequestRecord(
+        request,
+        listingPayloads.get(request.id),
+        historyByRequestId.get(request.id),
+      ),
     );
   }
 
@@ -20859,14 +20889,36 @@ export class NightlifeDataService {
   private partnerRequestAuditJson(
     request: PartnerRequestCmsRecord,
   ): Prisma.InputJsonObject {
-    return this.partnerRequestNotificationPayload(
-      request,
-    ) as unknown as Prisma.InputJsonObject;
+    return {
+      ...this.partnerRequestNotificationPayload(request),
+      storeSnapshot: this.partnerRequestStoreSnapshot(request.store),
+    } as unknown as Prisma.InputJsonObject;
+  }
+
+  private partnerRequestStoreSnapshot(store: PartnerRequestCmsRecord['store']) {
+    return {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      status: store.status,
+      category: store.category,
+      description: store.description,
+      address: store.address,
+      city: store.city,
+      district: store.district,
+      phone: store.phone,
+      openingHours: store.openingHours,
+      pricingInfo: store.pricingInfo,
+      tags: store.tags ?? [],
+      media: (store.media ?? []).filter((item) => !item.castId),
+      mapUrl: store.mapUrl,
+    };
   }
 
   private mapPartnerRequestRecord(
     request: PartnerRequestCmsRecord,
     listingPayload?: PartnerListingDraftPayload,
+    historicalStore?: Record<string, unknown>,
   ) {
     const businessName = listingPayload?.storeName ?? request.businessName;
     const businessType = listingPayload?.businessType ?? request.businessType;
@@ -20940,23 +20992,24 @@ export class NightlifeDataService {
       pricingItems: listingPayload?.pricingItems ?? [],
       mediaUrls,
       listingDraft: listingPayload ?? null,
-      originalStore: request.store
+      originalStore: (historicalStore ?? request.store)
         ? {
-            id: request.store.id,
-            name: request.store.name,
-            slug: request.store.slug,
-            status: request.store.status,
-            category: request.store.category,
-            description: request.store.description,
-            address: request.store.address,
-            city: request.store.city,
-            district: request.store.district,
-            phone: request.store.phone,
-            openingHours: request.store.openingHours,
-            pricingInfo: request.store.pricingInfo,
-            tags: request.store.tags ?? [],
-            media: (request.store.media ?? []).filter((item) => !item.castId),
-            mapUrl: request.store.mapUrl,
+            id: historicalStore?.id as string ?? request.store.id,
+            name: historicalStore?.name as string ?? request.store.name,
+            slug: historicalStore?.slug as string ?? request.store.slug,
+            status: historicalStore?.status as string ?? request.store.status,
+            category: historicalStore?.category as string ?? request.store.category,
+            description: historicalStore?.description as string ?? request.store.description,
+            address: historicalStore?.address as string ?? request.store.address,
+            city: historicalStore?.city as string ?? request.store.city,
+            district: historicalStore?.district as string ?? request.store.district,
+            phone: historicalStore?.phone as string ?? request.store.phone,
+            openingHours: historicalStore?.openingHours ?? request.store.openingHours,
+            pricingInfo: historicalStore?.pricingInfo ?? request.store.pricingInfo,
+            tags: (historicalStore?.tags as string[] | undefined) ?? request.store.tags ?? [],
+            media: (historicalStore?.media as Array<Record<string, unknown>> | undefined) ??
+              (request.store.media ?? []).filter((item) => !item.castId),
+            mapUrl: historicalStore?.mapUrl as string ?? request.store.mapUrl,
           }
         : null,
     };
