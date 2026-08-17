@@ -61,4 +61,21 @@ describe("apiClient session replacement handling", () => {
     await expect(apiClient("/bookings")).rejects.toBeInstanceOf(ApiError);
     expect(window.sessionStorage.getItem(sessionReplacedNoticeKey)).toBeNull();
   });
+
+  it("keeps the session for an incorrect current password", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: vi.fn().mockResolvedValue({
+        message: "Mật khẩu cũ không chính xác",
+      }),
+    }) as unknown as typeof fetch;
+
+    await expect(apiClient("/users/change-password", {
+      method: "POST",
+      data: { oldPassword: "wrong", newPassword: "NewPassword123!" },
+    })).rejects.toBeInstanceOf(ApiError);
+
+    expect(document.cookie).toContain("auth_token=test-token");
+  });
 });

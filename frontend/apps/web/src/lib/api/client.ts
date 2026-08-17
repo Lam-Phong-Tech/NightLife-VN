@@ -27,6 +27,10 @@ interface FormDataRequestOptions extends Omit<RequestInit, "body"> {
 }
 
 const authEntryEndpointPattern = /^\/?auth\/(login|register|google|line|password-reset)/i;
+// Some authenticated endpoints use 401 for a business-rule rejection rather
+// than an invalid session. Keep the current session so the caller can show
+// the actual validation error to the user.
+const businessUnauthorizedEndpointPattern = /^\/?users\/change-password$/i;
 
 const endpointPathname = (endpoint: string) => {
   if (!endpoint.startsWith("http")) return endpoint.replace(/^\/+/, "");
@@ -48,6 +52,7 @@ const clearStaleSessionOnUnauthorized = (
 
   const path = endpointPathname(endpoint);
   if (authEntryEndpointPattern.test(path)) return;
+  if (businessUnauthorizedEndpointPattern.test(path)) return;
 
   if (code === "SESSION_REPLACED") {
     // Capture the role before the cookies are wiped so the warning can point
