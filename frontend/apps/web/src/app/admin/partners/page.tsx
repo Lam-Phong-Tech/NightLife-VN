@@ -4,7 +4,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ImageIcon, Info, Loader2, XCircle } from "lucide-react";
 import { DataSkeleton } from "@/components/ui/DataLoading";
 
-import { ApiError, apiClient, translateApiMessage } from "@/lib/api/client";
+import {
+  ApiError,
+  apiClient,
+  getAuthToken,
+  resolveClientUrl,
+  translateApiMessage,
+} from "@/lib/api/client";
 
 const colors = {
   bg: "#0f0f13",
@@ -29,6 +35,21 @@ type PartnerTab = "PENDING_NEW" | "PENDING_UPDATE" | "APPROVED" | "REJECTED";
 
 const partnerRequestFetchLimit = 100;
 const partnerRequestPageSize = 10;
+
+const resolveAdminMediaUrl = (url?: string | null) => {
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  if (!trimmed) return trimmed;
+
+  const resolved = resolveClientUrl(trimmed) ?? trimmed;
+  const protectedUrl = resolved.replace("/storage/public/", "/storage/files/");
+  if (!protectedUrl.includes("/storage/files/")) return resolved;
+
+  const token = getAuthToken();
+  if (!token) return protectedUrl;
+
+  const separator = protectedUrl.includes("?") ? "&" : "?";
+  return `${protectedUrl}${separator}token=${encodeURIComponent(token)}`;
+};
 
 type OriginalStore = {
   id?: string | null;
@@ -1166,8 +1187,8 @@ export default function AdminPartnersPage() {
                     <div style={{ marginTop: 16 }}>
                       <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>Ảnh bìa</div>
                       <div style={{ aspectRatio: '21/9', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', position: 'relative', overflow: 'hidden' }}>
-                        <a href={cover} target="_blank" rel="noreferrer">
-                          <img src={cover} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <a href={resolveAdminMediaUrl(cover)} target="_blank" rel="noreferrer">
+                          <img src={resolveAdminMediaUrl(cover)} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </a>
                         <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.8, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: 5 }}>BÌA</span>
                       </div>
@@ -1181,8 +1202,8 @@ export default function AdminPartnersPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
                         {album.map((url, i) => (
-                          <a key={i} href={url} target="_blank" rel="noreferrer" style={{ aspectRatio: '4/3', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', overflow: 'hidden', display: 'block' }}>
-                            <img src={url} alt={`Album ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <a key={i} href={resolveAdminMediaUrl(url)} target="_blank" rel="noreferrer" style={{ aspectRatio: '4/3', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', overflow: 'hidden', display: 'block' }}>
+                            <img src={resolveAdminMediaUrl(url)} alt={`Album ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </a>
                         ))}
                       </div>
