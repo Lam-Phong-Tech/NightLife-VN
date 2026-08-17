@@ -3797,12 +3797,38 @@ export class NightlifeDataService {
         draftCastIds.push(cast.id);
 
         const castMediaUrls = this.partnerListingCastMediaUrls(castProfile);
+        const existingDraftMedia = await tx.media.findMany({
+          where: { castId: cast.id, deletedAt: null },
+          select: { id: true, url: true },
+        });
+        const existingMediaByUrl = new Map(
+          existingDraftMedia.map((media) => [
+            this.partnerMediaUrlKey(media.url),
+            media,
+          ]),
+        );
         for (const [mediaIndex, url] of castMediaUrls.entries()) {
           const purpose = this.partnerListingCastMediaPurpose(
             castProfile,
             url,
             mediaIndex,
           );
+          const existingMedia = existingMediaByUrl.get(
+            this.partnerMediaUrlKey(url),
+          );
+          if (existingMedia) {
+            await tx.media.update({
+              where: { id: existingMedia.id },
+              data: {
+                purpose,
+                status: 'READY',
+                access: 'PUBLIC',
+              },
+            });
+            draftMediaIds.push(existingMedia.id);
+            continue;
+          }
+
           const uploadedDraftMedia = await tx.media.findFirst({
             where: {
               ownerId: user.id,
@@ -3845,6 +3871,24 @@ export class NightlifeDataService {
           );
           draftMediaIds.push(media.id);
         }
+
+        // A re-submission replaces the review draft's media set. Archive files
+        // removed in Partner so they cannot remain in Admin or accumulate as
+        // duplicate videos on later submissions.
+        await tx.media.updateMany({
+          where: {
+            castId: cast.id,
+            deletedAt: null,
+            ...(draftMediaIds.length
+              ? { id: { notIn: draftMediaIds } }
+              : {}),
+          },
+          data: {
+            status: 'HIDDEN',
+            access: 'PROTECTED',
+            deletedAt: submittedAt,
+          },
+        });
       }
 
       if (draftMediaIds.length) {
@@ -18790,6 +18834,13 @@ export class NightlifeDataService {
       }
 
       parsed.hash = '';
+      // The same uploaded file is reachable through a protected URL while it
+      // is being edited and a public URL while Admin reviews it. Treat both
+      // representations as one media item when reconciling a re-submission.
+      parsed.pathname = parsed.pathname.replace(
+        /^\/storage\/(?:files|public)\//,
+        '/storage/media/',
+      );
       if (parsed.pathname.length > 1) {
         parsed.pathname = parsed.pathname.replace(/\/+$/g, '');
       }
@@ -19284,6 +19335,11 @@ export class NightlifeDataService {
     const text = (value?: string | null) => this.cleanPartnerListingText(value);
     const list = (values?: string[] | null, limit = 12) =>
       this.cleanPartnerListingStringArray(values, limit);
+    const hasTags = profile.tags !== undefined;
+    const hasLanguages = profile.languages !== undefined;
+    const hasHobbies = profile.hobbies !== undefined;
+    const hasYoutubeLinks = profile.youtubeLinks !== undefined;
+    const hasMediaUrls = profile.mediaUrls !== undefined;
     const tags = list(profile.tags, 12);
     const languages = list(profile.languages, 8);
     const hobbies = list(profile.hobbies, 12);
@@ -19314,8 +19370,8 @@ export class NightlifeDataService {
       storeName:
         text(profile.storeName) ?? text(storeProfile?.storeName) ?? undefined,
       bio: text(profile.bio) ?? text(storeProfile?.bio) ?? '',
-      tags: tags.length ? tags : (storeProfile?.tags ?? []),
-      languages: languages.length ? languages : (storeProfile?.languages ?? []),
+      tags: hasTags ? tags : (storeProfile?.tags ?? []),
+      languages: hasLanguages ? languages : (storeProfile?.languages ?? []),
       birthMonth: profile.birthMonth ?? storeProfile?.birthMonth,
       zodiacSign:
         profile.zodiacSign !== undefined
@@ -19330,8 +19386,8 @@ export class NightlifeDataService {
         text(profile.measurements) ??
         text(storeProfile?.measurements) ??
         undefined,
-      hobbies: hobbies.length ? hobbies : (storeProfile?.hobbies ?? []),
-      youtubeLinks: youtubeLinks.length
+      hobbies: hasHobbies ? hobbies : (storeProfile?.hobbies ?? []),
+      youtubeLinks: hasYoutubeLinks
         ? youtubeLinks
         : (storeProfile?.youtubeLinks ?? []),
       hourlyRateVnd: profile.hourlyRateVnd ?? storeProfile?.hourlyRateVnd,
@@ -19343,7 +19399,9 @@ export class NightlifeDataService {
         profile.albumImageUrls !== undefined
           ? albumImageUrls
           : (storeProfile?.albumImageUrls ?? []),
-      mediaUrls: mediaUrls.length ? mediaUrls : (storeProfile?.mediaUrls ?? []),
+      mediaUrls: hasMediaUrls
+        ? mediaUrls
+        : (storeProfile?.mediaUrls ?? []),
     };
   }
 
@@ -21218,9 +21276,14 @@ export class NightlifeDataService {
         const hasExplicitImagePartition =
           incomingProfile.avatarUrl !== undefined ||
           incomingProfile.albumImageUrls !== undefined;
-        const legacyMediaUrls = this.cleanPartnerListingCastMediaUrls(
-          profile.mediaUrls,
-        );
+        const hasTags = profile.tags !== undefined;
+        const hasLanguages = profile.languages !== undefined;
+        const hasHobbies = profile.hobbies !== undefined;
+        const hasYoutubeLinks = profile.youtubeLinks !== undefined;
+        const hasMediaUrls = profile.mediaUrls !== undefined;
+        const legacyMediaUrls = hasMediaUrls
+          ? this.cleanPartnerListingCastMediaUrls(profile.mediaUrls)
+          : [];
         const legacyImageUrls = legacyMediaUrls.filter(
           (url) => this.partnerRequestMediaType(url) === 'IMAGE',
         );
@@ -21254,8 +21317,12 @@ export class NightlifeDataService {
           stageName,
           storeName: this.cleanPartnerListingText(profile.storeName),
           bio: this.cleanPartnerListingText(profile.bio),
-          tags: this.cleanPartnerListingStringArray(profile.tags, 12),
-          languages: this.cleanPartnerListingStringArray(profile.languages, 8),
+          tags: hasTags
+            ? this.cleanPartnerListingStringArray(profile.tags, 12)
+            : undefined,
+          languages: hasLanguages
+            ? this.cleanPartnerListingStringArray(profile.languages, 8)
+            : undefined,
           birthMonth,
           zodiacSign:
             this.zodiacSignForBirthMonth(birthMonth) ??
@@ -21264,15 +21331,18 @@ export class NightlifeDataService {
               : this.cleanPartnerListingText(profile.zodiacSign)),
           heightCm,
           measurements: this.cleanPartnerListingText(profile.measurements),
-          hobbies: this.cleanPartnerListingStringArray(profile.hobbies, 12),
-          youtubeLinks: this.cleanPartnerListingStringArray(
-            profile.youtubeLinks,
-            8,
-          ),
+          hobbies: hasHobbies
+            ? this.cleanPartnerListingStringArray(profile.hobbies, 12)
+            : undefined,
+          youtubeLinks: hasYoutubeLinks
+            ? this.cleanPartnerListingStringArray(profile.youtubeLinks, 8)
+            : undefined,
           hourlyRateVnd,
           avatarUrl,
           albumImageUrls,
-          mediaUrls: this.cleanPartnerListingCastMediaUrls(mediaUrls),
+          mediaUrls: hasMediaUrls
+            ? this.cleanPartnerListingCastMediaUrls(mediaUrls)
+            : undefined,
           isPublic:
             typeof profile.isPublic === 'boolean'
               ? profile.isPublic

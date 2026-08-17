@@ -5552,6 +5552,36 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('preserves an explicit empty YouTube list from a partner cast edit', () => {
+    const mergeCastProfile = (
+      service as unknown as {
+        mergePartnerListingCastProfile(
+          profile: Record<string, unknown>,
+          storeProfile?: Record<string, unknown>,
+        ): Record<string, unknown>;
+      }
+    ).mergePartnerListingCastProfile.bind(service);
+
+    const merged = mergeCastProfile(
+      {
+        id: 'cast-aoi',
+        stageName: 'Aoi',
+        youtubeLinks: [],
+        mediaUrls: [],
+      },
+      {
+        id: 'cast-aoi',
+        stageName: 'Aoi',
+        youtubeLinks: ['https://youtube.com/watch?v=old-video'],
+        mediaUrls: ['https://cdn.example.com/old-video.mp4'],
+      },
+    );
+
+    expect(merged).toEqual(
+      expect.objectContaining({ youtubeLinks: [], mediaUrls: [] }),
+    );
+  });
+
   it('submits only changed partner listing casts without creating a store review request', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const existingCastId = '22222222-2222-4222-8222-222222222222';

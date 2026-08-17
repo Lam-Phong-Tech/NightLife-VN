@@ -1069,20 +1069,27 @@ const normalizeListingTextList = (value: unknown) => {
 };
 
 const normalizeListingUrlList = (value: unknown) => {
+  const normalize = (values: unknown[]) =>
+    Array.from(
+      new Set(
+        values
+          .map((item) => {
+            if (typeof item === 'string') return item.trim();
+            if (item && typeof item === 'object') {
+              const record = item as { url?: unknown; thumbnailUrl?: unknown; imageUrl?: unknown };
+              return safeListingText(record.url ?? record.thumbnailUrl ?? record.imageUrl).trim();
+            }
+            return safeListingText(item).trim();
+          })
+          .filter(Boolean),
+      ),
+    );
+
   if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (typeof item === 'string') return item.trim();
-        if (item && typeof item === 'object') {
-          const record = item as { url?: unknown; thumbnailUrl?: unknown; imageUrl?: unknown };
-          return safeListingText(record.url ?? record.thumbnailUrl ?? record.imageUrl).trim();
-        }
-        return safeListingText(item).trim();
-      })
-      .filter(Boolean);
+    return normalize(value);
   }
 
-  return splitInlineList(safeListingText(value));
+  return normalize(splitInlineList(safeListingText(value)));
 };
 
 const isValidUrl = (value: string) => {
@@ -4848,7 +4855,12 @@ export default function PartnerPage() {
       ...current,
       castProfiles: current.castProfiles.map((item, itemIndex) =>
         itemIndex === index
-          ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
+          ? {
+              ...item,
+              mediaUrls: Array.from(
+                new Set([...(item.mediaUrls ?? []).filter(Boolean), ...urls.filter(Boolean)]),
+              ),
+            }
           : item,
       ),
     }));
@@ -4873,7 +4885,12 @@ export default function PartnerPage() {
       ...current,
       castProfiles: current.castProfiles.map((item, itemIndex) =>
         itemIndex === index
-          ? { ...item, albumImageUrls: [...(item.albumImageUrls ?? []), ...urls.filter(Boolean)] }
+          ? {
+              ...item,
+              albumImageUrls: Array.from(
+                new Set([...(item.albumImageUrls ?? []), ...urls.filter(Boolean)]),
+              ),
+            }
           : item,
       ),
     }));
