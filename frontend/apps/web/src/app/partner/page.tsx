@@ -12685,6 +12685,14 @@ export default function PartnerPage() {
             font-size: 9px !important;
             line-height: 1.1;
           }
+          /* Mobile browsers pin fixed elements above the virtual keyboard.
+             Hide the navigation only while a text entry control is focused so
+             it never appears in the middle of an in-progress form. */
+          .partner-shell:has(input:not([type='checkbox']):not([type='radio']):not([type='file']):focus, textarea:focus, select:focus, [contenteditable='true']:focus) .partner-mobile-bottom-nav {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+          }
         }
         @media (max-width: 360px) {
           .partner-metric-grid {
