@@ -7297,9 +7297,7 @@ export default function PartnerPage() {
                   ? `Tour · điểm ${scanIssue.tour?.stopOrder ?? '-'}`
                   : scanIssue.scanType === 'BOOKING_QR'
                     ? 'Đơn đặt chỗ'
-                    : scanIssue.coupon?.name ?? 'Coupon'}{' '}
-                ·{' '}
-                {scanIssue.coupon?.store?.name ?? storeName}
+                    : scanIssue.coupon?.name ?? 'Coupon'}
               </div>
             </div>
 
