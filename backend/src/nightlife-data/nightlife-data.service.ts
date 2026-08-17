@@ -4020,7 +4020,16 @@ export class NightlifeDataService {
     });
 
     if (result.count !== 1) {
-      throw new NotFoundException('Partner listing cast not found');
+      // Partner can still hold an older draft containing the id of a cast
+      // that was already soft-deleted from Admin. Deletion is intentionally
+      // idempotent in that case so stale client data can be cleaned up.
+      const existingCast = await this.prisma.cast.findFirst({
+        where: { id, storeId: store.id },
+        select: { id: true, deletedAt: true },
+      });
+      if (!existingCast) {
+        throw new NotFoundException('Partner listing cast not found');
+      }
     }
 
     const draft = await this.findPartnerListingDraft(store.id);
