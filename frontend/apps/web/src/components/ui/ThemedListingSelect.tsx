@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 const colors = {
@@ -54,6 +54,13 @@ export function ThemedListingSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value);
+
+  // A touch selection can update the parent before iOS delivers the final
+  // click. Close on either state change so the menu cannot remain over the
+  // form after the selected value has been applied.
+  useEffect(() => {
+    setIsOpen(false);
+  }, [value]);
 
   return (
     <div
@@ -125,13 +132,23 @@ export function ThemedListingSelect({
           {options.length ? (
             options.map((option) => {
               const selected = option.value === value;
+              const selectOption = () => {
+                onChange(option.value);
+                setIsOpen(false);
+              };
               return (
                 <button
                   key={`${option.value}-${option.label}`}
                   type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    selectOption();
+                  }}
+                  onClick={(event) => {
+                    // Pointer selection is handled above; detail 0 is a
+                    // keyboard-triggered click and must remain accessible.
+                    if (event.detail === 0) selectOption();
                   }}
                   style={{
                     width: '100%',
