@@ -3728,17 +3728,57 @@ export class NightlifeDataService {
       const contact = await this.partnerListingContact(user, store, tx);
 
       for (const [index, url] of payload.mediaUrls.entries()) {
-        const media = await this.createPartnerRequestMedia(
-          {
-            requestId,
-            url,
-            index,
+        const purpose = this.partnerListingStoreMediaPurpose(payload, url);
+        const existingMedia = await tx.media.findFirst({
+          where: {
+            ownerId: user.id,
             storeId: store.id,
-            purpose: this.partnerListingStoreMediaPurpose(payload, url),
+            castId: null,
+            deletedAt: null,
+            url: {
+              in: [
+                url,
+                this.protectedMediaUrl(url),
+                this.publicMediaUrl(url),
+              ],
+            },
+            purpose: {
+              in: [
+                'PARTNER_STORE_COVER',
+                'PARTNER_STORE_GALLERY',
+                'PARTNER_STORE_VIDEO',
+                'PARTNER_LISTING_STORE',
+                'STORE_COVER',
+                'STORE_GALLERY',
+                'STORE_VIDEO',
+                'store-hero',
+              ],
+            },
           },
-          tx,
-        );
-        draftMediaIds.push(media.id);
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        });
+
+        if (existingMedia) {
+          await tx.media.update({
+            where: { id: existingMedia.id },
+            data: { purpose, status: 'HIDDEN', access: 'PROTECTED' },
+            select: { id: true },
+          });
+          draftMediaIds.push(existingMedia.id);
+        } else {
+          const media = await this.createPartnerRequestMedia(
+            {
+              requestId,
+              url,
+              index,
+              storeId: store.id,
+              purpose,
+            },
+            tx,
+          );
+          draftMediaIds.push(media.id);
+        }
       }
 
       const menuSummary =
