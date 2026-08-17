@@ -223,7 +223,7 @@ const CAST_RANKING_IMAGE_PURPOSES = [
   'cast-gallery',
   'thumbnail',
 ] as const;
-const STORE_MENU_MEDIA_PURPOSE_KEYS = new Set([
+const STORE_MENU_MEDIA_PURPOSES = [
   'menu',
   'menu-item',
   'menu_item',
@@ -231,7 +231,11 @@ const STORE_MENU_MEDIA_PURPOSE_KEYS = new Set([
   'store_menu_item',
   'partner-menu-item',
   'partner_menu_item',
-]);
+  'STORE_MENU_ITEM',
+] as const;
+const STORE_MENU_MEDIA_PURPOSE_KEYS = new Set(
+  STORE_MENU_MEDIA_PURPOSES.map((purpose) => purpose.toLowerCase()),
+);
 type BookingStatusActorType =
   | 'MEMBER'
   | 'GUEST'
@@ -2354,8 +2358,20 @@ export class NightlifeDataService {
                   access: 'PUBLIC',
                   status: 'READY',
                   type: 'IMAGE',
+                  // Exclude menu media before the eight-item window is
+                  // applied so menu uploads cannot hide the store cover.
+                  AND: [
+                    {
+                      OR: [
+                        { purpose: null },
+                        { purpose: { notIn: [...STORE_MENU_MEDIA_PURPOSES] } },
+                      ],
+                    },
+                  ],
                 }),
-                orderBy: { createdAt: 'desc' },
+                // Keep the admin-selected store cover inside the limited
+                // media window even when newer gallery/menu images exist.
+                orderBy: [{ purpose: 'desc' }, { createdAt: 'desc' }],
                 take: 8,
                 select: {
                   url: true,
@@ -2526,7 +2542,9 @@ export class NightlifeDataService {
             access: 'PUBLIC',
             type: { in: ['IMAGE', 'VIDEO'] },
           }),
-          orderBy: { createdAt: 'desc' },
+          // The admin-selected store-hero must be the first public detail
+          // image, regardless of when newer gallery images were uploaded.
+          orderBy: [{ purpose: 'desc' }, { createdAt: 'desc' }],
           select: {
             id: true,
             type: true,
@@ -18475,7 +18493,9 @@ export class NightlifeDataService {
       coverPurposes.has(String(item.purpose ?? '').trim()),
     );
 
-    return cover ?? storeMedia[0] ?? null;
+    // Only use an explicitly selected cover from admin. Do not promote the
+    // first gallery image to cover when the store has no configured cover.
+    return cover ?? null;
   }
 
   private publicMediaUrl(url: string) {
