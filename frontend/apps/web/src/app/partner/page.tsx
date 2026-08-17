@@ -1873,6 +1873,7 @@ export default function PartnerPage() {
   const [isSavingListing, setIsSavingListing] = useState(false);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
   const [isDeletingCastProfile, setIsDeletingCastProfile] = useState(false);
+  const isSubmittingCastRef = useRef(false);
   const [period, setPeriod] = useState<PeriodKey>('seven');
   const [overviewFromDate, setOverviewFromDate] = useState<string>('');
   const [overviewToDate, setOverviewToDate] = useState<string>('');
@@ -5238,6 +5239,8 @@ export default function PartnerPage() {
       description,
       durationMs: 5600,
       placement: 'top-right',
+      dedupeKey: `partner-listing:${tone}:${title}:${description}`,
+      dedupeMs: 4500,
     });
   };
 
@@ -6252,10 +6255,23 @@ export default function PartnerPage() {
       return;
     }
 
+    const isSavingCastDraft = listingTab === 'cast';
+    const activeCast =
+      isSavingCastDraft && activeCastProfileIndex !== null
+        ? listingDraft.castProfiles[activeCastProfileIndex]
+        : null;
+    if (isSavingCastDraft && activeCast && isEmptyCastProfile(activeCast)) {
+      const path = `castProfiles.${activeCastProfileIndex}.stageName`;
+      const message = 'Nhập ít nhất một thông tin cast trước khi lưu nháp.';
+      setListingErrors({ [path]: message });
+      setListingNotice(message);
+      listingActionToast('warning', 'Chưa thể lưu cast trống', message);
+      return;
+    }
+
     setIsSavingListing(true);
     setListingNotice('Đang lưu bản nháp...');
     try {
-      const isSavingCastDraft = listingTab === 'cast';
       const isAddingCast = isSavingCastDraft && isAddingCastProfile;
       const castProfileKeyToSave =
         isSavingCastDraft && activeCastProfileIndex !== null
@@ -6381,10 +6397,14 @@ export default function PartnerPage() {
   };
 
   const submitCastListingDraft = async () => {
+    if (isSubmittingCastRef.current) {
+      return;
+    }
     if (!validateCastListingBeforeSubmit()) {
       return;
     }
 
+    isSubmittingCastRef.current = true;
     setIsSubmittingListing(true);
     setListingNotice('Đang gửi cast cho Admin duyệt...');
     try {
@@ -6463,6 +6483,7 @@ export default function PartnerPage() {
       setListingNotice(message);
       listingActionToast('error', 'Không gửi duyệt được cast', message);
     } finally {
+      isSubmittingCastRef.current = false;
       setIsSubmittingListing(false);
     }
   };
