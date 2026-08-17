@@ -19902,7 +19902,9 @@ export class NightlifeDataService {
             m.purpose === 'STORE_COVER' ||
             m.purpose === 'COVER_IMAGE'),
       )?.url ??
-      storeMedia.find((m) => m.type === 'IMAGE' && !m.castId)?.url ??
+      storeMedia.find(
+        (m) => m.type === 'IMAGE' && this.isStoreGalleryMedia(m),
+      )?.url ??
       null;
     const galleryUrls =
       dto.galleryUrls !== undefined
@@ -19910,7 +19912,9 @@ export class NightlifeDataService {
         : storeMedia
             .filter(
               (m) =>
-                m.type === 'IMAGE' && m.purpose !== 'COVER_IMAGE' && !m.castId,
+                m.type === 'IMAGE' &&
+                m.purpose !== 'COVER_IMAGE' &&
+                this.isStoreGalleryMedia(m),
             )
             .map((m) => m.url)
             .slice(0, 12);

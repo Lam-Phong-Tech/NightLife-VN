@@ -5364,6 +5364,22 @@ describe('NightlifeDataService', () => {
       tags: [],
       partnerAccountId: 'partner-a',
       ownerId: null,
+      media: [
+        {
+          id: 'menu-image-1',
+          url: 'https://cdn.example.com/menu.jpg',
+          purpose: 'STORE_MENU_ITEM',
+          type: 'IMAGE',
+          castId: null,
+        },
+        {
+          id: 'gallery-image-1',
+          url: 'https://cdn.example.com/gallery.jpg',
+          purpose: 'STORE_GALLERY',
+          type: 'IMAGE',
+          castId: null,
+        },
+      ],
     });
     prisma.content.findFirst.mockResolvedValueOnce(null);
     prisma.partnerRequest.findFirst.mockResolvedValueOnce(null);
@@ -5389,6 +5405,7 @@ describe('NightlifeDataService', () => {
               ],
             },
           ],
+          galleryUrls: ['https://cdn.example.com/gallery.jpg'],
         }),
       }),
     );
