@@ -19130,7 +19130,7 @@ export class NightlifeDataService {
         : [];
 
     return rawGroups
-      .map((group) => {
+      .map((group): PartnerListingMenuGroupDto | null => {
         const groupRecord = this.asRecord(group);
         if (!groupRecord) {
           return null;
