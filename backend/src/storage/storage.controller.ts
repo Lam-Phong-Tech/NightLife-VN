@@ -274,6 +274,9 @@ export class StorageController {
     @Query('format') formatQuery: string | undefined,
     @Res() response: express.Response,
   ) {
+    // Never cache a missing public object. If the object is restored later
+    // under the same storage key, the next request must reach the origin.
+    response.set('Cache-Control', 'no-store');
     const { mediaFile, path } =
       await this.storageService.resolvePublicLocalFile(storageKey);
 
@@ -288,7 +291,6 @@ export class StorageController {
       );
     }
 
-    response.set('Cache-Control', 'public, max-age=31536000, immutable');
     if (requestedFormat === 'auto') response.set('Vary', 'Accept');
 
     if (this.storageService.isR2Enabled()) {
@@ -301,6 +303,7 @@ export class StorageController {
         defaultMimeType: mediaFile.mimeType,
       });
       const object = await this.storageService.getR2Object(selected.storageKey);
+      response.set('Cache-Control', 'public, max-age=31536000, immutable');
       response.type(selected.mimeType);
       if (object.contentLength !== undefined) {
         response.set('Content-Length', String(object.contentLength));
@@ -319,6 +322,7 @@ export class StorageController {
     });
 
     const fileStats = await stat(selected.path);
+    response.set('Cache-Control', 'public, max-age=31536000, immutable');
     response.type(selected.mimeType);
     response.set('Content-Length', String(fileStats.size));
     return response.sendFile(selected.path);
