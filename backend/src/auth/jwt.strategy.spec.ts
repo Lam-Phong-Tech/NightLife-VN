@@ -100,6 +100,41 @@ describe('JwtStrategy privileged session policy', () => {
     expect(userSessionUpdateMock).not.toHaveBeenCalled();
   });
 
+  it('reports a logged-out privileged token as revoked, not session replaced', async () => {
+    findByIdOrThrowMock.mockResolvedValue({
+      id: 'user-1',
+      email: 'partner@nightlife.vn',
+      role: 'PARTNER',
+      tier: 'PREMIUM',
+      status: 'ACTIVE',
+      deletedAt: null,
+      activePrivilegedJti: null,
+    });
+    tokenBlacklistFindUniqueMock.mockResolvedValue({
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    let rejection: unknown;
+    try {
+      await strategy.validate({
+        sub: 'user-1',
+        email: 'partner@nightlife.vn',
+        role: 'PARTNER',
+        jti: 'logged-out-jti',
+        exp: Math.floor(Date.now() / 1000) + 60,
+      });
+    } catch (error: unknown) {
+      rejection = error;
+    }
+
+    expect(rejection).toBeInstanceOf(UnauthorizedException);
+    expect((rejection as UnauthorizedException).getResponse()).toMatchObject({
+      message: 'Token has been revoked',
+    });
+    expect(userSessionFindUniqueMock).not.toHaveBeenCalled();
+    expect(userSessionUpdateMock).not.toHaveBeenCalled();
+  });
+
   it('allows USER accounts to keep multiple active sessions', async () => {
     findByIdOrThrowMock.mockResolvedValue({
       id: 'user-1',

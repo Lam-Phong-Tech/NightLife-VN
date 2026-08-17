@@ -62,13 +62,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token session is not active');
     }
 
-    if (
-      requiresSinglePrivilegedSession(user.role) &&
-      user.activePrivilegedJti !== payload.jti
-    ) {
-      throw new UnauthorizedException(SESSION_REPLACED_ERROR);
-    }
-
     const revokedToken = await this.prisma.tokenBlacklist.findUnique({
       where: { jti: payload.jti },
       select: { expiresAt: true },
@@ -76,6 +69,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (revokedToken && revokedToken.expiresAt > new Date()) {
       throw new UnauthorizedException('Token has been revoked');
+    }
+
+    // Logout blacklists the current token and clears activePrivilegedJti. Check
+    // the blacklist first so concurrent background requests after logout are
+    // treated as a normal revoked session, not as a login from another device.
+    if (
+      requiresSinglePrivilegedSession(user.role) &&
+      user.activePrivilegedJti !== payload.jti
+    ) {
+      throw new UnauthorizedException(SESSION_REPLACED_ERROR);
     }
 
     const session = await this.prisma.userSession.findUnique({
