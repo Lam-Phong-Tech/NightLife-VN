@@ -13903,7 +13903,7 @@ export class NightlifeDataService {
 
   private tourBookingCustomerInclude() {
     return {
-      tour: { select: { id: true, title: true } },
+      tour: { select: { id: true, title: true, coverUrl: true } },
       user: {
         select: { id: true, email: true, displayName: true, tier: true },
       },
@@ -13974,6 +13974,7 @@ export class NightlifeDataService {
       tour: {
         id: tourBooking.tour.id,
         title: tourBooking.titleSnapshot,
+        coverUrl: tourBooking.tour.coverUrl,
         status: tourBooking.status,
         progress: {
           checkedIn: (tourBooking.checkIns ?? []).length,

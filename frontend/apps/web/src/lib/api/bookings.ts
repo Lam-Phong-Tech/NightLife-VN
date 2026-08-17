@@ -118,6 +118,7 @@ export type BookingRecord = {
   tour?: {
     id: string;
     title: string;
+    coverUrl?: string | null;
     status?: string;
     progress?: {
       checkedIn: number;
