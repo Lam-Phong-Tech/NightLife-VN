@@ -81,6 +81,18 @@ export class TourService {
       .map(([key]) => key);
   }
 
+  private extractWardFromStoreAddress(address?: string | null) {
+    const parts =
+      address
+        ?.split(',')
+        .map((part) => part.trim())
+        .filter(Boolean) ?? [];
+
+    return (
+      parts.find((part) => /^(phường|xã|thị trấn)\b/i.test(part)) ?? null
+    );
+  }
+
   private async validateTourCoverUrl(coverUrl: string | undefined) {
     const validationError = getTourCoverUrlValidationError(coverUrl);
     if (validationError) {
@@ -543,7 +555,18 @@ export class TourService {
       throw new NotFoundException(`Tour with ID ${id} not found`);
     }
 
-    return tour;
+    return {
+      ...tour,
+      stops: tour.stops.map((stop) => ({
+        ...stop,
+        store: {
+          ...stop.store,
+          ward:
+            stop.store.area?.ward ??
+            this.extractWardFromStoreAddress(stop.store.address),
+        },
+      })),
+    };
   }
 
   private async assertTourStopsAreActive(
