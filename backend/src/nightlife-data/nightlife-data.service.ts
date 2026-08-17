@@ -3585,9 +3585,37 @@ export class NightlifeDataService {
     // the shared listing Content row can still contain the pre-review draft.
     // Once the review is newer than that row, expose the published store data
     // so a reload cannot revert the Partner UI to DRAFT or lose its media.
-    const payload = draftIsOlderThanApprovedReview
+    let payload = draftIsOlderThanApprovedReview
       ? this.normalizePartnerListingDraft({}, store)
       : this.partnerListingDraftPayloadFromContent(draft, store);
+
+    // Cast-only submissions are reviewed directly from the Admin Cast screen
+    // and do not create a new PartnerRequest. In that flow the shared Content
+    // draft can remain DRAFT even though the cast row is already ACTIVE. Use
+    // the live cast only when its database update is newer than the draft, so
+    // an older approval is reflected without overwriting a newer Partner edit.
+    if (draft?.updatedAt) {
+      const liveCastProfiles = this.partnerListingCastProfilesFromStore(store);
+      const liveCastUpdatedAt = new Map(
+        store.casts.map((cast) => [cast.id, cast.updatedAt]),
+      );
+      const reconciledCastProfiles = payload.castProfiles.map((profile) => {
+        const liveProfile = liveCastProfiles.find(
+          (candidate) => candidate.id === profile.id,
+        );
+        const liveUpdatedAt = liveProfile?.id
+          ? liveCastUpdatedAt.get(liveProfile.id)
+          : undefined;
+        const liveWasUpdatedAfterDraft =
+          liveUpdatedAt instanceof Date &&
+          liveUpdatedAt > draft.updatedAt &&
+          liveProfile?.status === 'ACTIVE' &&
+          liveProfile.isPublic === true;
+
+        return liveWasUpdatedAfterDraft ? liveProfile : profile;
+      });
+      payload = { ...payload, castProfiles: reconciledCastProfiles };
+    }
 
     return this.partnerListingDraftResponse(store, draft, payload, {
       message: draft
@@ -17855,6 +17883,7 @@ export class NightlifeDataService {
             stageName: true,
             publicAlias: true,
             status: true,
+            updatedAt: true,
             media: {
               where: {
                 deletedAt: null,
