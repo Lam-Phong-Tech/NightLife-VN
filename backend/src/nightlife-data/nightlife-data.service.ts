@@ -3679,6 +3679,7 @@ export class NightlifeDataService {
               'PARTNER_STORE_COVER',
               'PARTNER_STORE_GALLERY',
               'PARTNER_STORE_VIDEO',
+              'PARTNER_MENU_ITEM',
             ],
           },
         },
@@ -3753,6 +3754,7 @@ export class NightlifeDataService {
                 'PARTNER_STORE_GALLERY',
                 'PARTNER_STORE_VIDEO',
                 'PARTNER_LISTING_STORE',
+                'PARTNER_MENU_ITEM',
                 'STORE_COVER',
                 'STORE_GALLERY',
                 'STORE_VIDEO',
@@ -9390,7 +9392,7 @@ export class NightlifeDataService {
         throw new NotFoundException('Partner request not found');
       }
 
-      const listingDraftPayload = request.id.startsWith('LISTING-')
+      let listingDraftPayload = request.id.startsWith('LISTING-')
         ? await this.resolvePartnerListingDraftPayloadFromRequest(tx, request)
         : null;
 
@@ -9526,6 +9528,7 @@ export class NightlifeDataService {
                     'STORE_VIDEO',
                     'PARTNER_LISTING_STORE',
                     'PARTNER_REQUEST_STORE',
+                    'PARTNER_MENU_ITEM',
                   ],
                 },
               },
@@ -9555,11 +9558,51 @@ export class NightlifeDataService {
                   });
             }),
           );
+          if (listingDraftPayload) {
+            const publicUrlsByKey = new Map<string, string>();
+            promotedMedia.forEach((media) => {
+              const publicUrl = this.publicMediaUrl(media.url);
+              [media.url, this.protectedMediaUrl(media.url), publicUrl]
+                .map((url) => this.partnerMediaUrlKey(url))
+                .filter(Boolean)
+                .forEach((key) => publicUrlsByKey.set(key, publicUrl));
+            });
+            listingDraftPayload = this.publicPartnerListingMediaUrls(
+              listingDraftPayload,
+              publicUrlsByKey,
+            );
+            await tx.store.update({
+              where: { id: request.store.id },
+              data: await this.partnerListingStoreUpdateFromRequest(
+                tx,
+                request,
+                listingDraftPayload,
+              ),
+              select: { id: true },
+            });
+          }
         }
         if (request.draftContentIds.length) {
           await tx.content.updateMany({
             where: { id: { in: request.draftContentIds } },
-            data: { status: 'PUBLISHED', publishedAt: now },
+            data: {
+              status: 'PUBLISHED',
+              publishedAt: now,
+              ...(listingDraftPayload
+                ? {
+                    metadata: this.toPrismaJson({
+                      kind: PARTNER_LISTING_DRAFT_KIND,
+                      version: 1,
+                      listing: listingDraftPayload,
+                      savedAt: now.toISOString(),
+                      submittedAt: request.submittedAt.toISOString(),
+                      submittedRequestId: request.id,
+                      approvedAt: now.toISOString(),
+                      approvedById: adminId,
+                    }),
+                  }
+                : {}),
+            },
           });
         }
       } else {
@@ -18691,6 +18734,34 @@ export class NightlifeDataService {
     return url.replace('/storage/files/', '/storage/public/');
   }
 
+  private publicPartnerListingMediaUrls(
+    payload: PartnerListingDraftPayload,
+    publicUrlsByKey: Map<string, string>,
+  ): PartnerListingDraftPayload {
+    const toPublicUrl = (url: string | null) => {
+      if (!url) return url;
+      return (
+        publicUrlsByKey.get(this.partnerMediaUrlKey(url)) ??
+        this.publicMediaUrl(url)
+      );
+    };
+
+    return {
+      ...payload,
+      coverImageUrl: toPublicUrl(payload.coverImageUrl),
+      galleryUrls: payload.galleryUrls.map((url) => toPublicUrl(url) ?? url),
+      videoUrls: payload.videoUrls.map((url) => toPublicUrl(url) ?? url),
+      mediaUrls: payload.mediaUrls.map((url) => toPublicUrl(url) ?? url),
+      menuGroups: payload.menuGroups.map((group) => ({
+        ...group,
+        items: (group.items ?? []).map((item) => ({
+          ...item,
+          imageUrl: toPublicUrl(item.imageUrl ?? null) ?? undefined,
+        })),
+      })),
+    };
+  }
+
   private protectedMediaUrl(url: string) {
     return url.replace('/storage/public/', '/storage/files/');
   }
@@ -20067,6 +20138,11 @@ export class NightlifeDataService {
       coverImageUrl,
       ...galleryUrls,
       ...videoUrls,
+      ...menuGroups.flatMap((group) =>
+        (group.items ?? [])
+          .map((item) => this.cleanNullableText(item.imageUrl))
+          .filter((url): url is string => Boolean(url)),
+      ),
       ...this.cleanStringArray(dto.mediaUrls, 12),
     ]);
     const requestedStoreCity = this.canonicalPartnerListingCity(

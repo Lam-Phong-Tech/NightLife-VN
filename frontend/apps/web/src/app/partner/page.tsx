@@ -5248,10 +5248,16 @@ export default function PartnerPage() {
         url.trim() && normalizeListingMediaKey(url) !== coverMediaKey,
     );
     const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
+    const menuImageUrls = listingDraft.menuGroups.flatMap((group) =>
+      group.items
+        .map((item) => item.imageUrl?.trim() ?? '')
+        .filter(Boolean),
+    );
     const mediaUrls = [
       listingDraft.coverImageUrl.trim(),
       ...galleryUrls,
       ...videoUrls,
+      ...menuImageUrls,
     ]
       .filter(Boolean)
       .filter((url, index, list) => list.indexOf(url) === index);

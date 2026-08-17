@@ -6722,7 +6722,12 @@ describe('NightlifeDataService', () => {
         storeId: '11111111-1111-4111-8111-111111111111',
         url: { in: ['https://cdn.example.com/draft-cover.jpg'] },
         purpose: {
-          in: ['PARTNER_STORE_COVER', 'PARTNER_STORE_GALLERY', 'PARTNER_STORE_VIDEO'],
+          in: [
+            'PARTNER_STORE_COVER',
+            'PARTNER_STORE_GALLERY',
+            'PARTNER_STORE_VIDEO',
+            'PARTNER_MENU_ITEM',
+          ],
         },
       }),
       data: { access: 'PROTECTED', status: 'HIDDEN' },
