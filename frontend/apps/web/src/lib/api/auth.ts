@@ -193,11 +193,18 @@ const getDemoSession = (role: AuthRole, payload: LoginPayload): AuthResponse | n
 };
 
 const shouldUseDemoFallback = (error: unknown) => {
+  // Demo tokens are deliberately unsigned and must never reach a production
+  // portal-session handoff. Keep this escape hatch for local Next.js development
+  // only, and never mask an authentication or authorization response.
+  if (process.env.NODE_ENV !== "development") {
+    return false;
+  }
+
   if (!(error instanceof ApiError)) {
     return true;
   }
 
-  return [401, 403, 404, 502, 503, 504].includes(error.status);
+  return [502, 503, 504].includes(error.status);
 };
 
 const loginWithRole = async (role: AuthRole, endpoint: string, payload: LoginPayload) => {
