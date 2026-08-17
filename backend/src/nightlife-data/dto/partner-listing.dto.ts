@@ -395,6 +395,172 @@ export class PartnerListingDraftDto {
   mediaUrls?: string[];
 }
 
+/**
+ * Payload used only while a partner is saving work in progress.  A listing
+ * draft intentionally accepts incomplete fields (including a media URL that
+ * has not been corrected yet); the stricter PartnerListingDraftDto remains
+ * the contract for submitting the listing for review.
+ */
+export class PartnerListingDraftSaveDto {
+  @ApiPropertyOptional({ example: 'Velvet Club' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  storeName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  businessType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  storeCategory?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  area?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  storeCity?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  storeDistrict?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  ward?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  streetAddress?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  storeAddress?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  openingHours?: string;
+
+  @ApiPropertyOptional({ type: [PartnerListingOpeningHourDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(14)
+  openingHourItems?: PartnerListingOpeningHourDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  priceRange?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1500)
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1500)
+  menuSummary?: string;
+
+  @ApiPropertyOptional({ type: [PartnerListingMenuGroupDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  menuGroups?: PartnerListingMenuGroupDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  mapUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(16)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  coverImageUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  @MaxLength(2000, { each: true })
+  galleryUrls?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsString({ each: true })
+  @MaxLength(2000, { each: true })
+  videoUrls?: string[];
+
+  @ApiPropertyOptional({ type: [PartnerListingPricingDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  pricingItems?: PartnerListingPricingDto[];
+
+  @ApiPropertyOptional({ type: [PartnerListingCastDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  castProfiles?: PartnerListingCastDto[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  @MaxLength(2000, { each: true })
+  mediaUrls?: string[];
+}
+
 export class PartnerListingCastSubmitDto {
   @ApiPropertyOptional({ type: [PartnerListingCastDto] })
   @IsOptional()

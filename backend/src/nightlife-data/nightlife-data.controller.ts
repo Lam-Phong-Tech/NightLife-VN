@@ -122,6 +122,7 @@ import {
 import {
   PartnerListingCastSubmitDto,
   PartnerListingDraftDto,
+  PartnerListingDraftSaveDto,
 } from './dto/partner-listing.dto';
 import {
   AdminRankingQueryDto,
@@ -589,7 +590,7 @@ export class NightlifeDataController {
   savePartnerListingDraft(
     @Req() request: RequestWithUser,
     @Param('storeId') storeId: string,
-    @Body() dto: PartnerListingDraftDto,
+    @Body() dto: PartnerListingDraftSaveDto,
   ) {
     return this.nightlifeDataService.savePartnerListingDraft(
       request.user,

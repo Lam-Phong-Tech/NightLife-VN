@@ -1273,6 +1273,12 @@ const validateListingDraft = (
   mode: ListingValidationMode,
 ): ListingValidationResult => {
   const errors: ListingValidationErrors = {};
+  // A draft is a workspace, not a submission. Keep every in-progress value so
+  // the partner can return to correct it later; validation is enforced on the
+  // review submission paths below.
+  if (mode === 'draft') {
+    return { errors, firstTab: null };
+  }
   const requireOnSubmit = (path: string, value: string | null | undefined, message: string) => {
     if (mode === 'submit' && isBlank(value)) {
       errors[path] = message;
@@ -1291,7 +1297,6 @@ const validateListingDraft = (
 
   const category = draft.storeCategory || draft.businessType;
   requireOnSubmit('storeCategory', category, 'Chọn loại hình quán.');
-  requireOnSubmit('area', draft.area, 'Nhập khu vực hiển thị.');
   requireOnSubmit('storeCity', draft.storeCity, 'Nhập tỉnh/thành phố.');
   requireOnSubmit('streetAddress', draft.streetAddress, 'Nhập số nhà, tên đường.');
   requireOnSubmit('description', draft.description, 'Nhập mô tả quán.');
@@ -6178,7 +6183,7 @@ export default function PartnerPage() {
       return false;
     }
 
-    const validation = validateListingDraft(listingDraft, 'draft');
+    const validation = validateListingDraft(listingDraft, 'submit');
     const castErrors = Object.fromEntries(
       Object.entries(validation.errors).filter(([path]) => path.startsWith('castProfiles.')),
     );
@@ -8025,10 +8030,13 @@ export default function PartnerPage() {
       <section className="partner-listing-section">
         <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Thực đơn & mức giá</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '11px' }}>
-          {listingDraft.menuGroups.map((group, groupIndex) => (
-            <div key={`group-tab-${groupIndex}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {listingDraft.menuGroups.map((group, groupIndex) => {
+            const groupNameError = listingErrors[`menuGroups.${groupIndex}.name`];
+
+            return (
+            <div key={`group-tab-${groupIndex}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
               {menuManage ? (
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.05)', borderRadius: '9px', padding: '2px 2px 2px 8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: groupNameError ? 'rgba(224,102,119,.12)' : 'rgba(255,255,255,.05)', border: `1px solid ${groupNameError ? 'rgba(232,139,153,.8)' : 'transparent'}`, borderRadius: '9px', padding: '2px 2px 2px 8px' }}>
                   <input 
                     value={group.name} 
                     onChange={(e) => updateMenuGroupName(groupIndex, e.target.value)}
@@ -8060,8 +8068,10 @@ export default function PartnerPage() {
                   {group.name || 'Nhóm chưa đặt tên'}
                 </span>
               )}
+              {groupNameError ? <small style={{ color: '#f29aa6', fontSize: '10px', maxWidth: '150px' }}>{groupNameError}</small> : null}
             </div>
-          ))}
+            );
+          })}
           
           <span 
             onClick={addMenuGroup} 
@@ -8086,6 +8096,8 @@ export default function PartnerPage() {
             const uploadKey = `menu-item-image-${activeIndex}-${itemIndex}`;
             const isBusy = listingUploadKey === uploadKey;
             const isDisabled = Boolean(listingUploadKey);
+            const itemNameError = listingErrors[`menuGroups.${activeIndex}.items.${itemIndex}.name`];
+            const itemImageError = listingErrors[`menuGroups.${activeIndex}.items.${itemIndex}.imageUrl`];
             
             return (
               <div 
@@ -8095,7 +8107,7 @@ export default function PartnerPage() {
                   alignItems: 'center', 
                   gap: '12px', 
                   background: 'rgba(255,255,255,.03)', 
-                  border: '1px solid rgba(255,255,255,.07)', 
+                  border: `1px solid ${itemNameError || itemImageError ? 'rgba(232,139,153,.8)' : 'rgba(255,255,255,.07)'}`,
                   borderRadius: '12px', 
                   padding: '9px 12px 9px 9px' 
                 }}
@@ -8160,6 +8172,7 @@ export default function PartnerPage() {
                     <input 
                       value={item.name} 
                       onChange={e => updateMenuItem(activeIndex, itemIndex, 'name', e.target.value)} 
+                      aria-invalid={Boolean(itemNameError)}
                       style={{ background: 'transparent', border: 'none', color: '#e8e4db', fontSize: '12.5px', fontWeight: 600, outline: 'none', width: '100%' }} 
                       placeholder="Tên món" 
                     />
@@ -8186,6 +8199,8 @@ export default function PartnerPage() {
                     style={{ background: 'transparent', border: 'none', color: '#8c8679', fontSize: '10.5px', marginTop: '2px', outline: 'none', width: '100%' }} 
                     placeholder="Mô tả" 
                   />
+                  {itemNameError ? <small style={{ display: 'block', marginTop: '3px', color: '#f29aa6', fontSize: '10px', fontWeight: 600 }}>{itemNameError}</small> : null}
+                  {itemImageError ? <small style={{ display: 'block', marginTop: '3px', color: '#f29aa6', fontSize: '10px', fontWeight: 600 }}>{itemImageError}</small> : null}
                 </div>
 
                 <div style={{ display: 'flex', flex: 'none', gap: '3px', background: 'rgba(12,12,15,.4)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '9px', padding: '3px' }}>

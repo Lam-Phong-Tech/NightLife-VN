@@ -3588,11 +3588,10 @@ export class NightlifeDataService {
   async savePartnerListingDraft(
     user: AuthenticatedUser,
     storeId: string,
-    dto: PartnerListingDraftDto,
+    dto: Partial<PartnerListingDraftDto>,
   ) {
     const store = await this.getPartnerListingStore(user, storeId);
     const payload = this.normalizePartnerListingDraft(dto, store);
-    await this.assertPartnerListingWardMatchesCity(payload);
     const draft = await this.upsertPartnerListingDraftContent(
       user,
       store,
