@@ -425,6 +425,8 @@ function NotificationBellButton({
         <i
           className="nl-notification-count"
           data-wide={unreadCount > 9 ? "true" : undefined}
+          translate="no"
+          data-no-translate="true"
           aria-hidden="true"
           style={{
             position: "absolute",
@@ -539,6 +541,8 @@ function NotificationTabs({
             {translateText(tab.label, language)}
             {showAllBadge ? (
               <b
+                translate="no"
+                data-no-translate="true"
                 style={{
                   minWidth: unreadCount > 9 ? "24px" : "20px",
                   height: "18px",
