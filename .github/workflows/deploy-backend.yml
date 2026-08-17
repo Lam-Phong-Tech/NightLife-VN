@@ -96,7 +96,7 @@ jobs:
           DEPLOY_DIR="/var/www/api.vietyoru.com"
           SNAPSHOT_ROOT="/var/www/releases/api.vietyoru.com"
           SNAPSHOT_STAMP="$(TZ=Asia/Bangkok date +%Y%m%d-%H%M%S)"
-          $SSH_CMD "$USER@$SSH_HOST" "set -e; mkdir -p '$DEPLOY_DIR' '$SNAPSHOT_ROOT'; if [ -d '$DEPLOY_DIR' ] && [ -n \"\$(find '$DEPLOY_DIR' -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)\" ]; then snapshot='$SNAPSHOT_ROOT/backend-$SNAPSHOT_STAMP.tgz'; tar -czf \"\$snapshot\" --exclude='./node_modules' --exclude='./.git' -C '$DEPLOY_DIR' .; echo \"\$snapshot\" > '$SNAPSHOT_ROOT/latest-backend-snapshot.txt'; echo \"Created backend deploy snapshot: \$snapshot\"; else echo 'No previous backend deployment to snapshot.'; fi"
+          $SSH_CMD "$USER@$SSH_HOST" "set -e; mkdir -p '$DEPLOY_DIR' '$SNAPSHOT_ROOT'; if [ -d '$DEPLOY_DIR' ] && [ -n \"\$(find '$DEPLOY_DIR' -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)\" ]; then snapshot='$SNAPSHOT_ROOT/backend-$SNAPSHOT_STAMP.tgz'; tar -czf \"\$snapshot\" --exclude='./node_modules' --exclude='./.git' --exclude='./uploads' --exclude='./public/uploads' -C '$DEPLOY_DIR' .; echo \"\$snapshot\" > '$SNAPSHOT_ROOT/latest-backend-snapshot.txt'; echo \"Created backend deploy snapshot: \$snapshot\"; else echo 'No previous backend deployment to snapshot.'; fi"
           rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:$DEPLOY_DIR"
 
       - name: Backup, Migrate, Restart PM2 & Smoke
