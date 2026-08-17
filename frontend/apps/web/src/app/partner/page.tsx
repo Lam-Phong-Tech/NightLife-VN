@@ -1925,6 +1925,8 @@ export default function PartnerPage() {
   >('idle');
   const [cameraMessage, setCameraMessage] = useState('');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const notificationTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const notificationPopoverRef = useRef<HTMLDivElement | null>(null);
   const [partnerNotifications, setPartnerNotifications] = useState<PartnerNotification[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [partnerNotificationEvents, setPartnerNotificationEvents] = useState<PartnerNotificationEvent[]>([]);
@@ -1994,6 +1996,46 @@ export default function PartnerPage() {
     },
     [feedback],
   );
+
+  useEffect(() => {
+    if (!isNotificationOpen) {
+      return;
+    }
+
+    const closeOnOutsideInteraction = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (
+        notificationTriggerRef.current?.contains(target) ||
+        notificationPopoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setIsNotificationOpen(false);
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideInteraction);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideInteraction);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isNotificationOpen]);
+
+  useEffect(() => {
+    setIsNotificationOpen(false);
+  }, [activePanel]);
 
   // Settings & Staff Sub-View State
   const [settingsSubView, setSettingsSubView] = useState<'main' | 'change-password' | 'add-staff'>('main');
@@ -13001,6 +13043,7 @@ export default function PartnerPage() {
                 {partnerTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
               </button>
               <button
+                ref={notificationTriggerRef}
                 type="button"
                 onClick={() => setIsNotificationOpen((current) => !current)}
                 style={{
@@ -13048,6 +13091,7 @@ export default function PartnerPage() {
                 ) : null}
               </button>
               <div
+                ref={notificationPopoverRef}
                 className="partner-notification-popover"
                 style={{
                   display: isNotificationOpen ? 'block' : 'none',
