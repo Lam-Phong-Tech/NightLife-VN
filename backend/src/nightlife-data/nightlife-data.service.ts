@@ -4385,7 +4385,13 @@ export class NightlifeDataService {
     const notifications = await this.prisma.notificationLog.findMany({
       where: {
         channel: 'IN_APP',
-        templateKey: 'audit.bill.review.v1',
+        templateKey: {
+          in: [
+            'audit.bill.review.v1',
+            'partner.listing.reviewed.v1',
+            'partner.cast.reviewed.v1',
+          ],
+        },
         ...(storeScope ? { storeId: storeScope } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -4403,8 +4409,14 @@ export class NightlifeDataService {
         },
       },
     });
-    const notificationKeys = notifications.map(
-      (notification) => `bill-review:${notification.id}`,
+    const notificationKeyFor = (templateKey: string, id: string) =>
+      templateKey === 'audit.bill.review.v1'
+        ? `bill-review:${id}`
+        : templateKey === 'partner.cast.reviewed.v1'
+          ? `cast-review:${id}`
+          : `listing-review:${id}`;
+    const notificationKeys = notifications.map((notification) =>
+      notificationKeyFor(notification.templateKey, notification.id),
     );
     const readRows = notificationKeys.length
       ? await this.prisma.partnerNotificationRead.findMany({
@@ -4418,8 +4430,46 @@ export class NightlifeDataService {
     const readKeys = new Set(readRows.map((row) => row.notificationKey));
 
     return notifications.map((notification) => {
-      const key = `bill-review:${notification.id}`;
+      const key = notificationKeyFor(notification.templateKey, notification.id);
       const payload = this.asRecord(notification.payload);
+      if (notification.templateKey === 'partner.listing.reviewed.v1') {
+        const approved = String(payload?.status ?? '').toUpperCase() === 'APPROVED';
+        const reason = typeof payload?.reviewReason === 'string' ? payload.reviewReason : '';
+        return {
+          id: key,
+          category: 'Đăng tin',
+          title: approved ? 'Thông tin quán đã được duyệt' : 'Thông tin quán bị từ chối',
+          message: approved
+            ? 'Thông tin quán đã được Admin duyệt và cập nhật lên Go Live.'
+            : `Thông tin quán chưa được duyệt${reason ? `: ${reason}` : '.'}`,
+          meta: String(payload?.storeName ?? 'Thông tin quán'),
+          actionLabel: 'Xem đăng tin',
+          panel: 'listing',
+          listingTab: 'store',
+          tone: approved ? 'success' : 'danger',
+          createdAt: notification.createdAt.toISOString(),
+          unread: !readKeys.has(key),
+        };
+      }
+      if (notification.templateKey === 'partner.cast.reviewed.v1') {
+        const approved = String(payload?.status ?? '').toUpperCase() === 'APPROVED';
+        const reason = typeof payload?.reviewReason === 'string' ? payload.reviewReason : '';
+        return {
+          id: key,
+          category: 'Cast',
+          title: approved ? 'Cast đã được duyệt' : 'Cast bị từ chối',
+          message: approved
+            ? `${String(payload?.castName ?? 'Cast')} đã được Admin duyệt.`
+            : `${String(payload?.castName ?? 'Cast')} chưa được duyệt${reason ? `: ${reason}` : '.'}`,
+          meta: String(payload?.storeName ?? 'Cast'),
+          actionLabel: 'Xem Cast',
+          panel: 'listing',
+          listingTab: 'cast',
+          tone: approved ? 'success' : 'danger',
+          createdAt: notification.createdAt.toISOString(),
+          unread: !readKeys.has(key),
+        };
+      }
       const status = String(
         payload?.nextStatus ?? notification.bill?.status ?? '',
       ).toUpperCase();
@@ -4464,7 +4514,9 @@ export class NightlifeDataService {
             notificationIds
               .filter((value): value is string => typeof value === 'string')
               .map((value) => value.trim())
-              .filter((value) => value.startsWith('bill-review:')),
+              .filter((value) =>
+                /^(bill-review|listing-review|cast-review):/.test(value),
+              ),
           ),
         ).slice(0, 50)
       : [];
@@ -4481,17 +4533,38 @@ export class NightlifeDataService {
       return { updatedCount: 0 };
     }
 
-    const logIds = ids.map((id) => id.slice('bill-review:'.length));
+    const billIds = ids
+      .filter((id) => id.startsWith('bill-review:'))
+      .map((id) => id.slice('bill-review:'.length));
+    const listingIds = ids
+      .filter((id) => id.startsWith('listing-review:'))
+      .map((id) => id.slice('listing-review:'.length));
+    const castIds = ids
+      .filter((id) => id.startsWith('cast-review:'))
+      .map((id) => id.slice('cast-review:'.length));
     const ownedLogs = await this.prisma.notificationLog.findMany({
       where: {
-        id: { in: logIds },
         channel: 'IN_APP',
-        templateKey: 'audit.bill.review.v1',
+        OR: [
+          ...(billIds.length
+            ? [{ id: { in: billIds }, templateKey: 'audit.bill.review.v1' }]
+            : []),
+          ...(listingIds.length
+            ? [{ id: { in: listingIds }, templateKey: 'partner.listing.reviewed.v1' }]
+            : []),
+          ...(castIds.length
+            ? [{ id: { in: castIds }, templateKey: 'partner.cast.reviewed.v1' }]
+            : []),
+        ],
         ...(storeIds ? { storeId: { in: storeIds } } : {}),
-      },
+      } as Prisma.NotificationLogWhereInput,
       select: { id: true },
     });
-    const notificationKeys = ownedLogs.map((log) => `bill-review:${log.id}`);
+    const ownedIds = new Set(ownedLogs.map((log) => log.id));
+    const notificationKeys = ids.filter((id) => {
+      const logId = id.slice(id.indexOf(':') + 1);
+      return ownedIds.has(logId);
+    });
     if (!notificationKeys.length) {
       return { updatedCount: 0 };
     }
@@ -9714,6 +9787,7 @@ export class NightlifeDataService {
               requestId: request.id,
               status: nextStatus,
               reason,
+              reviewReason: reason,
               approve: dto.approve,
               storeId: request.store.id,
               storeName: request.store.name,
@@ -25386,7 +25460,7 @@ export class NightlifeDataService {
           ? await this.resolveAdminCastMediaIds(dto.mediaIds)
           : undefined;
 
-      return this.prisma.$transaction(async (tx) => {
+      const updatedTarget = await this.prisma.$transaction(async (tx) => {
         const targetCast = await tx.cast.findFirst({
           where: {
             id: partnerEditSourceId,
@@ -25501,6 +25575,8 @@ export class NightlifeDataService {
 
         return updatedTarget;
       });
+      await this.notifyPartnerCastReview(existing, updatedTarget, dto);
+      return updatedTarget;
     }
 
     let slug: string | undefined;
@@ -25517,7 +25593,7 @@ export class NightlifeDataService {
         ? await this.resolveAdminCastMediaIds(dto.mediaIds)
         : undefined;
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.cast.update({
         where: { id },
         data: {
@@ -25567,6 +25643,61 @@ export class NightlifeDataService {
       }
 
       return updated;
+    });
+    await this.notifyPartnerCastReview(existing, updated, dto);
+    return updated;
+  }
+
+  private async notifyPartnerCastReview(
+    previous: { id: string; storeId: string; status: CastStatus },
+    updated: { id: string; storeId: string; stageName: string; status: CastStatus },
+    dto: { status?: CastStatus; reviewReason?: string },
+  ) {
+    if (previous.status !== 'PENDING_REVIEW' || !dto.status ||
+        !['ACTIVE', 'DRAFT'].includes(dto.status) ||
+        updated.status === 'PENDING_REVIEW') {
+      return;
+    }
+
+    const store = await this.prisma.store.findUnique({
+      where: { id: updated.storeId },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        partnerAccount: { select: { userId: true } },
+      },
+    });
+    const partnerUserId = store?.partnerAccount?.userId ?? store?.ownerId;
+    if (!store || !partnerUserId) return;
+
+    const approved = updated.status === 'ACTIVE';
+    const reviewReason = this.cleanNullableText(dto.reviewReason) ??
+      (approved ? null : 'Admin yêu cầu kiểm tra và cập nhật lại thông tin Cast.');
+    const notification = await this.prisma.notificationLog.create({
+      data: {
+        userId: partnerUserId,
+        storeId: store.id,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: `user:${partnerUserId}`,
+        templateKey: 'partner.cast.reviewed.v1',
+        payload: this.toPrismaJson({
+          castId: updated.id,
+          castName: updated.stageName,
+          storeId: store.id,
+          storeName: store.name,
+          status: approved ? 'APPROVED' : 'REJECTED',
+          reviewReason,
+        }),
+      },
+      select: { id: true, createdAt: true },
+    });
+    this.socketGateway?.notifyMemberNotificationCreated(partnerUserId, {
+      id: notification.id,
+      templateKey: 'partner.cast.reviewed.v1',
+      category: 'system',
+      createdAt: notification.createdAt.toISOString(),
     });
   }
 

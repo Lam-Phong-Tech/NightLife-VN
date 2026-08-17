@@ -71,6 +71,7 @@ export class CreateAdminCastDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
 }
 
 export class UpdateAdminCastDto {
@@ -136,4 +137,8 @@ export class UpdateAdminCastDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  reviewReason?: string;
 }

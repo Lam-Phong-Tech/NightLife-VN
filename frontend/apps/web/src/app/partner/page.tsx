@@ -496,6 +496,7 @@ type PartnerNotification = {
   tone: PartnerNotificationTone;
   icon?: LucideIcon;
   unread: boolean;
+  createdAt?: string | null;
 };
 type PartnerNotificationEvent = Omit<PartnerNotification, 'unread'>;
 type ListingTabKey = 'store' | 'cast';
@@ -4504,18 +4505,23 @@ export default function PartnerPage() {
       const isBill = category === 'bill' || Boolean(detail.billId);
       const isBooking = category === 'booking' || Boolean(detail.bookingId);
       const isListingReview = detail.templateKey === 'partner.listing.reviewed.v1';
+      const isCastReview = detail.templateKey === 'partner.cast.reviewed.v1';
 
       pushPartnerNotificationEvent({
         id: `realtime:${detail.id ?? detail.billId ?? detail.bookingId ?? createdAt}`,
-        category: isListingReview ? 'Đăng tin' : isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
-        title: isListingReview
+        category: isCastReview ? 'Cast' : isListingReview ? 'Đăng tin' : isBill ? 'Hóa đơn' : isBooking ? 'Đặt chỗ' : 'Hệ thống',
+        title: isCastReview
+          ? 'Cast vừa có kết quả duyệt'
+          : isListingReview
           ? 'Yêu cầu đăng tin đã được xử lý'
           : isBill
             ? 'Có cập nhật bill mới'
             : isBooking
               ? 'Có cập nhật booking mới'
               : 'Có thông báo mới từ hệ thống',
-        message: isListingReview
+        message: isCastReview
+          ? 'Admin vừa phê duyệt hoặc từ chối Cast. Vui lòng kiểm tra thông báo để xem trạng thái và lý do.'
+          : isListingReview
           ? 'Admin vừa phê duyệt hoặc từ chối thông tin đăng của quán. Vui lòng kiểm tra lại.'
           : isBill
             ? 'Bill vừa có cập nhật mới. Mở màn gửi hóa đơn để kiểm tra trạng thái mới nhất.'
@@ -4523,10 +4529,11 @@ export default function PartnerPage() {
               ? 'Booking vừa có cập nhật mới. Mở màn quét QR để kiểm tra và xử lý kịp thời.'
               : 'Hệ thống vừa gửi một cập nhật mới cho tài khoản partner.',
         meta: `Realtime · ${formatDateTime(createdAt)}`,
-        actionLabel: isListingReview ? 'Xem đăng tin' : isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
-        panel: isListingReview ? 'listing' : isBill ? 'bill' : isBooking ? 'scan' : 'overview',
-        tone: isListingReview ? 'warning' : isBill ? 'gold' : isBooking ? 'info' : 'warning',
-        icon: isListingReview ? FileText : isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
+        actionLabel: isCastReview || isListingReview ? 'Xem đăng tin' : isBill ? 'Xem bill' : isBooking ? 'Xem booking' : 'Xem tổng quan',
+        panel: isCastReview || isListingReview ? 'listing' : isBill ? 'bill' : isBooking ? 'scan' : 'overview',
+        listingTab: isCastReview ? 'cast' : isListingReview ? 'store' : undefined,
+        tone: isCastReview || isListingReview ? 'warning' : isBill ? 'gold' : isBooking ? 'info' : 'warning',
+        icon: isCastReview || isListingReview ? FileText : isBill ? ReceiptText : isBooking ? CalendarDays : ShieldCheck,
       });
       refreshPartnerNotificationData();
     };
