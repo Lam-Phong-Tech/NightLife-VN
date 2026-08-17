@@ -3132,6 +3132,45 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('shows every requested cast for a tour stop in admin bookings', async () => {
+    const booking = {
+      id: 'booking-tour-stop-1',
+      bookingNumber: 43,
+      bookingCode: 'BK-TOUR-1',
+      user: null,
+      guest: { displayName: 'Nguyena', phone: null, email: 'guest@example.com' },
+      store: { id: 'store-grace', name: 'GRACE The Class' },
+      cast: { stageName: 'ヒナ' },
+      storeId: 'store-grace',
+      partySize: 2,
+      scheduledAt: new Date('2026-08-18T12:00:00.000Z'),
+      status: 'REQUESTED',
+      note: 'sbgdhfnjg',
+      tourBooking: {
+        bookingCode: 'TR-7N3TMY5X',
+        itinerarySnapshot: [
+          {
+            storeId: 'store-grace',
+            casts: [{ name: 'ヒナ' }, { name: 'アン' }],
+          },
+        ],
+      },
+    };
+    prisma.booking.findMany.mockResolvedValueOnce([booking] as never);
+    prisma.booking.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+
+    const result = await service.listAdminBookings({ search: 'BK-TOUR-1' });
+
+    expect(result.data[0]).toEqual(expect.objectContaining({
+      tourBookingCode: 'TR-7N3TMY5X',
+      cast: 'Cast: ヒナ, アン',
+    }));
+  });
+
   it('creates a member notification when admin confirms a booking', async () => {
     const scheduledAt = new Date('2026-07-09T14:00:00.000Z');
     const booking = {

@@ -26512,7 +26512,7 @@ export class NightlifeDataService {
           cast: true,
           user: true,
           guest: true,
-          tourBooking: { select: { bookingCode: true } },
+          tourBooking: { select: { bookingCode: true, itinerarySnapshot: true } },
         },
       }),
       this.prisma.booking.count({ where: baseWhere }),
@@ -26540,7 +26540,26 @@ export class NightlifeDataService {
       customerPhone: bk.user?.phone || bk.guest?.phone || '',
       customerEmail: bk.user?.email || bk.guest?.email || '',
       store: bk.store.name,
-      cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'Không cast',
+      cast: (() => {
+        const itinerary = bk.tourBooking?.itinerarySnapshot;
+        const stop = Array.isArray(itinerary)
+          ? itinerary.find((item: any) => item?.storeId === bk.storeId)
+          : null;
+        const tourCastNames = Array.isArray(stop?.casts)
+          ? stop.casts
+              .map((cast: any) => cast?.name)
+              .filter(
+                (name: unknown): name is string =>
+                  typeof name === 'string' && Boolean(name.trim()),
+              )
+          : [];
+
+        return tourCastNames.length
+          ? `Cast: ${tourCastNames.join(', ')}`
+          : bk.cast?.stageName
+            ? 'Cast: ' + bk.cast.stageName
+            : 'Không cast';
+      })(),
       partySize: bk.partySize,
       scheduledAt: bk.scheduledAt,
       source: 'Telegram', // Hardcoded as requested
