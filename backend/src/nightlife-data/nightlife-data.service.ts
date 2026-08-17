@@ -3827,7 +3827,11 @@ export class NightlifeDataService {
     const submittedAt = new Date();
     const requestId = `LISTING-${randomUUID().slice(0, 8).toUpperCase()}`;
 
-    const submitted = await this.prisma.$transaction(async (tx) => {
+    // Keep the whole submission idempotent when two requests race (double
+    // click, mobile retry, or a lost response). A retry reuses the same
+    // request id/media keys, so it updates the already-created review draft
+    // instead of creating another cast or another copy of its media.
+    const submitTransaction = () => this.prisma.$transaction(async (tx) => {
       const draftCastIds: string[] = [];
       const draftMediaIds: string[] = [];
 
@@ -3965,6 +3969,17 @@ export class NightlifeDataService {
         submittedAt,
       };
     });
+
+    let submitted: Awaited<ReturnType<typeof submitTransaction>>;
+    try {
+      submitted = await submitTransaction();
+    } catch (error) {
+      if (!this.isPrismaRetryableTransactionError(error)) {
+        throw error;
+      }
+
+      submitted = await submitTransaction();
+    }
 
     return {
       id: requestId,
@@ -22495,6 +22510,18 @@ export class NightlifeDataService {
       'code' in error &&
       (error as { code?: string }).code === 'P2002'
     );
+  }
+
+  private isPrismaRetryableTransactionError(error: unknown) {
+    if (error === null || error === undefined || typeof error !== 'object') {
+      return false;
+    }
+
+    const code = (error as { code?: string }).code;
+    // P2002 is a race on the stable partner-cast edit slug/media key. P2034
+    // is Prisma's serialization/write-conflict error. Retrying either makes
+    // a repeated submit converge on the same review draft.
+    return code === 'P2002' || code === 'P2034';
   }
 
   private couponQrPartnerUrl() {
