@@ -3,6 +3,7 @@ type MaybeDate = Date | string | null | undefined;
 export type BookingTelegramMessageInput = {
   bookingSequenceCode?: string | null;
   bookingCode?: string | null;
+  tourBookingCode?: string | null;
   storeName?: string | null;
   storeCategory?: string | null;
   customerName?: string | null;
@@ -193,6 +194,7 @@ function bookingDetailLines(
   return [
     input.bookingSequenceCode ? `🔢 STT: ${input.bookingSequenceCode}` : null,
     `🧾 Mã booking: ${valueOrFallback(input.bookingCode)}`,
+    input.tourBookingCode ? `🎫 Mã đặt tour: ${input.tourBookingCode}` : null,
     `👤 Khách: ${valueOrFallback(input.customerName)}`,
     `📧 Email: ${valueOrFallback(input.customerEmail)}`,
     `🏷️ Loại khách: ${customerType}`,

@@ -15760,6 +15760,7 @@ export class NightlifeDataService {
       bookingNumber: true,
       bookingCode: true,
       tourBookingId: true,
+      tourBooking: { select: { bookingCode: true } },
       storeId: true,
       castId: true,
       status: true,

@@ -48,6 +48,7 @@ export type BookingAdminNotification = {
   bookingSequenceCode?: string | null;
   bookingCode?: string | null;
   tourBookingId?: string | null;
+  tourBooking?: { bookingCode?: string | null } | null;
   status: string;
   scheduledAt?: Date | string | null;
   createdAt?: Date | string | null;
@@ -196,6 +197,7 @@ export class AdminNotificationService {
       lines: [
         ['STT', bookingSequenceCode],
         ['Booking', booking.bookingCode],
+        ['Mã đặt tour', booking.tourBooking?.bookingCode],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
         ['Email', this.customerEmail(booking)],
@@ -744,6 +746,7 @@ export class AdminNotificationService {
       bookingId: booking.id,
       bookingSequenceCode: bookingSequenceCode ?? null,
       bookingCode: booking.bookingCode,
+      tourBookingCode: booking.tourBooking?.bookingCode ?? null,
       status: booking.status,
       statusLabel: this.bookingStatusLabel(booking.status),
       scheduledAt: this.toIso(booking.scheduledAt),
@@ -827,6 +830,7 @@ export class AdminNotificationService {
     return {
       bookingSequenceCode,
       bookingCode: booking.bookingCode,
+      tourBookingCode: booking.tourBooking?.bookingCode ?? null,
       storeName: booking.store?.name,
       storeCategory: booking.store?.category,
       customerName: this.customerName(booking),

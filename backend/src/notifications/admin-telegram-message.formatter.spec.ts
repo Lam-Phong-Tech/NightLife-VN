@@ -106,4 +106,19 @@ describe('admin telegram message formatter', () => {
       expect(message).toContain('💬 Ghi chú: Bàn gần cửa sổ');
     },
   );
+
+  it('includes the parent tour booking code for a tour child booking', () => {
+    const message = formatBookingRequestTelegramMessage({
+      bookingCode: 'BK-D9GM4C',
+      tourBookingCode: 'TR-L48TTAPU',
+      customerName: 'Khách A',
+      customerEmail: 'guest@example.com',
+      storeName: 'FUTABA Bar',
+      scheduledAt: '2026-08-17T12:00:00.000Z',
+      partySize: 2,
+      timeZone: 'Asia/Bangkok',
+    });
+
+    expect(message).toContain('🎫 Mã đặt tour: TR-L48TTAPU');
+  });
 });
