@@ -1888,6 +1888,9 @@ export default function PartnerPage() {
   const [scanIssue, setScanIssue] = useState<PartnerScanIssue | null>(null);
   const [scannedTime, setScannedTime] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
+  const [scanMessageTone, setScanMessageTone] = useState<
+    'neutral' | 'success' | 'warning' | 'error'
+  >('neutral');
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirmingScan, setIsConfirmingScan] = useState(false);
   const [isReadingQrImage, setIsReadingQrImage] = useState(false);
@@ -1945,6 +1948,7 @@ export default function PartnerPage() {
   const showScanToast = useCallback(
     (title: string, description: string, tone: 'warning' | 'error' = 'warning') => {
       setScanMessage(description);
+      setScanMessageTone(tone);
       const toastKey = `${tone}:${title}:${description}`;
       const now = Date.now();
       if (
@@ -2503,6 +2507,7 @@ export default function PartnerPage() {
       }
 
       setIsScanning(true);
+      setScanMessageTone('neutral');
       setScanMessage(
         options.fromQueue ? 'Đang gửi lại mã offline...' : 'Đang xác thực mã tại quán...',
       );
@@ -2538,6 +2543,7 @@ export default function PartnerPage() {
 
         setScanIssue(issue);
         setScannedTime(new Date().toLocaleString('vi-VN'));
+        setScanMessageTone('success');
         setScanMessage(
           `${issue.statusLabel ?? issue.status} - đã đọc ${normalizedPayload.label} ${issue.code} tại ${
             issue.coupon?.store?.name ?? 'quán được phân quyền'
@@ -2724,6 +2730,7 @@ export default function PartnerPage() {
 
       stopCameraScan();
       setIsReadingQrImage(true);
+      setScanMessageTone('neutral');
       setScanMessage(`Đang đọc QR từ ảnh ${file.name}...`);
 
       try {
@@ -2738,6 +2745,7 @@ export default function PartnerPage() {
         }
 
         setScanPayload(rawValue);
+        setScanMessageTone('neutral');
         setScanMessage('Đã đọc QR từ ảnh, đang xác thực mã...');
         await scanCouponPayload(rawValue, { fromImage: true });
       } catch {
@@ -4197,6 +4205,7 @@ export default function PartnerPage() {
     setScanIssue(null);
     setScannedTime(null);
     setScanPayload('');
+    setScanMessageTone('neutral');
     setScanMessage('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   };
 
@@ -7069,8 +7078,52 @@ export default function PartnerPage() {
         )}
 
         {staffCanUseQrTools ? (
-          <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>
-            {scanMessage}
+          <div
+            role={scanMessageTone === 'error' || scanMessageTone === 'warning' ? 'alert' : 'status'}
+            aria-live="polite"
+            style={{
+              marginTop: '12px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '9px',
+              borderRadius: '10px',
+              padding:
+                scanMessageTone === 'neutral' ? '0' : '10px 12px',
+              border:
+                scanMessageTone === 'error'
+                  ? '1px solid rgba(248,113,113,.6)'
+                  : scanMessageTone === 'warning'
+                    ? '1px solid rgba(244,199,106,.56)'
+                    : scanMessageTone === 'success'
+                      ? '1px solid rgba(74,222,128,.42)'
+                      : 'none',
+              background:
+                scanMessageTone === 'error'
+                  ? 'rgba(248,113,113,.14)'
+                  : scanMessageTone === 'warning'
+                    ? 'rgba(244,199,106,.13)'
+                    : scanMessageTone === 'success'
+                      ? 'rgba(74,222,128,.1)'
+                      : 'transparent',
+              color:
+                scanMessageTone === 'error'
+                  ? '#fecaca'
+                  : scanMessageTone === 'warning'
+                    ? '#fde68a'
+                    : scanMessageTone === 'success'
+                      ? '#bbf7d0'
+                      : colors.text2,
+              fontSize: '12px',
+              lineHeight: 1.6,
+              fontWeight: scanMessageTone === 'neutral' ? 500 : 700,
+            }}
+          >
+            {scanMessageTone === 'error' || scanMessageTone === 'warning' ? (
+              <AlertTriangle size={17} style={{ flex: '0 0 auto', marginTop: '1px' }} />
+            ) : scanMessageTone === 'success' ? (
+              <CheckCircle2 size={17} style={{ flex: '0 0 auto', marginTop: '1px' }} />
+            ) : null}
+            <span>{scanMessage}</span>
           </div>
         ) : null}
       </PanelCard>
