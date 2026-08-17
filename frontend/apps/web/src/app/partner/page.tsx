@@ -391,6 +391,9 @@ type PartnerBill = {
   couponIssue?: { id: string; code: string; status: string } | null;
   media?: { id: string; originalName?: string | null; url?: string | null; mimeType?: string | null }[];
   discountRuleSnapshot?: DiscountRuleSnapshot | null;
+  /** Synthetic row used in the unified "Tất cả" view for bookings awaiting invoice entry. */
+  isUnsentBooking?: boolean;
+  unsentBooking?: PartnerBooking;
 };
 
 type DiscountRuleSnapshot = {
@@ -4015,6 +4018,37 @@ export default function PartnerPage() {
       return matchesSearch && matchesFrom && matchesTo;
     });
   }, [expiredBillPartnerBookings, normalizedBillSearchQuery, billFromMs, billToMs]);
+
+  // "Tất cả" represents every invoice-related item.  Unsent bookings do not
+  // have a Bill row in the database yet, so add them as clearly-marked
+  // synthetic rows for the unified list without creating duplicate records.
+  const allBillRows = useMemo<PartnerBill[]>(() => {
+    const unsentRows: PartnerBill[] = filteredUnsentBookings.map((booking) => ({
+      id: `unsent-booking:${booking.id}`,
+      storeId: booking.store?.id ?? null,
+      billNumber: null,
+      status: 'UNSENT',
+      totalVnd: null,
+      discountVnd: null,
+      submittedAt: null,
+      usedAt: partnerBookingConfirmedUsageAt(booking) ?? booking.scheduledAt ?? null,
+      store: booking.store ? { id: booking.store.id ?? null, name: booking.store.name } : null,
+      booking: {
+        id: booking.id,
+        bookingCode: booking.bookingCode ?? null,
+        status: booking.status,
+        scheduledAt: booking.scheduledAt,
+      },
+      isUnsentBooking: true,
+      unsentBooking: booking,
+    }));
+
+    return [...filteredScopedBillRows, ...unsentRows].sort((first, second) => {
+      const firstDate = Date.parse(first.usedAt ?? first.submittedAt ?? first.booking?.scheduledAt ?? '');
+      const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? second.booking?.scheduledAt ?? '');
+      return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
+    });
+  }, [filteredScopedBillRows, filteredUnsentBookings]);
 
   const canSubmitPartnerBill =
     !isSubmittingBill &&
@@ -8877,7 +8911,7 @@ export default function PartnerPage() {
     const isExpiredFilter = billStatusFilter === 'EXPIRED';
     const isBookingListFilter = isUnsentFilter || isExpiredFilter;
     const activeBookingList = isExpiredFilter ? filteredExpiredBillBookings : filteredUnsentBookings;
-    const activeScopedList = filteredScopedBillRows;
+    const activeScopedList = billStatusFilter === 'ALL' ? allBillRows : filteredScopedBillRows;
 
     const totalBillItems = isBookingListFilter ? activeBookingList.length : activeScopedList.length;
     const totalBillPages = Math.max(1, Math.ceil(totalBillItems / BILL_ITEMS_PER_PAGE));
@@ -9068,7 +9102,7 @@ export default function PartnerPage() {
               {/* Status tabs desktop */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 {[
-                  { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
+                  { key: 'ALL', label: 'Tất cả', count: allBillRows.length },
                   { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
                   { key: 'EXPIRED', label: 'Hết hạn', count: filteredExpiredBillBookings.length },
                   {
@@ -9329,7 +9363,7 @@ export default function PartnerPage() {
                 }}
               >
                 {[
-                  { key: 'ALL', label: 'Tất cả', count: dateFilteredStoreBills.length },
+                  { key: 'ALL', label: 'Tất cả', count: allBillRows.length },
                   { key: 'UNSENT', label: 'Chưa gửi', count: filteredUnsentBookings.length },
                   { key: 'EXPIRED', label: 'Hết hạn', count: filteredExpiredBillBookings.length },
                   {
@@ -9636,6 +9670,7 @@ export default function PartnerPage() {
                   ) : paginatedScopedBillRows.length ? (
                     paginatedScopedBillRows.map((bill, index) => {
                       const active = selectedBillId === bill.id;
+                      const isUnsentBooking = Boolean(bill.isUnsentBooking && bill.unsentBooking);
                       const billCode = getPartnerBillBookingCodeDisplay(bill);
                       const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
 
@@ -9644,11 +9679,11 @@ export default function PartnerPage() {
                           key={bill.id}
                           role="button"
                           tabIndex={0}
-                          onClick={() => fillBillFormFromRow(bill)}
+                          onClick={() => (isUnsentBooking ? fillBillFormFromBooking(bill.unsentBooking!) : fillBillFormFromRow(bill))}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
-                              fillBillFormFromRow(bill);
+                              isUnsentBooking ? fillBillFormFromBooking(bill.unsentBooking!) : fillBillFormFromRow(bill);
                             }
                           }}
                           style={{
@@ -9666,11 +9701,11 @@ export default function PartnerPage() {
                             {bill.store?.name ?? selectedBillStore?.name ?? 'Quán'}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldPale, fontSize: '12.5px', fontWeight: 900 }}>
-                            {moneyVnd(bill.totalVnd ?? 0)}
+                            {isUnsentBooking ? 'NHẬP HÓA ĐƠN' : moneyVnd(bill.totalVnd ?? 0)}
                           </td>
                           <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
-                            <StatusPill tone={billStatusTone(bill.status)}>
-                              {translateBillStatus(bill.status)}
+                            <StatusPill tone={isUnsentBooking ? 'gold' : billStatusTone(bill.status)}>
+                              {isUnsentBooking ? 'Chưa gửi' : translateBillStatus(bill.status)}
                             </StatusPill>
                           </td>
                         </tr>
@@ -9760,9 +9795,10 @@ export default function PartnerPage() {
               ) : paginatedScopedBillRows.length ? (
                 paginatedScopedBillRows.map((bill, index) => {
                   const active = selectedBillId === bill.id;
+                  const isUnsentBooking = Boolean(bill.isUnsentBooking && bill.unsentBooking);
                   const billCode = getPartnerBillBookingCodeDisplay(bill);
                   const storeName = bill.store?.name ?? selectedBillStore?.name ?? 'Quán';
-                  const statusTone = billStatusTone(bill.status);
+                  const statusTone = isUnsentBooking ? 'gold' : billStatusTone(bill.status);
                   const rowIndex = (safeBillCurrentPage - 1) * BILL_ITEMS_PER_PAGE + index + 1;
                   const dateStr = bill.submittedAt ? bill.submittedAt.slice(0, 10) : bill.usedAt ? bill.usedAt.slice(0, 10) : '';
 
@@ -9771,7 +9807,7 @@ export default function PartnerPage() {
                       key={bill.id}
                       type="button"
                       className="partner-bill-mobile-card"
-                      onClick={() => fillBillFormFromRow(bill)}
+                      onClick={() => (isUnsentBooking ? fillBillFormFromBooking(bill.unsentBooking!) : fillBillFormFromRow(bill))}
                       style={{
                         textAlign: 'left',
                         width: '100%',
@@ -9780,7 +9816,7 @@ export default function PartnerPage() {
                       <div className="partner-bill-mobile-head">
                         <span className="partner-bill-mobile-index">#{rowIndex}</span>
                         <span className="partner-bill-mobile-code">{billCode}</span>
-                        <StatusPill tone={statusTone}>{translateBillStatus(bill.status)}</StatusPill>
+                        <StatusPill tone={statusTone}>{isUnsentBooking ? 'Chưa gửi' : translateBillStatus(bill.status)}</StatusPill>
                       </div>
                       <div className="partner-bill-mobile-store">{storeName}</div>
                       <div
@@ -9794,8 +9830,8 @@ export default function PartnerPage() {
                         }}
                       >
                         <div>
-                          <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>Tổng tiền</small>
-                          <b style={{ fontSize: '14px', color: colors.goldBright }}>{moneyVnd(bill.totalVnd ?? 0)}</b>
+                          <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>{isUnsentBooking ? 'Thao tác' : 'Tổng tiền'}</small>
+                          <b style={{ fontSize: '14px', color: colors.goldBright }}>{isUnsentBooking ? 'NHẬP HÓA ĐƠN' : moneyVnd(bill.totalVnd ?? 0)}</b>
                         </div>
                         <div>
                           <small style={{ display: 'block', fontSize: '11px', color: colors.muted }}>
