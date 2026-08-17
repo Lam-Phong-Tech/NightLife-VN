@@ -5199,6 +5199,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             touch-action: pan-y;
           }
 
+          .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: 34% 0 0;
+            z-index: 1;
+            background: linear-gradient(
+              to top,
+              rgba(10, 9, 13, .82) 0%,
+              rgba(10, 9, 13, .5) 36%,
+              rgba(10, 9, 13, .08) 74%,
+              transparent 100%
+            );
+            pointer-events: none;
+          }
+
           .hero-top {
             top: 12px;
             left: 16px;
@@ -5234,10 +5249,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .hero-name h1 {
             display: block;
             font-size: 28px;
+            color: #f0dda8;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .78);
           }
 
           .hero-name div {
             margin-top: 10px;
+            color: #fff8e7;
+            text-shadow: 0 1px 5px rgba(0, 0, .8);
           }
 
           .hero-name div > span {
