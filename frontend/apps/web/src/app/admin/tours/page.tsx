@@ -774,34 +774,8 @@ function AdminToursContent() {
                     )}
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginBottom: '4px' }}>Gán liên kết hình ảnh (URL)</div>
-                      <input 
-                        value={formData.coverUrl}
-                        onChange={(e) => {
-                          if (pendingCoverMediaIdRef.current) {
-                            const pendingId = pendingCoverMediaIdRef.current;
-                            pendingCoverMediaIdRef.current = null;
-                            void deleteUploadedMedia(pendingId).catch(() => undefined);
-                          }
-                          setFormData(prev => ({ ...prev, coverUrl: e.target.value }));
-                        }}
-                        placeholder="https://images.unsplash.com/..."
-                        style={{ 
-                          ...boxS, 
-                          width: '100%', 
-                          padding: '8px 10px', 
-                          fontSize: '12px',
-                          border: formData.coverUrl && !isValidImageUrl(formData.coverUrl) 
-                            ? '1px solid #e88b99' 
-                            : '1px solid rgba(255,255,255,.09)'
-                        }}
-                      />
-                      {formData.coverUrl && !isValidImageUrl(formData.coverUrl) && (
-                        <div style={{ fontSize: '10.5px', color: '#e88b99', marginTop: '4px', fontWeight: 500 }}>
-                          * Đường dẫn phải là ảnh hợp lệ; không chấp nhận URL video, YouTube hoặc Vimeo
-                        </div>
-                      )}
+                    <div style={{ fontSize: '10.5px', color: '#8c8679' }}>
+                      Chỉ hỗ trợ tải ảnh từ máy
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
