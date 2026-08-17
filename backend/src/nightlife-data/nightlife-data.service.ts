@@ -4399,6 +4399,7 @@ export class NightlifeDataService {
       select: {
         id: true,
         createdAt: true,
+        templateKey: true,
         payload: true,
         bill: {
           select: {
@@ -4409,7 +4410,7 @@ export class NightlifeDataService {
         },
       },
     });
-    const notificationKeyFor = (templateKey: string, id: string) =>
+    const notificationKeyFor = (templateKey: string | null, id: string) =>
       templateKey === 'audit.bill.review.v1'
         ? `bill-review:${id}`
         : templateKey === 'partner.cast.reviewed.v1'
