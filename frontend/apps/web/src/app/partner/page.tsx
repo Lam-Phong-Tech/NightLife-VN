@@ -1108,6 +1108,13 @@ const normalizeListingUrlList = (value: unknown) => {
   return normalize(splitInlineList(safeListingText(value)));
 };
 
+const normalizeListingMediaKey = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace('/storage/files/', '/storage/media/')
+    .replace('/storage/public/', '/storage/media/');
+
 const isValidUrl = (value: string) => {
   try {
     const url = new URL(value);
@@ -4363,7 +4370,11 @@ export default function PartnerPage() {
           : defaultListingOpeningHours(),
         tags: normalizeListingTextList(d.tags),
         menuGroups: d.menuGroups ?? [],
-        galleryUrls: normalizeListingUrlList(d.galleryUrls),
+        galleryUrls: normalizeListingUrlList(d.galleryUrls).filter(
+          (url) =>
+            normalizeListingMediaKey(url) !==
+            normalizeListingMediaKey(safeListingText(d.coverImageUrl)),
+        ),
         videoUrls: normalizeListingUrlList(d.videoUrls),
         pricingItems: d.pricingItems ?? [],
         castProfiles: (d.castProfiles ?? []).map((cast: any, index: number) => ({
@@ -5231,7 +5242,11 @@ export default function PartnerPage() {
     ]
       .filter(Boolean)
       .join(', ');
-    const galleryUrls = listingDraft.galleryUrls.filter((url) => url.trim());
+    const coverMediaKey = normalizeListingMediaKey(listingDraft.coverImageUrl);
+    const galleryUrls = listingDraft.galleryUrls.filter(
+      (url) =>
+        url.trim() && normalizeListingMediaKey(url) !== coverMediaKey,
+    );
     const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
     const mediaUrls = [
       listingDraft.coverImageUrl.trim(),

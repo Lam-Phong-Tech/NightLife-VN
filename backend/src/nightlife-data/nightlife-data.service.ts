@@ -3596,8 +3596,8 @@ export class NightlifeDataService {
     const review = await this.getLatestPartnerListingReview(store.id);
     const draftIsOlderThanApprovedReview = Boolean(
       review?.status === 'APPROVED' &&
-        review.reviewedAt &&
-        (!draft?.updatedAt || review.reviewedAt >= draft.updatedAt.toISOString()),
+      review.reviewedAt &&
+      (!draft?.updatedAt || review.reviewedAt >= draft.updatedAt.toISOString()),
     );
     // An approved Partner request publishes cast/store/media records, while
     // the shared listing Content row can still contain the pre-review draft.
@@ -3853,188 +3853,191 @@ export class NightlifeDataService {
     // click, mobile retry, or a lost response). A retry reuses the same
     // request id/media keys, so it updates the already-created review draft
     // instead of creating another cast or another copy of its media.
-    const submitTransaction = () => this.prisma.$transaction(async (tx) => {
-      const draftCastIds: string[] = [];
-      const draftMediaIds: string[] = [];
+    const submitTransaction = () =>
+      this.prisma.$transaction(async (tx) => {
+        const draftCastIds: string[] = [];
+        const draftMediaIds: string[] = [];
 
-      for (const [index, castProfile] of castProfiles.entries()) {
-        const cast = await this.upsertPartnerListingReviewCast(
-          tx,
-          store.id,
-          castProfile,
-          requestId,
-          index,
-          submittedAt,
+        for (const [index, castProfile] of castProfiles.entries()) {
+          const cast = await this.upsertPartnerListingReviewCast(
+            tx,
+            store.id,
+            castProfile,
+            requestId,
+            index,
+            submittedAt,
+          );
+          draftCastIds.push(cast.id);
+
+          const castMediaUrls = this.partnerListingCastMediaUrls(castProfile);
+          const existingDraftMedia = await tx.media.findMany({
+            where: { castId: cast.id, deletedAt: null },
+            select: { id: true, url: true },
+          });
+          const existingMediaByUrl = new Map(
+            existingDraftMedia.map((media) => [
+              this.partnerMediaUrlKey(media.url),
+              media,
+            ]),
+          );
+          for (const [mediaIndex, url] of castMediaUrls.entries()) {
+            const purpose = this.partnerListingCastMediaPurpose(
+              castProfile,
+              url,
+              mediaIndex,
+            );
+            const existingMedia = existingMediaByUrl.get(
+              this.partnerMediaUrlKey(url),
+            );
+            if (existingMedia) {
+              await tx.media.update({
+                where: { id: existingMedia.id },
+                data: {
+                  purpose,
+                  status: 'READY',
+                  access: 'PUBLIC',
+                },
+              });
+              draftMediaIds.push(existingMedia.id);
+              continue;
+            }
+
+            const uploadedDraftMedia = await tx.media.findFirst({
+              where: {
+                ownerId: user.id,
+                storeId: store.id,
+                castId: null,
+                url: { in: [url, this.protectedMediaUrl(url)] },
+                purpose: {
+                  in: ['PARTNER_CAST_IMAGE', 'PARTNER_CAST_VIDEO'],
+                },
+                deletedAt: null,
+              },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true },
+            });
+
+            if (uploadedDraftMedia) {
+              await tx.media.update({
+                where: { id: uploadedDraftMedia.id },
+                data: {
+                  castId: cast.id,
+                  storeId: null,
+                  purpose,
+                  status: 'HIDDEN',
+                  access: 'PROTECTED',
+                },
+              });
+              draftMediaIds.push(uploadedDraftMedia.id);
+              continue;
+            }
+
+            const media = await this.createPartnerRequestMedia(
+              {
+                requestId,
+                url,
+                index: mediaIndex,
+                castId: cast.id,
+                purpose,
+              },
+              tx,
+            );
+            draftMediaIds.push(media.id);
+          }
+
+          // A re-submission replaces the review draft's media set. Archive files
+          // removed in Partner so they cannot remain in Admin or accumulate as
+          // duplicate videos on later submissions.
+          await tx.media.updateMany({
+            where: {
+              castId: cast.id,
+              deletedAt: null,
+              ...(draftMediaIds.length ? { id: { notIn: draftMediaIds } } : {}),
+            },
+            data: {
+              status: 'HIDDEN',
+              access: 'PROTECTED',
+              deletedAt: submittedAt,
+            },
+          });
+        }
+
+        if (draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: draftMediaIds } },
+            data: { status: 'READY', access: 'PUBLIC' },
+          });
+          const promotedMedia = await tx.media.findMany({
+            where: { id: { in: draftMediaIds } },
+            select: { id: true, url: true },
+          });
+          await Promise.all(
+            promotedMedia.map((media) => {
+              const publicUrl = this.publicMediaUrl(media.url);
+              return publicUrl === media.url
+                ? Promise.resolve()
+                : tx.media.update({
+                    where: { id: media.id },
+                    data: { url: publicUrl },
+                  });
+            }),
+          );
+        }
+
+        // Cast-only submissions must also update the shared Partner draft.
+        // Otherwise a reload reads the previous Content snapshot and restores
+        // stale status/IDs over the Cast data that was just submitted.
+        const submittedById = new Map(
+          castProfiles
+            .map(
+              (profile) =>
+                [this.cleanNullableText(profile.id), profile] as const,
+            )
+            .filter(([id]) => Boolean(id)),
         );
-        draftCastIds.push(cast.id);
-
-        const castMediaUrls = this.partnerListingCastMediaUrls(castProfile);
-        const existingDraftMedia = await tx.media.findMany({
-          where: { castId: cast.id, deletedAt: null },
-          select: { id: true, url: true },
-        });
-        const existingMediaByUrl = new Map(
-          existingDraftMedia.map((media) => [
-            this.partnerMediaUrlKey(media.url),
-            media,
+        const submittedByName = new Map(
+          castProfiles.map((profile) => [
+            this.normalizeToken(profile.stageName),
+            profile,
           ]),
         );
-        for (const [mediaIndex, url] of castMediaUrls.entries()) {
-          const purpose = this.partnerListingCastMediaPurpose(
-            castProfile,
-            url,
-            mediaIndex,
-          );
-          const existingMedia = existingMediaByUrl.get(
-            this.partnerMediaUrlKey(url),
-          );
-          if (existingMedia) {
-            await tx.media.update({
-              where: { id: existingMedia.id },
-              data: {
-                purpose,
-                status: 'READY',
-                access: 'PUBLIC',
-              },
-            });
-            draftMediaIds.push(existingMedia.id);
-            continue;
+        const mergedCastProfiles = existingListingPayload.castProfiles.map(
+          (profile) =>
+            submittedById.get(this.cleanNullableText(profile.id) ?? '') ??
+            submittedByName.get(this.normalizeToken(profile.stageName)) ??
+            profile,
+        );
+        const mergedKeys = new Set(
+          mergedCastProfiles.map(
+            (profile) =>
+              this.cleanNullableText(profile.id) ??
+              this.normalizeToken(profile.stageName),
+          ),
+        );
+        for (const profile of castProfiles) {
+          const key =
+            this.cleanNullableText(profile.id) ??
+            this.normalizeToken(profile.stageName);
+          if (!mergedKeys.has(key)) {
+            mergedCastProfiles.push(profile);
+            mergedKeys.add(key);
           }
-
-          const uploadedDraftMedia = await tx.media.findFirst({
-            where: {
-              ownerId: user.id,
-              storeId: store.id,
-              castId: null,
-              url: { in: [url, this.protectedMediaUrl(url)] },
-              purpose: {
-                in: ['PARTNER_CAST_IMAGE', 'PARTNER_CAST_VIDEO'],
-              },
-              deletedAt: null,
-            },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true },
-          });
-
-          if (uploadedDraftMedia) {
-            await tx.media.update({
-              where: { id: uploadedDraftMedia.id },
-              data: {
-                castId: cast.id,
-                storeId: null,
-                purpose,
-                status: 'HIDDEN',
-                access: 'PROTECTED',
-              },
-            });
-            draftMediaIds.push(uploadedDraftMedia.id);
-            continue;
-          }
-
-          const media = await this.createPartnerRequestMedia(
-            {
-              requestId,
-              url,
-              index: mediaIndex,
-              castId: cast.id,
-              purpose,
-            },
+        }
+        if (existingListingDraft) {
+          await this.upsertPartnerListingDraftContent(
+            user,
+            store,
+            { ...existingListingPayload, castProfiles: mergedCastProfiles },
             tx,
           );
-          draftMediaIds.push(media.id);
         }
 
-        // A re-submission replaces the review draft's media set. Archive files
-        // removed in Partner so they cannot remain in Admin or accumulate as
-        // duplicate videos on later submissions.
-        await tx.media.updateMany({
-          where: {
-            castId: cast.id,
-            deletedAt: null,
-            ...(draftMediaIds.length
-              ? { id: { notIn: draftMediaIds } }
-              : {}),
-          },
-          data: {
-            status: 'HIDDEN',
-            access: 'PROTECTED',
-            deletedAt: submittedAt,
-          },
-        });
-      }
-
-      if (draftMediaIds.length) {
-        await tx.media.updateMany({
-          where: { id: { in: draftMediaIds } },
-          data: { status: 'READY', access: 'PUBLIC' },
-        });
-        const promotedMedia = await tx.media.findMany({
-          where: { id: { in: draftMediaIds } },
-          select: { id: true, url: true },
-        });
-        await Promise.all(
-          promotedMedia.map((media) => {
-            const publicUrl = this.publicMediaUrl(media.url);
-            return publicUrl === media.url
-              ? Promise.resolve()
-              : tx.media.update({
-                  where: { id: media.id },
-                  data: { url: publicUrl },
-                });
-          }),
-        );
-      }
-
-      // Cast-only submissions must also update the shared Partner draft.
-      // Otherwise a reload reads the previous Content snapshot and restores
-      // stale status/IDs over the Cast data that was just submitted.
-      const submittedById = new Map(
-        castProfiles
-          .map((profile) => [this.cleanNullableText(profile.id), profile] as const)
-          .filter(([id]) => Boolean(id)),
-      );
-      const submittedByName = new Map(
-        castProfiles.map((profile) => [
-          this.normalizeToken(profile.stageName),
-          profile,
-        ]),
-      );
-      const mergedCastProfiles = existingListingPayload.castProfiles.map(
-        (profile) =>
-          submittedById.get(this.cleanNullableText(profile.id) ?? '') ??
-          submittedByName.get(this.normalizeToken(profile.stageName)) ??
-          profile,
-      );
-      const mergedKeys = new Set(
-        mergedCastProfiles.map((profile) =>
-          this.cleanNullableText(profile.id) ??
-          this.normalizeToken(profile.stageName),
-        ),
-      );
-      for (const profile of castProfiles) {
-        const key =
-          this.cleanNullableText(profile.id) ??
-          this.normalizeToken(profile.stageName);
-        if (!mergedKeys.has(key)) {
-          mergedCastProfiles.push(profile);
-          mergedKeys.add(key);
-        }
-      }
-      if (existingListingDraft) {
-        await this.upsertPartnerListingDraftContent(
-          user,
-          store,
-          { ...existingListingPayload, castProfiles: mergedCastProfiles },
-          tx,
-        );
-      }
-
-      return {
-        draftCastIds,
-        draftMediaIds,
-        submittedAt,
-      };
-    });
+        return {
+          draftCastIds,
+          draftMediaIds,
+          submittedAt,
+        };
+      });
 
     let submitted: Awaited<ReturnType<typeof submitTransaction>>;
     try {
@@ -19167,9 +19170,7 @@ export class NightlifeDataService {
           return null;
         }
 
-        const items = Array.isArray(groupRecord.items)
-          ? groupRecord.items
-          : [];
+        const items = Array.isArray(groupRecord.items) ? groupRecord.items : [];
 
         return {
           name: this.cleanText(
@@ -19179,7 +19180,8 @@ export class NightlifeDataService {
             const itemRecord = this.asRecord(item) ?? {};
             const description =
               itemRecord.description ?? itemRecord.desc ?? undefined;
-            const imageUrl = itemRecord.imageUrl ?? itemRecord.thumb ?? undefined;
+            const imageUrl =
+              itemRecord.imageUrl ?? itemRecord.thumb ?? undefined;
 
             return {
               name: this.cleanText(
@@ -19199,9 +19201,7 @@ export class NightlifeDataService {
           }),
         };
       })
-      .filter(
-        (group): group is PartnerListingMenuGroupDto => group !== null,
-      );
+      .filter((group): group is PartnerListingMenuGroupDto => group !== null);
   }
 
   private extractWardFromStoreAddress(address?: string | null) {
@@ -19663,9 +19663,7 @@ export class NightlifeDataService {
         profile.albumImageUrls !== undefined
           ? albumImageUrls
           : (storeProfile?.albumImageUrls ?? []),
-      mediaUrls: hasMediaUrls
-        ? mediaUrls
-        : (storeProfile?.mediaUrls ?? []),
+      mediaUrls: hasMediaUrls ? mediaUrls : (storeProfile?.mediaUrls ?? []),
     };
   }
 
@@ -19939,12 +19937,12 @@ export class NightlifeDataService {
             m.purpose === 'STORE_COVER' ||
             m.purpose === 'COVER_IMAGE'),
       )?.url ??
-      storeMedia.find(
-        (m) => m.type === 'IMAGE' && this.isStoreGalleryMedia(m),
-      )?.url ??
+      storeMedia.find((m) => m.type === 'IMAGE' && this.isStoreGalleryMedia(m))
+        ?.url ??
       null;
-    const galleryUrls =
-      dto.galleryUrls !== undefined
+    const coverMediaKey = this.partnerMediaUrlKey(coverImageUrl);
+    const galleryUrls = this.uniqueMediaUrls(
+      (dto.galleryUrls !== undefined
         ? this.cleanStringArray(dto.galleryUrls, 12)
         : storeMedia
             .filter(
@@ -19954,7 +19952,10 @@ export class NightlifeDataService {
                 this.isStoreGalleryMedia(m),
             )
             .map((m) => m.url)
-            .slice(0, 12);
+            .slice(0, 12)
+      ).filter((url) => this.partnerMediaUrlKey(url) !== coverMediaKey),
+      12,
+    );
     const videoUrls =
       dto.videoUrls !== undefined
         ? this.cleanStringArray(dto.videoUrls, 8)
@@ -23606,7 +23607,12 @@ export class NightlifeDataService {
   private resolvePartnerDashboardPeriod(
     input?: string,
   ): PartnerDashboardPeriod {
-    if (input === 'today' || input === 'seven' || input === 'thirty' || input === 'custom') {
+    if (
+      input === 'today' ||
+      input === 'seven' ||
+      input === 'thirty' ||
+      input === 'custom'
+    ) {
       return input;
     }
 

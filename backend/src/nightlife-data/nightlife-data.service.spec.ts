@@ -3548,7 +3548,9 @@ describe('NightlifeDataService', () => {
         scheduledAt: '2026-06-30T14:00:00.000Z',
         partySize: 4,
       }),
-    ).rejects.toThrow('Coupons are not available for massage and restaurant bookings');
+    ).rejects.toThrow(
+      'Coupons are not available for massage and restaurant bookings',
+    );
 
     expect(prisma.coupon.create).not.toHaveBeenCalled();
     expect(prisma.couponIssue.create).not.toHaveBeenCalled();
@@ -3655,19 +3657,19 @@ describe('NightlifeDataService', () => {
       .mockResolvedValueOnce({ code: 'CAMPAIGN-campaign-1' })
       .mockResolvedValueOnce({ id: 'coupon-campaign-1' })
       .mockResolvedValue({
-      id: 'coupon-campaign-1',
-      code: 'CAMPAIGN-campaign-1',
-      name: 'Welcome campaign',
-      storeId: 'store-1',
-      discountType: 'PERCENT',
-      discountValue: 5,
-      maxDiscountVnd: null,
-      minSpendVnd: null,
-      endsAt: new Date('2026-07-31T00:00:00.000Z'),
-      usageLimit: null,
-      usedCount: 0,
-      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-    });
+        id: 'coupon-campaign-1',
+        code: 'CAMPAIGN-campaign-1',
+        name: 'Welcome campaign',
+        storeId: 'store-1',
+        discountType: 'PERCENT',
+        discountValue: 5,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+        endsAt: new Date('2026-07-31T00:00:00.000Z'),
+        usageLimit: null,
+        usedCount: 0,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      });
     prisma.coupon.create.mockResolvedValue({ id: 'coupon-campaign-1' });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.couponIssue.create.mockResolvedValue({
@@ -4511,7 +4513,13 @@ describe('NightlifeDataService', () => {
         phone: '0901234567',
         email: 'guesttour@example.com',
       },
-      qr: { id: 'qr-1', code: 'TQR-123456', status: 'ACTIVE', expiresAt: new Date(), completedAt: null },
+      qr: {
+        id: 'qr-1',
+        code: 'TQR-123456',
+        status: 'ACTIVE',
+        expiresAt: new Date(),
+        completedAt: null,
+      },
       bookings: [
         {
           id: 'child-1',
@@ -4525,10 +4533,18 @@ describe('NightlifeDataService', () => {
       ],
       checkIns: [],
     };
-    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(createdTourBooking as never);
-    prisma.notificationLog.create.mockResolvedValue({ id: 'log-tour-email-1' } as never);
-    prisma.notificationLog.update.mockResolvedValue({ id: 'log-tour-email-1' } as never);
-    emailNotificationService.sendBookingQrEmail.mockResolvedValue({ messageId: 'msg-tour-1' });
+    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(
+      createdTourBooking as never,
+    );
+    prisma.notificationLog.create.mockResolvedValue({
+      id: 'log-tour-email-1',
+    } as never);
+    prisma.notificationLog.update.mockResolvedValue({
+      id: 'log-tour-email-1',
+    } as never);
+    emailNotificationService.sendBookingQrEmail.mockResolvedValue({
+      messageId: 'msg-tour-1',
+    });
 
     await service.createGuestTourBooking('tour-1', {
       displayName: 'Guest Tour User',
@@ -4627,14 +4643,24 @@ describe('NightlifeDataService', () => {
       itinerarySnapshot: [],
       note: 'Member tour note',
       tour: { id: 'tour-1', title: 'Hanoi Night Crawl' },
-      user: { id: 'user-mem-1', email: 'member@example.com', displayName: 'Member User' },
+      user: {
+        id: 'user-mem-1',
+        email: 'member@example.com',
+        displayName: 'Member User',
+      },
       guest: {
         id: 'guest-tour-2',
         displayName: 'Member User',
         phone: '0987654321',
         email: 'member@example.com',
       },
-      qr: { id: 'qr-2', code: 'TQR-654321', status: 'ACTIVE', expiresAt: new Date(), completedAt: null },
+      qr: {
+        id: 'qr-2',
+        code: 'TQR-654321',
+        status: 'ACTIVE',
+        expiresAt: new Date(),
+        completedAt: null,
+      },
       bookings: [
         {
           id: 'child-2',
@@ -4647,10 +4673,18 @@ describe('NightlifeDataService', () => {
       ],
       checkIns: [],
     };
-    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(createdTourBooking as never);
-    prisma.notificationLog.create.mockResolvedValue({ id: 'log-tour-email-2' } as never);
-    prisma.notificationLog.update.mockResolvedValue({ id: 'log-tour-email-2' } as never);
-    emailNotificationService.sendBookingQrEmail.mockResolvedValue({ messageId: 'msg-tour-2' });
+    prisma.tourBooking.findUniqueOrThrow.mockResolvedValue(
+      createdTourBooking as never,
+    );
+    prisma.notificationLog.create.mockResolvedValue({
+      id: 'log-tour-email-2',
+    } as never);
+    prisma.notificationLog.update.mockResolvedValue({
+      id: 'log-tour-email-2',
+    } as never);
+    emailNotificationService.sendBookingQrEmail.mockResolvedValue({
+      messageId: 'msg-tour-2',
+    });
 
     const memberUser = {
       id: 'user-mem-1',
@@ -5366,6 +5400,13 @@ describe('NightlifeDataService', () => {
       ownerId: null,
       media: [
         {
+          id: 'store-cover-1',
+          url: 'https://cdn.example.com/cover.jpg',
+          purpose: 'store-hero',
+          type: 'IMAGE',
+          castId: null,
+        },
+        {
           id: 'menu-image-1',
           url: 'https://cdn.example.com/menu.jpg',
           purpose: 'STORE_MENU_ITEM',
@@ -5405,6 +5446,7 @@ describe('NightlifeDataService', () => {
               ],
             },
           ],
+          coverImageUrl: 'https://cdn.example.com/cover.jpg',
           galleryUrls: ['https://cdn.example.com/gallery.jpg'],
         }),
       }),
@@ -5505,9 +5547,7 @@ describe('NightlifeDataService', () => {
               status: 'ACTIVE',
               avatarUrl: 'https://cdn.example.com/aoi.jpg',
               albumImageUrls: [],
-              mediaUrls: [
-                'https://cdn.example.com/aoi.mp4',
-              ],
+              mediaUrls: ['https://cdn.example.com/aoi.mp4'],
             }),
           ],
         }),
@@ -10432,7 +10472,8 @@ describe('NightlifeDataService', () => {
         where: { id: 'store-draft-1' },
         data: expect.objectContaining({
           name: 'New Club',
-          address: '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Thành phố Hồ Chí Minh',
+          address:
+            '22 Nguyen Hue, Phuong Sai Gon, Quan 1, Thành phố Hồ Chí Minh',
           city: 'Thành phố Hồ Chí Minh',
           district: 'Quan 1',
           areaId: 'area-sai-gon',
