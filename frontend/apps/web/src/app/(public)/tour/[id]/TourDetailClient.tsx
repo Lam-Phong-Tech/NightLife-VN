@@ -1030,7 +1030,16 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
             <div className={styles.bookingHeader}>
               <div>
                 <h2>{tx("bookThisTour")}</h2>
-                <p>{displayTargetLabel ? `${tx("bookingPoint")}: ${displayTargetLabel}` : tx("invalidTour")}</p>
+                {displayTargetLabel ? (
+                  <p>
+                    <span className="notranslate" translate="no" data-no-translate="true">
+                      {tx("bookingPoint")}:
+                    </span>{" "}
+                    <span>{displayTargetLabel}</span>
+                  </p>
+                ) : (
+                  <p>{tx("invalidTour")}</p>
+                )}
               </div>
               <div
                 className={`${styles.priceTier} notranslate`}

@@ -47,7 +47,15 @@ export function ResponsiveMedia({
   };
 
   return (
-    <picture style={{ display: "block", width: "100%", height: "100%" }}>
+    <picture
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "block",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       {useVariants && avifSrcSet ? <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} /> : null}
       {useVariants && webpSrcSet ? <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} /> : null}
       <img
