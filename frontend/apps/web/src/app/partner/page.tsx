@@ -2173,7 +2173,18 @@ export default function PartnerPage() {
 
   const staffPermissionsForDisplay = (staff: any): string[] => {
     const permissions = Array.isArray(staff?.permissions) ? staff.permissions : [];
-    return permissions;
+    // Accounts provisioned from the Admin portal used a legacy wildcard.
+    // Expand it in the form so the next toggle writes concrete permissions.
+    return Array.from(
+      new Set(
+        permissions.includes(staffStoreWildcardPermission)
+          ? [
+              ...permissions.filter((permission) => permission !== staffStoreWildcardPermission),
+              ...staffPermissionOptions.map((option) => option.key),
+            ]
+          : permissions,
+      ),
+    );
   };
 
   const handleToggleStaffPermission = async (

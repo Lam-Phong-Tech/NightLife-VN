@@ -67,6 +67,34 @@ describe('PartnerStaffService', () => {
   });
 
   describe('updateStaffPermissions', () => {
+    it('converts the legacy staff wildcard into editable concrete permissions', async () => {
+      prisma.storePermission.findFirst.mockResolvedValue({
+        userId: 'user-1',
+        storeId: 'store-1',
+      } as any);
+      prisma.storePermission.update.mockResolvedValue({
+        userId: 'user-1',
+        permissions: ['coupon.scan', 'checkin.confirm'],
+        createdAt: new Date('2026-07-23T00:00:00.000Z'),
+        user: {
+          email: 'staff@example.com',
+          displayName: 'Staff Name',
+          phone: null,
+          status: 'ACTIVE',
+        },
+      } as any);
+
+      await service.updateStaffPermissions('user-1', 'store-1', [
+        'store.staff.all',
+      ]);
+
+      expect(prisma.storePermission.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { permissions: ['coupon.scan', 'checkin.confirm'] },
+        }),
+      );
+    });
+
     it('updates staff permissions to an empty list', async () => {
       prisma.storePermission.findFirst.mockResolvedValue({
         userId: 'user-1',

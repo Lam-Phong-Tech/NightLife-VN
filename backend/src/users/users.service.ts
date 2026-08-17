@@ -242,14 +242,14 @@ export class UsersService {
                 },
               },
               update: {
-                permissions: ['store.staff.all'],
+                permissions: ['coupon.scan', 'checkin.confirm'],
                 status: 'ACTIVE',
                 deletedAt: null,
               },
               create: {
                 userId: id,
                 storeId,
-                permissions: ['store.staff.all'],
+                permissions: ['coupon.scan', 'checkin.confirm'],
                 status: 'ACTIVE',
               },
             });
@@ -399,7 +399,7 @@ export class UsersService {
             data: {
               userId: user.id,
               storeId: input.storeId,
-              permissions: ['store.staff.all'],
+              permissions: ['coupon.scan', 'checkin.confirm'],
               status: 'ACTIVE',
             },
           });

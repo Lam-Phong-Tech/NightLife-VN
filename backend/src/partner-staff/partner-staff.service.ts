@@ -10,6 +10,7 @@ import { CreateStaffDto } from './dto/create-staff.dto';
 
 const DEFAULT_STAFF_PERMISSIONS = ['coupon.scan', 'checkin.confirm'];
 const ALLOWED_STAFF_PERMISSIONS = new Set(DEFAULT_STAFF_PERMISSIONS);
+const LEGACY_STAFF_WILDCARD_PERMISSION = 'store.staff.all';
 
 @Injectable()
 export class PartnerStaffService {
@@ -54,9 +55,22 @@ export class PartnerStaffService {
       throw new BadRequestException('permissions must be an array');
     }
 
-    const normalized = Array.from(
+    const requested = Array.from(
       new Set(permissions.map((permission) => permission.trim()).filter(Boolean)),
     );
+    // Older staff accounts created from Admin used a wildcard that is not an
+    // editable Partner permission. Expand it once into the two concrete
+    // capabilities so existing accounts can be updated safely.
+    const normalized = requested.includes(LEGACY_STAFF_WILDCARD_PERMISSION)
+      ? Array.from(
+          new Set([
+            ...requested.filter(
+              (permission) => permission !== LEGACY_STAFF_WILDCARD_PERMISSION,
+            ),
+            ...DEFAULT_STAFF_PERMISSIONS,
+          ]),
+        )
+      : requested;
     const invalid = normalized.filter(
       (permission) => !ALLOWED_STAFF_PERMISSIONS.has(permission),
     );
