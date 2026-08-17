@@ -774,9 +774,6 @@ function AdminToursContent() {
                     )}
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '10.5px', color: '#8c8679' }}>
-                      Chỉ hỗ trợ tải ảnh từ máy
-                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer' }}>
