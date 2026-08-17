@@ -182,10 +182,26 @@ const cleanRichText = (value?: string | null) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const tourCover = (tour: PublicTour) =>
-  tour.coverUrl || tour.stops.find((stop) => stop.store.media[0])?.store.media[0]?.url || "";
+const storeImage = (store: TourStopStore) => {
+  const coverPurposes = new Set([
+    "store-hero",
+    "hero",
+    "cover",
+    "store-cover",
+    "STORE_COVER",
+    "PARTNER_STORE_COVER",
+    "PARTNER_LISTING_STORE",
+  ]);
 
-const storeImage = (store: TourStopStore) => store.media[0]?.url || "";
+  return (
+    store.media.find((media) => coverPurposes.has(media.purpose?.trim() ?? ""))?.url ||
+    store.media[0]?.url ||
+    ""
+  );
+};
+
+const tourCover = (tour: PublicTour) =>
+  tour.coverUrl || tour.stops.map((stop) => storeImage(stop.store)).find(Boolean) || "";
 
 const castName = (cast: TourStoreCast) => cast.publicAlias || cast.stageName;
 

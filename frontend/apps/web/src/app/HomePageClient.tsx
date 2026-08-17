@@ -2566,7 +2566,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
         src={item.img}
         alt={item.name ?? "Dịch vụ"}
         label={translateText("Ảnh dịch vụ", activeLanguage)}
-        style={{ height: compact ? "92px" : "132px", position: "relative" }}
+        style={{ height: compact ? "112px" : "132px", position: "relative" }}
       >
         <span className="nl-home-media-pill" style={{ position: "absolute", top: 10, left: 10, ...pillStyle, background: "rgba(12,12,15,.66)", color: colors.goldSoft }}>
           {item.badgeText}

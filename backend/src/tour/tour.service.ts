@@ -48,6 +48,16 @@ const uuidPattern =
 
 @Injectable()
 export class TourService {
+  private readonly publicStoreCoverPurposes = new Set([
+    'store-hero',
+    'hero',
+    'cover',
+    'store-cover',
+    'STORE_COVER',
+    'PARTNER_STORE_COVER',
+    'PARTNER_LISTING_STORE',
+  ]);
+
   constructor(private prisma: PrismaService) {}
 
   private tourAuditSnapshot(
@@ -158,7 +168,9 @@ export class TourService {
           type: 'IMAGE',
         },
         orderBy: { createdAt: 'desc' },
-        take: 3,
+        // Keep enough public images to find an older, explicitly selected
+        // cover even when newer gallery images were uploaded afterwards.
+        take: 20,
         select: {
           id: true,
           url: true,
@@ -316,7 +328,14 @@ export class TourService {
   }
 
   private decoratePublicTour<
-    T extends { stops: Array<{ store: { coupons: PublicTourStoreCoupon[] } }> },
+    T extends {
+      stops: Array<{
+        store: {
+          coupons: PublicTourStoreCoupon[];
+          media?: Array<{ url: string; purpose?: string | null }>;
+        };
+      }>;
+    },
   >(tour: T, user?: AuthenticatedUser) {
     const audience = this.resolveTourCouponAudience(user);
     const stops = tour.stops.map((stop) => {
@@ -324,10 +343,20 @@ export class TourService {
         stop.store.coupons,
         audience,
       );
+      const media = [...(stop.store.media ?? [])].sort((left, right) => {
+        const leftIsCover = this.publicStoreCoverPurposes.has(
+          String(left.purpose ?? '').trim(),
+        );
+        const rightIsCover = this.publicStoreCoverPurposes.has(
+          String(right.purpose ?? '').trim(),
+        );
+        return Number(rightIsCover) - Number(leftIsCover);
+      });
       return {
         ...stop,
         store: {
           ...stop.store,
+          media,
           applicableCoupon,
         },
       };
