@@ -20269,19 +20269,43 @@ export class NightlifeDataService {
 
     const stableSlug = this.partnerListingCastEditDraftSlug(castProfile);
 
-    const cast = await client.cast.create({
-      data: {
-        ...data,
-        slug:
-          stableSlug ??
-          this.buildPartnerRequestSlug(
-            castProfile.stageName,
-            requestId,
-            `cast-${index + 1}`,
-          ),
-      },
-      select: { id: true },
-    });
+    let cast: { id: string };
+    try {
+      cast = await client.cast.create({
+        data: {
+          ...data,
+          slug:
+            stableSlug ??
+            this.buildPartnerRequestSlug(
+              castProfile.stageName,
+              requestId,
+              `cast-${index + 1}`,
+            ),
+        },
+        select: { id: true },
+      });
+    } catch (error) {
+      // A previous submission may have already reserved the stable edit slug
+      // (for example after a double-click or a retried request). Reuse that
+      // draft instead of surfacing a generic 500 to Partner.
+      if (!stableSlug || !this.isPrismaUniqueConstraintError(error)) {
+        throw error;
+      }
+
+      const conflictedDraft = await client.cast.findFirst({
+        where: { storeId, slug: stableSlug, isPublic: false },
+        select: { id: true },
+      });
+      if (!conflictedDraft) {
+        throw error;
+      }
+
+      cast = await client.cast.update({
+        where: { id: conflictedDraft.id },
+        data: { ...data, deletedAt: null },
+        select: { id: true },
+      });
+    }
 
     await this.archiveDuplicatePartnerListingReviewCastDrafts(
       client,
