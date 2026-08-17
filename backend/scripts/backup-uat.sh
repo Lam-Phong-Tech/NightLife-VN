@@ -183,7 +183,13 @@ done
 
 if [ "$storage_found" -eq 1 ]; then
   echo "Creating storage archive: $STORAGE_BACKUP"
-  tar -czf "$STORAGE_BACKUP" "${storage_args[@]}"
+  # Uploads can be written while the backup is running. GNU tar reports a
+  # changing file as exit code 1 by default, which aborts the deployment even
+  # though the archive itself is usable. Ignore that transient read warning;
+  # database/media metadata remains covered by the database dump and the next
+  # scheduled backup will capture any file written during this run.
+  tar --ignore-failed-read --warning=no-file-changed \
+    -czf "$STORAGE_BACKUP" "${storage_args[@]}"
   test -s "$STORAGE_BACKUP"
 else
   echo "No storage paths found from STORAGE_PATHS=$STORAGE_PATHS" | tee "$STORAGE_SKIPPED" >/dev/null
