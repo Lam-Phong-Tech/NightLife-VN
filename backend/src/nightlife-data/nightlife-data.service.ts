@@ -19535,11 +19535,7 @@ export class NightlifeDataService {
         (hasStableClientKey && clientKey
           ? storeProfileIndexesByClientKey.get(clientKey)
           : undefined) ??
-        (!profileId && !hasStableClientKey
-          ? storeProfileIndexesByName.get(
-              this.normalizeToken(profile.stageName),
-            )
-          : undefined);
+        storeProfileIndexesByName.get(this.normalizeToken(profile.stageName));
       const storeProfile =
         matchedIndex !== undefined ? storeProfiles[matchedIndex] : undefined;
 
@@ -19552,7 +19548,17 @@ export class NightlifeDataService {
 
     storeProfiles.forEach((profile, index) => {
       if (!usedStoreIndexes.has(index)) {
-        merged.push(profile);
+        const profileName = this.normalizeToken(profile.stageName);
+        const isDuplicate =
+          Boolean(profileName) &&
+          merged.some(
+            (existing) =>
+              this.normalizeToken(existing.stageName) === profileName &&
+              this.partnerListingCastProfilesMatch(existing, profile),
+          );
+        if (!isDuplicate) {
+          merged.push(profile);
+        }
       }
     });
 
