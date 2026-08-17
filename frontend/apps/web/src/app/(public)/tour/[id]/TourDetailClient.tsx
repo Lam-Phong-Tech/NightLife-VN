@@ -737,6 +737,11 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
   })();
 
   const targetLabel = tour.title || firstStore?.name;
+  // Tour titles are dynamic API content. Translate every displayed instance
+  // explicitly so the booking card does not miss the initial Google fallback
+  // pass after client hydration.
+  const displayTourTitle = t(tour.title);
+  const displayTargetLabel = targetLabel ? t(targetLabel) : targetLabel;
   const canSubmit = Boolean(firstStore && bookingStore && bookingTimeOptions.length);
 
   const createTourBooking = async (
@@ -859,7 +864,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
       title: nearStart ? confirmationCopy.nearStartTitle : confirmationCopy.title,
       description: nearStart
         ? confirmationCopy.nearStartDescription(bookingTime, bookingDate)
-        : confirmationCopy.description(targetLabel ?? "", bookingTime, bookingDate),
+        : confirmationCopy.description(displayTargetLabel ?? "", bookingTime, bookingDate),
       confirmLabel: nearStart ? confirmationCopy.nearStartConfirmLabel : confirmationCopy.confirmLabel,
       localized: true,
       tone: nearStart ? "warning" : "gold",
@@ -875,7 +880,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
           <ChevronRight size={14} />
           <Link href="/tour">Tour</Link>
           <ChevronRight size={14} />
-          <strong>{tour.title}</strong>
+          <strong>{displayTourTitle}</strong>
         </nav>
 
         <div className={styles.layout}>
@@ -884,7 +889,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
               <div className={styles.heroBanner}>
                 <PlaceholderMedia
                   src={tourCover(tour)}
-                  alt={tour.title}
+                  alt={displayTourTitle}
                   label={tx("noTourImage")}
                   className={styles.heroMedia}
                   priority
@@ -894,7 +899,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                     <span className={styles.eyebrow}>
                       <Sparkles size={14} /> {tx("experienceTour")}
                     </span>
-                    <h1 className={styles.heroTitle}>{tour.title}</h1>
+                    <h1 className={styles.heroTitle}>{displayTourTitle}</h1>
                     {cleanSubtitle ? <p className={styles.heroText}>{cleanSubtitle}</p> : null}
                   </div>
                 </div>
@@ -1025,7 +1030,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
             <div className={styles.bookingHeader}>
               <div>
                 <h2>{tx("bookThisTour")}</h2>
-                <p>{targetLabel ? `${tx("bookingPoint")}: ${targetLabel}` : tx("invalidTour")}</p>
+                <p>{displayTargetLabel ? `${tx("bookingPoint")}: ${displayTargetLabel}` : tx("invalidTour")}</p>
               </div>
               <div
                 className={`${styles.priceTier} notranslate`}

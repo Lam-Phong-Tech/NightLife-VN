@@ -540,6 +540,7 @@ export function TourClient() {
 
 function TourResultCard({ tour, language }: { tour: PublicTour; language: LanguageCode }) {
   const copy = getTourDirectoryCopy(language);
+  const displayTitle = localize(tour.title, language);
   const stopCount = tour.stops.length;
   const castCount = countTourCasts(tour);
   const deal = tour.applicableCoupon;
@@ -547,10 +548,10 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
 
   return (
     <article className="tour-card">
-      <Link href={`/tour/${tour.id}`} className="tour-card-media" aria-label={tour.title}>
+      <Link href={`/tour/${tour.id}`} className="tour-card-media" aria-label={displayTitle}>
         <PlaceholderMedia
           src={tourImage(tour)}
-          alt={tour.title}
+          alt={displayTitle}
           label={copy.noTourImage}
           className="tour-card-image"
         >
@@ -566,7 +567,7 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
       <div className="tour-card-body">
         <div className="tour-card-main">
           <div className="tour-name-row">
-            <Link href={`/tour/${tour.id}`}>{tour.title}</Link>
+            <Link href={`/tour/${tour.id}`}>{displayTitle}</Link>
             <span className="notranslate" translate="no" data-no-translate="true">
               {priceTierLabel(tour.priceTier)}
             </span>
@@ -645,7 +646,7 @@ function TourSearchSuggestions({
                 style={{ backgroundImage: `url(${JSON.stringify(tourImage(tour))})` }}
               />
               <span>
-                <b className="notranslate" translate="no" data-no-translate="true">{tour.title}</b>
+                <b>{displayTitle}</b>
                 <small>{[tourCityLabel(tour, language), formatStopCount(tour.stops.length, language)].filter(Boolean).join(" · ")}</small>
               </span>
               <ChevronRight size={15} />

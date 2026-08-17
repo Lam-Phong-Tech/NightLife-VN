@@ -141,7 +141,10 @@ export function PlaceholderMedia({
           style={{
             position: "absolute",
             inset: 0,
-            zIndex: 0,
+            // Keep the actual image above the decorative fallback layer. Both
+            // previously used z-index 0, which can leave a valid pasted/data
+            // URL hidden behind that layer in some browsers.
+            zIndex: 1,
             width: "100%",
             height: "100%",
             objectFit: "cover",
