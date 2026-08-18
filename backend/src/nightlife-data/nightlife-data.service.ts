@@ -3010,13 +3010,10 @@ export class NightlifeDataService {
             mapUrl: true,
             googlePlaceId: true,
             media: {
-              where: {
-                deletedAt: null,
-                castId: null,
+              where: this.storeMediaWhere({
                 access: 'PUBLIC',
-                status: 'READY',
                 type: 'IMAGE',
-              },
+              }),
               orderBy: { createdAt: 'desc' },
               take: 8,
               select: {
