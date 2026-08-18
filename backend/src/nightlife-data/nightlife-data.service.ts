@@ -3014,7 +3014,9 @@ export class NightlifeDataService {
                 access: 'PUBLIC',
                 type: 'IMAGE',
               }),
-              orderBy: { createdAt: 'desc' },
+              // Keep the selected store cover ahead of newer gallery media so
+              // cast detail resolves the same venue image as store detail.
+              orderBy: [{ purpose: 'desc' }, { createdAt: 'desc' }],
               take: 8,
               select: {
                 url: true,
