@@ -26926,7 +26926,10 @@ export class NightlifeDataService {
           tourBooking: { select: { bookingCode: true, itinerarySnapshot: true } },
         },
       }),
-      this.prisma.booking.count({ where: baseWhere }),
+      // The total used for pagination must match the currently selected
+      // status filter. The per-status counters below intentionally use
+      // `baseWhere` so the tab badges continue to show all counts.
+      this.prisma.booking.count({ where }),
       this.prisma.booking.count({
         where: { ...baseWhere, status: 'REQUESTED' },
       }),

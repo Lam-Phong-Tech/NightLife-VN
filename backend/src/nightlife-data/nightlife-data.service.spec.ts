@@ -3107,6 +3107,21 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('uses the selected status when calculating the pagination total', async () => {
+    await service.listAdminBookings({ status: 'checked_in', page: 1, limit: 8 });
+
+    expect(prisma.booking.count).toHaveBeenNthCalledWith(1, {
+      where: { status: 'CHECKED_IN' },
+    });
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'CHECKED_IN' },
+        skip: 0,
+        take: 8,
+      }),
+    );
+  });
+
   it('shows every requested cast for a tour stop in admin bookings', async () => {
     const booking = {
       id: 'booking-tour-stop-1',
