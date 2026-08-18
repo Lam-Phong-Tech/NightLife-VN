@@ -624,7 +624,7 @@ export default function Page() {
             </span>
           </Link>
 
-          <div>
+          <div className="nl-login-visual-copy">
             <span
               style={{
                 display: "inline-flex",
@@ -1078,6 +1078,10 @@ export default function Page() {
             min-height: 300px !important;
             padding: 22px 20px !important;
             justify-content: space-between !important;
+          }
+
+          .nl-login-page .nl-login-visual-copy {
+            display: none !important;
           }
 
           .nl-login-page .nl-login-visual h1 {
