@@ -11,6 +11,7 @@ import {
   resolveClientUrl,
   translateApiMessage,
 } from "@/lib/api/client";
+import { filterStoreAlbumMedia } from "@/lib/store-media-filter";
 
 const colors = {
   bg: "#0f0f13",
@@ -630,27 +631,40 @@ export default function AdminPartnersPage() {
     if (!selectedRequest || getRequestType(selectedRequest) !== "LISTING_UPDATE") return [];
 
     const currentOpeningHours = formatOpeningHours(selectedRequest.originalStore?.openingHours);
-    const currentMediaItems = (selectedRequest.originalStore?.media ?? [])
+    const currentMedia = (selectedRequest.originalStore?.media ?? [])
       .filter((item) => item.type?.toUpperCase() === "IMAGE" && item.url)
-      .map((item) => ({ url: item.url as string, purpose: item.purpose ?? "" }));
-    const currentImages = uniqueMediaUrls(currentMediaItems.map((item) => item.url));
-    const currentCover =
-      currentMediaItems.find((item) => /cover|hero|b[iì]a/i.test(item.purpose))?.url ??
-      currentImages[0] ??
-      "";
-    const currentGallery = currentImages.filter(
-      (url) => normalizeMediaKey(url) !== normalizeMediaKey(currentCover),
+      .map((item) => ({
+        id: item.id,
+        url: item.url as string,
+        purpose: item.purpose ?? "",
+        type: item.type,
+      }));
+    const currentGalleryResult = filterStoreAlbumMedia(
+      currentMedia,
+      selectedRequest.originalStore?.pricingInfo,
     );
+    const currentCover = currentGalleryResult.cover?.url ?? "";
+    const currentGallery = currentGalleryResult.galleryMedia
+      .map((item) => item.url)
+      .filter((url): url is string => Boolean(url));
     const submittedMedia = uniqueMediaUrls(selectedRequest.mediaUrls ?? []);
     const submittedImages = submittedMedia.filter((url) => !/\.(mp4|webm|ogg)(?:\?|$)/i.test(url));
     const proposedCover = selectedRequest.coverImageUrl?.trim() || submittedImages[0] || "";
     const explicitProposedGallery = uniqueMediaUrls(selectedRequest.galleryUrls ?? []);
+    const proposedMenuImageKeys = new Set(
+      (selectedRequest.menuGroups ?? [])
+        .flatMap((group) => group.items ?? [])
+        .map((item) => normalizeMediaKey(item.imageUrl))
+        .filter(Boolean),
+    );
+    const proposedIsMenuImage = (url: string) =>
+      proposedMenuImageKeys.has(normalizeMediaKey(url));
     const proposedGallery = (explicitProposedGallery.length
       ? explicitProposedGallery
       : submittedImages
     ).filter(
       (url) => normalizeMediaKey(url) !== normalizeMediaKey(proposedCover),
-    );
+    ).filter((url) => !proposedIsMenuImage(url));
     const mediaChanged = (current: string[], proposed: string[]) =>
       current.map(normalizeMediaKey).join("|") !== proposed.map(normalizeMediaKey).join("|");
 
