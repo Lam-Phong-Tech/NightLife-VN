@@ -532,7 +532,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 <nav className="cast-desktop-breadcrumb" aria-label="Breadcrumb">
                   <Link href="/">{copy.home}</Link>
                   <span>/</span>
-                  <Link href="/casts">Cast</Link>
+                  <Link href="/casts">{translateText("Cast", activeLanguage)}</Link>
                   <span>/</span>
                   <strong className="notranslate" translate="no" data-no-translate="true">{profile.name}</strong>
                 </nav>

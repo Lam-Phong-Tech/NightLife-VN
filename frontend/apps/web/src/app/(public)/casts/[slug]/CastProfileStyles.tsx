@@ -150,7 +150,7 @@ export function CastProfileStyles() {
         min-width: 42px;
         height: 42px;
         min-height: 42px;
-        border: 1px solid rgba(255, 255, 255, .14);
+        border: 1px solid rgba(255, 61, 113, .54);
         background: var(--cast-hero-control-bg-strong);
         color: var(--cast-hero-control-icon);
         box-shadow: 0 12px 28px -18px rgba(0, 0, 0, .9);
