@@ -2789,6 +2789,7 @@ describe('NightlifeDataService', () => {
         store: expect.objectContaining({
           slug: 'velvet-club',
           cityCode: 'hcm',
+          ward: 'Ben Nghe',
           phone: '+842812345678',
           thumbnailUrl: 'https://example.com/velvet-hero.jpg',
           mapUrl: 'https://maps.example/velvet',

@@ -3023,6 +3023,7 @@ export class NightlifeDataService {
               category: true,
               city: true,
               district: true,
+              address: true,
               latitude: true,
               longitude: true,
               area: {
@@ -3083,6 +3084,9 @@ export class NightlifeDataService {
             ? this.cityCodeFromAreaCode(cast.store.area.code)
             : this.normalizeCityCode(cast.store.city),
           district: cast.store.district,
+          ward:
+            cast.store.area?.ward ??
+            this.extractWardFromStoreAddress(cast.store.address),
           area: cast.store.area
             ? {
                 id: cast.store.area.id,
@@ -3284,6 +3288,9 @@ export class NightlifeDataService {
           ? this.cityCodeFromAreaCode(cast.store.area.code)
           : this.normalizeCityCode(cast.store.city),
         district: cast.store.district,
+        ward:
+          cast.store.area?.ward ??
+          this.extractWardFromStoreAddress(cast.store.address),
         area: this.mapPublicArea(cast.store.area),
         phone: cast.store.phone,
         latitude: this.toNumber(cast.store.latitude),
