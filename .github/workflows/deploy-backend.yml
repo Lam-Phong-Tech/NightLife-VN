@@ -454,6 +454,15 @@ jobs:
             booking_status=000; for i in $(seq 1 10); do booking_status=$(curl -sS -o /tmp/nightlife-backend-booking-check.json -w "%{http_code}" -X POST "http://127.0.0.1:$BACKEND_PORT/bookings" -H 'Content-Type: application/json' -d '{}' || true); if [ "$booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$booking_status" != "400" ]; then echo "::error::Backend POST /bookings chua tra validation 400. Status: $booking_status"; cat /tmp/nightlife-backend-booking-check.json 2>/dev/null || true; pm2 logs "$BACKEND_PM2_NAME" --lines 80 --nostream 2>/dev/null; exit 1; fi
             echo "backend_booking_validation=400 http://127.0.0.1:$BACKEND_PORT/bookings" | tee -a "$SMOKE_RESULTS"
 
+            ranking_reorder_status=$(curl -sS -o /tmp/nightlife-backend-ranking-reorder-check.json -w "%{http_code}" -X POST "http://127.0.0.1:$BACKEND_PORT/admin/rankings/reorder" -H 'Content-Type: application/json' -d '{}' || true)
+            if [ "$ranking_reorder_status" != "401" ] && [ "$ranking_reorder_status" != "400" ]; then
+              echo "::error::Backend POST /admin/rankings/reorder khong ton tai hoac tra loi bat thuong. Status: $ranking_reorder_status"
+              cat /tmp/nightlife-backend-ranking-reorder-check.json 2>/dev/null || true
+              pm2 logs "$BACKEND_PM2_NAME" --lines 80 --nostream 2>/dev/null
+              exit 1
+            fi
+            echo "backend_ranking_reorder_route=$ranking_reorder_status http://127.0.0.1:$BACKEND_PORT/admin/rankings/reorder" | tee -a "$SMOKE_RESULTS"
+
             if [ -d "$FRONTEND_DIR" ]; then
               PORT="$FRONTEND_PORT" pm2 restart "$FRONTEND_PM2_NAME" --update-env 2>/dev/null || (cd "$FRONTEND_DIR" && PORT="$FRONTEND_PORT" pm2 start pnpm --name "$FRONTEND_PM2_NAME" --update-env -- --dir apps/web run start) 2>/dev/null || true
               check_url frontend_home_local "http://127.0.0.1:$FRONTEND_PORT/"
