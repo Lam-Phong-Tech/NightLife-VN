@@ -146,7 +146,9 @@ export function CastRelatedCasts({ relatedCasts, variant, language, onTrack }: R
       <div className="cast-section-heading">
         <h2>{copy.similarCast}</h2>
         <span />
-        <small>{copy.viewAll}</small>
+        <Link className="cast-related-view-all" href="/casts">
+          <small>{copy.viewAll}</small>
+        </Link>
       </div>
       <div className="cast-related-list">
         {relatedCasts.slice(0, variant === "desktop" ? 4 : 6).map((cast) => (

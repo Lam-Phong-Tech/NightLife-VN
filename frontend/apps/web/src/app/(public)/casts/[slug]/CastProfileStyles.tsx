@@ -385,6 +385,11 @@ export function CastProfileStyles() {
         white-space: nowrap;
       }
 
+      .cast-related-view-all {
+        cursor: pointer;
+        text-decoration: none;
+      }
+
       .cast-mobile-bio,
       .cast-desktop-copy {
         margin: 0;
