@@ -1468,17 +1468,6 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         <nav className="venue-chip-row hscroll" aria-label={copy.filterAria}>
           <button
             type="button"
-            className={`venue-chip ${sort === "nearest" ? "is-active" : ""}`}
-            onClick={() => {
-              void requestNearby();
-            }}
-            disabled={isLocating}
-          >
-            <LocateFixed size={13} />
-            {isLocating ? copy.locating : copy.nearMe}
-          </button>
-          <button
-            type="button"
             className={`venue-chip ${hasActiveCoupon ? "is-active" : ""}`}
             onClick={() => setHasActiveCoupon((current) => !current)}
           >

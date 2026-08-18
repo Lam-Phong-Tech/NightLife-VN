@@ -11,7 +11,6 @@ import {
   ChevronRight,
   History,
   Languages,
-  LocateFixed,
   MapPin,
   RotateCcw,
   Search,
@@ -1212,15 +1211,6 @@ export function CastDirectoryPage({ initialCasts = [], initialTotal = 0 }: { ini
             className="cast-chip-row hscroll"
             aria-label={translateText("Bộ lọc nhanh", activeLanguage)}
           >
-            <button
-              type="button"
-              className={`cast-chip ${sort === "nearest" ? "is-active" : ""}`}
-              onClick={requestNearby}
-              disabled={isLocating}
-            >
-              <LocateFixed size={13} />
-              {isLocating ? copy.locating : copy.nearMe}
-            </button>
             <button
               type="button"
               className={`cast-chip ${hasActiveCoupon ? "is-active" : ""}`}
