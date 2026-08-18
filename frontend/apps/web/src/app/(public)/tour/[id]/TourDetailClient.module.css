@@ -314,6 +314,64 @@
   margin-top: 16px;
 }
 
+.castGroup {
+  min-width: 0;
+  grid-column: 1 / -1;
+  padding-top: 14px;
+  border-top: 1px solid var(--vy-border-gold-12);
+}
+
+.castGroup:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.castGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.castGroupTitle {
+  margin: 0;
+  color: var(--tour-text);
+  font-size: 14px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.castGroupCount {
+  display: block;
+  margin-top: 3px;
+  color: var(--tour-faint);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.castExpandButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--tour-gold);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.castExpandIconOpen {
+  transform: rotate(90deg);
+}
+
+.castGroup .castGrid {
+  margin-top: 10px;
+}
+
 .castButton {
   width: 100%;
   max-width: 100%;

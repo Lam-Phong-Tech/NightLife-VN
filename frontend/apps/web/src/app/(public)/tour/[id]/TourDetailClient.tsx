@@ -303,6 +303,20 @@ const tourUiCopy = {
     ko: "지점별 Cast",
     zh: "按站点选择 陪伴人员",
   },
+  showMoreCasts: {
+    vi: "Xem thêm cast",
+    en: "Show more Cast",
+    ja: "キャストをさらに表示",
+    ko: "Cast 더 보기",
+    zh: "查看更多陪伴人员",
+  },
+  showLessCasts: {
+    vi: "Thu gọn cast",
+    en: "Show fewer Casts",
+    ja: "キャストを折りたたむ",
+    ko: "Cast 접기",
+    zh: "收起陪伴人员",
+  },
   chooseCast: {
     vi: "Chọn cast tại từng quán nếu muốn",
     en: "Choose Cast at each venue if you want",
@@ -528,6 +542,7 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
   const [note, setNote] = useState("");
   const [selectedCastKeys, setSelectedCastKeys] = useState<string[]>([]);
   const [tourCasts, setTourCasts] = useState<TourCastOption[]>([]);
+  const [expandedStoreIds, setExpandedStoreIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
@@ -595,6 +610,16 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
         .map((key) => tourCasts.find((cast) => castOptionKey(cast) === key))
         .filter(Boolean) as TourCastOption[],
     [selectedCastKeys, tourCasts],
+  );
+  const castGroups = useMemo(
+    () =>
+      tour.stops
+        .map((stop) => ({
+          store: stop.store,
+          casts: tourCasts.filter((cast) => cast.storeId === stop.store.id),
+        }))
+        .filter((group) => group.casts.length > 0),
+    [tour.stops, tourCasts],
   );
   const bookingStore = firstStore;
   const hasExplicitDepartureConfig =
@@ -1008,38 +1033,78 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                     </span>
                     {selectedCastKeys.length === 0 ? <Check size={17} color="var(--vy-gold)" /> : null}
                   </button>
-                  {tourCasts.map((cast) => {
-                    const key = castOptionKey(cast);
-                    const isSelected = selectedCastKeys.includes(key);
+                  {castGroups.map((group) => {
+                    const isExpanded = expandedStoreIds.includes(group.store.id);
+                    const selectedGroupCasts = group.casts.filter((cast) => selectedCastKeys.includes(castOptionKey(cast)));
+                    const visibleCasts = isExpanded
+                      ? group.casts
+                      : Array.from(new Map([...group.casts.slice(0, 6), ...selectedGroupCasts].map((cast) => [cast.id, cast])).values());
+                    const hiddenCount = group.casts.length - visibleCasts.length;
 
                     return (
-                      <button
-                        type="button"
-                        key={key}
-                        className={styles.castButton}
-                        data-selected={isSelected}
-                        onClick={() =>
-                          setSelectedCastKeys((current) =>
-                            current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
-                          )
-                        }
-                      >
-                        <span
-                          className={styles.castAvatar}
-                          role={cast.thumbnailUrl ? "img" : undefined}
-                          aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
-                          style={
-                            cast.thumbnailUrl
-                              ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` }
-                              : undefined
-                          }
-                        />
-                        <span className={styles.castCopy}>
-                          <span className={`${styles.castName} notranslate`} translate="no" data-no-translate="true">{castName(cast)}</span>
-                          <span className={`${styles.castMeta} notranslate`} translate="no" data-no-translate="true">{cast.storeName}</span>
-                        </span>
-                        {isSelected ? <Check size={17} color="var(--vy-gold)" /> : null}
-                      </button>
+                      <div className={styles.castGroup} key={group.store.id}>
+                        <div className={styles.castGroupHeader}>
+                          <div>
+                            <h3 className={`${styles.castGroupTitle} notranslate`} translate="no" data-no-translate="true">
+                              {group.store.name}
+                            </h3>
+                            <span className={styles.castGroupCount}>{group.casts.length} cast</span>
+                          </div>
+                          {group.casts.length > 6 ? (
+                            <button
+                              type="button"
+                              className={styles.castExpandButton}
+                              aria-expanded={isExpanded}
+                              onClick={() =>
+                                setExpandedStoreIds((current) =>
+                                  isExpanded
+                                    ? current.filter((storeId) => storeId !== group.store.id)
+                                    : [...current, group.store.id],
+                                )
+                              }
+                            >
+                              {isExpanded ? tx("showLessCasts") : `${tx("showMoreCasts")} (${hiddenCount})`}
+                              <ChevronRight size={15} className={isExpanded ? styles.castExpandIconOpen : undefined} />
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className={styles.castGrid}>
+                          {visibleCasts.map((cast) => {
+                            const key = castOptionKey(cast);
+                            const isSelected = selectedCastKeys.includes(key);
+
+                            return (
+                              <button
+                                type="button"
+                                key={key}
+                                className={styles.castButton}
+                                data-selected={isSelected}
+                                onClick={() =>
+                                  setSelectedCastKeys((current) =>
+                                    current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+                                  )
+                                }
+                              >
+                                <span
+                                  className={styles.castAvatar}
+                                  role={cast.thumbnailUrl ? "img" : undefined}
+                                  aria-label={cast.thumbnailUrl ? castName(cast) : undefined}
+                                  style={
+                                    cast.thumbnailUrl
+                                      ? { backgroundImage: `url(${JSON.stringify(cast.thumbnailUrl)})` }
+                                      : undefined
+                                  }
+                                />
+                                <span className={styles.castCopy}>
+                                  <span className={`${styles.castName} notranslate`} translate="no" data-no-translate="true">{castName(cast)}</span>
+                                  <span className={`${styles.castMeta} notranslate`} translate="no" data-no-translate="true">{cast.storeName}</span>
+                                </span>
+                                {isSelected ? <Check size={17} color="var(--vy-gold)" /> : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
