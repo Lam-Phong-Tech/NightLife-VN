@@ -367,7 +367,7 @@ export default function Page() {
                           <strong>{issueDiscountText(issue, activeLanguage, rates)}</strong>
                           <span>{issueStatusText(issue)}</span>
                         </div>
-                        <h2>{readableName(issue.coupon.name)}</h2>
+                        <h2 className="notranslate" translate="no" data-no-translate="true">{readableName(issue.coupon.name)}</h2>
                         <p>
                           <Store size={15} />
                           {issueStoreName(issue)}

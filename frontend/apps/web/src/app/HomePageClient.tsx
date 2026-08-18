@@ -2242,7 +2242,7 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
         >
           {item.value}
         </div>
-        <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
+        <div className="notranslate" translate="no" data-no-translate="true" style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
         <div className="notranslate" translate="no" data-no-translate="true" style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
       <span
@@ -2343,7 +2343,7 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
             overflow: "hidden",
           }}
         >
-          {item.title}
+          <span className="notranslate" translate="no" data-no-translate="true">{item.title}</span>
         </div>
         <div
           style={{

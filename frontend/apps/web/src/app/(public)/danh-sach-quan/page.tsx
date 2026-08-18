@@ -638,9 +638,7 @@ const toVenueView = (store: PublicStore, language: LanguageCode, now: Date): Ven
   const { label: statusLabel, isOpen, tone } = openingStatus(store, language, now);
   const adminTags = store.tags?.filter(Boolean) ?? [];
   const localizedAdminTags = adminTags.map((tag) => translateText(tag, language));
-  const localizedDealLabel = store.activeCoupon?.name
-    ? translateText(store.activeCoupon.name, language)
-    : "";
+  const localizedDealLabel = store.activeCoupon?.name ?? "";
 
   return {
     id: store.slug,
@@ -2157,7 +2155,7 @@ function VenueResultCard({
           <span />
           {venue.statusLabel}
         </span>
-        <span className="venue-deal">{venue.dealLabel}</span>
+        <span className="venue-deal notranslate" translate="no" data-no-translate="true">{venue.dealLabel}</span>
         <FavoriteButton
           as="span"
           className="venue-heart"
