@@ -4152,6 +4152,10 @@ const venueSearchCss = `
       min-height: 22px;
       font-size: 11px;
       min-width: 118px;
+      border: 1px solid var(--vy-border-gold-32);
+      border-radius: 12px;
+      background: var(--vy-surface-2);
+      padding: 0 10px;
     }
 
     .venue-sort-trigger {

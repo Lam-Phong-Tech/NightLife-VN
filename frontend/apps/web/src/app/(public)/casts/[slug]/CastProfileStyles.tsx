@@ -5,12 +5,12 @@ export function CastProfileStyles() {
         --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
         --cast-mobile-cta-height: 76px;
         --cast-mobile-fixed-space: var(--cast-mobile-cta-height);
-        --cast-hero-control-bg: transparent;
-        --cast-hero-control-bg-strong: transparent;
-        --cast-hero-control-border: transparent;
+        --cast-hero-control-bg: rgba(8, 8, 10, .28);
+        --cast-hero-control-bg-strong: rgba(17, 17, 20, .72);
+        --cast-hero-control-border: rgba(255, 255, 255, .16);
         --cast-hero-control-icon: #f7cf5c;
-        --cast-hero-control-shadow: none;
-        --cast-hero-control-icon-shadow: none;
+        --cast-hero-control-shadow: 0 14px 30px -18px rgba(0, 0, 0, .9);
+        --cast-hero-control-icon-shadow: 0 1px 2px rgba(0, 0, 0, .6);
         min-height: auto;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
@@ -18,11 +18,11 @@ export function CastProfileStyles() {
       }
 
       html.vy-light .cast-page {
-        --cast-hero-control-bg: transparent;
-        --cast-hero-control-bg-strong: transparent;
-        --cast-hero-control-border: transparent;
+        --cast-hero-control-bg: rgba(255, 248, 230, .76);
+        --cast-hero-control-bg-strong: rgba(255, 248, 230, .82);
+        --cast-hero-control-border: rgba(150, 116, 52, .42);
         --cast-hero-control-icon: #d4a72f;
-        --cast-hero-control-shadow: none;
+        --cast-hero-control-shadow: 0 8px 20px -12px rgba(96, 70, 22, .42);
         --cast-hero-control-icon-shadow: none;
       }
 
@@ -115,7 +115,7 @@ export function CastProfileStyles() {
         height: 38px;
         min-width: 38px;
         min-height: 38px;
-        border: 0;
+        border: 1px solid var(--cast-hero-control-border);
         border-radius: 999px;
         background: var(--cast-hero-control-bg);
         color: var(--cast-hero-control-icon);
@@ -132,6 +132,9 @@ export function CastProfileStyles() {
         border-radius: 12px;
         background: rgba(8, 8, 10, .28);
         color: #f7cf5c;
+        box-shadow:
+          0 0 0 4px rgba(8, 8, 10, .22),
+          0 8px 20px -12px rgba(0, 0, 0, .72);
         backdrop-filter: blur(8px);
       }
 
@@ -142,6 +145,16 @@ export function CastProfileStyles() {
       }
 
       .cast-favorite-action {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, .14);
+        background: var(--cast-hero-control-bg-strong);
+        color: var(--cast-hero-control-icon);
+        box-shadow: 0 12px 28px -18px rgba(0, 0, 0, .9);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         cursor: pointer;
         transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
       }
@@ -171,10 +184,10 @@ export function CastProfileStyles() {
 
       .cast-hero-media-nav button {
         position: absolute;
-        top: 47%;
-        width: 38px;
-        height: 38px;
-        border: 0;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--cast-hero-control-border);
         border-radius: 999px;
         background: var(--cast-hero-control-bg);
         color: var(--cast-hero-control-icon);
