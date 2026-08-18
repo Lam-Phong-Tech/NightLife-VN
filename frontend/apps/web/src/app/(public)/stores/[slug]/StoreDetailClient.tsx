@@ -4709,17 +4709,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           width: 40px;
           height: 40px;
           place-items: center;
-          border: 1px solid var(--vy-border-gold-32);
+          border: 2px solid rgba(255, 239, 178, .95);
           border-radius: 50%;
-          background: rgba(20, 18, 15, .9);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
-          color: var(--vy-gold-hi);
+          background: #211b10;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, .5), 0 0 0 2px rgba(0, 0, 0, .35);
+          color: #ffe9a8;
           cursor: pointer;
+          transition: background .15s ease, color .15s ease, transform .15s ease;
         }
 
         .cast-rail-control:where(:hover, :focus-visible) {
-          background: var(--vy-gold-soft-bg);
+          background: #d4a93e;
+          color: #17120a;
           outline: none;
+        }
+
+        .cast-rail-control:active {
+          background: #f5d77d;
+          border-color: #fff4c9;
+          color: #17120a;
+          transform: scale(.92);
         }
 
         .cast-rail-control-back {
