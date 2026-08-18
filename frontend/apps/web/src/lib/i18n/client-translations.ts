@@ -196,7 +196,7 @@ export function syncGoogleTranslateCookie(language: LanguageCode) {
   );
 }
 
-const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v3.";
+const DYNAMIC_CACHE_PREFIX = "vietyoru.translation_cache.v4.";
 const dynamicMemoryCache = new Map<string, Partial<Record<LanguageCode, string>>>();
 let isDynamicCacheHydrated = false;
 
