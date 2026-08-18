@@ -24,6 +24,7 @@ type AdminBookingRecord = {
   customerName: string;
   customerEmail?: string | null;
   store: (string & { name?: string | null }) | null;
+  storeCategory?: string | null;
   cast: string | { stageName?: string | null } | null;
   partySize: number;
   scheduledAt: string;
@@ -183,6 +184,11 @@ function AdminBookingsContent() {
 
   const formatBookingId = (booking: Pick<AdminBookingRecord, 'bookingCode' | 'id'> | null) => {
     return booking?.bookingCode || `BK-${String(booking?.id || '').slice(0, 8).toUpperCase()}`;
+  };
+
+  const isServiceOnlyBooking = (booking: AdminBookingRecord) => {
+    const category = booking.storeCategory?.trim().toUpperCase();
+    return category === 'RESTAURANT' || category === 'MASSAGE_SPA';
   };
 
   return (
@@ -349,7 +355,9 @@ function AdminBookingsContent() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Mã đặt tour</span><span style={{ fontSize: '13px', color: '#d4b26a', fontWeight: 700 }}>{bk.tourBookingCode}</span></div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Quán</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.store?.name || bk.store}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679', flex: 'none' }}>Cast mong muốn</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500, textAlign: 'right' }}>{typeof bk.cast === 'object' ? (bk.cast ? bk.cast.stageName : 'Không có') : (bk.cast === 'Không cast' ? 'Không có' : bk.cast.replace('Cast: ', ''))}</span></div>
+                {!isServiceOnlyBooking(bk) && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679', flex: 'none' }}>Cast mong muốn</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500, textAlign: 'right' }}>{typeof bk.cast === 'object' ? (bk.cast ? bk.cast.stageName : 'Không có') : (bk.cast === 'Không cast' ? 'Không có' : bk.cast.replace('Cast: ', ''))}</span></div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số người</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.partySize} khách</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Khung giờ</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{formatTime(bk.scheduledAt)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Nguồn gửi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.source || 'Form web'}</span></div>

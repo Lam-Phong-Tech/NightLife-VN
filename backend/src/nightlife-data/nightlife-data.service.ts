@@ -26793,6 +26793,7 @@ export class NightlifeDataService {
       customerPhone: bk.user?.phone || bk.guest?.phone || '',
       customerEmail: bk.user?.email || bk.guest?.email || '',
       store: bk.store.name,
+      storeCategory: bk.store.category,
       cast: (() => {
         const itinerary = bk.tourBooking?.itinerarySnapshot;
         const stop = (Array.isArray(itinerary)
