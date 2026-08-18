@@ -1080,6 +1080,111 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   );
 }
 
+function VideoRail({
+  items,
+  onOpen,
+}: {
+  items: StoreGalleryItem[];
+  onOpen: (index: number, event: ReactMouseEvent<HTMLButtonElement>) => void;
+}) {
+  const activeLanguage = useActiveLanguage();
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canScrollBack, setCanScrollBack] = useState(false);
+  const [canScrollForward, setCanScrollForward] = useState(false);
+
+  const updateRailControls = () => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const tolerance = 2;
+    setCanScrollBack(rail.scrollLeft > tolerance);
+    setCanScrollForward(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - tolerance);
+  };
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    updateRailControls();
+    const observer = new ResizeObserver(updateRailControls);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [items.length]);
+
+  const moveRail = (direction: "back" | "forward") => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    rail.scrollBy({
+      left: (direction === "forward" ? 1 : -1) * Math.max(rail.clientWidth * 0.75, 160),
+      behavior: "smooth",
+    });
+  };
+
+  const visibleItems = items.slice(0, 6);
+
+  return (
+    <div className={["video-rail-shell", canScrollBack || canScrollForward ? "has-controls" : ""].filter(Boolean).join(" ")}>
+      {canScrollBack ? (
+        <button
+          className="video-rail-control video-rail-control-back"
+          type="button"
+          aria-label={translateText("Xem video trước", activeLanguage)}
+          onClick={() => moveRail("back")}
+        >
+          <span className="video-rail-control-label">
+            {translateText("Vuốt để quay lại", activeLanguage)}
+          </span>
+          <ChevronLeft size={22} aria-hidden="true" />
+        </button>
+      ) : null}
+
+      <div className="tour-rail hscroll video-rail" ref={railRef} onScroll={updateRailControls}>
+        {visibleItems.map((item, index) => {
+          const videoUrl = resolveClientUrl(item.url) ?? item.url;
+          const visualUrl = mediaVisualUrl(item);
+          const isDirectVideo = !visualUrl && videoUrl && !videoUrl.includes("youtube.com") && !videoUrl.includes("vimeo.com");
+
+          return (
+            <button
+              className="tour-card"
+              type="button"
+              key={`${item.id}-${index}`}
+              style={visualUrl ? { backgroundImage: imageBackground(visualUrl) } : undefined}
+              onClick={(event) => onOpen(index, event)}
+            >
+              {isDirectVideo ? (
+                <video
+                  className="tour-card-video-preview"
+                  src={`${videoUrl}#t=0.1`}
+                  preload="metadata"
+                  muted
+                  playsInline
+                />
+              ) : null}
+              <Play size={18} fill="currentColor" />
+            </button>
+          );
+        })}
+      </div>
+
+      {canScrollForward ? (
+        <button
+          className="video-rail-control video-rail-control-forward"
+          type="button"
+          aria-label={translateText("Xem thêm video", activeLanguage)}
+          onClick={() => moveRail("forward")}
+        >
+          <span className="video-rail-control-label">
+            {translateText("Vuốt để xem thêm", activeLanguage)}
+          </span>
+          <ChevronRight size={22} aria-hidden="true" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const { formatMoney } = useMoneyFormatter(activeLanguage);
@@ -2882,34 +2987,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             {tourMedia.length ? (
               <section className="mobile-only">
                 <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
-                <div className="tour-rail hscroll">
-                  {tourMedia.slice(0, 6).map((item, index) => {
-                    const videoUrl = resolveClientUrl(item.url) ?? item.url;
-                    const visualUrl = mediaVisualUrl(item);
-                    const isDirectVideo = !visualUrl && videoUrl && !videoUrl.includes("youtube.com") && !videoUrl.includes("vimeo.com");
-
-                    return (
-                      <button
-                        className="tour-card"
-                        type="button"
-                        key={`${item.id}-${index}`}
-                        style={visualUrl ? { backgroundImage: imageBackground(visualUrl) } : undefined}
-                        onClick={(event) => openVideoGallery(index, event)}
-                      >
-                        {isDirectVideo ? (
-                          <video
-                            className="tour-card-video-preview"
-                            src={`${videoUrl}#t=0.1`}
-                            preload="metadata"
-                            muted
-                            playsInline
-                          />
-                        ) : null}
-                        <Play size={18} fill="currentColor" />
-                      </button>
-                    );
-                  })}
-                </div>
+                <VideoRail items={tourMedia} onOpen={openVideoGallery} />
               </section>
             ) : null}
 
@@ -4699,6 +4777,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-width: 0;
         }
 
+        .video-rail-shell {
+          position: relative;
+          min-width: 0;
+        }
+
+        .video-rail-control {
+          display: none;
+        }
+
         .cast-rail {
           display: flex;
           gap: 16px;
@@ -5564,6 +5651,52 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .cast-rail-shell.has-controls {
             padding-bottom: 46px;
+          }
+
+          .video-rail-shell.has-controls {
+            padding-bottom: 46px;
+          }
+
+          .video-rail-control {
+            position: absolute;
+            z-index: 2;
+            bottom: 5px;
+            display: inline-flex;
+            width: auto;
+            height: 24px;
+            align-items: center;
+            gap: 5px;
+            padding: 0 2px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            color: var(--vy-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .01em;
+            cursor: pointer;
+          }
+
+          .video-rail-control:active {
+            color: var(--vy-gold-hi);
+          }
+
+          .video-rail-control:focus-visible {
+            outline: 1px solid var(--vy-gold);
+            outline-offset: 3px;
+          }
+
+          .video-rail-control-label {
+            display: inline;
+          }
+
+          .video-rail-control-back {
+            left: 2px;
+          }
+
+          .video-rail-control-forward {
+            right: 6px;
           }
 
           .cast-rail-control {
