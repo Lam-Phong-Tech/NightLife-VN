@@ -5660,7 +5660,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .video-rail-control {
             position: absolute;
             z-index: 2;
-            bottom: 5px;
+            bottom: -18px;
             display: inline-flex;
             width: auto;
             height: 24px;
