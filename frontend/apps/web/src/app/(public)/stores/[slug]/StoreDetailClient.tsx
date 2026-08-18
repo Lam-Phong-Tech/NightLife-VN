@@ -1025,7 +1025,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   }
 
   return (
-    <div className="cast-rail-shell">
+    <div className={["cast-rail-shell", canScrollBack || canScrollForward ? "has-controls" : ""].filter(Boolean).join(" ")}>
       {canScrollBack ? (
         <button
           className="cast-rail-control cast-rail-control-back"
@@ -1033,6 +1033,9 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
           aria-label={translateText("Xem cast trước", activeLanguage)}
           onClick={() => moveRail("back")}
         >
+          <span className="cast-rail-control-label">
+            {translateText("Vuốt để quay lại", activeLanguage)}
+          </span>
           <ChevronLeft size={22} aria-hidden="true" />
         </button>
       ) : null}
@@ -1067,6 +1070,9 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
           aria-label={translateText("Xem thêm cast", activeLanguage)}
           onClick={() => moveRail("forward")}
         >
+          <span className="cast-rail-control-label">
+            {translateText("Vuốt để xem thêm", activeLanguage)}
+          </span>
           <ChevronRight size={22} aria-hidden="true" />
         </button>
       ) : null}
@@ -4722,6 +4728,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           outline: none;
         }
 
+        .cast-rail-control-label {
+          display: none;
+        }
+
         .cast-rail-control:active {
           background: #f5d77d;
           border-color: #fff4c9;
@@ -5548,6 +5558,67 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 620px) {
+          .cast-rail-shell.has-controls {
+            padding-bottom: 26px;
+          }
+
+          .cast-rail-control {
+            top: auto;
+            bottom: 0;
+            display: inline-flex;
+            width: auto;
+            height: 24px;
+            gap: 5px;
+            padding: 0 2px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            color: var(--vy-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .01em;
+          }
+
+          .cast-rail-control:active {
+            background: transparent;
+            border-color: transparent;
+            color: var(--vy-gold-hi);
+            transform: none;
+          }
+
+          html.vy-light .cast-rail-control,
+          html:not(.vy-light) .cast-rail-control,
+          html.vy-light .cast-rail-control:active,
+          html:not(.vy-light) .cast-rail-control:active {
+            background: transparent;
+            border-color: transparent;
+            box-shadow: none;
+            color: var(--vy-muted);
+          }
+
+          html.vy-light .cast-rail-control:active,
+          html:not(.vy-light) .cast-rail-control:active {
+            color: var(--vy-gold-hi);
+          }
+
+          .cast-rail-control:focus-visible {
+            outline: 1px solid var(--vy-gold);
+            outline-offset: 3px;
+          }
+
+          .cast-rail-control-label {
+            display: inline;
+          }
+
+          .cast-rail-control-back {
+            left: 2px;
+          }
+
+          .cast-rail-control-forward {
+            right: 2px;
+          }
+
           .info-column {
             padding: 0 16px;
           }
