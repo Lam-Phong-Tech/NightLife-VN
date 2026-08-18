@@ -128,6 +128,7 @@ import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
   CreateAdminRankingConfigDto,
+  ReorderAdminRankingGroupDto,
   UpdateAdminRankingConfigDto,
 } from './dto/admin-ranking.dto';
 import { AdminBookingQueryDto } from './dto/admin-booking.dto';
@@ -660,6 +661,20 @@ export class NightlifeDataController {
       period,
       from,
       to,
+    );
+  }
+
+  @ActionPolicy('canManageRanking')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('admin/rankings/reorder')
+  reorderAdminRankingGroup(
+    @Req() request: RequestWithUser,
+    @Body() dto: ReorderAdminRankingGroupDto,
+  ) {
+    return this.nightlifeDataService.reorderAdminRankingGroup(
+      request.user,
+      dto,
     );
   }
 

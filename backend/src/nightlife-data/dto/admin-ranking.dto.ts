@@ -5,11 +5,13 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsArray,
   IsString,
   IsUUID,
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { VIETNAM_CITY_FILTER_CODES } from '../vietnam-admin-units';
 
@@ -167,4 +169,39 @@ export class UpdateAdminRankingConfigDto {
   @IsOptional()
   @IsDateString()
   endsAt?: string | null;
+}
+
+export class AdminRankingReorderItemDto {
+  @IsUUID()
+  targetId!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  sponsored?: boolean;
+}
+
+export class ReorderAdminRankingGroupDto {
+  @IsString()
+  @IsIn(['CAST', 'STORE', 'cast', 'store'])
+  targetType!: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(VIETNAM_CITY_FILTER_CODES)
+  cityCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  category?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  scope?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdminRankingReorderItemDto)
+  items!: AdminRankingReorderItemDto[];
 }

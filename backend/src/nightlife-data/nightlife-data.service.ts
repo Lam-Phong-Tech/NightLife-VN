@@ -60,6 +60,7 @@ import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
   CreateAdminRankingConfigDto,
+  ReorderAdminRankingGroupDto,
   UpdateAdminRankingConfigDto,
 } from './dto/admin-ranking.dto';
 import {
@@ -2203,6 +2204,130 @@ export class NightlifeDataService {
     });
 
     return (await this.mapAdminRankingConfigs([config]))[0];
+  }
+
+  async reorderAdminRankingGroup(
+    user: AuthenticatedUser,
+    dto: ReorderAdminRankingGroupDto,
+  ) {
+    const targetType = this.resolveRankingTargetType(dto.targetType);
+    const cityCode = this.resolveAdminRankingCityCode(dto.cityCode);
+    const category = this.resolveAdminRankingCategory(dto.category);
+    const scope = this.resolveAdminRankingScope(dto.scope);
+    const items = dto.items ?? [];
+    const maxItems = this.getAdminRankingGroupLimit(scope);
+
+    if (items.length > maxItems) {
+      throw new BadRequestException(
+        `Ranking group supports at most ${maxItems} active items.`,
+      );
+    }
+
+    const targetIds = items.map((item) => item.targetId);
+    if (new Set(targetIds).size !== targetIds.length) {
+      throw new BadRequestException('Ranking targets must be unique.');
+    }
+
+    for (const targetId of targetIds) {
+      await this.assertAdminRankingTargetExists(targetType, targetId);
+    }
+
+    const categoryFilter = category === null ? {} : { category };
+    const groupWhere = {
+      targetType,
+      cityCode,
+      scope,
+      deletedAt: null,
+      ...categoryFilter,
+    } as Prisma.RankingConfigWhereInput;
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        // Clear the complete group, including stale configs whose targets are
+        // no longer shown by the admin list. This makes the reorder operation
+        // self-healing and prevents hidden records from blocking a rank.
+        await tx.rankingConfig.updateMany({
+          where: groupWhere,
+          data: { pinRank: null },
+        });
+
+        for (const [index, item] of items.entries()) {
+          const existing = await tx.rankingConfig.findFirst({
+            where: {
+              ...groupWhere,
+              targetId: item.targetId,
+            },
+            orderBy: { updatedAt: 'desc' },
+            select: { id: true },
+          });
+
+          if (existing) {
+            await tx.rankingConfig.update({
+              where: { id: existing.id },
+              data: {
+                category,
+                pinRank: index + 1,
+                sponsored: item.sponsored ?? false,
+                status: 'ACTIVE',
+              },
+            });
+          } else {
+            await tx.rankingConfig.create({
+              data: {
+                createdById: user.id,
+                targetType,
+                targetId: item.targetId,
+                cityCode,
+                category,
+                scope,
+                pinRank: index + 1,
+                manualScore: 0,
+                sponsored: item.sponsored ?? false,
+                status: 'ACTIVE',
+              },
+            });
+          }
+        }
+
+        await tx.auditLog.create({
+          data: {
+            ...adminAuditActorFields(user),
+            module: 'Ranking',
+            changeSummary: `Reordered ${targetType} ranking group`,
+            result: 'SUCCESS',
+            action: 'ranking.config.reorder',
+            targetType: 'RankingConfig',
+            targetId: `group:${targetType}:${cityCode}:${category ?? 'all'}:${scope}`,
+            entityDisplayCode: `RANKING-${targetType}-${cityCode}`,
+            beforeJson: Prisma.JsonNull,
+            afterJson: this.toPrismaJson({
+              targetType,
+              cityCode,
+              category,
+              scope,
+              targetIds,
+            }),
+            metadata: this.toPrismaJson(
+              this.buildMinimalSensitiveMetadata({
+                actorId: user.id,
+                action: 'ranking.config.reorder',
+                refType: 'RankingConfigGroup',
+                refId: `${targetType}:${cityCode}:${category ?? 'all'}:${scope}`,
+                metadata: { targetType, cityCode, category, scope, targetIds },
+              }),
+            ),
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    return this.listAdminRankingConfigs({
+      targetType,
+      city: cityCode,
+      ...(category !== null ? { category } : {}),
+      scope,
+    });
   }
 
   async deleteAdminRankingConfig(user: AuthenticatedUser, rankingId: string) {

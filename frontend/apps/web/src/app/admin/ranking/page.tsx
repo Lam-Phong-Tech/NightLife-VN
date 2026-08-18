@@ -279,7 +279,6 @@ function AdminRankingsClient() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
   const [toast, setToast] = useState<RankingToast | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -427,7 +426,6 @@ function AdminRankingsClient() {
   useEffect(() => {
     void Promise.resolve().then(async () => {
       await fetchRankings();
-      setDeletedItemIds([]);
     });
   }, [fetchRankings]);
 
@@ -480,12 +478,10 @@ function AdminRankingsClient() {
   };
 
   const removeCast = (id: string) => {
-    if (!id.startsWith('new-')) setDeletedItemIds(prev => [...prev, id]);
     setCasts(casts.filter(item => item.id !== id));
   };
 
   const removeStore = (id: string) => {
-    if (!id.startsWith('new-')) setDeletedItemIds(prev => [...prev, id]);
     setStores(stores.filter(item => item.id !== id));
   };
 
@@ -493,65 +489,31 @@ function AdminRankingsClient() {
     setIsSaving(true);
     try {
       const cityCode = tabToCityCode(activeTab);
-      
-      for (const id of deletedItemIds) {
-        await apiClient(`/admin/rankings/${id}`, { method: 'DELETE' });
-      }
 
-      const unpinExistingItems = async (items: RankingItem[]) => {
-        await Promise.all(
-          items
-            .filter((item) => !item.id.startsWith('new-'))
-            .map((item) =>
-              apiClient(`/admin/rankings/${item.id}`, {
-                method: 'PATCH',
-                data: { pinRank: null },
-              }),
-            ),
-        );
-      };
-
-      const saveRankingItems = async (
+      const saveRankingGroup = async (
         items: RankingItem[],
         targetType: RankingItem['targetType'],
       ) => {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (!item) continue;
-          if (item.id.startsWith('new-')) {
-            await apiClient('/admin/rankings', {
-              method: 'POST',
-              data: {
-                targetId: item.targetId,
-                targetType,
-                cityCode: cityCode,
-                category: activeCategory,
-                pinRank: i + 1,
-                sponsored: item.sponsored
-              }
-            });
-          } else {
-            await apiClient(`/admin/rankings/${item.id}`, {
-              method: 'PATCH',
-              data: {
-                cityCode: cityCode,
-                category: activeCategory,
-                pinRank: i + 1,
-                sponsored: item.sponsored
-              }
-            });
-          }
-        }
+        await apiClient('/admin/rankings/reorder', {
+          method: 'POST',
+          data: {
+            targetType,
+            cityCode,
+            category: activeCategory,
+            scope: 'global',
+            items: items.map((item) => ({
+              targetId: item.targetId,
+              sponsored: item.sponsored,
+            })),
+          },
+        });
       };
 
-      await unpinExistingItems(casts);
-      await unpinExistingItems(stores);
-      await saveRankingItems(casts, 'CAST');
-      await saveRankingItems(stores, 'STORE');
+      await saveRankingGroup(casts, 'CAST');
+      await saveRankingGroup(stores, 'STORE');
 
       showToast('Lưu ranking thành công.', 'success');
-      setDeletedItemIds([]);
-      fetchRankings();
+      await fetchRankings();
     } catch (error: any) {
       console.error(error);
       showToast(rankingSaveErrorMessage(error), 'error');
