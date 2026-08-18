@@ -581,8 +581,8 @@ const entries: TranslationEntry[] = [
   {
     vi: "Khi bạn đặt bàn, đặt cast hoặc đặt tour, lịch sử sẽ hiển thị tại đây.",
     en: "When you reserve a table, book a Cast, or book a tour, your history will appear here.",
-    ja: "テーブル予約、Cast予約、ツアー予約をすると、履歴がここに表示されます。",
-    ko: "테이블, Cast 또는 투어를 예약하면 내역이 여기에 표시됩니다.",
+    ja: "テーブルやキャスト、ツアーを予約すると履歴がここに表示されます。",
+    ko: "테이블, 캐스트 또는 투어를 예약하면 내역이 여기에 표시됩니다.",
     zh: "当你预订座位、预约 陪伴人员 或预订行程后，历史记录会显示在这里。",
   },
   {

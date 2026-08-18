@@ -239,7 +239,7 @@ const rankingPageCopy = (language: LanguageCode) =>
   })[language];
 
 const rankingKindTabs = (language: LanguageCode): Array<SelectOption<RankingKind>> => [
-  { key: "cast", label: "Cast" },
+  { key: "cast", label: translateText("Cast", language) },
   {
     key: "quan",
     label:

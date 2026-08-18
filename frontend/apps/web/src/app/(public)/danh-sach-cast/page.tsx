@@ -3209,7 +3209,8 @@ html.vy-light .cast-card-favorite.is-active {
 }
 
 .cast-reset-button {
-  flex: none;
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3217,7 +3218,8 @@ html.vy-light .cast-card-favorite.is-active {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: var(--vy-muted);
-  padding: 0 17px;
+  padding: 0 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -3226,13 +3228,21 @@ html.vy-light .cast-card-favorite.is-active {
 }
 
 .cast-apply-button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .cast-filter-sheet--desktop .cast-apply-button {
   flex: none;
   min-width: 178px;
   padding: 0 24px;
+}
+
+.cast-filter-sheet--desktop .cast-reset-button {
+  flex: none;
+  min-width: auto;
+  padding: 0 17px;
+  font-size: 13px;
 }
 
 html.vy-light .cast-search-page {

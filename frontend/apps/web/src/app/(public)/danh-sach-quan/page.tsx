@@ -3472,7 +3472,7 @@ const venueSearchCss = `
 
   .venue-filter-actions {
     display: grid;
-    grid-template-columns: minmax(126px, .98fr) minmax(0, 1.62fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
     gap: 10px;
     padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--vy-border);
@@ -3496,7 +3496,9 @@ const venueSearchCss = `
     border: 1px solid var(--vy-border);
     background: var(--vy-surface-1);
     color: var(--vy-muted);
-    padding: 0 12px;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 12px;
     white-space: nowrap;
   }
 
