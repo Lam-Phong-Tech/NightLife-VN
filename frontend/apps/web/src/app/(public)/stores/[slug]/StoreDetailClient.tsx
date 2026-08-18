@@ -4718,9 +4718,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           transition: background .15s ease, color .15s ease, transform .15s ease;
         }
 
-        .cast-rail-control:where(:hover, :focus-visible) {
-          background: #d4a93e;
-          color: #17120a;
+        .cast-rail-control:focus-visible {
           outline: none;
         }
 
@@ -4740,21 +4738,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #5b421f;
         }
 
-        html.vy-light .cast-rail-control:where(:hover, :focus-visible) {
-          background: #ead8ae;
-          color: #30220f;
-        }
-
         html.vy-light .cast-rail-control:active {
           background: #c9953d;
           border-color: #704d1e;
           color: #fffaf0;
-        }
-
-        html:not(.vy-light) .cast-rail-control:where(:hover, :focus-visible) {
-          background: #70404a;
-          border-color: #d7a16b;
-          color: #ffe0b2;
         }
 
         html:not(.vy-light) .cast-rail-control:active {
