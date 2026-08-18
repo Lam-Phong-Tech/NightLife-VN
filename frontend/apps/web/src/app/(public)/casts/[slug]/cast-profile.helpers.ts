@@ -1,5 +1,5 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
-import { getFilterAreaLabel, getFilterCityLabel } from "@/lib/i18n/filter-taxonomy";
+import { getFilterAreaLabel } from "@/lib/i18n/filter-taxonomy";
 import type { LanguageCode } from "@/lib/i18n/locales";
 import { isServiceOnlyBookingCategory } from "@/lib/store-categories";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
@@ -240,13 +240,7 @@ export function buildCastArea(profile: CastProfile, language: LanguageCode = "vi
     : !isGenVal(profile.store.district)
     ? profile.store.district
     : null;
-  const city = profile.store.cityCode
-    ? getFilterCityLabel(profile.store.cityCode, language)
-    : profile.store.city
-      ? getFilterAreaLabel(profile.store.city, language)
-      : "";
-
-  return [rawWard ? getFilterAreaLabel(rawWard, language) : "", city].filter(Boolean).join(" · ");
+  return rawWard ? getFilterAreaLabel(rawWard, language) : "";
 }
 
 export function buildBookingHref(profile: CastProfile, area: string) {

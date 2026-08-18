@@ -9,6 +9,7 @@ import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 type CastHeroProps = {
   profile: CastProfile;
+  rank: number | null;
   activeMedia: CastMedia;
   area: string;
   language: LanguageCode;
@@ -35,6 +36,7 @@ const profileSummary = (profile: CastProfile, language: LanguageCode) =>
 
 export function CastHero({
   profile,
+  rank,
   activeMedia,
   area,
   language,
@@ -119,10 +121,12 @@ export function CastHero({
 
       <div className="cast-hero-copy">
         <div className="cast-badge-row">
-          <span className="cast-rank-badge">
-            <Star size={12} fill="currentColor" />
-            {copy.rankingThisMonth}
-          </span>
+          {rank ? (
+            <span className="cast-rank-badge">
+              <Star size={12} fill="currentColor" />
+              {copy.rankingThisMonth.replace("#1", `#${rank}`)}
+            </span>
+          ) : null}
           <span className="cast-live-badge">
             <span />
             {copy.acceptingTonight}

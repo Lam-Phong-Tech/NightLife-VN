@@ -3034,6 +3034,17 @@ export class NightlifeDataService {
             longitude: true,
             mapUrl: true,
             googlePlaceId: true,
+            _count: {
+              select: {
+                casts: {
+                  where: {
+                    deletedAt: null,
+                    status: 'ACTIVE',
+                    isPublic: true,
+                  },
+                },
+              },
+            },
             media: {
               where: this.storeMediaWhere({
                 access: 'PUBLIC',
@@ -3153,6 +3164,7 @@ export class NightlifeDataService {
         thumbnailUrl: this.resolveStoreCoverImage(cast.store.media),
         mapUrl: cast.store.mapUrl,
         googlePlaceId: cast.store.googlePlaceId,
+        castCount: cast.store._count?.casts ?? 0,
       },
       seo: {
         title: `${name} · ${cast.store.name} | Vietyoru`,

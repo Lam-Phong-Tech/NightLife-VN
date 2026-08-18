@@ -12,6 +12,7 @@ import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
 type CastGalleryProps = {
   gallery: CastMedia[];
+  rank: number | null;
   activeIndex: number;
   variant: "mobile" | "desktop";
   language: LanguageCode;
@@ -35,6 +36,7 @@ type GalleryTouchStart = {
 
 export function CastGallery({
   gallery,
+  rank,
   activeIndex,
   variant,
   language,
@@ -202,10 +204,12 @@ export function CastGallery({
             </span>
           ) : null}
         </button>
-        <span className="cast-rank-badge cast-desktop-media-rank">
-          <Star size={13} fill="currentColor" />
-          {copy.rankingJune}
-        </span>
+        {rank ? (
+          <span className="cast-rank-badge cast-desktop-media-rank">
+            <Star size={13} fill="currentColor" />
+            {copy.rankingJune.replace("#1", `#${rank}`)}
+          </span>
+        ) : null}
         <span className="cast-live-badge cast-desktop-media-live">
           <span />
           {copy.acceptingTonight}

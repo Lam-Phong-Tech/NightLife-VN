@@ -16,6 +16,7 @@ import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
 type CastInfoProps = {
   profile: CastProfile;
+  rank: number | null;
   area: string;
   languageText: string;
   storeHref: string;
@@ -33,6 +34,7 @@ type RelatedCastsProps = {
 
 export function CastInfo({
   profile,
+  rank,
   area,
   languageText,
   storeHref,
@@ -84,10 +86,12 @@ export function CastInfo({
   return (
     <section className="cast-desktop-profile" data-testid="cast-info-desktop">
       <div className="cast-badge-row desktop">
-        <span className="cast-rank-badge">
-          <Star size={12} fill="currentColor" />
-          {copy.rankingThisMonth}
-        </span>
+        {rank ? (
+          <span className="cast-rank-badge">
+            <Star size={12} fill="currentColor" />
+            {copy.rankingThisMonth.replace("#1", `#${rank}`)}
+          </span>
+        ) : null}
         <span className="cast-live-badge">
           <span />
           {copy.acceptingTonight}
@@ -248,7 +252,7 @@ function VenueCard({
           {localizeCastText(profile.store.category || "Lounge", language)} · {area || copy.areaUpdating}
         </small>
         <span className="cast-venue-meta">
-          <span>18 cast</span>
+          <span>{profile.store.castCount ?? 0} cast</span>
         </span>
       </span>
       <span className="cast-venue-actions">

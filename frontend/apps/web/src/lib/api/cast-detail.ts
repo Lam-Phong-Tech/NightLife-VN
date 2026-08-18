@@ -15,6 +15,7 @@ export type CastGalleryItem = {
 };
 
 export type CastDetailStore = PublicStore & {
+  castCount?: number;
   phone?: string | null;
   mapUrl?: string | null;
   googlePlaceId?: string | null;

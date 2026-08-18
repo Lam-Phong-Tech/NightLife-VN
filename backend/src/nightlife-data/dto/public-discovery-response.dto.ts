@@ -251,6 +251,9 @@ export class PublicCastGalleryItemDto {
 }
 
 export class PublicCastDetailStoreDto extends PublicStoreDto {
+  @ApiProperty({ example: 3 })
+  castCount!: number;
+
   @ApiPropertyOptional({ example: '+84243456007', nullable: true })
   phone?: string | null;
 

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ApiError, apiClient } from "@/lib/api/client";
 import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
+import { rankingsApi } from "@/lib/api/rankings";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
@@ -160,6 +161,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const [isVideoLightboxOpen, setIsVideoLightboxOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [castRank, setCastRank] = useState<number | null>(null);
   const heroSwipeRef = useRef({
     pointerId: null as number | null,
     startX: 0,
@@ -208,6 +210,29 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       data: { targetType: "CAST", targetId: profile.id },
     }).catch(() => undefined);
   }, [profile.id]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const city = profile.store.cityCode === "hn" || profile.store.cityCode === "hcm"
+      ? profile.store.cityCode
+      : "all";
+
+    setCastRank(null);
+    rankingsApi
+      .list({ targetType: "CAST", city, limit: 5 }, { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const rankedCast = response.data.find(
+          (item) => item.targetId === profile.id || item.slug === profile.slug,
+        );
+        setCastRank(rankedCast?.rank ?? null);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCastRank(null);
+      });
+
+    return () => controller.abort();
+  }, [profile.id, profile.slug, profile.store.cityCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -416,6 +441,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
         >
           <CastHero
             profile={profile}
+            rank={castRank}
             activeMedia={activeMedia}
             area={area}
             language={activeLanguage}
@@ -433,6 +459,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
           {shouldRenderPhotoGallery ? (
             <CastGallery
               gallery={gallery}
+              rank={castRank}
               activeIndex={activeMediaIndex}
               variant="mobile"
               language={activeLanguage}
@@ -452,6 +479,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
           {videoGallery.length ? (
             <CastGallery
               gallery={videoGallery}
+              rank={castRank}
               activeIndex={activeVideoIndex}
               variant="mobile"
               language={activeLanguage}
@@ -466,6 +494,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
           ) : null}
           <CastInfo
             profile={profile}
+            rank={castRank}
             area={area}
             languageText={languageText}
             storeHref={storeHref}
@@ -486,6 +515,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             <div className="cast-desktop-grid">
               <CastGallery
                 gallery={gallery}
+                rank={castRank}
                 activeIndex={activeMediaIndex}
                 variant="desktop"
                 isLightboxOpen={isLightboxOpen}
@@ -508,6 +538,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 </nav>
                 <CastInfo
                   profile={profile}
+                  rank={castRank}
                   area={area}
                   languageText={languageText}
                   storeHref={storeHref}
@@ -529,6 +560,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             {videoGallery.length ? (
               <CastGallery
                 gallery={videoGallery}
+                rank={castRank}
                 activeIndex={activeVideoIndex}
                 variant="mobile"
                 language={activeLanguage}
