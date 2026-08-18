@@ -978,6 +978,38 @@ function IconButton({
 
 function CastRail({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canScrollBack, setCanScrollBack] = useState(false);
+  const [canScrollForward, setCanScrollForward] = useState(false);
+
+  const updateRailControls = () => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const tolerance = 2;
+    setCanScrollBack(rail.scrollLeft > tolerance);
+    setCanScrollForward(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - tolerance);
+  };
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    updateRailControls();
+    const observer = new ResizeObserver(updateRailControls);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [store.casts.length]);
+
+  const moveRail = (direction: "back" | "forward") => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    rail.scrollBy({
+      left: (direction === "forward" ? 1 : -1) * Math.max(rail.clientWidth * 0.75, 160),
+      behavior: "smooth",
+    });
+  };
 
   if (!store.casts.length) {
     return (
@@ -993,27 +1025,51 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   }
 
   return (
-    <div className="cast-rail hscroll">
-      {store.casts.slice(0, 10).map((cast) => {
-        const avatarUrl = cast.thumbnailUrl || "";
+    <div className="cast-rail-shell">
+      {canScrollBack ? (
+        <button
+          className="cast-rail-control cast-rail-control-back"
+          type="button"
+          aria-label={translateText("Xem cast trước", activeLanguage)}
+          onClick={() => moveRail("back")}
+        >
+          <ChevronLeft size={22} aria-hidden="true" />
+        </button>
+      ) : null}
 
-        return (
-          <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
-            <span
-              className="cast-avatar"
-              style={{
-                backgroundImage: avatarUrl ? imageBackground(avatarUrl) : emptyMediaBackground,
-              }}
-            />
-            <strong className="notranslate" translate="no" data-no-translate="true">{cast.publicAlias || cast.stageName}</strong>
-            <small>
-              <Star size={11} fill="currentColor" />
-              {formatNationalities(cast.languages, activeLanguage) ||
-                translateText("Cast", activeLanguage)}
-            </small>
-          </Link>
-        );
-      })}
+      <div className="cast-rail hscroll" ref={railRef} onScroll={updateRailControls}>
+        {store.casts.slice(0, 10).map((cast) => {
+          const avatarUrl = cast.thumbnailUrl || "";
+
+          return (
+            <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
+              <span
+                className="cast-avatar"
+                style={{
+                  backgroundImage: avatarUrl ? imageBackground(avatarUrl) : emptyMediaBackground,
+                }}
+              />
+              <strong className="notranslate" translate="no" data-no-translate="true">{cast.publicAlias || cast.stageName}</strong>
+              <small>
+                <Star size={11} fill="currentColor" />
+                {formatNationalities(cast.languages, activeLanguage) ||
+                  translateText("Cast", activeLanguage)}
+              </small>
+            </Link>
+          );
+        })}
+      </div>
+
+      {canScrollForward ? (
+        <button
+          className="cast-rail-control cast-rail-control-forward"
+          type="button"
+          aria-label={translateText("Xem thêm cast", activeLanguage)}
+          onClick={() => moveRail("forward")}
+        >
+          <ChevronRight size={22} aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -4632,11 +4688,46 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           white-space: nowrap;
         }
 
+        .cast-rail-shell {
+          position: relative;
+          min-width: 0;
+        }
+
         .cast-rail {
           display: flex;
           gap: 16px;
           overflow-x: auto;
           padding-bottom: 2px;
+          scroll-behavior: smooth;
+        }
+
+        .cast-rail-control {
+          position: absolute;
+          z-index: 2;
+          top: 38px;
+          display: grid;
+          width: 40px;
+          height: 40px;
+          place-items: center;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 50%;
+          background: rgba(20, 18, 15, .9);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+          color: var(--vy-gold-hi);
+          cursor: pointer;
+        }
+
+        .cast-rail-control:where(:hover, :focus-visible) {
+          background: var(--vy-gold-soft-bg);
+          outline: none;
+        }
+
+        .cast-rail-control-back {
+          left: 4px;
+        }
+
+        .cast-rail-control-forward {
+          right: 4px;
         }
 
         .cast-bubble {
