@@ -34,6 +34,42 @@ type GalleryTouchStart = {
   y: number;
 };
 
+function isDirectVideo(media: CastMedia) {
+  if (media.type !== "VIDEO") return false;
+
+  if (media.mimeType?.startsWith("video/") && media.mimeType !== "video/youtube") {
+    return true;
+  }
+
+  try {
+    const pathname = new URL(media.url).pathname.toLowerCase();
+    return /\.(mp4|webm|mov|m4v)(?:$|[?#])/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+function DirectVideoPreview({ media }: { media: CastMedia }) {
+  if (!isDirectVideo(media)) return null;
+
+  return (
+    <video
+      className="cast-video-thumbnail"
+      src={media.url}
+      muted
+      playsInline
+      preload="metadata"
+      aria-hidden="true"
+      onLoadedMetadata={(event) => {
+        const video = event.currentTarget;
+        if (Number.isFinite(video.duration) && video.duration > 0) {
+          video.currentTime = Math.min(0.1, video.duration);
+        }
+      }}
+    />
+  );
+}
+
 export function CastGallery({
   gallery,
   rank,
@@ -168,6 +204,7 @@ export function CastGallery({
                   className={`cast-gallery-tile${isPlaceholder ? " is-placeholder" : ""}`}
                   style={{ background: mediaPreviewBg(media, fallbackImageUrl) }}
                 >
+                  <DirectVideoPreview media={media} />
                   {isPlaceholder
                     ? renderPlaceholder(true)
                     : media.type === "VIDEO"
@@ -193,6 +230,7 @@ export function CastGallery({
           onClick={() => onOpenLightbox(activeIndex)}
           aria-label={copy.openGallery}
         >
+          <DirectVideoPreview media={activeMedia} />
           <span className="cast-media-label">
             {activeMedia.type === "VIDEO" ? "Video" : "Gallery"}
           </span>
@@ -267,6 +305,7 @@ export function CastGallery({
               aria-label={media.alt}
               style={{ background: mediaPreviewBg(media, fallbackImageUrl) }}
             >
+              <DirectVideoPreview media={media} />
               {isPlaceholder
                 ? renderPlaceholder(true)
                 : media.type === "VIDEO"

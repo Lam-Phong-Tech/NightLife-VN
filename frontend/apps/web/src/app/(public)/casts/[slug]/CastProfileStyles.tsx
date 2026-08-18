@@ -678,6 +678,16 @@ export function CastProfileStyles() {
         cursor: pointer;
       }
 
+      .cast-video-thumbnail {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+        background: #19191d;
+      }
+
       .cast-video-grid-section {
         margin-top: 18px;
       }
@@ -929,6 +939,14 @@ export function CastProfileStyles() {
         padding: 0;
         cursor: pointer;
         box-shadow: inset 0 -120px 80px -70px rgba(0,0,0,.85);
+      }
+
+      .cast-desktop-main-media .cast-video-thumbnail {
+        z-index: 0;
+      }
+
+      .cast-desktop-main-media > :not(.cast-video-thumbnail) {
+        z-index: 1;
       }
 
       .cast-desktop-main-media.is-placeholder {
