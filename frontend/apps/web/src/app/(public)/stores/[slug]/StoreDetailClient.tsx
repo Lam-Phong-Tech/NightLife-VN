@@ -3175,12 +3175,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         html.vy-light .round-action.hero-back {
-          border-color: rgba(151, 112, 37, .42);
-          background: rgba(255, 248, 230, .76);
-          color: #9c7125;
-          box-shadow:
-            0 0 0 4px rgba(255, 248, 230, .34),
-            0 8px 20px -12px rgba(96, 70, 22, .42);
+          border-color: rgba(255, 61, 113, .54);
+          background: #fff;
+          color: #ff3d71;
+          box-shadow: 0 12px 28px -18px rgba(255, 61, 113, .45);
         }
 
         .store-favorite-action {
