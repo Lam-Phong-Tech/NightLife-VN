@@ -5559,11 +5559,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 620px) {
           .cast-section {
-            margin-bottom: -14px;
+            margin-bottom: -18px;
           }
 
           .cast-rail-shell.has-controls {
-            padding-bottom: 42px;
+            padding-bottom: 46px;
           }
 
           .cast-rail-control {
