@@ -5559,12 +5559,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 620px) {
           .cast-rail-shell.has-controls {
-            padding-bottom: 26px;
+            padding-bottom: 42px;
           }
 
           .cast-rail-control {
             top: auto;
-            bottom: 0;
+            bottom: 5px;
             display: inline-flex;
             width: auto;
             height: 24px;
@@ -5616,7 +5616,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .cast-rail-control-forward {
-            right: 2px;
+            right: 6px;
           }
 
           .info-column {
