@@ -1075,7 +1075,7 @@ export default function Page() {
           }
 
           .nl-login-page .nl-login-visual {
-            min-height: 300px !important;
+            min-height: auto !important;
             padding: 22px 20px !important;
             justify-content: space-between !important;
           }
