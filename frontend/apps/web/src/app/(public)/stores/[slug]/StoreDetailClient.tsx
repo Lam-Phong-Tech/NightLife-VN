@@ -5654,7 +5654,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .video-rail-shell.has-controls {
-            padding-bottom: 46px;
+            padding-bottom: 28px;
           }
 
           .video-rail-control {
