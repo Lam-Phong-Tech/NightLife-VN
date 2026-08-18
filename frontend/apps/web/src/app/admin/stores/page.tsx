@@ -1012,7 +1012,15 @@ function AdminStoresContent() {
       }
 
       const menuMediaIds = menuGroups.flatMap((group) =>
-        (group.items || []).map((item: any) => item.mediaId),
+        (group.items || [])
+          .map((item: any) => {
+            if (item.mediaId) return item.mediaId;
+            const itemKey = normalizeMediaKey(item.thumb || item.imageUrl || item.url);
+            return selectedStore?.media?.find(
+              (media: any) => normalizeMediaKey(mediaItemUrl(media)) === itemKey,
+            )?.id;
+          })
+          .filter(Boolean),
       );
       const payload = {
         ...formData,

@@ -232,6 +232,7 @@ const STORE_MENU_MEDIA_PURPOSES = [
   'store_menu_item',
   'partner-menu-item',
   'partner_menu_item',
+  'PARTNER_MENU_ITEM',
   'STORE_MENU_ITEM',
 ] as const;
 const STORE_MENU_MEDIA_PURPOSE_KEYS = new Set(
@@ -19372,7 +19373,7 @@ export class NightlifeDataService {
   private partnerListingStoreMediaPurpose(
     payload: Pick<
       PartnerListingDraftPayload,
-      'coverImageUrl' | 'galleryUrls' | 'videoUrls'
+      'coverImageUrl' | 'galleryUrls' | 'videoUrls' | 'menuGroups'
     >,
     url: string,
   ) {
@@ -19384,6 +19385,17 @@ export class NightlifeDataService {
       this.partnerMediaUrlKey(payload.coverImageUrl) === key
     ) {
       return 'store-hero';
+    }
+
+    if (
+      key &&
+      payload.menuGroups.some((group) =>
+        (group.items ?? []).some(
+          (item) => this.partnerMediaUrlKey(item.imageUrl) === key,
+        ),
+      )
+    ) {
+      return 'PARTNER_MENU_ITEM';
     }
 
     if (this.partnerRequestMediaType(url) === 'VIDEO') {

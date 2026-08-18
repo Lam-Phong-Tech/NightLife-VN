@@ -1156,21 +1156,49 @@ export default function AdminPartnersPage() {
                     />
                   ) : null}
                   {selectedRequest.menuGroups?.length ? (
-                    <InfoCard
-                      label="Nhóm menu"
-                      value={selectedRequest.menuGroups
-                        .map((group) => {
-                          const items =
-                            group.items
-                              ?.map((item) => cleanText(item.name, ""))
-                              .filter(Boolean) ?? [];
-                          return [cleanText(group.name, ""), items.join(", ")]
-                            .filter(Boolean)
-                            .join(": ");
-                        })
-                        .filter(Boolean)
-                        .join("\n")}
-                    />
+                    <div
+                      style={{
+                        padding: 14,
+                        borderRadius: 12,
+                        background: colors.surface1,
+                        border: `1px solid ${colors.borderSoft}`,
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 9 }}>
+                        Nhóm menu
+                      </div>
+                      <div style={{ display: "grid", gap: 12 }}>
+                        {selectedRequest.menuGroups.map((group, groupIndex) => (
+                          <div key={`${cleanText(group.name, "group")}-${groupIndex}`}>
+                            <div style={{ color: colors.text, fontWeight: 700, marginBottom: 7 }}>
+                              {cleanText(group.name, `Nhóm ${groupIndex + 1}`)}
+                            </div>
+                            <div style={{ display: "grid", gap: 6 }}>
+                              {(group.items ?? []).map((item, itemIndex) => {
+                                const imageUrl = cleanText(item.imageUrl, "");
+                                return (
+                                  <div
+                                    key={`${cleanText(item.name, "item")}-${itemIndex}`}
+                                    style={{ display: "flex", alignItems: "center", gap: 9 }}
+                                  >
+                                    {imageUrl ? (
+                                      <img
+                                        src={resolveAdminMediaUrl(imageUrl)}
+                                        alt={cleanText(item.name, "Ảnh món")}
+                                        style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 7 }}
+                                      />
+                                    ) : null}
+                                    <span style={{ color: colors.text2, fontSize: 13 }}>
+                                      {cleanText(item.name, "Món chưa đặt tên")}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ) : null}
                   {selectedRequest.menuSummary ? (
                     <InfoCard label="Tóm tắt menu" value={selectedRequest.menuSummary} />
@@ -1222,10 +1250,25 @@ export default function AdminPartnersPage() {
               const explicitGallery = uniqueMediaUrls(selectedRequest.galleryUrls || []);
               const explicitVideos = uniqueMediaUrls(selectedRequest.videoUrls || []);
               const images = media.filter(url => !isVideo(url));
+              const menuImageKeys = new Set(
+                (selectedRequest.menuGroups || [])
+                  .flatMap((group) => group.items || [])
+                  .map((item) => normalizeMediaKey(item.imageUrl))
+                  .filter(Boolean),
+              );
+              const isMenuImage = (url: string) => menuImageKeys.has(normalizeMediaKey(url));
               const cover = explicitCover || images[0];
-              const album = explicitGallery.length
-                ? explicitGallery.filter((url) => normalizeMediaKey(url) !== normalizeMediaKey(cover))
-                : images.filter((url) => normalizeMediaKey(url) !== normalizeMediaKey(cover));
+              const album = explicitGallery.filter(
+                (url) =>
+                  !isMenuImage(url) &&
+                  normalizeMediaKey(url) !== normalizeMediaKey(cover),
+              );
+              const legacyAlbum = images.filter(
+                (url) =>
+                  !isMenuImage(url) &&
+                  normalizeMediaKey(url) !== normalizeMediaKey(cover),
+              );
+              const albumImages = explicitGallery.length ? album : legacyAlbum;
               const videos = explicitVideos.length ? explicitVideos : media.filter(isVideo);
               
               return (
@@ -1242,13 +1285,13 @@ export default function AdminPartnersPage() {
                     </div>
                   )}
                   
-                  {album.length > 0 && (
+                  {albumImages.length > 0 && (
                     <div style={{ marginTop: 16 }}>
                       <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>
-                        Ảnh album <span style={{ color: '#57534b' }}>· {album.length} ảnh</span>
+                        Ảnh album <span style={{ color: '#57534b' }}>· {albumImages.length} ảnh</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-                        {album.map((url, i) => (
+                        {albumImages.map((url, i) => (
                           <a key={i} href={resolveAdminMediaUrl(url)} target="_blank" rel="noreferrer" style={{ aspectRatio: '4/3', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', overflow: 'hidden', display: 'block' }}>
                             <img src={resolveAdminMediaUrl(url)} alt={`Album ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </a>
