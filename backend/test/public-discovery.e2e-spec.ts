@@ -172,14 +172,21 @@ describe('Public discovery listing API (e2e)', () => {
         sort: 'nearest',
       }),
     );
-    expect(prisma.store.findMany).toHaveBeenCalledWith(
+    const publicStoreQuery = prisma.store.findMany.mock.calls.find(
+      ([args]) => (args as any)?.select?.coupons,
+    )?.[0] as any;
+    expect(publicStoreQuery).toEqual(
       expect.objectContaining({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         where: expect.objectContaining({
-          deletedAt: null,
-          status: 'ACTIVE',
-          category: 'CLUB',
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              deletedAt: null,
+              status: 'ACTIVE',
+              category: 'CLUB',
+            }),
+          ]),
         }),
-        take: 20,
       }),
     );
   });
