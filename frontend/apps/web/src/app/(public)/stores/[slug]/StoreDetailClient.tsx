@@ -4731,6 +4731,38 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           transform: scale(.92);
         }
 
+        /* Flat, theme-specific colors keep the control readable without the
+           generic gradient treatment used by many auto-generated interfaces. */
+        html.vy-light .cast-rail-control {
+          border-color: #8d6a35;
+          background: #fffaf0;
+          box-shadow: 0 3px 12px rgba(72, 52, 25, .22), 0 0 0 2px rgba(255, 255, 255, .8);
+          color: #5b421f;
+        }
+
+        html.vy-light .cast-rail-control:where(:hover, :focus-visible) {
+          background: #ead8ae;
+          color: #30220f;
+        }
+
+        html.vy-light .cast-rail-control:active {
+          background: #c9953d;
+          border-color: #704d1e;
+          color: #fffaf0;
+        }
+
+        html:not(.vy-light) .cast-rail-control:where(:hover, :focus-visible) {
+          background: #70404a;
+          border-color: #d7a16b;
+          color: #ffe0b2;
+        }
+
+        html:not(.vy-light) .cast-rail-control:active {
+          background: #a85f4c;
+          border-color: #f0c58d;
+          color: #fff4dc;
+        }
+
         .cast-rail-control-back {
           left: 4px;
         }
