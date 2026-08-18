@@ -2914,7 +2914,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             ) : null}
 
             {!isServiceOnlyBooking ? (
-              <section>
+              <section className="cast-section">
                 <SectionTitle
                   title={translateText("Cast đang làm", activeLanguage)}
                   meta={formatStoreCastCount(visibleCasts.length, activeLanguage)}
@@ -5558,6 +5558,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 620px) {
+          .cast-section {
+            margin-bottom: -14px;
+          }
+
           .cast-rail-shell.has-controls {
             padding-bottom: 42px;
           }
