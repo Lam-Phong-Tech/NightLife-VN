@@ -139,9 +139,10 @@ export function CastProfileStyles() {
       }
 
       html.vy-light .cast-back-link {
-        border-color: rgba(151, 112, 37, .42);
-        background: rgba(255, 248, 230, .76);
-        color: #9c7125;
+        border-color: rgba(255, 61, 113, .54);
+        background: #fff;
+        color: #ff3d71;
+        box-shadow: 0 12px 28px -18px rgba(255, 61, 113, .45);
       }
 
       .cast-favorite-action {
@@ -162,6 +163,12 @@ export function CastProfileStyles() {
       .cast-favorite-action.is-active {
         background: rgba(255,61,113,.16);
         border-color: rgba(255,61,113,.54);
+        color: #ff3d71;
+      }
+
+      html.vy-light .cast-favorite-action {
+        border-color: rgba(255, 61, 113, .54);
+        background: #fff;
         color: #ff3d71;
       }
 
@@ -207,6 +214,19 @@ export function CastProfileStyles() {
       .cast-hero-media-nav button:active,
       .cast-hero-media-nav button:where(:hover, :focus-visible) {
         transform: translateY(-50%) !important;
+      }
+
+      html.vy-light .cast-hero-media-nav button {
+        border-color: rgba(255, 61, 113, .54);
+        background: #fff;
+        color: #ff3d71;
+        box-shadow: 0 12px 28px -18px rgba(255, 61, 113, .45);
+      }
+
+      html.vy-light .cast-hero-media-nav button:where(:hover, :focus-visible),
+      html.vy-light .cast-hero-media-nav button:active {
+        border-color: rgba(255, 61, 113, .72);
+        background: #fff;
       }
 
       .cast-hero-media-nav .previous {
@@ -1356,6 +1376,26 @@ export function CastProfileStyles() {
         transform: translate3d(0, -50%, 0) !important;
         background: rgba(212,178,106,.22);
         border-color: rgba(212,178,106,.45);
+      }
+
+      html.vy-light .cast-desktop-main-media-wrap .cast-favorite-action {
+        border-color: rgba(255, 61, 113, .54);
+        background: #fff;
+        color: #ff3d71;
+        box-shadow: 0 12px 28px -18px rgba(255, 61, 113, .45);
+      }
+
+      html.vy-light .cast-desktop-media-nav button {
+        border-color: rgba(255, 61, 113, .54);
+        background: #fff;
+        color: #ff3d71;
+        box-shadow: 0 12px 28px -18px rgba(255, 61, 113, .45);
+      }
+
+      html.vy-light .cast-desktop-media-nav button:where(:hover, :focus-visible),
+      html.vy-light .cast-desktop-media-nav button:active {
+        border-color: rgba(255, 61, 113, .72);
+        background: #fff;
       }
 
       .cast-desktop-media-nav .previous {
