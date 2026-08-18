@@ -1348,10 +1348,10 @@ export function CastProfileStyles() {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid rgba(255,255,255,.14);
+        border: 1px solid rgba(255,61,113,.54);
         border-radius: 999px;
         background: rgba(17,17,20,.72);
-        color: #f6ecda;
+        color: #ff3d71;
         box-shadow: 0 12px 28px -18px rgba(0,0,0,.9);
         backdrop-filter: blur(8px);
       }
