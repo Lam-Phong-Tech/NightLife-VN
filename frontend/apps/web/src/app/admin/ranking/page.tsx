@@ -80,6 +80,19 @@ const tabToTopbarCityParam = (tab: RankingCityTab) => {
   return '';
 };
 
+const formatRankingCity = (value?: string | null) => {
+  const normalized = (value || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+  if (['hanoi', 'ha noi', 'hà nội'].includes(normalized)) return 'Hà Nội';
+  if (
+    ['hcm', 'tp hcm', 'tphcm', 'ho chi minh', 'ho chi minh city', 'hồ chí minh', 'sài gòn', 'saigon'].includes(
+      normalized,
+    )
+  ) {
+    return 'TP. Hồ Chí Minh';
+  }
+  return value?.trim() || 'Chưa xác định';
+};
+
 const normalizeRankingCategory = (value?: string | null): AdminRankingCategory | undefined => {
   const normalized = (value || '').trim().toUpperCase();
   if (!normalized || normalized === 'ALL') return undefined;
@@ -345,7 +358,7 @@ function AdminRankingsClient() {
       targetId: option.id,
       targetType: 'CAST',
       name: option.name,
-      desc: option.area || option.city || 'Cast',
+      desc: formatRankingCity(option.city),
       avatar: 'C',
       image: option.image || null,
       sponsored: false
@@ -364,7 +377,7 @@ function AdminRankingsClient() {
       targetId: option.id,
       targetType: 'STORE',
       name: option.name,
-      desc: option.category || 'Store',
+      desc: formatRankingCity(option.city),
       avatar: 'S',
       image: option.image || null,
       sponsored: false
@@ -398,7 +411,7 @@ function AdminRankingsClient() {
           targetId: r.targetId,
           targetType: type as any,
           name: r.targetName || (isCast ? 'Unknown Cast' : 'Unknown Store'),
-          desc: isCast ? (r.targetArea || r.targetCity || 'Cast') : (r.targetCategory || r.targetArea || 'Store'),
+          desc: formatRankingCity(r.targetCity),
           avatar: isCast ? 'C' : 'S',
           image: r.targetImage || null,
           sponsored: r.sponsored || false,
@@ -691,7 +704,7 @@ function AdminRankingsClient() {
                     }}></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
-                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.area || opt.city || 'Cast'}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{formatRankingCity(opt.city)}</div>
                     </div>
                     <span onClick={() => handleAddCast(opt)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Thêm vào Top</span>
                   </div>
@@ -776,7 +789,7 @@ function AdminRankingsClient() {
                     }}>{opt.name.substring(0,2).toUpperCase()}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
-                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.category || 'Store'}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{formatRankingCity(opt.city)}</div>
                     </div>
                     <span onClick={() => handleAddStore(opt)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Thêm vào Top</span>
                   </div>

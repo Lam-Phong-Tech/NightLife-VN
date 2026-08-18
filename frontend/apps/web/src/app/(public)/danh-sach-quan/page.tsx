@@ -134,7 +134,6 @@ const cityOptions = [
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "nearest", label: "Gần nhất" },
 ];
 
 const categoryLabels: Record<string, string> = {

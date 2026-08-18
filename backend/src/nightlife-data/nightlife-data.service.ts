@@ -3032,6 +3032,7 @@ export class NightlifeDataService {
                   name: true,
                   city: true,
                   district: true,
+                  ward: true,
                 },
               },
             },
@@ -3089,6 +3090,7 @@ export class NightlifeDataService {
                 name: cast.store.area.name,
                 city: cast.store.area.city,
                 district: cast.store.area.district,
+                ward: cast.store.area.ward,
                 cityCode: this.cityCodeFromAreaCode(cast.store.area.code),
               }
             : null,

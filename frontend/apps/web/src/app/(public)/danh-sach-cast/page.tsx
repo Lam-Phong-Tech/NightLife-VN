@@ -37,6 +37,7 @@ import {
   getFilterCategoryLabel,
   getFilterCityLabel,
   getFilterLanguageLabel,
+  getPreferredStoreAreaName,
 } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { localizePathname } from "@/lib/i18n/locales";
@@ -136,7 +137,6 @@ const languageOptions: Option[] = [
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "nearest", label: "Gần nhất" },
 ];
 
 const compactLanguageLabels: Record<string, string> = {
@@ -432,16 +432,16 @@ const castFavoriteFeedbackCopy = (
   return copy[language];
 };
 
-const castAreaLabel = (cast: PublicCast, language: LanguageCode) =>
-  [
-    getFilterAreaLabel(
-      cast.store.area?.name ?? cast.store.district ?? "",
-      language,
-    ),
-    getCastCityLabel(cast.store.cityCode ?? "", language),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+const castAreaLabel = (cast: PublicCast, language: LanguageCode) => {
+  const areaName = getPreferredStoreAreaName({
+    ward: cast.store.ward,
+    areaWard: cast.store.area?.ward,
+    areaName: cast.store.area?.name,
+    district: cast.store.district,
+  });
+
+  return areaName ? getFilterAreaLabel(areaName, language) : "";
+};
 
 const favoriteSnapshotFromCast = (
   cast: PublicCast,
@@ -463,15 +463,7 @@ const favoriteSnapshotFromApi = (
   name: item.cast.publicAlias ?? item.cast.name ?? item.cast.stageName,
   storeName: item.cast.store.name,
   categoryLabel: getCastCategoryLabel(item.cast.store.category, language),
-  areaLabel: [
-    getFilterAreaLabel(
-      item.cast.store.area?.name ?? item.cast.store.district ?? "",
-      language,
-    ),
-    getCastCityLabel(item.cast.store.cityCode ?? "", language),
-  ]
-    .filter(Boolean)
-    .join(" · "),
+  areaLabel: castAreaLabel(item.cast, language),
   image: item.cast.thumbnailUrl ?? undefined,
   favoritedAt: item.favoritedAt,
 });
@@ -1597,15 +1589,7 @@ function CastDiscoveryCard({
     onToggleFavorite();
   };
   const image = cast.thumbnailUrl;
-  const areaLabel = [
-    getFilterAreaLabel(
-      cast.store.area?.name ?? cast.store.district ?? "",
-      language,
-    ),
-    getCastCityLabel(cast.store.cityCode ?? "", language),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const areaLabel = castAreaLabel(cast, language);
   const langText =
     cast.languages.map((item) => compactLanguageLabels[item] ?? item.toUpperCase()).join(" · ") ||
     "VI";
