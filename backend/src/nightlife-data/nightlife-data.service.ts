@@ -206,6 +206,7 @@ const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
+const DEFAULT_NEARBY_RADIUS_KM = 30;
 const STORE_RANKING_IMAGE_PURPOSES = [
   'hero',
   'store-hero',
@@ -2288,10 +2289,33 @@ export class NightlifeDataService {
     const pagination = this.resolvePagination(query);
     const sort = this.resolveSort(query.sort, coordinates);
     const readArgs =
-      sort === 'priority' ? null : this.resolvePublicReadArgs(sort, pagination);
+      sort === 'priority' || sort === 'nearest'
+        ? null
+        : this.resolvePublicReadArgs(sort, pagination);
     const where = this.buildPublicStoreWhere(query, { includeCastName: true });
     const now = new Date();
-    const total = await this.prisma.store.count({ where });
+    const nearbyStoreIds =
+      sort === 'nearest'
+        ? (
+            await this.prisma.store.findMany({
+              where,
+              select: { id: true, latitude: true, longitude: true },
+            })
+          )
+            .filter((store) => {
+              const distanceKm = this.calculateDistanceKm(
+                coordinates,
+                store.latitude,
+                store.longitude,
+              );
+              return distanceKm !== null && distanceKm <= DEFAULT_NEARBY_RADIUS_KM;
+            })
+            .map((store) => store.id)
+        : null;
+    const eligibleWhere = nearbyStoreIds
+      ? { AND: [where, { id: { in: nearbyStoreIds } }] }
+      : where;
+    const total = await this.prisma.store.count({ where: eligibleWhere });
     let priorityPageIds: string[] | null = null;
     let priorityRankings = new Map<string, RankingScore>();
 
@@ -2324,8 +2348,8 @@ export class NightlifeDataService {
         ? []
         : await this.prisma.store.findMany({
             where: priorityPageIds
-              ? { AND: [where, { id: { in: priorityPageIds } }] }
-              : where,
+              ? { AND: [eligibleWhere, { id: { in: priorityPageIds } }] }
+              : eligibleWhere,
             // Keep pagination stable when several venues are created at the same time.
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             ...(readArgs ?? {}),

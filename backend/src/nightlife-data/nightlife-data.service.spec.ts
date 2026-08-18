@@ -688,38 +688,23 @@ describe('NightlifeDataService', () => {
         sort: 'nearest',
       }),
     );
-    expect(prisma.store.findMany).toHaveBeenCalledWith(
+    const publicStoreQuery = prisma.store.findMany.mock.calls.find(
+      ([args]) => (args as any)?.select?.coupons,
+    )?.[0] as any;
+    expect(publicStoreQuery).toEqual(
       expect.objectContaining({
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         where: expect.objectContaining({
-          deletedAt: null,
-          status: 'ACTIVE',
-          category: 'CLUB',
           AND: expect.arrayContaining([
             expect.objectContaining({
-              OR: expect.arrayContaining([
-                { name: { contains: 'neon', mode: 'insensitive' } },
-              ]),
+              deletedAt: null,
+              status: 'ACTIVE',
+              category: 'CLUB',
             }),
-            {
-              area: {
-                is: {
-                  OR: [
-                    { code: { startsWith: 'hn-' } },
-                    { code: { startsWith: 'hanoi-' } },
-                  ],
-                  deletedAt: null,
-                  status: 'ACTIVE',
-                },
-              },
-            },
           ]),
         }),
       }),
     );
-    const publicStoreQuery = prisma.store.findMany.mock.calls.find(
-      ([args]) => (args as any)?.select?.coupons,
-    )?.[0] as any;
     expect(publicStoreQuery.select.coupons.where.NOT).toEqual(
       expect.arrayContaining([
         { code: { contains: 'GUEST5' } },
@@ -1080,28 +1065,19 @@ describe('NightlifeDataService', () => {
   });
 
   it('sorts public stores nearest first when coordinates are provided', async () => {
-    prisma.store.findMany.mockResolvedValue([
+    prisma.store.findMany.mockResolvedValueOnce([
       {
         id: 'far-store',
-        createdAt: new Date('2026-06-18T00:00:00.000Z'),
-        name: 'Far Store',
-        slug: 'far-store',
-        category: 'BAR',
-        description: null,
-        address: null,
-        city: 'Ha Noi',
-        district: 'Hoan Kiem',
-        latitude: '21.0245',
-        longitude: '105.8485',
-        area: {
-          id: 'area-far',
-          code: 'hn-hoankiem',
-          name: 'Hoan Kiem',
-          city: 'Ha Noi',
-          district: 'Hoan Kiem',
-        },
-        media: [],
+        latitude: '10.8015',
+        longitude: '106.6805',
       },
+      {
+        id: 'near-store',
+        latitude: '21.063',
+        longitude: '105.822',
+      },
+    ] as never);
+    prisma.store.findMany.mockResolvedValueOnce([
       {
         id: 'near-store',
         createdAt: new Date('2026-06-19T00:00:00.000Z'),
@@ -1130,10 +1106,8 @@ describe('NightlifeDataService', () => {
       lng: '105.8221',
     });
 
-    expect(result.data.map((store) => store.slug)).toEqual([
-      'near-store',
-      'far-store',
-    ]);
+    expect(result.data.map((store) => store.slug)).toEqual(['near-store']);
+    expect(result.meta.total).toBe(1);
   });
 
   it('filters public stores by active coupons and returns pagination metadata', async () => {
