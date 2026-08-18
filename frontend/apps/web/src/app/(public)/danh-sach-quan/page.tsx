@@ -4158,7 +4158,7 @@ const venueSearchCss = `
       padding: 0;
     }
 
-    .venue-sort-trigger {
+    .venue-sort-select .venue-sort-trigger {
       min-height: 24px;
       height: 24px;
       justify-content: center;
