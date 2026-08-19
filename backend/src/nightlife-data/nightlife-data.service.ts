@@ -27937,8 +27937,8 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
     dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
-    if (dto.name.trim().length > 80) {
-      throw new BadRequestException('Tên ưu đãi không được vượt quá 80 ký tự');
+    if (dto.name.trim().length > 40) {
+      throw new BadRequestException('Tên ưu đãi không được vượt quá 40 ký tự');
     }
 
     if (

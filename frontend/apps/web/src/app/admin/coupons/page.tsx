@@ -653,12 +653,12 @@ export default function AdminCouponsPage() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase' }}>Tên ưu đãi</div>
-                  <span style={{ fontSize: '10.5px', color: fName.length >= 80 ? '#f87171' : '#8c8679', fontWeight: 500 }}>{fName.length}/80</span>
+                  <span style={{ fontSize: '10.5px', color: fName.length >= 40 ? '#f87171' : '#8c8679', fontWeight: 500 }}>{fName.length}/40</span>
                 </div>
                 <input
                   value={fName}
-                  maxLength={80}
-                  onChange={e => setFName(e.target.value.slice(0, 80))}
+                  maxLength={40}
+                  onChange={e => setFName(e.target.value.slice(0, 40))}
                   placeholder="VD: Happy Hour tháng 7"
                   style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }}
                 />
@@ -766,8 +766,8 @@ export default function AdminCouponsPage() {
                   showToastMsg('Nhập tên ưu đãi, quán áp dụng và số lượng mã');
                   return;
                 }
-                if (fName.trim().length > 80) {
-                  showToastMsg('Tên ưu đãi không được vượt quá 80 ký tự');
+                if (fName.trim().length > 40) {
+                  showToastMsg('Tên ưu đãi không được vượt quá 40 ký tự');
                   return;
                 }
                 if (!parsedDiscount || parsedDiscount < 1 || (discountType === 'pct' && parsedDiscount > 100)) {

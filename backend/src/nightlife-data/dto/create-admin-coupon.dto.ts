@@ -20,7 +20,7 @@ export enum CreateAdminCouponDiscountType {
 export class CreateAdminCouponDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(80)
+  @MaxLength(40)
   name: string;
 
   @IsEnum(CreateAdminCouponDiscountType)
