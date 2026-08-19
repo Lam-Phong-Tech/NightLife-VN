@@ -7,6 +7,7 @@ import {
   IsArray,
   Min,
   Max,
+  MaxLength,
   ArrayNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -19,6 +20,7 @@ export enum CreateAdminCouponDiscountType {
 export class CreateAdminCouponDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(80)
   name: string;
 
   @IsEnum(CreateAdminCouponDiscountType)
