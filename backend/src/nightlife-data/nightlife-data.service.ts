@@ -5473,7 +5473,7 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
-      const tourBooking = await this.prisma.tourBooking.findFirst({
+      const tourBooking = await this.prisma.tourBooking?.findFirst?.({
         where: {
           id: bookingId,
           userId: user.id,
@@ -5545,7 +5545,7 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
-      const tourBooking = await this.prisma.tourBooking.findFirst({
+      const tourBooking = await this.prisma.tourBooking?.findFirst?.({
         where: {
           id: bookingId,
           userId: null,
@@ -24385,7 +24385,7 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
-      const tourBooking = await this.prisma.tourBooking.findUnique({
+      const tourBooking = await this.prisma.tourBooking?.findUnique?.({
         where: { id },
         include: this.tourBookingCustomerInclude(),
       });

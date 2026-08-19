@@ -57,6 +57,12 @@ describe('Booking cancellation API (e2e)', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    tourBooking: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
     auditLog: {
       create: jest.fn(),
     },
