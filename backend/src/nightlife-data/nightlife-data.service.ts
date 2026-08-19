@@ -14348,54 +14348,6 @@ export class NightlifeDataService {
         });
         const selectedStoreCasts = selectionsByStore.get(stop.store.id) ?? [];
         const primaryCast = selectedStoreCasts[0];
-        const target: BookingTarget = {
-          store: stop.store,
-          ...(primaryCast
-            ? {
-                cast: {
-                  id: primaryCast.id,
-                  slug: primaryCast.slug,
-                  stageName: primaryCast.stageName,
-                  publicAlias: primaryCast.publicAlias,
-                },
-              }
-            : {}),
-        };
-        const bookingDto: CreateBookingDto = {
-          storeId: stop.store.id,
-          ...(primaryCast ? { castId: primaryCast.id } : {}),
-          displayName: input.dto.displayName,
-          email: input.dto.email,
-          phone: input.dto.phone,
-          scheduledAt: input.dto.scheduledAt,
-          locale,
-          partySize: input.dto.partySize,
-          note: input.note,
-        };
-        const couponLink = await this.resolveBookingCouponLink({
-          dto: bookingDto,
-          target,
-          userId: input.userId,
-          user: input.user,
-          phone: input.phone,
-          prisma,
-        });
-        const couponIssueId =
-          couponLink.couponIssueId ??
-          (couponLink.couponId
-            ? (
-                await this.issueBookingCouponQr({
-                  couponId: couponLink.couponId,
-                  target,
-                  user: input.user,
-                  guestId: input.guestId,
-                  phone: input.phone,
-                  scheduledAt,
-                  context: input.context,
-                  prisma,
-                })
-              ).id
-            : undefined);
 
         const child = await prisma.booking.create({
           data: {
@@ -14404,8 +14356,8 @@ export class NightlifeDataService {
             guestId: input.guestId,
             storeId: stop.store.id,
             castId: primaryCast?.id,
-            couponId: couponLink.couponId,
-            couponIssueId,
+            couponId: null,
+            couponIssueId: null,
             tourBookingId: tourBooking.id,
             tourStopId: stop.id,
             tourStopOrder: stop.order,
@@ -14415,8 +14367,8 @@ export class NightlifeDataService {
             partySize: input.dto.partySize,
             note: input.note,
             discountSnapshot: {
-              couponId: couponLink.couponId ?? null,
-              couponIssueId: couponIssueId ?? null,
+              couponId: null,
+              couponIssueId: null,
               tourBookingId: tourBooking.id,
               tourStopOrder: stop.order,
             },
