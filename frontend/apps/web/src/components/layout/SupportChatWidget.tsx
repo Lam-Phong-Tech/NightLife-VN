@@ -548,28 +548,39 @@ function MobileSupportChatPanel({
   }, []);
 
   return (
-    <section
-      data-support-chat-panel="true"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="mobile-support-chat-title"
-      style={{
-        position: "fixed",
-        top: `${visualViewportState.offsetTop}px`,
-        right: 0,
-        bottom: "auto",
-        left: 0,
-        height: visualViewportState.height ? `${visualViewportState.height}px` : "100dvh",
-        minHeight: 0,
-        zIndex: 130,
-        background: chatColors.bg,
-        color: chatColors.text,
-        fontFamily: "var(--nl-font-sans)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
+    <>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 129,
+          background: chatColors.bg,
+          pointerEvents: "none",
+        }}
+      />
+      <section
+        data-support-chat-panel="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-support-chat-title"
+        style={{
+          position: "fixed",
+          top: `${visualViewportState.offsetTop}px`,
+          right: 0,
+          bottom: "auto",
+          left: 0,
+          height: visualViewportState.height ? `${visualViewportState.height}px` : "100dvh",
+          minHeight: 0,
+          zIndex: 130,
+          background: chatColors.bg,
+          color: chatColors.text,
+          fontFamily: "var(--nl-font-sans)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
       <div
         style={{
           display: "flex",
@@ -627,9 +638,10 @@ function MobileSupportChatPanel({
         </div>
       </div>
 
-      <ChatThread messages={messages} isMobile isLoadingHistory={isLoadingHistory} />
-      <ChatComposer draft={draft} isMobile onDraftChange={onDraftChange} onSubmit={onSubmit} />
-    </section>
+        <ChatThread messages={messages} isMobile isLoadingHistory={isLoadingHistory} />
+        <ChatComposer draft={draft} isMobile onDraftChange={onDraftChange} onSubmit={onSubmit} />
+      </section>
+    </>
   );
 }
 
