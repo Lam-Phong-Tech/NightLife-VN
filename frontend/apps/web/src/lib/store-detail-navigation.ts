@@ -4,9 +4,18 @@ import {
   stripLanguagePrefix,
 } from "@/lib/i18n/locales";
 
-export const storeDetailSources = ["home", "stores", "ranking", "search"] as const;
+export type StoreDetailSource =
+  | "home"
+  | "stores"
+  | "ranking"
+  | "search";
 
-export type StoreDetailSource = (typeof storeDetailSources)[number];
+export const storeDetailSources: readonly StoreDetailSource[] = [
+  "home",
+  "stores",
+  "ranking",
+  "search",
+];
 
 export const storeDetailSourceParam = "from";
 
