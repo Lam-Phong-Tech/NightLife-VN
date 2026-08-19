@@ -978,38 +978,10 @@ function IconButton({
 
 function CastRail({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
-  const railRef = useRef<HTMLDivElement>(null);
-  const [canScrollBack, setCanScrollBack] = useState(false);
-  const [canScrollForward, setCanScrollForward] = useState(false);
-
-  const updateRailControls = () => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    const tolerance = 2;
-    setCanScrollBack(rail.scrollLeft > tolerance);
-    setCanScrollForward(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - tolerance);
-  };
-
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    updateRailControls();
-    const observer = new ResizeObserver(updateRailControls);
-    observer.observe(rail);
-    return () => observer.disconnect();
-  }, [store.casts.length]);
-
-  const moveRail = (direction: "back" | "forward") => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    rail.scrollBy({
-      left: (direction === "forward" ? 1 : -1) * Math.max(rail.clientWidth * 0.75, 160),
-      behavior: "smooth",
-    });
-  };
+  const [showAllCasts, setShowAllCasts] = useState(false);
+  const initialCastCount = 8;
+  const visibleCasts = showAllCasts ? store.casts : store.casts.slice(0, initialCastCount);
+  const hasMoreCasts = store.casts.length > initialCastCount;
 
   if (!store.casts.length) {
     return (
@@ -1025,23 +997,9 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   }
 
   return (
-    <div className={["cast-rail-shell", canScrollBack || canScrollForward ? "has-controls" : ""].filter(Boolean).join(" ")}>
-      {canScrollBack ? (
-        <button
-          className="cast-rail-control cast-rail-control-back"
-          type="button"
-          aria-label={translateText("Xem cast trước", activeLanguage)}
-          onClick={() => moveRail("back")}
-        >
-          <span className="cast-rail-control-label">
-            {translateText("Vuốt để quay lại", activeLanguage)}
-          </span>
-          <ChevronLeft size={22} aria-hidden="true" />
-        </button>
-      ) : null}
-
-      <div className="cast-rail hscroll" ref={railRef} onScroll={updateRailControls}>
-        {store.casts.slice(0, 10).map((cast) => {
+    <div className={["cast-rail-shell", showAllCasts ? "is-expanded" : ""].filter(Boolean).join(" ")}>
+      <div className="cast-rail">
+        {visibleCasts.map((cast) => {
           const avatarUrl = cast.thumbnailUrl || "";
 
           return (
@@ -1063,16 +1021,14 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
         })}
       </div>
 
-      {canScrollForward ? (
+      {hasMoreCasts && !showAllCasts ? (
         <button
-          className="cast-rail-control cast-rail-control-forward"
+          className="cast-rail-more"
           type="button"
           aria-label={translateText("Xem thêm cast", activeLanguage)}
-          onClick={() => moveRail("forward")}
+          onClick={() => setShowAllCasts(true)}
         >
-          <span className="cast-rail-control-label">
-            {translateText("Vuốt để xem thêm", activeLanguage)}
-          </span>
+          {translateText("Xem thêm cast", activeLanguage)}
           <ChevronRight size={22} aria-hidden="true" />
         </button>
       ) : null}
@@ -4788,14 +4744,36 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-rail {
           display: grid;
-          grid-auto-flow: column;
-          grid-template-rows: repeat(2, max-content);
-          grid-auto-columns: 78px;
-          column-gap: 16px;
-          row-gap: 12px;
-          overflow-x: auto;
+          grid-template-columns: repeat(4, minmax(0, 78px));
+          column-gap: 12px;
+          row-gap: 14px;
+          overflow: visible;
           padding-bottom: 2px;
-          scroll-behavior: smooth;
+        }
+
+        .cast-rail-more {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          min-height: 34px;
+          margin: 12px 0 0 auto;
+          padding: 0 2px 0 10px;
+          border: 1px solid var(--vy-border-gold-22);
+          border-radius: 6px;
+          background: var(--vy-surface-2);
+          color: var(--vy-muted);
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .cast-rail-more:active {
+          color: var(--vy-gold-hi);
+        }
+
+        .cast-rail-more:focus-visible {
+          outline: 1px solid var(--vy-gold);
+          outline-offset: 3px;
         }
 
         .cast-rail-control {
@@ -4860,7 +4838,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .cast-bubble {
-          flex: 0 0 78px;
+          width: 78px;
           color: var(--vy-text);
           text-align: center;
           text-decoration: none;
