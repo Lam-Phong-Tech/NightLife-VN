@@ -751,14 +751,49 @@ export function SupportChatWidget({
     const storageKey = `vy_support_unread_count:${guestSessionId}`;
     const storedCount = Number.parseInt(localStorage.getItem(storageKey) || "0", 10);
     setUnreadMessageCount(Number.isFinite(storedCount) ? Math.max(0, storedCount) : 0);
-  }, [guestSessionId]);
+
+    const controller = new AbortController();
+    const token = getAuthSessionToken();
+    fetch(`${getApiBaseUrl()}/api/support/unread?guestSessionId=${encodeURIComponent(guestSessionId)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { unreadCount?: number } | null) => {
+        if (isOpenRef.current || typeof data?.unreadCount !== "number") return;
+        setUnreadMessageCount((count) => Math.max(count, data.unreadCount ?? 0));
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("[SupportChat] Could not load unread count:", error);
+      });
+
+    return () => controller.abort();
+  }, [currentUser?.id, guestSessionId]);
 
   useEffect(() => {
-    if (!isOpen || !guestSessionId) return;
+    if (!isOpen || !guestSessionId || !ticketId) return;
 
     setUnreadMessageCount(0);
     localStorage.removeItem(`vy_support_unread_count:${guestSessionId}`);
-  }, [guestSessionId, isOpen]);
+
+    const controller = new AbortController();
+    const token = getAuthSessionToken();
+    fetch(`${getApiBaseUrl()}/api/support/tickets/read-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ ticketId, guestSessionId }),
+      signal: controller.signal,
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      console.error("[SupportChat] Could not mark messages as read:", error);
+    });
+
+    return () => controller.abort();
+  }, [guestSessionId, isOpen, ticketId]);
 
   useEffect(() => {
     const handleOpenSupportChat = (event: Event) => {

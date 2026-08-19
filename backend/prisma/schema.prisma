@@ -1403,6 +1403,7 @@ model SupportMessage {
   senderType SupportSenderType @map("sender_type")
   content    String
   isRead     Boolean           @default(false) @map("is_read")
+  isReadByUser Boolean         @default(false) @map("is_read_by_user")
   ticket     SupportTicket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   senderUser User?             @relation("SupportMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
   createdAt  DateTime          @default(now()) @map("created_at")

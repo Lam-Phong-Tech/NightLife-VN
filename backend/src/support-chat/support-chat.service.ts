@@ -121,6 +121,51 @@ export class SupportChatService {
     return unreadTickets.length;
   }
 
+  async countUnreadUserMessages(guestSessionId?: string, userId?: string) {
+    if (!guestSessionId && !userId) return 0;
+
+    return this.prisma.supportMessage.count({
+      where: {
+        isReadByUser: false,
+        senderType: SupportSenderType.ADMIN,
+        ticket: userId
+          ? { userId, status: { in: this.openTicketStatuses } }
+          : {
+              guestSessionId: guestSessionId as string,
+              status: { in: this.openTicketStatuses },
+            },
+      },
+    });
+  }
+
+  async markTicketReadByUser(
+    ticketId: string,
+    guestSessionId?: string,
+    userId?: string,
+  ) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: { userId: true, guestSessionId: true },
+    });
+
+    const ownsTicket = userId
+      ? ticket?.userId === userId
+      : Boolean(guestSessionId && ticket?.guestSessionId === guestSessionId);
+
+    if (!ownsTicket) {
+      throw new NotFoundException('Support ticket not found');
+    }
+
+    return this.prisma.supportMessage.updateMany({
+      where: {
+        ticketId,
+        isReadByUser: false,
+        senderType: SupportSenderType.ADMIN,
+      },
+      data: { isReadByUser: true },
+    });
+  }
+
   async markTicketReadByAdmin(ticketId: string) {
     return this.prisma.supportMessage.updateMany({
       where: {

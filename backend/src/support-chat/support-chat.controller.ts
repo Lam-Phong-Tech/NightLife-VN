@@ -59,6 +59,20 @@ export class SupportChatController {
     );
   }
 
+  @Get('unread')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getUnread(
+    @Query('guestSessionId') guestSessionId: string | undefined,
+    @Req() req: SupportRequest,
+  ) {
+    const unreadCount = await this.supportChatService.countUnreadUserMessages(
+      guestSessionId,
+      req.user?.id,
+    );
+
+    return { unreadCount };
+  }
+
   @Get('pending')
   @UseGuards(JwtAuthGuard) // Only admins should see this
   async getPendingTickets(@Req() req: SupportRequest) {
@@ -129,6 +143,25 @@ export class SupportChatController {
 
     const result = await this.supportChatService.markTicketReadByAdmin(
       body.ticketId,
+    );
+
+    return { success: true, ticketId: body.ticketId, count: result.count };
+  }
+
+  @Post('tickets/read-user')
+  @UseGuards(OptionalJwtAuthGuard)
+  async markTicketReadByUser(
+    @Body() body: { ticketId?: string; guestSessionId?: string },
+    @Req() req: SupportRequest,
+  ) {
+    if (!body.ticketId) {
+      throw new BadRequestException('Ticket ID is required');
+    }
+
+    const result = await this.supportChatService.markTicketReadByUser(
+      body.ticketId,
+      body.guestSessionId,
+      req.user?.id,
     );
 
     return { success: true, ticketId: body.ticketId, count: result.count };
