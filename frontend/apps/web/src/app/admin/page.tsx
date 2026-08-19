@@ -51,6 +51,25 @@ type AdminDashboardStats = {
   }[];
 };
 
+type TimeGreeting = {
+  text: string;
+  emoji: string;
+};
+
+/** Returns the greeting for the current time in Vietnam, regardless of the browser timezone. */
+function getVietnamTimeGreeting(date = new Date()): TimeGreeting {
+  const hourText = new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    hour12: false,
+  }).format(date);
+  const hour = Number(hourText) % 24;
+
+  if (hour >= 5 && hour < 12) return { text: "Chào buổi sáng", emoji: "☀️" };
+  if (hour >= 12 && hour < 18) return { text: "Chào buổi chiều", emoji: "🌤️" };
+  return { text: "Chào buổi tối", emoji: "🌙" };
+}
+
 export default function AdminDashboardPage() {
   return (
     <Suspense
@@ -81,11 +100,21 @@ function AdminDashboardContent() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
   const [user, setUser] = useState<any>(null);
+  const [timeGreeting, setTimeGreeting] = useState<TimeGreeting | null>(null);
 
   useEffect(() => {
     import("@/lib/auth/session").then(({ getAuthUser }) => {
       setUser(getAuthUser());
     });
+  }, []);
+
+  useEffect(() => {
+    const updateGreeting = () => setTimeGreeting(getVietnamTimeGreeting());
+    updateGreeting();
+
+    // Keep the greeting accurate when the dashboard stays open across a time boundary.
+    const intervalId = window.setInterval(updateGreeting, 30_000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const loadStats = async () => {
@@ -304,7 +333,8 @@ function AdminDashboardContent() {
       >
         <div>
           <div style={{ fontSize: "22px", fontWeight: 700, color: "#f3f0ea" }}>
-            Chào buổi tối, {user?.displayName || "Admin"} 🌙
+            {timeGreeting?.text || "Chào bạn"}, {user?.displayName || "Admin"}{" "}
+            {timeGreeting?.emoji || ""}
           </div>
           <div style={{ fontSize: "13px", color: "#8c8679", marginTop: "4px" }}>
             {formatDateStr()} · Có <b style={{ color: "#e3c27e" }}>{pendingBills} hóa đơn</b> và{" "}
