@@ -65,6 +65,7 @@ function AdminBookingsContent() {
     cancelled: 0,
   });
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isBookingsLoading, setIsBookingsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [bookingSearch, setBookingSearch] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -85,6 +86,7 @@ function AdminBookingsContent() {
   };
 
   const fetchBookings = useCallback(async () => {
+    setIsBookingsLoading(true);
     try {
       const statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<AdminBookingsResponse>('/admin/bookings', {
@@ -99,6 +101,7 @@ function AdminBookingsContent() {
       });
       setBookings(res.data);
       setMeta(res.meta);
+      setFetchError(null);
     } catch (e: any) {
       console.error(e);
       const status = e?.status ?? e?.statusCode;
@@ -107,6 +110,8 @@ function AdminBookingsContent() {
       } else {
         setFetchError(e?.message || 'Lỗi khi tải dữ liệu. Vui lòng thử lại.');
       }
+    } finally {
+      setIsBookingsLoading(false);
     }
   }, [activeTab, bookingSearch, category, city, currentPage]);
 
@@ -318,10 +323,20 @@ function AdminBookingsContent() {
             </div>
           );
         })}
-        {bookings.length === 0 && (
+        {isBookingsLoading ? (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }} role="status" aria-live="polite">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+              <span
+                aria-hidden="true"
+                style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+              />
+              Đang tải booking...
+            </span>
+          </div>
+        ) : bookings.length === 0 && (
           <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có booking nào.</div>
         )}
-        {bookings.length > 0 && (
+        {!isBookingsLoading && bookings.length > 0 && (
           <AdminPagination
             page={currentPage}
             totalItems={meta?.total ?? bookings.length}

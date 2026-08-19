@@ -19,6 +19,7 @@ export default function AdminCouponsPage() {
   const [issues, setIssues] = useState<any[]>([]);
   const [isIssuesLoading, setIsIssuesLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isCampaignsLoading, setIsCampaignsLoading] = useState(true);
   const [campaignPage, setCampaignPage] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalIssues, setTotalIssues] = useState(0);
@@ -122,6 +123,7 @@ export default function AdminCouponsPage() {
     : duration;
 
   const fetchCampaigns = async () => {
+    setIsCampaignsLoading(true);
     try {
       const res = await apiClient<any>('/admin/coupons', {
         params: { page: 1, limit: 100 } // Get all recent campaigns
@@ -129,6 +131,8 @@ export default function AdminCouponsPage() {
       if (res?.data) setCampaigns(res.data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsCampaignsLoading(false);
     }
   };
 
@@ -373,7 +377,19 @@ export default function AdminCouponsPage() {
             </div>
           );
         })}
-        {filteredCampaigns.length === 0 && <div style={{ color: '#8c8679', fontSize: '13px', padding: '10px 0' }}>Không có ưu đãi phù hợp với bộ lọc.</div>}
+        {isCampaignsLoading ? (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px', gridColumn: '1 / -1' }} role="status" aria-live="polite">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+              <span
+                aria-hidden="true"
+                style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+              />
+              Đang tải campaign...
+            </span>
+          </div>
+        ) : filteredCampaigns.length === 0 && (
+          <div style={{ color: '#8c8679', fontSize: '13px', padding: '10px 0' }}>Không có ưu đãi phù hợp với bộ lọc.</div>
+        )}
       </div>
 
       {filteredCampaigns.length > 0 && (
