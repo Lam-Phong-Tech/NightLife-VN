@@ -7444,7 +7444,10 @@ export class NightlifeDataService {
       userId: user.id,
       channel: 'IN_APP',
       status: { not: 'CANCELLED' },
-      templateKey: { startsWith: 'customer.' },
+      templateKey: {
+        startsWith: 'customer.',
+        not: 'customer.support.reply.v1',
+      },
     };
     const [items, unreadCount] = await Promise.all([
       this.prisma.notificationLog.findMany({

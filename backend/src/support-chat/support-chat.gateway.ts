@@ -233,23 +233,6 @@ export class SupportChatGateway
 
       try {
         if (isAdminSender) {
-          const notification =
-            await this.supportChatService.createMemberReplyNotification({
-              ticketId: ticketId as string,
-              messageId: message.id,
-              content: message.content,
-            });
-          if (notification) {
-            this.socketGateway.notifyMemberNotificationCreated(
-              notification.userId as string,
-              {
-                id: notification.id,
-                templateKey: notification.templateKey,
-                category: 'system',
-                createdAt: notification.createdAt.toISOString(),
-              },
-            );
-          }
           await this.notifyCustomerSupportMessage(ticketId as string, message);
         } else {
           const notification =
