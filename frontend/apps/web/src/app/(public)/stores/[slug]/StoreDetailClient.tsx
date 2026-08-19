@@ -4749,8 +4749,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-rail {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          column-gap: 6px;
+          grid-template-columns: repeat(4, minmax(0, 78px));
+          column-gap: 12px;
           row-gap: 14px;
           overflow: visible;
           padding-bottom: 2px;
@@ -4844,7 +4844,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .cast-bubble {
-          width: 100%;
+          width: 78px;
           color: var(--vy-text);
           text-align: center;
           text-decoration: none;
@@ -4861,9 +4861,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-avatar {
           display: block;
-          width: 100%;
-          height: auto;
-          aspect-ratio: 1;
+          width: 76px;
+          height: 76px;
           border-radius: 8px;
           background-size: cover;
           background-position: center;
