@@ -13,6 +13,8 @@ describe("store detail navigation", () => {
     expect(parseStoreDetailSource("stores")).toBe("stores");
     expect(parseStoreDetailSource("ranking")).toBe("ranking");
     expect(parseStoreDetailSource("search")).toBe("search");
+    expect(parseStoreDetailSource("spa")).toBe("spa");
+    expect(parseStoreDetailSource("restaurant")).toBe("restaurant");
     expect(parseStoreDetailSource("external")).toBeNull();
     expect(parseStoreDetailSource(null)).toBeNull();
   });
@@ -22,7 +24,8 @@ describe("store detail navigation", () => {
     expect(inferStoreDetailSource("/ja/stores")).toBe("stores");
     expect(inferStoreDetailSource("/ja/stores", true)).toBe("search");
     expect(inferStoreDetailSource("/ja/xep-hang")).toBe("ranking");
-    expect(inferStoreDetailSource("/ja/spa")).toBe("stores");
+    expect(inferStoreDetailSource("/ja/spa")).toBe("spa");
+    expect(inferStoreDetailSource("/vi/nha-hang")).toBe("restaurant");
   });
 
   it("recognizes localized and unlocalized store detail paths", () => {
@@ -38,6 +41,18 @@ describe("store detail navigation", () => {
     expect(getStoreDetailBackHref(detailPath, "stores")).toBe("/ja/stores");
     expect(getStoreDetailBackHref(detailPath, "search")).toBe("/ja/stores");
     expect(getStoreDetailBackHref(detailPath, "ranking")).toBe("/ja/xep-hang");
+    expect(getStoreDetailBackHref(detailPath, "spa")).toBe("/ja/spa");
+    expect(getStoreDetailBackHref(detailPath, "restaurant")).toBe("/ja/nha-hang");
     expect(getStoreDetailBackHref(detailPath, null)).toBe("/ja/stores");
+  });
+
+  it("keeps the fixed-category listing in the massage and restaurant flows", () => {
+    expect(inferStoreDetailSource("/vi/spa")).toBe("spa");
+    expect(getStoreDetailBackHref("/vi/stores/fuji-spa", "spa")).toBe("/vi/spa");
+
+    expect(inferStoreDetailSource("/vi/nha-hang")).toBe("restaurant");
+    expect(getStoreDetailBackHref("/vi/stores/example-restaurant", "restaurant")).toBe(
+      "/vi/nha-hang",
+    );
   });
 });
