@@ -4787,8 +4787,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .cast-rail {
-          display: flex;
-          gap: 16px;
+          display: grid;
+          grid-auto-flow: column;
+          grid-template-rows: repeat(2, max-content);
+          grid-auto-columns: 78px;
+          column-gap: 16px;
+          row-gap: 12px;
           overflow-x: auto;
           padding-bottom: 2px;
           scroll-behavior: smooth;
@@ -4875,7 +4879,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: block;
           width: 76px;
           height: 76px;
-          border-radius: 50%;
+          border-radius: 8px;
           background-size: cover;
           background-position: center;
           border: 1px solid rgba(255, 255, 255, .14);
