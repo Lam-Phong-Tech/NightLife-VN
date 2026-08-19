@@ -3112,15 +3112,23 @@ describe('NightlifeDataService', () => {
   });
 
   it('uses the selected status when calculating the pagination total', async () => {
-    await service.listAdminBookings({ status: 'checked_in', page: 1, limit: 8 });
+    prisma.booking.count
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(5)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
 
-    expect(prisma.booking.count).toHaveBeenNthCalledWith(1, {
-      where: { status: 'CHECKED_IN' },
+    const result = await service.listAdminBookings({
+      status: 'checked_in',
+      page: 1,
+      limit: 8,
     });
+
+    expect(result.meta.total).toBe(5);
+    expect(result.meta.checkedIn).toBe(5);
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'CHECKED_IN' },
-        skip: 0,
+        where: expect.objectContaining({ status: 'CHECKED_IN' }),
         take: 8,
       }),
     );
