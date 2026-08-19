@@ -576,6 +576,7 @@ export default function AdminStoresPage() {
 function AdminStoresContent() {
   const feedback = useSystemFeedback();
   const [stores, setStores] = useState<any[]>([]);
+  const [isStoresLoading, setIsStoresLoading] = useState(true);
   const [partnerAccounts, setPartnerAccounts] = useState<any[]>([]);
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [isDraftStore, setIsDraftStore] = useState(false);
@@ -654,6 +655,7 @@ function AdminStoresContent() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchStores = async () => {
+    setIsStoresLoading(true);
     try {
       const res = await apiClient<any>('/admin/stores', { params: { limit: 1000, includeDeleted: 'true' } });
       setFetchError(null);
@@ -669,6 +671,8 @@ function AdminStoresContent() {
         setFetchError(e?.message || 'Lỗi khi tải danh sách Quán. Vui lòng thử lại.');
       }
       setStores([]);
+    } finally {
+      setIsStoresLoading(false);
     }
   };
 
@@ -1687,12 +1691,22 @@ function AdminStoresContent() {
             </div>
           );
         })}
-        {filteredStores.length === 0 && (
+        {isStoresLoading ? (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }} role="status" aria-live="polite">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+              <span
+                aria-hidden="true"
+                style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+              />
+              Đang tải quán...
+            </span>
+          </div>
+        ) : filteredStores.length === 0 && (
           <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>
             {showDeletedStores ? 'Thùng rác chưa có quán nào.' : 'Không tìm thấy quán nào.'}
           </div>
         )}
-        {filteredStores.length > 0 && (
+        {!isStoresLoading && filteredStores.length > 0 && (
           <AdminPagination
             page={currentPage}
             totalItems={filteredStores.length}
