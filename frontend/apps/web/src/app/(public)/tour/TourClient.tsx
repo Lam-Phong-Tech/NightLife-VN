@@ -13,7 +13,6 @@ import {
   Route,
   Search,
   Sparkles,
-  Ticket,
 } from "lucide-react";
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -543,7 +542,6 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
   const displayTitle = localize(tour.title, language);
   const stopCount = tour.stops.length;
   const castCount = countTourCasts(tour);
-  const deal = tour.applicableCoupon;
   const departureLabel = tour.departureTimes.slice(0, 2).join(", ") || copy.requestTime;
 
   return (
@@ -560,7 +558,6 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
             <Route size={14} />
             {formatStopCount(stopCount, language)}
           </span>
-          {deal ? <span className="tour-deal-pill">{deal.name}</span> : null}
         </PlaceholderMedia>
       </Link>
 
@@ -606,10 +603,6 @@ function TourResultCard({ tour, language }: { tour: PublicTour; language: Langua
         </div>
 
         <div className="tour-card-side">
-          <div>
-            <Ticket size={17} />
-            <strong>{deal ? copy.hasDeals : copy.itinerary}</strong>
-          </div>
           <Link href={`/tour/${tour.id}`}>
             {copy.viewTour}
             <ChevronRight size={16} />
@@ -1152,22 +1145,6 @@ const tourDirectoryCss = `
     font-weight: 850;
   }
 
-  .tour-deal-pill {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid rgba(212, 178, 106, .32);
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(212, 178, 106, .22), rgba(180, 132, 40, .18));
-    backdrop-filter: blur(8px);
-    color: #f0dda8;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 900;
-  }
-
   .tour-card-body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 160px;
@@ -1294,18 +1271,9 @@ const tourDirectoryCss = `
   .tour-card-side {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     padding: 20px;
     gap: 12px;
-  }
-
-  .tour-card-side > div {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--vy-gold);
-    font-size: 13px;
-    font-weight: 900;
   }
 
   .tour-card-side > a {
