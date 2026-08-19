@@ -8,6 +8,13 @@ import {
   localizePathname,
 } from "@/lib/i18n/locales";
 import {
+  castDetailSourceParam,
+  getCastDetailBackHref,
+  inferCastDetailSource,
+  isCastDetailPath,
+  parseCastDetailSource,
+} from "@/lib/cast-detail-navigation";
+import {
   getStoreDetailBackHref,
   inferStoreDetailSource,
   isStoreDetailPath,
@@ -17,7 +24,7 @@ import {
 
 const searchParamKeys = ["q", "query", "search", "keyword"] as const;
 
-function hasActiveVenueSearch() {
+function hasActiveDirectorySearch() {
   const params = new URLSearchParams(window.location.search);
   if (searchParamKeys.some((key) => Boolean(params.get(key)?.trim()))) return true;
 
@@ -43,7 +50,7 @@ function isPlainPrimaryClick(event: MouseEvent, anchor: HTMLAnchorElement) {
   );
 }
 
-function localizeStoreDetailDestination(url: URL, currentPathname: string) {
+function localizeDetailDestination(url: URL, currentPathname: string) {
   const currentLocale = getPathLanguage(currentPathname);
   if (!currentLocale || getPathLanguage(url.pathname)) return;
 
@@ -51,17 +58,21 @@ function localizeStoreDetailDestination(url: URL, currentPathname: string) {
 }
 
 /**
- * Adds an explicit origin to internal store-detail navigation without forcing
- * every store card in the app to know about the back-navigation contract.
+ * Adds an explicit origin to internal store/cast detail navigation without
+ * forcing every card in the app to know about the back-navigation contract.
  *
- * Examples:
+ * Store examples:
  *   /ja -> /ja/stores/grace-the-class?from=home
  *   /ja/stores -> /ja/stores/grace-the-class?from=stores
- *   /ja/xep-hang -> /ja/stores/grace-the-class?from=ranking
- *   store search -> /ja/stores/grace-the-class?from=search
  *
- * A directly opened/shared detail URL has no `from`, so its back button falls
- * back to the localized store directory.
+ * Cast examples:
+ *   /ja -> /ja/casts/hina?from=home
+ *   /ja/casts -> /ja/casts/hina?from=casts
+ *   /ja/xep-hang -> /ja/casts/hina?from=ranking
+ *   cast search -> /ja/casts/hina?from=search
+ *
+ * Direct/shared detail URLs have no `from`, so their back buttons safely fall
+ * back to the localized store/cast directory.
  */
 export function StoreDetailNavigationProvider() {
   const pathname = usePathname() || "/";
@@ -74,9 +85,18 @@ export function StoreDetailNavigationProvider() {
       );
       const backHref = getStoreDetailBackHref(pathname, source);
 
-      // Keep the real anchor destination correct for accessibility, long press,
-      // copy-link and cases where JavaScript navigation is bypassed.
       document.querySelectorAll<HTMLAnchorElement>("a.hero-back").forEach((anchor) => {
+        anchor.setAttribute("href", backHref);
+      });
+    }
+
+    if (isCastDetailPath(pathname)) {
+      const source = parseCastDetailSource(
+        new URLSearchParams(window.location.search).get(castDetailSourceParam),
+      );
+      const backHref = getCastDetailBackHref(pathname, source);
+
+      document.querySelectorAll<HTMLAnchorElement>("a.cast-back-link").forEach((anchor) => {
         anchor.setAttribute("href", backHref);
       });
     }
@@ -97,6 +117,18 @@ export function StoreDetailNavigationProvider() {
         return;
       }
 
+      if (isCastDetailPath(pathname) && anchor.matches("a.cast-back-link")) {
+        const source = parseCastDetailSource(
+          new URLSearchParams(window.location.search).get(castDetailSourceParam),
+        );
+        const backHref = getCastDetailBackHref(pathname, source);
+
+        event.preventDefault();
+        event.stopPropagation();
+        router.push(backHref);
+        return;
+      }
+
       let destination: URL;
       try {
         destination = new URL(anchor.href, window.location.href);
@@ -104,20 +136,33 @@ export function StoreDetailNavigationProvider() {
         return;
       }
 
-      if (destination.origin !== window.location.origin || !isStoreDetailPath(destination.pathname)) {
-        return;
+      if (destination.origin !== window.location.origin) return;
+
+      const goesToStoreDetail = isStoreDetailPath(destination.pathname);
+      const goesToCastDetail = isCastDetailPath(destination.pathname);
+      if (!goesToStoreDetail && !goesToCastDetail) return;
+
+      if (goesToStoreDetail) {
+        // Related-store navigation from one detail page to another is not an
+        // entry source. Leave it untouched so back safely defaults to /stores.
+        if (isStoreDetailPath(pathname)) return;
+
+        const source = inferStoreDetailSource(pathname, hasActiveDirectorySearch());
+        if (!source) return;
+
+        localizeDetailDestination(destination, pathname);
+        destination.searchParams.set(storeDetailSourceParam, source);
+      } else {
+        // Related-cast navigation from one detail page to another is not an
+        // entry source. Leave it untouched so back safely defaults to /casts.
+        if (isCastDetailPath(pathname)) return;
+
+        const source = inferCastDetailSource(pathname, hasActiveDirectorySearch());
+        if (!source) return;
+
+        localizeDetailDestination(destination, pathname);
+        destination.searchParams.set(castDetailSourceParam, source);
       }
-
-      // Related-store navigation from one detail page to another is not one of
-      // the four entry sources. Leave it untouched; the next detail therefore
-      // uses the safe default of returning to /stores.
-      if (isStoreDetailPath(pathname)) return;
-
-      const source = inferStoreDetailSource(pathname, hasActiveVenueSearch());
-      if (!source) return;
-
-      localizeStoreDetailDestination(destination, pathname);
-      destination.searchParams.set(storeDetailSourceParam, source);
 
       event.preventDefault();
       event.stopPropagation();
