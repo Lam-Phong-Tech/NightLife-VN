@@ -93,8 +93,10 @@ export type BookingAdminNotification = {
 
 export type TourBookingAdminNotification = {
   id: string;
+  bookingNumber?: number | null;
   bookingCode?: string | null;
   status: string;
+  createdAt?: Date | string | null;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
   note?: string | null;
@@ -217,6 +219,7 @@ export class AdminNotificationService {
   }
 
   async notifyTourBookingCreated(tourBooking: TourBookingAdminNotification) {
+    const bookingSequenceCode = await this.tourBookingSequenceCode(tourBooking);
     const stops = [...tourBooking.bookings].sort(
       (first, second) =>
         (first.tourStopOrder ?? Number.MAX_SAFE_INTEGER) -
@@ -272,6 +275,7 @@ export class AdminNotificationService {
       : 'Không có';
 
     const lines: Array<[string, unknown]> = [
+      ['🔢 STT', bookingSequenceCode],
       ['🎫 Mã đặt tour', tourBooking.bookingCode],
       ['🗺️ Tên tour', tourTitle],
       ['📍 Lịch trình tour', `\n${itinerary}`],
@@ -699,6 +703,44 @@ export class AdminNotificationService {
       );
       return null;
     }
+  }
+
+  private async tourBookingSequenceCode(tourBooking: TourBookingAdminNotification) {
+    try {
+      const sequence = await this.tourBookingSequenceNumber(tourBooking);
+      return sequence ? `NLF-${sequence}` : null;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve tour Telegram STT: ${this.errorMessage(error)}`,
+      );
+      return null;
+    }
+  }
+
+  private async tourBookingSequenceNumber(tourBooking: TourBookingAdminNotification) {
+    if (
+      typeof tourBooking.bookingNumber === 'number' &&
+      Number.isInteger(tourBooking.bookingNumber) &&
+      tourBooking.bookingNumber > 0
+    ) {
+      return tourBooking.bookingNumber;
+    }
+
+    const createdAt = this.toValidDate(tourBooking.createdAt);
+    const createdAtWhere: Prisma.BookingWhereInput = createdAt
+      ? { createdAt: { lte: createdAt } }
+      : {};
+    const tourCreatedAtWhere: Prisma.TourBookingWhereInput = createdAt
+      ? { createdAt: { lte: createdAt } }
+      : {};
+    const [standaloneBookingCount, tourBookingCount] = await Promise.all([
+      this.prisma.booking.count({
+        where: { tourBookingId: null, ...createdAtWhere },
+      }),
+      this.prisma.tourBooking.count({ where: tourCreatedAtWhere }),
+    ]);
+
+    return Number(standaloneBookingCount || 0) + Number(tourBookingCount || 0);
   }
 
   private async bookingSequenceNumber(booking: BookingAdminNotification) {

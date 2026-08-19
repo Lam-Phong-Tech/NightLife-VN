@@ -27314,9 +27314,9 @@ export class NightlifeDataService {
       note: bk.note,
     }));
 
-    const mappedTours = tourItems.map((tb) => ({
+    const mappedTours = await Promise.all(tourItems.map(async (tb) => ({
       id: tb.id,
-      bookingNumber: 0,
+      bookingNumber: await this.adminTourBookingNumber(tb.createdAt),
       bookingCode: tb.bookingCode,
       tourBookingCode: null,
       customerName:
@@ -27357,7 +27357,7 @@ export class NightlifeDataService {
       source: 'Telegram',
       status: tb.status,
       note: tb.note,
-    }));
+    })));
 
     const combined = [...mappedBookings, ...mappedTours].sort((a, b) => {
       const isDateSort =
@@ -27388,6 +27388,22 @@ export class NightlifeDataService {
         all: allCount,
       },
     };
+  }
+
+  private async adminTourBookingNumber(createdAt?: Date | string | null) {
+    const anchorCreatedAt = createdAt ? new Date(createdAt) : null;
+    const createdAtWhere =
+      anchorCreatedAt && !Number.isNaN(anchorCreatedAt.getTime())
+        ? { createdAt: { lte: anchorCreatedAt } }
+        : {};
+    const [standaloneBookingCount, tourBookingCount] = await Promise.all([
+      this.prisma.booking.count({
+        where: { tourBookingId: null, ...createdAtWhere },
+      }),
+      this.prisma.tourBooking.count({ where: createdAtWhere }),
+    ]);
+
+    return Number(standaloneBookingCount || 0) + Number(tourBookingCount || 0);
   }
 
   async listPublicHomeRecommendations(query: PublicHomeContentQueryDto = {}) {

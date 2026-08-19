@@ -4,7 +4,10 @@ describe('AdminNotificationService', () => {
   it('uses the itinerary snapshot when a new tour has no stop bookings yet', async () => {
     const service = new AdminNotificationService(
       { get: jest.fn() } as any,
-      {} as any,
+      {
+        booking: { count: jest.fn().mockResolvedValue(10) },
+        tourBooking: { count: jest.fn().mockResolvedValue(2) },
+      } as any,
     );
     const notifyAdmin = jest
       .spyOn(service as any, 'notifyAdmin')
@@ -14,6 +17,7 @@ describe('AdminNotificationService', () => {
       id: 'tour-booking-1',
       bookingCode: 'TR-123456',
       status: 'REQUESTED',
+      createdAt: new Date('2026-08-19T12:00:00.000Z'),
       scheduledAt: new Date('2026-08-30T12:00:00.000Z'),
       partySize: 2,
       titleSnapshot: 'Tour mới',
@@ -39,5 +43,6 @@ describe('AdminNotificationService', () => {
         }),
       }),
     );
+    expect(notifyAdmin.mock.calls[0][0].message).toContain('🔢 STT: NLF-12');
   });
 });
