@@ -3,7 +3,7 @@ import { TourService } from './tour.service';
 describe('TourService public cast visibility', () => {
   const deletedCastId = 'f0cf336c-8813-484d-9bb5-ec50862f174f';
 
-  it('filters deleted, non-public, and pending-edit source casts before limiting a tour stop', () => {
+  it('filters deleted, non-public, and pending-edit source casts without truncating the total', () => {
     const service = new TourService({} as any);
     const select = (service as any).publicTourStoreSelect(
       new Date('2026-08-16T00:00:00.000Z'),
@@ -18,8 +18,8 @@ describe('TourService public cast visibility', () => {
         isPublic: true,
         id: { notIn: [deletedCastId] },
       },
-      take: 4,
     });
+    expect(select.casts).not.toHaveProperty('take');
   });
 
   it('finds the original casts hidden by pending partner listing edits', async () => {

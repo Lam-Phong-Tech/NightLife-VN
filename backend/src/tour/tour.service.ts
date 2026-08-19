@@ -208,7 +208,6 @@ export class TourService {
             : {}),
         },
         orderBy: { createdAt: 'desc' },
-        take: 4,
         select: {
           id: true,
           stageName: true,

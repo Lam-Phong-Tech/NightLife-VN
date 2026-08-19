@@ -433,27 +433,6 @@ function RankingSelect<T extends string>({
   );
 }
 
-function LoadingRows() {
-  return (
-    <>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div
-          key={index}
-          className="vyr-rank-row vyr-rank-skeleton"
-          data-testid="ranking-loading-row"
-        >
-          <span className="vyr-rank-avatar" />
-          <span className="vyr-rank-copy">
-            <span className="vyr-rank-badge-line" />
-            <strong />
-            <small />
-          </span>
-        </div>
-      ))}
-    </>
-  );
-}
-
 function RankingRow({
   item,
   trackingContext,
@@ -760,8 +739,6 @@ export default function Page() {
         ) : null}
 
         <div className="vyr-ranking-list" aria-live="polite">
-          {loadState === "loading" ? <LoadingRows /> : null}
-
           {loadState === "error" ? (
             <div className="vyr-ranking-state is-error">
               <strong>{copy.apiError}</strong>
@@ -1368,51 +1345,6 @@ export default function Page() {
           border-color: rgba(248, 113, 113, 0.32);
         }
 
-        .vyr-rank-skeleton {
-          pointer-events: none;
-        }
-
-        .vyr-rank-skeleton .vyr-rank-avatar,
-        .vyr-rank-skeleton .vyr-rank-badge-line,
-        .vyr-rank-skeleton strong,
-        .vyr-rank-skeleton small {
-          border: 0;
-          background: linear-gradient(
-            90deg,
-            var(--vy-surface-1),
-            var(--vy-surface-3),
-            var(--vy-surface-1)
-          );
-          background-size: 220% 100%;
-          animation: vyrSkeleton 1.2s ease-in-out infinite;
-        }
-
-        .vyr-rank-skeleton .vyr-rank-badge-line {
-          width: 92px;
-          border-radius: 9px;
-        }
-
-        .vyr-rank-skeleton strong {
-          width: 180px;
-          height: 22px;
-          border-radius: 8px;
-        }
-
-        .vyr-rank-skeleton small {
-          width: 240px;
-          height: 14px;
-          border-radius: 7px;
-        }
-
-        @keyframes vyrSkeleton {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 220% 50%;
-          }
-        }
-
         @media (max-width: 980px) {
           .vyr-rank-row {
             grid-template-columns: 58px minmax(0, 1fr);
@@ -1681,9 +1613,6 @@ export default function Page() {
             padding: 22px 16px;
           }
 
-          .vyr-rank-skeleton small {
-            width: min(190px, 100%);
-          }
         }
       `}</style>
     </main>

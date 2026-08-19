@@ -1353,6 +1353,10 @@ const tourDirectoryCss = `
       border-bottom: 1px solid var(--vy-border-gold-16);
     }
 
+    .tour-card-side {
+      padding-top: 0;
+    }
+
     .tour-search-controls {
       grid-template-columns: minmax(0, 1fr) 130px;
     }
