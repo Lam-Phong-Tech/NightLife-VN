@@ -2573,6 +2573,12 @@ html.vy-light .nl-page-content {
   color: var(--vy-text) !important;
 }
 
+/* Keep the light-mode background change scoped to the public/customer shell. */
+html.vy-light .nl-customer-site-shell,
+html.vy-light .nl-customer-route-content {
+  --vy-bg: #fff;
+}
+
 html.vy-light body {
   background-image: var(--vy-hero-grad) !important;
   background-attachment: fixed !important;

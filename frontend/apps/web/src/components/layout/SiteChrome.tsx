@@ -2100,6 +2100,7 @@ export function SiteChrome({
       <AuthRedirectNotice />
       <SessionSecurityWatcher />
       <div
+        className="nl-customer-site-shell"
         style={{
           minHeight: "100vh",
           background: colors.bg,
