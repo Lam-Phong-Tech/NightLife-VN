@@ -2553,6 +2553,9 @@ html.vy-light .nl-media-fallback :where(svg, path):not(.nl-favorite-button, .nl-
 html.vy-light .nl-media-fallback-label {
   color: #7a5a22 !important;
 }
+html.vy-light .nl-site-actions .nl-site-login-link {
+  border: 1px solid rgba(150, 116, 52, 0.58) !important;
+}
 html.vy-light .nl-home-section-title {
   text-shadow: none !important;
 }
