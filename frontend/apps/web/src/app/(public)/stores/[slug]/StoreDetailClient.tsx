@@ -4757,15 +4757,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .cast-rail-more {
-          display: inline-flex;
+          display: flex;
           align-items: center;
           gap: 4px;
-          min-height: 34px;
+          width: max-content;
+          min-height: 24px;
           margin: 12px 0 0 auto;
-          padding: 0 2px 0 10px;
-          border: 1px solid var(--vy-border-gold-22);
-          border-radius: 6px;
-          background: var(--vy-surface-2);
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
           color: var(--vy-muted);
           font-size: 11px;
           font-weight: 700;
