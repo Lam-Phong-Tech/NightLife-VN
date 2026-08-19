@@ -4749,7 +4749,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-rail {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 78px));
+          grid-template-columns: repeat(8, minmax(0, 78px));
           column-gap: 12px;
           row-gap: 14px;
           overflow: visible;
@@ -5634,6 +5634,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 620px) {
+          .cast-rail {
+            grid-template-columns: repeat(4, minmax(0, 78px));
+          }
+
           .cast-section {
             margin-bottom: -18px;
           }
