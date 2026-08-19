@@ -161,6 +161,7 @@ describe('NightlifeDataService', () => {
     tourBooking: {
       count: jest.fn(),
       create: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
@@ -403,6 +404,7 @@ describe('NightlifeDataService', () => {
     prisma.booking.updateMany.mockResolvedValue({ count: 0 });
     prisma.bookingQr.count.mockResolvedValue(0);
     prisma.tourBooking.findMany.mockResolvedValue([]);
+    prisma.tourBooking.findFirst.mockResolvedValue(null);
     prisma.tourBooking.count.mockResolvedValue(0);
     prisma.bill.count.mockResolvedValue(0);
     prisma.bill.findFirst.mockResolvedValue(null);

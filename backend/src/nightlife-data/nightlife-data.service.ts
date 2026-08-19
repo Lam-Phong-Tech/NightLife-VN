@@ -29,6 +29,7 @@ import {
   StoreStatus,
   SupportSenderType,
   SupportTicketStatus,
+  TourBookingStatus,
   UserTier,
 } from '@prisma/client';
 import {
@@ -187,6 +188,11 @@ const ACTIVE_DUPLICATE_BOOKING_STATUSES: BookingStatus[] = [
   'REQUESTED',
   'CONFIRMED',
   'CHECKED_IN',
+];
+const ACTIVE_DUPLICATE_TOUR_BOOKING_STATUSES: TourBookingStatus[] = [
+  'REQUESTED',
+  'CONFIRMED',
+  'IN_PROGRESS',
 ];
 const DUPLICATE_BOOKING_MESSAGE =
   'You already have an active booking at this store for this time slot.';
@@ -5100,7 +5106,6 @@ export class NightlifeDataService {
       data: {
         userId: user.id,
         guestId: guest.id,
-        bookingId: result.id,
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient: user.id,
@@ -12990,6 +12995,49 @@ export class NightlifeDataService {
     }
   }
 
+  private async assertNoDuplicateActiveTourBooking(input: {
+    storeIds: string[];
+    scheduledAt: Date;
+    userId?: string;
+    email?: string;
+    phone?: string;
+    prisma?: Prisma.TransactionClient | PrismaService;
+  }) {
+    const prisma = input.prisma ?? this.prisma;
+    const identityConditions: Prisma.TourBookingWhereInput[] = [
+      ...(input.userId
+        ? [
+            { userId: input.userId },
+            { guest: { is: { convertedUserId: input.userId } } },
+          ]
+        : []),
+      ...(input.email ? [{ guest: { is: { email: input.email } } }] : []),
+      ...(input.phone ? [{ guest: { is: { phone: input.phone } } }] : []),
+    ];
+
+    if (!identityConditions.length || !input.storeIds.length) {
+      return;
+    }
+
+    const duplicateTourBooking = await prisma.tourBooking.findFirst({
+      where: {
+        scheduledAt: input.scheduledAt,
+        status: { in: ACTIVE_DUPLICATE_TOUR_BOOKING_STATUSES },
+        OR: identityConditions,
+        tour: {
+          stops: {
+            some: { storeId: { in: input.storeIds } },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (duplicateTourBooking) {
+      throw new BadRequestException(DUPLICATE_BOOKING_MESSAGE);
+    }
+  }
+
   private async resolveBookingCouponLink(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
@@ -14488,6 +14536,15 @@ export class NightlifeDataService {
     }));
 
     const created = await this.prisma.$transaction(async (prisma) => {
+      await this.assertNoDuplicateActiveTourBooking({
+        storeIds: tour.stops.map((stop) => stop.store.id),
+        scheduledAt,
+        userId: input.userId,
+        email: input.email,
+        phone: input.phone,
+        prisma,
+      });
+
       const tourBooking = await prisma.tourBooking.create({
         data: {
           bookingCode: this.generateTourBookingCode(),
