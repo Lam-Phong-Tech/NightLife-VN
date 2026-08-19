@@ -227,15 +227,27 @@ export class AdminNotificationService {
     const itinerary = stops
       .map((booking, index) => {
         const order = booking.tourStopOrder ?? index + 1;
-        const cast = this.castLabel(booking.cast);
-        return `${order}. ${booking.store?.name ?? 'Quán'}${cast ? ` · Cast: ${cast}` : ''}`;
+        return `${order}. ${booking.store?.name ?? 'Quán'}`;
       })
       .join('\n');
+
+    const hasAnyCast = stops.some((booking) => Boolean(booking.cast));
+    const desiredCastSummary = hasAnyCast
+      ? '\n' +
+        stops
+          .map((booking, index) => {
+            const order = booking.tourStopOrder ?? index + 1;
+            const cast = this.castLabel(booking.cast);
+            return `${order}. ${booking.store?.name ?? 'Quán'}: ${cast ?? 'Không chọn'}`;
+          })
+          .join('\n')
+      : 'Không có';
 
     const lines: Array<[string, unknown]> = [
       ['🎫 Mã đặt tour', tourBooking.bookingCode],
       ['🗺️ Tên tour', tourTitle],
-      ['📍 Lịch trình tour', itinerary],
+      ['📍 Lịch trình tour', `\n${itinerary}`],
+      ['👑 Cast mong muốn', desiredCastSummary],
       ['📅 Thời gian', this.formatDateTime(tourBooking.scheduledAt)],
       ['👥 Số người', tourBooking.partySize],
       ['👤 Người đặt', this.customerName(tourBooking)],
