@@ -107,7 +107,7 @@ export function PlaceholderMedia({
             }}
           >
             <ImageOff size={28} strokeWidth={1.8} />
-            <span style={{ fontSize: "12px", fontWeight: 800, lineHeight: 1.3 }}>{label}</span>
+            <span className="nl-media-fallback-label" style={{ fontSize: "12px", fontWeight: 800, lineHeight: 1.3 }}>{label}</span>
           </div>
         ) : (
           <div
