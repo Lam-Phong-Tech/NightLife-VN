@@ -694,7 +694,7 @@ export function CastProfileStyles() {
         width: 100%;
         min-width: 0;
         height: auto;
-        aspect-ratio: 3 / 2;
+        aspect-ratio: 3 / 4;
         flex-basis: auto;
       }
 
