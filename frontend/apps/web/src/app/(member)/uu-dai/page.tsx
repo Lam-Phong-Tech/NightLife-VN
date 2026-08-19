@@ -1089,7 +1089,7 @@ export default function Page() {
 
         /* Light mode overrides */
         html.vy-light .campaign-page {
-          background: #f6f4ef;
+          background: #fff;
           color: #211e19;
         }
 

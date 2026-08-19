@@ -3220,9 +3220,7 @@ html.vy-light .cast-card-favorite.is-active {
 }
 
 html.vy-light .cast-search-page {
-  background:
-    radial-gradient(circle at 14% 0%, rgba(212, 178, 106, 0.18), transparent 30%),
-    linear-gradient(180deg, #fffaf1 0%, #f7f2e8 52%, #efe7db 100%);
+  background: #fff;
   color: var(--vy-text);
 }
 
