@@ -58,16 +58,24 @@ type TimeGreeting = {
 
 /** Returns the greeting for the current time in Vietnam, regardless of the browser timezone. */
 function getVietnamTimeGreeting(date = new Date()): TimeGreeting {
-  const hourText = new Intl.DateTimeFormat("vi-VN", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    hour: "2-digit",
-    hour12: false,
-  }).format(date);
-  const hour = Number(hourText) % 24;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "numeric",
+      hour12: false,
+    }).formatToParts(date);
+    const hourPart = parts.find((p) => p.type === "hour");
+    const hour = hourPart ? parseInt(hourPart.value, 10) % 24 : date.getHours();
 
-  if (hour >= 5 && hour < 12) return { text: "Chào buổi sáng", emoji: "☀️" };
-  if (hour >= 12 && hour < 18) return { text: "Chào buổi chiều", emoji: "🌤️" };
-  return { text: "Chào buổi tối", emoji: "🌙" };
+    if (hour >= 5 && hour < 12) return { text: "Chào buổi sáng", emoji: "☀️" };
+    if (hour >= 12 && hour < 18) return { text: "Chào buổi chiều", emoji: "🌤️" };
+    return { text: "Chào buổi tối", emoji: "🌙" };
+  } catch {
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 12) return { text: "Chào buổi sáng", emoji: "☀️" };
+    if (hour >= 12 && hour < 18) return { text: "Chào buổi chiều", emoji: "🌤️" };
+    return { text: "Chào buổi tối", emoji: "🌙" };
+  }
 }
 
 export default function AdminDashboardPage() {
@@ -100,7 +108,7 @@ function AdminDashboardContent() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
   const [user, setUser] = useState<any>(null);
-  const [timeGreeting, setTimeGreeting] = useState<TimeGreeting | null>(null);
+  const [timeGreeting, setTimeGreeting] = useState<TimeGreeting>(() => getVietnamTimeGreeting());
 
   useEffect(() => {
     import("@/lib/auth/session").then(({ getAuthUser }) => {
