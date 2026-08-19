@@ -170,7 +170,7 @@ export default function Page() {
 
   if (authStatus !== "ready" || !authUser) {
     return (
-      <main style={{ background: colors.bg, color: colors.text }}>
+      <main className="nl-account-page" style={{ background: colors.bg, color: colors.text }}>
         <section style={{ maxWidth: 1120, margin: "0 auto", padding: "42px 18px" }}>
           <div style={{ color: colors.muted, fontSize: 14, fontWeight: 800 }}>
             {translateText(
@@ -186,7 +186,7 @@ export default function Page() {
   }
 
   return (
-    <main style={{ background: colors.bg, color: colors.text }}>
+    <main className="nl-account-page" style={{ background: colors.bg, color: colors.text }}>
       <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 28px" }}>
         <div className="nl-account-layout">
           <aside style={{ display: "grid", gap: 16 }}>
@@ -353,6 +353,10 @@ export default function Page() {
         </div>
       </section>
       <style>{`
+        html.vy-light .nl-account-page {
+          background: #fff !important;
+        }
+
         html.vy-light .nl-account-profile-card {
           background:
             radial-gradient(circle at 82% 12%, rgba(212,178,106,.16), transparent 28%),
