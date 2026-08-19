@@ -1276,7 +1276,7 @@ function BookingCard({
   const canSubmitBill =
     isMemberActionBooking &&
     group === "Hoàn tất" &&
-    booking.status.trim().toUpperCase() === "CHECKED_IN" &&
+    ["CHECKED_IN", "COMPLETED"].includes(booking.status.trim().toUpperCase()) &&
     !isCodeOnlyBooking &&
     !hasSubmittedBill(booking) &&
     !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());

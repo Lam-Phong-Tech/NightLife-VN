@@ -85,7 +85,7 @@ describe("BookingConfirmTour", () => {
     cleanup();
   });
 
-  it("shows tour summary with the booking QR panel", async () => {
+  it("shows tour summary without the booking QR panel", async () => {
     rememberLastBooking(tourBooking);
 
     renderPage();
@@ -93,7 +93,7 @@ describe("BookingConfirmTour", () => {
     expect(await screen.findByText("Busy Night Tour")).toBeInTheDocument();
     expect(screen.getByText("Tokyo Kitchen")).toBeInTheDocument();
     expect(screen.getByText("Crimson Bar")).toBeInTheDocument();
-    expect(await screen.findByRole("img")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("refreshes cached confirmation details from the latest member booking data", async () => {

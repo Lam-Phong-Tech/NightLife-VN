@@ -14426,23 +14426,6 @@ export class NightlifeDataService {
         childBookings.push(child);
       }
 
-      const qrId = randomUUID();
-      const qrPayload = this.buildTourBookingQrPayload(qrId);
-      await prisma.tourBookingQr.create({
-        data: {
-          id: qrId,
-          tourBookingId: tourBooking.id,
-          code: `TQR-${randomUUID().slice(0, 8).toUpperCase()}`,
-          qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-          validFrom: new Date(scheduledAt.getTime() - TOUR_QR_VALID_BEFORE_MS),
-          expiresAt: new Date(
-            scheduledAt.getTime() +
-              tour.durationHours * 60 * 60 * 1000 +
-              TOUR_QR_GRACE_AFTER_MS,
-          ),
-        },
-      });
-
       await prisma.auditLog.create({
         data: {
           actorId: input.userId,
@@ -15746,18 +15729,9 @@ export class NightlifeDataService {
     }
 
     const bookingCode = tourBooking.bookingCode || tourBooking.id;
-    const qrPayload =
-      tourBooking.qr?.payload ||
-      (tourBooking.qr?.id
-        ? this.buildTourBookingQrPayload(tourBooking.qr.id)
-        : '');
-
-    const qrImageDataUrl = qrPayload
-      ? await this.buildBookingQrImageDataUrl(qrPayload)
-      : null;
-    const qrImageUrl = qrPayload
-      ? `https://api.qrserver.com/v1/create-qr-code/?size=640x640&margin=24&data=${encodeURIComponent(qrPayload)}`
-      : '';
+    const qrPayload = '';
+    const qrImageDataUrl = null;
+    const qrImageUrl = '';
 
     const locale = this.normalizeBookingLocale(tourBooking.locale);
     const tourTitle =
@@ -15844,7 +15818,7 @@ export class NightlifeDataService {
           channel: 'EMAIL',
           status: 'QUEUED',
           recipient: email,
-          templateKey: 'customer.booking.qr_email.v1',
+          templateKey: 'customer.booking.code_email.v1',
           payload,
         },
       });
@@ -15878,6 +15852,7 @@ export class NightlifeDataService {
         qrPayload,
         qrImageUrl,
         qrImageDataUrl,
+        includeQr: false,
       });
 
       await this.prisma.notificationLog.update({

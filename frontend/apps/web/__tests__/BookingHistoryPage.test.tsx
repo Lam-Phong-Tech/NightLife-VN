@@ -1,6 +1,8 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../src/app/(member)/lich-su-dat-cho/page";
+import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
+import { RoutedLanguageProvider } from "@/lib/i18n/use-active-language";
 import { rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
 
 const mocks = vi.hoisted(() => ({
@@ -70,6 +72,15 @@ const booking = (overrides: Partial<BookingRecord>): BookingRecord => ({
   tour: overrides.tour,
 });
 
+const renderPage = () =>
+  render(
+    <RoutedLanguageProvider initialLanguage="vi">
+      <SystemFeedbackProvider>
+        <Page />
+      </SystemFeedbackProvider>
+    </RoutedLanguageProvider>,
+  );
+
 describe("BookingHistoryPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -128,8 +139,7 @@ describe("BookingHistoryPage", () => {
 
     rememberLastBooking(kotoneBooking);
     mocks.bookingApi.listMemberBookings.mockResolvedValue([erikaBooking, kotoneBooking]);
-
-    render(<Page />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("Kotone @ Tokyo Kitchen")).toBeInTheDocument());
 
@@ -158,7 +168,7 @@ describe("BookingHistoryPage", () => {
 
     mocks.bookingApi.listMemberBookings.mockResolvedValue([completedBooking]);
 
-    render(<Page />);
+    renderPage();
 
     await waitFor(() =>
       expect(
@@ -212,7 +222,7 @@ describe("BookingHistoryPage", () => {
     window.sessionStorage.clear();
     mocks.bookingApi.listMemberBookings.mockResolvedValue([apiBooking]);
 
-    render(<Page />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText("Busy Night Tour")).toBeInTheDocument());
 

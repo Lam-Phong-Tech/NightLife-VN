@@ -4544,13 +4544,7 @@ describe('NightlifeDataService', () => {
         phone: '0901234567',
         email: 'guesttour@example.com',
       },
-      qr: {
-        id: 'qr-1',
-        code: 'TQR-123456',
-        status: 'ACTIVE',
-        expiresAt: new Date(),
-        completedAt: null,
-      },
+      qr: null,
       bookings: [
         {
           id: 'child-1',
@@ -4593,7 +4587,7 @@ describe('NightlifeDataService', () => {
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'guesttour@example.com',
-        templateKey: 'customer.booking.qr_email.v1',
+        templateKey: 'customer.booking.code_email.v1',
         payload: expect.objectContaining({
           bookingId: 'tb-1',
           bookingCode: 'TB-123456',
@@ -4620,7 +4614,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('sends QR email when creating member tour booking', async () => {
+  it('sends code email when creating member tour booking', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-08-01T10:00:00.000Z'));
 
     const tourStop = {
@@ -4685,13 +4679,7 @@ describe('NightlifeDataService', () => {
         phone: '0987654321',
         email: 'member@example.com',
       },
-      qr: {
-        id: 'qr-2',
-        code: 'TQR-654321',
-        status: 'ACTIVE',
-        expiresAt: new Date(),
-        completedAt: null,
-      },
+      qr: null,
       bookings: [
         {
           id: 'child-2',
@@ -4740,7 +4728,7 @@ describe('NightlifeDataService', () => {
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'member@example.com',
-        templateKey: 'customer.booking.qr_email.v1',
+        templateKey: 'customer.booking.code_email.v1',
         payload: expect.objectContaining({
           bookingId: 'tb-2',
           bookingCode: 'TB-654321',
