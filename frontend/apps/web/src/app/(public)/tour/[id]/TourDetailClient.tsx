@@ -14,7 +14,6 @@ import {
   Plus,
   Route,
   Sparkles,
-  Tag,
   UserRound,
   Users,
 } from "lucide-react";
@@ -981,7 +980,6 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
               <div className={styles.timeline}>
                 {tour.stops.map((stop) => {
                   const stopDescription = cleanRichText(stop.store.description);
-                  const couponName = cleanRichText(stop.store.applicableCoupon?.name);
                   const stopWard =
                     stop.store.area?.ward || formatCity(tour);
 
@@ -1001,11 +999,6 @@ export default function TourDetailClient({ tour: initialTour }: TourDetailClient
                         </div>
                         <h3 className={`${styles.stopTitle} notranslate`} translate="no" data-no-translate="true">{stop.store.name}</h3>
                         {stopDescription ? <p className={styles.stopText}>{stopDescription}</p> : null}
-                        {couponName ? (
-                          <span className={styles.couponPill}>
-                            <Tag size={13} /> <span className={styles.couponText}>{couponName}</span>
-                          </span>
-                        ) : null}
                       </div>
                     </article>
                   );
