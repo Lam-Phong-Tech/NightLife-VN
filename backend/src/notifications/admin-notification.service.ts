@@ -249,7 +249,7 @@ export class AdminNotificationService {
       .map(([label, value]) => `${label}: ${value}`);
 
     const message = [
-      '[P0] Yêu cầu đặt tour mới',
+      '🆕 [TOUR MỚI]',
       ...details,
     ].join('\n');
 
@@ -738,7 +738,7 @@ export class AdminNotificationService {
       .map(([label, value]) => `${label}: ${value}`);
 
     return [
-      `[P0] ${input.title}`,
+      `🔔 ${input.title}`,
       ...details,
       `CMS: ${actionUrl}`,
       `Web: ${webUrl}`,
