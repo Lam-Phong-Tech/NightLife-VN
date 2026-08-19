@@ -530,6 +530,8 @@ function MobileSupportChatPanel({
       style={{
         position: "fixed",
         inset: 0,
+        height: "100dvh",
+        minHeight: 0,
         zIndex: 130,
         background: chatColors.bg,
         color: chatColors.text,
