@@ -648,10 +648,12 @@ function MobileSupportChatPanel({
 function SupportChatButton({
   isMobile,
   isOpen,
+  unreadCount,
   onClick,
 }: {
   isMobile: boolean;
   isOpen: boolean;
+  unreadCount: number;
   onClick: () => void;
 }) {
   const activeLanguage = useActiveLanguage();
@@ -686,6 +688,32 @@ function SupportChatButton({
       }}
     >
       <MessageCircle size={isMobile ? 16 : 18} strokeWidth={1.8} />
+      {unreadCount > 0 ? (
+        <span
+          aria-label={`${unreadCount} tin nhắn chat mới`}
+          style={{
+            position: "absolute",
+            top: "-5px",
+            right: "-5px",
+            minWidth: unreadCount > 9 ? "22px" : "18px",
+            height: "18px",
+            padding: "0 4px",
+            borderRadius: "10px",
+            background: "#e54868",
+            color: "#fff",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "10px",
+            fontWeight: 800,
+            lineHeight: 1,
+            boxSizing: "border-box",
+            pointerEvents: "none",
+          }}
+        >
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -705,16 +733,32 @@ export function SupportChatWidget({
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string>("");
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "error">(
     "disconnected",
   );
-  const [hasOpened, setHasOpened] = useState(false);
   const hasLoadedSessionHistoryRef = useRef(false);
   const closedTicketIdsRef = useRef<Set<string>>(new Set());
+  const isOpenRef = useRef(isOpen);
 
   useEffect(() => {
-    if (isOpen) setHasOpened(true);
+    isOpenRef.current = isOpen;
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!guestSessionId) return;
+
+    const storageKey = `vy_support_unread_count:${guestSessionId}`;
+    const storedCount = Number.parseInt(localStorage.getItem(storageKey) || "0", 10);
+    setUnreadMessageCount(Number.isFinite(storedCount) ? Math.max(0, storedCount) : 0);
+  }, [guestSessionId]);
+
+  useEffect(() => {
+    if (!isOpen || !guestSessionId) return;
+
+    setUnreadMessageCount(0);
+    localStorage.removeItem(`vy_support_unread_count:${guestSessionId}`);
+  }, [guestSessionId, isOpen]);
 
   useEffect(() => {
     const handleOpenSupportChat = (event: Event) => {
@@ -870,7 +914,7 @@ export function SupportChatWidget({
   }, [socket, ticketId]);
 
   useEffect(() => {
-    if (!hasOpened) return;
+    if (!guestSessionId) return;
 
     const socketConfig = getSupportSocketConfig();
     const token = currentUser?.id ? getAuthSessionToken() : "";
@@ -894,6 +938,20 @@ export function SupportChatWidget({
         if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, mapSupportMessageToChatMessage(msg, activeLanguageRef.current)];
       });
+
+      if (
+        msg.senderType === "ADMIN" &&
+        !isOpenRef.current
+      ) {
+        setUnreadMessageCount((count) => {
+          const nextCount = count + 1;
+          localStorage.setItem(
+            `vy_support_unread_count:${guestSessionId}`,
+            String(nextCount),
+          );
+          return nextCount;
+        });
+      }
     });
 
     newSocket.on("system_message", (msg: SupportMessagePayload) => {
@@ -925,7 +983,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, [hasOpened, currentUser?.id]);
+  }, [currentUser?.id, guestSessionId, ticketId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1065,7 +1123,12 @@ export function SupportChatWidget({
 
   return (
     <>
-      <SupportChatButton isMobile={isMobile} isOpen={isOpen} onClick={handleTriggerClick} />
+      <SupportChatButton
+        isMobile={isMobile}
+        isOpen={isOpen}
+        unreadCount={unreadMessageCount}
+        onClick={handleTriggerClick}
+      />
       {isOpen && typeof document !== "undefined" ? createPortal(panel, document.body) : null}
     </>
   );
