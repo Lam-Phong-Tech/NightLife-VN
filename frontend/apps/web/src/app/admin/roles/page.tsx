@@ -410,7 +410,17 @@ export default function AdminRolesPage() {
                 </div>
               </div>
             ))}
-            {accF.length === 0 && (
+            {loading ? (
+              <div style={{ padding: '28px', textAlign: 'center', fontSize: '12px', color: '#8c8679' }} role="status" aria-live="polite">
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+                  <span
+                    aria-hidden="true"
+                    style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+                  />
+                  Đang tải tài khoản...
+                </span>
+              </div>
+            ) : accF.length === 0 && (
               <div style={{ padding: '28px', textAlign: 'center', fontSize: '12px', color: '#57534b' }}>Không tìm thấy tài khoản phù hợp</div>
             )}
             
