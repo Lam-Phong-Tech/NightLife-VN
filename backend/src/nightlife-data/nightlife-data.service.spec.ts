@@ -9361,7 +9361,10 @@ describe('NightlifeDataService', () => {
         where: expect.objectContaining({
           userId: 'member-1',
           channel: 'IN_APP',
-          templateKey: { startsWith: 'customer.' },
+          templateKey: {
+            startsWith: 'customer.',
+            not: 'customer.support.reply.v1',
+          },
         }),
         take: 5,
       }),
