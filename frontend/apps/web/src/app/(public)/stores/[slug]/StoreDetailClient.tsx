@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ImageOff,
   Loader2,
   Minus,
@@ -1021,15 +1022,19 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
         })}
       </div>
 
-      {hasMoreCasts && !showAllCasts ? (
+      {hasMoreCasts ? (
         <button
           className="cast-rail-more"
           type="button"
-          aria-label={translateText("Xem thêm cast", activeLanguage)}
-          onClick={() => setShowAllCasts(true)}
+          aria-label={translateText(showAllCasts ? "Thu gọn cast" : "Xem thêm cast", activeLanguage)}
+          onClick={() => setShowAllCasts((current) => !current)}
         >
-          {translateText("Xem thêm cast", activeLanguage)}
-          <ChevronRight size={22} aria-hidden="true" />
+          {translateText(showAllCasts ? "Thu gọn cast" : "Xem thêm cast", activeLanguage)}
+          {showAllCasts ? (
+            <ChevronUp size={22} aria-hidden="true" />
+          ) : (
+            <ChevronRight size={22} aria-hidden="true" />
+          )}
         </button>
       ) : null}
     </div>

@@ -7341,6 +7341,13 @@ const termEntries: TranslationEntry[] = [
     zh: "查看更多陪伴人员",
   },
   {
+    vi: "Thu gọn cast",
+    en: "Show fewer Cast",
+    ja: "キャストを折りたたむ",
+    ko: "캐스트 접기",
+    zh: "收起陪伴人员",
+  },
+  {
     vi: "Xem cast trước",
     en: "See previous Cast",
     ja: "前のキャストを見る",
