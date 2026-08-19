@@ -12,6 +12,10 @@ const configuredApiOrigin = (() => {
   return readOrigin(process.env.NEXT_PUBLIC_API_URL);
 })();
 
+const configuredSocketOrigin = (() => {
+  return readOrigin(process.env.NEXT_PUBLIC_SOCKET_URL);
+})();
+
 const trustedPortalOrigins = Array.from(
   new Set(
     [
@@ -72,6 +76,10 @@ export function createContentSecurityPolicy(isProduction: boolean) {
 
   if (configuredApiOrigin && !connectSources.includes(configuredApiOrigin)) {
     connectSources.push(configuredApiOrigin);
+  }
+
+  if (configuredSocketOrigin && !connectSources.includes(configuredSocketOrigin)) {
+    connectSources.push(configuredSocketOrigin);
   }
 
   if (!isProduction) {

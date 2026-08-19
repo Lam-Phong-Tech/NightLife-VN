@@ -35,7 +35,7 @@ export function getApiBaseUrl(): string {
 }
 
 export function getSupportSocketConfig(): SocketConfig {
-  const apiUrl = getApiBaseUrl();
+  const apiUrl = process.env.NEXT_PUBLIC_SOCKET_URL || getApiBaseUrl();
 
   let socketHost = apiUrl;
   let socketPath: string | undefined = undefined;
