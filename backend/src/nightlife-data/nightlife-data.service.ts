@@ -4348,6 +4348,20 @@ export class NightlifeDataService {
       data: { deletedAt: new Date() },
     });
 
+    if (result.count === 1) {
+      await this.prisma.rankingConfig.updateMany({
+        where: {
+          targetType: 'CAST',
+          targetId: id,
+          deletedAt: null,
+        },
+        data: {
+          status: 'DELETED',
+          deletedAt: new Date(),
+        },
+      });
+    }
+
     if (result.count !== 1) {
       // Partner may still hold an older draft containing a cast ID that was
       // already soft-deleted from Admin. Treat that state as already deleted
@@ -25755,6 +25769,17 @@ export class NightlifeDataService {
             },
             select: { id: true },
           });
+          await tx.rankingConfig.updateMany({
+            where: {
+              targetType: 'CAST',
+              targetId: existing.id,
+              deletedAt: null,
+            },
+            data: {
+              status: 'DELETED',
+              deletedAt: now,
+            },
+          });
         }
 
         await this.syncAdminCastMediaPurposes(
@@ -25819,6 +25844,20 @@ export class NightlifeDataService {
           ...(dto.status && { status: dto.status }),
         },
       });
+
+      if (dto.isPublic === false || (dto.status && dto.status !== 'ACTIVE')) {
+        await tx.rankingConfig.updateMany({
+          where: {
+            targetType: 'CAST',
+            targetId: id,
+            deletedAt: null,
+          },
+          data: {
+            status: 'DELETED',
+            deletedAt: new Date(),
+          },
+        });
+      }
 
       await this.replaceAdminCastMedia(updated.id, mediaIds, tx);
 
@@ -26022,6 +26061,20 @@ export class NightlifeDataService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      if (hard) {
+        await tx.rankingConfig.deleteMany({
+          where: { targetType: 'CAST', targetId: id },
+        });
+      } else {
+        await tx.rankingConfig.updateMany({
+          where: { targetType: 'CAST', targetId: id, deletedAt: null },
+          data: {
+            status: 'DELETED',
+            deletedAt: new Date(),
+          },
+        });
+      }
+
       const result = hard
         ? await tx.cast.delete({ where: { id } })
         : await tx.cast.update({
@@ -26329,6 +26382,31 @@ export class NightlifeDataService {
         },
       });
 
+      if (dto.status && dto.status !== 'ACTIVE') {
+        const castIds = (
+          await tx.cast.findMany({
+            where: { storeId: id },
+            select: { id: true },
+          })
+        ).map((c) => c.id);
+
+        await tx.rankingConfig.updateMany({
+          where: {
+            deletedAt: null,
+            OR: [
+              { targetType: 'STORE', targetId: id },
+              ...(castIds.length
+                ? [{ targetType: 'CAST' as const, targetId: { in: castIds } }]
+                : []),
+            ],
+          },
+          data: {
+            status: 'DELETED',
+            deletedAt: new Date(),
+          },
+        });
+      }
+
       const wasDraft = existing.status === 'DRAFT';
       const isStillDraft = store.status === 'DRAFT';
       if (!wasDraft || !isStillDraft) {
@@ -26512,10 +26590,18 @@ export class NightlifeDataService {
           await tx.memberFavoriteCast.deleteMany({
             where: { castId: { in: castIds } },
           });
+          await tx.rankingConfig.deleteMany({
+            where: { targetType: 'CAST', targetId: { in: castIds } },
+          });
           await tx.cast.deleteMany({ where: { storeId: id } });
         }
 
-        // 5. Finally, delete the store itself
+        // 5. Clean up Store ranking configs
+        await tx.rankingConfig.deleteMany({
+          where: { targetType: 'STORE', targetId: id },
+        });
+
+        // 6. Finally, delete the store itself
         await tx.store.delete({
           where: { id },
         });
@@ -26538,11 +26624,35 @@ export class NightlifeDataService {
         return { message: 'Store hard deleted successfully' };
       }
 
+      const now = new Date();
+      const castIds = (
+        await tx.cast.findMany({
+          where: { storeId: id },
+          select: { id: true },
+        })
+      ).map((c) => c.id);
+
+      await tx.rankingConfig.updateMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { targetType: 'STORE', targetId: id },
+            ...(castIds.length
+              ? [{ targetType: 'CAST' as const, targetId: { in: castIds } }]
+              : []),
+          ],
+        },
+        data: {
+          status: 'DELETED',
+          deletedAt: now,
+        },
+      });
+
       const deletedStore = await tx.store.update({
         where: { id },
         data: {
           status: 'DELETED',
-          deletedAt: new Date(),
+          deletedAt: now,
         },
       });
 
