@@ -259,7 +259,6 @@ const footerCopy: Record<
   LanguageCode,
   {
     description: string;
-    legalPlaceholder: string;
     mobileNotice: (brandName: string) => string;
     rights: (brandName: string) => string;
     bookingNote: string;
@@ -267,8 +266,6 @@ const footerCopy: Record<
 > = {
   vi: {
     description: "Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.",
-    legalPlaceholder:
-      "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
     mobileNotice: (brandName) =>
       `© 2026 ${brandName}. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.`,
     rights: (brandName) => `© 2026 ${brandName}. Bảo lưu mọi quyền.`,
@@ -276,8 +273,6 @@ const footerCopy: Record<
   },
   en: {
     description: "Discover venues, Cast, deals, and nightlife guides in Vietnam.",
-    legalPlaceholder:
-      "Legal content is a placeholder until the client provides the official version.",
     mobileNotice: (brandName) =>
       `© 2026 ${brandName}. 18+ · Prices and booking availability are confirmed by admin.`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
@@ -285,14 +280,12 @@ const footerCopy: Record<
   },
   ja: {
     description: "ベトナムの店舗、キャスト、特典、ナイトライフガイドを探せます。",
-    legalPlaceholder: "正式版が提供されるまで、法務コンテンツは仮テキストです。",
     mobileNotice: (brandName) => `© 2026 ${brandName}. 18+ · 料金と予約状況は管理者が確認します。`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
     bookingNote: "18+ · 料金と予約状況は管理者が再確認します。",
   },
   ko: {
     description: "베트남의 매장, Cast, 혜택과 나이트라이프 가이드를 찾아보세요.",
-    legalPlaceholder: "공식 문구가 제공될 때까지 법적 콘텐츠는 임시 문구입니다.",
     mobileNotice: (brandName) =>
       `© 2026 ${brandName}. 18+ · 가격과 예약 가능 여부는 관리자가 확인합니다.`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
@@ -300,7 +293,6 @@ const footerCopy: Record<
   },
   zh: {
     description: "探索越南的场所、陪伴人员、优惠和夜生活指南。",
-    legalPlaceholder: "正式内容提供前，法律文本暂为占位内容。",
     mobileNotice: (brandName) => `© 2026 ${brandName}. 18+ · 价格和预订状态由管理员确认。`,
     rights: (brandName) => `© 2026 ${brandName}. All rights reserved.`,
     bookingNote: "18+ · 价格和预订状态由管理员再次确认。",

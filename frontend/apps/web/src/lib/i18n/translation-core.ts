@@ -3617,13 +3617,6 @@ const entries: TranslationEntry[] = [
     zh: "探索越南的店铺、陪伴人员、优惠和夜生活指南。",
   },
   {
-    vi: "Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.",
-    en: "Legal content is using placeholders until the client provides the official copy.",
-    ja: "正式文面が提供されるまで、法務コンテンツは仮文面です。",
-    ko: "고객이 공식 문안을 제공할 때까지 법적 내용은 임시 문구입니다.",
-    zh: "法律内容在客户提供正式文本前使用占位文案。",
-  },
-  {
     vi: "KHÁM PHÁ",
     en: "EXPLORE",
     ja: "探す",
