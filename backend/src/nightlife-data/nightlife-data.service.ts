@@ -27937,6 +27937,13 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
     dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
   ) {
+    if (
+      dto.discountType === 'PERCENT' &&
+      (dto.discountValue < 1 || dto.discountValue > 100)
+    ) {
+      throw new BadRequestException('Mức giảm theo % phải từ 1 đến 100');
+    }
+
     const { randomUUID, createHash } = await import('crypto');
     await this.assertAdminCouponTargetStoresAreActive(dto.targetStores);
 

@@ -100,8 +100,19 @@ export default function AdminCouponsPage() {
 
   const customDurationKey = 'custom';
   const sanitizeDigits = (value: string, maxLength = 9) => value.replace(/[^\d]/g, '').slice(0, maxLength);
+  const handleDiscountCustomChange = (val: string) => {
+    let cleaned = sanitizeDigits(val, discountType === 'pct' ? 3 : 9);
+    if (discountType === 'pct' && cleaned) {
+      const num = parseInt(cleaned, 10);
+      if (num > 100) {
+        cleaned = '100';
+      }
+    }
+    setDiscountCustom(cleaned);
+  };
   const presetDiscountValue = parseInt(discountVal.replace(/[^0-9]/g, ''), 10) || 0;
-  const customDiscountValue = discountCustom ? parseInt(discountCustom, 10) : 0;
+  const rawCustomDiscountValue = discountCustom ? parseInt(discountCustom, 10) : 0;
+  const customDiscountValue = discountType === 'pct' ? Math.min(100, rawCustomDiscountValue) : rawCustomDiscountValue;
   const displayDiscountValue = discountCustom ? customDiscountValue : presetDiscountValue;
   const discountPreview = discountType === 'pct'
     ? `-${displayDiscountValue || 0}%`
@@ -656,8 +667,16 @@ export default function AdminCouponsPage() {
                   ))}
                 </div>
                 <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
-                  <input value={discountCustom} onChange={e => setDiscountCustom(sanitizeDigits(e.target.value, discountType === 'pct' ? 3 : 9))} placeholder={discountType === 'pct' ? 'VD: 12' : 'VD: 75000'} inputMode="numeric" style={{ width: '150px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
-                  <span style={{ fontSize: '12.5px', color: '#8c8679' }}>{discountType === 'pct' ? '% · nhập mức giảm tùy chỉnh' : '₫ · nhập số tiền tùy chỉnh'}</span>
+                  <input
+                    value={discountCustom}
+                    onChange={e => handleDiscountCustomChange(e.target.value)}
+                    placeholder={discountType === 'pct' ? 'VD: 12 (tối đa 100)' : 'VD: 75000'}
+                    inputMode="numeric"
+                    min={1}
+                    max={discountType === 'pct' ? 100 : undefined}
+                    style={{ width: '150px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }}
+                  />
+                  <span style={{ fontSize: '12.5px', color: '#8c8679' }}>{discountType === 'pct' ? '% · nhập mức giảm tùy chỉnh (1 - 100)' : '₫ · nhập số tiền tùy chỉnh'}</span>
                 </div>
               </div>
 
