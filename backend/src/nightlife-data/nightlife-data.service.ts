@@ -5473,6 +5473,30 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
+      const tourBooking = await this.prisma.tourBooking.findFirst({
+        where: {
+          id: bookingId,
+          userId: user.id,
+        },
+      });
+      if (tourBooking) {
+        return this.cancelTourBookingRecord({
+          booking: {
+            id: tourBooking.id,
+            tourBookingId: tourBooking.id,
+            storeId: '',
+            userId: tourBooking.userId,
+            guestId: tourBooking.guestId,
+            status: tourBooking.status,
+            scheduledAt: tourBooking.scheduledAt,
+            cancelledAt: tourBooking.cancelledAt,
+          } as any,
+          tourBookingId: tourBooking.id,
+          actorId: user.id,
+          actorType: 'MEMBER',
+          reason: dto.reason,
+        });
+      }
       throw new NotFoundException('Booking not found');
     }
 
@@ -5521,6 +5545,30 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
+      const tourBooking = await this.prisma.tourBooking.findFirst({
+        where: {
+          id: bookingId,
+          userId: null,
+          guest: { is: { phone } },
+        },
+      });
+      if (tourBooking) {
+        return this.cancelTourBookingRecord({
+          booking: {
+            id: tourBooking.id,
+            tourBookingId: tourBooking.id,
+            storeId: '',
+            userId: tourBooking.userId,
+            guestId: tourBooking.guestId,
+            status: tourBooking.status,
+            scheduledAt: tourBooking.scheduledAt,
+            cancelledAt: tourBooking.cancelledAt,
+          } as any,
+          tourBookingId: tourBooking.id,
+          actorType: 'GUEST',
+          reason: dto.reason,
+        });
+      }
       throw new NotFoundException('Booking not found');
     }
 
@@ -14336,7 +14384,6 @@ export class NightlifeDataService {
         },
       });
 
-      const childBookings: Array<{ id: string }> = [];
       for (const stop of tour.stops) {
         await this.assertNoDuplicateActiveBooking({
           storeId: stop.store.id,
@@ -14346,36 +14393,6 @@ export class NightlifeDataService {
           phone: input.phone,
           prisma,
         });
-        const selectedStoreCasts = selectionsByStore.get(stop.store.id) ?? [];
-        const primaryCast = selectedStoreCasts[0];
-
-        const child = await prisma.booking.create({
-          data: {
-            bookingCode: this.generateBookingCode(),
-            userId: input.userId,
-            guestId: input.guestId,
-            storeId: stop.store.id,
-            castId: primaryCast?.id,
-            couponId: null,
-            couponIssueId: null,
-            tourBookingId: tourBooking.id,
-            tourStopId: stop.id,
-            tourStopOrder: stop.order,
-            status: 'REQUESTED',
-            locale,
-            scheduledAt,
-            partySize: input.dto.partySize,
-            note: input.note,
-            discountSnapshot: {
-              couponId: null,
-              couponIssueId: null,
-              tourBookingId: tourBooking.id,
-              tourStopOrder: stop.order,
-            },
-          },
-          select: { id: true },
-        });
-        childBookings.push(child);
       }
 
       await prisma.auditLog.create({
@@ -14389,7 +14406,6 @@ export class NightlifeDataService {
           result: 'SUCCESS',
           afterJson: this.toPrismaJson({
             status: 'REQUESTED',
-            childBookingIds: childBookings.map((booking) => booking.id),
             storeIds: tour.stops.map((stop) => stop.store.id),
           }),
           metadata: this.toPrismaJson({
@@ -14441,13 +14457,10 @@ export class NightlifeDataService {
   }
 
   private decorateCustomerTourBooking(tourBooking: any) {
-    const primary = tourBooking.bookings[0];
-    if (!primary) {
-      throw new NotFoundException('Tour booking has no stops');
-    }
     const itinerary = Array.isArray(tourBooking.itinerarySnapshot)
       ? tourBooking.itinerarySnapshot
       : [];
+    const primary = tourBooking.bookings?.[0];
     const checkedInByBookingId = new Map(
       (tourBooking.checkIns ?? []).map((checkIn: any) => [
         checkIn.bookingId,
@@ -14466,10 +14479,46 @@ export class NightlifeDataService {
       NO_SHOW: 'NO_SHOW',
     };
 
+    const stops = tourBooking.bookings?.length
+      ? tourBooking.bookings.map((booking: any, index: number) => {
+          const snapshot = itinerary.find(
+            (item: any) => item.storeId === booking.storeId,
+          );
+          return {
+            order: booking.tourStopOrder ?? snapshot?.order ?? index + 1,
+            bookingId: booking.id,
+            bookingCode: booking.bookingCode,
+            storeId: booking.store?.id ?? booking.storeId,
+            storeSlug: booking.store?.slug ?? snapshot?.storeSlug,
+            storeName: booking.store?.name ?? snapshot?.storeName,
+            status: booking.status,
+            checkedInAt: checkedInByBookingId.get(booking.id) ?? null,
+            casts: snapshot?.casts ?? (booking.cast ? [booking.cast] : []),
+            coupon: booking.coupon,
+            couponIssue: booking.couponIssue,
+          };
+        })
+      : itinerary.map((item: any, index: number) => ({
+          order: item.order ?? index + 1,
+          bookingId: tourBooking.id,
+          bookingCode: tourBooking.bookingCode,
+          storeId: item.storeId,
+          storeSlug: item.storeSlug,
+          storeName: item.storeName,
+          status: tourBooking.status,
+          checkedInAt: null,
+          casts: item.casts ?? [],
+          coupon: null,
+          couponIssue: null,
+        }));
+
     return {
-      ...primary,
+      ...(primary ?? {}),
+      id: tourBooking.id,
       bookingCode: tourBooking.bookingCode,
-      status: customerStatusByTourStatus[tourBooking.status] ?? primary.status,
+      status:
+        customerStatusByTourStatus[tourBooking.status] ??
+        (primary?.status || tourBooking.status),
       tourBookingId: tourBooking.id,
       scheduledAt: tourBooking.scheduledAt,
       partySize: tourBooking.partySize,
@@ -14477,6 +14526,11 @@ export class NightlifeDataService {
       guest: tourBooking.guest,
       user: tourBooking.user,
       locale: tourBooking.locale,
+      store: primary?.store ?? {
+        id: tourBooking.tour?.id,
+        name: `Tour: ${tourBooking.tour?.title || tourBooking.titleSnapshot || 'Tour'}`,
+        slug: '',
+      },
       qr: tourBooking.qr
         ? {
             id: tourBooking.qr.id,
@@ -14488,32 +14542,15 @@ export class NightlifeDataService {
           }
         : null,
       tour: {
-        id: tourBooking.tour.id,
-        title: tourBooking.titleSnapshot,
-        coverUrl: tourBooking.tour.coverUrl,
+        id: tourBooking.tour?.id,
+        title: tourBooking.titleSnapshot || tourBooking.tour?.title,
+        coverUrl: tourBooking.tour?.coverUrl,
         status: tourBooking.status,
         progress: {
           checkedIn: (tourBooking.checkIns ?? []).length,
-          total: tourBooking.bookings.length,
+          total: stops.length,
         },
-        stops: tourBooking.bookings.map((booking: any, index: number) => {
-          const snapshot = itinerary.find(
-            (item: any) => item.storeId === booking.storeId,
-          );
-          return {
-            order: booking.tourStopOrder ?? snapshot?.order ?? index + 1,
-            bookingId: booking.id,
-            bookingCode: booking.bookingCode,
-            storeId: booking.store.id,
-            storeSlug: booking.store.slug,
-            storeName: booking.store.name,
-            status: booking.status,
-            checkedInAt: checkedInByBookingId.get(booking.id) ?? null,
-            casts: snapshot?.casts ?? (booking.cast ? [booking.cast] : []),
-            coupon: booking.coupon,
-            couponIssue: booking.couponIssue,
-          };
-        }),
+        stops,
       },
     };
   }
@@ -24348,7 +24385,41 @@ export class NightlifeDataService {
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking not found');
+      const tourBooking = await this.prisma.tourBooking.findUnique({
+        where: { id },
+        include: this.tourBookingCustomerInclude(),
+      });
+      if (!tourBooking) {
+        throw new NotFoundException('Booking not found');
+      }
+
+      const tourStatus: import('@prisma/client').TourBookingStatus =
+        status === 'CANCELLED'
+          ? 'CANCELLED'
+          : status === 'COMPLETED'
+            ? 'COMPLETED'
+            : status === 'CONFIRMED' || status === 'CHECKED_IN'
+              ? 'CONFIRMED'
+              : 'REQUESTED';
+
+      const updatedTourBooking = await this.prisma.tourBooking.update({
+        where: { id },
+        data: {
+          status: tourStatus,
+          ...(tourStatus === 'CANCELLED' ? { cancelledAt: new Date() } : {}),
+          ...(tourStatus === 'COMPLETED' ? { completedAt: new Date() } : {}),
+        },
+        include: this.tourBookingCustomerInclude(),
+      });
+
+      if (updatedTourBooking.user?.id) {
+        this.socketGateway?.notifyBookingStatusUpdate(
+          updatedTourBooking.user.id,
+          this.decorateCustomerTourBooking(updatedTourBooking),
+        );
+      }
+
+      return this.decorateCustomerTourBooking(updatedTourBooking);
     }
 
     const updatedBooking =
@@ -26891,10 +26962,14 @@ export class NightlifeDataService {
     const searchTerm = this.cleanText(search);
     const dateFilterCondition = dateFilter ? dateFilter : {};
 
+    const isTourQuery = !storeId && (!category || category.toUpperCase() === 'TOUR');
+    const isBookingQuery = !category || category.toUpperCase() !== 'TOUR';
+
     const baseWhere: import('@prisma/client').Prisma.BookingWhereInput = {
+      tourBookingId: null,
+      deletedAt: null,
       ...(storeId && { storeId }),
       ...(storeFilter ? { store: { is: storeFilter } } : {}),
-      // TODO: Filter by source when the schema supports it. Currently hardcoded.
       ...dateFilterCondition,
       ...(searchTerm && {
         OR: [
@@ -26919,6 +26994,34 @@ export class NightlifeDataService {
       ...(prismaStatus && { status: prismaStatus }),
     };
 
+    const tourBaseWhere: import('@prisma/client').Prisma.TourBookingWhereInput = {
+      ...dateFilterCondition,
+      ...(searchTerm && {
+        OR: [
+          {
+            bookingCode: {
+              contains: searchTerm.replace(/^(TR|TB|BK)-?/i, ''),
+              mode: 'insensitive',
+            },
+          },
+          ...(this.isUuid(searchTerm.replace(/^(TR|TB|BK)-?/i, ''))
+            ? [{ id: searchTerm.replace(/^(TR|TB|BK)-?/i, '') }]
+            : []),
+          { titleSnapshot: this.containsInsensitive(searchTerm) },
+          { tour: { is: { title: this.containsInsensitive(searchTerm) } } },
+          { user: { displayName: this.containsInsensitive(searchTerm) } },
+          { guest: { displayName: this.containsInsensitive(searchTerm) } },
+          { user: { phone: this.containsInsensitive(searchTerm) } },
+          { guest: { phone: this.containsInsensitive(searchTerm) } },
+        ],
+      }),
+    };
+
+    let prismaTourStatus: import('@prisma/client').TourBookingStatus | undefined;
+    if (status === 'new') prismaTourStatus = 'REQUESTED';
+    else if (status === 'completed') prismaTourStatus = 'COMPLETED';
+    else if (status === 'cancelled') prismaTourStatus = 'CANCELLED';
+
     let orderBy: any;
     if (
       status === 'checked_in' ||
@@ -26927,86 +27030,151 @@ export class NightlifeDataService {
     ) {
       orderBy = { scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc' };
     } else {
-      // Cho tab 'Tất cả' và 'Mới', ưu tiên những booking vừa được gửi tới
       orderBy = { createdAt: sortBy === 'oldest' ? 'asc' : 'desc' };
     }
 
     const [
-      items,
-      total,
-      newCount,
-      checkedInCount,
-      completedCount,
-      cancelledCount,
+      bkRequested,
+      bkCheckedIn,
+      bkCompleted,
+      bkCancelled,
+      tourRequested,
+      tourCompleted,
+      tourCancelled,
+      bookingItems,
+      tourItems,
     ] = await Promise.all([
-      this.prisma.booking.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          store: true,
-          cast: true,
-          user: true,
-          guest: true,
-          tourBooking: { select: { bookingCode: true, itinerarySnapshot: true } },
-        },
-      }),
-      // The total used for pagination must match the currently selected
-      // status filter. The per-status counters below intentionally use
-      // `baseWhere` so the tab badges continue to show all counts.
-      this.prisma.booking.count({ where }),
-      this.prisma.booking.count({
-        where: { ...baseWhere, status: 'REQUESTED' },
-      }),
-      this.prisma.booking.count({
-        where: { ...baseWhere, status: 'CHECKED_IN' },
-      }),
-      this.prisma.booking.count({
-        where: { ...baseWhere, status: 'COMPLETED' },
-      }),
-      this.prisma.booking.count({
-        where: { ...baseWhere, status: 'CANCELLED' },
-      }),
+      isBookingQuery
+        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'REQUESTED' } })
+        : 0,
+      isBookingQuery
+        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'CHECKED_IN' } })
+        : 0,
+      isBookingQuery
+        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'COMPLETED' } })
+        : 0,
+      isBookingQuery
+        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'CANCELLED' } })
+        : 0,
+      isTourQuery
+        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'REQUESTED' } })
+        : 0,
+      isTourQuery
+        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'COMPLETED' } })
+        : 0,
+      isTourQuery
+        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'CANCELLED' } })
+        : 0,
+      isBookingQuery
+        ? this.prisma.booking.findMany({
+            where,
+            take: skip + limit,
+            orderBy,
+            include: {
+              store: true,
+              cast: true,
+              user: true,
+              guest: true,
+            },
+          })
+        : [],
+      isTourQuery && status !== 'checked_in'
+        ? this.prisma.tourBooking.findMany({
+            where: {
+              ...tourBaseWhere,
+              ...(prismaTourStatus && { status: prismaTourStatus }),
+            },
+            take: skip + limit,
+            orderBy,
+            include: {
+              tour: true,
+              user: true,
+              guest: true,
+            },
+          })
+        : [],
     ]);
 
-    const data = items.map((bk) => ({
+    const newCount = bkRequested + tourRequested;
+    const checkedInCount = bkCheckedIn;
+    const completedCount = bkCompleted + tourCompleted;
+    const cancelledCount = bkCancelled + tourCancelled;
+    const allCount = newCount + checkedInCount + completedCount + cancelledCount;
+
+    let total = allCount;
+    if (status === 'new') total = newCount;
+    else if (status === 'checked_in') total = checkedInCount;
+    else if (status === 'completed') total = completedCount;
+    else if (status === 'cancelled') total = cancelledCount;
+
+    const mappedBookings = bookingItems.map((bk) => ({
       id: bk.id,
       bookingNumber: bk.bookingNumber,
       bookingCode: bk.bookingCode,
-      tourBookingCode: bk.tourBooking?.bookingCode ?? null,
+      tourBookingCode: null,
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       customerPhone: bk.user?.phone || bk.guest?.phone || '',
       customerEmail: bk.user?.email || bk.guest?.email || '',
       store: bk.store.name,
       storeCategory: bk.store.category,
-      cast: (() => {
-        const itinerary = bk.tourBooking?.itinerarySnapshot;
-        const stop = (Array.isArray(itinerary)
-          ? itinerary.find((item: any) => item?.storeId === bk.storeId)
-          : null) as unknown as { casts?: unknown } | null;
-        const tourCastNames = Array.isArray(stop?.casts)
-          ? stop.casts
-              .map((cast: any) => cast?.name)
-              .filter(
-                (name: unknown): name is string =>
-                  typeof name === 'string' && Boolean(name.trim()),
-              )
-          : [];
-
-        return tourCastNames.length
-          ? `Cast: ${tourCastNames.join(', ')}`
-          : bk.cast?.stageName
-            ? 'Cast: ' + bk.cast.stageName
-            : 'Không cast';
-      })(),
+      cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'Không cast',
       partySize: bk.partySize,
       scheduledAt: bk.scheduledAt,
-      source: 'Telegram', // Hardcoded as requested
+      createdAt: bk.createdAt,
+      source: 'Telegram',
       status: bk.status,
       note: bk.note,
     }));
+
+    const mappedTours = tourItems.map((tb) => ({
+      id: tb.id,
+      bookingNumber: 0,
+      bookingCode: tb.bookingCode,
+      tourBookingCode: null,
+      customerName:
+        tb.user?.displayName || tb.guest?.displayName || 'Khách Vãng Lai',
+      customerPhone: tb.user?.phone || tb.guest?.phone || '',
+      customerEmail: tb.user?.email || tb.guest?.email || '',
+      store: `Tour: ${tb.tour?.title || tb.titleSnapshot || 'Tour'}`,
+      storeCategory: 'TOUR',
+      cast: (() => {
+        const itinerary = tb.itinerarySnapshot;
+        if (!Array.isArray(itinerary)) return 'Không cast';
+        const allCasts = itinerary.flatMap((stop: any) =>
+          Array.isArray(stop?.casts)
+            ? stop.casts
+                .map((c: any) =>
+                  typeof c?.name === 'string' ? c.name.trim() : '',
+                )
+                .filter(Boolean)
+            : [],
+        );
+        return allCasts.length ? `Cast: ${allCasts.join(', ')}` : 'Không cast';
+      })(),
+      partySize: tb.partySize,
+      scheduledAt: tb.scheduledAt,
+      createdAt: tb.createdAt,
+      source: 'Telegram',
+      status: tb.status,
+      note: tb.note,
+    }));
+
+    const combined = [...mappedBookings, ...mappedTours].sort((a, b) => {
+      const isDateSort =
+        status === 'checked_in' ||
+        status === 'completed' ||
+        status === 'cancelled';
+      const aVal = isDateSort
+        ? new Date(a.scheduledAt).getTime()
+        : new Date(a.createdAt).getTime();
+      const bVal = isDateSort
+        ? new Date(b.scheduledAt).getTime()
+        : new Date(b.createdAt).getTime();
+      return sortBy === 'oldest' ? aVal - bVal : bVal - aVal;
+    });
+
+    const data = combined.slice(skip, skip + limit);
 
     return {
       data,
@@ -27018,7 +27186,7 @@ export class NightlifeDataService {
         checkedIn: checkedInCount,
         completed: completedCount,
         cancelled: cancelledCount,
-        all: total,
+        all: allCount,
       },
     };
   }

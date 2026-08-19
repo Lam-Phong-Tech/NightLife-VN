@@ -159,6 +159,7 @@ describe('NightlifeDataService', () => {
       findUnique: jest.fn(),
     },
     tourBooking: {
+      count: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -402,6 +403,7 @@ describe('NightlifeDataService', () => {
     prisma.booking.updateMany.mockResolvedValue({ count: 0 });
     prisma.bookingQr.count.mockResolvedValue(0);
     prisma.tourBooking.findMany.mockResolvedValue([]);
+    prisma.tourBooking.count.mockResolvedValue(0);
     prisma.bill.count.mockResolvedValue(0);
     prisma.bill.findFirst.mockResolvedValue(null);
     prisma.bill.updateMany.mockResolvedValue({ count: 0 });
@@ -3087,7 +3089,7 @@ describe('NightlifeDataService', () => {
     prisma.booking.findMany.mockResolvedValueOnce([booking] as never);
     prisma.booking.count
       .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0);
 
@@ -3124,43 +3126,47 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('shows every requested cast for a tour stop in admin bookings', async () => {
-    const booking = {
-      id: 'booking-tour-stop-1',
-      bookingNumber: 43,
-      bookingCode: 'BK-TOUR-1',
+  it('shows tour bookings with all requested casts in admin bookings', async () => {
+    const tourBooking = {
+      id: 'tour-booking-1',
+      bookingCode: 'TR-7N3TMY5X',
       user: null,
       guest: { displayName: 'Nguyena', phone: null, email: 'guest@example.com' },
-      store: { id: 'store-grace', name: 'GRACE The Class' },
-      cast: { stageName: 'ヒナ' },
-      storeId: 'store-grace',
+      tour: { id: 'tour-1', title: 'Hanoi Night Crawl' },
+      titleSnapshot: 'Hanoi Night Crawl',
       partySize: 2,
       scheduledAt: new Date('2026-08-18T12:00:00.000Z'),
+      createdAt: new Date('2026-08-18T10:00:00.000Z'),
       status: 'REQUESTED',
       note: 'sbgdhfnjg',
-      tourBooking: {
-        bookingCode: 'TR-7N3TMY5X',
-        itinerarySnapshot: [
-          {
-            storeId: 'store-grace',
-            casts: [{ name: 'ヒナ' }, { name: 'アン' }],
-          },
-        ],
-      },
+      itinerarySnapshot: [
+        {
+          storeId: 'store-grace',
+          casts: [{ name: 'ヒナ' }, { name: 'アン' }],
+        },
+      ],
     };
-    prisma.booking.findMany.mockResolvedValueOnce([booking] as never);
+    prisma.booking.findMany.mockResolvedValueOnce([]);
+    prisma.tourBooking.findMany.mockResolvedValueOnce([tourBooking] as never);
     prisma.booking.count
-      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    prisma.tourBooking.count
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0);
 
-    const result = await service.listAdminBookings({ search: 'BK-TOUR-1' });
+    const result = await service.listAdminBookings({ search: 'TR-7N3TMY5X' });
 
-    expect(result.data[0]).toEqual(expect.objectContaining({
-      tourBookingCode: 'TR-7N3TMY5X',
-      cast: 'Cast: ヒナ, アン',
-    }));
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        bookingCode: 'TR-7N3TMY5X',
+        store: 'Tour: Hanoi Night Crawl',
+        cast: 'Cast: ヒナ, アン',
+      }),
+    );
   });
 
   it('creates a member notification when admin confirms a booking', async () => {
@@ -4583,7 +4589,7 @@ describe('NightlifeDataService', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         guestId: 'guest-tour-1',
-        bookingId: 'child-1',
+        bookingId: 'tb-1',
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'guesttour@example.com',
@@ -4724,7 +4730,7 @@ describe('NightlifeDataService', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         guestId: 'guest-tour-2',
-        bookingId: 'child-2',
+        bookingId: 'tb-2',
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'member@example.com',
