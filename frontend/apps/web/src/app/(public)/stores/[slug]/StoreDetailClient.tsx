@@ -980,11 +980,11 @@ function IconButton({
 function CastRail({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const [showAllCasts, setShowAllCasts] = useState(false);
-  const [initialCastCount, setInitialCastCount] = useState(16);
+  const [initialCastCount, setInitialCastCount] = useState(12);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 620px)");
-    const updateInitialCastCount = () => setInitialCastCount(mobileQuery.matches ? 8 : 16);
+    const updateInitialCastCount = () => setInitialCastCount(mobileQuery.matches ? 8 : 12);
 
     updateInitialCastCount();
     mobileQuery.addEventListener("change", updateInitialCastCount);
@@ -4760,7 +4760,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-rail {
           display: grid;
-          grid-template-columns: repeat(8, minmax(0, 78px));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           column-gap: 12px;
           row-gap: 14px;
           overflow: visible;
@@ -4855,7 +4855,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .cast-bubble {
-          width: 78px;
+          width: 100%;
           color: var(--vy-text);
           text-align: center;
           text-decoration: none;
@@ -4872,7 +4872,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-avatar {
           display: block;
-          width: 76px;
+          width: 100%;
           height: auto;
           aspect-ratio: 3 / 4;
           border-radius: 8px;
@@ -5647,6 +5647,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         @media (max-width: 620px) {
           .cast-rail {
             grid-template-columns: repeat(4, minmax(0, 78px));
+          }
+
+          .cast-bubble {
+            width: 78px;
+          }
+
+          .cast-avatar {
+            width: 76px;
           }
 
           .cast-section {
