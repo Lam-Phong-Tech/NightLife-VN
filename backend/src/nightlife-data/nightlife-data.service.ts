@@ -8265,7 +8265,7 @@ export class NightlifeDataService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: Math.min(query.limit ?? 50, 100),
+      take: Math.min(query.limit ?? 50, 1000),
       select: {
         id: true,
         code: true,

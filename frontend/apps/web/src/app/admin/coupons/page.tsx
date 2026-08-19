@@ -7,6 +7,7 @@ import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { AdminToast } from '@/components/ui/AdminToast';
 
 const campaignPageSize = 9;
+const issueFetchLimit = 1000;
 
 export default function AdminCouponsPage() {
   const feedback = useSystemFeedback();
@@ -16,6 +17,7 @@ export default function AdminCouponsPage() {
   const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [issues, setIssues] = useState<any[]>([]);
+  const [isIssuesLoading, setIsIssuesLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [campaignPage, setCampaignPage] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,11 +122,13 @@ export default function AdminCouponsPage() {
   };
 
   const fetchIssues = async () => {
+    setIsIssuesLoading(true);
+    setFetchError(null);
     try {
       const statusMap: Record<string, string> = { holding: 'ISSUED', used: 'USED', expired: 'EXPIRED' };
       const statusParam = activeTab === 'all' ? undefined : statusMap[activeTab];
       const res = await apiClient<any>('/admin/coupon-issues', {
-        params: { status: statusParam, limit: 100 }
+        params: { status: statusParam, limit: issueFetchLimit }
       });
       if (Array.isArray(res)) {
         setIssues(res);
@@ -141,6 +145,8 @@ export default function AdminCouponsPage() {
       } else {
         setFetchError(e?.message || 'Lỗi khi tải dữ liệu. Vui lòng thử lại.');
       }
+    } finally {
+      setIsIssuesLoading(false);
     }
   };
 
@@ -150,7 +156,7 @@ export default function AdminCouponsPage() {
 
   useEffect(() => {
     fetchIssues();
-  }, [activeTab, currentPage]);
+  }, [activeTab]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -408,7 +414,17 @@ export default function AdminCouponsPage() {
         <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '46px 132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>STT</span><span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
-        {(() => {
+        {isIssuesLoading ? (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }} role="status" aria-live="polite">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+              <span
+                aria-hidden="true"
+                style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+              />
+              Đang tải mã khách đã lấy...
+            </span>
+          </div>
+        ) : (() => {
           const startIndex = (currentPage - 1) * adminPageSize;
           const visibleIssues = issues.slice(startIndex, startIndex + adminPageSize);
           return visibleIssues.map((c: any, index: number) => {
@@ -445,8 +461,8 @@ export default function AdminCouponsPage() {
             );
           });
         })()}
-        {issues.length === 0 && <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có mã nào.</div>}
-        {issues.length > 0 && (
+        {!isIssuesLoading && issues.length === 0 && !fetchError && <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có mã nào.</div>}
+        {!isIssuesLoading && issues.length > 0 && (
           <AdminPagination page={currentPage} totalItems={totalIssues} onPageChange={setCurrentPage} itemLabel="mã" />
         )}
       </div>
