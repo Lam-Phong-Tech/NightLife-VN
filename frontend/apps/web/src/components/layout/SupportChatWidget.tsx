@@ -521,6 +521,32 @@ function MobileSupportChatPanel({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const activeLanguage = useActiveLanguage();
+  const [visualViewportState, setVisualViewportState] = useState<{
+    height: number | null;
+    offsetTop: number;
+  }>({ height: null, offsetTop: 0 });
+
+  useEffect(() => {
+    const visualViewport = window.visualViewport;
+    if (!visualViewport) return undefined;
+
+    const syncVisualViewport = () => {
+      setVisualViewportState({
+        height: visualViewport.height,
+        offsetTop: visualViewport.offsetTop,
+      });
+    };
+
+    syncVisualViewport();
+    visualViewport.addEventListener("resize", syncVisualViewport);
+    visualViewport.addEventListener("scroll", syncVisualViewport);
+
+    return () => {
+      visualViewport.removeEventListener("resize", syncVisualViewport);
+      visualViewport.removeEventListener("scroll", syncVisualViewport);
+    };
+  }, []);
+
   return (
     <section
       data-support-chat-panel="true"
@@ -529,8 +555,11 @@ function MobileSupportChatPanel({
       aria-labelledby="mobile-support-chat-title"
       style={{
         position: "fixed",
-        inset: 0,
-        height: "100dvh",
+        top: `${visualViewportState.offsetTop}px`,
+        right: 0,
+        bottom: "auto",
+        left: 0,
+        height: visualViewportState.height ? `${visualViewportState.height}px` : "100dvh",
         minHeight: 0,
         zIndex: 130,
         background: chatColors.bg,
