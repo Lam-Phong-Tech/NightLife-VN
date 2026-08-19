@@ -8,13 +8,17 @@ export type StoreDetailSource =
   | "home"
   | "stores"
   | "ranking"
-  | "search";
+  | "search"
+  | "spa"
+  | "restaurant";
 
 export const storeDetailSources: readonly StoreDetailSource[] = [
   "home",
   "stores",
   "ranking",
   "search",
+  "spa",
+  "restaurant",
 ];
 
 export const storeDetailSourceParam = "from";
@@ -41,13 +45,12 @@ export function inferStoreDetailSource(
   if (normalizedPath === "/") return "home";
   if (normalizedPath === "/xep-hang") return "ranking";
   if (normalizedPath === "/search" || normalizedPath === "/tim-kiem") return "search";
+  if (normalizedPath === "/spa") return "spa";
+  if (normalizedPath === "/nha-hang") return "restaurant";
 
   if (normalizedPath === "/stores" || normalizedPath === "/danh-sach-quan") {
     return hasActiveSearch ? "search" : "stores";
   }
-
-  // Category/listing pages still lead back to the general store directory.
-  if (normalizedPath === "/spa" || normalizedPath === "/nha-hang") return "stores";
 
   return null;
 }
@@ -61,7 +64,11 @@ export function getStoreDetailBackHref(
       ? "/"
       : source === "ranking"
         ? "/xep-hang"
-        : "/stores";
+        : source === "spa"
+          ? "/spa"
+          : source === "restaurant"
+            ? "/nha-hang"
+            : "/stores";
   const locale = getPathLanguage(pathname);
 
   return locale ? localizePathname(destination, locale) : destination;
