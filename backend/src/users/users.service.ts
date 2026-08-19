@@ -479,7 +479,7 @@ export class UsersService {
     const user = await this.findByEmail(email);
     let passwordMatches = false;
 
-    if (user && !user.deletedAt && user.status === 'ACTIVE') {
+    if (user) {
       try {
         passwordMatches = await this.passwordService.verify(
           password,
@@ -490,13 +490,12 @@ export class UsersService {
       }
     }
 
-    if (
-      !user ||
-      user.deletedAt ||
-      user.status !== 'ACTIVE' ||
-      !passwordMatches
-    ) {
+    if (!user || !passwordMatches) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (user.deletedAt || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Account is disabled');
     }
 
     return user;

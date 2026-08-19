@@ -70,6 +70,15 @@ describe('UsersService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('returns a disabled-account error when an inactive account has the correct password', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...activeUser, status: 'INACTIVE' });
+    passwordService.verify.mockResolvedValue(true);
+
+    await expect(
+      service.validateCredentials(activeUser.email, 'Str0ngPass!'),
+    ).rejects.toThrow('Account is disabled');
+  });
+
   it('creates regular member accounts with the MEMBER tier', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     passwordService.hash.mockResolvedValue('hashed-password');

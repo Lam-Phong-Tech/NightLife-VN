@@ -112,6 +112,7 @@ const exactMessageTranslations: Record<string, string> = {
   "invalid or expired registration otp": "Mã OTP không đúng hoặc đã hết hạn.",
   "emailotp must be an 8 digit number": "Mã OTP phải gồm 8 chữ số.",
   "account is not active": "Tài khoản chưa hoạt động hoặc đã bị khóa.",
+  "account is disabled": "Tài khoản đã bị vô hiệu hóa.",
   "booking change request not found": "Không tìm thấy yêu cầu đổi lịch booking.",
   "booking not found": "Không tìm thấy booking.",
   "booking cannot be rescheduled in its current state": "Booking hiện tại không thể đổi lịch.",
