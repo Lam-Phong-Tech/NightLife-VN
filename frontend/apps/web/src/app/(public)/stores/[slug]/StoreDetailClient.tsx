@@ -4862,7 +4862,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .cast-avatar {
           display: block;
           width: 76px;
-          height: 76px;
+          height: auto;
+          aspect-ratio: 3 / 4;
           border-radius: 8px;
           background-size: cover;
           background-position: center;
