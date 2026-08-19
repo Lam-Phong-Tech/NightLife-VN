@@ -125,6 +125,8 @@ describe('NightlifeDataService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     memberFavoriteCast: {
       findMany: jest.fn(),
