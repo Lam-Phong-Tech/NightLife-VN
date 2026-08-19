@@ -417,6 +417,7 @@ export default function AdminCastsPage() {
 function AdminCastsContent() {
   const [activeTab, setActiveTab] = useState('all');
   const [casts, setCasts] = useState<any[]>([]);
+  const [isCastsLoading, setIsCastsLoading] = useState(true);
   const [stores, setStores] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -493,6 +494,7 @@ function AdminCastsContent() {
   }, [previewImage]);
 
   const fetchCasts = async () => {
+    setIsCastsLoading(true);
     try {
       const res = await apiClient<any>('/admin/casts', { params: { search: search || undefined, limit: 1000 } });
       setFetchError(null);
@@ -506,6 +508,8 @@ function AdminCastsContent() {
         setFetchError(e?.message || 'Lỗi khi tải danh sách Cast. Vui lòng thử lại.');
       }
       setCasts([]);
+    } finally {
+      setIsCastsLoading(false);
     }
   };
 
@@ -1407,7 +1411,19 @@ function AdminCastsContent() {
             </tr>
           </thead>
           <tbody>
-            {paginatedCasts.map((cast, idx) => {
+            {isCastsLoading ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: colors.muted }} role="status" aria-live="polite">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+                    <span
+                      aria-hidden="true"
+                      style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+                    />
+                    Đang tải Cast...
+                  </span>
+                </td>
+              </tr>
+            ) : paginatedCasts.map((cast, idx) => {
               const statusLabel = getStatusLabel(cast.status, cast.isPublic);
               const statusStyle = getStatusStyle(statusLabel);
               const avatarStyle = getAvatarStyle(cast.stageName);
@@ -1468,7 +1484,7 @@ function AdminCastsContent() {
                 </tr>
               );
             })}
-            {filteredCasts.length === 0 && (
+            {!isCastsLoading && filteredCasts.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: colors.muted }}>Không tìm thấy Cast nào.</td>
               </tr>

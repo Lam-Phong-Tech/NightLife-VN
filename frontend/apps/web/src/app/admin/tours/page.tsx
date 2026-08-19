@@ -192,6 +192,7 @@ export default function AdminToursPage() {
 function AdminToursContent() {
   const feedback = useSystemFeedback();
   const [tours, setTours] = useState<any[]>([]);
+  const [isToursLoading, setIsToursLoading] = useState(true);
   const [stores, setStores] = useState<any[]>([]);
   const [tourSel, setTourSel] = useState<string | null>(null); // 'new' or Tour UUID
   const [toast, setToast] = useState<string | null>(null);
@@ -230,6 +231,7 @@ function AdminToursContent() {
   };
 
   const fetchTours = async () => {
+    setIsToursLoading(true);
     try {
       const res = await apiClient<any>('/admin/tours', { params: { limit: 1000 } });
       setFetchError(null);
@@ -245,6 +247,8 @@ function AdminToursContent() {
         setFetchError(e?.message || 'Lỗi khi tải danh sách Tour. Vui lòng thử lại.');
       }
       setTours([]);
+    } finally {
+      setIsToursLoading(false);
     }
   };
 
@@ -647,7 +651,17 @@ function AdminToursContent() {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {paginated.length === 0 ? (
+          {isToursLoading ? (
+            <div style={{ padding: '60px 24px', textAlign: 'center', color: '#8c8679', fontSize: '13.5px' }} role="status" aria-live="polite">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+                <span
+                  aria-hidden="true"
+                  style={{ width: '13px', height: '13px', border: '2px solid rgba(212,178,106,.25)', borderTopColor: '#d4b26a', borderRadius: '50%', animation: 'vpulse 1s linear infinite' }}
+                />
+                Đang tải Tour...
+              </span>
+            </div>
+          ) : paginated.length === 0 ? (
             <div style={{ padding: '60px 24px', textAlign: 'center', color: '#8c8679', fontSize: '13.5px' }}>
               Không tìm thấy Tour nào phù hợp.
             </div>
