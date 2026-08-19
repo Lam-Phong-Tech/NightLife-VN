@@ -62,6 +62,7 @@ export type RequestPasswordResetPayload = {
 
 export type RequestRegistrationOtpPayload = {
   email: string;
+  locale?: string;
 };
 
 export type VerifyPasswordResetCodePayload = {

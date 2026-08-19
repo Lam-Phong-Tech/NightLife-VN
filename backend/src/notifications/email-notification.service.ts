@@ -47,6 +47,7 @@ export type RegistrationOtpEmailInput = {
   to: string;
   code: string;
   expiresAt: Date;
+  locale?: string | null;
 };
 
 type EmailLocale = 'vi' | 'en' | 'ja' | 'ko' | 'zh';
@@ -92,6 +93,18 @@ type BookingEmailTemplate = {
   textQrBackup: string;
   textArrival: string;
   codeOnlyHint: string;
+};
+
+type RegistrationOtpEmailTemplate = {
+  htmlLang: string;
+  intlLocale: string;
+  subject: string;
+  title: string;
+  intro: string;
+  codeLabel: string;
+  expiryLead: string;
+  expirySuffix: string;
+  ignoreNote: string;
 };
 
 const defaultEmailLocale: EmailLocale = 'ja';
@@ -358,6 +371,64 @@ const bookingEmailTemplates: Record<EmailLocale, BookingEmailTemplate> = {
   },
 };
 
+const registrationOtpEmailTemplates: Record<EmailLocale, RegistrationOtpEmailTemplate> = {
+  vi: {
+    htmlLang: 'vi',
+    intlLocale: 'vi-VN',
+    subject: 'Vietyoru - Mã OTP xác thực email đăng ký',
+    title: 'Mã OTP xác thực email',
+    intro: 'Dùng mã dưới đây để xác thực email và hoàn tất tạo tài khoản hội viên.',
+    codeLabel: 'Mã OTP xác thực email của bạn là:',
+    expiryLead: 'Mã có hiệu lực đến',
+    expirySuffix: '. Nếu mã hết hạn, hãy yêu cầu gửi mã mới.',
+    ignoreNote: 'Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email.',
+  },
+  en: {
+    htmlLang: 'en',
+    intlLocale: 'en-US',
+    subject: 'Vietyoru - Email verification OTP',
+    title: 'Email verification OTP',
+    intro: 'Use the code below to verify your email and complete your member account registration.',
+    codeLabel: 'Your email verification OTP is:',
+    expiryLead: 'This code is valid until',
+    expirySuffix: '. If it expires, please request a new code.',
+    ignoreNote: 'If you did not request this, please ignore this email.',
+  },
+  ja: {
+    htmlLang: 'ja',
+    intlLocale: 'ja-JP',
+    subject: 'Vietyoru - メール認証OTP',
+    title: 'メール認証OTP',
+    intro: '以下のコードでメールアドレスを認証し、会員登録を完了してください。',
+    codeLabel: 'メール認証OTP：',
+    expiryLead: 'このコードの有効期限は',
+    expirySuffix: 'です。期限が切れた場合は、新しいコードをリクエストしてください。',
+    ignoreNote: 'この操作をリクエストしていない場合は、このメールを無視してください。',
+  },
+  ko: {
+    htmlLang: 'ko',
+    intlLocale: 'ko-KR',
+    subject: 'Vietyoru - 이메일 인증 OTP',
+    title: '이메일 인증 OTP',
+    intro: '아래 코드를 사용하여 이메일을 인증하고 회원가입을 완료해 주세요.',
+    codeLabel: '이메일 인증 OTP:',
+    expiryLead: '이 코드는 다음 시간까지 유효합니다:',
+    expirySuffix: '. 만료된 경우 새 코드를 요청해 주세요.',
+    ignoreNote: '요청하지 않은 작업이라면 이 이메일을 무시해 주세요.',
+  },
+  zh: {
+    htmlLang: 'zh-CN',
+    intlLocale: 'zh-CN',
+    subject: 'Vietyoru - 邮箱验证 OTP',
+    title: '邮箱验证 OTP',
+    intro: '请使用以下验证码验证邮箱并完成会员账号注册。',
+    codeLabel: '您的邮箱验证码为：',
+    expiryLead: '此验证码有效期至',
+    expirySuffix: '。如果验证码已过期，请重新获取。',
+    ignoreNote: '如果您没有发起此操作，请忽略此邮件。',
+  },
+};
+
 @Injectable()
 export class EmailNotificationService {
   constructor(private readonly configService: ConfigService) {}
@@ -454,12 +525,14 @@ export class EmailNotificationService {
       secure,
       auth: user ? { user, pass } : undefined,
     });
+    const locale = this.normalizeLocale(input.locale, 'vi');
+    const template = registrationOtpEmailTemplates[locale];
     const message = await transporter.sendMail({
       from,
       to: input.to,
-      subject: 'Vietyoru - Mã OTP xác thực email đăng ký',
-      text: this.registrationOtpText(input),
-      html: this.registrationOtpHtml(input),
+      subject: template.subject,
+      text: this.registrationOtpText(input, template),
+      html: this.registrationOtpHtml(input, template),
     });
 
     return { messageId: message.messageId ?? null };
@@ -689,38 +762,44 @@ export class EmailNotificationService {
 </html>`;
   }
 
-  private registrationOtpText(input: RegistrationOtpEmailInput) {
+  private registrationOtpText(
+    input: RegistrationOtpEmailInput,
+    template: RegistrationOtpEmailTemplate,
+  ) {
     return [
-      'Xin chào bạn,',
+      'Vietyoru',
       '',
-      'Bạn vừa yêu cầu tạo tài khoản hội viên Vietyoru.',
-      `Mã OTP xác thực email của bạn là: ${input.code}`,
-      `Mã có hiệu lực đến: ${this.formatDateTime(input.expiresAt)}`,
+      template.intro,
+      `${template.codeLabel} ${input.code}`,
+      `${template.expiryLead}: ${this.formatDateTime(input.expiresAt, template.intlLocale)}${template.expirySuffix}`,
       '',
-      'Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email.',
+      template.ignoreNote,
     ].join('\n');
   }
 
-  private registrationOtpHtml(input: RegistrationOtpEmailInput) {
+  private registrationOtpHtml(
+    input: RegistrationOtpEmailInput,
+    template: RegistrationOtpEmailTemplate,
+  ) {
     return `<!doctype html>
-<html>
+<html lang="${this.escapeAttribute(template.htmlLang)}">
   <body style="margin:0;background:#08080b;color:#f8f4e8;font-family:Arial,sans-serif;">
     <div style="max-width:560px;margin:0 auto;padding:28px 18px;">
       <h1 style="margin:0 0 8px;color:#f5d982;font-size:26px;">Vietyoru</h1>
       <p style="margin:0 0 22px;color:#b8b1a1;letter-spacing:3px;font-size:11px;">VIETNAM NIGHTLIFE GUIDE</p>
       <div style="border:1px solid rgba(245,217,130,.28);border-radius:14px;background:#141417;padding:22px;">
-        <h2 style="margin:0 0 12px;font-size:22px;color:#fff;">Mã OTP xác thực email</h2>
+        <h2 style="margin:0 0 12px;font-size:22px;color:#fff;">${this.escapeHtml(template.title)}</h2>
         <p style="margin:0 0 18px;color:#cfc7b6;line-height:1.55;">
-          Dùng mã dưới đây để xác thực email và hoàn tất tạo tài khoản hội viên.
+          ${this.escapeHtml(template.intro)}
         </p>
         <div style="margin:22px 0;padding:18px;border-radius:14px;background:#f5d982;color:#1d1607;text-align:center;font-size:32px;font-weight:900;letter-spacing:8px;">
           ${this.escapeHtml(input.code)}
         </div>
         <p style="margin:0;color:#b8b1a1;line-height:1.55;">
-          Mã có hiệu lực đến <strong style="color:#fff;">${this.escapeHtml(this.formatDateTime(input.expiresAt))}</strong>. Nếu mã hết hạn, hãy yêu cầu gửi mã mới.
+          ${this.escapeHtml(template.expiryLead)} <strong style="color:#fff;">${this.escapeHtml(this.formatDateTime(input.expiresAt, template.intlLocale))}</strong>${this.escapeHtml(template.expirySuffix)}
         </p>
         <p style="margin:18px 0 0;color:#8d8577;font-size:12px;line-height:1.5;">
-          Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email.
+          ${this.escapeHtml(template.ignoreNote)}
         </p>
       </div>
     </div>
@@ -781,12 +860,15 @@ export class EmailNotificationService {
     return template.statusLabels[status] ?? template.statusLabels.REQUESTED;
   }
 
-  private normalizeLocale(locale?: string | null): EmailLocale {
+  private normalizeLocale(
+    locale?: string | null,
+    fallback: EmailLocale = defaultEmailLocale,
+  ): EmailLocale {
     const normalized =
       typeof locale === 'string' ? locale.trim().toLowerCase() : '';
     return normalized in bookingEmailTemplates
       ? (normalized as EmailLocale)
-      : defaultEmailLocale;
+      : fallback;
   }
 
   private mailFrom() {

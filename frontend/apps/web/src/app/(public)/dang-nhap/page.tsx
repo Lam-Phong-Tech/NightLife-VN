@@ -344,7 +344,10 @@ export default function Page() {
     setMessage("");
 
     try {
-      const response = await requestRegistrationOtp({ email: normalizedEmail });
+      const response = await requestRegistrationOtp({
+        email: normalizedEmail,
+        locale: activeLanguage,
+      });
       setMessageTone("success");
       setMessage(response.message || "Mã OTP đã được gửi tới email của bạn.");
     } catch (error) {

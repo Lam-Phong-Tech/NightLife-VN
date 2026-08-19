@@ -2,7 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform, type TransformFnParams } from 'class-transformer';
 import {
   IsEmail,
+  IsIn,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -64,6 +66,11 @@ export class RequestRegistrationOtpDto {
   @IsEmail()
   @MaxLength(254)
   email: string;
+
+  @ApiProperty({ required: false, enum: ['vi', 'en', 'ja', 'ko', 'zh'] })
+  @IsOptional()
+  @IsIn(['vi', 'en', 'ja', 'ko', 'zh'])
+  locale?: string;
 }
 
 export class RegistrationOtpRequestResponseDto {

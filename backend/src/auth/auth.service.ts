@@ -216,6 +216,7 @@ export class AuthService {
         to: email,
         code,
         expiresAt,
+        locale: dto.locale,
       });
     } catch (error) {
       this.registrationOtpTokens.delete(email);
