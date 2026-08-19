@@ -46,6 +46,9 @@ export class PublicRankingItemDto {
   @ApiPropertyOptional({ example: 'Tay Ho', nullable: true })
   area?: string | null;
 
+  @ApiPropertyOptional({ example: 'Phường Sài Gòn', nullable: true })
+  ward?: string | null;
+
   @ApiProperty({ example: 'Ha Noi' })
   city!: string;
 

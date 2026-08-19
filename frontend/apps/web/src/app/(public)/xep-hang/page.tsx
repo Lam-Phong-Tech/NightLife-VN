@@ -22,6 +22,11 @@ import {
 } from "@/lib/api/rankings";
 import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ranking";
 import { translateText } from "@/lib/i18n/client-translations";
+import {
+  getFilterAreaLabel,
+  getFilterCityLabel,
+  getPreferredStoreAreaName,
+} from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 type RankingKind = "cast" | "quan";
@@ -298,6 +303,17 @@ function formatCategory(value: string | null | undefined, language: LanguageCode
   return translateText(label, language);
 }
 
+function rankingCityLabel(item: PublicRankingItem, language: LanguageCode) {
+  const value = (item.cityCode || item.city || "").trim().toLowerCase();
+  const cityCode = value.includes("hanoi") || value.includes("ha noi") || value === "hn"
+    ? "hn"
+    : value.includes("ho chi minh") || value.includes("hồ chí minh") || value.includes("saigon") || value === "hcm"
+      ? "hcm"
+      : item.cityCode;
+
+  return cityCode ? getFilterCityLabel(cityCode, language) : item.city;
+}
+
 function KindTabs({
   rankingType,
   language,
@@ -459,7 +475,8 @@ function RankingRow({
     castSlug: item.slug,
     castName: item.name,
   }).toString()}`;
-  const areaLine = [item.area, item.cityCode?.toUpperCase() || item.city]
+  const areaName = getPreferredStoreAreaName({ ward: item.ward, areaName: item.area });
+  const areaLine = [areaName ? getFilterAreaLabel(areaName, language) : "", rankingCityLabel(item, language)]
     .filter(Boolean)
     .join(" · ");
   const primaryAction = isStore ? "store" : "profile";

@@ -929,6 +929,7 @@ type PublicRankingItem = {
   image: string | null;
   responsiveImage?: ReturnType<typeof toPublicResponsiveImage>;
   area: string | null;
+  ward: string | null;
   city: string;
   cityCode?: string;
   category: StoreCategory;
@@ -18902,6 +18903,7 @@ export class NightlifeDataService {
             name: true,
             city: true,
             district: true,
+            ward: true,
           },
         },
         media: {
@@ -18981,6 +18983,7 @@ export class NightlifeDataService {
                 name: true,
                 city: true,
                 district: true,
+                ward: true,
               },
             },
           },
@@ -19010,6 +19013,7 @@ export class NightlifeDataService {
         name: string;
         city: string;
         district?: string | null;
+        ward?: string | null;
       } | null;
       media: RankingImageMedia[];
     },
@@ -19038,6 +19042,7 @@ export class NightlifeDataService {
             })
           : null,
       area: store.area?.name ?? store.district,
+      ward: store.area?.ward ?? null,
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
@@ -19066,6 +19071,7 @@ export class NightlifeDataService {
           name: string;
           city: string;
           district?: string | null;
+          ward?: string | null;
         } | null;
       };
     },
@@ -19094,6 +19100,7 @@ export class NightlifeDataService {
             })
           : null,
       area: cast.store.area?.name ?? cast.store.district,
+      ward: cast.store.area?.ward ?? null,
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
       category: cast.store.category,
