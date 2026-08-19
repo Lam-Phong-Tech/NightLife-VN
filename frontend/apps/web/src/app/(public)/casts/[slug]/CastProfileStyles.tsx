@@ -666,6 +666,13 @@ export function CastProfileStyles() {
         padding-bottom: 2px;
       }
 
+      .cast-photo-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow: visible;
+        padding-bottom: 0;
+      }
+
       .cast-mobile-gallery-grid::-webkit-scrollbar {
         display: none;
       }
@@ -681,6 +688,39 @@ export function CastProfileStyles() {
         background-position: center !important;
         padding: 0;
         cursor: pointer;
+      }
+
+      .cast-photo-gallery-grid .cast-gallery-tile {
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        aspect-ratio: 94 / 70;
+        flex-basis: auto;
+      }
+
+      .cast-gallery-more {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: max-content;
+        min-height: 24px;
+        margin: 10px 0 0 auto;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--vy-muted);
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .cast-gallery-more:active {
+        color: var(--vy-gold-hi);
+      }
+
+      .cast-gallery-more:focus-visible {
+        outline: 1px solid var(--vy-gold);
+        outline-offset: 3px;
       }
 
       .cast-video-thumbnail {

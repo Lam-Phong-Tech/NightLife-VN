@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, ImageOff, Play, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ImageOff, Play, Star, X } from "lucide-react";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { resolveClientUrl } from "@/lib/api/client";
+import { translateText } from "@/lib/i18n/client-translations";
 import type { LanguageCode } from "@/lib/i18n/use-active-language";
 import { getCastProfileCopy } from "./cast-profile.copy";
 import { isPlaceholderCastMedia, mediaPreviewBg, videoEmbedUrl } from "./cast-profile.helpers";
@@ -90,6 +91,7 @@ export function CastGallery({
 }: CastGalleryProps) {
   const [touchStart, setTouchStart] = useState<GalleryTouchStart | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [showAllMobilePhotos, setShowAllMobilePhotos] = useState(false);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
   const activeMediaIsPlaceholder = isPlaceholderCastMedia(activeMedia);
   const fallbackImageUrl =
@@ -98,6 +100,13 @@ export function CastGallery({
   const mobileItems = gallery
     .map((media, index) => ({ media, index }))
     .filter(({ media }) => !mobileMediaType || media.type === mobileMediaType);
+  const isMobilePhotoGallery = mobileMediaType !== "VIDEO";
+  const mobilePhotoLimit = 8;
+  const hasMoreMobilePhotos = isMobilePhotoGallery && mobileItems.length > mobilePhotoLimit;
+  const visibleMobileItems =
+    hasMoreMobilePhotos && !showAllMobilePhotos
+      ? mobileItems.slice(0, mobilePhotoLimit)
+      : mobileItems;
   const desktopThumbnailStart = Math.min(
     Math.max(activeIndex - 4, 0),
     Math.max(gallery.length - 5, 0),
@@ -188,8 +197,8 @@ export function CastGallery({
             <span />
             <small>{mobileMeta ?? copy.galleryCount(mobileItems.length)}</small>
           </div>
-          <div className="cast-mobile-gallery-grid">
-            {mobileItems.map(({ media, index }) => {
+          <div className={`cast-mobile-gallery-grid${isMobilePhotoGallery ? " cast-photo-gallery-grid" : ""}`}>
+            {visibleMobileItems.map(({ media, index }) => {
               const isPlaceholder = isPlaceholderCastMedia(media);
 
               return (
@@ -214,6 +223,20 @@ export function CastGallery({
               );
             })}
           </div>
+          {hasMoreMobilePhotos ? (
+            <button
+              type="button"
+              className="cast-gallery-more"
+              aria-label={translateText(
+                showAllMobilePhotos ? "Thu gọn ảnh" : "Xem thêm ảnh",
+                language,
+              )}
+              onClick={() => setShowAllMobilePhotos((current) => !current)}
+            >
+              {translateText(showAllMobilePhotos ? "Thu gọn ảnh" : "Xem thêm ảnh", language)}
+              {showAllMobilePhotos ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+            </button>
+          ) : null}
         </section>
         {lightbox}
       </>

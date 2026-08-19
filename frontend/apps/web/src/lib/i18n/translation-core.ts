@@ -7348,6 +7348,20 @@ const termEntries: TranslationEntry[] = [
     zh: "收起陪伴人员",
   },
   {
+    vi: "Xem thêm ảnh",
+    en: "See more photos",
+    ja: "写真をもっと見る",
+    ko: "사진 더 보기",
+    zh: "查看更多照片",
+  },
+  {
+    vi: "Thu gọn ảnh",
+    en: "Show fewer photos",
+    ja: "写真を折りたたむ",
+    ko: "사진 접기",
+    zh: "收起照片",
+  },
+  {
     vi: "Xem cast trước",
     en: "See previous Cast",
     ja: "前のキャストを見る",
