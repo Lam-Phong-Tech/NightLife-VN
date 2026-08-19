@@ -228,14 +228,30 @@ export class AdminNotificationService {
       .map((booking, index) => {
         const order = booking.tourStopOrder ?? index + 1;
         const cast = this.castLabel(booking.cast);
-        return `${order}. ${booking.store?.name ?? 'Quán'} · ${booking.bookingCode ?? booking.id}${cast ? ` · Cast: ${cast}` : ''}`;
+        return `${order}. ${booking.store?.name ?? 'Quán'}${cast ? ` · Cast: ${cast}` : ''}`;
       })
       .join('\n');
-    const couponCode =
-      primaryBooking?.coupon?.code ?? primaryBooking?.couponIssue?.code ?? null;
-    const discount = primaryBooking
-      ? this.bookingDiscountLabel(primaryBooking)
-      : null;
+
+    const lines: Array<[string, unknown]> = [
+      ['🎫 Mã đặt tour', tourBooking.bookingCode],
+      ['🗺️ Tên tour', tourTitle],
+      ['📍 Lịch trình tour', itinerary],
+      ['📅 Thời gian', this.formatDateTime(tourBooking.scheduledAt)],
+      ['👥 Số người', tourBooking.partySize],
+      ['👤 Người đặt', this.customerName(tourBooking)],
+      ['📧 Email', this.customerEmail(tourBooking)],
+      ['💬 Ghi chú', tourBooking.note],
+    ];
+
+    const details = lines
+      .map(([label, value]) => [label, this.formatValue(value)] as const)
+      .filter(([, value]) => value)
+      .map(([label, value]) => `${label}: ${value}`);
+
+    const message = [
+      '[P0] Yêu cầu đặt tour mới',
+      ...details,
+    ].join('\n');
 
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.tourBookingCreated,
@@ -249,18 +265,8 @@ export class AdminNotificationService {
       webPath: tourBooking.tour?.id
         ? `/tour/${encodeURIComponent(tourBooking.tour.id)}`
         : '/tour',
-      lines: [
-        ['🎫 Mã đặt tour', tourBooking.bookingCode],
-        ['🗺️ Tên tour', tourTitle],
-        ['📍 Lịch trình tour', itinerary],
-        ['📅 Thời gian', this.formatDateTime(tourBooking.scheduledAt)],
-        ['👥 Số người', tourBooking.partySize],
-        ['👤 Người đặt', this.customerName(tourBooking)],
-        ['📧 Email', this.customerEmail(tourBooking)],
-        ['🏷️ Mã ưu đãi', couponCode],
-        ['🎟️ Mức giảm', discount],
-        ['💬 Ghi chú', tourBooking.note],
-      ],
+      lines,
+      message,
       payload: {
         tourBookingId: tourBooking.id,
         tourBookingCode: tourBooking.bookingCode ?? null,
@@ -270,8 +276,6 @@ export class AdminNotificationService {
         scheduledAt: this.toIso(tourBooking.scheduledAt),
         partySize: tourBooking.partySize ?? null,
         customer: this.customerPayload(tourBooking),
-        couponCode,
-        discountLabel: discount,
         stops: stops.map((booking, index) => ({
           order: booking.tourStopOrder ?? index + 1,
           bookingId: booking.id,

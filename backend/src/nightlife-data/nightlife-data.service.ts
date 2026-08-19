@@ -14462,16 +14462,6 @@ export class NightlifeDataService {
       ),
     );
 
-    for (const child of created.bookings) {
-      await Promise.resolve(
-        this.adminNotificationService?.notifyBookingCreated(child),
-      ).catch((error) =>
-        this.logger.warn(
-          `Failed to notify tour child booking ${child.id}: ${this.errorMessage(error)}`,
-        ),
-      );
-    }
-
     return this.decorateCustomerTourBooking(created);
   }
 
