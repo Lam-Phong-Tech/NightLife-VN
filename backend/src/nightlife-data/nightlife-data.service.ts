@@ -27136,7 +27136,19 @@ export class NightlifeDataService {
         tb.user?.displayName || tb.guest?.displayName || 'Khách Vãng Lai',
       customerPhone: tb.user?.phone || tb.guest?.phone || '',
       customerEmail: tb.user?.email || tb.guest?.email || '',
-      store: `Tour: ${tb.tour?.title || tb.titleSnapshot || 'Tour'}`,
+      tourName: tb.tour?.title || tb.titleSnapshot || 'Tour',
+      store: (() => {
+        const itinerary = tb.itinerarySnapshot;
+        if (!Array.isArray(itinerary)) return 'Chưa có quán';
+
+        const storeNames = itinerary
+          .map((stop: any) =>
+            typeof stop?.storeName === 'string' ? stop.storeName.trim() : '',
+          )
+          .filter(Boolean);
+
+        return storeNames.length ? storeNames.join(', ') : 'Chưa có quán';
+      })(),
       storeCategory: 'TOUR',
       cast: (() => {
         const itinerary = tb.itinerarySnapshot;

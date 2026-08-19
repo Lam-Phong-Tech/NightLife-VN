@@ -3150,7 +3150,18 @@ describe('NightlifeDataService', () => {
       itinerarySnapshot: [
         {
           storeId: 'store-grace',
+          storeName: 'Grace Club',
           casts: [{ name: 'ヒナ' }, { name: 'アン' }],
+        },
+        {
+          storeId: 'store-neon',
+          storeName: 'Neon Club',
+          casts: [],
+        },
+        {
+          storeId: 'store-luna',
+          storeName: 'Luna Lounge',
+          casts: [],
         },
       ],
     };
@@ -3171,7 +3182,8 @@ describe('NightlifeDataService', () => {
     expect(result.data[0]).toEqual(
       expect.objectContaining({
         bookingCode: 'TR-7N3TMY5X',
-        store: 'Tour: Hanoi Night Crawl',
+        tourName: 'Hanoi Night Crawl',
+        store: 'Grace Club, Neon Club, Luna Lounge',
         cast: 'Cast: ヒナ, アン',
       }),
     );
