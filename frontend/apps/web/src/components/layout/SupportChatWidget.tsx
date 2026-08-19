@@ -939,10 +939,17 @@ export function SupportChatWidget({
         return [...prev, mapSupportMessageToChatMessage(msg, activeLanguageRef.current)];
       });
 
-      if (
-        msg.senderType === "ADMIN" &&
-        !isOpenRef.current
-      ) {
+    });
+
+    newSocket.on("support_message_notification", (msg: SupportMessagePayload) => {
+      if (msg.ticketId && closedTicketIdsRef.current.has(msg.ticketId)) return;
+
+      setMessages((prev) => {
+        if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, mapSupportMessageToChatMessage(msg, activeLanguageRef.current)];
+      });
+
+      if (!isOpenRef.current) {
         setUnreadMessageCount((count) => {
           const nextCount = count + 1;
           localStorage.setItem(

@@ -134,6 +134,13 @@ export class SupportChatGateway
       );
     }
 
+    const guestSessionId = this.handshakeString(client, 'guestSessionId');
+    if (supportUser) {
+      void client.join(`support_user_${supportUser.id}`);
+    } else if (guestSessionId) {
+      void client.join(`support_guest_${guestSessionId}`);
+    }
+
     const ticketId = this.handshakeString(client, 'ticketId');
     if (ticketId && (await this.canJoinTicket(client, ticketId))) {
       void client.join(`ticket_${ticketId}`);
@@ -243,6 +250,7 @@ export class SupportChatGateway
               },
             );
           }
+          await this.notifyCustomerSupportMessage(ticketId as string, message);
         } else {
           const notification =
             await this.supportChatService.createAdminCustomerMessageNotification(
@@ -287,6 +295,26 @@ export class SupportChatGateway
     } catch (error) {
       console.error('[SupportChat] Error sending message:', error);
       return { error: 'Internal error' };
+    }
+  }
+
+  private async notifyCustomerSupportMessage(
+    ticketId: string,
+    message: unknown,
+  ) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: { userId: true, guestSessionId: true },
+    });
+
+    const room = ticket?.userId
+      ? `support_user_${ticket.userId}`
+      : ticket?.guestSessionId
+        ? `support_guest_${ticket.guestSessionId}`
+        : null;
+
+    if (room) {
+      this.server.to(room).emit('support_message_notification', message);
     }
   }
 
