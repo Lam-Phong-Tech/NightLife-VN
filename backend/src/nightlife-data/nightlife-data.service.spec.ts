@@ -4611,7 +4611,6 @@ describe('NightlifeDataService', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         guestId: 'guest-tour-1',
-        bookingId: 'tb-1',
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'guesttour@example.com',
@@ -4624,6 +4623,9 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+    expect(
+      (prisma.notificationLog.create.mock.calls[0][0] as any).data,
+    ).not.toHaveProperty('bookingId');
     expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'guesttour@example.com',
@@ -4752,7 +4754,6 @@ describe('NightlifeDataService', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         guestId: 'guest-tour-2',
-        bookingId: 'tb-2',
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'member@example.com',

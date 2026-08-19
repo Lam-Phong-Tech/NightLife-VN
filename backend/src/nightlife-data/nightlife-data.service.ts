@@ -15970,7 +15970,6 @@ export class NightlifeDataService {
         data: {
           userId: tourBooking.user?.id ?? tourBooking.userId ?? undefined,
           guestId: tourBooking.guest?.id ?? tourBooking.guestId ?? undefined,
-          bookingId: tourBooking.id || tourBooking.tourBookingId,
           channel: 'EMAIL',
           status: 'QUEUED',
           recipient: email,
