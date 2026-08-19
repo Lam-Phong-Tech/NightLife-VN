@@ -236,6 +236,7 @@ export default function AdminCouponsPage() {
   };
 
   const getStatusMeta = (s: string) => {
+    if (s === 'ACTIVE') return { label: 'Đang chạy', style: { color: '#7fd3a2', background: 'rgba(95,191,134,.12)', border: '1px solid rgba(95,191,134,.32)' } };
     if (s === 'ISSUED') return { label: 'Đang giữ chỗ', style: { color: '#8fb6e4', background: 'rgba(111,159,216,.12)', border: '1px solid rgba(111,159,216,.28)' } };
     if (s === 'USED') return { label: 'Đã sử dụng', style: { color: '#7fd3a2', background: 'rgba(95,191,134,.1)', border: '1px solid rgba(95,191,134,.28)' } };
     if (s === 'EXPIRED') return { label: 'Hết hạn', style: { color: '#9b958a', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)' } };
