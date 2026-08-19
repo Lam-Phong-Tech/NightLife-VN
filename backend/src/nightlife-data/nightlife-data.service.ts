@@ -8281,6 +8281,127 @@ export class NightlifeDataService {
     return { count };
   }
 
+  @Cron('*/5 * * * *')
+  async completeStaleTourBookingsEveryFiveMinutes(now = new Date()) {
+    const cutoff = new Date(
+      now.getTime() - SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_MS,
+    );
+    const candidates = await this.prisma.tourBooking.findMany({
+      where: {
+        status: { in: ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS'] },
+        scheduledAt: { lte: cutoff },
+      },
+      include: this.tourBookingCustomerInclude(),
+    });
+
+    let count = 0;
+    for (const tourBooking of candidates) {
+      const completed = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.tourBooking.updateMany({
+          where: {
+            id: tourBooking.id,
+            status: { in: ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS'] },
+          },
+          data: { status: 'COMPLETED', completedAt: now },
+        });
+        if (updated.count !== 1) {
+          return false;
+        }
+
+        await tx.booking.updateMany({
+          where: {
+            tourBookingId: tourBooking.id,
+            deletedAt: null,
+            status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+          },
+          data: { status: 'COMPLETED' },
+        });
+        await tx.tourBookingQr.updateMany({
+          where: { tourBookingId: tourBooking.id, status: 'ACTIVE' },
+          data: { status: 'COMPLETED', completedAt: now },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorType: 'SYSTEM',
+            actorRole: 'SYSTEM',
+            module: 'TOUR_BOOKING',
+            action: 'TOUR_BOOKING_STATUS_CHANGED',
+            targetType: 'TourBooking',
+            targetId: tourBooking.id,
+            entityDisplayCode: tourBooking.bookingCode,
+            changedFields: ['status', 'completedAt'],
+            changeSummary: `Đã tự động đổi trạng thái booking tour từ ${tourBooking.status} sang COMPLETED sau ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} ngày kể từ giờ hẹn`,
+            reason: `Tour booking was still active ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} days after scheduledAt`,
+            result: 'SUCCESS',
+            beforeJson: this.toPrismaJson({
+              id: tourBooking.id,
+              status: tourBooking.status,
+              scheduledAt: tourBooking.scheduledAt,
+            }),
+            afterJson: this.toPrismaJson({
+              id: tourBooking.id,
+              status: 'COMPLETED',
+              scheduledAt: tourBooking.scheduledAt,
+              completedAt: now,
+            }),
+            metadata: this.toPrismaJson({
+              actorType: 'SYSTEM',
+              previousStatus: tourBooking.status,
+              nextStatus: 'COMPLETED',
+              scheduledAt: tourBooking.scheduledAt.toISOString(),
+              deadlineAt: new Date(
+                tourBooking.scheduledAt.getTime() +
+                  SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_MS,
+              ).toISOString(),
+              completedAt: now.toISOString(),
+              reason: 'TOUR_BOOKING_COMPLETION_DEADLINE_EXPIRED',
+            }),
+          },
+        });
+        return true;
+      });
+
+      if (!completed) {
+        continue;
+      }
+
+      count += 1;
+      const completedTourBooking = this.decorateCustomerTourBooking({
+        ...tourBooking,
+        status: 'COMPLETED',
+        completedAt: now,
+        bookings: (tourBooking.bookings ?? []).map((booking: any) => ({
+          ...booking,
+          status: ['CANCELLED', 'NO_SHOW'].includes(booking.status)
+            ? booking.status
+            : 'COMPLETED',
+        })),
+      });
+      await this.notifyBookingCustomerStatusChange(completedTourBooking, {
+        actorType: 'SYSTEM',
+        reason: `Quá ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS} ngày kể từ giờ hẹn mà booking tour chưa được xử lý`,
+      }).catch((error) => {
+        this.logger.warn(
+          `Failed to queue tour booking completion notification for ${tourBooking.id}: ${this.errorMessage(error)}`,
+        );
+      });
+      if (tourBooking.user?.id) {
+        this.socketGateway?.notifyBookingStatusUpdate(
+          tourBooking.user.id,
+          completedTourBooking,
+        );
+      }
+    }
+
+    if (count > 0) {
+      this.logger.log(
+        `Completed ${count} tour booking(s) after the ${SERVICE_ONLY_BOOKING_COMPLETION_DEADLINE_DAYS}-day scheduled booking deadline.`,
+      );
+    }
+
+    return { count };
+  }
+
   async listMemberCouponIssues(userId: string) {
     await this.expireIssuedCouponIssues({ userId });
 

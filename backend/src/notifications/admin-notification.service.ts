@@ -99,6 +99,7 @@ export type TourBookingAdminNotification = {
   partySize?: number | null;
   note?: string | null;
   titleSnapshot?: string | null;
+  itinerarySnapshot?: unknown;
   tour?: { id: string; title: string } | null;
   user?: BookingAdminNotification['user'];
   guest?: BookingAdminNotification['guest'];
@@ -224,21 +225,48 @@ export class AdminNotificationService {
     const primaryBooking = stops[0];
     const tourTitle =
       tourBooking.tour?.title ?? tourBooking.titleSnapshot ?? 'Nightlife Tour';
-    const itinerary = stops
-      .map((booking, index) => {
-        const order = booking.tourStopOrder ?? index + 1;
-        return `${order}. ${booking.store?.name ?? 'Quán'}`;
-      })
+    const snapshotStops = Array.isArray(tourBooking.itinerarySnapshot)
+      ? tourBooking.itinerarySnapshot
+      : [];
+    const notificationStops = stops.length
+      ? stops.map((booking, index) => ({
+          order: booking.tourStopOrder ?? index + 1,
+          bookingId: booking.id,
+          bookingCode: booking.bookingCode ?? null,
+          storeId: booking.store?.id ?? null,
+          storeName: booking.store?.name ?? 'Quán',
+          castName: this.castLabel(booking.cast),
+        }))
+      : snapshotStops
+          .map((stop: any, index) => ({
+            order: typeof stop?.order === 'number' ? stop.order : index + 1,
+            bookingId: null,
+            bookingCode: null,
+            storeId: typeof stop?.storeId === 'string' ? stop.storeId : null,
+            storeName:
+              typeof stop?.storeName === 'string' && stop.storeName.trim()
+                ? stop.storeName.trim()
+                : 'Quán',
+            castName: Array.isArray(stop?.casts)
+              ? stop.casts
+                  .map((cast: any) =>
+                    typeof cast?.name === 'string' ? cast.name.trim() : '',
+                  )
+                  .filter(Boolean)
+                  .join(', ') || null
+              : null,
+          }))
+          .sort((first, second) => first.order - second.order);
+    const itinerary = notificationStops
+      .map((stop) => `${stop.order}. ${stop.storeName}`)
       .join('\n');
 
-    const hasAnyCast = stops.some((booking) => Boolean(booking.cast));
+    const hasAnyCast = notificationStops.some((stop) => Boolean(stop.castName));
     const desiredCastSummary = hasAnyCast
       ? '\n' +
-        stops
-          .map((booking, index) => {
-            const order = booking.tourStopOrder ?? index + 1;
-            const cast = this.castLabel(booking.cast);
-            return `${order}. ${booking.store?.name ?? 'Quán'}: ${cast ?? 'Không chọn'}`;
+        notificationStops
+          .map((stop) => {
+            return `${stop.order}. ${stop.storeName}: ${stop.castName ?? 'Không chọn'}`;
           })
           .join('\n')
       : 'Không có';
@@ -288,14 +316,7 @@ export class AdminNotificationService {
         scheduledAt: this.toIso(tourBooking.scheduledAt),
         partySize: tourBooking.partySize ?? null,
         customer: this.customerPayload(tourBooking),
-        stops: stops.map((booking, index) => ({
-          order: booking.tourStopOrder ?? index + 1,
-          bookingId: booking.id,
-          bookingCode: booking.bookingCode ?? null,
-          storeId: booking.store?.id ?? null,
-          storeName: booking.store?.name ?? null,
-          castName: this.castLabel(booking.cast),
-        })),
+        stops: notificationStops,
       },
     });
   }

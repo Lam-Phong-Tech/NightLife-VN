@@ -8343,6 +8343,69 @@ describe('NightlifeDataService', () => {
     logSpy.mockRestore();
   });
 
+  it('completes active tour bookings 10 days after their scheduled time', async () => {
+    const now = new Date('2026-03-18T01:00:00.000Z');
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    const tourBooking = {
+      id: 'tour-booking-stale-1',
+      bookingCode: 'TR-STALE10',
+      status: 'CONFIRMED',
+      scheduledAt: new Date('2026-03-08T01:00:00.000Z'),
+      partySize: 2,
+      note: null,
+      titleSnapshot: 'Hanoi Night Tour',
+      itinerarySnapshot: [
+        { order: 1, storeId: 'store-1', storeName: 'FANTASY', casts: [] },
+      ],
+      tour: { id: 'tour-1', title: 'Hanoi Night Tour' },
+      user: { id: 'member-tour-1', displayName: 'Tour Member', email: 'tour@example.com' },
+      guest: null,
+      bookings: [],
+      checkIns: [],
+      qr: null,
+    };
+    prisma.tourBooking.findMany.mockResolvedValueOnce([tourBooking] as never);
+    prisma.tourBooking.updateMany.mockResolvedValueOnce({ count: 1 });
+    prisma.booking.updateMany.mockResolvedValueOnce({ count: 0 });
+    prisma.tourBookingQr.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(
+      service.completeStaleTourBookingsEveryFiveMinutes(now),
+    ).resolves.toEqual({ count: 1 });
+
+    expect(prisma.tourBooking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: { in: ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS'] },
+          scheduledAt: { lte: new Date('2026-03-08T01:00:00.000Z') },
+        },
+      }),
+    );
+    expect(prisma.tourBooking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'tour-booking-stale-1',
+        status: { in: ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS'] },
+      },
+      data: { status: 'COMPLETED', completedAt: now },
+    });
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        tourBookingId: 'tour-booking-stale-1',
+        deletedAt: null,
+        status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+      },
+      data: { status: 'COMPLETED' },
+    });
+    expect(prisma.tourBookingQr.updateMany).toHaveBeenCalledWith({
+      where: { tourBookingId: 'tour-booking-stale-1', status: 'ACTIVE' },
+      data: { status: 'COMPLETED', completedAt: now },
+    });
+    expect(logSpy).toHaveBeenCalledWith(
+      'Completed 1 tour booking(s) after the 10-day scheduled booking deadline.',
+    );
+    logSpy.mockRestore();
+  });
+
   it('lists admin coupon issues by store, coupon, and status', async () => {
     prisma.couponIssue.findMany.mockResolvedValue([
       {
