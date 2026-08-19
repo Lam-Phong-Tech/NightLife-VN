@@ -15680,9 +15680,8 @@ export class NightlifeDataService {
       tourBooking.tour?.title || tourBooking.titleSnapshot || 'Nightlife Tour';
     const storeName = `Tour: ${tourTitle}`;
     const amountLabel = this.bookingAmountLabel(tourBooking, locale);
-    const discountDetails = this.bookingDiscountEmailDetails(tourBooking);
-    const discountLabel = discountDetails.code;
-    const discountValueLabel = discountDetails.valueLabel;
+    const discountLabel = null;
+    const discountValueLabel = null;
     const guestName =
       tourBooking.guest?.displayName || tourBooking.user?.displayName || null;
 
@@ -15713,13 +15712,13 @@ export class NightlifeDataService {
       ? tourBooking.bookings.map((booking: any, index: number) => ({
           order: booking.tourStopOrder ?? index + 1,
           storeName: booking.store?.name ?? 'Vietyoru',
-          bookingCode: booking.bookingCode ?? null,
+          bookingCode: null,
           castName: castNamesForStop(booking, index),
         }))
       : (tourBooking.tour?.stops ?? []).map((stop: any, index: number) => ({
           order: stop.order ?? index + 1,
           storeName: stop.storeName ?? 'Vietyoru',
-          bookingCode: stop.bookingCode ?? null,
+          bookingCode: null,
           castName: Array.isArray(stop.casts)
             ? stop.casts
                 .map((cast: any) => cast?.name)

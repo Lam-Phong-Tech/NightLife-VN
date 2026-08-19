@@ -4606,7 +4606,7 @@ describe('NightlifeDataService', () => {
           expect.objectContaining({
             order: 1,
             storeName: 'Neon Club',
-            bookingCode: 'BK-TOUR-1',
+            bookingCode: null,
             castName: 'Cast One, Cast Two',
           }),
         ],
