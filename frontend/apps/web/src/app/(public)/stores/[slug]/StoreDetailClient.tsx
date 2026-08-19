@@ -980,7 +980,18 @@ function IconButton({
 function CastRail({ store }: { store: PublicStoreDetail }) {
   const activeLanguage = useActiveLanguage();
   const [showAllCasts, setShowAllCasts] = useState(false);
-  const initialCastCount = 8;
+  const [initialCastCount, setInitialCastCount] = useState(16);
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 620px)");
+    const updateInitialCastCount = () => setInitialCastCount(mobileQuery.matches ? 8 : 16);
+
+    updateInitialCastCount();
+    mobileQuery.addEventListener("change", updateInitialCastCount);
+
+    return () => mobileQuery.removeEventListener("change", updateInitialCastCount);
+  }, []);
+
   const visibleCasts = showAllCasts ? store.casts : store.casts.slice(0, initialCastCount);
   const hasMoreCasts = store.casts.length > initialCastCount;
 
