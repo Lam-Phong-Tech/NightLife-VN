@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { PublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+import { StoreDetailNavigationProvider } from "@/components/navigation/StoreDetailNavigationProvider";
 import { AppearanceFavicon } from "@/components/providers/AppearanceFavicon";
 import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
@@ -305,6 +306,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <AppearanceFavicon />
         <GoogleAnalytics />
+        <StoreDetailNavigationProvider />
         <ClientLanguageTranslator hostKind={hostKind}>
           <PublicTranslationFallback hostKind={hostKind} />
           <CurrencyProvider>
