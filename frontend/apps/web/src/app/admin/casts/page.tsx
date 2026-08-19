@@ -53,21 +53,26 @@ const ZODIAC_SIGNS = [
   { value: 'Pisces', label: 'Song Ngư' },
 ];
 
-// Form chỉ lưu tháng sinh, nên dùng cung hoàng đạo đại diện cho từng tháng.
-// Quản trị viên vẫn có thể điều chỉnh thủ công khi cần dựa trên ngày sinh chính xác.
-const ZODIAC_BY_BIRTH_MONTH: Record<number, string> = {
-  1: 'Capricorn',
-  2: 'Aquarius',
-  3: 'Pisces',
-  4: 'Aries',
-  5: 'Taurus',
-  6: 'Gemini',
-  7: 'Cancer',
-  8: 'Leo',
-  9: 'Virgo',
-  10: 'Libra',
-  11: 'Scorpio',
-  12: 'Sagittarius',
+// Chỉ lưu tháng sinh nên mỗi tháng có thể có 2 cung ở hai phía của ngày chuyển cung.
+const ZODIAC_BY_BIRTH_MONTH: Record<number, string[]> = {
+  1: ['Capricorn', 'Aquarius'],
+  2: ['Aquarius', 'Pisces'],
+  3: ['Pisces', 'Aries'],
+  4: ['Aries', 'Taurus'],
+  5: ['Taurus', 'Gemini'],
+  6: ['Gemini', 'Cancer'],
+  7: ['Cancer', 'Leo'],
+  8: ['Leo', 'Virgo'],
+  9: ['Virgo', 'Libra'],
+  10: ['Libra', 'Scorpio'],
+  11: ['Scorpio', 'Sagittarius'],
+  12: ['Sagittarius', 'Capricorn'],
+};
+
+const getZodiacOptionsForBirthMonth = (birthMonth: unknown) => {
+  const zodiacValues = ZODIAC_BY_BIRTH_MONTH[Number(birthMonth)];
+  if (!zodiacValues) return ZODIAC_SIGNS;
+  return ZODIAC_SIGNS.filter((zodiac) => zodiacValues.includes(zodiac.value));
 };
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -1153,6 +1158,7 @@ function AdminCastsContent() {
   const selectedZodiac = ZODIAC_SIGNS.find(
     (zodiac) => zodiac.value === formData.zodiacSign || zodiac.label === formData.zodiacSign,
   );
+  const availableZodiacSigns = getZodiacOptionsForBirthMonth(formData.birthMonth);
   const filteredStores = stores.filter((store) => {
     const isExcluded = store.category === 'MASSAGE_SPA' || store.category === 'RESTAURANT';
     const matchesSearch = !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase());
@@ -1662,10 +1668,18 @@ function AdminCastsContent() {
                             key={mVal}
                             type="button"
                             onClick={() => {
+                              const zodiacValues = ZODIAC_BY_BIRTH_MONTH[mVal] || [];
+                              const currentZodiac = formData.zodiacSign;
+                              const currentZodiacValue = ZODIAC_SIGNS.find(
+                                (zodiac) => zodiac.value === currentZodiac || zodiac.label === currentZodiac,
+                              )?.value;
+                              const nextZodiac = currentZodiacValue && zodiacValues.includes(currentZodiacValue)
+                                ? currentZodiacValue
+                                : '';
                               setFormData({
                                 ...formData,
                                 birthMonth: mVal,
-                                zodiacSign: ZODIAC_BY_BIRTH_MONTH[mVal],
+                                zodiacSign: nextZodiac,
                               });
                               setMonthPickerOpen(false);
                             }}
@@ -1735,7 +1749,7 @@ function AdminCastsContent() {
                         padding: '6px'
                       }}
                     >
-                      {ZODIAC_SIGNS.map((zodiac) => {
+                      {availableZodiacSigns.map((zodiac) => {
                         const isSelected = formData.zodiacSign === zodiac.value || formData.zodiacSign === zodiac.label;
                         return (
                           <button
