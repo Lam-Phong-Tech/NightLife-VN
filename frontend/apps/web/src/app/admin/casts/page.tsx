@@ -1181,7 +1181,7 @@ function AdminCastsContent() {
   const statHidden = casts.filter(c => getStatusLabel(c.status, c.isPublic) === 'Ẩn').length;
 
   return (
-    <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
+    <div className="nl-admin-casts-page" style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
       <AdminToast message={toast} />
 
       {fetchError && (
@@ -1192,10 +1192,10 @@ function AdminCastsContent() {
       )}
       
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap', marginBottom: showAdvancedFilters ? '14px' : '24px' }}>
+      <div className="nl-admin-casts-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap', marginBottom: showAdvancedFilters ? '14px' : '24px' }}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {/* TABS */}
-          <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
+          <div className="nl-admin-casts-tabs" style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
             <button onClick={() => setActiveTab('all')} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: activeTab === 'all' ? colors.goldGrad : 'transparent', color: activeTab === 'all' ? colors.onGold : colors.muted, fontWeight: activeTab === 'all' ? 700 : 500, fontSize: '13px', cursor: 'pointer' }}>
               Tất cả {casts.length}
             </button>
@@ -1211,7 +1211,7 @@ function AdminCastsContent() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="nl-admin-casts-toolbar" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} color={colors.muted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
             <input 
@@ -1398,8 +1398,8 @@ function AdminCastsContent() {
       )}
 
       {/* TABLE */}
-      <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="nl-admin-casts-table-wrap" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
+        <table className="nl-admin-casts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', width: '60px' }}>STT</th>
@@ -1435,7 +1435,17 @@ function AdminCastsContent() {
               return (
                 <tr 
                   key={cast.id} 
+                  className="nl-admin-casts-row"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Mở hồ sơ Cast ${cast.stageName}`}
                   onClick={() => openEditDrawer(cast)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openEditDrawer(cast);
+                    }
+                  }}
                   style={{ 
                     borderBottom: `1px solid ${colors.borderSoft}`, cursor: 'pointer',
                     background: selectedCast?.id === cast.id ? colors.surface2 : 'transparent',
@@ -1502,7 +1512,7 @@ function AdminCastsContent() {
       </div>
 
       {/* DRAWER */}
-      <div style={{
+      <div className="nl-admin-cast-drawer" style={{
         position: 'fixed', top: 0, right: (isEditing) ? 0 : '-520px', bottom: 0, width: '520px',
         background: colors.bg, borderLeft: `1px solid ${colors.borderSoft}`,
         boxShadow: (isEditing) ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
@@ -1511,7 +1521,7 @@ function AdminCastsContent() {
       }}>
         {isEditing && (
           <>
-            <div style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="nl-admin-cast-drawer-header" style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: colors.gold, letterSpacing: '1px', textTransform: 'uppercase' }}>
                 {isAddingCast ? 'THÊM CAST MỚI' : 'CHỈNH SỬA CAST'}
               </h3>
@@ -1520,7 +1530,7 @@ function AdminCastsContent() {
               </button>
             </div>
 
-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+            <div className="nl-admin-cast-drawer-body" style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
               {currentLabel === 'Chờ duyệt' && (
                 <div style={{ 
                   padding: '16px', border: `1px solid ${colors.borderGold22}`, borderRadius: '12px', 
@@ -1645,7 +1655,7 @@ function AdminCastsContent() {
               </div>
 
               {/* GRID INFO */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div className="nl-admin-cast-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div 
                   onClick={() => {
                     setMonthPickerOpen(!monthPickerOpen);
@@ -2189,7 +2199,7 @@ function AdminCastsContent() {
             </div>
 
             {/* Actions Footer */}
-            <div style={{ padding: '24px', borderTop: `1px solid ${colors.borderSoft}`, display: 'flex', gap: '16px' }}>
+            <div className="nl-admin-cast-drawer-footer" style={{ padding: '24px', borderTop: `1px solid ${colors.borderSoft}`, display: 'flex', gap: '16px' }}>
               <button onClick={saveCast} style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 background: colors.goldGrad, color: colors.onGold, border: 'none', height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer'

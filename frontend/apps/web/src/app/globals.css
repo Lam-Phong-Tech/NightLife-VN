@@ -4053,6 +4053,207 @@ input[type="search"] {
     flex: 1 1 92px !important;
   }
 }
+
+/* Admin Cast: compact the list and make the add/edit drawer fit one phone
+   viewport without changing the desktop table or form behavior. */
+.nl-admin-casts-page,
+.nl-admin-casts-page * {
+  box-sizing: border-box;
+}
+
+.nl-admin-casts-page {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.nl-admin-casts-row:focus-visible {
+  outline: 2px solid rgba(212,178,106,.75);
+  outline-offset: -2px;
+}
+
+@media (max-width: 767px) {
+  .nl-admin-casts-page {
+    padding: 16px 12px 28px !important;
+  }
+
+  .nl-admin-casts-header {
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .nl-admin-casts-tabs {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nl-admin-casts-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nl-admin-casts-tabs > button {
+    flex: 1 0 auto;
+    min-width: 86px;
+    white-space: nowrap;
+  }
+
+  .nl-admin-casts-toolbar {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .nl-admin-casts-toolbar > div:first-child {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .nl-admin-casts-toolbar > div:first-child input {
+    width: 100% !important;
+  }
+
+  .nl-admin-casts-toolbar > button {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .nl-admin-casts-table-wrap {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .nl-admin-casts-table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+
+  .nl-admin-casts-table th,
+  .nl-admin-casts-table td {
+    padding: 12px 8px !important;
+    vertical-align: middle;
+  }
+
+  .nl-admin-casts-table th {
+    font-size: 9px !important;
+    letter-spacing: .7px !important;
+  }
+
+  .nl-admin-casts-table th:nth-child(1),
+  .nl-admin-casts-table td:nth-child(1) {
+    width: 38px;
+    text-align: center;
+  }
+
+  .nl-admin-casts-table th:nth-child(2),
+  .nl-admin-casts-table td:nth-child(2) {
+    width: 42%;
+  }
+
+  .nl-admin-casts-table th:nth-child(3),
+  .nl-admin-casts-table td:nth-child(3) {
+    width: 42%;
+  }
+
+  .nl-admin-casts-table th:nth-child(4),
+  .nl-admin-casts-table td:nth-child(4),
+  .nl-admin-casts-table th:nth-child(5),
+  .nl-admin-casts-table td:nth-child(5) {
+    display: none;
+  }
+
+  .nl-admin-casts-table th:nth-child(6),
+  .nl-admin-casts-table td:nth-child(6) {
+    width: 24px;
+    padding-left: 0 !important;
+    padding-right: 6px !important;
+  }
+
+  .nl-admin-casts-table td:nth-child(2) > div {
+    min-width: 0;
+    gap: 8px !important;
+  }
+
+  .nl-admin-casts-table td:nth-child(2) > div > div:first-child {
+    width: 34px !important;
+    height: 34px !important;
+    flex: none;
+  }
+
+  .nl-admin-casts-table td:nth-child(2) > div > div:last-child,
+  .nl-admin-casts-table td:nth-child(3) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .nl-admin-casts-table td:nth-child(2) > div > div:last-child > div:first-child,
+  .nl-admin-casts-table td:nth-child(3) {
+    font-size: 12px !important;
+    line-height: 1.35;
+  }
+
+  .nl-admin-cast-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    border-left: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .nl-admin-cast-drawer-header {
+    min-width: 0 !important;
+    padding: 16px 14px !important;
+  }
+
+  .nl-admin-cast-drawer-header h3 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px !important;
+  }
+
+  .nl-admin-cast-drawer-body {
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    padding: 18px 14px !important;
+  }
+
+  .nl-admin-cast-drawer-body > div,
+  .nl-admin-cast-drawer-body input,
+  .nl-admin-cast-drawer-body textarea,
+  .nl-admin-cast-drawer-body button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .nl-admin-cast-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .nl-admin-cast-drawer-footer {
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+
+  .nl-admin-cast-drawer-footer > button {
+    min-width: 0;
+    flex: 1 1 100px;
+  }
+
+  .nl-admin-cast-drawer-footer > button:first-child {
+    flex: 1 1 100%;
+    order: -1;
+  }
+}
 /* SiteChrome renders its mobile-nav spacer in SSR.  Restrict it to mobile with
    CSS so hydration does not insert it later and shift the page height. */
 .nl-mobile-footer-spacer {
