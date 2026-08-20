@@ -8,6 +8,10 @@ import {
   localizePathname,
 } from "@/lib/i18n/locales";
 import {
+  bookingReturnToParam,
+  isBookingPath,
+} from "@/lib/booking-return-navigation";
+import {
   castDetailReturnToParam,
   castDetailSourceParam,
   getCastDetailBackHref,
@@ -83,6 +87,9 @@ function castBackHref(pathname: string) {
  *   /ja/stores/grace-the-class?from=home
  *      -> /ja/casts/hina?from=store&returnTo=%2Fja%2Fstores%2Fgrace-the-class%3Ffrom%3Dhome
  *
+ * Booking keeps the exact detail URL as returnTo so going back from the booking
+ * form restores that detail's own navigation source as well.
+ *
  * Direct/shared detail URLs have no `from`, so their back buttons safely fall
  * back to the localized store/cast directory.
  */
@@ -143,6 +150,18 @@ export function StoreDetailNavigationProvider() {
       }
 
       if (destination.origin !== window.location.origin) return;
+
+      if (
+        isBookingPath(destination.pathname) &&
+        (isStoreDetailPath(pathname) || isCastDetailPath(pathname))
+      ) {
+        destination.searchParams.set(bookingReturnToParam, currentRelativeHref(pathname));
+
+        event.preventDefault();
+        event.stopPropagation();
+        router.push(`${destination.pathname}${destination.search}${destination.hash}`);
+        return;
+      }
 
       const goesToStoreDetail = isStoreDetailPath(destination.pathname);
       const goesToCastDetail = isCastDetailPath(destination.pathname);
