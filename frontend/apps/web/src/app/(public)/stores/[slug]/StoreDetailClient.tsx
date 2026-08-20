@@ -1126,13 +1126,7 @@ function VideoRail({
               onClick={(event) => onOpen(index, event)}
             >
               {isDirectVideo ? (
-                <video
-                  className="tour-card-video-preview"
-                  src={`${videoUrl}#t=0.1`}
-                  preload="metadata"
-                  muted
-                  playsInline
-                />
+                <StoreVideoPreview url={videoUrl} />
               ) : null}
               <Play size={18} fill="currentColor" />
             </button>
@@ -1154,6 +1148,26 @@ function VideoRail({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function StoreVideoPreview({ url }: { url: string }) {
+  const seekToPreviewFrame = (video: HTMLVideoElement) => {
+    if (video.readyState < 1 || !Number.isFinite(video.duration) || video.duration <= 0) return;
+    video.currentTime = Math.min(0.1, Math.max(video.duration - 0.05, 0));
+  };
+
+  return (
+    <video
+      className="tour-card-video-preview"
+      src={url}
+      preload="metadata"
+      muted
+      playsInline
+      aria-hidden="true"
+      onLoadedMetadata={(event) => seekToPreviewFrame(event.currentTarget)}
+      onLoadedData={(event) => seekToPreviewFrame(event.currentTarget)}
+    />
   );
 }
 
@@ -2833,13 +2847,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                         onClick={(event) => openVideoGallery(index, event)}
                       >
                         {isDirectVideo ? (
-                          <video
-                            className="tour-card-video-preview"
-                            src={`${videoUrl}#t=0.1`}
-                            preload="metadata"
-                            muted
-                            playsInline
-                          />
+                          <StoreVideoPreview url={videoUrl} />
                         ) : null}
                         <Play size={18} fill="currentColor" />
                       </button>
