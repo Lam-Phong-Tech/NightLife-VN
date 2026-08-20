@@ -1645,6 +1645,7 @@ function AdminCastsContent() {
                     ) : null}
                   </div>
                   <input
+                    className="nl-admin-cast-name-input"
                     type="text"
                     placeholder="Nhập nghệ danh của Cast"
                     value={formData.stageName}

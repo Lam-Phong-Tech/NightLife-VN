@@ -4253,6 +4253,30 @@ input[type="search"] {
     gap: 12px !important;
   }
 
+  .nl-admin-cast-name-input {
+    width: 100% !important;
+    min-height: 58px !important;
+    margin-top: 14px !important;
+    padding: 14px 16px !important;
+    border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,.035) !important;
+    color: #f3f0ea !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+  }
+
+  .nl-admin-cast-name-input::placeholder {
+    color: #8c8679;
+    font-weight: 500;
+  }
+
+  .nl-admin-cast-name-input:focus {
+    border-color: rgba(212,178,106,.55) !important;
+    box-shadow: 0 0 0 3px rgba(212,178,106,.1);
+  }
+
   .nl-admin-cast-drawer-footer {
     min-width: 0 !important;
     flex-wrap: wrap !important;
