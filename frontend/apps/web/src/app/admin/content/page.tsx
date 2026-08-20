@@ -2876,8 +2876,8 @@ export default function AdminContentPage() {
       )}
       {/* NEW BANNER MODAL */}
       {isAdding === 'banner' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ width: '600px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+        <div className="nl-admin-content-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div className="nl-admin-content-modal" style={{ width: '600px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
             
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div>
@@ -2889,7 +2889,7 @@ export default function AdminContentPage() {
               </span>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="nl-admin-content-modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>TIÊU ĐỀ BANNER</div>
                 <input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="VD: Đêm nhạc acoustic · Akari Lounge" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
@@ -3124,8 +3124,8 @@ export default function AdminContentPage() {
       )}
 
       {editingLegalPage && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ width: 760, maxWidth: '96vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(212,178,106,.22)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)' }}>
+        <div className="nl-admin-content-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="nl-admin-content-modal" style={{ width: 760, maxWidth: '96vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(212,178,106,.22)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ color: colors.muted, fontSize: 10, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase' }}>Pháp lý · Trang cố định</div>
@@ -3133,7 +3133,7 @@ export default function AdminContentPage() {
               </div>
               <button type="button" onClick={closeLegalEditor} style={{ width: 32, height: 32, borderRadius: 9, display: 'grid', placeItems: 'center', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.05)', color: colors.muted, cursor: 'pointer' }}><X size={16} /></button>
             </div>
-            <div className="scw" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="scw nl-admin-content-modal-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <label style={{ color: colors.text2, fontSize: 11, fontWeight: 800, letterSpacing: .8, textTransform: 'uppercase' }}>
                 Mẫu URL chung cho mọi ngôn ngữ
                 <input value={`/{locale}/legal/${editingLegalPage.slug}`} readOnly style={{ display: 'block', width: '100%', marginTop: 7, boxSizing: 'border-box', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, padding: '11px 13px', color: colors.muted, fontSize: 13 }} />
@@ -3165,7 +3165,7 @@ export default function AdminContentPage() {
                 <input type="checkbox" checked={!legalNoindex} onChange={(event) => setLegalNoindex(!event.target.checked)} /> Cho phép Google lập chỉ mục trang này
               </label>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.08)' }}>
+            <div className="nl-admin-content-modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.08)' }}>
               <button type="button" onClick={closeLegalEditor} style={{ border: 0, background: 'transparent', color: colors.muted, padding: '10px 14px', cursor: 'pointer', fontWeight: 700 }}>Hủy</button>
               <button type="button" disabled={isSavingLegalPage} onClick={handleSaveLegalPage} style={{ border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, padding: '10px 18px', cursor: isSavingLegalPage ? 'not-allowed' : 'pointer', opacity: isSavingLegalPage ? .65 : 1, fontWeight: 800 }}>{isSavingLegalPage ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
             </div>
@@ -3175,8 +3175,8 @@ export default function AdminContentPage() {
 
       {/* NEW BLOG MODAL */}
       {isAdding === 'blog' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ width: '750px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+        <div className="nl-admin-content-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div className="nl-admin-content-modal" style={{ width: '750px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Blog &amp; cẩm nang · Trang chủ</div>
@@ -3186,7 +3186,7 @@ export default function AdminContentPage() {
                 <X size={16} />
               </span>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div className="nl-admin-content-modal-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div style={{ border: '1px solid rgba(255,255,255,.08)', borderRadius: '13px', background: 'rgba(255,255,255,.025)', padding: '18px 20px', boxShadow: '0 18px 44px rgba(0,0,0,.16)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
                   <CheckCircle2 size={20} color={blogSeoAnalysis.tone === 'good' ? colors.green : blogSeoAnalysis.tone === 'medium' ? colors.gold : '#e88b99'} strokeWidth={2.2} />
@@ -3450,8 +3450,8 @@ export default function AdminContentPage() {
 
       {/* NEW CAMPAIGN MODAL (MOCKUP) */}
       {isAdding === 'campaign' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ width: '620px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+        <div className="nl-admin-content-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div className="nl-admin-content-modal" style={{ width: '620px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Campaign &amp; Discount</div>
@@ -3461,7 +3461,7 @@ export default function AdminContentPage() {
                 <X size={16} />
               </span>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div className="nl-admin-content-modal-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên chương trình</div>
                 <input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="VD: Happy Hour cuối tuần" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
