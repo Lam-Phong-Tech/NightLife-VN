@@ -51,7 +51,7 @@ function isDirectVideo(media: CastMedia) {
 }
 
 function DirectVideoPreview({ media }: { media: CastMedia }) {
-  if (!isDirectVideo(media)) return null;
+  if (!isDirectVideo(media) || media.thumbnailUrl) return null;
 
   return (
     <video

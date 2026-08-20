@@ -9,6 +9,7 @@ export type CastGalleryItem = {
   id: string;
   type: CastDetailMediaType;
   url: string;
+  thumbnailUrl?: string | null;
   purpose?: string | null;
   mimeType?: string | null;
   alt?: string | null;
@@ -126,6 +127,7 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
 const normalizeCastGalleryItem = (item: CastGalleryItem): CastGalleryItem => ({
   ...item,
   url: resolveClientUrl(item.url) ?? item.url,
+  thumbnailUrl: resolveClientUrl(item.thumbnailUrl),
 });
 
 const normalizeRelatedCast = (cast: RelatedCast): RelatedCast => ({

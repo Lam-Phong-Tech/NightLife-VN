@@ -6,6 +6,7 @@ import { StorageService } from './storage.service';
 import { validateUploadedFile } from './upload-file-validation';
 import { ImageProcessingService } from './image-processing.service';
 import { R2StorageService } from './r2-storage.service';
+import { VideoThumbnailService } from './video-thumbnail.service';
 
 jest.mock('./upload-file-validation', () => ({
   validateUploadedFile: jest.fn(),
@@ -78,6 +79,10 @@ describe('StorageService', () => {
     deleteObjects: jest.fn(),
   } as unknown as jest.Mocked<R2StorageService>;
 
+  const videoThumbnailService = {
+    create: jest.fn(),
+  } as unknown as jest.Mocked<VideoThumbnailService>;
+
   let service: StorageService;
 
   beforeEach(() => {
@@ -96,6 +101,7 @@ describe('StorageService', () => {
       systemConfigService as never,
       imageProcessingService,
       r2Storage,
+      videoThumbnailService,
     );
   });
 
@@ -123,6 +129,53 @@ describe('StorageService', () => {
         access: MediaAccess.PUBLIC,
         mimeType: 'image/png',
         purpose: 'store-cover',
+      }),
+    });
+  });
+
+  it('stores an R2-ready thumbnail reference for directly uploaded videos', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-video-1' });
+    jest.mocked(validateUploadedFile).mockResolvedValue({
+      mimeType: 'video/mp4',
+      originalName: 'venue-video.mp4',
+    });
+    videoThumbnailService.create.mockResolvedValue({
+      storageKey: 'stored-video.mp4-thumbnail.webp',
+      path: 'uploads-test/stored-video.mp4-thumbnail.webp',
+      mimeType: 'image/webp',
+      sizeBytes: 1234,
+    });
+
+    await service.saveLocalFile(
+      {
+        filename: 'stored-video.mp4',
+        originalname: 'venue-video.mp4',
+        mimetype: 'video/mp4',
+        size: 2048,
+        path: 'uploads-test/stored-video.mp4',
+      },
+      {
+        ownerId: 'owner-1',
+        userRole: 'ADMIN',
+        access: 'PUBLIC',
+        storeId: 'store-1',
+        purpose: 'STORE_VIDEO',
+      },
+    );
+
+    expect(videoThumbnailService.create).toHaveBeenCalledWith(
+      'uploads-test/stored-video.mp4',
+      'stored-video.mp4',
+      expect.any(String),
+    );
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        metadata: expect.objectContaining({
+          thumbnailKey: 'stored-video.mp4-thumbnail.webp',
+          thumbnailUrl:
+            'http://localhost:3001/storage/public/stored-video.mp4-thumbnail.webp',
+          thumbnailMimeType: 'image/webp',
+        }),
       }),
     });
   });

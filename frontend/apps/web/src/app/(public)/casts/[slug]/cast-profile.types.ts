@@ -4,6 +4,7 @@ export type CastMedia = {
   id: string;
   type: "IMAGE" | "VIDEO";
   url: string;
+  thumbnailUrl?: string | null;
   alt: string;
   purpose?: string | null;
   mimeType?: string | null;

@@ -2861,14 +2861,7 @@ export class NightlifeDataService {
           !menuImageKeys.has(this.partnerMediaUrlKey(media.url) ?? ''),
       )
       .map((media) => {
-        const metadata = this.asRecord(media.metadata);
-        const thumbnailUrl =
-          [metadata?.thumbnailUrl, metadata?.posterUrl, metadata?.previewUrl]
-            .filter(
-              (value): value is string =>
-                typeof value === 'string' && value.trim().length > 0,
-            )
-            .map((value) => value.trim())[0] ?? null;
+        const thumbnailUrl = this.mediaThumbnailUrl(media);
 
         const isVideo =
           media.type === 'VIDEO' ||
@@ -3239,6 +3232,7 @@ export class NightlifeDataService {
             purpose: true,
             mimeType: true,
             originalName: true,
+            metadata: true,
             createdAt: true,
           },
         },
@@ -3257,6 +3251,7 @@ export class NightlifeDataService {
         id: media.id,
         type: media.type,
         url: media.url,
+        thumbnailUrl: this.mediaThumbnailUrl(media),
         purpose: media.purpose,
         mimeType: media.mimeType,
         alt: media.originalName || cast.publicAlias || cast.stageName,
@@ -19246,6 +19241,33 @@ export class NightlifeDataService {
 
   private publicMediaUrl(url: string) {
     return url.replace('/storage/files/', '/storage/public/');
+  }
+
+  private mediaThumbnailUrl(media: { url: string; metadata?: unknown }) {
+    const metadata = this.asRecord(media.metadata);
+    const thumbnailKey =
+      typeof metadata?.thumbnailKey === 'string'
+        ? this.cleanNullableText(metadata.thumbnailKey)
+        : null;
+    if (thumbnailKey) {
+      try {
+        const url = new URL(media.url);
+        url.pathname = url.pathname.replace(/\/[^/]+$/, `/${thumbnailKey}`);
+        return url.toString();
+      } catch {
+        const separator = media.url.lastIndexOf('/');
+        if (separator >= 0) return `${media.url.slice(0, separator + 1)}${thumbnailKey}`;
+      }
+    }
+
+    return (
+      [metadata?.thumbnailUrl, metadata?.posterUrl, metadata?.previewUrl]
+        .filter(
+          (value): value is string =>
+            typeof value === 'string' && value.trim().length > 0,
+        )
+        .map((value) => value.trim())[0] ?? null
+    );
   }
 
   private publicPartnerListingMediaUrls(

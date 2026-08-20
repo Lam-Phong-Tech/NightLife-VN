@@ -41,6 +41,7 @@ Do not paste real secret values into Jira or Git. Confirm only present/missing.
 | `JWT_EXPIRES_IN` | Yes | Token TTL, for example `1d`. |
 | `PORT` | Yes | Workflow exports backend runtime port `3012`. |
 | `STORAGE_LOCAL_DIR` | Yes | Defaults to `uploads`; backup archives this path. |
+| `FFMPEG_PATH` | Yes for direct-video thumbnails | Absolute FFmpeg path, or omit when `ffmpeg` is available on `PATH`. |
 | `PUBLIC_BASE_URL` | Yes | Backend public base URL. |
 | `WEB_BASE_URL` | Yes | Frontend public URL. |
 | `CMS_BASE_URL` | Yes | Admin/CMS base URL. |
@@ -56,6 +57,14 @@ Do not paste real secret values into Jira or Git. Confirm only present/missing.
 | `TELEGRAM_NOTIFICATION_TIME_ZONE` | Optional | Defaults to `Asia/Bangkok`. |
 | `COUPON_QR_SECRET` | If coupon QR enabled | Must be set outside Git. |
 | `COUPON_QR_PARTNER_URL` | If partner QR scan enabled | Partner scan URL. |
+
+The VPS must have FFmpeg installed before deploying this feature. On Ubuntu/Debian:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ffmpeg
+ffmpeg -version
+```
 
 ## Automated Deploy Safety
 

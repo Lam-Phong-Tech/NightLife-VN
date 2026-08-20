@@ -31,6 +31,7 @@ const castDetail: PublicCastDetail = {
       id: 'media-admin-video',
       type: 'VIDEO',
       url: 'https://youtu.be/admin-cast',
+      thumbnailUrl: 'https://cdn.example.com/admin-cast-video.webp',
       purpose: 'youtube-link',
       alt: 'Admin video',
     },
@@ -102,5 +103,8 @@ describe('profileFromCastDetail', () => {
     expect(profile.interests).toEqual(['wine', 'piano']);
     expect(profile.styleTags).toEqual(['elegant', 'quiet']);
     expect(profile.store.thumbnailUrl).toBe('https://cdn.example.com/store.jpg');
+    expect(profile.gallery[2]?.thumbnailUrl).toBe(
+      'https://cdn.example.com/admin-cast-video.webp',
+    );
   });
 });

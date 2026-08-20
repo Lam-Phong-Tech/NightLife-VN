@@ -18,6 +18,7 @@ import { SystemConfigService } from '../system-config/system-config.service';
 import { validateUploadedFile } from './upload-file-validation';
 import { ImageProcessingService } from './image-processing.service';
 import { R2StorageService } from './r2-storage.service';
+import { VideoThumbnailService } from './video-thumbnail.service';
 
 type UploadedFile = {
   filename: string;
@@ -62,6 +63,7 @@ export class StorageService implements OnModuleInit {
     private readonly systemConfigService: SystemConfigService,
     private readonly imageProcessingService: ImageProcessingService,
     private readonly r2Storage: R2StorageService,
+    private readonly videoThumbnailService: VideoThumbnailService,
   ) {}
 
   isR2Enabled() {
@@ -300,6 +302,7 @@ export class StorageService implements OnModuleInit {
       let finalMimeType: string = validatedFile.mimeType;
       let finalSizeBytes = file.size;
       let mediaMetadata: Record<string, unknown> | null = null;
+      let videoThumbnailKey: string | null = null;
 
       // Multer's generated filename has no extension. Keep the validated
       // extension on uploaded videos so clients can reliably identify and
@@ -312,6 +315,22 @@ export class StorageService implements OnModuleInit {
           await rename(file.path, storagePath);
           file.filename = storageKey;
           file.path = storagePath;
+        }
+
+        try {
+          const thumbnail = await this.videoThumbnailService.create(
+            file.path,
+            storageKey,
+            uploadDir,
+          );
+          processingCreatedPaths.push(thumbnail.path);
+          videoThumbnailKey = thumbnail.storageKey;
+        } catch (error) {
+          this.logger.warn(
+            `Could not generate a thumbnail for video ${storageKey}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
       }
 
@@ -372,6 +391,16 @@ export class StorageService implements OnModuleInit {
       );
       const access = this.resolveAccess(options.access);
       const relationIds = this.cleanRelationIds(options);
+      if (videoThumbnailKey) {
+        mediaMetadata = {
+          ...(mediaMetadata ?? {}),
+          thumbnailKey: videoThumbnailKey,
+          thumbnailUrl: `${publicBaseUrl}/storage/${
+            access === MediaAccess.PUBLIC ? 'public' : 'files'
+          }/${videoThumbnailKey}`,
+          thumbnailMimeType: 'image/webp',
+        };
+      }
       const mediaData = {
         ownerId: options.ownerId,
         storeId: relationIds.storeId,

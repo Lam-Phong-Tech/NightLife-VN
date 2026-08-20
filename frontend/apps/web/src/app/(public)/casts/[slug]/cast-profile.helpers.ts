@@ -113,16 +113,18 @@ export function videoThumbnailUrl(url?: string | null) {
 }
 
 export function mediaPreviewUrl(
-  media?: Pick<CastMedia, "type" | "url"> | null,
+  media?: Pick<CastMedia, "type" | "url" | "thumbnailUrl"> | null,
   fallback?: string | null,
 ) {
   if (!media) return fallback ?? null;
-  if (media.type === "VIDEO") return videoThumbnailUrl(media.url) ?? fallback ?? null;
+  if (media.type === "VIDEO") {
+    return media.thumbnailUrl ?? videoThumbnailUrl(media.url) ?? fallback ?? null;
+  }
   return media.url ?? fallback ?? null;
 }
 
 export function mediaPreviewBg(
-  media?: Pick<CastMedia, "type" | "url"> | null,
+  media?: Pick<CastMedia, "type" | "url" | "thumbnailUrl"> | null,
   fallback?: string | null,
 ) {
   return mediaBg(mediaPreviewUrl(media, fallback));
@@ -144,6 +146,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
         id: media.id,
         type: media.type,
         url: media.url,
+        thumbnailUrl: media.thumbnailUrl,
         alt: media.alt ?? cast.publicAlias ?? cast.stageName,
         purpose: media.purpose,
         mimeType: media.mimeType,
@@ -163,6 +166,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
       id: `${cast.id}-thumbnail`,
       type: "IMAGE",
       url: cast.thumbnailUrl,
+      thumbnailUrl: null,
       alt: cast.publicAlias ?? cast.stageName,
       purpose: "thumbnail",
       mimeType: null,

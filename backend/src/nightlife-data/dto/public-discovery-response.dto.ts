@@ -243,6 +243,9 @@ export class PublicCastGalleryItemDto {
   @ApiProperty({ example: '/media/demo/casts/yuna-neon.jpg' })
   url!: string;
 
+  @ApiPropertyOptional({ example: '/storage/public/video-thumbnail.webp', nullable: true })
+  thumbnailUrl?: string | null;
+
   @ApiPropertyOptional({ example: 'cast-gallery', nullable: true })
   purpose?: string | null;
 
