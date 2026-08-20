@@ -733,7 +733,7 @@ function AdminToursContent() {
           <div className="nl-admin-tour-drawer" style={{ width: '560px', height: '100%', background: '#100f14', borderLeft: '1px solid rgba(255,255,255,.09)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 82, boxShadow: '-20px 0 60px rgba(0,0,0,.85)' }}>
             
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.005)' }}>
+            <div className="nl-admin-tour-drawer-header" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.005)' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '9px', fontWeight: 700, color: '#8c8679', textTransform: 'uppercase', letterSpacing: '1.2px' }}>QUẢN LÝ TOUR NIGHTLIFE</div>
                 <div style={{ fontSize: '16.5px', fontWeight: 700, color: '#f3f0ea', marginTop: '3.5px' }}>{tourSel === 'new' ? 'Thêm hành trình mới' : 'Chỉnh sửa hành trình'}</div>
@@ -744,7 +744,7 @@ function AdminToursContent() {
             </div>
 
             {/* Scrollable form body */}
-            <div className="scw" style={{ flex: 1, overflowY: 'auto', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div className="scw nl-admin-tour-drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               
               {/* Title */}
               <div>
@@ -771,7 +771,7 @@ function AdminToursContent() {
               {/* Cover Image Section */}
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', marginBottom: '12px', borderLeft: '3px solid #d4b26a', paddingLeft: '8px' }}>Ảnh bìa Tour</div>
-                <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', display: 'flex', gap: '14px' }}>
+                <div className="nl-admin-tour-cover-upload" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '12px', padding: '14px', display: 'flex', gap: '14px' }}>
                   <div style={{ 
                     width: '110px', 
                     height: '74px', 
@@ -829,7 +829,7 @@ function AdminToursContent() {
               </div>
 
               {/* City and price row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="nl-admin-tour-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Thành phố</div>
                   <div style={{ display: 'flex', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
@@ -874,7 +874,7 @@ function AdminToursContent() {
               </div>
 
               {/* Duration and Status */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="nl-admin-tour-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Thời lượng (Giờ)</div>
                   <input 
@@ -1118,7 +1118,7 @@ function AdminToursContent() {
             </div>
 
             {/* Actions footer */}
-            <div style={{ padding: '15px 26px', background: '#131218', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: '10px', flex: 'none' }}>
+            <div className="nl-admin-tour-drawer-footer" style={{ padding: '15px 26px', background: '#131218', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: '10px', flex: 'none' }}>
               {tourSel !== 'new' && (
                 <span onClick={deleteTour} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.32)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
