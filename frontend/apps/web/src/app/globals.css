@@ -3745,6 +3745,18 @@ input[type="search"] {
   touch-action: manipulation;
 }
 
+/* Tour list: the row remains the detail entry point on mobile. The compact
+   view keeps the high-value columns and moves secondary data into the drawer. */
+.nl-admin-tours-page,
+.nl-admin-tours-page * {
+  box-sizing: border-box;
+}
+
+.nl-admin-tours-table-row:focus-visible {
+  outline: 2px solid rgba(212,178,106,.75);
+  outline-offset: -2px;
+}
+
 @media (max-width: 767px) {
   .nl-admin-permissions-page {
     padding: 18px 12px 32px !important;
@@ -3825,6 +3837,97 @@ input[type="search"] {
     flex: none;
     width: 38px !important;
     height: 22px !important;
+  }
+
+  .nl-admin-tours-page {
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    padding: 18px 12px 28px !important;
+  }
+
+  .nl-admin-tours-page > div:first-of-type {
+    width: 100% !important;
+    margin-bottom: 16px !important;
+  }
+
+  .nl-admin-tours-page > div:first-of-type > div:first-child {
+    width: 100% !important;
+  }
+
+  .nl-admin-tours-page > div:first-of-type > div:nth-child(2) {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nl-admin-tours-page > div:first-of-type > div:nth-child(2)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nl-admin-tours-page > div:first-of-type > span {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  .nl-admin-tours-table {
+    min-height: 360px !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .nl-admin-tours-table-header,
+  .nl-admin-tours-table-row {
+    grid-template-columns: 36px minmax(0, 1fr) 76px 58px 16px !important;
+    gap: 8px !important;
+  }
+
+  .nl-admin-tours-table-header {
+    padding: 12px 12px !important;
+    font-size: 9px !important;
+  }
+
+  .nl-admin-tours-table-header > :nth-child(3),
+  .nl-admin-tours-table-row > :nth-child(3),
+  .nl-admin-tours-table-header > :nth-child(6),
+  .nl-admin-tours-table-row > :nth-child(6) {
+    display: none !important;
+  }
+
+  .nl-admin-tours-table-row {
+    min-height: 72px;
+    padding: 12px !important;
+    font-size: 12px !important;
+    touch-action: manipulation;
+  }
+
+  .nl-admin-tours-table-row > :nth-child(2) {
+    gap: 8px !important;
+  }
+
+  .nl-admin-tours-table-row > :nth-child(2) > span,
+  .nl-admin-tours-table-row > :nth-child(2) > div:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .nl-admin-tours-table-row > :nth-child(2) > div:last-child > div:first-child {
+    font-size: 12px !important;
+  }
+
+  .nl-admin-tours-table-row > :nth-child(2) > div:last-child > div:last-child {
+    font-size: 10px !important;
+  }
+
+  .nl-admin-tours-table-row > :nth-child(7) {
+    justify-content: center !important;
+  }
+
+  .nl-admin-tour-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-left: 0 !important;
   }
 }
 /* SiteChrome renders its mobile-nav spacer in SSR.  Restrict it to mobile with

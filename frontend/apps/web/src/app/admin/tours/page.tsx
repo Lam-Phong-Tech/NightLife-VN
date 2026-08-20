@@ -593,7 +593,7 @@ function AdminToursContent() {
   const seg = (a: boolean) => ({ fontSize: '12px', padding: '9px 15px', borderRadius: '9px', cursor: 'pointer', fontWeight: 600, color: a ? '#241a0a' : '#9b958a', background: a ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)', border: a ? 'none' : '1px solid rgba(255,255,255,.08)' });
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
+    <div className="nl-admin-tours-page" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
 
       {fetchError && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', color: '#f87171' }}>
@@ -645,12 +645,12 @@ function AdminToursContent() {
       </div>
 
       {/* Main Tour list table */}
-      <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+      <div className="nl-admin-tours-table" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="nl-admin-tours-table-header" style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span style={{ textAlign: 'center' }}>STT</span><span>Tour &amp; Hành trình</span><span>Khu vực</span><span>Điểm dừng</span><span>Chi phí</span><span>Trạng thái</span><span></span>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="nl-admin-tours-table-body" style={{ flex: 1, overflowY: 'auto' }}>
           {isToursLoading ? (
             <div style={{ padding: '60px 24px', textAlign: 'center', color: '#8c8679', fontSize: '13.5px' }} role="status" aria-live="polite">
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
@@ -672,7 +672,17 @@ function AdminToursContent() {
               return (
                 <div 
                   key={t.id}
+                  className="nl-admin-tours-table-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Mở chi tiết Tour ${t.title}`}
                   onClick={() => openEditDrawer(t.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openEditDrawer(t.id);
+                    }
+                  }}
                   style={{ display: 'grid', gridTemplateColumns: tourTableColumns, gap: '12px', alignItems: 'center', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -720,7 +730,7 @@ function AdminToursContent() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', justifyContent: 'flex-end', background: 'rgba(6,6,9,.65)', backdropFilter: 'blur(4px)' }}>
           <div onClick={closeDrawer} style={{ position: 'absolute', inset: 0 }} />
           
-          <div style={{ width: '560px', height: '100%', background: '#100f14', borderLeft: '1px solid rgba(255,255,255,.09)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 82, boxShadow: '-20px 0 60px rgba(0,0,0,.85)' }}>
+          <div className="nl-admin-tour-drawer" style={{ width: '560px', height: '100%', background: '#100f14', borderLeft: '1px solid rgba(255,255,255,.09)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 82, boxShadow: '-20px 0 60px rgba(0,0,0,.85)' }}>
             
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.005)' }}>
