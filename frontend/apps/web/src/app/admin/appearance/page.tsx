@@ -1169,7 +1169,7 @@ export default function AppearancePage() {
             const sv = saved.titles.find(x => x.id === t.id);
             const changed = !sv || sv.label !== t.label;
             return (
-              <div key={t.id} className="grid md:grid-cols-[150px_1fr_280px_78px] gap-3 items-center p-3.5 border-b border-white/[0.04] text-xs md:text-sm max-md:flex max-md:flex-col max-md:align-stretch">
+              <div key={t.id} className="nl-admin-appearance-title-row grid md:grid-cols-[150px_1fr_280px_78px] gap-3 items-center p-3.5 border-b border-white/[0.04] text-xs md:text-sm max-md:flex max-md:flex-col max-md:items-stretch">
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>{t.key}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                   <span style={{ width: '3.5px', height: '20px', borderRadius: '2px', background: 'linear-gradient(180deg,#f0dda8,#b6924a)', flex: 'none' }}></span>

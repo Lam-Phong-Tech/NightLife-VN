@@ -3762,6 +3762,22 @@ input[type="search"] {
 }
 
 @media (max-width: 767px) {
+  .nl-admin-appearance-title-row {
+    align-items: stretch !important;
+    text-align: left !important;
+  }
+
+  .nl-admin-appearance-title-row > span,
+  .nl-admin-appearance-title-row > div {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .nl-admin-appearance-title-row > div:nth-child(2) {
+    justify-content: flex-start;
+  }
+
   .nl-admin-permissions-page {
     padding: 18px 12px 32px !important;
     max-width: none !important;
