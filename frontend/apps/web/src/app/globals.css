@@ -4412,6 +4412,21 @@ input[type="search"] {
 }
 
 @media (max-width: 767px) {
+  .nl-admin-ranking-item {
+    gap: 8px !important;
+    padding: 10px 9px !important;
+  }
+
+  .nl-admin-ranking-item-details {
+    min-width: 0 !important;
+  }
+
+  .nl-admin-ranking-item-name {
+    flex-wrap: wrap !important;
+    row-gap: 3px !important;
+    overflow-wrap: anywhere;
+  }
+
   .nl-admin-audit-page {
     padding: 18px 12px 30px !important;
   }

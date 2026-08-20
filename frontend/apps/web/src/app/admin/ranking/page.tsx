@@ -169,7 +169,7 @@ function SortableRankingItem(props: {
   };
 
   return (
-    <div ref={setNodeRef} style={{
+    <div ref={setNodeRef} className="nl-admin-ranking-item" style={{
       ...style,
       display: 'flex', alignItems: 'center', gap: '14px',
       background: rowBg,
@@ -232,8 +232,8 @@ function SortableRankingItem(props: {
         {isStore ? item.name.substring(0, 2).toUpperCase() : ''}
       </span>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="nl-admin-ranking-item-details" style={{ flex: 1, minWidth: 0 }}>
+        <div className="nl-admin-ranking-item-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, fontSize: '14.5px', color: '#f3f0ea' }}>{item.name}</span>
           {item.sponsored && (
             <span style={{ flex: 'none', fontSize: '10px', fontWeight: 800, letterSpacing: '.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 7px', borderRadius: '7px' }}>
