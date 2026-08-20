@@ -3761,6 +3761,25 @@ input[type="search"] {
   outline-offset: -2px;
 }
 
+.nl-admin-tour-stops-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nl-admin-tour-stops-heading {
+  order: 2;
+}
+
+.nl-admin-tour-stops-lookup {
+  order: 1;
+  margin-bottom: 14px;
+}
+
+.nl-admin-tour-stops-list {
+  order: 3;
+  margin-bottom: 0 !important;
+}
+
 @media (max-width: 767px) {
   .nl-admin-appearance-title-row {
     align-items: stretch !important;

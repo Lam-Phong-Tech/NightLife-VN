@@ -1045,10 +1045,10 @@ function AdminToursContent() {
               </div>
 
               {/* Stops management */}
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', marginBottom: '12px', borderLeft: '3px solid #d4b26a', paddingLeft: '8px' }}>Hành trình dừng chân ({formData.stops?.length || 0})</div>
+              <div className="nl-admin-tour-stops-section">
+                <div className="nl-admin-tour-stops-heading" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', marginBottom: '12px', borderLeft: '3px solid #d4b26a', paddingLeft: '8px' }}>Hành trình dừng chân ({formData.stops?.length || 0})</div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                <div className="nl-admin-tour-stops-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                   {formData.stops?.map((stop, idx) => (
                     <div key={stop.storeId} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)', padding: '10px 14px', borderRadius: '12px' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#d4b26a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontSize: '11.5px', fontWeight: 800 }}>
@@ -1076,7 +1076,7 @@ function AdminToursContent() {
                 </div>
 
                 {/* Add new stops lookup */}
-                <div>
+                <div className="nl-admin-tour-stops-lookup">
                   <div style={{ fontSize: '11px', color: '#8c8679', marginBottom: '6px' }}>Gán thêm điểm dừng từ hệ thống</div>
                   <div style={{ position: 'relative' }}>
                     <input 
