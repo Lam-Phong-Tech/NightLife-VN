@@ -479,6 +479,7 @@ function CastLightbox({
               onClick={() => onSelect(itemIndex, "select")}
               aria-label={item.alt}
             >
+              <DirectVideoPreview media={item} />
               {isPlaceholder ? (
                 <ImageOff size={14} strokeWidth={1.8} />
               ) : item.type === "VIDEO" ? (
