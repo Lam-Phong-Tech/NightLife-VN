@@ -153,7 +153,7 @@ function TopRegionFilter() {
   const curr = opts.find(o => o.v === activeCity) || opts[0]!;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="nl-admin-region-filter" style={{ position: 'relative' }}>
       <div 
         onClick={() => setOpen(!open)}
         style={{
@@ -171,7 +171,7 @@ function TopRegionFilter() {
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
-          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#15141a', border: '1px solid rgba(212,178,106,.24)', borderRadius: '15px', zIndex: 100, width: '248px', boxShadow: '0 34px 70px -24px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+          <div className="nl-admin-region-filter-menu" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#15141a', border: '1px solid rgba(212,178,106,.24)', borderRadius: '15px', zIndex: 100, width: '248px', boxShadow: '0 34px 70px -24px rgba(0,0,0,.9)', overflow: 'hidden' }}>
             <div style={{ padding: '12px 15px 9px', fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
               Khu vực dữ liệu
             </div>

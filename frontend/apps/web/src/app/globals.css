@@ -2042,6 +2042,12 @@ textarea::placeholder {
   min-width: 0;
 }
 
+/* Keep the shared admin region menu inside the viewport when the mobile
+   topbar moves its filters onto a full-width row. */
+.nl-admin-region-filter-menu {
+  max-width: calc(100vw - 24px);
+}
+
 .nl-admin-sidebar-backdrop {
   display: none;
 }
@@ -2081,6 +2087,12 @@ textarea::placeholder {
 
   .nl-admin-topbar-controls::-webkit-scrollbar {
     display: none;
+  }
+
+  .nl-admin-region-filter-menu {
+    left: 0 !important;
+    right: auto !important;
+    width: min(248px, calc(100vw - 24px)) !important;
   }
 
   .nl-admin-top-search {
