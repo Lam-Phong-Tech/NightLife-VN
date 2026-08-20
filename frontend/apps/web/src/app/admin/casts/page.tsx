@@ -18,6 +18,7 @@ import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { DataSkeleton } from '@/components/ui/DataLoading';
 import { AdminToast } from '@/components/ui/AdminToast';
+import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
 
 const colors = {
   bg: '#0f0f13',
@@ -441,6 +442,12 @@ function AdminCastsContent() {
   const [isAddingCast, setIsAddingCast] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    setAdminTopbarFiltersHidden(isMobile && (isAddingCast || selectedCast !== null));
+    return () => setAdminTopbarFiltersHidden(false);
+  }, [isAddingCast, selectedCast]);
 
   // Form states
   const [formData, setFormData] = useState<any>({

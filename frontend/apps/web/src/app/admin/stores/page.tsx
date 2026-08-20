@@ -32,6 +32,7 @@ import {
   mediaItemUrl,
   normalizeMediaKey,
 } from '@/lib/store-media-filter';
+import { setAdminTopbarFiltersHidden } from '@/lib/admin/topbar-filters';
 
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
@@ -599,6 +600,12 @@ function AdminStoresContent() {
 
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    setAdminTopbarFiltersHidden(isMobile && venueSel !== null);
+    return () => setAdminTopbarFiltersHidden(false);
+  }, [venueSel]);
 
   const categories = [
     { value: 'LOUNGE', label: 'ラウンジ (Lounge)' },
