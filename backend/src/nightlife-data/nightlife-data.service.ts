@@ -1574,12 +1574,27 @@ export class NightlifeDataService {
       throw new NotFoundException('Content not found');
     }
 
+    const clearedBannerMetadata =
+      existing.type === 'BANNER' &&
+      existing.metadata &&
+      typeof existing.metadata === 'object' &&
+      !Array.isArray(existing.metadata)
+        ? Object.fromEntries(
+            Object.entries(existing.metadata as Record<string, unknown>).filter(
+              ([key]) => key !== 'position',
+            ),
+          )
+        : undefined;
+
     return this.prisma.$transaction(async (tx) => {
       const content = await tx.content.update({
         where: { id: contentId },
         data: {
           status: 'DELETED',
           deletedAt: new Date(),
+          ...(clearedBannerMetadata !== undefined
+            ? { metadata: this.toPrismaJson(clearedBannerMetadata) }
+            : {}),
         },
         select: this.contentSelect(),
       });
@@ -1969,6 +1984,7 @@ export class NightlifeDataService {
       dto.endsAt,
     );
 
+    await this.cleanupOrphanedRankingConfigs();
     await this.assertAdminRankingTargetExists(targetType, dto.targetId);
     this.assertAdminRankingPinRankWithinScope(scope, pinRank);
     await this.assertNoPinnedRankingCollision({
@@ -2223,6 +2239,8 @@ export class NightlifeDataService {
     const scope = this.resolveAdminRankingScope(dto.scope);
     const items = dto.items ?? [];
     const maxItems = this.getAdminRankingGroupLimit(scope);
+
+    await this.cleanupOrphanedRankingConfigs();
 
     if (items.length > maxItems) {
       throw new BadRequestException(
@@ -18698,6 +18716,77 @@ export class NightlifeDataService {
     }
   }
 
+  /**
+   * RankingConfig uses a polymorphic targetId instead of a database foreign
+   * key, so old delete paths can leave an ACTIVE row behind. Reconcile those
+   * rows before capacity/collision checks; otherwise a deleted store or cast
+   * still occupies a homepage slot forever.
+   */
+  private async cleanupOrphanedRankingConfigs() {
+    const configs = await this.prisma.rankingConfig.findMany({
+      where: { status: 'ACTIVE', deletedAt: null },
+      select: { targetType: true, targetId: true },
+    });
+    if (!configs.length) return;
+
+    const storeIds = configs
+      .filter((config) => config.targetType === 'STORE')
+      .map((config) => config.targetId);
+    const castIds = configs
+      .filter((config) => config.targetType === 'CAST')
+      .map((config) => config.targetId);
+
+    const [stores, casts] = await Promise.all([
+      storeIds.length
+        ? this.prisma.store.findMany({
+            where: { id: { in: storeIds }, deletedAt: null, status: 'ACTIVE' },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      castIds.length
+        ? this.prisma.cast.findMany({
+            where: {
+              id: { in: castIds },
+              deletedAt: null,
+              status: 'ACTIVE',
+              isPublic: true,
+              store: { deletedAt: null, status: 'ACTIVE' },
+            },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const activeStoreIds = new Set(stores.map((store) => store.id));
+    const activeCastIds = new Set(casts.map((cast) => cast.id));
+    const now = new Date();
+
+    await Promise.all([
+      storeIds.length
+        ? this.prisma.rankingConfig.updateMany({
+            where: {
+              targetType: 'STORE',
+              targetId: { notIn: [...activeStoreIds] },
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
+            data: { status: 'DELETED', deletedAt: now },
+          })
+        : Promise.resolve(),
+      castIds.length
+        ? this.prisma.rankingConfig.updateMany({
+            where: {
+              targetType: 'CAST',
+              targetId: { notIn: [...activeCastIds] },
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
+            data: { status: 'DELETED', deletedAt: now },
+          })
+        : Promise.resolve(),
+    ]);
+  }
+
   private async assertNoPinnedRankingCollision(input: {
     targetType: RankingTargetType;
     cityCode: string;
@@ -26590,6 +26679,11 @@ export class NightlifeDataService {
       });
 
       if (dto.status && dto.status !== 'ACTIVE') {
+        await tx.campaign.updateMany({
+          where: { targetStoreId: id, homePosition: { not: null } },
+          data: { homePosition: null },
+        });
+
         const castIds = (
           await tx.cast.findMany({
             where: { storeId: id },
@@ -26808,6 +26902,13 @@ export class NightlifeDataService {
           where: { targetType: 'STORE', targetId: id },
         });
 
+        // A campaign may keep its homepage slot even after its target store
+        // is hard-deleted. Release that slot together with the store.
+        await tx.campaign.updateMany({
+          where: { targetStoreId: id, homePosition: { not: null } },
+          data: { homePosition: null },
+        });
+
         // 6. Finally, delete the store itself
         await tx.store.delete({
           where: { id },
@@ -26838,6 +26939,11 @@ export class NightlifeDataService {
           select: { id: true },
         })
       ).map((c) => c.id);
+
+      await tx.campaign.updateMany({
+        where: { targetStoreId: id, homePosition: { not: null } },
+        data: { homePosition: null },
+      });
 
       await tx.rankingConfig.updateMany({
         where: {

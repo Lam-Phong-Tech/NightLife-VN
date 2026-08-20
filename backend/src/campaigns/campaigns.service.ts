@@ -322,7 +322,7 @@ export class CampaignsService {
     return this.prisma.$transaction(async (tx) => {
       const deleted = await tx.campaign.update({
         where: { id },
-        data: { status: CampaignStatus.DELETED },
+        data: { status: CampaignStatus.DELETED, homePosition: null },
       });
 
       await tx.auditLog.create({
