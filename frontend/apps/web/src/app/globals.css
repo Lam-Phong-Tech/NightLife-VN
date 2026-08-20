@@ -4254,6 +4254,129 @@ input[type="search"] {
     order: -1;
   }
 }
+
+/* Audit Log mobile: make every visible row a detail target and keep the eye
+   action in the viewport after secondary columns are collapsed. */
+.nl-admin-audit-page,
+.nl-admin-audit-page * {
+  box-sizing: border-box;
+}
+
+.nl-admin-audit-page {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden !important;
+}
+
+.nl-admin-audit-row:focus-visible {
+  outline: 2px solid rgba(212,178,106,.75);
+  outline-offset: -2px;
+}
+
+@media (max-width: 767px) {
+  .nl-admin-audit-page {
+    padding: 18px 12px 30px !important;
+  }
+
+  .nl-admin-audit-filters {
+    width: 100%;
+    display: flex;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .nl-admin-audit-page > div:nth-of-type(2) > div {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0;
+  }
+
+  .nl-admin-audit-page > div:nth-of-type(2) > div > div:first-child {
+    min-height: 44px;
+    padding: 9px 10px !important;
+  }
+
+  .nl-admin-audit-table-wrap {
+    border-radius: 14px !important;
+  }
+
+  .nl-admin-audit-table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+
+  .nl-admin-audit-table th,
+  .nl-admin-audit-table td {
+    padding: 12px 9px !important;
+    vertical-align: middle;
+  }
+
+  .nl-admin-audit-table th {
+    font-size: 10px !important;
+  }
+
+  .nl-admin-audit-table th:nth-child(1),
+  .nl-admin-audit-table td:nth-child(1) {
+    width: 31%;
+  }
+
+  .nl-admin-audit-table th:nth-child(2),
+  .nl-admin-audit-table td:nth-child(2) {
+    width: 53%;
+  }
+
+  .nl-admin-audit-table th:nth-child(3),
+  .nl-admin-audit-table td:nth-child(3),
+  .nl-admin-audit-table th:nth-child(4),
+  .nl-admin-audit-table td:nth-child(4),
+  .nl-admin-audit-table th:nth-child(5),
+  .nl-admin-audit-table td:nth-child(5) {
+    display: none;
+  }
+
+  .nl-admin-audit-table th:nth-child(6),
+  .nl-admin-audit-table td:nth-child(6) {
+    width: 16%;
+    padding-left: 0 !important;
+    padding-right: 6px !important;
+  }
+
+  .nl-admin-audit-table td:nth-child(1) > div,
+  .nl-admin-audit-table td:nth-child(2) > div {
+    min-width: 0;
+  }
+
+  .nl-admin-audit-table td:nth-child(2) > div:first-child {
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .nl-admin-audit-table td:nth-child(6) > span {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .nl-admin-audit-detail-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-left: 0 !important;
+  }
+
+  .nl-admin-audit-detail-body {
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    padding: 18px 14px !important;
+  }
+
+  .nl-admin-audit-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .nl-admin-audit-detail-grid > div[style*="grid-column"] {
+    grid-column: auto !important;
+  }
+}
 /* SiteChrome renders its mobile-nav spacer in SSR.  Restrict it to mobile with
    CSS so hydration does not insert it later and shift the page height. */
 .nl-mobile-footer-spacer {

@@ -213,25 +213,25 @@ export default function AdminAuditLogsPage() {
   };
 
   return (
-    <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto' }}>
+    <div className="nl-admin-audit-page" style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto' }}>
       {fetchError && (
         <div style={{ marginBottom: '16px', background: 'rgba(232,80,80,.1)', border: '1px solid rgba(232,80,80,.3)', borderRadius: '12px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e85050" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           <span style={{ fontSize: '13.5px', color: '#f87171', fontWeight: 500 }}>{fetchError}</span>
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <div className="nl-admin-audit-heading" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <span style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea' }}>Audit Log</span>
         <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
       </div>
       
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+      <div className="nl-admin-audit-filters" style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
         <CustomDropdown value={module} options={moduleOptions} onChange={(v) => { setModule(v); setPage(1); }} />
         <CustomDropdown value={result} options={resultOptions} onChange={(v) => { setResult(v); setPage(1); }} />
       </div>
 
-      <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="nl-admin-audit-table-wrap" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
+        <table className="nl-admin-audit-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,.03)', borderBottom: `1px solid ${colors.borderSoft}` }}>
               <th style={{ padding: '12px 16px', fontSize: '11.5px', color: colors.muted, fontWeight: 600, width: '150px' }}>Thời gian</th>
@@ -249,7 +249,21 @@ export default function AdminAuditLogsPage() {
               <tr><td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: colors.muted, fontSize: '13px' }}>Không có lịch sử thao tác nào.</td></tr>
             ) : (
               logs.map(log => (
-                <tr key={log.id} style={{ borderBottom: `1px solid ${colors.borderSoft2}` }}>
+                <tr
+                  key={log.id}
+                  className="nl-admin-audit-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Xem chi tiết thao tác ${actionNames[log.action] || log.action}`}
+                  onClick={() => setSelectedLog(log)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedLog(log);
+                    }
+                  }}
+                  style={{ borderBottom: `1px solid ${colors.borderSoft2}`, cursor: 'pointer' }}
+                >
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ fontSize: '12.5px', color: colors.text, fontWeight: 500 }}>{dayjs(log.createdAt).format('DD/MM/YYYY HH:mm')}</div>
                     <div style={{ fontSize: '11px', color: colors.muted, marginTop: '2px' }}>{dayjs(log.createdAt).fromNow()}</div>
@@ -312,8 +326,8 @@ export default function AdminAuditLogsPage() {
 
       {/* Slide-out Panel / Modal cho Chi Tiết Log */}
       {selectedLog && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ width: '600px', maxWidth: '100vw', background: '#121115', borderLeft: '1px solid rgba(255,255,255,.1)', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="nl-admin-audit-detail-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="nl-admin-audit-detail-drawer" style={{ width: '600px', maxWidth: '100vw', background: '#121115', borderLeft: '1px solid rgba(255,255,255,.1)', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', height: '100%' }}>
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div>
@@ -325,8 +339,8 @@ export default function AdminAuditLogsPage() {
               </span>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <div className="nl-admin-audit-detail-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              <div className="nl-admin-audit-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '12px', padding: '14px' }}>
                   <div style={{ fontSize: '11px', color: colors.muted, marginBottom: '6px' }}>Thời gian</div>
                   <div style={{ fontSize: '14px', color: colors.text, fontWeight: 500 }}>{dayjs(selectedLog.createdAt).format('DD/MM/YYYY HH:mm:ss')}</div>
