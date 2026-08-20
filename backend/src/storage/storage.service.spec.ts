@@ -18,6 +18,7 @@ describe('StorageService', () => {
     media: {
       create: jest.fn(),
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -549,6 +550,39 @@ describe('StorageService', () => {
         role: 'USER',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('resolves a direct-video thumbnail through its parent media metadata', async () => {
+    prisma.media.findUnique.mockResolvedValue(null);
+    prisma.media.findFirst.mockResolvedValue({
+      access: MediaAccess.PUBLIC,
+      ownerId: 'owner-1',
+      mimeType: 'video/mp4',
+      storageKey: 'stored-video.mp4',
+      metadata: {
+        thumbnailKey: 'stored-video.mp4-thumbnail.webp',
+        thumbnailMimeType: 'image/webp',
+      },
+    });
+
+    await expect(
+      service.resolvePublicLocalFile('stored-video.mp4-thumbnail.webp'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        storageKey: 'stored-video.mp4-thumbnail.webp',
+        mimeType: 'image/webp',
+      }),
+    );
+    expect(prisma.media.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          metadata: {
+            path: ['thumbnailKey'],
+            equals: 'stored-video.mp4-thumbnail.webp',
+          },
+        },
+      }),
+    );
   });
 
   it('allows a partner to open protected media from an accessible store', async () => {

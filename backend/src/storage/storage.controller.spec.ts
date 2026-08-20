@@ -69,6 +69,8 @@ describe('StorageController public responsive files', () => {
       isR2Enabled: jest.fn().mockReturnValue(false),
       resolvePublicLocalFile: jest.fn().mockResolvedValue({
         path: defaultPath,
+        storageKey: 'image-800.webp',
+        mimeType: 'image/webp',
         mediaFile: {
           storageKey: 'image-800.webp',
           mimeType: 'image/webp',
@@ -117,6 +119,8 @@ describe('StorageController public responsive files', () => {
         isR2Enabled: jest.fn().mockReturnValue(false),
         resolvePublicLocalFile: jest.fn().mockResolvedValue({
           path: defaultPath,
+          storageKey: 'legacy.png',
+          mimeType: 'image/png',
           mediaFile: {
             storageKey: 'legacy.png',
             mimeType: 'image/png',

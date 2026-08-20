@@ -730,17 +730,34 @@ export class StorageService implements OnModuleInit {
   }
 
   private async resolveLocalFile(storageKey: string) {
-    const mediaFile = await this.prisma.media.findUnique({
-      where: { storageKey },
-      include: {
-        booking: { select: { storeId: true } },
-        bill: {
-          select: { storeId: true, userId: true, submittedByUserId: true },
-        },
-        cast: { select: { storeId: true } },
-        content: { select: { storeId: true } },
+    const include = {
+      booking: { select: { storeId: true } },
+      bill: {
+        select: { storeId: true, userId: true, submittedByUserId: true },
       },
+      cast: { select: { storeId: true } },
+      content: { select: { storeId: true } },
+    };
+    let mediaFile = await this.prisma.media.findUnique({
+      where: { storageKey },
+      include,
     });
+
+    // Video thumbnails are companion R2 objects, not standalone Media rows.
+    // Resolve them through their parent video's metadata so their public URLs
+    // can be served just like optimized image variants.
+    const isVideoThumbnail = !mediaFile;
+    if (!mediaFile) {
+      mediaFile = await this.prisma.media.findFirst({
+        where: {
+          metadata: {
+            path: ['thumbnailKey'],
+            equals: storageKey,
+          },
+        },
+        include,
+      });
+    }
     if (!mediaFile) {
       throw new NotFoundException('Media file not found');
     }
@@ -751,6 +768,13 @@ export class StorageService implements OnModuleInit {
     return {
       mediaFile,
       path: join(this.getUploadDir(), storageKey),
+      storageKey,
+      mimeType:
+        isVideoThumbnail &&
+        typeof (mediaFile.metadata as Record<string, unknown> | null)
+          ?.thumbnailMimeType === 'string'
+          ? ((mediaFile.metadata as Record<string, unknown>).thumbnailMimeType as string)
+          : mediaFile.mimeType,
     };
   }
 

@@ -274,7 +274,7 @@ export class StorageController {
     @Query('format') formatQuery: string | undefined,
     @Res() response: express.Response,
   ) {
-    const { mediaFile, path } =
+    const { mediaFile, path, storageKey: resolvedStorageKey, mimeType } =
       await this.storageService.resolvePublicLocalFile(storageKey);
 
     const requestedWidth = parseRequestedImageWidth(widthQuery);
@@ -293,12 +293,12 @@ export class StorageController {
 
     if (this.storageService.isR2Enabled()) {
       const selected = this.resolveVariantKey({
-        storageKey: mediaFile.storageKey,
+        storageKey: resolvedStorageKey,
         metadata: mediaFile.metadata,
         acceptHeader,
         requestedWidth,
         requestedFormat,
-        defaultMimeType: mediaFile.mimeType,
+        defaultMimeType: mimeType,
       });
       const object = await this.storageService.getR2Object(selected.storageKey);
       response.type(selected.mimeType);
@@ -310,12 +310,12 @@ export class StorageController {
 
     const selected = this.resolveVariantPath({
       defaultPath: path,
-      storageKey: mediaFile.storageKey,
+      storageKey: resolvedStorageKey,
       metadata: mediaFile.metadata,
       acceptHeader,
       requestedWidth,
       requestedFormat,
-      defaultMimeType: mediaFile.mimeType,
+      defaultMimeType: mimeType,
     });
 
     const fileStats = await stat(selected.path);
@@ -343,7 +343,7 @@ export class StorageController {
     @Req() request: RequestWithUser,
     @Res() response: express.Response,
   ) {
-    const { mediaFile, path } =
+    const { mediaFile, path, storageKey: resolvedStorageKey, mimeType } =
       await this.storageService.resolveProtectedLocalFile(
         storageKey,
         request.user,
@@ -355,11 +355,11 @@ export class StorageController {
 
     if (this.storageService.isR2Enabled()) {
       const selected = this.resolveVariantKey({
-        storageKey: mediaFile.storageKey,
+        storageKey: resolvedStorageKey,
         metadata: mediaFile.metadata,
         acceptHeader,
         requestedFormat: 'auto',
-        defaultMimeType: mediaFile.mimeType,
+        defaultMimeType: mimeType,
       });
       const object = await this.storageService.getR2Object(selected.storageKey);
       response.type(selected.mimeType);
@@ -371,11 +371,11 @@ export class StorageController {
 
     const selected = this.resolveVariantPath({
       defaultPath: path,
-      storageKey: mediaFile.storageKey,
+      storageKey: resolvedStorageKey,
       metadata: mediaFile.metadata,
       acceptHeader,
       requestedFormat: 'auto',
-      defaultMimeType: mediaFile.mimeType,
+      defaultMimeType: mimeType,
     });
 
     response.type(selected.mimeType);
