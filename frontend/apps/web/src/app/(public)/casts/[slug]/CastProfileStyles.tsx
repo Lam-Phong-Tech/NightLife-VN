@@ -1474,12 +1474,6 @@ export function CastProfileStyles() {
         margin-top: 10px;
       }
 
-      @media (min-width: 1200px) {
-        .cast-desktop-thumbs {
-          width: calc(100% + 120px);
-        }
-      }
-
       .cast-thumb {
         height: 74px;
         border-radius: 10px;
