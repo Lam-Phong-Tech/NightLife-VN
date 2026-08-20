@@ -1919,13 +1919,6 @@ export function CastProfileStyles() {
           height: 64px;
         }
       }
-
-      @media (min-width: 768px) {
-        .cast-desktop-main-media {
-          height: auto !important;
-          aspect-ratio: 3 / 4;
-        }
-      }
     `}</style>
   );
 }
