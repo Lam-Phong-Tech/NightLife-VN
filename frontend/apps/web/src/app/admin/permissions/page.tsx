@@ -297,6 +297,24 @@ export default function AdminPermissionsPage() {
         <span style={{ fontSize: '18px', fontWeight: 600, color: '#f3f0ea' }}>Bảng phân quyền chi tiết (Matrix)</span>
         <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
       </div>
+
+      <div className="nl-admin-permissions-mobile-actions" aria-label="Lưu thay đổi phân quyền">
+        {visibleRoles.filter(role => isSuperAdmin || (isAdmin && role.key === 'operator')).map(role => {
+          const isDirty = dirtyRoles.has(role.key);
+          return (
+            <div key={role.key} className="nl-admin-permissions-mobile-action">
+              <span>{ROLE_VI[role.key] ?? role.name}</span>
+              <button
+                type="button"
+                onClick={() => handleSaveColumn(role.key)}
+                disabled={!isDirty}
+              >
+                {isDirty ? 'Lưu thay đổi' : 'Đã lưu'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
       
       <div className="nl-admin-permissions-matrix" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '30px' }}>
         

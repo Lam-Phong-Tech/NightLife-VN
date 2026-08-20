@@ -3741,6 +3741,10 @@ input[type="search"] {
   display: none;
 }
 
+.nl-admin-permissions-mobile-actions {
+  display: none;
+}
+
 .nl-admin-permissions-role-cell button {
   touch-action: manipulation;
 }
@@ -3779,6 +3783,58 @@ input[type="search"] {
     overflow: visible !important;
     background: transparent !important;
     border: 0 !important;
+  }
+
+  .nl-admin-permissions-mobile-actions {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: grid;
+    gap: 8px;
+    margin: -2px 0 14px;
+    padding: 8px 0 10px;
+    background: #0c0c0f;
+  }
+
+  .nl-admin-permissions-mobile-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 7px 8px 7px 12px;
+    border: 1px solid rgba(212,178,106,.22);
+    border-radius: 11px;
+    background: rgba(212,178,106,.06);
+  }
+
+  .nl-admin-permissions-mobile-action > span {
+    min-width: 0;
+    color: #f3f0ea;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .nl-admin-permissions-mobile-action > button {
+    flex: none;
+    min-width: 104px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: #d4b26a;
+    color: #241a0a;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .nl-admin-permissions-mobile-action > button:disabled {
+    background: rgba(255,255,255,.1);
+    color: #8c8679;
+    cursor: not-allowed;
   }
 
   .nl-admin-permissions-header {
