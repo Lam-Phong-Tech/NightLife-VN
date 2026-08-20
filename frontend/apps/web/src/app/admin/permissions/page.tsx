@@ -19,7 +19,10 @@ const colors = {
 };
 
 const Toggle = ({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) => (
-  <div
+  <button
+    type="button"
+    aria-pressed={on}
+    aria-label={on ? 'Tắt quyền' : 'Bật quyền'}
     onClick={disabled ? undefined : onClick}
     title={disabled ? 'Không thể thay đổi cấu hình cho role này' : undefined}
     style={{
@@ -32,6 +35,9 @@ const Toggle = ({ on, onClick, disabled }: { on: boolean; onClick: () => void; d
       opacity: disabled ? 0.45 : 1,
       margin: '0 auto',
       transition: 'all 0.2s',
+      border: 0,
+      padding: 0,
+      display: 'block',
     }}
   >
     <div
@@ -46,7 +52,7 @@ const Toggle = ({ on, onClick, disabled }: { on: boolean; onClick: () => void; d
         transition: 'all 0.2s',
       }}
     />
-  </div>
+  </button>
 );
 
 const subscribeToAuthRole = (onStoreChange: () => void) => {
@@ -286,16 +292,16 @@ export default function AdminPermissionsPage() {
   const matrixGridCols = `minmax(250px, 1fr) repeat(${visibleRoles.length}, 130px)`;
 
   return (
-    <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+    <div className="nl-admin-permissions-page" style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto', maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="nl-admin-permissions-heading" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <span style={{ fontSize: '18px', fontWeight: 600, color: '#f3f0ea' }}>Bảng phân quyền chi tiết (Matrix)</span>
         <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
       </div>
       
-      <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '30px' }}>
+      <div className="nl-admin-permissions-matrix" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '30px' }}>
         
         {/* Header Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.02)', alignItems: 'center' }}>
+        <div className="nl-admin-permissions-header" style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.02)', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.8px', color: '#8c8679', textTransform: 'uppercase' }}>Chức năng</span>
           {visibleRoles.map(role => {
             const canEdit = isSuperAdmin || (isAdmin && role.key === 'operator');
@@ -331,12 +337,12 @@ export default function AdminPermissionsPage() {
         
         {Object.entries(groupedPermissions).map(([category, perms], index) => (
           <React.Fragment key={category}>
-            <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: index > 0 ? '1px' : '0' }}>
+            <div className="nl-admin-permissions-category" style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: index > 0 ? '1px' : '0' }}>
               {index + 1}. {category}
             </div>
             {perms.map((p) => (
-              <div key={p.key} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
-                <span style={{ minWidth: 0 }}>
+              <div key={p.key} className="nl-admin-permissions-row" style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
+                <span className="nl-admin-permissions-info" style={{ minWidth: 0 }}>
                   {(() => { const vi = getPermVI(p.key, p.name, p.description); return (<>
                     <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{vi.name}</span>
                     {vi.desc && <span style={{ display: 'block', fontSize: '11px', color: colors.muted, marginTop: '2px' }}>{vi.desc}</span>}
@@ -347,12 +353,10 @@ export default function AdminPermissionsPage() {
                   const rolePerms = localAssignments[role.key] || [];
                   const isOn = rolePerms.includes(p.key);
                   return (
-                    <Toggle 
-                      key={`${role.key}-${p.key}`} 
-                      on={isOn} 
-                      onClick={() => handleToggle(role.key, p.key)} 
-                      disabled={!canEdit} 
-                    />
+                    <div key={`${role.key}-${p.key}`} className="nl-admin-permissions-role-cell">
+                      <span className="nl-admin-permissions-role-label">{ROLE_VI[role.key] ?? role.name}</span>
+                      <Toggle on={isOn} onClick={() => handleToggle(role.key, p.key)} disabled={!canEdit} />
+                    </div>
                   );
                 })}
               </div>
