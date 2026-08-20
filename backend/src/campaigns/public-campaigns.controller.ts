@@ -64,15 +64,13 @@ export class PublicCampaignsController {
       const imageMedia =
         media.find((item) =>
           CAMPAIGN_IMAGE_PURPOSES.has(String(item.purpose ?? '').trim()),
-        ) ??
-        media[0] ??
-        null;
+        ) ?? null;
 
       return {
         ...campaign,
         targetStore: {
           ...campaign.targetStore,
-          media,
+          media: imageMedia ? [imageMedia] : [],
           thumbnailUrl: imageMedia?.url ?? null,
           responsiveImage: toPublicResponsiveImage(imageMedia),
         },

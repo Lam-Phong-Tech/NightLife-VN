@@ -291,7 +291,7 @@ export default function Page() {
         categoryLabel: categoryLabels[item.store.category] ?? item.store.category,
         areaLabel: storeArea(item.store),
         cityLabel: item.store.city,
-        image: item.store.thumbnailUrl ?? storeImageForSlug(item.store.slug, index),
+        image: item.store.thumbnailUrl ?? undefined,
         favoritedAt: item.favoritedAt,
       })) ?? [];
       const serverCastSlugs = serverCastFavorites?.map((item) => item.cast.slug) ?? [];

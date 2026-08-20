@@ -193,9 +193,7 @@ const storeImage = (store: TourStopStore) => {
   ]);
 
   return (
-    store.media.find((media) => coverPurposes.has(media.purpose?.trim() ?? ""))?.url ||
-    store.media[0]?.url ||
-    ""
+    store.media.find((media) => coverPurposes.has(media.purpose?.trim() ?? ""))?.url ?? ""
   );
 };
 

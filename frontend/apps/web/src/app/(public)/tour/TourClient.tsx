@@ -231,7 +231,7 @@ const priceTierLabel = (tier: number) =>
   "$".repeat(Math.max(1, Math.min(4, Math.trunc(tier || 3))));
 
 const tourImage = (tour: PublicTour) =>
-  tour.coverUrl || tour.stops.find((stop) => stop.store.media[0])?.store.media[0]?.url || emptyTourImage;
+  tour.coverUrl || emptyTourImage;
 
 const countTourCasts = (tour: PublicTour) =>
   tour.stops.reduce((sum, stop) => sum + stop.store.casts.length, 0);

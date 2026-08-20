@@ -36,6 +36,88 @@ describe('NightlifeDataService - Tonight Recommendations (Đề xuất tối nay
   });
 
   describe('Edge Case: Empty Configuration (Fallback to Personalization)', () => {
+    it('selects an older configured cover instead of a newer album image', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-with-cover', pinRank: 1 },
+      ] as any);
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-with-cover',
+          name: 'Store With Cover',
+          slug: 'store-with-cover',
+          category: 'CLUB',
+          description: 'A club',
+          city: 'Hanoi',
+          district: 'Hoan Kiem',
+          areaId: 'area-1',
+          area: {
+            id: 'area-1',
+            code: 'hn-hoankiem',
+            name: 'Hoan Kiem',
+            city: 'Hanoi',
+            district: 'Hoan Kiem',
+          },
+          // The cover is older than more than six album uploads.
+          media: [
+            ...Array.from({ length: 7 }, (_, index) => ({
+              url: `album-${index}.jpg`,
+              purpose: 'STORE_GALLERY',
+            })),
+            { url: 'configured-cover.jpg', purpose: 'STORE_COVER' },
+          ],
+          coupons: [],
+        },
+      ] as any);
+      prisma.auditLog.groupBy.mockResolvedValue([]);
+      prisma.booking.groupBy.mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 1,
+      });
+
+      expect(result[0].thumbnailUrl).toBe('configured-cover.jpg');
+      const mediaQuery = (prisma.store.findMany as jest.Mock).mock.calls[0][0]
+        .select.media;
+      expect(mediaQuery).not.toHaveProperty('take');
+    });
+
+    it('does not use an album image when a store has no configured cover', async () => {
+      prisma.rankingConfig.findMany.mockResolvedValue([
+        { targetId: 'store-without-cover', pinRank: 1 },
+      ] as any);
+      prisma.store.findMany.mockResolvedValue([
+        {
+          id: 'store-without-cover',
+          name: 'Store Without Cover',
+          slug: 'store-without-cover',
+          category: 'CLUB',
+          description: 'A club',
+          city: 'Hanoi',
+          district: 'Hoan Kiem',
+          areaId: 'area-1',
+          area: {
+            id: 'area-1',
+            code: 'hn-hoankiem',
+            name: 'Hoan Kiem',
+            city: 'Hanoi',
+            district: 'Hoan Kiem',
+          },
+          media: [{ url: 'album-only.jpg', purpose: 'STORE_GALLERY' }],
+          coupons: [],
+        },
+      ] as any);
+      prisma.auditLog.groupBy.mockResolvedValue([]);
+      prisma.booking.groupBy.mockResolvedValue([]);
+
+      const result = await service.listPublicHomeRecommendations({
+        cityCode: 'hn',
+        limit: 1,
+      });
+
+      expect(result[0].thumbnailUrl).toBeNull();
+    });
+
     it('should fallback to personalized recommendations when no ranking configurations are active', async () => {
       // 1. Return no pinned ranking configurations
       prisma.rankingConfig.findMany.mockResolvedValue([]);

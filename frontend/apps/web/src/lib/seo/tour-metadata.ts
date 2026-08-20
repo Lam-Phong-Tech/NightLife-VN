@@ -16,7 +16,7 @@ export function buildTourMetadata(tour: TourForMetadata): Metadata {
   // Use slug for SEO-friendly URL; fall back to ID only if slug is unavailable
   const identifier = tour.slug || tour.id;
   const canonicalPath = `/tour/${identifier}`;
-  const image = tour.coverUrl || tour.stops[0]?.store.media[0]?.url || undefined;
+  const image = tour.coverUrl || undefined;
   const description =
     tour.subtitle ||
     `Chi tiết hành trình ${tour.title}, các điểm dừng và đặt tour nightlife trên Vietyoru.`;

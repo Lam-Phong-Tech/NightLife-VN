@@ -168,7 +168,6 @@ const normalizeText = (value: string) =>
 
 const getCampaignImage = (campaign: CampaignItem, index: number) =>
   campaign.targetStore!.thumbnailUrl ??
-  campaign.targetStore!.media?.[0]?.url ??
   categoryImages[campaign.targetStore!.category] ??
   fallbackImages[index % fallbackImages.length];
 

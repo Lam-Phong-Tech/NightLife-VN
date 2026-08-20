@@ -494,7 +494,9 @@ function firstContentImage(...values: Array<string | null | undefined>) {
 }
 
 function storeCardImage(store: Pick<PublicStore, "slug" | "thumbnailUrl">, index: number) {
-  return resolveClientUrl(store.thumbnailUrl) || storeImageForSlug(store.slug, index);
+  void store.slug;
+  void index;
+  return resolveClientUrl(store.thumbnailUrl);
 }
 
 function storeImage(store: PublicStore, index: number) {
@@ -762,7 +764,7 @@ function mapCampaignToHomeItem(
   rates: CurrencyRateMap,
 ): HomeCouponItem {
   void index;
-  const storeImageUrl = campaign.targetStore?.thumbnailUrl ?? campaign.targetStore?.media?.[0]?.url;
+  const storeImageUrl = campaign.targetStore?.thumbnailUrl;
   const value =
     campaign.discountType === "PERCENT"
       ? `-${campaign.discountValue}%`
@@ -3319,7 +3321,7 @@ export default function HomePageClient({
             .filter(Boolean)
             .join(" · "),
           cityLabel: item.store.city,
-          image: resolveClientUrl(item.store.thumbnailUrl) ?? storeImageForSlug(item.store.slug),
+          image: resolveClientUrl(item.store.thumbnailUrl) ?? undefined,
           favoritedAt: item.favoritedAt,
         }));
 

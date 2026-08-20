@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
-import { getStoreDetail } from "@/lib/api/store-detail";
 import type { LanguageCode } from "@/lib/i18n/locales";
 import { buildCastMetadata } from "@/lib/seo/cast-metadata";
 import CastProfileClient from "./CastProfileClient";
@@ -30,25 +29,6 @@ export const resolveCastSlug = (slug: string) => legacyCastSlugMap[slug] ?? slug
 const loadCast = async (slug: string) => {
   try {
     const cast = await getCastDetail(resolveCastSlug(slug));
-
-    // Cast detail responses can omit the venue thumbnail even though the store
-    // detail already has public gallery media. Enrich it here so the current
-    // venue card always uses the real store image instead of a placeholder.
-    if (!cast.store.thumbnailUrl) {
-      try {
-        const store = await getStoreDetail(cast.store.slug);
-        const storeImage =
-          store.gallery.find((item) => item.type === "IMAGE" && item.url)?.url ??
-          store.seo.ogImage ??
-          null;
-
-        if (storeImage) {
-          cast.store.thumbnailUrl = storeImage;
-        }
-      } catch {
-        // Keep the cast detail usable if the secondary store request fails.
-      }
-    }
 
     return cast;
   } catch (error) {

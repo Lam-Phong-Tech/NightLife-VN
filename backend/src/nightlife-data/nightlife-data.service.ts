@@ -2527,10 +2527,9 @@ export class NightlifeDataService {
                     },
                   ],
                 }),
-                // Keep the admin-selected store cover inside the limited
-                // media window even when newer gallery/menu images exist.
+                // Keep media sorted for a stable public response. Cover
+                // selection is handled below and never falls back to album media.
                 orderBy: [{ purpose: 'desc' }, { createdAt: 'desc' }],
-                take: 8,
                 select: {
                   url: true,
                   purpose: true,
@@ -2811,7 +2810,6 @@ export class NightlifeDataService {
             type: 'IMAGE',
           }),
           orderBy: { createdAt: 'desc' },
-          take: 8,
           select: {
             url: true,
             purpose: true,
@@ -3188,10 +3186,9 @@ export class NightlifeDataService {
                 access: 'PUBLIC',
                 type: 'IMAGE',
               }),
-              // Keep the selected store cover ahead of newer gallery media so
-              // cast detail resolves the same venue image as store detail.
+              // The resolved venue thumbnail must only use an explicitly
+              // configured cover, even if newer gallery media exists.
               orderBy: [{ purpose: 'desc' }, { createdAt: 'desc' }],
-              take: 8,
               select: {
                 url: true,
                 purpose: true,
@@ -3411,7 +3408,6 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               }),
               orderBy: { createdAt: 'desc' },
-              take: 8,
               select: {
                 url: true,
                 purpose: true,
@@ -3454,7 +3450,10 @@ export class NightlifeDataService {
         city: c.store.city,
         district: c.store.district,
         ward: extractWardFromAddress(c.store.address, c.store.area?.ward),
-        media: c.store.media,
+        media: (() => {
+          const cover = this.resolveStoreCoverMedia(c.store.media);
+          return cover ? [cover] : [];
+        })(),
       },
     }));
   }
@@ -7842,7 +7841,6 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 8,
               select: {
                 url: true,
                 purpose: true,
@@ -19137,16 +19135,24 @@ export class NightlifeDataService {
       'hero',
       'cover',
       'store-cover',
-      'PARTNER_LISTING_STORE',
+      'store_cover',
+      'partner-store-cover',
+      'partner_store_cover',
+      'partner_listing_store',
     ]);
     const storeMedia = media.filter((item) => this.isStoreGalleryMedia(item));
     const cover = storeMedia.find((item) =>
-      coverPurposes.has(String(item.purpose ?? '').trim()),
+      coverPurposes.has(
+        String(item.purpose ?? '')
+          .trim()
+          .toLowerCase(),
+      ),
     );
 
-    // Prefer the explicitly selected cover, but retain the public API's
-    // gallery fallback for stores that have no configured cover yet.
-    return cover ?? storeMedia[0] ?? null;
+    // Public surfaces must only show the explicitly configured store cover.
+    // A missing cover intentionally produces no image rather than an album
+    // fallback.
+    return cover ?? null;
   }
 
   private publicMediaUrl(url: string) {
@@ -21547,26 +21553,42 @@ export class NightlifeDataService {
       pricingItems: listingPayload?.pricingItems ?? [],
       mediaUrls,
       listingDraft: listingPayload ?? null,
-      originalStore: (historicalStore ?? request.store)
-        ? {
-            id: historicalStore?.id as string ?? request.store.id,
-            name: historicalStore?.name as string ?? request.store.name,
-            slug: historicalStore?.slug as string ?? request.store.slug,
-            status: historicalStore?.status as string ?? request.store.status,
-            category: historicalStore?.category as string ?? request.store.category,
-            description: historicalStore?.description as string ?? request.store.description,
-            address: historicalStore?.address as string ?? request.store.address,
-            city: historicalStore?.city as string ?? request.store.city,
-            district: historicalStore?.district as string ?? request.store.district,
-            phone: historicalStore?.phone as string ?? request.store.phone,
-            openingHours: historicalStore?.openingHours ?? request.store.openingHours,
-            pricingInfo: historicalStore?.pricingInfo ?? request.store.pricingInfo,
-            tags: (historicalStore?.tags as string[] | undefined) ?? request.store.tags ?? [],
-            media: (historicalStore?.media as Array<Record<string, unknown>> | undefined) ??
-              (request.store.media ?? []).filter((item) => !item.castId),
-            mapUrl: historicalStore?.mapUrl as string ?? request.store.mapUrl,
-          }
-        : null,
+      originalStore:
+        (historicalStore ?? request.store)
+          ? {
+              id: (historicalStore?.id as string) ?? request.store.id,
+              name: (historicalStore?.name as string) ?? request.store.name,
+              slug: (historicalStore?.slug as string) ?? request.store.slug,
+              status:
+                (historicalStore?.status as string) ?? request.store.status,
+              category:
+                (historicalStore?.category as string) ?? request.store.category,
+              description:
+                (historicalStore?.description as string) ??
+                request.store.description,
+              address:
+                (historicalStore?.address as string) ?? request.store.address,
+              city: (historicalStore?.city as string) ?? request.store.city,
+              district:
+                (historicalStore?.district as string) ?? request.store.district,
+              phone: (historicalStore?.phone as string) ?? request.store.phone,
+              openingHours:
+                historicalStore?.openingHours ?? request.store.openingHours,
+              pricingInfo:
+                historicalStore?.pricingInfo ?? request.store.pricingInfo,
+              tags:
+                (historicalStore?.tags as string[] | undefined) ??
+                request.store.tags ??
+                [],
+              media:
+                (historicalStore?.media as
+                  | Array<Record<string, unknown>>
+                  | undefined) ??
+                (request.store.media ?? []).filter((item) => !item.castId),
+              mapUrl:
+                (historicalStore?.mapUrl as string) ?? request.store.mapUrl,
+            }
+          : null,
     };
   }
 
@@ -26067,12 +26089,20 @@ export class NightlifeDataService {
 
   private async notifyPartnerCastReview(
     previous: { id: string; storeId: string; status: CastStatus },
-    updated: { id: string; storeId: string; stageName: string; status: CastStatus },
+    updated: {
+      id: string;
+      storeId: string;
+      stageName: string;
+      status: CastStatus;
+    },
     dto: { status?: CastStatus; reviewReason?: string },
   ) {
-    if (previous.status !== 'PENDING_REVIEW' || !dto.status ||
-        !['ACTIVE', 'DRAFT'].includes(dto.status) ||
-        updated.status === 'PENDING_REVIEW') {
+    if (
+      previous.status !== 'PENDING_REVIEW' ||
+      !dto.status ||
+      !['ACTIVE', 'DRAFT'].includes(dto.status) ||
+      updated.status === 'PENDING_REVIEW'
+    ) {
       return;
     }
 
@@ -26089,8 +26119,11 @@ export class NightlifeDataService {
     if (!store || !partnerUserId) return;
 
     const approved = updated.status === 'ACTIVE';
-    const reviewReason = this.cleanNullableText(dto.reviewReason) ??
-      (approved ? null : 'Admin yêu cầu kiểm tra và cập nhật lại thông tin Cast.');
+    const reviewReason =
+      this.cleanNullableText(dto.reviewReason) ??
+      (approved
+        ? null
+        : 'Admin yêu cầu kiểm tra và cập nhật lại thông tin Cast.');
     const notification = await this.prisma.notificationLog.create({
       data: {
         userId: partnerUserId,
@@ -27149,7 +27182,8 @@ export class NightlifeDataService {
     const searchTerm = this.cleanText(search);
     const dateFilterCondition = dateFilter ? dateFilter : {};
 
-    const isTourQuery = !storeId && (!category || category.toUpperCase() === 'TOUR');
+    const isTourQuery =
+      !storeId && (!category || category.toUpperCase() === 'TOUR');
     const isBookingQuery = !category || category.toUpperCase() !== 'TOUR';
 
     const baseWhere: import('@prisma/client').Prisma.BookingWhereInput = {
@@ -27181,30 +27215,33 @@ export class NightlifeDataService {
       ...(prismaStatus && { status: prismaStatus }),
     };
 
-    const tourBaseWhere: import('@prisma/client').Prisma.TourBookingWhereInput = {
-      ...dateFilterCondition,
-      ...(searchTerm && {
-        OR: [
-          {
-            bookingCode: {
-              contains: searchTerm.replace(/^(TR|TB|BK)-?/i, ''),
-              mode: 'insensitive',
+    const tourBaseWhere: import('@prisma/client').Prisma.TourBookingWhereInput =
+      {
+        ...dateFilterCondition,
+        ...(searchTerm && {
+          OR: [
+            {
+              bookingCode: {
+                contains: searchTerm.replace(/^(TR|TB|BK)-?/i, ''),
+                mode: 'insensitive',
+              },
             },
-          },
-          ...(this.isUuid(searchTerm.replace(/^(TR|TB|BK)-?/i, ''))
-            ? [{ id: searchTerm.replace(/^(TR|TB|BK)-?/i, '') }]
-            : []),
-          { titleSnapshot: this.containsInsensitive(searchTerm) },
-          { tour: { is: { title: this.containsInsensitive(searchTerm) } } },
-          { user: { displayName: this.containsInsensitive(searchTerm) } },
-          { guest: { displayName: this.containsInsensitive(searchTerm) } },
-          { user: { phone: this.containsInsensitive(searchTerm) } },
-          { guest: { phone: this.containsInsensitive(searchTerm) } },
-        ],
-      }),
-    };
+            ...(this.isUuid(searchTerm.replace(/^(TR|TB|BK)-?/i, ''))
+              ? [{ id: searchTerm.replace(/^(TR|TB|BK)-?/i, '') }]
+              : []),
+            { titleSnapshot: this.containsInsensitive(searchTerm) },
+            { tour: { is: { title: this.containsInsensitive(searchTerm) } } },
+            { user: { displayName: this.containsInsensitive(searchTerm) } },
+            { guest: { displayName: this.containsInsensitive(searchTerm) } },
+            { user: { phone: this.containsInsensitive(searchTerm) } },
+            { guest: { phone: this.containsInsensitive(searchTerm) } },
+          ],
+        }),
+      };
 
-    let prismaTourStatus: import('@prisma/client').TourBookingStatus | undefined;
+    let prismaTourStatus:
+      | import('@prisma/client').TourBookingStatus
+      | undefined;
     if (status === 'new') prismaTourStatus = 'REQUESTED';
     else if (status === 'completed') prismaTourStatus = 'COMPLETED';
     else if (status === 'cancelled') prismaTourStatus = 'CANCELLED';
@@ -27232,25 +27269,39 @@ export class NightlifeDataService {
       tourItems,
     ] = await Promise.all([
       isBookingQuery
-        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'REQUESTED' } })
+        ? this.prisma.booking.count({
+            where: { ...baseWhere, status: 'REQUESTED' },
+          })
         : 0,
       isBookingQuery
-        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'CHECKED_IN' } })
+        ? this.prisma.booking.count({
+            where: { ...baseWhere, status: 'CHECKED_IN' },
+          })
         : 0,
       isBookingQuery
-        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'COMPLETED' } })
+        ? this.prisma.booking.count({
+            where: { ...baseWhere, status: 'COMPLETED' },
+          })
         : 0,
       isBookingQuery
-        ? this.prisma.booking.count({ where: { ...baseWhere, status: 'CANCELLED' } })
+        ? this.prisma.booking.count({
+            where: { ...baseWhere, status: 'CANCELLED' },
+          })
         : 0,
       isTourQuery
-        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'REQUESTED' } })
+        ? this.prisma.tourBooking.count({
+            where: { ...tourBaseWhere, status: 'REQUESTED' },
+          })
         : 0,
       isTourQuery
-        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'COMPLETED' } })
+        ? this.prisma.tourBooking.count({
+            where: { ...tourBaseWhere, status: 'COMPLETED' },
+          })
         : 0,
       isTourQuery
-        ? this.prisma.tourBooking.count({ where: { ...tourBaseWhere, status: 'CANCELLED' } })
+        ? this.prisma.tourBooking.count({
+            where: { ...tourBaseWhere, status: 'CANCELLED' },
+          })
         : 0,
       isBookingQuery
         ? this.prisma.booking.findMany({
@@ -27286,7 +27337,8 @@ export class NightlifeDataService {
     const checkedInCount = bkCheckedIn;
     const completedCount = bkCompleted + tourCompleted;
     const cancelledCount = bkCancelled + tourCancelled;
-    const allCount = newCount + checkedInCount + completedCount + cancelledCount;
+    const allCount =
+      newCount + checkedInCount + completedCount + cancelledCount;
 
     let total = allCount;
     if (status === 'new') total = newCount;
@@ -27314,50 +27366,54 @@ export class NightlifeDataService {
       note: bk.note,
     }));
 
-    const mappedTours = await Promise.all(tourItems.map(async (tb) => ({
-      id: tb.id,
-      bookingNumber: await this.adminTourBookingNumber(tb.createdAt),
-      bookingCode: tb.bookingCode,
-      tourBookingCode: null,
-      customerName:
-        tb.user?.displayName || tb.guest?.displayName || 'Khách Vãng Lai',
-      customerPhone: tb.user?.phone || tb.guest?.phone || '',
-      customerEmail: tb.user?.email || tb.guest?.email || '',
-      tourName: tb.tour?.title || tb.titleSnapshot || 'Tour',
-      store: (() => {
-        const itinerary = tb.itinerarySnapshot;
-        if (!Array.isArray(itinerary)) return 'Chưa có quán';
+    const mappedTours = await Promise.all(
+      tourItems.map(async (tb) => ({
+        id: tb.id,
+        bookingNumber: await this.adminTourBookingNumber(tb.createdAt),
+        bookingCode: tb.bookingCode,
+        tourBookingCode: null,
+        customerName:
+          tb.user?.displayName || tb.guest?.displayName || 'Khách Vãng Lai',
+        customerPhone: tb.user?.phone || tb.guest?.phone || '',
+        customerEmail: tb.user?.email || tb.guest?.email || '',
+        tourName: tb.tour?.title || tb.titleSnapshot || 'Tour',
+        store: (() => {
+          const itinerary = tb.itinerarySnapshot;
+          if (!Array.isArray(itinerary)) return 'Chưa có quán';
 
-        const storeNames = itinerary
-          .map((stop: any) =>
-            typeof stop?.storeName === 'string' ? stop.storeName.trim() : '',
-          )
-          .filter(Boolean);
+          const storeNames = itinerary
+            .map((stop: any) =>
+              typeof stop?.storeName === 'string' ? stop.storeName.trim() : '',
+            )
+            .filter(Boolean);
 
-        return storeNames.length ? storeNames.join(', ') : 'Chưa có quán';
-      })(),
-      storeCategory: 'TOUR',
-      cast: (() => {
-        const itinerary = tb.itinerarySnapshot;
-        if (!Array.isArray(itinerary)) return 'Không cast';
-        const allCasts = itinerary.flatMap((stop: any) =>
-          Array.isArray(stop?.casts)
-            ? stop.casts
-                .map((c: any) =>
-                  typeof c?.name === 'string' ? c.name.trim() : '',
-                )
-                .filter(Boolean)
-            : [],
-        );
-        return allCasts.length ? `Cast: ${allCasts.join(', ')}` : 'Không cast';
-      })(),
-      partySize: tb.partySize,
-      scheduledAt: tb.scheduledAt,
-      createdAt: tb.createdAt,
-      source: 'Telegram',
-      status: tb.status,
-      note: tb.note,
-    })));
+          return storeNames.length ? storeNames.join(', ') : 'Chưa có quán';
+        })(),
+        storeCategory: 'TOUR',
+        cast: (() => {
+          const itinerary = tb.itinerarySnapshot;
+          if (!Array.isArray(itinerary)) return 'Không cast';
+          const allCasts = itinerary.flatMap((stop: any) =>
+            Array.isArray(stop?.casts)
+              ? stop.casts
+                  .map((c: any) =>
+                    typeof c?.name === 'string' ? c.name.trim() : '',
+                  )
+                  .filter(Boolean)
+              : [],
+          );
+          return allCasts.length
+            ? `Cast: ${allCasts.join(', ')}`
+            : 'Không cast';
+        })(),
+        partySize: tb.partySize,
+        scheduledAt: tb.scheduledAt,
+        createdAt: tb.createdAt,
+        source: 'Telegram',
+        status: tb.status,
+        note: tb.note,
+      })),
+    );
 
     const combined = [...mappedBookings, ...mappedTours].sort((a, b) => {
       const isDateSort =
@@ -27473,7 +27529,6 @@ export class NightlifeDataService {
               type: 'IMAGE',
             }),
             orderBy: { createdAt: 'desc' },
-            take: 6,
             select: {
               id: true,
               url: true,
@@ -27655,7 +27710,6 @@ export class NightlifeDataService {
             type: 'IMAGE',
           }),
           orderBy: { createdAt: 'desc' },
-          take: 6,
           select: {
             id: true,
             url: true,
@@ -27820,7 +27874,6 @@ export class NightlifeDataService {
             type: 'IMAGE',
           }),
           orderBy: { createdAt: 'desc' },
-          take: 4,
           select: {
             url: true,
             purpose: true,

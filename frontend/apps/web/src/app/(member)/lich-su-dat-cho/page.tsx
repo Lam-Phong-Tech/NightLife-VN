@@ -402,7 +402,7 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language:
 const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => {
   const image = booking.tour
     ? booking.tour.coverUrl
-    : booking.store?.media?.[0]?.url ?? booking.cast?.media?.[0]?.url;
+    : booking.cast?.media?.[0]?.url;
   return image ? `url(${JSON.stringify(image)})` : thumbnails[group];
 };
 
