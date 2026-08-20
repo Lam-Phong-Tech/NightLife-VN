@@ -246,7 +246,7 @@ function TopCategoryFilter() {
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
-          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#17161c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '6px', zIndex: 100, minWidth: '160px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' }}>
+          <div className="nl-admin-category-filter-menu" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#17161c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '6px', zIndex: 100, minWidth: '160px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' }}>
             {opts.map(o => (
               <div 
                 key={o.v}

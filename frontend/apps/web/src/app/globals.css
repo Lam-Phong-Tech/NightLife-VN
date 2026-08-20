@@ -2095,6 +2095,13 @@ textarea::placeholder {
     width: min(248px, calc(100vw - 24px)) !important;
   }
 
+  .nl-admin-category-filter-menu {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 0 !important;
+    width: min(394px, calc(100vw - 32px)) !important;
+  }
+
   .nl-admin-top-search {
     min-width: min(100%, 280px) !important;
   }
