@@ -48,6 +48,10 @@ import {
 } from "@/lib/booking-field-validation";
 import { scrollBookingValidationFieldIntoView, type BookingFieldScrollSelectors } from "@/lib/booking-field-scroll";
 import { writeBookingConfirmationFlashToast } from "@/lib/booking-confirmation-flash";
+import {
+  bookingReturnToParam,
+  sanitizeBookingReturnHref,
+} from "@/lib/booking-return-navigation";
 import { translateText } from "@/lib/i18n/client-translations";
 import {
   getFilterAreaLabel,
@@ -121,6 +125,7 @@ type BookingContext = {
   couponId?: string;
   couponIssueId?: string;
   fromHref: string;
+  hasExplicitReturnHref: boolean;
 };
 
 const defaultContext: BookingContext = {
@@ -128,6 +133,7 @@ const defaultContext: BookingContext = {
   storeName: "Neon Club",
   area: "Tây Hồ",
   fromHref: "/stores/neon-club",
+  hasExplicitReturnHref: false,
 };
 
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
@@ -246,6 +252,7 @@ const parseContext = () => {
   const storeSlug = rawStoreSlug || (castSlug ? undefined : defaultContext.storeSlug);
   const couponId = params.get("couponId") || undefined;
   const couponIssueId = params.get("couponIssueId") || undefined;
+  const explicitReturnHref = sanitizeBookingReturnHref(params.get(bookingReturnToParam));
 
   return {
     context: {
@@ -257,9 +264,12 @@ const parseContext = () => {
       castName: isServiceOnlyBooking ? undefined : params.get("castName") || undefined,
       couponId,
       couponIssueId,
-      fromHref: castSlug
-        ? `/casts/${castSlug}`
-        : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
+      fromHref:
+        explicitReturnHref ??
+        (castSlug
+          ? `/casts/${castSlug}`
+          : `/stores/${storeSlug ?? defaultContext.storeSlug}`),
+      hasExplicitReturnHref: Boolean(explicitReturnHref),
     },
     mode: parseRequestedMode(params.get("mode")),
     date: clampBookingDate(params.get("date")),
@@ -376,9 +386,10 @@ export default function Page() {
               }) ?? current.area,
             couponId: current.couponId,
             couponIssueId: current.couponIssueId,
-            fromHref: isCastStoreServiceOnly
-              ? `/stores/${cast.store.slug ?? current.storeSlug ?? defaultContext.storeSlug}`
-              : current.fromHref,
+            fromHref:
+              isCastStoreServiceOnly && !current.hasExplicitReturnHref
+                ? `/stores/${cast.store.slug ?? current.storeSlug ?? defaultContext.storeSlug}`
+                : current.fromHref,
           };
         });
       })
@@ -451,7 +462,10 @@ export default function Page() {
                 : current.castName,
             couponId: current.couponId,
             couponIssueId: current.couponIssueId,
-            fromHref: isStoreServiceOnly ? `/stores/${store.slug}` : current.fromHref,
+            fromHref:
+              isStoreServiceOnly && !current.hasExplicitReturnHref
+                ? `/stores/${store.slug}`
+                : current.fromHref,
           };
         });
       })
@@ -645,9 +659,11 @@ export default function Page() {
           ? castOptionLabel(nextCast)
           : (current.castName ?? fallbackCastNameFromSlug(castSlug))
         : undefined,
-      fromHref: castSlug
-        ? `/casts/${castSlug}`
-        : `/stores/${current.storeSlug ?? defaultContext.storeSlug}`,
+      fromHref: current.hasExplicitReturnHref
+        ? current.fromHref
+        : castSlug
+          ? `/casts/${castSlug}`
+          : `/stores/${current.storeSlug ?? defaultContext.storeSlug}`,
     }));
   };
 
@@ -662,6 +678,7 @@ export default function Page() {
       ...(context.couponId ? { couponId: context.couponId } : {}),
       ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       ...(!isServiceOnlyBooking && context.castName ? { castName: context.castName } : {}),
+      ...(context.hasExplicitReturnHref ? { [bookingReturnToParam]: context.fromHref } : {}),
       date: bookingDate,
       time: bookingTime,
       guests: String(guests),
