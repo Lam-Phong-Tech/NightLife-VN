@@ -51,6 +51,23 @@ const colors = {
 
 const HOME_GUIDE_LIMIT = 8;
 
+const nextAvailablePinRank = (
+  items: Array<{ pinRank?: number | null }>,
+  maxRank: number,
+) => {
+  const usedRanks = new Set(
+    items
+      .map((item) => item.pinRank)
+      .filter((rank): rank is number => Number.isInteger(rank) && rank > 0),
+  );
+
+  for (let rank = 1; rank <= maxRank; rank += 1) {
+    if (!usedRanks.has(rank)) return rank;
+  }
+
+  return items.length + 1;
+};
+
 type AdminHomeTour = {
   id: string;
   title: string;
@@ -519,7 +536,7 @@ export default function AdminContentPage() {
         cityCode: featuredCity === 'all' ? (store.cityCode as any || 'all') : featuredCity,
         category: featuredCategory as any,
         scope: 'featured_home',
-        pinRank: featuredItems.length > 0 ? (featuredItems[featuredItems.length - 1]?.pinRank || 0) + 1 : 1,
+        pinRank: nextAvailablePinRank(featuredItems, 5),
         status: 'ACTIVE'
       });
       await fetchFeaturedItems();
@@ -677,7 +694,7 @@ export default function AdminContentPage() {
         cityCode: (store.cityCode as RankingCity) || 'all',
         category: (store.category as RankingCategory) || null,
         scope: 'recommend-home',
-        pinRank: recommendItems.length > 0 ? (recommendItems[recommendItems.length - 1]?.pinRank || 0) + 1 : 1,
+        pinRank: nextAvailablePinRank(recommendItems, HOME_GUIDE_LIMIT),
         status: 'ACTIVE'
       });
       await fetchRecommendItems();
