@@ -1317,7 +1317,12 @@ describe('NightlifeDataService', () => {
         city: 'Ha Noi',
         district: 'Hoan Kiem',
         area: null,
-        media: [{ url: 'https://example.com/crimson.jpg' }],
+        media: [
+          {
+            url: 'https://example.com/crimson.jpg',
+            purpose: 'STORE_COVER',
+          },
+        ],
       },
     ] as never);
 
