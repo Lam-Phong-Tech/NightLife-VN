@@ -1493,6 +1493,15 @@ export default function Page() {
         }
 
         @media (max-width: 767px) {
+          .vyr-rank-row.is-podium-rank:not(.is-store-rank) .vyr-rank-podium-image {
+            margin-left: -12px;
+          }
+
+          .vyr-rank-row:not(.is-store-rank) .vyr-rank-name {
+            font-size: 18px;
+            line-height: 1.1;
+          }
+
           .vyr-rank-row.is-store-rank .vyr-rank-label {
             font-size: 16px !important;
             line-height: 1.15;
