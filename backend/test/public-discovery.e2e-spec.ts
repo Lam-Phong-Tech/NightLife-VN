@@ -244,7 +244,6 @@ describe('Public discovery listing API (e2e)', () => {
         scope: 'global',
         manualScore: 95,
         pinRank: 1,
-        sponsored: true,
         updatedAt: new Date('2026-06-20T00:00:00.000Z'),
       },
     ]);
@@ -269,7 +268,6 @@ describe('Public discovery listing API (e2e)', () => {
           slug: 'mika-golden-ktv',
           image: '/media/admin/casts/mika-avatar.jpg',
           category: 'KARAOKE',
-          sponsored: true,
           pinRank: 1,
           manualScore: 95,
           href: '/casts/mika-golden-ktv',
@@ -341,7 +339,6 @@ describe('Public discovery listing API (e2e)', () => {
         scope: 'global',
         manualScore: 100,
         pinRank: 1,
-        sponsored: true,
         updatedAt: new Date('2026-06-20T00:00:00.000Z'),
       },
     ]);
@@ -365,7 +362,6 @@ describe('Public discovery listing API (e2e)', () => {
         slug: 'neon-club',
         image: '/media/admin/stores/neon-hero.jpg',
         category: 'CLUB',
-        sponsored: true,
         pinRank: 1,
         manualScore: 100,
         href: '/stores/neon-club',
