@@ -2847,7 +2847,11 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-    transform: translateY(18px) !important;
+    transform: translateY(10px) !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier] .nl-home-ranking-podium-image {
+    transform: translateY(1px) !important;
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name,
@@ -2944,7 +2948,11 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 }
 
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-  transform: translateY(18px) !important;
+  transform: translateY(10px) !important;
+}
+
+.nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier] .nl-home-ranking-podium-image {
+  transform: translateY(1px) !important;
 }
 
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name {
