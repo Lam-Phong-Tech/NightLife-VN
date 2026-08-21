@@ -1480,7 +1480,7 @@ export default function Page() {
         }
 
         @media (min-width: 981px) {
-          .vyr-rank-row.is-store-rank {
+          .vyr-rank-row {
             height: 136px;
             min-height: 136px;
             box-sizing: border-box;
@@ -1493,10 +1493,6 @@ export default function Page() {
         }
 
         @media (max-width: 767px) {
-          .vyr-rank-row.is-podium-rank:not(.is-store-rank) .vyr-rank-podium-image {
-            margin-left: -12px;
-          }
-
           .vyr-rank-row:not(.is-store-rank) .vyr-rank-name {
             font-size: 18px;
             line-height: 1.1;
