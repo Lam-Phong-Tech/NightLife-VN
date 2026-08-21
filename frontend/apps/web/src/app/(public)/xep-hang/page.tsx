@@ -1493,6 +1493,11 @@ export default function Page() {
         }
 
         @media (max-width: 767px) {
+          .vyr-rank-row.is-store-rank .vyr-rank-label {
+            font-size: 16px !important;
+            line-height: 1.15;
+          }
+
           .vyr-ranking-page {
             min-height: auto;
             padding: 6px 16px 18px;
