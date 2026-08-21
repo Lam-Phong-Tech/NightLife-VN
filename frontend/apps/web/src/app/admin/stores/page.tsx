@@ -1724,22 +1724,6 @@ function AdminStoresContent() {
         )}
       </div>
 
-      {/* Floating Action Button (FAB) on Mobile */}
-      <div 
-        onClick={openNewDrawer}
-        className="md:hidden fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl cursor-pointer"
-        style={{
-          background: 'linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a)',
-          color: '#241a0a',
-          boxShadow: '0 8px 24px -4px rgba(212,178,106,.5)'
-        }}
-        title="Thêm quán"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-      </div>
-
       {/* Drawer */}
       {venueSel && typeof document !== 'undefined' ? createPortal((
         <div className="nl-admin-store-drawer-overlay" style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
