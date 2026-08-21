@@ -2935,6 +2935,25 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
   white-space: nowrap;
 }
 
+.nl-home-ranking-meta {
+  display: flex;
+  min-width: 0;
+}
+
+.nl-home-ranking-meta > span {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.nl-home-ranking-meta > span + span::before {
+  content: " | ";
+}
+
+.nl-home-ranking-meta-street {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .nl-home-ranking-badge-line {
   min-width: 0;
   column-gap: 4px !important;
@@ -4698,6 +4717,42 @@ input[type="search"] {
 
   .nl-home-ranking-row {
     column-gap: 6px !important;
+  }
+
+  .nl-home-ranking-meta {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    row-gap: 3px;
+    white-space: normal;
+  }
+
+  .nl-home-ranking-meta > span + span::before {
+    content: none;
+  }
+
+  .nl-home-ranking-meta-city {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .nl-home-ranking-meta-category {
+    grid-column: 2;
+    grid-row: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nl-home-ranking-meta-category::before {
+    content: " | " !important;
+  }
+
+  .nl-home-ranking-meta-street {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .nl-mobile-footer-spacer {

@@ -2484,6 +2484,13 @@ function RankingRow({
       : rankNumber === 2
         ? "radial-gradient(circle at 12% 0%, rgba(226,232,240,.22), transparent 34%)"
         : "radial-gradient(circle at 12% 0%, rgba(251,146,60,.22), transparent 34%)";
+  const cityLabel = item.city
+    ? getCityDisplay(undefined, item.city, activeLanguage)
+    : "";
+  const streetAddress = item.streetAddress?.trim() ?? "";
+  const categoryLabel = item.category
+    ? getFilterCategoryLabel(item.category, activeLanguage)
+    : "";
 
   return (
     <Link
@@ -2622,18 +2629,11 @@ function RankingRow({
             fontWeight: isPodium ? 760 : 650,
             lineHeight: 1.25,
             textShadow: isPodium ? "0 1px 8px rgba(0,0,0,.42)" : "none",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
-          {[
-            item.city ? getCityDisplay(undefined, item.city, activeLanguage) : "",
-            item.streetAddress ?? "",
-            item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
-          ]
-            .filter(Boolean)
-            .join(" | ")}
+          {cityLabel ? <span className="nl-home-ranking-meta-city">{cityLabel}</span> : null}
+          {streetAddress ? <span className="nl-home-ranking-meta-street">{streetAddress}</span> : null}
+          {categoryLabel ? <span className="nl-home-ranking-meta-category">{categoryLabel}</span> : null}
         </div>
       </div>
       <span
