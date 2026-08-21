@@ -2820,9 +2820,10 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
 }
 
 @media (min-width: 768px) {
+  /* Keep the crown, venue name and address on one shared left edge. */
   .nl-home-ranking-row[data-rank-tier] .nl-home-ranking-meta,
   .vyr-rank-row.is-podium-rank .vyr-rank-meta {
-    margin-left: 71px !important;
+    margin-left: 0 !important;
   }
 
   .nl-home-ranking-podium-image,
@@ -2838,10 +2839,21 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
     transform: translateY(9px);
   }
 
+  /* A venue name belongs below its crown, aligned with the crown box. */
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
+    transform: translateY(-16px) !important;
+  }
+
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name,
   .vyr-rank-row.is-store-rank.is-podium-rank .vyr-rank-name {
-    flex-basis: calc(100% - 71px);
-    margin-left: 71px;
+    flex-basis: 100%;
+    margin-left: 0;
+    transform: none;
   }
 
   .nl-home-ranking-store-name,
@@ -2921,6 +2933,22 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 
 .nl-home-ranking-badge-line .nl-home-ranking-label {
   flex: 0 0 auto;
+}
+
+/* Venue cards use a stacked text block: crown first, then venue name and address. */
+.nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
+  transform: translateY(-12px) !important;
+}
+
+.nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name {
+  flex-basis: 100%;
+  margin-left: 0;
+  transform: none;
 }
 
 html.vy-light .nl-home-ranking-row[data-rank-tier="1"] .nl-home-ranking-label {
