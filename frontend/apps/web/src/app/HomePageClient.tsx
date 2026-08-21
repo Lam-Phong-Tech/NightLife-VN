@@ -2629,7 +2629,7 @@ function RankingRow({
             item.city ? getCityDisplay(undefined, item.city, activeLanguage) : "",
             item.ward
               ? getFilterAreaLabel(item.ward, activeLanguage)
-              : item.area
+              : item.area && !isGeneralAreaText(item.area)
                 ? getFilterAreaLabel(item.area, activeLanguage)
                 : "",
             item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",

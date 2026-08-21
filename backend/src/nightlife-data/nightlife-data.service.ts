@@ -18977,6 +18977,7 @@ export class NightlifeDataService {
         category: true,
         city: true,
         district: true,
+        address: true,
         phone: true,
         area: {
           select: {
@@ -19059,6 +19060,7 @@ export class NightlifeDataService {
             category: true,
             city: true,
             district: true,
+            address: true,
             area: {
               select: {
                 id: true,
@@ -19089,6 +19091,7 @@ export class NightlifeDataService {
       category: StoreCategory;
       city: string;
       district: string | null;
+      address: string | null;
       phone: string | null;
       area: {
         id: string;
@@ -19125,7 +19128,7 @@ export class NightlifeDataService {
             })
           : null,
       area: store.area?.name ?? store.district,
-      ward: store.area?.ward ?? null,
+      ward: store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
@@ -19148,6 +19151,7 @@ export class NightlifeDataService {
         category: StoreCategory;
         city: string;
         district: string | null;
+        address: string | null;
         area: {
           id: string;
           code: string;
@@ -19184,7 +19188,9 @@ export class NightlifeDataService {
             })
           : null,
       area: cast.store.area?.name ?? cast.store.district,
-      ward: cast.store.area?.ward ?? null,
+      ward:
+        cast.store.area?.ward ??
+        this.extractWardFromStoreAddress(cast.store.address),
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
       category: cast.store.category,
