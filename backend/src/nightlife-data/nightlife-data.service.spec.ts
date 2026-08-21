@@ -1713,7 +1713,6 @@ describe('NightlifeDataService', () => {
         scope: 'global',
         manualScore: 25,
         pinRank: 5,
-        sponsored: true,
         updatedAt: new Date('2026-07-20T00:00:00.000Z'),
       },
     ] as never);
@@ -1748,7 +1747,6 @@ describe('NightlifeDataService', () => {
         targetId: 'store-five',
         rank: 1,
         pinRank: 5,
-        sponsored: true,
       }),
     ]);
   });
@@ -1855,7 +1853,7 @@ describe('NightlifeDataService', () => {
     expect(result.data.map((item) => item.pinRank)).toEqual([1, 1, 3]);
   });
 
-  it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
+  it('creates an admin ranking config with a scoped pin', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
     const rankingId = '22222222-2222-4222-8222-222222222222';
     const now = new Date('2026-06-30T10:00:00.000Z');
@@ -1871,7 +1869,7 @@ describe('NightlifeDataService', () => {
       scope: 'global',
       manualScore: 100,
       pinRank: 1,
-      sponsored: true,
+      sponsored: false,
       reason: 'Top club tháng 7',
       status: 'ACTIVE',
       startsAt: null,
@@ -1907,7 +1905,6 @@ describe('NightlifeDataService', () => {
         scope: 'global',
         pinRank: 1,
         manualScore: 100,
-        sponsored: true,
         reason: 'Top club tháng 7',
       },
     );
@@ -1921,7 +1918,6 @@ describe('NightlifeDataService', () => {
         cityCode: 'hn',
         category: 'CLUB',
         pinRank: 1,
-        sponsored: true,
       }),
     );
     expect(prisma.rankingConfig.create).toHaveBeenCalledWith(
@@ -1935,7 +1931,6 @@ describe('NightlifeDataService', () => {
           scope: 'global',
           pinRank: 1,
           manualScore: 100,
-          sponsored: true,
         }),
       }),
     );
