@@ -18,6 +18,7 @@ export type PublicRankingItem = {
   targetType: RankingTargetType;
   targetId: string;
   name: string;
+  storeName?: string | null;
   slug: string;
   image?: string | null;
   responsiveImage?: PublicResponsiveImage | null;

@@ -925,6 +925,7 @@ type PublicRankingItem = {
   targetType: 'CAST' | 'STORE';
   targetId: string;
   name: string;
+  storeName?: string;
   slug: string;
   image: string | null;
   responsiveImage?: ReturnType<typeof toPublicResponsiveImage>;
@@ -1928,6 +1929,7 @@ export class NightlifeDataService {
         },
         store: {
           select: {
+            name: true,
             category: true,
             city: true,
             district: true,
@@ -18520,6 +18522,7 @@ export class NightlifeDataService {
       status: string;
       media: RankingImageMedia[];
       store: {
+        name: string;
         category: StoreCategory;
         city: string;
         district: string | null;
@@ -19055,6 +19058,7 @@ export class NightlifeDataService {
         },
         store: {
           select: {
+            name: true,
             category: true,
             city: true,
             district: true,
@@ -19144,6 +19148,7 @@ export class NightlifeDataService {
       publicAlias: string | null;
       media: RankingImageMedia[];
       store: {
+        name: string;
         category: StoreCategory;
         city: string;
         district: string | null;
@@ -19171,6 +19176,7 @@ export class NightlifeDataService {
       targetType: 'CAST',
       targetId: cast.id,
       name: cast.publicAlias ?? cast.stageName,
+      storeName: cast.store.name,
       slug: cast.slug,
       image: this.resolveRankingCastImage(cast.media),
       responsiveImage:

@@ -465,6 +465,7 @@ function RankingRow({
   const topRank = item.rank === 1;
   const podiumRank = item.rank <= 3;
   const isStore = item.targetType === "STORE";
+  const isCast = !isStore;
   const primaryHref = item.href || (isStore ? `/stores/${item.slug}` : `/casts/${item.slug}`);
   const bookingHref = `/dat-cho?${new URLSearchParams({
     castSlug: item.slug,
@@ -487,19 +488,24 @@ function RankingRow({
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ borderColor: tone?.topBorder }}
+      style={{ borderColor: tone?.topBorder, gridTemplateColumns: isCast ? "72px minmax(0, 1fr) minmax(220px, auto)" : undefined, minHeight: isCast ? 136 : undefined }}
       data-testid={`ranking-card-${item.rank}`}
     >
       <span
         className={item.image ? "vyr-rank-avatar" : "vyr-rank-avatar vyr-rank-avatar-fallback"}
         style={
-          item.image
-            ? {
-                backgroundImage: `url(${item.image})`,
-                borderColor: topRank ? "#d4b26a" : undefined,
-                position: "relative",
-              }
-            : { position: "relative" }
+          {
+            width: isCast ? 72 : undefined,
+            height: isCast ? 96 : undefined,
+            borderRadius: isCast ? 8 : undefined,
+            position: "relative",
+            ...(item.image
+              ? {
+                  backgroundImage: `url(${item.image})`,
+                  borderColor: topRank ? "#d4b26a" : undefined,
+                }
+              : {})
+          }
         }
       >
         {!item.image ? getInitials(item.name) : null}
@@ -535,10 +541,11 @@ function RankingRow({
                 height={31}
                 style={{ width: 43, height: 31, objectFit: "contain", flex: "none" }}
               />
+              {isCast ? <span className="notranslate" translate="no" data-no-translate="true">{item.name}</span> : null}
             </>
           ) : tone ? (
             <span className="vyr-rank-label" style={{ color: tone.text }}>
-              TOP {item.rank}
+              {isCast ? `TOP ${item.rank} · ${item.name}` : `TOP ${item.rank}`}
             </span>
           ) : (
             <span className="vyr-rank-number">{item.rank}</span>
@@ -549,11 +556,10 @@ function RankingRow({
             </span>
           ) : null}
         </span>
-        <strong className="notranslate" translate="no" data-no-translate="true">{item.name}</strong>
+        {!isCast ? <strong className="notranslate" translate="no" data-no-translate="true">{item.name}</strong> : null}
+        {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
         <small>
-          {areaLine}
-          <span aria-hidden="true"> · </span>
-          {formatCategory(item.category, language)}
+          {isCast ? [rankingCityLabel(item, language), areaName ? getFilterAreaLabel(areaName, language) : "", formatCategory(item.category, language)].filter(Boolean).join(" | ") : <>{areaLine}<span aria-hidden="true"> · </span>{formatCategory(item.category, language)}</>}
         </small>
       </span>
 

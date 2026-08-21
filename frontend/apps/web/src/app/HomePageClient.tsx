@@ -373,6 +373,8 @@ type RankedItem = {
   rank?: string | number;
   targetType?: "CAST" | "STORE";
   slug?: string;
+  storeName?: string;
+  city?: string;
   category?: string;
   image?: string;
   numColor?: string;
@@ -662,6 +664,8 @@ function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode)
     rank: item.rank ?? item.pinRank,
     targetType: item.targetType,
     slug: item.slug,
+    storeName: item.storeName ?? undefined,
+    city: item.city,
     category: item.category,
     img: backgroundFromUrl(item.image),
     image: resolveClientUrl(item.image) ?? undefined,
@@ -2473,6 +2477,7 @@ function RankingRow({
 }) {
   const activeLanguage = useActiveLanguage();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
+  const isCast = item.targetType === "CAST";
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
   const rankingVisual = getRankingVisual(rankNumber, item, rankingStyles);
   const podiumGlow =
@@ -2490,10 +2495,10 @@ function RankingRow({
       aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
       style={{
         display: "grid",
-        gridTemplateColumns: "64px minmax(0, 1fr) 30px",
+        gridTemplateColumns: isCast ? "72px minmax(0, 1fr) 30px" : "64px minmax(0, 1fr) 30px",
         alignItems: "center",
         gap: "14px",
-        minHeight: "104px",
+        minHeight: isCast ? "136px" : "104px",
         padding: "16px",
         borderRadius: homeCardRadius,
         background: rankingVisual.rowBackground,
@@ -2517,20 +2522,20 @@ function RankingRow({
           }}
         />
       ) : null}
-      <div style={{ position: "relative", width: 64, height: 64, zIndex: 2 }}>
+      <div style={{ position: "relative", width: isCast ? 72 : 64, height: isCast ? 96 : 64, zIndex: 2 }}>
         <PlaceholderMedia
           src={item.img}
           alt={item.name ?? "Xếp hạng"}
           responsiveImage={item.responsiveImage}
-          sizes="64px"
-          width={64}
-          height={64}
+          sizes={isCast ? "72px" : "64px"}
+          width={isCast ? 72 : 64}
+          height={isCast ? 96 : 64}
           label=""
           priority={priority}
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
+            width: isCast ? 72 : 64,
+            height: isCast ? 96 : 64,
+            borderRadius: isCast ? "8px" : "50%",
             flex: "none",
             border: `1px solid ${isPodium ? rankingVisual.rowBorder : colors.line}`,
             boxShadow: isPodium ? `0 0 0 4px rgba(255,255,255,.05), ${rankingVisual.rowShadow}` : "0 10px 20px rgba(0,0,0,.28)",
@@ -2574,9 +2579,14 @@ function RankingRow({
               }}
             />
           ) : null}
-          {!isPodium ? (
+          {!isPodium && !isCast ? (
             <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
               Top {item.rank}
+            </span>
+          ) : null}
+          {isCast ? (
+            <span style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
             </span>
           ) : null}
           {item.sponsored ? (
@@ -2601,7 +2611,7 @@ function RankingRow({
             </span>
           ) : null}
         </div>
-        <div
+        {!isCast ? <div
           className="notranslate"
           translate="no"
           data-no-translate="true"
@@ -2617,7 +2627,26 @@ function RankingRow({
           }}
         >
           {item.name}
-        </div>
+        </div> : null}
+        {isCast ? (
+          <div
+            className="notranslate"
+            translate="no"
+            data-no-translate="true"
+            style={{
+              marginTop: "1px",
+              color: colors.text,
+              fontSize: "13px",
+              fontWeight: 800,
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {item.storeName ?? ""}
+          </div>
+        ) : null}
         <div
           style={{
             marginTop: "5px",
@@ -2631,7 +2660,15 @@ function RankingRow({
             whiteSpace: "nowrap",
           }}
         >
-          {item.area}
+          {isCast
+            ? [
+                item.city ? getFilterCityLabel(item.city, activeLanguage) : "",
+                item.area ? getFilterAreaLabel(item.area, activeLanguage) : "",
+                item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
+              ]
+                .filter(Boolean)
+                .join(" | ")
+            : item.area}
         </div>
       </div>
       <span
