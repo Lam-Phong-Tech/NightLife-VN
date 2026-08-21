@@ -2443,7 +2443,6 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
 function RankingRow({ item, priority = false, rankingStyles }: { item: RankedItem; priority?: boolean; rankingStyles: AppearanceRankingStyle[] }) {
   const activeLanguage = useActiveLanguage();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
-  const hasCrown = rankNumber >= 1 && rankNumber <= 5;
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
   const rankingVisual = getRankingVisual(rankNumber, item, rankingStyles);
   const podiumGlow =
@@ -2510,25 +2509,23 @@ function RankingRow({ item, priority = false, rankingStyles }: { item: RankedIte
       />
       <div style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
         <div className="nl-home-ranking-badge-line" style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px", minWidth: 0 }}>
-          <span
-            style={{
-              width: isPodium ? 43 : 38,
-              height: isPodium ? 31 : 28,
-              flex: "0 0 auto",
-              borderRadius: "10px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: rankingVisual.badgeBackground,
-              color: rankingVisual.badgeColor,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,.34), 0 8px 18px rgba(0,0,0,.22)",
-            }}
-          >
-            {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
-          </span>
-          <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
-            Top {item.rank}
-          </span>
+          {isPodium ? (
+            <img
+              src={`/top${rankNumber}.png`}
+              alt={`Top ${rankNumber}`}
+              style={{
+                width: 43,
+                height: 31,
+                flex: "0 0 auto",
+                objectFit: "contain",
+              }}
+            />
+          ) : null}
+          {!isPodium ? (
+            <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
+              Top {item.rank}
+            </span>
+          ) : null}
           {item.sponsored ? (
             <span
               data-testid="home-ranking-sponsored-badge"
