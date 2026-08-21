@@ -2611,6 +2611,7 @@ function RankingRow({
           </div>
         ) : null}
         <div
+          className="nl-home-ranking-meta"
           style={{
             marginTop: "5px",
             color: rankingVisual.metaColor,

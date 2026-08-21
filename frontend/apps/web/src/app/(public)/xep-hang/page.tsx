@@ -544,7 +544,7 @@ function RankingRow({
           )}
         </span>
         {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
-        <small>
+        <small className="vyr-rank-meta">
           {[rankingCityLabel(item, language), areaName ? getFilterAreaLabel(areaName, language) : "", formatCategory(item.category, language)].filter(Boolean).join(" | ")}
         </small>
       </span>

@@ -2819,6 +2819,13 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   }
 }
 
+@media (min-width: 768px) {
+  .nl-home-ranking-row[data-rank-tier] .nl-home-ranking-meta,
+  .vyr-rank-row.is-podium-rank .vyr-rank-meta {
+    margin-left: 71px !important;
+  }
+}
+
 html.vy-light .nl-home-ranking-row {
   box-shadow: 0 18px 42px -34px rgba(80, 55, 18, 0.45) !important;
 }
