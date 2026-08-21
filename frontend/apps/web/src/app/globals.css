@@ -2822,18 +2822,20 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
 @media (min-width: 768px) {
   .nl-home-ranking-row[data-rank-tier] .nl-home-ranking-meta,
   .vyr-rank-row.is-podium-rank .vyr-rank-meta {
-    margin-left: 87px !important;
+    margin-left: 71px !important;
   }
 
   .nl-home-ranking-podium-image,
   .vyr-rank-podium-image {
-    width: 78px !important;
-    height: 56px !important;
+    width: 62px !important;
+    height: 44px !important;
   }
 
   .nl-home-ranking-name,
   .vyr-rank-name {
     font-size: 22px !important;
+    display: inline-block;
+    transform: translateY(9px);
   }
 
   .nl-home-ranking-store-name,
