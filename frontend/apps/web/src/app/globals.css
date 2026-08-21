@@ -2813,9 +2813,10 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
 }
 
 @media (min-width: 900px) {
-  .nl-home-ranking-row[data-rank-target="STORE"],
-  .vyr-rank-row.is-store-rank {
+  .nl-home-ranking-row[data-rank-target] {
+    height: 136px !important;
     min-height: 136px !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -2824,13 +2825,6 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   .nl-home-ranking-row[data-rank-tier] .nl-home-ranking-meta,
   .vyr-rank-row.is-podium-rank .vyr-rank-meta {
     margin-left: 0 !important;
-  }
-
-  .nl-home-ranking-podium-image,
-  .vyr-rank-podium-image {
-    width: 62px !important;
-    height: 44px !important;
-    object-fit: fill !important;
   }
 
   .nl-home-ranking-name,
@@ -2844,14 +2838,6 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line {
     flex-wrap: wrap;
     align-items: flex-start;
-  }
-
-  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-    transform: translateY(10px) !important;
-  }
-
-  .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier] .nl-home-ranking-podium-image {
-    transform: translateY(1px) !important;
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name,
@@ -2945,14 +2931,6 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line {
   flex-wrap: wrap;
   align-items: flex-start;
-}
-
-.nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-  transform: translateY(10px) !important;
-}
-
-.nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier] .nl-home-ranking-podium-image {
-  transform: translateY(1px) !important;
 }
 
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name {

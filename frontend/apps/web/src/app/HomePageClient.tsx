@@ -383,6 +383,7 @@ type RankedItem = {
   name?: string;
   area?: string;
   ward?: string;
+  streetAddress?: string;
   href?: string;
   responsiveImage?: PublicResponsiveImage | null;
 };
@@ -668,6 +669,7 @@ function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
     name: item.name,
     area: item.area ?? undefined,
     ward: item.ward ?? undefined,
+    streetAddress: item.streetAddress ?? undefined,
     href: item.href,
     responsiveImage: item.responsiveImage,
   };
@@ -2495,7 +2497,7 @@ function RankingRow({
         gridTemplateColumns: isCast ? "72px minmax(0, 1fr) 30px" : "64px minmax(0, 1fr) 30px",
         alignItems: "center",
         gap: "14px",
-        minHeight: isCast ? "136px" : "104px",
+        minHeight: "136px",
         padding: "16px",
         borderRadius: homeCardRadius,
         background: rankingVisual.rowBackground,
@@ -2627,11 +2629,7 @@ function RankingRow({
         >
           {[
             item.city ? getCityDisplay(undefined, item.city, activeLanguage) : "",
-            item.ward
-              ? getFilterAreaLabel(item.ward, activeLanguage)
-              : item.area && !isGeneralAreaText(item.area)
-                ? getFilterAreaLabel(item.area, activeLanguage)
-                : "",
+            item.streetAddress ?? "",
             item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
           ]
             .filter(Boolean)

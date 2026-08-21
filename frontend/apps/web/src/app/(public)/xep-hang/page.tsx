@@ -1479,30 +1479,7 @@ export default function Page() {
           }
         }
 
-        @media (min-width: 981px) {
-          .vyr-rank-row {
-            height: 136px;
-            min-height: 136px;
-            box-sizing: border-box;
-          }
-
-          .vyr-rank-row.is-store-rank .vyr-rank-label {
-            font-size: 22px !important;
-            line-height: 1.15;
-          }
-        }
-
         @media (max-width: 767px) {
-          .vyr-rank-row:not(.is-store-rank) .vyr-rank-name {
-            font-size: 18px;
-            line-height: 1.1;
-          }
-
-          .vyr-rank-row.is-store-rank .vyr-rank-label {
-            font-size: 16px !important;
-            line-height: 1.15;
-          }
-
           .vyr-ranking-page {
             min-height: auto;
             padding: 6px 16px 18px;
