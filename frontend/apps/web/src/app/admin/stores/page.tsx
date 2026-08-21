@@ -1889,7 +1889,7 @@ function AdminStoresContent() {
 
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>
-                    Tên đường {formData.status === 'ACTIVE' ? '(Bắt buộc)' : '(Tuỳ chọn khi lưu nháp)'}
+                    Tên đường (Đề xuất viết tiếng Nhật)
                   </div>
                   <input
                     style={inputS}
