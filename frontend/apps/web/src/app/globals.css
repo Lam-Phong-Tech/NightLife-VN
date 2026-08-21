@@ -2838,6 +2838,12 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
     transform: translateY(9px);
   }
 
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name,
+  .vyr-rank-row.is-store-rank.is-podium-rank .vyr-rank-name {
+    flex-basis: calc(100% - 71px);
+    margin-left: 71px;
+  }
+
   .nl-home-ranking-store-name,
   .vyr-rank-store-name,
   .vyr-rank-label {
