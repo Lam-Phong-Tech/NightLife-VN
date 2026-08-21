@@ -635,6 +635,7 @@ function AdminStoresContent() {
   const [selProvince, setSelProvince] = useState('');
   const [selWard, setSelWard] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
+  const [streetName, setStreetName] = useState('');
   const [pendingAddress, setPendingAddress] = useState('');
   
   const [albums, setAlbums] = useState<any[]>([]);
@@ -867,6 +868,7 @@ function AdminStoresContent() {
     setSelProvince('');
     setSelWard('');
     setStreetAddress('');
+    setStreetName('');
     setPendingAddress('');
     setPartnerAccountId('');
     setPartnerLinkEditing(false);
@@ -907,6 +909,7 @@ function AdminStoresContent() {
     setAlbums(galleryMedia);
     setVideos(videoMedia);
     setTags(st.tags || []);
+    setStreetName(st.streetName || '');
     setPartnerAccountId(st.partnerAccountId || st.partnerAccount?.id || '');
     setPartnerLinkEditing(false);
     
@@ -1009,6 +1012,12 @@ function AdminStoresContent() {
         return;
       }
 
+      const normalizedStreetName = streetName.trim();
+      if (formData.status === 'ACTIVE' && !normalizedStreetName) {
+        showToast('Vui lòng nhập tên đường cho quán đang hoạt động!');
+        return;
+      }
+
       const openingHourValidation = validateOpeningHours(hoursForm);
       const openingHourError = firstOpeningHourError(openingHourValidation.errors);
       if (openingHourError) {
@@ -1039,6 +1048,7 @@ function AdminStoresContent() {
         name: normalizedName,
         phone: normalizedPhone,
         address: finalAddress,
+        streetName: normalizedStreetName,
         city: finalCity,
         ward: wName || undefined,
         tags,
@@ -1872,9 +1882,21 @@ function AdminStoresContent() {
                     </select>
                   </div>
                   <div>
-                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Số nhà, Tên đường</div>
-                    <input style={inputS} placeholder="Ví dụ: 123 Lê Lợi..." value={streetAddress} onChange={e => setStreetAddress(e.target.value)} />
+                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Địa chỉ chi tiết</div>
+                    <input style={inputS} placeholder="Ví dụ: 8A/E14 Thái Văn Lung..." value={streetAddress} onChange={e => setStreetAddress(e.target.value)} />
                   </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>
+                    Tên đường {formData.status === 'ACTIVE' ? '(Bắt buộc)' : '(Tuỳ chọn khi lưu nháp)'}
+                  </div>
+                  <input
+                    style={inputS}
+                    placeholder="Ví dụ: Thái Văn Lung..."
+                    value={streetName}
+                    onChange={e => setStreetName(e.target.value)}
+                  />
                 </div>
                 
                 <div>

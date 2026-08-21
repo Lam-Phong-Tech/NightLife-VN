@@ -51,6 +51,7 @@ interface StoreSeed {
     | 'CASINO';
   description: string;
   address: string;
+  streetName: string;
   city: string;
   district: string;
   areaCode: string;
@@ -74,6 +75,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 A sophisticated bar in the heart of District 1, HCMC. Enjoy curated craft cocktails and a refined jazz atmosphere. Japanese-speaking staff available.\n\n' +
       '🇻🇳 Quán bar tinh tế tọa lạc tại trung tâm Quận 1, TP.HCM. Thưởng thức cocktail thủ công tuyển chọn trong không gian jazz sang trọng. Có nhân viên nói tiếng Nhật.',
     address: '45 Đồng Khởi, Bến Nghé, Quận 1, TP.HCM',
+    streetName: 'Đồng Khởi',
     city: 'Hồ Chí Minh',
     district: 'Quận 1',
     areaCode: 'hcm-q1',
@@ -93,6 +95,7 @@ const STORES: StoreSeed[] = [
       "🇬🇧 One of Saigon's largest clubs. Cutting-edge EDM, world-class DJs, full VIP table service. Ladies' night every Friday.\n\n" +
       "🇻🇳 Một trong những club lớn nhất Sài Gòn. EDM đỉnh cao, DJ đẳng cấp quốc tế, dịch vụ bàn VIP đầy đủ. Ladies' Night mỗi thứ Sáu.",
     address: '22 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM',
+    streetName: 'Nguyễn Huệ',
     city: 'Hồ Chí Minh',
     district: 'Quận 1',
     areaCode: 'hcm-q1',
@@ -112,6 +115,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 A premium lounge blending Japanese hospitality with Vietnamese vibrancy. Private VIP rooms, extensive sake and shochu selection.\n\n' +
       '🇻🇳 Lounge cao cấp kết hợp sự hiếu khách Nhật Bản với sự sôi động Việt Nam. Phòng VIP riêng tư, bộ sưu tập sake và shochu phong phú.',
     address: '123 Võ Văn Tần, Phường 5, Quận 3, TP.HCM',
+    streetName: 'Võ Văn Tần',
     city: 'Hồ Chí Minh',
     district: 'Quận 3',
     areaCode: 'hcm-q3',
@@ -131,6 +135,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 Premium KTV with state-of-the-art audio equipment. Over 10,000 Japanese songs. Room types from VIP suites to standard.\n\n' +
       '🇻🇳 KTV cao cấp với hệ thống âm thanh hiện đại nhất. Hơn 10.000 bài hát tiếng Nhật. Đa dạng loại phòng từ VIP đến Standard.',
     address: '67 Nguyễn Thị Thập, Tân Phú, Quận 7, TP.HCM',
+    streetName: 'Nguyễn Thị Thập',
     city: 'Hồ Chí Minh',
     district: 'Quận 7',
     areaCode: 'hcm-q7',
@@ -150,6 +155,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 A Japanese-Western fusion restaurant inspired by hanami. Creative cuisine with seasonal ingredients and curated sake. Perfect for business entertaining.\n\n' +
       '🇻🇳 Nhà hàng kết hợp Nhật-Âu lấy cảm hứng từ hanami. Ẩm thực sáng tạo từ nguyên liệu theo mùa và sake tuyển chọn. Lý tưởng cho tiếp khách doanh nghiệp.',
     address: '89 Nam Kỳ Khởi Nghĩa, Phường 6, Quận 3, TP.HCM',
+    streetName: 'Nam Kỳ Khởi Nghĩa',
     city: 'Hồ Chí Minh',
     district: 'Quận 3',
     areaCode: 'hcm-q3',
@@ -168,6 +174,7 @@ const STORES: StoreSeed[] = [
       'Late-night massage spa in District 3 with quiet private rooms, sauna, and wellness packages for after-party recovery.\n\n' +
       'Massage spa Quan 3, co phong rieng yen tinh, xong hoi va goi thu gian sau buoi toi.',
     address: '12 Nguyen Dinh Chieu, Quan 3, TP.HCM',
+    streetName: 'Nguyen Dinh Chieu',
     city: 'Há»“ ChÃ­ Minh',
     district: 'Quáº­n 3',
     areaCode: 'hcm-q3',
@@ -189,6 +196,7 @@ const STORES: StoreSeed[] = [
       "🇬🇧 A chic bar nestled in Hanoi's Old Quarter. Vietnamese craft beers and creative cocktails. Live jazz on weekends.\n\n" +
       '🇻🇳 Quán bar sang trọng nằm trong phố cổ Hà Nội. Bia thủ công Việt Nam và cocktail sáng tạo. Nhạc jazz trực tiếp cuối tuần.',
     address: '15 Tạ Hiện, Lương Ngọc Quyến, Hoàn Kiếm, Hà Nội',
+    streetName: 'Tạ Hiện',
     city: 'Hà Nội',
     district: 'Hoàn Kiếm',
     areaCode: 'hn-hoankiem',
@@ -208,6 +216,7 @@ const STORES: StoreSeed[] = [
       "🇬🇧 A cutting-edge club by West Lake. Space illuminated by neon lights and lasers, with Asia's top DJs spinning weekly.\n\n" +
       '🇻🇳 Club hiện đại bên Hồ Tây. Không gian rực rỡ đèn neon và laser, với các DJ hàng đầu châu Á biểu diễn hàng tuần.',
     address: '200 Nghi Tàm, Quảng An, Tây Hồ, Hà Nội',
+    streetName: 'Nghi Tàm',
     city: 'Hà Nội',
     district: 'Tây Hồ',
     areaCode: 'hn-tayho',
@@ -227,6 +236,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 A jade-themed luxury lounge. Terrace seating overlooking Hoàn Kiếm Lake, premium whisky bar, fully private rooms available.\n\n' +
       '🇻🇳 Lounge cao cấp chủ đề ngọc bích. Chỗ ngồi sân thượng nhìn ra Hồ Hoàn Kiếm, bar whisky premium, phòng riêng hoàn toàn.',
     address: '88 Lý Thường Kiệt, Trần Hưng Đạo, Hoàn Kiếm, Hà Nội',
+    streetName: 'Lý Thường Kiệt',
     city: 'Hà Nội',
     district: 'Hoàn Kiếm',
     areaCode: 'hn-hoankiem',
@@ -246,6 +256,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 Five-star KTV experience. Latest DAM system, professional lighting, Japanese-speaking staff welcome you. Suitable for business entertainment.\n\n' +
       '🇻🇳 Trải nghiệm KTV 5 sao. Hệ thống DAM mới nhất, ánh sáng chuyên nghiệp, nhân viên nói tiếng Nhật đón tiếp. Phù hợp tiếp khách doanh nghiệp.',
     address: '156 Xuân Thủy, Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
+    streetName: 'Xuân Thủy',
     city: 'Hà Nội',
     district: 'Cầu Giấy',
     areaCode: 'hn-caugiay',
@@ -265,6 +276,7 @@ const STORES: StoreSeed[] = [
       '🇬🇧 Tokyo Kitchen serves authentic Japanese cuisine. Sushi, sashimi, tempura, unagi. Enjoy a quiet dining experience in private rooms.\n\n' +
       '🇻🇳 Tokyo Kitchen phục vụ ẩm thực Nhật Bản chính thống. Sushi, sashimi, tempura, unagi. Tận hưởng bữa ăn yên tĩnh trong phòng riêng.',
     address: '50 Xuân Diệu, Quảng An, Tây Hồ, Hà Nội',
+    streetName: 'Xuân Diệu',
     city: 'Hà Nội',
     district: 'Tây Hồ',
     areaCode: 'hn-tayho',
@@ -285,6 +297,7 @@ const STORES: StoreSeed[] = [
       'Rooftop club near the Han River with EDM nights, VIP tables, and late-night bottle service.\n\n' +
       'Club rooftop bên sông Hàn, phù hợp nhóm bạn, sinh nhật và bàn VIP cuối tuần.',
     address: '36 Bạch Đằng, Hải Châu, Đà Nẵng',
+    streetName: 'Bạch Đằng',
     city: 'Đà Nẵng',
     district: 'Hải Châu',
     areaCode: 'dn-haichau',
@@ -303,6 +316,7 @@ const STORES: StoreSeed[] = [
       'Premium lounge close to My Khe and Son Tra with cocktails, private rooms, and sea-breeze terrace seating.\n\n' +
       'Lounge cao cấp khu Sơn Trà, có cocktail, phòng riêng và khu ngồi ngoài trời.',
     address: '88 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng',
+    streetName: 'Võ Nguyên Giáp',
     city: 'Đà Nẵng',
     district: 'Sơn Trà',
     areaCode: 'dn-sontra',
@@ -323,6 +337,7 @@ const STORES: StoreSeed[] = [
       'Private-room KTV near the old port area with Japanese, Korean, and Vietnamese song catalogs.\n\n' +
       'Karaoke phòng riêng khu trung tâm Hải Phòng, phù hợp tiếp khách và nhóm đông.',
     address: '18 Điện Biên Phủ, Hồng Bàng, Hải Phòng',
+    streetName: 'Điện Biên Phủ',
     city: 'Hải Phòng',
     district: 'Hồng Bàng',
     areaCode: 'hp-hongbang',
@@ -341,6 +356,7 @@ const STORES: StoreSeed[] = [
       'Late-night wellness spa near the Opera House with massage, sauna, and premium quiet rooms.\n\n' +
       'Spa mở muộn gần Nhà hát Lớn, có massage, xông hơi và phòng riêng cao cấp.',
     address: '12 Trần Phú, Ngô Quyền, Hải Phòng',
+    streetName: 'Trần Phú',
     city: 'Hải Phòng',
     district: 'Ngô Quyền',
     areaCode: 'hp-ngoquyen',
@@ -374,6 +390,7 @@ export async function seedStores(
         category: s.category,
         description: s.description,
         address: s.address,
+        streetName: s.streetName,
         city: s.city,
         district: s.district,
         phone: s.phone,
@@ -393,6 +410,7 @@ export async function seedStores(
         category: s.category,
         description: s.description,
         address: s.address,
+        streetName: s.streetName,
         city: s.city,
         district: s.district,
         phone: s.phone,

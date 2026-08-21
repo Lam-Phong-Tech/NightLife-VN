@@ -163,6 +163,10 @@ export class CreateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  streetName?: string;
+
+  @IsOptional()
+  @IsString()
   ward?: string;
 
   @IsOptional()
@@ -225,6 +229,10 @@ export class UpdateAdminStoreDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  streetName?: string;
 
   @IsOptional()
   @IsString()

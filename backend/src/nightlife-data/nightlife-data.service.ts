@@ -551,6 +551,7 @@ const STORE_AUDIT_FIELDS = [
   'category',
   'city',
   'address',
+  'streetName',
   'mapUrl',
   'phone',
   'description',
@@ -932,6 +933,7 @@ type PublicRankingItem = {
   area: string | null;
   ward: string | null;
   streetAddress: string | null;
+  streetName: string | null;
   city: string;
   cityCode?: string;
   category: StoreCategory;
@@ -18980,6 +18982,7 @@ export class NightlifeDataService {
         city: true,
         district: true,
         address: true,
+        streetName: true,
         phone: true,
         area: {
           select: {
@@ -19063,6 +19066,7 @@ export class NightlifeDataService {
             city: true,
             district: true,
             address: true,
+            streetName: true,
             area: {
               select: {
                 id: true,
@@ -19094,6 +19098,7 @@ export class NightlifeDataService {
       city: string;
       district: string | null;
       address: string | null;
+      streetName: string | null;
       phone: string | null;
       area: {
         id: string;
@@ -19131,11 +19136,8 @@ export class NightlifeDataService {
           : null,
       area: store.area?.name ?? store.district,
       ward: this.resolveStoreWard(store.area?.ward, store.address),
-      streetAddress: this.extractStreetFromStoreAddress(
-        store.address,
-        this.resolveStoreWard(store.area?.ward, store.address),
-        store.area?.city ?? store.city,
-      ),
+      streetName: this.cleanNullableText(store.streetName),
+      streetAddress: this.cleanNullableText(store.streetName),
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
@@ -19159,6 +19161,7 @@ export class NightlifeDataService {
         city: string;
         district: string | null;
         address: string | null;
+        streetName: string | null;
         area: {
           id: string;
           code: string;
@@ -19199,11 +19202,8 @@ export class NightlifeDataService {
         cast.store.area?.ward,
         cast.store.address,
       ),
-      streetAddress: this.extractStreetFromStoreAddress(
-        cast.store.address,
-        this.resolveStoreWard(cast.store.area?.ward, cast.store.address),
-        cast.store.area?.city ?? cast.store.city,
-      ),
+      streetName: this.cleanNullableText(cast.store.streetName),
+      streetAddress: this.cleanNullableText(cast.store.streetName),
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
       category: cast.store.category,
@@ -25646,6 +25646,7 @@ export class NightlifeDataService {
               OR: [
                 { name: { contains: search, mode: 'insensitive' } },
                 { address: { contains: search, mode: 'insensitive' } },
+                { streetName: { contains: search, mode: 'insensitive' } },
               ],
             })),
     };
@@ -26581,6 +26582,12 @@ export class NightlifeDataService {
     dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
   ) {
     const slug = await this.resolveUniqueAdminStoreSlug(dto.name);
+    const streetName = this.cleanNullableText(dto.streetName);
+    if ((dto.status ?? 'ACTIVE') === 'ACTIVE' && !streetName) {
+      throw new BadRequestException(
+        'Tên đường là bắt buộc đối với quán đang hoạt động.',
+      );
+    }
 
     const storeAddress = this.mergeWardIntoStoreAddress(
       dto.address,
@@ -26610,6 +26617,7 @@ export class NightlifeDataService {
           city: dto.city,
           district: inferredArea?.district,
           address: storeAddress,
+          streetName,
           mapUrl: dto.mapUrl,
           phone: dto.phone,
           description: dto.description,
@@ -26663,6 +26671,15 @@ export class NightlifeDataService {
     const existing = await this.prisma.store.findUniqueOrThrow({
       where: { id },
     });
+    const streetName =
+      dto.streetName !== undefined
+        ? this.cleanNullableText(dto.streetName)
+        : existing.streetName;
+    if ((dto.status ?? existing.status) === 'ACTIVE' && !streetName) {
+      throw new BadRequestException(
+        'Tên đường là bắt buộc đối với quán đang hoạt động.',
+      );
+    }
     let slug: string | undefined;
     const nextName = dto.name ?? existing.name;
     const isActivatingDraft =
@@ -26712,6 +26729,7 @@ export class NightlifeDataService {
           ...(dto.city && { city: dto.city }),
           ...(inferredArea && { district: inferredArea.district }),
           ...(storeAddress && { address: storeAddress }),
+          ...(dto.streetName !== undefined && { streetName }),
           ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.description !== undefined && {

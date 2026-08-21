@@ -227,6 +227,7 @@ export function getFriendlyAuditDiff(beforeJson: unknown, afterJson: unknown) {
     adultsCount: "Số khách",
     notes: "Ghi chú",
     address: "Địa chỉ",
+    streetName: "Tên đường",
     city: "Thành phố",
     mapUrl: "Liên kết bản đồ",
     description: "Mô tả",

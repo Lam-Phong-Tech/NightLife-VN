@@ -49,8 +49,16 @@ export class PublicRankingItemDto {
   @ApiPropertyOptional({ example: 'Phường Sài Gòn', nullable: true })
   ward?: string | null;
 
-  @ApiPropertyOptional({ example: '79 P. Kim Mã Thượng', nullable: true })
+  @ApiPropertyOptional({
+    example: 'Kim Mã Thượng',
+    nullable: true,
+    deprecated: true,
+    description: 'Compatibility alias for streetName.',
+  })
   streetAddress?: string | null;
+
+  @ApiPropertyOptional({ example: 'Kim Mã Thượng', nullable: true })
+  streetName?: string | null;
 
   @ApiProperty({ example: 'Ha Noi' })
   city!: string;

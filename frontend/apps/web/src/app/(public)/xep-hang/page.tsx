@@ -464,9 +464,9 @@ function RankingRow({
     castSlug: item.slug,
     castName: item.name,
   }).toString()}`;
-  // Do not fall back to `area`: legacy ranking responses may expose the ward
-  // name there (e.g. "Phường Sài Gòn"), which is not the street address.
-  const addressLabel = item.streetAddress?.trim() || "";
+  // Do not infer or fall back to the detailed address. Existing stores stay
+  // blank until an admin explicitly provides their street name.
+  const addressLabel = item.streetName?.trim() || "";
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 

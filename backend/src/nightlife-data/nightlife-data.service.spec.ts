@@ -878,6 +878,7 @@ describe('NightlifeDataService', () => {
       category: 'CLUB',
       city: 'Tinh Ninh Binh',
       address: 'Kim Thanh, Tinh Ninh Binh',
+      streetName: 'Kim Thanh',
       status: 'ACTIVE',
     } as never);
 
@@ -909,6 +910,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           name: 'Meo Meo',
+          streetName: 'Kim Thanh',
           areaId: 'area-ninhbinh-general',
           district: 'Tong hop',
         }),
@@ -930,6 +932,7 @@ describe('NightlifeDataService', () => {
       category: 'LOUNGE',
       city: 'Ho Chi Minh City',
       address: '8 Le Thanh Ton',
+      streetName: 'Le Thanh Ton',
       status: 'ACTIVE',
     } as never);
 
@@ -944,6 +947,117 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('requires a street name when an admin creates an active store', async () => {
+    prisma.store.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.createAdminStore(adminActor, {
+        name: 'Active Club',
+        category: 'CLUB',
+        city: 'Ho Chi Minh City',
+        address: '8A/E14 Thai Van Lung',
+        status: 'ACTIVE',
+      } as never),
+    ).rejects.toThrow('Tên đường là bắt buộc');
+
+    expect(prisma.store.create).not.toHaveBeenCalled();
+  });
+
+  it('allows a draft store without a street name', async () => {
+    prisma.store.findUnique.mockResolvedValue(null);
+    prisma.store.create.mockResolvedValueOnce({
+      id: 'draft-store',
+      name: 'Draft Club',
+      slug: 'draft-club',
+      status: 'DRAFT',
+      streetName: null,
+    });
+
+    await expect(
+      service.createAdminStore(adminActor, {
+        name: 'Draft Club',
+        category: 'CLUB',
+        city: 'Ho Chi Minh City',
+        address: 'Draft address',
+        status: 'DRAFT',
+      } as never),
+    ).resolves.toEqual(expect.objectContaining({ id: 'draft-store' }));
+
+    expect(prisma.store.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ streetName: null, status: 'DRAFT' }),
+      }),
+    );
+  });
+
+  it('requires a street name when activating an existing draft store', async () => {
+    prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
+      id: 'draft-store',
+      name: 'Draft Club',
+      slug: 'draft-club',
+      status: 'DRAFT',
+      city: 'Ho Chi Minh City',
+      address: '8A/E14 Thai Van Lung',
+      streetName: null,
+    });
+
+    await expect(
+      service.updateAdminStore(adminActor, 'draft-store', {
+        status: 'ACTIVE',
+      }),
+    ).rejects.toThrow('Tên đường là bắt buộc');
+
+    expect(prisma.store.update).not.toHaveBeenCalled();
+  });
+
+  it('requires a street name before updating a legacy active store', async () => {
+    prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
+      id: 'legacy-active-store',
+      name: 'Legacy Club',
+      slug: 'legacy-club',
+      status: 'ACTIVE',
+      city: 'Ho Chi Minh City',
+      address: '8A/E14 Thai Van Lung',
+      streetName: null,
+    });
+
+    await expect(
+      service.updateAdminStore(adminActor, 'legacy-active-store', {
+        description: 'Updated description',
+      }),
+    ).rejects.toThrow('Tên đường là bắt buộc');
+
+    expect(prisma.store.update).not.toHaveBeenCalled();
+  });
+
+  it('trims and persists a street name independently from the detailed address', async () => {
+    prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
+      id: 'active-store',
+      name: 'Active Club',
+      slug: 'active-club',
+      status: 'ACTIVE',
+      city: 'Ho Chi Minh City',
+      address: '8A/E14 Thai Van Lung',
+      streetName: 'Old Street',
+    });
+    prisma.store.update.mockResolvedValueOnce({
+      id: 'active-store',
+      status: 'ACTIVE',
+      address: '8A/E14 Thai Van Lung',
+      streetName: 'Thai Van Lung',
+    });
+
+    await service.updateAdminStore(adminActor, 'active-store', {
+      streetName: '  Thai Van Lung  ',
+    });
+
+    expect(prisma.store.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ streetName: 'Thai Van Lung' }),
+      }),
+    );
+  });
+
   it('syncs district from the inferred area when admin updates a store address', async () => {
     prisma.store.findUniqueOrThrow.mockResolvedValueOnce({
       id: 'store-1',
@@ -951,6 +1065,7 @@ describe('NightlifeDataService', () => {
       status: 'ACTIVE',
       city: 'Hanoi',
       address: 'Old address',
+      streetName: 'Old Street',
     });
     prisma.area.findMany.mockResolvedValueOnce([
       {
@@ -1724,6 +1839,8 @@ describe('NightlifeDataService', () => {
         category: 'BAR',
         city: 'Ha Noi',
         district: 'Hoan Kiem',
+        address: '8A/E14 Thai Van Lung, Hoan Kiem, Ha Noi',
+        streetName: 'Thai Van Lung',
         phone: '0900000000',
         area: {
           id: 'area-hn',
@@ -1747,8 +1864,95 @@ describe('NightlifeDataService', () => {
         targetId: 'store-five',
         rank: 1,
         pinRank: 5,
+        streetName: 'Thai Van Lung',
+        streetAddress: 'Thai Van Lung',
       }),
     ]);
+  });
+
+  it('does not derive a ranking street name from a detailed store address', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'store-without-street',
+        cityCode: 'hcm',
+        category: null,
+        scope: 'global',
+        manualScore: 10,
+        pinRank: 1,
+        updatedAt: new Date('2026-08-21T00:00:00.000Z'),
+      },
+    ] as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-without-street',
+        name: 'Legacy Store',
+        slug: 'legacy-store',
+        category: 'CLUB',
+        city: 'Ho Chi Minh City',
+        district: 'Quan 1',
+        address: '8A/E14 Thai Van Lung, Phuong Sai Gon',
+        streetName: null,
+        phone: null,
+        area: null,
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicRankings({
+      targetType: 'STORE',
+      city: 'hcm',
+      limit: '5',
+    });
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ streetName: null, streetAddress: null }),
+    );
+  });
+
+  it('uses the related store street name for cast rankings', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'cast-one',
+        cityCode: 'hn',
+        category: null,
+        scope: 'global',
+        manualScore: 10,
+        pinRank: 1,
+        updatedAt: new Date('2026-08-21T00:00:00.000Z'),
+      },
+    ] as never);
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-one',
+        slug: 'cast-one',
+        stageName: 'Mika',
+        publicAlias: null,
+        media: [],
+        store: {
+          name: 'Hanoi Club',
+          category: 'CLUB',
+          city: 'Ha Noi',
+          district: 'Ba Dinh',
+          address: '10 Linh Lang, Ba Dinh, Ha Noi',
+          streetName: 'Linh Lang',
+          area: null,
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicRankings({
+      targetType: 'CAST',
+      city: 'hn',
+      limit: '5',
+    });
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        targetType: 'CAST',
+        streetName: 'Linh Lang',
+        streetAddress: 'Linh Lang',
+      }),
+    );
   });
 
   it('normalizes duplicate admin pin ranks into a sequential public ranking', async () => {
@@ -6259,6 +6463,7 @@ describe('NightlifeDataService', () => {
       category: 'CLUB',
       city: 'Ho Chi Minh City',
       address: '22 Nguyen Hue',
+      streetName: 'Nguyen Hue',
       mapUrl: null,
       phone: null,
       description: null,

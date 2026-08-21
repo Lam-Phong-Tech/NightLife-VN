@@ -383,7 +383,7 @@ type RankedItem = {
   name?: string;
   area?: string;
   ward?: string;
-  streetAddress?: string;
+  streetName?: string;
   href?: string;
   responsiveImage?: PublicResponsiveImage | null;
 };
@@ -669,7 +669,7 @@ function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
     name: item.name,
     area: item.area ?? undefined,
     ward: item.ward ?? undefined,
-    streetAddress: item.streetAddress ?? undefined,
+    streetName: item.streetName ?? undefined,
     href: item.href,
     responsiveImage: item.responsiveImage,
   };
@@ -2487,7 +2487,7 @@ function RankingRow({
   const cityLabel = item.city
     ? getCityDisplay(undefined, item.city, activeLanguage)
     : "";
-  const streetAddress = item.streetAddress?.trim() ?? "";
+  const streetName = item.streetName?.trim() ?? "";
   const categoryLabel = item.category
     ? getFilterCategoryLabel(item.category, activeLanguage)
     : "";
@@ -2632,7 +2632,7 @@ function RankingRow({
           }}
         >
           {cityLabel ? <span className="nl-home-ranking-meta-city">{cityLabel}</span> : null}
-          {streetAddress ? <span className="nl-home-ranking-meta-street">{streetAddress}</span> : null}
+          {streetName ? <span className="nl-home-ranking-meta-street">{streetName}</span> : null}
           {categoryLabel ? <span className="nl-home-ranking-meta-category">{categoryLabel}</span> : null}
         </div>
       </div>

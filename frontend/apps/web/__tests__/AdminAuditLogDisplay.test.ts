@@ -89,8 +89,8 @@ describe("admin audit log friendly display", () => {
       targetId: "store-id",
       entityDisplayCode: "Lighthouse Club",
       changeSummary: 'Đã cập nhật thông tin quán "Lighthouse Club"',
-      beforeJson: { name: "Lighthouse", address: "1 Phố Cũ" },
-      afterJson: { name: "Lighthouse Club", address: "2 Phố Mới" },
+      beforeJson: { name: "Lighthouse", address: "1 Phố Cũ", streetName: "Phố Cũ" },
+      afterJson: { name: "Lighthouse Club", address: "2 Phố Mới", streetName: "Phố Mới" },
       createdAt: "2026-07-29T15:00:00.000Z",
     };
 
@@ -104,6 +104,7 @@ describe("admin audit log friendly display", () => {
     expect(getFriendlyAuditDiff(log.beforeJson, log.afterJson)).toEqual([
       expect.objectContaining({ field: "name", label: "Tên" }),
       expect.objectContaining({ field: "address", label: "Địa chỉ" }),
+      expect.objectContaining({ field: "streetName", label: "Tên đường" }),
     ]);
   });
 });

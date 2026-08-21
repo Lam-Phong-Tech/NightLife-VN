@@ -18,6 +18,8 @@ type RankingItem = {
   slug: string;
   image: string | null;
   area: string;
+  streetName?: string | null;
+  streetAddress?: string | null;
   city: string;
   cityCode: string;
   category: string;
@@ -37,6 +39,8 @@ const castItems: RankingItem[] = [
     slug: 'mika',
     image: null,
     area: 'Hoan Kiem',
+    streetName: 'Linh Lang',
+    streetAddress: '10 Linh Lang',
     city: 'Ha Noi',
     cityCode: 'hn',
     category: 'bar',
@@ -88,6 +92,8 @@ const storeItems: RankingItem[] = [
     slug: 'midnight-bar',
     image: null,
     area: 'District 1',
+    streetName: 'Thái Văn Lung',
+    streetAddress: '8A/E14 Thái Văn Lung',
     city: 'TP.HCM',
     cityCode: 'hcm',
     category: 'bar',
@@ -232,6 +238,8 @@ test.describe('ranking page', () => {
     await page.getByTestId('ranking-city-select').locator('.vyr-ranking-select-trigger').click();
     await page.getByTestId('ranking-city-select').locator('[role="option"]').nth(1).click();
     await expect(page.getByTestId('ranking-card-1')).toContainText('Midnight Bar');
+    await expect(page.getByTestId('ranking-card-1')).toContainText('Thái Văn Lung');
+    await expect(page.getByTestId('ranking-card-1')).not.toContainText('8A/E14 Thái Văn Lung');
     expect(capturedRequests.at(-1)).toMatchObject({ targetType: 'STORE', city: 'hcm' });
 
     await page.getByTestId('ranking-city-select').locator('.vyr-ranking-select-trigger').click();

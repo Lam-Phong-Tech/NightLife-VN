@@ -259,6 +259,8 @@ describe('Home Page', () => {
               slug: 'api-cast',
               image: 'https://example.com/cast.jpg',
               area: 'Tay Ho',
+              streetName: 'Linh Lang',
+              streetAddress: '10 Linh Lang',
               city: 'Ha Noi',
               cityCode: 'hn',
               category: 'CLUB',
@@ -282,6 +284,8 @@ describe('Home Page', () => {
             slug: 'api-neon-lounge',
             image: 'https://example.com/api-neon.jpg',
             area: 'Tay Ho',
+            streetName: 'Thái Văn Lung',
+            streetAddress: '8A/E14 Thái Văn Lung',
             city: 'Ha Noi',
             cityCode: 'hn',
             category: 'LOUNGE',
@@ -408,6 +412,8 @@ describe('Home Page', () => {
     expect(await screen.findAllByText('API Neon Lounge')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Coupon')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
+    expect(await screen.findAllByText('Thái Văn Lung')).not.toHaveLength(0);
+    expect(screen.queryByText('8A/E14 Thái Văn Lung')).not.toBeInTheDocument();
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
     expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
     expect(document.body.textContent ?? '').not.toMatch(

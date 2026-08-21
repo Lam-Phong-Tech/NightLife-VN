@@ -519,6 +519,7 @@ model Store {
   category                   StoreCategory
   description                String?
   address                    String?
+  streetName                 String?                @map("street_name")
   city                       String                 @default("Ho Chi Minh City")
   district                   String?
   phone                      String?
