@@ -533,7 +533,7 @@ function RankingRow({
                 height={44}
                 style={{ width: 62, height: 44, objectFit: "contain", flex: "none", transform: "translateY(-6px)" }}
               />
-              <span className="notranslate" translate="no" data-no-translate="true">{item.name}</span>
+              <span className="notranslate vyr-rank-name" translate="no" data-no-translate="true">{item.name}</span>
             </>
           ) : tone ? (
             <span className="vyr-rank-label" style={{ color: tone.text }}>

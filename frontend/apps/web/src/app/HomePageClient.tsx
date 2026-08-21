@@ -2564,6 +2564,7 @@ function RankingRow({
         <div className="nl-home-ranking-badge-line" style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px", minWidth: 0 }}>
           {isPodium ? (
             <img
+              className="nl-home-ranking-podium-image"
               src={`/top${rankNumber}.png`}
               alt={`Top ${rankNumber}`}
               style={{
@@ -2581,19 +2582,19 @@ function RankingRow({
             </span>
           ) : null}
           {isCast ? (
-            <span style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span className="nl-home-ranking-name" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
             </span>
           ) : null}
           {!isCast ? (
-            <span style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span className="nl-home-ranking-name" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {item.name}
             </span>
           ) : null}
         </div>
         {isCast ? (
           <div
-            className="notranslate"
+            className="notranslate nl-home-ranking-store-name"
             translate="no"
             data-no-translate="true"
             style={{
