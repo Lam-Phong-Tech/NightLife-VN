@@ -382,6 +382,7 @@ type RankedItem = {
   img?: string;
   name?: string;
   area?: string;
+  ward?: string;
   href?: string;
   responsiveImage?: PublicResponsiveImage | null;
 };
@@ -654,7 +655,7 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
   };
 }
 
-function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode): RankedItem {
+function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
   return {
     rank: item.rank ?? item.pinRank,
     targetType: item.targetType,
@@ -665,7 +666,8 @@ function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode)
     img: backgroundFromUrl(item.image),
     image: resolveClientUrl(item.image) ?? undefined,
     name: item.name,
-    area: storeAreaText(item.area, item.cityCode, item.city, language, item.ward),
+    area: item.area ?? undefined,
+    ward: item.ward ?? undefined,
     href: item.href,
     responsiveImage: item.responsiveImage,
   };
@@ -2623,7 +2625,11 @@ function RankingRow({
         >
           {[
             item.city ? getCityDisplay(undefined, item.city, activeLanguage) : "",
-            item.area ? getFilterAreaLabel(item.area, activeLanguage) : "",
+            item.ward
+              ? getFilterAreaLabel(item.ward, activeLanguage)
+              : item.area
+                ? getFilterAreaLabel(item.area, activeLanguage)
+                : "",
             item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
           ]
             .filter(Boolean)
@@ -3714,8 +3720,8 @@ export default function HomePageClient({
     ])
       .then(([castResponse, storeItems]) => {
         if (cancelled) return;
-        setCastRankItems(castResponse.data.map((item) => mapRankingToRankedItem(item, activeLanguage)));
-        setStoreRankItems(storeItems.map((item) => mapRankingToRankedItem(item, activeLanguage)));
+        setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
+        setStoreRankItems(storeItems.map(mapRankingToRankedItem));
       })
       .catch(() => {
         if (!cancelled) {
