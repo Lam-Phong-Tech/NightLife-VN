@@ -2480,9 +2480,10 @@ textarea::placeholder {
   }
 
   .nl-admin-login-layout {
-    min-height: auto !important;
+    min-height: calc(100dvh - 28px) !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: center !important;
     gap: 14px !important;
   }
 
