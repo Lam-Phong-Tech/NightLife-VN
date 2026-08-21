@@ -2813,10 +2813,70 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
 }
 
 @media (min-width: 900px) {
+  .nl-home-ranking-column {
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .nl-home-ranking-list {
+    gap: 10px !important;
+  }
+
   .nl-home-ranking-row[data-rank-target] {
-    height: 136px !important;
-    min-height: 136px !important;
+    height: 120px !important;
+    min-height: 120px !important;
     box-sizing: border-box !important;
+    column-gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"] {
+    grid-template-columns: 58px minmax(0, 1fr) 26px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="CAST"] {
+    grid-template-columns: 64px minmax(0, 1fr) 26px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-media-wrap,
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-media {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-media-wrap,
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-media {
+    width: 64px !important;
+    height: 86px !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-podium-image {
+    width: 54px !important;
+    height: 38px !important;
+    transform: translateY(-4px) !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-name,
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-label {
+    font-size: 18px !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-store-name {
+    font-size: 14px !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-meta {
+    font-size: 12px !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-arrow {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .nl-home-ranking-row .nl-home-ranking-arrow svg {
+    width: 21px;
+    height: 21px;
   }
 }
 
