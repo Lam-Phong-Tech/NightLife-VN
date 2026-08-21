@@ -2873,6 +2873,15 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
     font-size: 13px !important;
     letter-spacing: 0.06em !important;
   }
+
+  /* Match lower venue rank labels to the white, larger cast rank treatment. */
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-label {
+    color: var(--vy-text) !important;
+    font-size: 20px !important;
+    font-weight: 950 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
 }
 
 html.vy-light .nl-home-ranking-row {
