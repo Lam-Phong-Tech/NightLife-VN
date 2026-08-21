@@ -27,7 +27,6 @@ export type PublicRankingItem = {
   city: string;
   cityCode?: string;
   category: string;
-  sponsored: boolean;
   pinRank?: number | null;
   manualScore: number;
   href: string;

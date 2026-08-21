@@ -430,7 +430,6 @@ type RankingFormState = {
   scope: string;
   pinRank: string;
   manualScore: string;
-  sponsored: boolean;
   status: "ACTIVE" | "PAUSED" | "EXPIRED";
   startsAt: string;
   endsAt: string;
@@ -723,7 +722,6 @@ const defaultRankingForm: RankingFormState = {
   scope: "global",
   pinRank: "1",
   manualScore: "100",
-  sponsored: false,
   status: "ACTIVE",
   startsAt: "",
   endsAt: "",
@@ -2734,7 +2732,6 @@ export default function AdminConsole({ section }: { section?: string }) {
       scope: ranking.scope,
       pinRank: ranking.pinRank ? String(ranking.pinRank) : "",
       manualScore: String(ranking.manualScore),
-      sponsored: ranking.sponsored,
       status: ranking.status === "DELETED" ? "EXPIRED" : ranking.status,
       startsAt: formatDateInput(ranking.startsAt),
       endsAt: formatDateInput(ranking.endsAt),
@@ -4394,26 +4391,6 @@ export default function AdminConsole({ section }: { section?: string }) {
             </select>
           </Field>
 
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: colors.text2,
-              fontSize: 12,
-              fontWeight: 800,
-              paddingTop: 20,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={rankingForm.sponsored}
-              onChange={(event) => setRankingForm((current) => ({ ...current, sponsored: event.target.checked }))}
-            />
-            Tài trợ
-          </label>
-
-
           <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
@@ -4468,11 +4445,6 @@ export default function AdminConsole({ section }: { section?: string }) {
               <span>
                 <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>
                   {ranking.targetName}
-                  {ranking.sponsored ? (
-                    <span style={{ marginLeft: 7 }}>
-                      <Badge tone="ACTIVE">Tài trợ</Badge>
-                    </span>
-                  ) : null}
                 </span>
                 <span style={{ display: "block", color: colors.muted, marginTop: 4, fontSize: 12 }}>
                   {ranking.targetType} · {ranking.cityCode.toUpperCase()} · {displayCategory(ranking.category)} ·{" "}

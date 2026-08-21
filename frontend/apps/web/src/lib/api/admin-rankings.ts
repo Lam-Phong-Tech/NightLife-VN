@@ -18,7 +18,6 @@ export type AdminRankingConfig = {
   scope: string;
   manualScore: number;
   pinRank?: number | null;
-  sponsored: boolean;
   status: "ACTIVE" | "PAUSED" | "EXPIRED" | "DELETED";
   startsAt?: string | null;
   endsAt?: string | null;
@@ -48,7 +47,6 @@ export type AdminRankingFormPayload = {
   scope?: string;
   pinRank?: number | null;
   manualScore?: number;
-  sponsored?: boolean;
   status?: "ACTIVE" | "PAUSED" | "EXPIRED";
   startsAt?: string | null;
   endsAt?: string | null;

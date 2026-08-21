@@ -32,7 +32,6 @@ interface RankingItem {
   desc: string;
   avatar: string;
   image?: string | null;
-  sponsored: boolean;
 }
 
 type RankingCityTab = 'HN' | 'HCM' | 'ALL';
@@ -118,11 +117,10 @@ function SortableRankingItem(props: {
   item: RankingItem;
   index: number;
   isStore: boolean;
-  toggleSponsor: (id: string) => void;
   moveItem: (index: number, direction: 'up' | 'down') => void;
   removeItem: (id: string) => void;
 }) {
-  const { item, index, isStore, toggleSponsor, moveItem, removeItem } = props;
+  const { item, index, isStore, moveItem, removeItem } = props;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const feedback = useSystemFeedback();
 
@@ -147,9 +145,6 @@ function SortableRankingItem(props: {
 
   const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
   const rowBd = index === 0 ? 'rgba(212,178,106,.34)' : 'rgba(255,255,255,.06)';
-  const sponsorColor = item.sponsored ? '#241a0a' : '#8c8679';
-  const sponsorBg = item.sponsored ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)';
-  const sponsorBorder = item.sponsored ? '1px solid rgba(212,178,106,.7)' : '1px solid rgba(255,255,255,.08)';
 
   const onRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -161,11 +156,6 @@ function SortableRankingItem(props: {
         removeItem(item.id);
       }
     });
-  };
-
-  const onToggleSponsor = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleSponsor(item.id);
   };
 
   return (
@@ -235,27 +225,9 @@ function SortableRankingItem(props: {
       <div className="nl-admin-ranking-item-details" style={{ flex: 1, minWidth: 0 }}>
         <div className="nl-admin-ranking-item-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, fontSize: '14.5px', color: '#f3f0ea' }}>{item.name}</span>
-          {item.sponsored && (
-            <span style={{ flex: 'none', fontSize: '10px', fontWeight: 800, letterSpacing: '.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 7px', borderRadius: '7px' }}>
-              Tài trợ
-            </span>
-          )}
         </div>
         <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px' }}>{item.desc}</div>
       </div>
-
-      <button
-        type="button"
-        onClick={onToggleSponsor}
-        title={item.sponsored ? 'Tắt tài trợ' : 'Bật tài trợ'}
-        aria-pressed={item.sponsored}
-        aria-label={item.sponsored ? `Tắt tài trợ ${item.name}` : `Bật tài trợ ${item.name}`}
-        style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: sponsorBg, border: sponsorBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', color: sponsorColor, cursor: 'pointer', padding: 0 }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill={item.sponsored ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.1 8.3 22 9.3 17 14.2 18.2 21 12 17.8 5.8 21 7 14.2 2 9.3 8.9 8.3 12 2" />
-        </svg>
-      </button>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <span onClick={() => moveItem(index, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
@@ -361,7 +333,6 @@ function AdminRankingsClient() {
       desc: formatRankingCity(option.city),
       avatar: 'C',
       image: option.image || null,
-      sponsored: false
     }]);
     setCastSearch('');
   };
@@ -380,7 +351,6 @@ function AdminRankingsClient() {
       desc: formatRankingCity(option.city),
       avatar: 'S',
       image: option.image || null,
-      sponsored: false
     }]);
     setStoreSearch('');
   };
@@ -414,7 +384,6 @@ function AdminRankingsClient() {
           desc: formatRankingCity(r.targetCity),
           avatar: isCast ? 'C' : 'S',
           image: r.targetImage || null,
-          sponsored: r.sponsored || false,
         };
         if (isCast) castItems.push(obj);
         else storeItems.push(obj);
@@ -482,14 +451,6 @@ function AdminRankingsClient() {
     setList(newList);
   };
 
-  const toggleSponsorCast = (id: string) => {
-    setCasts(casts.map(item => item.id === id ? { ...item, sponsored: !item.sponsored } : item));
-  };
-  
-  const toggleSponsorStore = (id: string) => {
-    setStores(stores.map(item => item.id === id ? { ...item, sponsored: !item.sponsored } : item));
-  };
-
   const removeCast = (id: string) => {
     setCasts(casts.filter(item => item.id !== id));
   };
@@ -516,7 +477,6 @@ function AdminRankingsClient() {
             scope: 'global',
             items: items.map((item) => ({
               targetId: item.targetId,
-              sponsored: item.sponsored,
             })),
           },
         });
@@ -720,7 +680,7 @@ function AdminRankingsClient() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndCasts}>
               <SortableContext items={casts.map(c => c.id)} strategy={verticalListSortingStrategy}>
                 {casts.map((item, index) => (
-                  <SortableRankingItem key={item.id} item={item} index={index} isStore={false} toggleSponsor={toggleSponsorCast} moveItem={(idx, dir) => moveItem(casts, setCasts, idx, dir)} removeItem={removeCast} />
+                  <SortableRankingItem key={item.id} item={item} index={index} isStore={false} moveItem={(idx, dir) => moveItem(casts, setCasts, idx, dir)} removeItem={removeCast} />
                 ))}
                 {casts.length === 0 && <div style={{ color: '#8c8679', padding: '20px', textAlign: 'center', border: '1px dashed rgba(255,255,255,.1)', borderRadius: '12px' }}>Chưa có Cast nào được xếp hạng</div>}
               </SortableContext>
@@ -805,7 +765,7 @@ function AdminRankingsClient() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndStores}>
               <SortableContext items={stores.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 {stores.map((item, index) => (
-                  <SortableRankingItem key={item.id} item={item} index={index} isStore={true} toggleSponsor={toggleSponsorStore} moveItem={(idx, dir) => moveItem(stores, setStores, idx, dir)} removeItem={removeStore} />
+                  <SortableRankingItem key={item.id} item={item} index={index} isStore={true} moveItem={(idx, dir) => moveItem(stores, setStores, idx, dir)} removeItem={removeStore} />
                 ))}
                 {stores.length === 0 && <div style={{ color: '#8c8679', padding: '20px', textAlign: 'center', border: '1px dashed rgba(255,255,255,.1)', borderRadius: '12px' }}>Chưa có Quán nào được xếp hạng</div>}
               </SortableContext>

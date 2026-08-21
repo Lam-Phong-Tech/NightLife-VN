@@ -934,7 +934,6 @@ type PublicRankingItem = {
   city: string;
   cityCode?: string;
   category: StoreCategory;
-  sponsored: boolean;
   pinRank: number | null;
   manualScore: number;
   href: string;
@@ -2016,7 +2015,6 @@ export class NightlifeDataService {
           scope,
           pinRank,
           manualScore,
-          sponsored: dto.sponsored ?? false,
           status,
           startsAt,
           endsAt,
@@ -2164,7 +2162,6 @@ export class NightlifeDataService {
           ...(dto.manualScore !== undefined
             ? { manualScore: dto.manualScore }
             : {}),
-          ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
           ...(dto.status !== undefined
             ? { status: dto.status as RankingConfigStatus }
             : {}),
@@ -2294,7 +2291,7 @@ export class NightlifeDataService {
               data: {
                 category,
                 pinRank: index + 1,
-                sponsored: item.sponsored ?? false,
+                sponsored: false,
                 status: 'ACTIVE',
               },
             });
@@ -2309,7 +2306,7 @@ export class NightlifeDataService {
                 scope,
                 pinRank: index + 1,
                 manualScore: 0,
-                sponsored: item.sponsored ?? false,
+                sponsored: false,
                 status: 'ACTIVE',
               },
             });
@@ -19132,7 +19129,6 @@ export class NightlifeDataService {
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
-      sponsored: config?.sponsored ?? false,
       pinRank: config?.pinRank ?? null,
       manualScore: config?.manualScore ?? 0,
       href: `/stores/${store.slug}`,
@@ -19192,7 +19188,6 @@ export class NightlifeDataService {
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
       category: cast.store.category,
-      sponsored: config?.sponsored ?? false,
       pinRank: config?.pinRank ?? null,
       manualScore: config?.manualScore ?? 0,
       href: `/casts/${cast.slug}`,

@@ -383,7 +383,6 @@ type RankedItem = {
   name?: string;
   area?: string;
   href?: string;
-  sponsored?: boolean;
   responsiveImage?: PublicResponsiveImage | null;
 };
 
@@ -481,10 +480,6 @@ function comparePublicRankingItems(first: PublicRankingItem, second: PublicRanki
 
   const scoreDiff = (second.manualScore ?? 0) - (first.manualScore ?? 0);
   if (scoreDiff !== 0) return scoreDiff;
-
-  if (first.sponsored !== second.sponsored) {
-    return first.sponsored ? -1 : 1;
-  }
 
   return first.name.localeCompare(second.name);
 }
@@ -672,7 +667,6 @@ function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode)
     name: item.name,
     area: storeAreaText(item.area, item.cityCode, item.city, language, item.ward),
     href: item.href,
-    sponsored: item.sponsored,
     responsiveImage: item.responsiveImage,
   };
 }
@@ -693,7 +687,7 @@ function mapRankingToHomeCard(item: PublicRankingItem, index: number, language: 
     img: backgroundFromUrl(item.image),
     image: image ?? undefined,
     href: item.href || `/stores/${item.slug}`,
-    badgeText: item.sponsored ? "Nổi bật" : categoryLabel,
+    badgeText: categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
   };
 }
@@ -2587,27 +2581,6 @@ function RankingRow({
           {isCast ? (
             <span style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
-            </span>
-          ) : null}
-          {item.sponsored ? (
-            <span
-              data-testid="home-ranking-sponsored-badge"
-              style={{
-                minHeight: 22,
-                display: "inline-flex",
-                alignItems: "center",
-                borderRadius: 999,
-                padding: "0 8px",
-                border: "1px solid rgba(240,221,168,.45)",
-                background: "rgba(240,221,168,.16)",
-                color: colors.goldSoft,
-                fontSize: "10.5px",
-                fontWeight: 950,
-                lineHeight: 1,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {translateText("Tài trợ", activeLanguage)}
             </span>
           ) : null}
         </div>

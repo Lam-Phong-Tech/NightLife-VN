@@ -93,10 +93,6 @@ export class CreateAdminRankingConfigDto {
   manualScore?: number;
 
   @IsOptional()
-  @IsBoolean()
-  sponsored?: boolean;
-
-  @IsOptional()
   @IsString()
   @IsIn(['ACTIVE', 'PAUSED', 'EXPIRED'])
   status?: string;
@@ -154,10 +150,6 @@ export class UpdateAdminRankingConfigDto {
   manualScore?: number;
 
   @IsOptional()
-  @IsBoolean()
-  sponsored?: boolean;
-
-  @IsOptional()
   @IsString()
   @IsIn(['ACTIVE', 'PAUSED', 'EXPIRED'])
   status?: string;
@@ -175,9 +167,6 @@ export class AdminRankingReorderItemDto {
   @IsUUID()
   targetId!: string;
 
-  @IsOptional()
-  @IsBoolean()
-  sponsored?: boolean;
 }
 
 export class ReorderAdminRankingGroupDto {

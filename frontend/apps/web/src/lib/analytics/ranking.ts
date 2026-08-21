@@ -32,13 +32,10 @@ export function trackRankingClick(
     city: context.city,
     selectedCategory: context.category,
     selectedTargetType: context.targetType,
-    sponsored: item.sponsored,
     pinRank: item.pinRank ?? null,
     manualScore: item.manualScore,
     href: item.href,
     surface: context.surface,
-    experimentKey: "ranking_sponsored_v1",
-    experimentVariant: "control",
   };
   const trackingWindow = window as TrackingWindow;
 

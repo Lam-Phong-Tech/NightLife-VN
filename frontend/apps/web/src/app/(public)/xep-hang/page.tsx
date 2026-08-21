@@ -166,7 +166,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       loadedItems: (count: number) => `${count} mục đã tải sẵn`,
       retry: "Tải lại",
       showMore: "Xem thêm",
-      sponsored: "Tài trợ",
       switchRanking: "Chuyển bảng xếp hạng",
       title: "Bảng xếp hạng",
       uncategorized: "Chưa phân loại",
@@ -186,7 +185,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       loadedItems: (count: number) => `${count} items preloaded`,
       retry: "Reload",
       showMore: "Show more",
-      sponsored: "Sponsored",
       switchRanking: "Switch ranking",
       title: "Ranking",
       uncategorized: "Uncategorized",
@@ -206,7 +204,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       loadedItems: (count: number) => `${count}件を読み込み済み`,
       retry: "再読み込み",
       showMore: "もっと見る",
-      sponsored: "スポンサー",
       switchRanking: "ランキングを切り替え",
       title: "ランキング",
       uncategorized: "未分類",
@@ -226,7 +223,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       loadedItems: (count: number) => `${count}개 항목 로드됨`,
       retry: "다시 불러오기",
       showMore: "더 보기",
-      sponsored: "스폰서",
       switchRanking: "랭킹 전환",
       title: "랭킹",
       uncategorized: "미분류",
@@ -246,7 +242,6 @@ const rankingPageCopy = (language: LanguageCode) =>
       loadedItems: (count: number) => `已预载 ${count} 项`,
       retry: "重新加载",
       showMore: "查看更多",
-      sponsored: "赞助",
       switchRanking: "切换排行榜",
       title: "排行榜",
       uncategorized: "未分类",
@@ -550,11 +545,6 @@ function RankingRow({
           ) : (
             <span className="vyr-rank-number">{item.rank}</span>
           )}
-          {item.sponsored ? (
-            <span className="vyr-sponsored" data-testid="ranking-sponsored-badge">
-              {copy.sponsored}
-            </span>
-          ) : null}
         </span>
         {!isCast ? <strong className="notranslate" translate="no" data-no-translate="true">{item.name}</strong> : null}
         {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
@@ -1305,17 +1295,6 @@ export default function Page() {
           line-height: 1;
         }
 
-        .vyr-sponsored {
-          border: 1px solid var(--vy-border-gold-32);
-          border-radius: 999px;
-          background: var(--vy-gold-soft-bg);
-          color: var(--vy-gold-pale);
-          font-size: 10.5px;
-          font-weight: 800;
-          line-height: 1;
-          padding: 5px 8px;
-        }
-
         .vyr-rank-copy strong {
           margin-top: 6px;
           display: -webkit-box;
@@ -1693,13 +1672,6 @@ export default function Page() {
             min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .vyr-sponsored {
-            grid-column: 1 / -1;
-            grid-row: 2;
-            justify-self: start;
             white-space: nowrap;
           }
 
