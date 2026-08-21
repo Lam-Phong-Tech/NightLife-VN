@@ -851,6 +851,27 @@ export default function Page() {
           </div>
         ) : null}
 
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            minHeight: 38,
+            marginTop: 18,
+            padding: "0 13px",
+            borderRadius: 9,
+            background: "linear-gradient(90deg, #ef6a91, #e45d86)",
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span>{new Date().getMonth() + 1}/{new Date().getFullYear()}</span>
+          <span>{translateText("Cập nhật", activeLanguage)} {new Date().getDate()}/{new Date().getMonth() + 1}</span>
+        </div>
+
         <div className="vyr-ranking-list" aria-live="polite">
           {loadState === "error" ? (
             <div className="vyr-ranking-state is-error">

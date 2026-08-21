@@ -3170,7 +3170,12 @@ function RankingListColumn({
   favoriteSlugs: string[];
   onToggleFavorite: (item: RankedItem) => void;
 }) {
+  const activeLanguage = useActiveLanguage();
   const list = items.slice(0, 5);
+  const updatedAt = new Date();
+  const updateMonth = updatedAt.getMonth() + 1;
+  const updateYear = updatedAt.getFullYear();
+  const updateDay = updatedAt.getDate();
 
   return (
     <div
@@ -3213,6 +3218,26 @@ function RankingListColumn({
         >
           Top 5
         </span>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          minHeight: 34,
+          padding: "0 11px",
+          borderRadius: 8,
+          background: "linear-gradient(90deg, #ef6a91, #e45d86)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 900,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span>{updateMonth}/{updateYear}</span>
+        <span>{translateText("Cập nhật", activeLanguage)} {updateDay}/{updateMonth}</span>
       </div>
 
       {list.length ? (
