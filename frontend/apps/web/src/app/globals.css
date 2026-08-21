@@ -214,12 +214,17 @@ html.vy-light {
 }
 
 @media (max-width: 767px) {
-  .home-ranking-favorite-button,
-  .ranking-favorite-button {
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
-    min-height: 20px;
+  .nl-page-content .home-ranking-favorite-button,
+  .nl-page-content .ranking-favorite-button {
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    max-height: 20px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
   }
 
   .home-ranking-favorite-button .nl-favorite-button__icon,
