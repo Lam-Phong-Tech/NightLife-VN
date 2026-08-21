@@ -193,6 +193,22 @@ html.vy-light {
   height: 11px;
 }
 
+.home-ranking-favorite-button,
+.ranking-favorite-button {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+}
+
+.home-ranking-favorite-button.is-active,
+.ranking-favorite-button.is-active {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 0 0 2px var(--vy-favorite-soft),
+    0 8px 18px -12px var(--vy-favorite-glow);
+}
+
 .nl-favorite-button.venue-heart,
 .nl-favorite-button.cast-card-favorite,
 .nl-favorite-button.cast-favorite-action,
