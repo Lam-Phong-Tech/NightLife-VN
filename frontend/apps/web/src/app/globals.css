@@ -195,10 +195,14 @@ html.vy-light {
 
 .home-ranking-favorite-button,
 .ranking-favorite-button {
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
-  min-height: 20px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
+  aspect-ratio: 1 / 1;
+  flex: none;
+  padding: 0;
+  border-radius: 50%;
 }
 
 .home-ranking-favorite-button.is-active,
@@ -207,6 +211,22 @@ html.vy-light {
     0 0 0 1px rgba(255, 255, 255, 0.16) inset,
     0 0 0 2px var(--vy-favorite-soft),
     0 8px 18px -12px var(--vy-favorite-glow);
+}
+
+@media (max-width: 767px) {
+  .home-ranking-favorite-button,
+  .ranking-favorite-button {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    min-height: 20px;
+  }
+
+  .home-ranking-favorite-button .nl-favorite-button__icon,
+  .ranking-favorite-button .nl-favorite-button__icon {
+    width: 11px;
+    height: 11px;
+  }
 }
 
 .nl-favorite-button.venue-heart,

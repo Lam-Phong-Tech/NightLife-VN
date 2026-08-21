@@ -2554,8 +2554,6 @@ function RankingRow({
               right: -6,
               bottom: -6,
               zIndex: 3,
-              width: 20,
-              height: 20,
             }}
           />
         ) : null}
