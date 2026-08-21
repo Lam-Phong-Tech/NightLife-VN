@@ -475,22 +475,20 @@ function RankingRow({
       className={[
         "vyr-rank-row",
         isStore ? "is-store-rank" : "",
+        isCast ? "is-cast-rank" : "",
         topRank ? "is-top-rank" : "",
         podiumRank ? "is-podium-rank" : "",
         `is-rank-${item.rank}`,
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ borderColor: tone?.topBorder, gridTemplateColumns: isCast ? "72px minmax(0, 1fr) minmax(220px, auto)" : undefined, minHeight: isCast ? 136 : undefined }}
+      style={{ borderColor: tone?.topBorder }}
       data-testid={`ranking-card-${item.rank}`}
     >
       <span
         className={item.image ? "vyr-rank-avatar" : "vyr-rank-avatar vyr-rank-avatar-fallback"}
         style={
           {
-            width: isCast ? 72 : undefined,
-            height: isCast ? 96 : undefined,
-            borderRadius: isCast ? 8 : undefined,
             position: "relative",
             ...(item.image
               ? {
@@ -1243,6 +1241,11 @@ export default function Page() {
           background: var(--vy-gold-soft-bg);
         }
 
+        .vyr-rank-row.is-cast-rank {
+          grid-template-columns: 72px minmax(0, 1fr) minmax(220px, auto);
+          min-height: 136px;
+        }
+
         .vyr-rank-avatar {
           width: 58px;
           height: 58px;
@@ -1251,6 +1254,12 @@ export default function Page() {
           background-position: center;
           background-size: cover;
           border: 2px solid transparent;
+        }
+
+        .vyr-rank-row.is-cast-rank .vyr-rank-avatar {
+          width: 72px;
+          height: 96px;
+          border-radius: 8px;
         }
 
         .vyr-rank-avatar-fallback {
@@ -1631,6 +1640,16 @@ export default function Page() {
               rgba(212, 178, 106, 0.1),
               rgba(255, 255, 255, 0.025)
             );
+          }
+
+          .vyr-rank-row.is-cast-rank {
+            min-height: 70px;
+          }
+
+          .vyr-rank-row.is-cast-rank .vyr-rank-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
           }
 
           .vyr-rank-row.is-rank-2 {
