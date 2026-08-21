@@ -19128,7 +19128,7 @@ export class NightlifeDataService {
             })
           : null,
       area: store.area?.name ?? store.district,
-      ward: store.area?.ward ?? this.extractWardFromStoreAddress(store.address),
+      ward: this.resolveStoreWard(store.area?.ward, store.address),
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
@@ -19188,9 +19188,10 @@ export class NightlifeDataService {
             })
           : null,
       area: cast.store.area?.name ?? cast.store.district,
-      ward:
-        cast.store.area?.ward ??
-        this.extractWardFromStoreAddress(cast.store.address),
+      ward: this.resolveStoreWard(
+        cast.store.area?.ward,
+        cast.store.address,
+      ),
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
       category: cast.store.category,
@@ -19938,6 +19939,22 @@ export class NightlifeDataService {
         .filter(Boolean) ?? [];
 
     return parts.find((part) => this.isWardAddressPart(part)) ?? null;
+  }
+
+  private resolveStoreWard(
+    areaWard?: string | null,
+    address?: string | null,
+  ) {
+    const normalizedAreaWard = this.cleanText(areaWard);
+    const areaWardToken = this.normalizeToken(normalizedAreaWard);
+    const isGeneralArea =
+      !normalizedAreaWard ||
+      areaWardToken === 'tong-hop' ||
+      areaWardToken === 'all';
+
+    return isGeneralArea
+      ? this.extractWardFromStoreAddress(address)
+      : normalizedAreaWard;
   }
 
   private isWardAddressPart(part: string) {
