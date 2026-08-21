@@ -504,9 +504,10 @@ function RankingRow({
         }
       >
         {!item.image ? getInitials(item.name) : null}
-        <FavoriteButton
-          isFavorite={isFavorite}
-          label={translateText(isFavorite ? "Bỏ lưu yêu thích" : "Lưu yêu thích", language)}
+          <FavoriteButton
+            isFavorite={isFavorite}
+            label={translateText(isFavorite ? "Bỏ lưu yêu thích" : "Lưu yêu thích", language)}
+            className="ranking-favorite-button"
           size="compact"
           onClick={(event) => {
             event.preventDefault();
@@ -517,8 +518,8 @@ function RankingRow({
             position: "absolute",
             right: -7,
             bottom: -7,
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             zIndex: 2,
           }}
         />
