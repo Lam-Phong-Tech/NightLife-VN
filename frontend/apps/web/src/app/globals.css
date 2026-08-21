@@ -2830,13 +2830,14 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   .vyr-rank-podium-image {
     width: 62px !important;
     height: 44px !important;
+    object-fit: fill !important;
   }
 
   .nl-home-ranking-name,
   .vyr-rank-name {
     font-size: 22px !important;
     display: inline-block;
-    transform: translateY(9px);
+    transform: none !important;
   }
 
   /* A venue name belongs below its crown, aligned with the crown box. */
@@ -2846,7 +2847,7 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-    transform: translateY(-2px) !important;
+    transform: translateY(18px) !important;
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name,
@@ -2925,6 +2926,7 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 
 .nl-home-ranking-badge-line {
   min-width: 0;
+  column-gap: 4px !important;
 }
 
 .nl-home-ranking-badge-line > :first-child {
@@ -2942,7 +2944,7 @@ html.vy-light .nl-home-ranking-row[data-rank-tier="3"] .nl-home-ranking-glow {
 }
 
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line .nl-home-ranking-podium-image {
-  transform: translateY(-2px) !important;
+  transform: translateY(18px) !important;
 }
 
 .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-name {
