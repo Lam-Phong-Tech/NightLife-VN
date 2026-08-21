@@ -2852,6 +2852,27 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   .vyr-rank-label {
     font-size: 16px !important;
   }
+
+  /* Keep homepage ranking copy compact against the large card artwork. */
+  .nl-home-ranking-name {
+    font-size: 20px !important;
+    line-height: 1.12;
+  }
+
+  .nl-home-ranking-store-name {
+    font-size: 15px !important;
+    line-height: 1.2;
+  }
+
+  .nl-home-ranking-meta {
+    font-size: 13px !important;
+    line-height: 1.25;
+  }
+
+  .nl-home-ranking-label {
+    font-size: 13px !important;
+    letter-spacing: 0.06em !important;
+  }
 }
 
 html.vy-light .nl-home-ranking-row {
