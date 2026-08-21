@@ -24,6 +24,7 @@ export type PublicRankingItem = {
   responsiveImage?: PublicResponsiveImage | null;
   area?: string | null;
   ward?: string | null;
+  streetAddress?: string | null;
   city: string;
   cityCode?: string;
   category: string;

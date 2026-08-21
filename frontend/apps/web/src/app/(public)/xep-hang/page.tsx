@@ -26,9 +26,7 @@ import {
 import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ranking";
 import { translateText } from "@/lib/i18n/client-translations";
 import {
-  getFilterAreaLabel,
   getFilterCityLabel,
-  getPreferredStoreAreaName,
 } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
@@ -466,7 +464,7 @@ function RankingRow({
     castSlug: item.slug,
     castName: item.name,
   }).toString()}`;
-  const areaName = getPreferredStoreAreaName({ ward: item.ward, areaName: item.area });
+  const addressLabel = item.streetAddress?.trim() || item.area?.trim() || "";
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 
@@ -545,7 +543,7 @@ function RankingRow({
         </span>
         {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
         <small className="vyr-rank-meta">
-          {[rankingCityLabel(item, language), areaName ? getFilterAreaLabel(areaName, language) : "", formatCategory(item.category, language)].filter(Boolean).join(" | ")}
+          {[rankingCityLabel(item, language), addressLabel, formatCategory(item.category, language)].filter(Boolean).join(" | ")}
         </small>
       </span>
 

@@ -931,6 +931,7 @@ type PublicRankingItem = {
   responsiveImage?: ReturnType<typeof toPublicResponsiveImage>;
   area: string | null;
   ward: string | null;
+  streetAddress: string | null;
   city: string;
   cityCode?: string;
   category: StoreCategory;
@@ -19130,6 +19131,11 @@ export class NightlifeDataService {
           : null,
       area: store.area?.name ?? store.district,
       ward: this.resolveStoreWard(store.area?.ward, store.address),
+      streetAddress: this.extractStreetFromStoreAddress(
+        store.address,
+        this.resolveStoreWard(store.area?.ward, store.address),
+        store.area?.city ?? store.city,
+      ),
       city: store.area?.city ?? store.city,
       cityCode,
       category: store.category,
@@ -19192,6 +19198,11 @@ export class NightlifeDataService {
       ward: this.resolveStoreWard(
         cast.store.area?.ward,
         cast.store.address,
+      ),
+      streetAddress: this.extractStreetFromStoreAddress(
+        cast.store.address,
+        this.resolveStoreWard(cast.store.area?.ward, cast.store.address),
+        cast.store.area?.city ?? cast.store.city,
       ),
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
