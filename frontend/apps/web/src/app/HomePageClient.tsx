@@ -2477,7 +2477,8 @@ function RankingRow({
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const isCast = item.targetType === "CAST";
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
-  const isLowerStoreRank = !isCast && rankNumber >= 4;
+  const isLowerRank = rankNumber >= 4;
+  const isLowerStoreRank = !isCast && isLowerRank;
   const rankingVisual = getRankingVisual(rankNumber, item, rankingStyles);
   const podiumGlow =
     rankNumber === 1
@@ -2498,7 +2499,7 @@ function RankingRow({
       href={item.href ?? "/xep-hang"}
       className="nl-home-ranking-row"
       data-rank-target={isCast ? "CAST" : "STORE"}
-      data-rank-tier={isPodium ? rankNumber : isLowerStoreRank ? "lower" : undefined}
+      data-rank-tier={isPodium ? rankNumber : isLowerRank ? "lower" : undefined}
       aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
       style={{
         display: "grid",

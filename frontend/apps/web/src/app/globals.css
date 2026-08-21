@@ -4735,6 +4735,10 @@ input[type="search"] {
     margin-left: 0 !important;
   }
 
+  .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
+    margin-left: 18px !important;
+  }
+
   .nl-home-ranking-badge-line {
     margin-bottom: 2px !important;
   }
