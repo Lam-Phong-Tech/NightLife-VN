@@ -1642,8 +1642,9 @@ export default function Page() {
             );
           }
 
-          .vyr-rank-row.is-cast-rank {
+          .vyr-rank-row.is-cast-rank:not(.is-podium-rank) {
             min-height: 70px;
+            grid-template-columns: 48px minmax(0, 1fr);
           }
 
           .vyr-rank-row.is-cast-rank .vyr-rank-avatar {
