@@ -4728,6 +4728,12 @@ input[type="search"] {
     column-gap: 6px !important;
   }
 
+  /* Keep the mobile podium crown compact without moving the adjacent name. */
+  .nl-home-ranking-podium-image {
+    transform: translateY(-4px) scale(0.75) !important;
+    transform-origin: center;
+  }
+
   .nl-home-ranking-store-name,
   .nl-home-ranking-meta,
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
