@@ -1485,6 +1485,11 @@ export default function Page() {
             min-height: 136px;
             box-sizing: border-box;
           }
+
+          .vyr-rank-row.is-store-rank .vyr-rank-label {
+            font-size: 22px !important;
+            line-height: 1.15;
+          }
         }
 
         @media (max-width: 767px) {
