@@ -54,6 +54,7 @@ import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
 import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { storeFavoriteApi } from "@/lib/api/store-favorite";
+import { castFavoriteApi } from "@/lib/api/cast-detail";
 import {
   DEFAULT_APPEARANCE_CONFIG,
   findAppearanceTitle,
@@ -82,7 +83,16 @@ import {
   getFilterCityLabel,
 } from "@/lib/i18n/filter-taxonomy";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
-import { readFavoriteStoreSlugs, replaceFavoriteStores, writeFavoriteStore, type SavedFavoriteStore } from "@/lib/member-favorites";
+import {
+  readFavoriteCastSlugs,
+  readFavoriteStoreSlugs,
+  replaceFavoriteCasts,
+  replaceFavoriteStores,
+  writeFavoriteCast,
+  writeFavoriteStore,
+  type SavedFavoriteCast,
+  type SavedFavoriteStore,
+} from "@/lib/member-favorites";
 import {
   buildBookingConfirmationFlashToast,
   readBookingConfirmationFlashToast,
@@ -361,6 +371,10 @@ const categoryPrices: Record<string, string> = {
 
 type RankedItem = {
   rank?: string | number;
+  targetType?: "CAST" | "STORE";
+  slug?: string;
+  category?: string;
+  image?: string;
   numColor?: string;
   crown?: string;
   img?: string;
@@ -646,7 +660,11 @@ function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: numb
 function mapRankingToRankedItem(item: PublicRankingItem, language: LanguageCode): RankedItem {
   return {
     rank: item.rank ?? item.pinRank,
+    targetType: item.targetType,
+    slug: item.slug,
+    category: item.category,
     img: backgroundFromUrl(item.image),
+    image: resolveClientUrl(item.image) ?? undefined,
     name: item.name,
     area: storeAreaText(item.area, item.cityCode, item.city, language, item.ward),
     href: item.href,
@@ -2440,7 +2458,19 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
   );
 }
 
-function RankingRow({ item, priority = false, rankingStyles }: { item: RankedItem; priority?: boolean; rankingStyles: AppearanceRankingStyle[] }) {
+function RankingRow({
+  item,
+  priority = false,
+  rankingStyles,
+  isFavorite = false,
+  onToggleFavorite,
+}: {
+  item: RankedItem;
+  priority?: boolean;
+  rankingStyles: AppearanceRankingStyle[];
+  isFavorite?: boolean;
+  onToggleFavorite?: (item: RankedItem) => void;
+}) {
   const activeLanguage = useActiveLanguage();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
@@ -2487,26 +2517,49 @@ function RankingRow({ item, priority = false, rankingStyles }: { item: RankedIte
           }}
         />
       ) : null}
-      <PlaceholderMedia
-        src={item.img}
-        alt={item.name ?? "Xếp hạng"}
-        responsiveImage={item.responsiveImage}
-        sizes="64px"
-        width={64}
-        height={64}
-        label=""
-        priority={priority}
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          flex: "none",
-          border: `1px solid ${isPodium ? rankingVisual.rowBorder : colors.line}`,
-          boxShadow: isPodium ? `0 0 0 4px rgba(255,255,255,.05), ${rankingVisual.rowShadow}` : "0 10px 20px rgba(0,0,0,.28)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      />
+      <div style={{ position: "relative", width: 64, height: 64, zIndex: 2 }}>
+        <PlaceholderMedia
+          src={item.img}
+          alt={item.name ?? "Xếp hạng"}
+          responsiveImage={item.responsiveImage}
+          sizes="64px"
+          width={64}
+          height={64}
+          label=""
+          priority={priority}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            flex: "none",
+            border: `1px solid ${isPodium ? rankingVisual.rowBorder : colors.line}`,
+            boxShadow: isPodium ? `0 0 0 4px rgba(255,255,255,.05), ${rankingVisual.rowShadow}` : "0 10px 20px rgba(0,0,0,.28)",
+            position: "relative",
+            zIndex: 1,
+          }}
+        />
+        {item.slug && item.targetType ? (
+          <FavoriteButton
+            isFavorite={isFavorite}
+            label={translateText(isFavorite ? "Bỏ lưu yêu thích" : "Lưu yêu thích", activeLanguage)}
+            className="home-ranking-favorite-button"
+            size="compact"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onToggleFavorite?.(item);
+            }}
+            style={{
+              position: "absolute",
+              right: -6,
+              bottom: -6,
+              zIndex: 3,
+              width: 28,
+              height: 28,
+            }}
+          />
+        ) : null}
+      </div>
       <div style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
         <div className="nl-home-ranking-badge-line" style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px", minWidth: 0 }}>
           {isPodium ? (
@@ -3097,11 +3150,15 @@ function RankingListColumn({
   items,
   emptyText,
   rankingStyles,
+  favoriteSlugs,
+  onToggleFavorite,
 }: {
   title: string;
   items: RankedItem[];
   emptyText: string;
   rankingStyles: AppearanceRankingStyle[];
+  favoriteSlugs: string[];
+  onToggleFavorite: (item: RankedItem) => void;
 }) {
   const list = items.slice(0, 5);
 
@@ -3155,6 +3212,8 @@ function RankingListColumn({
               key={`${title}-${item.rank}-${item.href ?? item.name}`}
               item={item}
               rankingStyles={rankingStyles}
+              isFavorite={Boolean(item.slug && favoriteSlugs.includes(item.slug))}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </div>
@@ -3171,12 +3230,18 @@ function RankingSplitPanel({
   error,
   stacked = false,
   rankingStyles,
+  favoriteStoreSlugs,
+  favoriteCastSlugs,
+  onToggleFavorite,
 }: {
   castItems: RankedItem[];
   storeItems: RankedItem[];
   error?: string;
   stacked?: boolean;
   rankingStyles: AppearanceRankingStyle[];
+  favoriteStoreSlugs: string[];
+  favoriteCastSlugs: string[];
+  onToggleFavorite: (item: RankedItem) => void;
 }) {
   const activeLanguage = useActiveLanguage();
   const emptyText = error || "Chưa có dữ liệu xếp hạng.";
@@ -3191,12 +3256,14 @@ function RankingSplitPanel({
         alignItems: "stretch",
       }}
     >
-      <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} rankingStyles={rankingStyles} />
+      <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} rankingStyles={rankingStyles} favoriteSlugs={favoriteCastSlugs} onToggleFavorite={onToggleFavorite} />
       <RankingListColumn
         title={translateText("Quán", activeLanguage)}
         items={storeItems}
         emptyText={emptyText}
         rankingStyles={rankingStyles}
+        favoriteSlugs={favoriteStoreSlugs}
+        onToggleFavorite={onToggleFavorite}
       />
     </div>
   );
@@ -3260,6 +3327,9 @@ export default function HomePageClient({
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
     () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
+  );
+  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteCastSlugs() : []),
   );
   const homeCategoryItems = useMemo(
     () => homeAppearance.quick.map(mapAppearanceQuickItem),
@@ -3355,19 +3425,21 @@ export default function HomePageClient({
 
     if (!hasMemberFavoriteAccess()) {
       queueMicrotask(() => {
-        if (!cancelled) setFavoriteStoreSlugs([]);
+        if (!cancelled) {
+          setFavoriteStoreSlugs([]);
+          setFavoriteCastSlugs([]);
+        }
       });
       return () => {
         cancelled = true;
       };
     }
 
-    storeFavoriteApi
-      .list()
-      .then((items) => {
+    Promise.all([storeFavoriteApi.list(), castFavoriteApi.list()])
+      .then(([storeItems, castItems]) => {
         if (cancelled) return;
 
-        const favoriteSnapshots = items.map((item) => ({
+        const favoriteStoreSnapshots: SavedFavoriteStore[] = storeItems.map((item) => ({
           slug: item.store.slug,
           name: item.store.name,
           categoryLabel: translateText(categoryLabels[item.store.category] ?? item.store.category, activeLanguage),
@@ -3382,11 +3454,25 @@ export default function HomePageClient({
           favoritedAt: item.favoritedAt,
         }));
 
-        replaceFavoriteStores(favoriteSnapshots);
-        setFavoriteStoreSlugs(favoriteSnapshots.map((item) => item.slug));
+        const favoriteCastSnapshots: SavedFavoriteCast[] = castItems.map((item) => ({
+          slug: item.cast.slug,
+          name: item.cast.stageName || item.cast.name,
+          storeName: item.cast.store.name,
+          areaLabel: item.cast.store.area?.name ?? item.cast.store.district ?? undefined,
+          image: resolveClientUrl(item.cast.thumbnailUrl) ?? undefined,
+          favoritedAt: item.favoritedAt,
+        }));
+
+        replaceFavoriteStores(favoriteStoreSnapshots);
+        replaceFavoriteCasts(favoriteCastSnapshots);
+        setFavoriteStoreSlugs(favoriteStoreSnapshots.map((item) => item.slug));
+        setFavoriteCastSlugs(favoriteCastSnapshots.map((item) => item.slug));
       })
       .catch(() => {
-        if (!cancelled) setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+        if (!cancelled) {
+          setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+          setFavoriteCastSlugs(readFavoriteCastSlugs());
+        }
       });
 
     return () => {
@@ -3802,6 +3888,41 @@ export default function HomePageClient({
     });
   };
 
+  const toggleRankingFavorite = async (item: RankedItem) => {
+    if (!item.slug || !item.targetType || !requireMemberFavoriteAccess()) return;
+
+    const isCast = item.targetType === "CAST";
+    const currentSlugs = isCast ? favoriteCastSlugs : favoriteStoreSlugs;
+    const nextValue = !currentSlugs.includes(item.slug);
+    const updateSlugs = (favorited: boolean) => {
+      const update = (current: string[]) =>
+        favorited
+          ? [item.slug!, ...current.filter((slug) => slug !== item.slug)]
+          : current.filter((slug) => slug !== item.slug);
+      if (isCast) setFavoriteCastSlugs(update);
+      else setFavoriteStoreSlugs(update);
+    };
+
+    updateSlugs(nextValue);
+    if (isCast) {
+      writeFavoriteCast({ slug: item.slug, name: item.name ?? "Cast", areaLabel: item.area, image: item.image }, nextValue);
+    } else {
+      writeFavoriteStore({ slug: item.slug, name: item.name ?? "Quán", categoryLabel: item.category, areaLabel: item.area, image: item.image }, nextValue);
+    }
+
+    try {
+      const state = isCast
+        ? await (nextValue ? castFavoriteApi.favorite(item.slug) : castFavoriteApi.unfavorite(item.slug))
+        : await (nextValue ? storeFavoriteApi.favorite(item.slug) : storeFavoriteApi.unfavorite(item.slug));
+      updateSlugs(state.favorited);
+    } catch (error) {
+      updateSlugs(!nextValue);
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        redirectToLoginForFavorite();
+      }
+    }
+  };
+
   const useLegacySplitHomeLayout = false;
   if (!useLegacySplitHomeLayout) {
     const deferredSectionStyle: CSSProperties = {
@@ -3925,6 +4046,9 @@ export default function HomePageClient({
                   error={rankingsError}
                   stacked={!isDesktopLayout}
                   rankingStyles={homeAppearance.rankingStyles}
+                  favoriteStoreSlugs={favoriteStoreSlugs}
+                  favoriteCastSlugs={favoriteCastSlugs}
+                  onToggleFavorite={toggleRankingFavorite}
                 />
               ) : (
                 <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
@@ -4117,7 +4241,7 @@ export default function HomePageClient({
               {isRankingsLoading ? (
                 <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
               ) : castRankItems.length || storeRankItems.length ? (
-                <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} stacked rankingStyles={homeAppearance.rankingStyles} />
+                <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} stacked rankingStyles={homeAppearance.rankingStyles} favoriteStoreSlugs={favoriteStoreSlugs} favoriteCastSlugs={favoriteCastSlugs} onToggleFavorite={toggleRankingFavorite} />
               ) : (
                 <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
               )}
@@ -4280,7 +4404,7 @@ export default function HomePageClient({
                 {isRankingsLoading ? (
                   <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
                 ) : castRankItems.length || storeRankItems.length ? (
-                  <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} rankingStyles={homeAppearance.rankingStyles} />
+                  <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} rankingStyles={homeAppearance.rankingStyles} favoriteStoreSlugs={favoriteStoreSlugs} favoriteCastSlugs={favoriteCastSlugs} onToggleFavorite={toggleRankingFavorite} />
                 ) : (
                   <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
                 )}

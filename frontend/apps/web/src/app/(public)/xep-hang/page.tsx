@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
-  Crown,
   MapPin,
   Phone,
   RefreshCcw,
@@ -13,6 +13,9 @@ import {
   UserRound,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
+import { castFavoriteApi } from "@/lib/api/cast-detail";
+import { storeFavoriteApi } from "@/lib/api/store-favorite";
 import {
   rankingsApi,
   type PublicRankingItem,
@@ -28,6 +31,15 @@ import {
   getPreferredStoreAreaName,
 } from "@/lib/i18n/filter-taxonomy";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
+import {
+  readFavoriteCastSlugs,
+  readFavoriteStoreSlugs,
+  replaceFavoriteCasts,
+  replaceFavoriteStores,
+  writeFavoriteCast,
+  writeFavoriteStore,
+} from "@/lib/member-favorites";
 
 type RankingKind = "cast" | "quan";
 type LoadState = "loading" | "ready" | "error";
@@ -438,11 +450,15 @@ function RankingRow({
   trackingContext,
   language,
   onCall,
+  isFavorite,
+  onToggleFavorite,
 }: {
   item: PublicRankingItem;
   trackingContext: RankingClickContext;
   language: LanguageCode;
   onCall: (notice: CallNotice, options?: CallNoticeOptions) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (item: PublicRankingItem) => void;
 }) {
   const copy = rankingPageCopy(language);
   const tone = getRankTone(item.rank);
@@ -481,25 +497,49 @@ function RankingRow({
             ? {
                 backgroundImage: `url(${item.image})`,
                 borderColor: topRank ? "#d4b26a" : undefined,
+                position: "relative",
               }
-            : undefined
+            : { position: "relative" }
         }
-        aria-hidden="true"
       >
         {!item.image ? getInitials(item.name) : null}
+        <FavoriteButton
+          isFavorite={isFavorite}
+          label={translateText(isFavorite ? "Bỏ lưu yêu thích" : "Lưu yêu thích", language)}
+          size="compact"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleFavorite(item);
+          }}
+          style={{
+            position: "absolute",
+            right: -7,
+            bottom: -7,
+            width: 28,
+            height: 28,
+            zIndex: 2,
+          }}
+        />
       </span>
 
       <span className="vyr-rank-copy">
         <span className="vyr-rank-badge-line">
-          {tone ? (
+          {podiumRank ? (
             <>
-              <span className="vyr-rank-crown" style={{ background: tone.badge, color: tone.icon }}>
-                <Crown size={16} fill="currentColor" strokeWidth={0} aria-hidden="true" />
-              </span>
-              <span className="vyr-rank-label" style={{ color: tone.text }}>
-                TOP {item.rank}
-              </span>
+              <Image
+                className="vyr-rank-podium-image"
+                src={`/top${item.rank}.png`}
+                alt={`Top ${item.rank}`}
+                width={43}
+                height={31}
+                style={{ width: 43, height: 31, objectFit: "contain", flex: "none" }}
+              />
             </>
+          ) : tone ? (
+            <span className="vyr-rank-label" style={{ color: tone.text }}>
+              TOP {item.rank}
+            </span>
           ) : (
             <span className="vyr-rank-number">{item.rank}</span>
           )}
@@ -585,6 +625,12 @@ export default function Page() {
   const [reloadKey, setReloadKey] = useState(0);
   const [callNotice, setCallNotice] = useState<CallNotice | null>(null);
   const [showDesktopCallPopup, setShowDesktopCallPopup] = useState(false);
+  const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
+  );
+  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteCastSlugs() : []),
+  );
 
   const query = useMemo(
     () => ({
@@ -618,6 +664,76 @@ export default function Page() {
   const retryRanking = () => {
     markRankingLoading();
     setReloadKey((key) => key + 1);
+  };
+
+  useEffect(() => {
+    if (!hasMemberFavoriteAccess()) {
+      return;
+    }
+
+    Promise.all([storeFavoriteApi.list(), castFavoriteApi.list()])
+      .then(([stores, casts]) => {
+        const storeSnapshots = stores.map((item) => ({
+          slug: item.store.slug,
+          name: item.store.name,
+          categoryLabel: item.store.category,
+          areaLabel: item.store.area?.name ?? item.store.district ?? undefined,
+          cityLabel: item.store.city,
+          image: item.store.thumbnailUrl ?? undefined,
+          favoritedAt: item.favoritedAt,
+        }));
+        const castSnapshots = casts.map((item) => ({
+          slug: item.cast.slug,
+          name: item.cast.stageName || item.cast.name,
+          storeName: item.cast.store.name,
+          areaLabel: item.cast.store.area?.name ?? item.cast.store.district ?? undefined,
+          image: item.cast.thumbnailUrl ?? undefined,
+          favoritedAt: item.favoritedAt,
+        }));
+        replaceFavoriteStores(storeSnapshots);
+        replaceFavoriteCasts(castSnapshots);
+        setFavoriteStoreSlugs(storeSnapshots.map((item) => item.slug));
+        setFavoriteCastSlugs(castSnapshots.map((item) => item.slug));
+      })
+      .catch(() => {
+        setFavoriteStoreSlugs(readFavoriteStoreSlugs());
+        setFavoriteCastSlugs(readFavoriteCastSlugs());
+      });
+  }, []);
+
+  const toggleRankingFavorite = async (item: PublicRankingItem) => {
+    if (!requireMemberFavoriteAccess()) return;
+
+    const isCast = item.targetType === "CAST";
+    const slugs = isCast ? favoriteCastSlugs : favoriteStoreSlugs;
+    const nextValue = !slugs.includes(item.slug);
+    const updateSlugs = (favorited: boolean) => {
+      const update = (current: string[]) =>
+        favorited
+          ? [item.slug, ...current.filter((slug) => slug !== item.slug)]
+          : current.filter((slug) => slug !== item.slug);
+      if (isCast) setFavoriteCastSlugs(update);
+      else setFavoriteStoreSlugs(update);
+    };
+
+    updateSlugs(nextValue);
+    if (isCast) {
+      writeFavoriteCast({ slug: item.slug, name: item.name, areaLabel: item.area ?? undefined, image: item.image ?? undefined }, nextValue);
+    } else {
+      writeFavoriteStore({ slug: item.slug, name: item.name, categoryLabel: item.category, areaLabel: item.area ?? undefined, image: item.image ?? undefined }, nextValue);
+    }
+
+    try {
+      const state = isCast
+        ? await (nextValue ? castFavoriteApi.favorite(item.slug) : castFavoriteApi.unfavorite(item.slug))
+        : await (nextValue ? storeFavoriteApi.favorite(item.slug) : storeFavoriteApi.unfavorite(item.slug));
+      updateSlugs(state.favorited);
+    } catch (error) {
+      updateSlugs(!nextValue);
+      if (error instanceof Error && "status" in error && [401, 403].includes(Number(error.status))) {
+        redirectToLoginForFavorite();
+      }
+    }
   };
 
   useEffect(() => {
@@ -775,6 +891,8 @@ export default function Page() {
                   trackingContext={trackingContext}
                   language={activeLanguage}
                   onCall={handleCallNotice}
+                  isFavorite={item.targetType === "CAST" ? favoriteCastSlugs.includes(item.slug) : favoriteStoreSlugs.includes(item.slug)}
+                  onToggleFavorite={toggleRankingFavorite}
                 />
               ))
             : null}
