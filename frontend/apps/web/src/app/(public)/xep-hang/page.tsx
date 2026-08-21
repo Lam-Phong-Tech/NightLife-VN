@@ -1653,6 +1653,11 @@ export default function Page() {
             border-radius: 50%;
           }
 
+          .vyr-rank-row.is-cast-rank:not(.is-podium-rank) .vyr-rank-badge-line,
+          .vyr-rank-row.is-cast-rank:not(.is-podium-rank) .vyr-rank-label {
+            display: block;
+          }
+
           .vyr-rank-row.is-rank-2 {
             background: linear-gradient(
               135deg,
