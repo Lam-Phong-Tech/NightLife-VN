@@ -2565,8 +2565,8 @@ function RankingRow({
               src={`/top${rankNumber}.png`}
               alt={`Top ${rankNumber}`}
               style={{
-                width: 43,
-                height: 31,
+                width: 52,
+                height: 37,
                 flex: "0 0 auto",
                 objectFit: "contain",
                 transform: "translateY(-6px)",
