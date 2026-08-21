@@ -3171,7 +3171,8 @@ function RankingListColumn({
   onToggleFavorite: (item: RankedItem) => void;
 }) {
   const activeLanguage = useActiveLanguage();
-  const list = items.slice(0, 5);
+  const [showAll, setShowAll] = useState(false);
+  const list = items.slice(0, showAll ? 5 : 3);
   const updatedAt = new Date();
   const updateMonth = updatedAt.getMonth() + 1;
   const updateYear = updatedAt.getFullYear();
@@ -3255,6 +3256,28 @@ function RankingListColumn({
       ) : (
         <HomeDataMessage text={emptyText} compact minHeight={118} />
       )}
+      {items.length > 3 ? (
+        <button
+          type="button"
+          onClick={() => setShowAll((current) => !current)}
+          style={{
+            justifySelf: "end",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            border: 0,
+            padding: "4px 2px",
+            background: "transparent",
+            color: colors.goldSoft,
+            fontSize: 12,
+            fontWeight: 900,
+            cursor: "pointer",
+          }}
+        >
+          {translateText(showAll ? "Thu gọn" : "Xem thêm", activeLanguage)}
+          <ChevronRight size={15} strokeWidth={2.4} style={{ transform: showAll ? "rotate(-90deg)" : undefined }} />
+        </button>
+      ) : null}
     </div>
   );
 }
