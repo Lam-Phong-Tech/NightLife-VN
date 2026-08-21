@@ -6042,6 +6042,13 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "查看更多",
   },
   {
+    vi: "Cập nhật",
+    en: "Updated",
+    ja: "更新",
+    ko: "업데이트",
+    zh: "更新于",
+  },
+  {
     vi: "Gợi ý cùng khu vực",
     en: "Recommended in the same area",
     ja: "同じエリアのおすすめ",

@@ -2622,7 +2622,7 @@ function RankingRow({
           }}
         >
           {[
-            item.city ? getFilterCityLabel(item.city, activeLanguage) : "",
+            item.city ? getCityDisplay(undefined, item.city, activeLanguage) : "",
             item.area ? getFilterAreaLabel(item.area, activeLanguage) : "",
             item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
           ]
