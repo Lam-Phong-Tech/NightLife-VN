@@ -2530,8 +2530,9 @@ function RankingRow({
           }}
         />
       ) : null}
-      <div style={{ position: "relative", width: isCast ? 72 : 64, height: isCast ? 96 : 64, zIndex: 2 }}>
+      <div className="nl-home-ranking-media-wrap" style={{ position: "relative", width: isCast ? 72 : 64, height: isCast ? 96 : 64, zIndex: 2 }}>
         <PlaceholderMedia
+          className="nl-home-ranking-media"
           src={item.img}
           alt={item.name ?? "Xếp hạng"}
           responsiveImage={item.responsiveImage}
@@ -3254,7 +3255,7 @@ function RankingListColumn({
       </div>
 
       {list.length ? (
-        <div style={{ display: "grid", alignSelf: "start", gap: "12px", minWidth: 0 }}>
+        <div className="nl-home-ranking-list" style={{ display: "grid", alignSelf: "start", gap: "12px", minWidth: 0 }}>
           {list.map((item) => (
             <RankingRow
               key={`${title}-${item.rank}-${item.href ?? item.name}`}

@@ -4724,28 +4724,73 @@ input[type="search"] {
     display: none !important;
   }
 
-  .nl-home-ranking-row {
-    column-gap: 6px !important;
+  .nl-home-ranking-column {
+    gap: 10px !important;
+    padding: 12px !important;
   }
 
-  /* Keep the mobile podium crown compact without moving the adjacent name. */
+  .nl-home-ranking-list {
+    gap: 8px !important;
+  }
+
+  .nl-home-ranking-row {
+    box-sizing: border-box;
+    column-gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"] {
+    grid-template-columns: 54px minmax(0, 1fr) 22px !important;
+    min-height: 108px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="CAST"] {
+    grid-template-columns: 58px minmax(0, 1fr) 22px !important;
+    min-height: 112px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-media-wrap,
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-media {
+    width: 54px !important;
+    height: 54px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-media-wrap,
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-media {
+    width: 58px !important;
+    height: 78px !important;
+  }
+
+  .nl-home-ranking-arrow {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .nl-home-ranking-arrow svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /* Scale the podium artwork and its layout box together on compact cards. */
   .nl-home-ranking-podium-image {
-    transform: translateY(-4px) scale(0.75) !important;
+    width: 48px !important;
+    height: 34px !important;
+    transform: translateY(-2px) !important;
     transform-origin: center;
   }
 
   .nl-home-ranking-store-name,
   .nl-home-ranking-meta,
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
-    margin-left: 18px !important;
+    margin-left: 12px !important;
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
-    margin-left: 18px !important;
+    margin-left: 12px !important;
   }
 
   .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
-    margin-left: 18px !important;
+    margin-left: 12px !important;
   }
 
   .nl-home-ranking-badge-line {
@@ -4757,11 +4802,20 @@ input[type="search"] {
     margin-bottom: 0 !important;
   }
 
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
+    font-size: 15px !important;
+    line-height: 1.12 !important;
+  }
+
+  .nl-home-ranking-store-name {
+    font-size: 12px !important;
+  }
+
   .nl-home-ranking-meta {
     display: flex;
     align-items: center;
     gap: 0;
-    font-size: 12px !important;
+    font-size: 11px !important;
     font-weight: 620 !important;
     white-space: nowrap;
     overflow: hidden;
