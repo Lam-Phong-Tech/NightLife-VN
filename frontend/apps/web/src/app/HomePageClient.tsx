@@ -61,6 +61,7 @@ import {
   getCachedAppearanceConfig,
   type AppearanceConfig,
   type AppearanceItem,
+  type AppearanceRankingStyle,
 } from "@/lib/api/appearance";
 import { formatPriceTier } from "@/lib/price-tier";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
@@ -911,19 +912,53 @@ function withApiImageFallbacks(items: HomeContentItem[], fallbackImages: Array<s
   );
 }
 
-function getRankingVisual(rankNumber: number, item: RankedItem) {
-  const rankVisuals: Record<
-    number,
-    {
-      badgeBackground: string;
-      badgeColor: string;
-      rowBackground: string;
-      rowBorder: string;
-      rowShadow: string;
-      labelColor: string;
-      metaColor: string;
-    }
-  > = {
+const rankingHexToRgb = (color: string) => {
+  const normalized = color.trim().replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return null;
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+};
+
+const rankingRgba = (color: string, alpha: number) => {
+  const rgb = rankingHexToRgb(color);
+  return rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})` : `rgba(212,178,106,${alpha})`;
+};
+
+const mixRankingColor = (color: string, target: "#FFFFFF" | "#000000", amount: number) => {
+  const base = rankingHexToRgb(color);
+  const targetRgb = rankingHexToRgb(target);
+  if (!base || !targetRgb) return color;
+  const mix = (from: number, to: number) => Math.round(from + (to - from) * amount);
+  return `#${[mix(base.r, targetRgb.r), mix(base.g, targetRgb.g), mix(base.b, targetRgb.b)].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+};
+
+const rankingTextColor = (color: string) => {
+  const rgb = rankingHexToRgb(color);
+  if (!rgb) return "#17130b";
+  const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+  return luminance > 0.62 ? "#17130b" : "#FFFFFF";
+};
+
+type RankingVisual = {
+  badgeBackground: string;
+  badgeColor: string;
+  rowBackground: string;
+  rowBorder: string;
+  rowShadow: string;
+  labelColor: string;
+  metaColor: string;
+  glow?: string;
+};
+
+function getRankingVisual(
+  rankNumber: number,
+  item: RankedItem,
+  rankingStyles: AppearanceRankingStyle[],
+): RankingVisual {
+  const rankVisuals: Record<number, RankingVisual> = {
     1: {
       badgeBackground: "linear-gradient(140deg, #fff4a8 0%, #f2c94c 58%, #c88614 100%)",
       badgeColor: "#3d2503",
@@ -973,6 +1008,25 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       metaColor: colors.muted,
     },
   };
+
+  const selectedColor = rankingStyles.find((style) => style.rank === rankNumber)?.color;
+  const defaultColor = DEFAULT_APPEARANCE_CONFIG.rankingStyles.find((style) => style.rank === rankNumber)?.color;
+  const isCustomColor = Boolean(
+    selectedColor && defaultColor && selectedColor.toUpperCase() !== defaultColor.toUpperCase(),
+  );
+
+  if (isCustomColor && selectedColor) {
+    return {
+      badgeBackground: `linear-gradient(140deg, ${mixRankingColor(selectedColor, "#FFFFFF", .38)} 0%, ${selectedColor} 56%, ${mixRankingColor(selectedColor, "#000000", .30)} 100%)`,
+      badgeColor: rankingTextColor(selectedColor),
+      rowBackground: `linear-gradient(100deg, ${rankingRgba(selectedColor, .58)} 0%, ${rankingRgba(selectedColor, .32)} 28%, rgba(30,27,31,.95) 58%, rgba(20,20,24,.98) 100%), linear-gradient(135deg, ${rankingRgba(selectedColor, .22)}, rgba(24,24,28,.96))`,
+      rowBorder: rankingRgba(selectedColor, .76),
+      rowShadow: `0 0 0 1px ${rankingRgba(selectedColor, .20)} inset, 0 24px 58px ${rankingRgba(selectedColor, .30)}, 0 18px 38px rgba(0,0,0,.34)`,
+      labelColor: mixRankingColor(selectedColor, "#FFFFFF", .35),
+      metaColor: mixRankingColor(selectedColor, "#FFFFFF", .72),
+      glow: `radial-gradient(circle at 12% 0%, ${rankingRgba(selectedColor, .30)}, transparent 34%)`,
+    };
+  }
 
   return rankVisuals[rankNumber] ?? {
     badgeBackground: item.crown ?? colors.gold,
@@ -2386,12 +2440,12 @@ function CouponCard({ item, compact = false, priority = false }: { item: HomeCou
   );
 }
 
-function RankingRow({ item, priority = false }: { item: RankedItem; priority?: boolean }) {
+function RankingRow({ item, priority = false, rankingStyles }: { item: RankedItem; priority?: boolean; rankingStyles: AppearanceRankingStyle[] }) {
   const activeLanguage = useActiveLanguage();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
-  const rankingVisual = getRankingVisual(rankNumber, item);
+  const rankingVisual = getRankingVisual(rankNumber, item, rankingStyles);
   const podiumGlow =
     rankNumber === 1
       ? "radial-gradient(circle at 12% 0%, rgba(254,240,138,.28), transparent 34%)"
@@ -2429,7 +2483,7 @@ function RankingRow({ item, priority = false }: { item: RankedItem; priority?: b
           style={{
             position: "absolute",
             inset: 0,
-            background: `${podiumGlow}, linear-gradient(120deg, rgba(255,255,255,.16), transparent 28%, transparent 70%, rgba(255,255,255,.08))`,
+            background: `${rankingVisual.glow ?? podiumGlow}, linear-gradient(120deg, rgba(255,255,255,.16), transparent 28%, transparent 70%, rgba(255,255,255,.08))`,
             pointerEvents: "none",
           }}
         />
@@ -3045,10 +3099,12 @@ function RankingListColumn({
   title,
   items,
   emptyText,
+  rankingStyles,
 }: {
   title: string;
   items: RankedItem[];
   emptyText: string;
+  rankingStyles: AppearanceRankingStyle[];
 }) {
   const list = items.slice(0, 5);
 
@@ -3101,6 +3157,7 @@ function RankingListColumn({
             <RankingRow
               key={`${title}-${item.rank}-${item.href ?? item.name}`}
               item={item}
+              rankingStyles={rankingStyles}
             />
           ))}
         </div>
@@ -3116,11 +3173,13 @@ function RankingSplitPanel({
   storeItems,
   error,
   stacked = false,
+  rankingStyles,
 }: {
   castItems: RankedItem[];
   storeItems: RankedItem[];
   error?: string;
   stacked?: boolean;
+  rankingStyles: AppearanceRankingStyle[];
 }) {
   const activeLanguage = useActiveLanguage();
   const emptyText = error || "Chưa có dữ liệu xếp hạng.";
@@ -3135,11 +3194,12 @@ function RankingSplitPanel({
         alignItems: "stretch",
       }}
     >
-      <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} />
+      <RankingListColumn title="Cast" items={castItems} emptyText={emptyText} rankingStyles={rankingStyles} />
       <RankingListColumn
         title={translateText("Quán", activeLanguage)}
         items={storeItems}
         emptyText={emptyText}
+        rankingStyles={rankingStyles}
       />
     </div>
   );
@@ -3867,6 +3927,7 @@ export default function HomePageClient({
                   storeItems={storeRankItems}
                   error={rankingsError}
                   stacked={!isDesktopLayout}
+                  rankingStyles={homeAppearance.rankingStyles}
                 />
               ) : (
                 <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
@@ -4059,7 +4120,7 @@ export default function HomePageClient({
               {isRankingsLoading ? (
                 <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
               ) : castRankItems.length || storeRankItems.length ? (
-                <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} stacked />
+                <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} stacked rankingStyles={homeAppearance.rankingStyles} />
               ) : (
                 <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
               )}
@@ -4222,7 +4283,7 @@ export default function HomePageClient({
                 {isRankingsLoading ? (
                   <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
                 ) : castRankItems.length || storeRankItems.length ? (
-                  <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} />
+                  <RankingSplitPanel castItems={castRankItems} storeItems={storeRankItems} error={rankingsError} rankingStyles={homeAppearance.rankingStyles} />
                 ) : (
                   <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
                 )}

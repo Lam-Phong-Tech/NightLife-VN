@@ -22,11 +22,17 @@ export type AppearanceBrand = {
   faviconUrl?: string;
 };
 
+export type AppearanceRankingStyle = {
+  rank: number;
+  color: string;
+};
+
 export type AppearanceConfig = {
   quick: AppearanceItem[];
   nav: AppearanceItem[];
   titles: AppearanceTitle[];
   brand: AppearanceBrand;
+  rankingStyles: AppearanceRankingStyle[];
 };
 
 type AppearanceConfigResponse = {
@@ -72,6 +78,13 @@ export const DEFAULT_APPEARANCE_CONFIG: AppearanceConfig = {
     logoUrl: "",
     faviconUrl: "",
   },
+  rankingStyles: [
+    { rank: 1, color: "#F2C94C" },
+    { rank: 2, color: "#CBD5E1" },
+    { rank: 3, color: "#F59E45" },
+    { rank: 4, color: "#22C55E" },
+    { rank: 5, color: "#3B82F6" },
+  ],
 };
 
 const mergeAppearanceItems = (value: AppearanceItem[] | undefined, fallback: AppearanceItem[]) =>
@@ -105,6 +118,21 @@ const mergeAppearanceTitles = (value: AppearanceTitle[] | undefined, fallback: A
     };
   });
 
+const mergeRankingStyles = (
+  value: AppearanceRankingStyle[] | undefined,
+  fallback: AppearanceRankingStyle[],
+) =>
+  fallback.map((fallbackItem) => {
+    const item = Array.isArray(value)
+      ? value.find((candidate) => candidate.rank === fallbackItem.rank)
+      : undefined;
+
+    return {
+      rank: fallbackItem.rank,
+      color: normalizeAppearanceColor(item?.color) || fallbackItem.color,
+    };
+  });
+
 export function normalizeAppearanceConfig(
   value?: Partial<AppearanceConfig> | null,
 ): AppearanceConfig {
@@ -120,6 +148,7 @@ export function normalizeAppearanceConfig(
       logoUrl: value.brand?.logoUrl?.trim() || "",
       faviconUrl: value.brand?.faviconUrl?.trim() || "",
     },
+    rankingStyles: mergeRankingStyles(value.rankingStyles, DEFAULT_APPEARANCE_CONFIG.rankingStyles),
   };
 }
 
@@ -128,7 +157,7 @@ export function getCachedAppearanceConfig(): AppearanceConfig | null {
   try {
     const cached = localStorage.getItem(APPEARANCE_CONFIG_CACHE_KEY);
     if (cached) {
-      return JSON.parse(cached) as AppearanceConfig;
+      return normalizeAppearanceConfig(JSON.parse(cached) as Partial<AppearanceConfig>);
     }
   } catch (e) {
     // Ignore error

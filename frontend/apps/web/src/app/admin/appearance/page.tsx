@@ -60,6 +60,7 @@ type AppearanceState = {
   nav: AppearanceIconItem[];
   titles: { id: string; key: string; label: string }[];
   brand: { name: string; tagline: string; logoUrl?: string; faviconUrl?: string };
+  rankingStyles: { rank: number; color: string }[];
 };
 
 const DEFAULT_ICON_COLOR = '#d4b26a';
@@ -97,7 +98,14 @@ const DEFAULT_STATE: AppearanceState = {
     tagline: 'VIETNAM NIGHTLIFE GUIDE',
     logoUrl: '',
     faviconUrl: '',
-  }
+  },
+  rankingStyles: [
+    { rank: 1, color: '#F2C94C' },
+    { rank: 2, color: '#CBD5E1' },
+    { rank: 3, color: '#F59E45' },
+    { rank: 4, color: '#22C55E' },
+    { rank: 5, color: '#3B82F6' },
+  ],
 };
 type AppearanceConfigResponse = {
   data?: Partial<AppearanceState> | null;
@@ -310,6 +318,7 @@ export default function AppearancePage() {
   const [nav, setNav] = useState([...DEFAULT_STATE.nav]);
   const [titles, setTitles] = useState([...DEFAULT_STATE.titles]);
   const [brand, setBrand] = useState({ ...DEFAULT_STATE.brand });
+  const [rankingStyles, setRankingStyles] = useState([...DEFAULT_STATE.rankingStyles]);
   
   const [drawer, setDrawer] = useState<{group: 'quick' | 'nav', id: string} | null>(null);
   const [logoOpen, setLogoOpen] = useState(false);
@@ -341,12 +350,14 @@ export default function AppearancePage() {
             nav: normalized.nav,
             titles: fetchedTitles,
             brand: normalized.brand,
+            rankingStyles: normalized.rankingStyles,
           };
           setSavedState(JSON.stringify(fetchedState));
           setQuick(fetchedState.quick);
           setNav(fetchedState.nav);
           setTitles(fetchedTitles);
           setBrand(fetchedState.brand);
+          setRankingStyles(fetchedState.rankingStyles);
         }
       } catch (err: any) {
         console.error('Failed to load appearance config', err);
@@ -385,7 +396,7 @@ export default function AppearancePage() {
     />
   );
 
-  const currentStateStr = JSON.stringify({ quick, nav, titles, brand });
+  const currentStateStr = JSON.stringify({ quick, nav, titles, brand, rankingStyles });
   const dirty = currentStateStr !== savedState;
 
   let changedCount = 0;
@@ -393,6 +404,7 @@ export default function AppearancePage() {
   nav.forEach((it, i) => { const sv = saved.nav[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color)) changedCount++; });
   titles.forEach((t, i) => { const sv = saved.titles[i]; if (!sv || sv.label !== t.label) changedCount++; });
   if (brandChanged) changedCount++;
+  rankingStyles.forEach((style, i) => { const sv = saved.rankingStyles[i]; if (!sv || sv.color !== style.color) changedCount++; });
 
   const handleUndoAll = async () => {
     await deleteUploadedMediaBatch(pendingAppearanceMediaRef.current.keys());
@@ -401,13 +413,14 @@ export default function AppearancePage() {
     setNav([...saved.nav]);
     setTitles([...saved.titles]);
     setBrand({ ...saved.brand });
+    setRankingStyles([...saved.rankingStyles]);
     showToast('Đã hoàn tác về bản đang chạy');
   };
 
   const handleSaveAll = async () => {
     try {
       setSaving(true);
-      const dataToSave = { quick, nav, titles, brand };
+      const dataToSave = { quick, nav, titles, brand, rankingStyles };
       await apiClient('/admin/system-config/appearance', {
         method: 'PUT',
         data: { value: dataToSave }
@@ -1189,6 +1202,48 @@ export default function AppearancePage() {
             );
           })}
           <div style={{ padding: '10px 18px', fontSize: '10.5px', color: '#57534b' }}>Tiêu đề ngắn gọn ≤ 24 ký tự để hiển thị đẹp trên mobile · hỗ trợ tiếng Việt có dấu.</div>
+        </div>
+
+        {/* MÀU RANKING */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '28px 0 12px' }}>
+          <div>
+            <div style={{ fontSize: '15.5px', fontWeight: 600, color: '#f3f0ea' }}>Màu sắc Ranking trang chủ</div>
+            <div style={{ fontSize: '8.5px', fontWeight: 600, letterSpacing: '1.6px', color: '#8c8679', textTransform: 'uppercase', marginTop: '2px' }}>Top 1–5 · áp dụng cho badge và thẻ xếp hạng</div>
+          </div>
+          <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.45),transparent)' }}></div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+          {rankingStyles.map((style) => {
+            const savedStyle = saved.rankingStyles.find((item) => item.rank === style.rank);
+            const changed = savedStyle?.color !== style.color;
+            const defaultStyle = DEFAULT_STATE.rankingStyles.find((item) => item.rank === style.rank);
+            const setColor = (value: string) => {
+              const normalized = normalizeIconColor(value);
+              if (!normalized) return;
+              setRankingStyles((current) => current.map((item) => item.rank === style.rank ? { ...item, color: normalized } : item));
+            };
+
+            return (
+              <div key={style.rank} style={{ background: 'rgba(255,255,255,.02)', border: `1px solid ${changed ? 'rgba(224,164,78,.45)' : 'rgba(255,255,255,.08)'}`, borderRadius: '14px', padding: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ color: '#f3f0ea', fontSize: '13px', fontWeight: 800 }}>Top {style.rank}</span>
+                  {changed && <span style={{ fontSize: '8px', fontWeight: 800, color: '#e0a44e', letterSpacing: '.5px' }}>CHƯA ÁP DỤNG</span>}
+                </div>
+                <div style={{ minHeight: '64px', display: 'flex', alignItems: 'center', gap: '9px', padding: '10px', borderRadius: '11px', background: `linear-gradient(100deg, ${style.color}, rgba(20,20,24,.96) 88%)`, border: `1px solid ${style.color}` }}>
+                  <span style={{ width: '31px', height: '26px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#17130b', background: 'rgba(255,255,255,.78)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 17L2.8 8l5.2 3.6L12 5l4 6.6L21.2 8 20 17z"/><path d="M6 20.5h12"/></svg>
+                  </span>
+                  <span style={{ color: '#fff', fontSize: '11px', fontWeight: 900, letterSpacing: '.08em' }}>TOP {style.rank}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                  <input aria-label={`Chọn màu Top ${style.rank}`} type="color" value={style.color} onChange={(event) => setColor(event.target.value)} style={{ width: '36px', height: '34px', padding: '2px', border: '1px solid rgba(255,255,255,.15)', borderRadius: '8px', background: 'transparent', cursor: 'pointer' }} />
+                  <input aria-label={`Mã màu Top ${style.rank}`} value={style.color} onChange={(event) => setColor(event.target.value)} maxLength={7} style={{ minWidth: 0, flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '8px 9px', color: '#f3f0ea', fontSize: '11px', fontFamily: 'monospace', outline: 'none' }} />
+                  <button type="button" onClick={() => setColor(defaultStyle?.color || style.color)} title="Khôi phục màu mặc định" style={{ color: '#8c8679', background: 'transparent', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', padding: '7px 8px', fontSize: '10px', cursor: 'pointer' }}>↺</button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
       </div>
