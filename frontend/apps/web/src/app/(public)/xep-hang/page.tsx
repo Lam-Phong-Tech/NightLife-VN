@@ -515,8 +515,8 @@ function RankingRow({
             position: "absolute",
             right: -7,
             bottom: -7,
-            width: 24,
-            height: 24,
+            width: 20,
+            height: 20,
             zIndex: 2,
           }}
         />
