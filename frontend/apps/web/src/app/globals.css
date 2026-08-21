@@ -4728,12 +4728,6 @@ input[type="search"] {
     column-gap: 6px !important;
   }
 
-  .nl-home-ranking-podium-image {
-    width: 68px !important;
-    height: 48px !important;
-    transform: translateY(-3px) !important;
-  }
-
   .nl-home-ranking-store-name,
   .nl-home-ranking-meta,
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
