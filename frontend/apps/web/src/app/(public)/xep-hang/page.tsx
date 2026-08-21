@@ -464,7 +464,9 @@ function RankingRow({
     castSlug: item.slug,
     castName: item.name,
   }).toString()}`;
-  const addressLabel = item.streetAddress?.trim() || item.area?.trim() || "";
+  // Do not fall back to `area`: legacy ranking responses may expose the ward
+  // name there (e.g. "Phường Sài Gòn"), which is not the street address.
+  const addressLabel = item.streetAddress?.trim() || "";
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 
