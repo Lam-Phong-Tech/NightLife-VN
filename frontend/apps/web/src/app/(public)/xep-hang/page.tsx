@@ -474,6 +474,7 @@ function RankingRow({
     <article
       className={[
         "vyr-rank-row",
+        isStore ? "is-store-rank" : "",
         topRank ? "is-top-rank" : "",
         podiumRank ? "is-podium-rank" : "",
         `is-rank-${item.rank}`,

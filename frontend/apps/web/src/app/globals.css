@@ -2771,6 +2771,13 @@ html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
   color: #f7e6b4 !important;
 }
 
+@media (min-width: 900px) {
+  .nl-home-ranking-row[data-rank-target="STORE"],
+  .vyr-rank-row.is-store-rank {
+    min-height: 136px !important;
+  }
+}
+
 html.vy-light .nl-home-ranking-row {
   box-shadow: 0 18px 42px -34px rgba(80, 55, 18, 0.45) !important;
 }

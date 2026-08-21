@@ -2485,6 +2485,7 @@ function RankingRow({
     <Link
       href={item.href ?? "/xep-hang"}
       className="nl-home-ranking-row"
+      data-rank-target={isCast ? "CAST" : "STORE"}
       data-rank-tier={isPodium ? rankNumber : undefined}
       aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
       style={{
