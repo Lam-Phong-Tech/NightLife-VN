@@ -4735,6 +4735,11 @@ input[type="search"] {
     margin-bottom: 2px !important;
   }
 
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-badge-line {
+    row-gap: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
   .nl-home-ranking-meta {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
