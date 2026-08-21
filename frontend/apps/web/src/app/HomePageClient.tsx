@@ -2477,6 +2477,7 @@ function RankingRow({
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const isCast = item.targetType === "CAST";
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
+  const isLowerStoreRank = !isCast && rankNumber >= 4;
   const rankingVisual = getRankingVisual(rankNumber, item, rankingStyles);
   const podiumGlow =
     rankNumber === 1
@@ -2497,7 +2498,7 @@ function RankingRow({
       href={item.href ?? "/xep-hang"}
       className="nl-home-ranking-row"
       data-rank-target={isCast ? "CAST" : "STORE"}
-      data-rank-tier={isPodium ? rankNumber : undefined}
+      data-rank-tier={isPodium ? rankNumber : isLowerStoreRank ? "lower" : undefined}
       aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
       style={{
         display: "grid",
@@ -2595,12 +2596,30 @@ function RankingRow({
               {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
             </span>
           ) : null}
-          {!isCast ? (
+          {!isCast && !isLowerStoreRank ? (
             <span className="nl-home-ranking-name" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {item.name}
             </span>
           ) : null}
         </div>
+        {!isCast && isLowerStoreRank ? (
+          <div
+            className="nl-home-ranking-name nl-home-ranking-lower-name"
+            style={{
+              color: colors.text,
+              fontSize: "18px",
+              fontWeight: 950,
+              lineHeight: 1.15,
+              minWidth: 0,
+              marginTop: "7px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {item.name}
+          </div>
+        ) : null}
         {isCast ? (
           <div
             className="notranslate nl-home-ranking-store-name"
