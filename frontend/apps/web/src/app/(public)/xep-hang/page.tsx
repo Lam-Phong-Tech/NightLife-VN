@@ -467,9 +467,6 @@ function RankingRow({
     castName: item.name,
   }).toString()}`;
   const areaName = getPreferredStoreAreaName({ ward: item.ward, areaName: item.area });
-  const areaLine = [areaName ? getFilterAreaLabel(areaName, language) : "", rankingCityLabel(item, language)]
-    .filter(Boolean)
-    .join(" · ");
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 
@@ -537,20 +534,19 @@ function RankingRow({
                 height={31}
                 style={{ width: 43, height: 31, objectFit: "contain", flex: "none" }}
               />
-              {isCast ? <span className="notranslate" translate="no" data-no-translate="true">{item.name}</span> : null}
+              <span className="notranslate" translate="no" data-no-translate="true">{item.name}</span>
             </>
           ) : tone ? (
             <span className="vyr-rank-label" style={{ color: tone.text }}>
-              {isCast ? `TOP ${item.rank} · ${item.name}` : `TOP ${item.rank}`}
+              {isCast ? `TOP ${item.rank} · ${item.name}` : `TOP ${item.rank} · ${item.name}`}
             </span>
           ) : (
             <span className="vyr-rank-number">{item.rank}</span>
           )}
         </span>
-        {!isCast ? <strong className="notranslate" translate="no" data-no-translate="true">{item.name}</strong> : null}
         {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
         <small>
-          {isCast ? [rankingCityLabel(item, language), areaName ? getFilterAreaLabel(areaName, language) : "", formatCategory(item.category, language)].filter(Boolean).join(" | ") : <>{areaLine}<span aria-hidden="true"> · </span>{formatCategory(item.category, language)}</>}
+          {[rankingCityLabel(item, language), areaName ? getFilterAreaLabel(areaName, language) : "", formatCategory(item.category, language)].filter(Boolean).join(" | ")}
         </small>
       </span>
 

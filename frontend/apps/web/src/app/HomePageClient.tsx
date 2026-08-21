@@ -2583,24 +2583,12 @@ function RankingRow({
               {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
             </span>
           ) : null}
+          {!isCast ? (
+            <span style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {item.name}
+            </span>
+          ) : null}
         </div>
-        {!isCast ? <div
-          className="notranslate"
-          translate="no"
-          data-no-translate="true"
-          style={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            color: colors.text,
-            fontSize: isPodium ? "18px" : "17px",
-            fontWeight: 950,
-            lineHeight: 1.16,
-          }}
-        >
-          {item.name}
-        </div> : null}
         {isCast ? (
           <div
             className="notranslate"
@@ -2633,15 +2621,13 @@ function RankingRow({
             whiteSpace: "nowrap",
           }}
         >
-          {isCast
-            ? [
-                item.city ? getFilterCityLabel(item.city, activeLanguage) : "",
-                item.area ? getFilterAreaLabel(item.area, activeLanguage) : "",
-                item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
-              ]
-                .filter(Boolean)
-                .join(" | ")
-            : item.area}
+          {[
+            item.city ? getFilterCityLabel(item.city, activeLanguage) : "",
+            item.area ? getFilterAreaLabel(item.area, activeLanguage) : "",
+            item.category ? getFilterCategoryLabel(item.category, activeLanguage) : "",
+          ]
+            .filter(Boolean)
+            .join(" | ")}
         </div>
       </div>
       <span
