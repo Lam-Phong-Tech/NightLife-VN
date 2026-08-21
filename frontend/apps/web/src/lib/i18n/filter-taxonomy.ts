@@ -85,7 +85,7 @@ const languageLabels: Record<string, LocalizedLabels> = {
 
 const cityLabels: Record<string, LocalizedLabels> = {
   hn: { vi: "Hà Nội", en: "Hanoi", ja: "ハノイ", ko: "하노이", zh: "河内" },
-  hcm: { vi: "TP.HCM", en: "Ho Chi Minh City", ja: "ホーチミン市", ko: "호찌민시", zh: "胡志明市" },
+  hcm: { vi: "TP.HCM", en: "Ho Chi Minh City", ja: "ホーチミン", ko: "호찌민시", zh: "胡志明市" },
   hp: { vi: "Hải Phòng", en: "Hai Phong", ja: "ハイフォン", ko: "하이퐁", zh: "海防" },
   dn: { vi: "Đà Nẵng", en: "Da Nang", ja: "ダナン", ko: "다낭", zh: "岘港" },
   vietnam: { vi: "Việt Nam", en: "Vietnam", ja: "ベトナム", ko: "베트남", zh: "越南" },

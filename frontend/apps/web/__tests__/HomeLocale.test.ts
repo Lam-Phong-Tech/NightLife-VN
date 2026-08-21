@@ -9,7 +9,7 @@ import {
 describe("homepage locale labels", () => {
   it("renders common ranking and recommendation locations in Japanese", () => {
     expect(getFilterCityLabel("hn", "ja")).toBe("ハノイ");
-    expect(getFilterCityLabel("hcm", "ja")).toBe("ホーチミン市");
+    expect(getFilterCityLabel("hcm", "ja")).toBe("ホーチミン");
     expect(getFilterCityLabel("hp", "ja")).toBe("ハイフォン");
     expect(getFilterCityLabel("dn", "ja")).toBe("ダナン");
     expect(getFilterAreaLabel("Phường Sài Gòn", "ja")).toBe("サイゴン区");

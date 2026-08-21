@@ -4758,42 +4758,39 @@ input[type="search"] {
   }
 
   .nl-home-ranking-meta {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    row-gap: 7px;
+    display: flex;
+    align-items: center;
+    gap: 0;
     font-size: 12px !important;
     font-weight: 620 !important;
-    white-space: normal;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .nl-home-ranking-meta > span + span::before {
-    content: none;
+    content: " | ";
   }
 
   .nl-home-ranking-meta-city {
-    grid-column: 1;
-    grid-row: 1;
+    flex: 0 0 auto;
   }
 
   .nl-home-ranking-meta-category {
-    grid-column: 2;
-    grid-row: 1;
+    flex: 0 0 auto;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .nl-home-ranking-meta-category::before {
-    content: " | " !important;
+    content: " | ";
   }
 
   .nl-home-ranking-meta-street {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    flex: 0 1 auto;
     font-weight: 680;
-    overflow: visible;
-    overflow-wrap: anywhere;
-    text-overflow: clip;
-    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nl-mobile-footer-spacer {
