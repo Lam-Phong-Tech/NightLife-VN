@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
@@ -1740,7 +1741,7 @@ function AdminStoresContent() {
       </div>
 
       {/* Drawer */}
-      {venueSel && (
+      {venueSel && typeof document !== 'undefined' ? createPortal((
         <div className="nl-admin-store-drawer-overlay" style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
           <div onClick={closeDrawer} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
           <div className="scw nl-admin-drawer nl-admin-store-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '576px', maxWidth: '96vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)', display: 'flex', flexDirection: 'column' }}>
@@ -2323,7 +2324,7 @@ function AdminStoresContent() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body) : null}
 
       <AdminToast message={toast} />
     </div>
