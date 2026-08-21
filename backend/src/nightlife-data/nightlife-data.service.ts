@@ -18593,6 +18593,7 @@ export class NightlifeDataService {
             },
             store: {
               select: {
+                name: true,
                 category: true,
                 city: true,
                 district: true,
