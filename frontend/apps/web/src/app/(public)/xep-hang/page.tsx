@@ -532,7 +532,7 @@ function RankingRow({
                 alt={`Top ${item.rank}`}
                 width={43}
                 height={31}
-                style={{ width: 43, height: 31, objectFit: "contain", flex: "none" }}
+                style={{ width: 43, height: 31, objectFit: "contain", flex: "none", transform: "translateY(-6px)" }}
               />
               <span className="notranslate" translate="no" data-no-translate="true">{item.name}</span>
             </>

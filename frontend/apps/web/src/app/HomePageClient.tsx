@@ -2570,6 +2570,7 @@ function RankingRow({
                 height: 31,
                 flex: "0 0 auto",
                 objectFit: "contain",
+                transform: "translateY(-6px)",
               }}
             />
           ) : null}
