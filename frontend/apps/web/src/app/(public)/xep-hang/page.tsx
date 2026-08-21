@@ -527,9 +527,9 @@ function RankingRow({
                 className="vyr-rank-podium-image"
                 src={`/top${item.rank}.png`}
                 alt={`Top ${item.rank}`}
-                width={62}
-                height={44}
-                style={{ width: 62, height: 44, objectFit: "contain", flex: "none", transform: "translateY(-6px)" }}
+                width={52}
+                height={37}
+                style={{ width: 52, height: 37, objectFit: "contain", flex: "none", transform: "translateY(-6px)" }}
               />
               <span className="notranslate vyr-rank-name" translate="no" data-no-translate="true">{item.name}</span>
             </>
