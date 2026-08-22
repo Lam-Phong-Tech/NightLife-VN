@@ -4831,11 +4831,11 @@ input[type="search"] {
     height: 19px;
   }
 
-  /* Scale the podium artwork and its layout box together on compact cards. */
+  /* Keep the podium crown compact so it does not dominate mobile ranking cards. */
   .nl-home-ranking-podium-image {
-    width: 48px !important;
-    height: 34px !important;
-    transform: translateY(-2px) !important;
+    width: 40px !important;
+    height: 28px !important;
+    transform: translateY(-1px) !important;
     transform-origin: center;
   }
 
