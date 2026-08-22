@@ -2222,20 +2222,12 @@ function VenueMiniCard({
   const activeLanguage = useActiveLanguage();
 
   return (
-    <Link
-      href={item.href}
+    <div
       className="nl-home-card nl-home-venue-card"
-      onClick={() =>
-        trackHomeVenueSignal({
-          storeId: item.id,
-          storeSlug: item.slug,
-          category: item.category,
-          source: "home_recommendation",
-        })
-      }
       style={{
         minWidth: compact ? "min(162px, 100%)" : "0",
         display: "block",
+        position: "relative",
         overflow: "hidden",
         borderRadius: homeCardRadius,
         background: "var(--vy-surface-2)",
@@ -2243,41 +2235,50 @@ function VenueMiniCard({
         color: colors.text,
       }}
     >
-      <PlaceholderMedia
-        src={item.img}
-        responsiveImage={item.responsiveImage}
-        sizes="(max-width: 767px) calc((100vw - 48px) / 2), (max-width: 1279px) calc((100vw - 100px) / 3), calc((100vw - 124px) / 4)"
-        width={800}
-        height={450}
-        alt={item.name ?? "Địa điểm"}
-        label={translateText("Ảnh quán", activeLanguage)}
-        priority={priority}
-        style={{ height: compact ? "112px" : "156px", position: "relative" }}
+      <Link
+        href={item.href}
+        onClick={() =>
+          trackHomeVenueSignal({
+            storeId: item.id,
+            storeSlug: item.slug,
+            category: item.category,
+            source: "home_recommendation",
+          })
+        }
+        style={{ display: "block", color: "inherit" }}
       >
-        <FavoriteButton
-          isFavorite={isFavorite}
-          label={translateText(isFavorite ? "Bỏ lưu quán" : "Lưu quán", activeLanguage)}
-          className="home-favorite-button"
-          size="card"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onToggleFavorite?.(item);
-          }}
-          style={{
-            position: "absolute",
-            top: 10,
-            right: 10,
-          }}
+        <PlaceholderMedia
+          src={item.img}
+          responsiveImage={item.responsiveImage}
+          sizes="(max-width: 767px) calc((100vw - 48px) / 2), (max-width: 1279px) calc((100vw - 100px) / 3), calc((100vw - 124px) / 4)"
+          width={800}
+          height={450}
+          alt={item.name ?? "Địa điểm"}
+          label={translateText("Ảnh quán", activeLanguage)}
+          priority={priority}
+          style={{ height: compact ? "112px" : "156px", position: "relative" }}
         />
-      </PlaceholderMedia>
-      <div style={{ padding: "12px" }}>
-        <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
-        <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
-          {item.area} · {item.catLabel}
+        <div style={{ padding: "12px" }}>
+          <div className="notranslate" translate="no" data-no-translate="true" style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
+          <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
+            {item.area} · {item.catLabel}
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      <FavoriteButton
+        isFavorite={isFavorite}
+        label={translateText(isFavorite ? "Bỏ lưu quán" : "Lưu quán", activeLanguage)}
+        className="home-favorite-button"
+        size="card"
+        onClick={() => onToggleFavorite?.(item)}
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 2,
+        }}
+      />
+    </div>
   );
 }
 
