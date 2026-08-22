@@ -4846,11 +4846,16 @@ input[type="search"] {
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
-    margin-left: 12px !important;
+    margin-left: 10px !important;
+  }
+
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-label {
+    color: var(--vy-text) !important;
+    font-size: 13px !important;
   }
 
   .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
-    margin-left: 12px !important;
+    margin-left: 10px !important;
   }
 
   .nl-home-ranking-badge-line {
