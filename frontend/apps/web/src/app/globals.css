@@ -4879,6 +4879,10 @@ input[type="search"] {
     margin-left: 8px !important;
   }
 
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-podium-image {
+    margin-bottom: 2px;
+  }
+
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
     font-size: 15px !important;
     line-height: 1.12 !important;
