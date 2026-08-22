@@ -4855,7 +4855,7 @@ input[type="search"] {
   }
 
   .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-lower-name {
-    margin-top: 6px !important;
+    margin-top: 3px !important;
   }
 
   .nl-home-ranking-row[data-rank-target="CAST"][data-rank-tier="lower"] .nl-home-ranking-badge-line {
