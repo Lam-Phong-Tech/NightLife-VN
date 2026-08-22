@@ -2,6 +2,7 @@
 
 import React, { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -2474,6 +2475,7 @@ function RankingRow({
   onToggleFavorite?: (item: RankedItem) => void;
 }) {
   const activeLanguage = useActiveLanguage();
+  const router = useRouter();
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const isCast = item.targetType === "CAST";
   const isPodium = rankNumber >= 1 && rankNumber <= 3;
@@ -2495,12 +2497,20 @@ function RankingRow({
     : "";
 
   return (
-    <Link
-      href={item.href ?? "/xep-hang"}
+    <article
       className="nl-home-ranking-row"
       data-rank-target={isCast ? "CAST" : "STORE"}
       data-rank-tier={isPodium ? rankNumber : isLowerRank ? "lower" : undefined}
+      role="link"
+      tabIndex={0}
       aria-label={`${translateText("Xem chi tiết", activeLanguage)}: ${item.name ?? translateText("mục xếp hạng", activeLanguage)}`}
+      onClick={() => router.push(item.href ?? "/xep-hang")}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(item.href ?? "/xep-hang");
+        }
+      }}
       style={{
         display: "grid",
         gridTemplateColumns: isCast ? "72px minmax(0, 1fr) 30px" : "64px minmax(0, 1fr) 30px",
@@ -2672,7 +2682,7 @@ function RankingRow({
       >
         <ChevronRight size={24} strokeWidth={2.35} />
       </span>
-    </Link>
+    </article>
   );
 }
 
