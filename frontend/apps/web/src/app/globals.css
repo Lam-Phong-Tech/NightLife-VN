@@ -4939,6 +4939,11 @@ input[type="search"] {
 }
 
 @media (min-width: 768px) {
+  /* Tighten only the gap below the Top 4/5 label on desktop venue cards. */
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier="lower"] .nl-home-ranking-lower-name {
+    margin-top: 5px !important;
+  }
+
   .nl-home-page-responsive .nl-home-shell-inner {
     max-width: none !important;
     border: 0 !important;
