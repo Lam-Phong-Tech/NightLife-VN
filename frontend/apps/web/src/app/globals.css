@@ -4862,6 +4862,17 @@ input[type="search"] {
     margin-bottom: 0 !important;
   }
 
+  /* Leave a little breathing room between a podium crown and the venue name. */
+  .nl-home-ranking-row[data-rank-target="STORE"][data-rank-tier] .nl-home-ranking-badge-line {
+    row-gap: 4px !important;
+  }
+
+  /* Pull venue copy slightly back toward the crown on narrow screens. */
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name,
+  .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-meta {
+    margin-left: 8px !important;
+  }
+
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
     font-size: 15px !important;
     line-height: 1.12 !important;
