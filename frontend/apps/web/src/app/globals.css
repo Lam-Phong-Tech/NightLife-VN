@@ -4873,6 +4873,12 @@ input[type="search"] {
     margin-left: 8px !important;
   }
 
+  /* Align cast venue details 4px closer to the crown and portrait. */
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-store-name,
+  .nl-home-ranking-row[data-rank-target="CAST"] .nl-home-ranking-meta {
+    margin-left: 8px !important;
+  }
+
   .nl-home-ranking-row[data-rank-target="STORE"] .nl-home-ranking-name {
     font-size: 15px !important;
     line-height: 1.12 !important;
