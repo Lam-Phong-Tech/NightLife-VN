@@ -2144,54 +2144,56 @@ function VenueResultCard({
   };
 
   return (
-    <Link href={localizePathname(`/stores/${venue.id}`, language)} className="venue-card">
-      <div
-        className="venue-card-media"
-        aria-label={`${copy.venuePhoto} ${venue.name}`}
-        style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
-      >
-        <div className="venue-image-shade" />
-        <span className={`venue-status is-${venue.statusTone}`}>
-          <span />
-          {venue.statusLabel}
-        </span>
-        <span className="venue-deal notranslate" translate="no" data-no-translate="true">{venue.dealLabel}</span>
-        <FavoriteButton
-          as="span"
-          className="venue-heart"
-          isFavorite={isFavorite}
-          label={isFavorite ? copy.unsaveVenue : copy.saveVenue}
-          size="card"
-          onClick={handleFavoriteClick}
-        />
-      </div>
-
-      <div className="venue-card-body">
-        <div className="venue-card-main">
-          <div className="venue-name-row">
-            <h2 className="notranslate" translate="no" data-no-translate="true">{venue.name}</h2>
-          </div>
-          <p className="venue-meta">
-            {[venue.categoryLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
-          </p>
-          <div className="venue-tags">
-            {venue.tags.map((tag) => (
-              <span key={`${venue.id}-${tag}`}>{tag}</span>
-            ))}
-          </div>
-          <div className="venue-price notranslate" translate="no" data-no-translate="true">{venue.priceLabel}</div>
-          <div className="venue-distance">
-            <MapPin size={12} />
-            {[venue.distanceLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
-          </div>
+    <div style={{ position: "relative" }}>
+      <Link href={localizePathname(`/stores/${venue.id}`, language)} className="venue-card">
+        <div
+          className="venue-card-media"
+          aria-label={`${copy.venuePhoto} ${venue.name}`}
+          style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
+        >
+          <div className="venue-image-shade" />
+          <span className={`venue-status is-${venue.statusTone}`}>
+            <span />
+            {venue.statusLabel}
+          </span>
+          <span className="venue-deal notranslate" translate="no" data-no-translate="true">{venue.dealLabel}</span>
         </div>
 
-        <span className="venue-book-button">
-          {copy.bookTable}
-          <ChevronRight size={16} />
-        </span>
-      </div>
-    </Link>
+        <div className="venue-card-body">
+          <div className="venue-card-main">
+            <div className="venue-name-row">
+              <h2 className="notranslate" translate="no" data-no-translate="true">{venue.name}</h2>
+            </div>
+            <p className="venue-meta">
+              {[venue.categoryLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
+            </p>
+            <div className="venue-tags">
+              {venue.tags.map((tag) => (
+                <span key={`${venue.id}-${tag}`}>{tag}</span>
+              ))}
+            </div>
+            <div className="venue-price notranslate" translate="no" data-no-translate="true">{venue.priceLabel}</div>
+            <div className="venue-distance">
+              <MapPin size={12} />
+              {[venue.distanceLabel, venue.areaLabel, venue.cityLabel].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+
+          <span className="venue-book-button">
+            {copy.bookTable}
+            <ChevronRight size={16} />
+          </span>
+        </div>
+      </Link>
+      <FavoriteButton
+        as="span"
+        className="venue-heart"
+        isFavorite={isFavorite}
+        label={isFavorite ? copy.unsaveVenue : copy.saveVenue}
+        size="card"
+        onClick={handleFavoriteClick}
+      />
+    </div>
   );
 }
 
