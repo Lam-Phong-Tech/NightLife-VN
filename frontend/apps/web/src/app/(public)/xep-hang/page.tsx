@@ -866,7 +866,9 @@ export default function Page() {
           }}
         >
           <span>{new Date().getMonth() + 1}/{new Date().getFullYear()}</span>
-          <span>{translateText("Cập nhật", activeLanguage)} {new Date().getDate()}/{new Date().getMonth() + 1}</span>
+          <span className="notranslate" translate="no" data-no-translate="true">
+            {translateText("Cập nhật", activeLanguage)} {new Date().getDate()}/{new Date().getMonth() + 1}
+          </span>
         </div>
 
         <div className="vyr-ranking-list" aria-live="polite">

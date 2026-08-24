@@ -3262,7 +3262,9 @@ function RankingListColumn({
         }}
       >
         <span>{updateMonth}/{updateYear}</span>
-        <span>{translateText("Cập nhật", activeLanguage)} {updateDay}/{updateMonth}</span>
+        <span className="notranslate" translate="no" data-no-translate="true">
+          {translateText("Cập nhật", activeLanguage)} {updateDay}/{updateMonth}
+        </span>
       </div>
 
       {list.length ? (

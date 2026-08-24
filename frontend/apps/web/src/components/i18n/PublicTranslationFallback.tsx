@@ -13,7 +13,6 @@ import {
 } from "@/lib/i18n/locales";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import {
-  isPublicHomepagePath,
   shouldSkipLanguageTranslation,
 } from "./ClientLanguageTranslator";
 
@@ -90,8 +89,6 @@ export function PublicTranslationFallback({
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
-    if (isPublicHomepagePath(pathname)) return undefined;
-
     const resetBodyStyles = () => {
       if (document.body.style.top && document.body.style.top !== "0px") {
         document.body.style.top = "0px";
@@ -174,8 +171,7 @@ export function PublicTranslationFallback({
     hostKind === "admin" ||
     hostKind === "partner" ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/partner") ||
-    isPublicHomepagePath(pathname)
+    pathname.startsWith("/partner")
   ) {
     return null;
   }
