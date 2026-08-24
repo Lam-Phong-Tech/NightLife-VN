@@ -3302,7 +3302,9 @@ function RankingListColumn({
             cursor: "pointer",
           }}
         >
-          {translateText(showAll ? "Thu gọn" : "Xem thêm", activeLanguage)}
+          <span className="notranslate" translate="no" data-no-translate="true">
+            {translateText(showAll ? "Thu gọn" : "Xem thêm", activeLanguage)}
+          </span>
           <ChevronRight size={15} strokeWidth={2.4} style={{ transform: showAll ? "rotate(-90deg)" : undefined }} />
         </button>
       ) : null}
