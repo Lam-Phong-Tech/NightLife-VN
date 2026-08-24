@@ -13,7 +13,6 @@ import {
 } from "@/lib/i18n/locales";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import {
-  hasNativeRouteLocale,
   isPublicHomepagePath,
   shouldSkipLanguageTranslation,
 } from "./ClientLanguageTranslator";
@@ -91,7 +90,6 @@ export function PublicTranslationFallback({
     if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
       return undefined;
     }
-    if (hasNativeRouteLocale(pathname)) return undefined;
     if (isPublicHomepagePath(pathname)) return undefined;
 
     const resetBodyStyles = () => {
@@ -177,7 +175,6 @@ export function PublicTranslationFallback({
     hostKind === "partner" ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/partner") ||
-    hasNativeRouteLocale(pathname) ||
     isPublicHomepagePath(pathname)
   ) {
     return null;

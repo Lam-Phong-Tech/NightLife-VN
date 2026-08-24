@@ -466,7 +466,11 @@ function RankingRow({
   }).toString()}`;
   // Do not infer or fall back to the detailed address. Existing stores stay
   // blank until an admin explicitly provides their street name.
-  const addressLabel = item.streetName?.trim() || "";
+  // Street names are CMS content, so localize known place names here and let
+  // the public Google Translate fallback translate the remaining free text.
+  const addressLabel = item.streetName?.trim()
+    ? translateText(item.streetName.trim(), language)
+    : "";
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 
