@@ -77,6 +77,16 @@ function rewriteLocalizedLinks(language: LanguageCode) {
   });
 }
 
+function normalizeTranslatedStreetNames() {
+  document
+    .querySelectorAll<HTMLElement>("[data-vietyoru-street-name='true']")
+    .forEach((streetName) => {
+      const translated = streetName.textContent;
+      if (!translated?.includes("・")) return;
+      streetName.textContent = translated.replace(/\s*・\s*/g, " ");
+    });
+}
+
 export function PublicTranslationFallback({
   hostKind,
 }: {
@@ -108,6 +118,7 @@ export function PublicTranslationFallback({
       started = true;
       syncGoogleTranslateCookie(activeLanguage);
       rewriteLocalizedLinks(activeLanguage);
+      normalizeTranslatedStreetNames();
       resetBodyStyles();
 
       const translationRoot =
@@ -115,6 +126,7 @@ export function PublicTranslationFallback({
         document.body;
       linkObserver = new MutationObserver(() => {
         rewriteLocalizedLinks(activeLanguage);
+        normalizeTranslatedStreetNames();
         resetBodyStyles();
       });
       linkObserver.observe(translationRoot, { childList: true, subtree: true });

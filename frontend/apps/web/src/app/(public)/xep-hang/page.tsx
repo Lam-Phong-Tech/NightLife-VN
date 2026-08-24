@@ -538,7 +538,7 @@ function RankingRow({
               <span className="notranslate vyr-rank-name" translate="no" data-no-translate="true">{item.name}</span>
             </>
           ) : tone ? (
-            <span className="vyr-rank-label" style={{ color: tone.text }}>
+            <span className="notranslate vyr-rank-label" translate="no" data-no-translate="true" style={{ color: tone.text }}>
               {isCast ? `TOP ${item.rank} · ${item.name}` : `TOP ${item.rank} · ${item.name}`}
             </span>
           ) : (
@@ -547,7 +547,9 @@ function RankingRow({
         </span>
         {isCast ? <strong className="notranslate vyr-rank-store-name" translate="no" data-no-translate="true">{item.storeName ?? ""}</strong> : null}
         <small className="vyr-rank-meta">
-          {[rankingCityLabel(item, language), addressLabel, formatCategory(item.category, language)].filter(Boolean).join(" | ")}
+          {rankingCityLabel(item, language)}
+          {addressLabel ? <><span> | </span><span data-vietyoru-street-name="true">{addressLabel}</span></> : null}
+          {formatCategory(item.category, language) ? <><span> | </span>{formatCategory(item.category, language)}</> : null}
         </small>
       </span>
 

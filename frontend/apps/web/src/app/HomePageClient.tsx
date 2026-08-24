@@ -2600,24 +2600,26 @@ function RankingRow({
             />
           ) : null}
           {!isPodium && !isCast ? (
-            <span className="nl-home-ranking-label" style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
+            <span className="notranslate nl-home-ranking-label" translate="no" data-no-translate="true" style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "none", whiteSpace: "nowrap", flex: "0 0 auto" }}>
               Top {item.rank}
             </span>
           ) : null}
           {isCast ? (
-            <span className="nl-home-ranking-name" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span className="notranslate nl-home-ranking-name" translate="no" data-no-translate="true" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {!isPodium ? `Top ${item.rank} · ` : null}{item.name}
             </span>
           ) : null}
           {!isCast && !isLowerStoreRank ? (
-            <span className="nl-home-ranking-name" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span className="notranslate nl-home-ranking-name" translate="no" data-no-translate="true" style={{ color: colors.text, fontSize: "16px", fontWeight: 950, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {item.name}
             </span>
           ) : null}
         </div>
         {!isCast && isLowerStoreRank ? (
           <div
-            className="nl-home-ranking-name nl-home-ranking-lower-name"
+            className="notranslate nl-home-ranking-name nl-home-ranking-lower-name"
+            translate="no"
+            data-no-translate="true"
             style={{
               color: colors.text,
               fontSize: "18px",
@@ -2664,7 +2666,7 @@ function RankingRow({
           }}
         >
           {cityLabel ? <span className="nl-home-ranking-meta-city">{cityLabel}</span> : null}
-          {streetName ? <span className="nl-home-ranking-meta-street">{streetName}</span> : null}
+          {streetName ? <span className="nl-home-ranking-meta-street" data-vietyoru-street-name="true">{streetName}</span> : null}
           {categoryLabel ? <span className="nl-home-ranking-meta-category">{categoryLabel}</span> : null}
         </div>
       </div>
@@ -3241,7 +3243,7 @@ function RankingListColumn({
             whiteSpace: "nowrap",
           }}
         >
-          Top 5
+          <span className="notranslate" translate="no" data-no-translate="true">Top 5</span>
         </span>
       </div>
 
