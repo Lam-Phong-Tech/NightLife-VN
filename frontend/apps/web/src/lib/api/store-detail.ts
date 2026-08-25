@@ -1,4 +1,4 @@
-import { apiClient, resolveClientUrl } from "./client";
+import { ApiError, apiClient, resolveClientUrl } from "./client";
 
 export type StoreDetailMediaType = "IMAGE" | "VIDEO" | "DOCUMENT" | "OTHER";
 
@@ -213,8 +213,50 @@ export const normalizeStoreDetail = (store: PublicStoreDetail): PublicStoreDetai
   },
 });
 
+const storeDetailRetryDelaysMs = [300, 800] as const;
+
+export const isRetryableStoreDetailError = (error: unknown) => {
+  if (error instanceof ApiError) {
+    return error.status === 408 || error.status === 425 || error.status === 429 || error.status >= 500;
+  }
+
+  // A failed fetch has no HTTP response (for example, a short network or
+  // upstream connection interruption), so it is safe to retry this read-only request.
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error && /fetch|network|socket|timeout|connection/i.test(error.message))
+  );
+};
+
+export const retryStoreDetailRequest = async <T>(
+  request: () => Promise<T>,
+  delaysMs: readonly number[] = storeDetailRetryDelaysMs,
+  wait: (delayMs: number) => Promise<void> = (delayMs) =>
+    new Promise((resolve) => setTimeout(resolve, delayMs)),
+): Promise<T> => {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= delaysMs.length; attempt += 1) {
+    try {
+      return await request();
+    } catch (error) {
+      lastError = error;
+      const delayMs = delaysMs[attempt];
+      if (delayMs === undefined || !isRetryableStoreDetailError(error)) {
+        throw error;
+      }
+
+      await wait(delayMs);
+    }
+  }
+
+  throw lastError;
+};
+
 export const getStoreDetail = async (slug: string, options: RequestInit = {}) =>
-  normalizeStoreDetail(await apiClient<PublicStoreDetail>(`/stores/${encodeURIComponent(slug)}`, {
-    cache: "no-store",
-    ...options,
-  }));
+  retryStoreDetailRequest(async () =>
+    normalizeStoreDetail(await apiClient<PublicStoreDetail>(`/stores/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      ...options,
+    })),
+  );
