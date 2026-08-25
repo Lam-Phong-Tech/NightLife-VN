@@ -738,6 +738,7 @@ export function SupportChatWidget({
     "disconnected",
   );
   const hasLoadedSessionHistoryRef = useRef(false);
+  const loadedTicketHistoryRef = useRef<string | null>(null);
   const closedTicketIdsRef = useRef<Set<string>>(new Set());
   const isOpenRef = useRef(isOpen);
 
@@ -867,7 +868,7 @@ export function SupportChatWidget({
   }, [guestSessionId, currentUser?.id]);
 
   useEffect(() => {
-    if (!guestSessionId || ticketId || hasLoadedSessionHistoryRef.current) return;
+    if (!isOpen || !guestSessionId || ticketId || hasLoadedSessionHistoryRef.current) return;
 
     hasLoadedSessionHistoryRef.current = true;
     const params = new URLSearchParams({ guestSessionId });
@@ -885,6 +886,9 @@ export function SupportChatWidget({
         }
 
         if (restoredTicketId) {
+          // This response already contains the ticket's messages. Remember it
+          // so the ticket-specific effect below does not load them again.
+          loadedTicketHistoryRef.current = `${restoredTicketId}:${activeLanguage}`;
           setTicketId(restoredTicketId);
           localStorage.setItem("vy_support_ticket_id", restoredTicketId);
         }
@@ -898,13 +902,19 @@ export function SupportChatWidget({
           );
         }
       })
-      .catch(console.error)
+      .catch((error: unknown) => {
+        hasLoadedSessionHistoryRef.current = false;
+        console.error(error);
+      })
       .finally(() => setIsLoadingHistory(false));
-  }, [guestSessionId, ticketId, currentUser?.id, activeLanguage]);
+  }, [activeLanguage, currentUser?.id, guestSessionId, isOpen, ticketId]);
 
   useEffect(() => {
-    if (!ticketId) return;
+    if (!isOpen || !ticketId) return;
     const historyTicketId = ticketId;
+    const historyLoadKey = `${historyTicketId}:${activeLanguage}`;
+    if (loadedTicketHistoryRef.current === historyLoadKey) return;
+
     setIsLoadingHistory(true);
     fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
       .then((res) => res.json())
@@ -917,10 +927,11 @@ export function SupportChatWidget({
           );
           setMessages((currentMessages) => mergeSupportChatHistory(currentMessages, mapped));
         }
+        loadedTicketHistoryRef.current = historyLoadKey;
       })
       .catch(console.error)
       .finally(() => setIsLoadingHistory(false));
-  }, [ticketId, activeLanguage]);
+  }, [activeLanguage, isOpen, ticketId]);
 
   const activeLanguageRef = useRef(activeLanguage);
   useEffect(() => {

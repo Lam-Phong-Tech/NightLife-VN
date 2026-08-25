@@ -49,6 +49,14 @@ describe("support chat identity", () => {
     localStorage.setItem("vy_guest_session_id", "guest-session-1");
     localStorage.setItem("vy_support_ticket_id", "ticket-1");
     getAuthSessionTokenMock.mockReturnValue("member-token");
+    ioMock.mockReturnValue({
+      connected: false,
+      io: { opts: {} },
+      on: vi.fn(),
+      off: vi.fn(),
+      emit: vi.fn(),
+      close: vi.fn(),
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -79,10 +87,9 @@ describe("support chat identity", () => {
     );
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        "https://api.example.com/api/support/history?ticketId=ticket-1",
-      );
+      expect(ioMock).toHaveBeenCalled();
     });
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/api/support/history"))).toBe(false);
     vi.mocked(fetch).mockClear();
 
     rerender(

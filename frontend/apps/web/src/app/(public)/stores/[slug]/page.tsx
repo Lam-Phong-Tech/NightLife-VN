@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import type { LanguageCode } from "@/lib/i18n/locales";
@@ -32,7 +33,7 @@ export const dynamic = "force-dynamic";
 
 export const resolveStoreSlug = (slug: string) => legacyStoreSlugMap[slug] ?? slug;
 
-const loadStore = async (slug: string) => {
+const loadStore = cache(async (slug: string) => {
   try {
     return await getStoreDetail(resolveStoreSlug(slug));
   } catch (error) {
@@ -42,13 +43,13 @@ const loadStore = async (slug: string) => {
 
     throw error;
   }
-};
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug, locale } = await params;
 
   try {
-    const store = await getStoreDetail(resolveStoreSlug(slug));
+    const store = await loadStore(slug);
     return buildStoreMetadata(store, locale);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {

@@ -312,31 +312,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(localizedUrl, 308);
   }
 
-  const publicDetailMatch = requestedLanguage
-    ? pathname.match(/^\/(stores|casts)\/([^/]+)$/)
-    : null;
-  if (
-    publicDetailMatch &&
-    (hostKind === "local" || hostKind === "unknown" || hostKind === "public")
-  ) {
-    const [, resourceType, slug] = publicDetailMatch;
-    const detailApiBaseUrl =
-      process.env.BACKEND_API_URL ||
-      (hostKind === "local" ? request.nextUrl.origin + "/api/backend" : "https://api.vietyoru.com");
-    const detailApiUrl = new URL(
-      `${detailApiBaseUrl.replace(/\/$/, "")}/${resourceType}/${encodeURIComponent(slug)}`,
-    );
-
-    try {
-      const detailResponse = await fetch(detailApiUrl, { cache: "no-store" });
-      if (detailResponse.status === 404) {
-        return new NextResponse("Not Found", { status: 404 });
-      }
-    } catch {
-      // Let the page render its normal error state if the API is temporarily unavailable.
-    }
-  }
-
   const prefix = pathname.startsWith("/admin")
     ? "admin_"
     : pathname.startsWith("/partner")
