@@ -1909,10 +1909,11 @@ function AdminStoresContent() {
                     Tên đường tiếng Nhật (để trống để tự dịch)
                   </div>
                   <input
-                    style={inputS}
+                    style={{ ...inputS, cursor: 'not-allowed', opacity: 0.7 }}
                     placeholder="Ví dụ: タイヴァンルン"
                     value={streetNameJa}
-                    onChange={e => setStreetNameJa(e.target.value)}
+                    disabled
+                    aria-label="Tên đường tiếng Nhật (chỉ xem)"
                   />
                 </div>
                 
