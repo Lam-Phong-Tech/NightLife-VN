@@ -13,6 +13,7 @@ import {
 } from "@/lib/i18n/locales";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import {
+  hasNativeRouteLocale,
   shouldSkipLanguageTranslation,
 } from "./ClientLanguageTranslator";
 
@@ -35,6 +36,25 @@ type GoogleTranslateWindow = Window & {
   };
   [googleTranslateCallbackName]?: () => void;
 };
+
+/**
+ * Google Translate rewrites text nodes into its own DOM tree. React cannot
+ * safely reconcile or remove that tree during a client-side route change and
+ * can throw `removeChild` NotFoundError after a visitor navigates back.
+ *
+ * Locale-prefixed public routes are rendered with the app's native i18n
+ * provider, so the DOM-rewriting fallback must never run on those routes.
+ */
+export function shouldEnablePublicTranslationFallback(
+  pathname: string,
+  hostKind: NightlifeHostKind,
+  hostname = "",
+) {
+  return (
+    !shouldSkipLanguageTranslation(pathname, hostKind, hostname) &&
+    !hasNativeRouteLocale(pathname)
+  );
+}
 
 function initializeGoogleTranslate(language: LanguageCode) {
   const googleWindow = window as GoogleTranslateWindow;
@@ -96,7 +116,13 @@ export function PublicTranslationFallback({
   const activeLanguage = useActiveLanguage();
 
   useEffect(() => {
-    if (shouldSkipLanguageTranslation(pathname, hostKind, window.location.hostname)) {
+    if (
+      !shouldEnablePublicTranslationFallback(
+        pathname,
+        hostKind,
+        window.location.hostname,
+      )
+    ) {
       return undefined;
     }
     const resetBodyStyles = () => {
@@ -179,12 +205,7 @@ export function PublicTranslationFallback({
     };
   }, [activeLanguage, hostKind, pathname]);
 
-  if (
-    hostKind === "admin" ||
-    hostKind === "partner" ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/partner")
-  ) {
+  if (!shouldEnablePublicTranslationFallback(pathname, hostKind)) {
     return null;
   }
 

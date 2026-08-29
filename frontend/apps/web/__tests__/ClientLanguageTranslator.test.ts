@@ -5,6 +5,7 @@ import {
   isPublicHomepagePath,
   shouldSkipLanguageTranslation,
 } from "@/components/i18n/ClientLanguageTranslator";
+import { shouldEnablePublicTranslationFallback } from "@/components/i18n/PublicTranslationFallback";
 import type { NightlifeHostKind } from "@/lib/auth/hosts";
 
 describe("client language translator portal isolation", () => {
@@ -74,5 +75,24 @@ describe("native locale rendering", () => {
 
   it("keeps unprefixed legacy routes eligible for the fallback", () => {
     expect(hasNativeRouteLocale("/stores")).toBe(false);
+  });
+
+  it.each([
+    "/vi/stores",
+    "/en/stores/fuji",
+    "/ja/stores",
+    "/ja/stores/twenty-two-private-lounge",
+    "/ko/casts/hina",
+    "/zh/blog",
+  ])("never enables the DOM-rewriting Google fallback for %s", (pathname) => {
+    expect(
+      shouldEnablePublicTranslationFallback(pathname, "public", "vietyoru.com"),
+    ).toBe(false);
+  });
+
+  it("retains the fallback only for an unprefixed legacy public route", () => {
+    expect(
+      shouldEnablePublicTranslationFallback("/stores", "public", "vietyoru.com"),
+    ).toBe(true);
   });
 });
