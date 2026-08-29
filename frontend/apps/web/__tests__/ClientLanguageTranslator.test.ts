@@ -95,4 +95,14 @@ describe("native locale rendering", () => {
       shouldEnablePublicTranslationFallback("/stores", "public", "vietyoru.com"),
     ).toBe(true);
   });
+
+  it.each([
+    "/legal",
+    "/legal/chinh-sach-bao-mat",
+    "/ja/legal/chinh-sach-bao-mat",
+  ])("never enables DOM translation for the React-rendered legal route %s", (pathname) => {
+    expect(
+      shouldEnablePublicTranslationFallback(pathname, "public", "vietyoru.com"),
+    ).toBe(false);
+  });
 });

@@ -10,6 +10,7 @@ import {
 import {
   googleTranslateLanguageCode,
   localizeHref,
+  stripLanguagePrefix,
 } from "@/lib/i18n/locales";
 import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import {
@@ -50,9 +51,14 @@ export function shouldEnablePublicTranslationFallback(
   hostKind: NightlifeHostKind,
   hostname = "",
 ) {
+  const unprefixedPathname = stripLanguagePrefix(pathname);
+  const isLegalRoute =
+    unprefixedPathname === "/legal" || unprefixedPathname.startsWith("/legal/");
+
   return (
     !shouldSkipLanguageTranslation(pathname, hostKind, hostname) &&
-    !hasNativeRouteLocale(pathname)
+    !hasNativeRouteLocale(pathname) &&
+    !isLegalRoute
   );
 }
 

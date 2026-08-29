@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getPublishedLegalSections, legalPageDescription } from "@/lib/content/legal";
+import { localizeLegalPage } from "@/lib/content/legal-localizations";
 import { getServerSelectedLanguage } from "@/lib/i18n/server-language";
+import { translateTextCore } from "@/lib/i18n/translation-core";
+import type { LanguageCode } from "@/lib/i18n/locales";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -30,19 +33,35 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("vi-VN", {
+const dateLocale: Record<LanguageCode, string> = {
+  vi: "vi-VN",
+  en: "en-US",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  zh: "zh-CN",
+};
+
+const formatDate = (value: string, language: LanguageCode) =>
+  new Intl.DateTimeFormat(dateLocale[language], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
 
 export default async function LegalPage() {
-  const legalSections = await getPublishedLegalSections();
   const language = await getServerSelectedLanguage();
+  const legalSections = (await getPublishedLegalSections()).map((section) =>
+    localizeLegalPage(section, language),
+  );
+  const homeLabel = translateTextCore("Trang chủ", language);
+  const legalLabel = translateTextCore("Pháp lý", language);
+  const updatedLabel = translateTextCore("Cập nhật", language);
 
   return (
     <main
+      className="notranslate"
+      translate="no"
+      data-no-translate="true"
       style={{
         minHeight: "auto",
         background: "var(--vy-bg)",
@@ -52,8 +71,8 @@ export default async function LegalPage() {
     >
       <BreadcrumbJsonLd
         items={[
-          { name: "Trang chủ", path: "/" },
-          { name: "Pháp lý", path: "/legal" },
+          { name: homeLabel, path: "/" },
+          { name: legalLabel, path: "/legal" },
         ]}
         idPath="/legal"
       />
@@ -68,7 +87,7 @@ export default async function LegalPage() {
             textTransform: "uppercase",
           }}
         >
-          Legal
+          {legalLabel}
         </p>
         <h1
           style={{
@@ -80,7 +99,7 @@ export default async function LegalPage() {
             letterSpacing: 0,
           }}
         >
-          Pháp lý và chính sách vận hành
+          {translateTextCore("Pháp lý và chính sách vận hành", language)}
         </h1>
         <p style={{ maxWidth: "740px", margin: "16px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.75 }}>
           {legalPageDescription[language]}
@@ -115,7 +134,7 @@ export default async function LegalPage() {
                 {section.excerpt || section.title}
               </p>
               <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12px", fontWeight: 800 }}>
-                Cập nhật: {formatDate(section.updatedAt)}
+                {updatedLabel}: {formatDate(section.updatedAt, language)}
               </div>
             </Link>
           ))}
