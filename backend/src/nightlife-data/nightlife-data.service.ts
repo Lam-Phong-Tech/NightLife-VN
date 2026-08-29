@@ -47,6 +47,7 @@ import {
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { SocketGateway } from '../notifications/socket.gateway';
 import { PasswordService } from '../common/password.service';
+import { ContentTranslationService } from '../common/content-translation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ResponsiveMediaRecord,
@@ -934,6 +935,7 @@ type PublicRankingItem = {
   ward: string | null;
   streetAddress: string | null;
   streetName: string | null;
+  streetNameJa: string | null;
   city: string;
   cityCode?: string;
   category: StoreCategory;
@@ -1285,6 +1287,8 @@ export class NightlifeDataService {
     private readonly emailNotificationService?: EmailNotificationService,
     @Optional()
     private readonly passwordService?: PasswordService,
+    @Optional()
+    private readonly contentTranslationService?: ContentTranslationService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -2513,7 +2517,10 @@ export class NightlifeDataService {
               slug: true,
               category: true,
               description: true,
+              descriptionJa: true,
               address: true,
+              streetName: true,
+              streetNameJa: true,
               city: true,
               district: true,
               tags: true,
@@ -2596,7 +2603,10 @@ export class NightlifeDataService {
       slug: store.slug,
       category: store.category,
       description: store.description,
+      descriptionJa: store.descriptionJa,
       address: store.address,
+      streetName: store.streetName,
+      streetNameJa: store.streetNameJa,
       city: store.city,
       cityCode: store.area?.code
         ? this.cityCodeFromAreaCode(store.area.code)
@@ -2692,7 +2702,10 @@ export class NightlifeDataService {
         slug: true,
         category: true,
         description: true,
+        descriptionJa: true,
         address: true,
+        streetName: true,
+        streetNameJa: true,
         city: true,
         district: true,
         phone: true,
@@ -2907,8 +2920,11 @@ export class NightlifeDataService {
       name: store.name,
       category: store.category,
       description: store.description,
+      descriptionJa: store.descriptionJa,
       area: this.mapPublicArea(store.area),
       address: store.address,
+      streetName: store.streetName,
+      streetNameJa: store.streetNameJa,
       city: store.city,
       cityCode: store.area?.code
         ? this.cityCodeFromAreaCode(store.area.code)
@@ -3158,6 +3174,7 @@ export class NightlifeDataService {
         publicAlias: true,
         bio: true,
         publicBio: true,
+        publicBioJa: true,
         birthMonth: true,
         zodiacSign: true,
         heightCm: true,
@@ -3175,7 +3192,10 @@ export class NightlifeDataService {
             slug: true,
             category: true,
             description: true,
+            descriptionJa: true,
             address: true,
+            streetName: true,
+            streetNameJa: true,
             city: true,
             district: true,
             phone: true,
@@ -3283,6 +3303,9 @@ export class NightlifeDataService {
       name,
       publicAlias: cast.publicAlias,
       publicBio,
+      publicBioJa:
+        cast.publicBioJa ??
+        (!publicBio ? `${name}は${cast.store.name}で勤務しています。` : null),
       monthOfBirth: cast.birthMonth,
       zodiacSign: cast.zodiacSign,
       heightCm: cast.heightCm,
@@ -3301,7 +3324,10 @@ export class NightlifeDataService {
         slug: cast.store.slug,
         category: cast.store.category,
         description: cast.store.description,
+        descriptionJa: cast.store.descriptionJa,
         address: cast.store.address,
+        streetName: cast.store.streetName,
+        streetNameJa: cast.store.streetNameJa,
         city: cast.store.city,
         cityCode: cast.store.area?.code
           ? this.cityCodeFromAreaCode(cast.store.area.code)
@@ -18983,6 +19009,7 @@ export class NightlifeDataService {
         district: true,
         address: true,
         streetName: true,
+        streetNameJa: true,
         phone: true,
         area: {
           select: {
@@ -19067,6 +19094,7 @@ export class NightlifeDataService {
             district: true,
             address: true,
             streetName: true,
+            streetNameJa: true,
             area: {
               select: {
                 id: true,
@@ -19099,6 +19127,7 @@ export class NightlifeDataService {
       district: string | null;
       address: string | null;
       streetName: string | null;
+      streetNameJa: string | null;
       phone: string | null;
       area: {
         id: string;
@@ -19137,6 +19166,7 @@ export class NightlifeDataService {
       area: store.area?.name ?? store.district,
       ward: this.resolveStoreWard(store.area?.ward, store.address),
       streetName: this.cleanNullableText(store.streetName),
+      streetNameJa: this.cleanNullableText(store.streetNameJa),
       streetAddress: this.cleanNullableText(store.streetName),
       city: store.area?.city ?? store.city,
       cityCode,
@@ -19162,6 +19192,7 @@ export class NightlifeDataService {
         district: string | null;
         address: string | null;
         streetName: string | null;
+        streetNameJa: string | null;
         area: {
           id: string;
           code: string;
@@ -19203,6 +19234,7 @@ export class NightlifeDataService {
         cast.store.address,
       ),
       streetName: this.cleanNullableText(cast.store.streetName),
+      streetNameJa: this.cleanNullableText(cast.store.streetNameJa),
       streetAddress: this.cleanNullableText(cast.store.streetName),
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
@@ -25948,6 +25980,12 @@ export class NightlifeDataService {
     await this.assertAdminCastStoreIsActive(dto.storeId);
     const mediaIds = await this.resolveAdminCastMediaIds(dto.mediaIds);
     const slug = await this.resolveUniqueAdminCastSlug(dto.stageName);
+    const automaticPublicBioJa =
+      await this.contentTranslationService?.translateVietnameseToJapanese(
+        dto.bio,
+      );
+    const publicBioJa =
+      this.cleanNullableText(dto.publicBioJa) ?? automaticPublicBioJa ?? null;
 
     return this.prisma.$transaction(async (tx) => {
       const newCast = await tx.cast.create({
@@ -25957,6 +25995,7 @@ export class NightlifeDataService {
           storeId: dto.storeId,
           bio: dto.bio,
           publicBio: dto.bio,
+          publicBioJa,
           birthMonth: dto.birthMonth,
           zodiacSign: dto.zodiacSign,
           heightCm: dto.heightCm,
@@ -26006,6 +26045,27 @@ export class NightlifeDataService {
     const existing = await this.prisma.cast.findUniqueOrThrow({
       where: { id },
     });
+    const sourceBioChanged =
+      dto.bio !== undefined && dto.bio !== existing.publicBio;
+    const requestedPublicBioJa =
+      dto.publicBioJa !== undefined
+        ? this.cleanNullableText(dto.publicBioJa)
+        : undefined;
+    const manuallyChangedPublicBioJa =
+      dto.publicBioJa !== undefined &&
+      requestedPublicBioJa !== existing.publicBioJa;
+    const automaticPublicBioJa =
+      sourceBioChanged ||
+      (!existing.publicBioJa && (dto.bio ?? existing.publicBio))
+        ? await this.contentTranslationService?.translateVietnameseToJapanese(
+            dto.bio ?? existing.publicBio,
+          )
+        : undefined;
+    const publicBioJa = manuallyChangedPublicBioJa
+      ? requestedPublicBioJa
+      : automaticPublicBioJa !== undefined
+        ? automaticPublicBioJa
+        : existing.publicBioJa;
     if (dto.storeId !== undefined && dto.storeId !== existing.storeId) {
       await this.assertAdminCastStoreIsActive(dto.storeId);
     }
@@ -26053,6 +26113,7 @@ export class NightlifeDataService {
             storeId: dto.storeId ?? existing.storeId,
             bio: dto.bio !== undefined ? dto.bio : existing.bio,
             publicBio: dto.bio !== undefined ? dto.bio : existing.publicBio,
+            publicBioJa,
             birthMonth:
               dto.birthMonth !== undefined
                 ? dto.birthMonth
@@ -26174,6 +26235,9 @@ export class NightlifeDataService {
           ...(slug && { slug }),
           ...(dto.storeId && { storeId: dto.storeId }),
           ...(dto.bio !== undefined && { bio: dto.bio, publicBio: dto.bio }),
+          ...((dto.bio !== undefined ||
+            dto.publicBioJa !== undefined ||
+            automaticPublicBioJa !== undefined) && { publicBioJa }),
           ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
           ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),
           ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
@@ -26588,6 +26652,18 @@ export class NightlifeDataService {
         'Tên đường là bắt buộc đối với quán đang hoạt động.',
       );
     }
+    const [automaticStreetNameJa, automaticDescriptionJa] = await Promise.all([
+      this.contentTranslationService?.translateStreetNameToJapanese(streetName),
+      this.contentTranslationService?.translateVietnameseToJapanese(
+        dto.description,
+      ),
+    ]);
+    const streetNameJa =
+      this.cleanNullableText(dto.streetNameJa) ?? automaticStreetNameJa ?? null;
+    const descriptionJa =
+      this.cleanNullableText(dto.descriptionJa) ??
+      automaticDescriptionJa ??
+      null;
 
     const storeAddress = this.mergeWardIntoStoreAddress(
       dto.address,
@@ -26618,9 +26694,11 @@ export class NightlifeDataService {
           district: inferredArea?.district,
           address: storeAddress,
           streetName,
+          streetNameJa,
           mapUrl: dto.mapUrl,
           phone: dto.phone,
           description: dto.description,
+          descriptionJa,
           tags: dto.tags || [],
           openingHours: dto.openingHours,
           pricingInfo: dto.pricingInfo,
@@ -26680,6 +26758,47 @@ export class NightlifeDataService {
         'Tên đường là bắt buộc đối với quán đang hoạt động.',
       );
     }
+    const sourceStreetChanged =
+      dto.streetName !== undefined && streetName !== existing.streetName;
+    const sourceDescriptionChanged =
+      dto.description !== undefined && dto.description !== existing.description;
+    const requestedStreetNameJa =
+      dto.streetNameJa !== undefined
+        ? this.cleanNullableText(dto.streetNameJa)
+        : undefined;
+    const requestedDescriptionJa =
+      dto.descriptionJa !== undefined
+        ? this.cleanNullableText(dto.descriptionJa)
+        : undefined;
+    const manuallyChangedStreetNameJa =
+      dto.streetNameJa !== undefined &&
+      requestedStreetNameJa !== existing.streetNameJa;
+    const manuallyChangedDescriptionJa =
+      dto.descriptionJa !== undefined &&
+      requestedDescriptionJa !== existing.descriptionJa;
+    const [automaticStreetNameJa, automaticDescriptionJa] = await Promise.all([
+      sourceStreetChanged || (!existing.streetNameJa && streetName)
+        ? this.contentTranslationService?.translateStreetNameToJapanese(
+            streetName,
+          )
+        : undefined,
+      sourceDescriptionChanged ||
+      (!existing.descriptionJa && (dto.description ?? existing.description))
+        ? this.contentTranslationService?.translateVietnameseToJapanese(
+            dto.description ?? existing.description,
+          )
+        : undefined,
+    ]);
+    const streetNameJa = manuallyChangedStreetNameJa
+      ? requestedStreetNameJa
+      : automaticStreetNameJa !== undefined
+        ? automaticStreetNameJa
+        : existing.streetNameJa;
+    const descriptionJa = manuallyChangedDescriptionJa
+      ? requestedDescriptionJa
+      : automaticDescriptionJa !== undefined
+        ? automaticDescriptionJa
+        : existing.descriptionJa;
     let slug: string | undefined;
     const nextName = dto.name ?? existing.name;
     const isActivatingDraft =
@@ -26730,11 +26849,17 @@ export class NightlifeDataService {
           ...(inferredArea && { district: inferredArea.district }),
           ...(storeAddress && { address: storeAddress }),
           ...(dto.streetName !== undefined && { streetName }),
+          ...((dto.streetName !== undefined ||
+            dto.streetNameJa !== undefined ||
+            automaticStreetNameJa !== undefined) && { streetNameJa }),
           ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.description !== undefined && {
             description: dto.description,
           }),
+          ...((dto.description !== undefined ||
+            dto.descriptionJa !== undefined ||
+            automaticDescriptionJa !== undefined) && { descriptionJa }),
           ...(dto.tags !== undefined && { tags: dto.tags }),
           ...(dto.openingHours !== undefined && {
             openingHours: dto.openingHours,

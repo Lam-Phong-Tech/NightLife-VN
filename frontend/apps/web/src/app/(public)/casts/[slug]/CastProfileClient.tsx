@@ -137,7 +137,10 @@ const heroSwipeDistancePx = 48;
 export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const activeLanguage = useActiveLanguage();
   const userFeedback = useUserActionFeedback();
-  const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
+  const profile = useMemo(
+    () => profileFromCastDetail(cast, activeLanguage),
+    [activeLanguage, cast],
+  );
   const allMedia = profile.gallery.length ? profile.gallery : placeholderGallery;
   const photoGallery = allMedia.filter((media) => media.type === "IMAGE");
   const videoGallery = allMedia.filter((media) => media.type === "VIDEO");

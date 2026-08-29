@@ -22,6 +22,10 @@ export class CreateAdminCastDto {
   bio?: string;
 
   @IsOptional()
+  @IsString()
+  publicBioJa?: string;
+
+  @IsOptional()
   @IsInt()
   birthMonth?: number;
 
@@ -86,6 +90,10 @@ export class UpdateAdminCastDto {
   @IsOptional()
   @IsString()
   bio?: string;
+
+  @IsOptional()
+  @IsString()
+  publicBioJa?: string;
 
   @IsOptional()
   @IsInt()

@@ -130,9 +130,13 @@ export function mediaPreviewBg(
   return mediaBg(mediaPreviewUrl(media, fallback));
 }
 
-export function buildCastBio(cast: PublicCastDetail) {
+export function buildCastBio(cast: PublicCastDetail, language: LanguageCode = "vi") {
   const name = cast.publicAlias ?? cast.name ?? cast.stageName;
   const adminBio = cast.publicBio?.trim();
+
+  if (language === "ja") {
+    return cast.publicBioJa?.trim() || `${name}は${cast.store.name}で勤務しています。`;
+  }
 
   return adminBio || `${name} đang hoạt động tại ${cast.store.name}.`;
 }
@@ -184,7 +188,10 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
   return gallery.length ? gallery : placeholderGallery;
 }
 
-export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
+export function profileFromCastDetail(
+  cast: PublicCastDetail,
+  language: LanguageCode = "vi",
+): CastProfile {
   const name = cast.publicAlias ?? cast.name ?? cast.stageName;
 
   return {
@@ -192,7 +199,7 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     slug: cast.slug,
     stageName: cast.stageName,
     name,
-    bio: buildCastBio(cast),
+    bio: buildCastBio(cast, language),
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],
     hourlyRateVnd: cast.hourlyRateVnd ?? null,

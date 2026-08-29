@@ -451,7 +451,7 @@ function AdminCastsContent() {
 
   // Form states
   const [formData, setFormData] = useState<any>({
-    stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
+    stageName: '', storeId: '', bio: '', publicBioJa: '', birthMonth: '', zodiacSign: '',
     heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: false, status: 'PENDING_REVIEW',
     youtubeLinks: []
   });
@@ -782,7 +782,7 @@ function AdminCastsContent() {
 
   const openNewDrawer = () => {
     setFormData({
-      stageName: '', storeId: '', bio: '', birthMonth: '', zodiacSign: '',
+      stageName: '', storeId: '', bio: '', publicBioJa: '', birthMonth: '', zodiacSign: '',
       heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: false, status: 'PENDING_REVIEW',
       youtubeLinks: []
     });
@@ -813,6 +813,7 @@ function AdminCastsContent() {
       stageName: c.stageName || '',
       storeId: c.storeId || '',
       bio: c.bio || c.publicBio || '',
+      publicBioJa: c.publicBioJa || '',
       birthMonth: c.birthMonth || '',
       zodiacSign: c.zodiacSign || '',
       heightCm: c.heightCm || '',
@@ -1947,6 +1948,18 @@ function AdminCastsContent() {
                   value={formData.bio || ''}
                   onChange={e => setFormData({...formData, bio: e.target.value})}
                   style={{ width: '100%', minHeight: '118px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', color: colors.text, fontSize: '14px', padding: '16px', outline: 'none', resize: 'vertical', lineHeight: 1.55 }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>
+                  Mô tả tiếng Nhật (để trống để tự dịch)
+                </div>
+                <textarea
+                  placeholder="Backend sẽ tự dịch khi lưu; admin có thể sửa bản dịch tại đây."
+                  value={formData.publicBioJa || ''}
+                  onChange={e => setFormData({...formData, publicBioJa: e.target.value})}
+                  style={{ width: '100%', minHeight: '100px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', color: colors.text, fontSize: '14px', padding: '16px', outline: 'none', resize: 'vertical', lineHeight: 1.55 }}
                 />
               </div>
 

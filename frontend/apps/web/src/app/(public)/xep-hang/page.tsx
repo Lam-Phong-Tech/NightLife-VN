@@ -466,11 +466,15 @@ function RankingRow({
   }).toString()}`;
   // Do not infer or fall back to the detailed address. Existing stores stay
   // blank until an admin explicitly provides their street name.
-  // Street names are CMS content, so localize known place names here and let
-  // the public Google Translate fallback translate the remaining free text.
-  const addressLabel = item.streetName?.trim()
-    ? translateText(item.streetName.trim(), language)
-    : "";
+  // Japanese CMS content is translated before render. This keeps React as the
+  // sole owner of the DOM and avoids browser translation extensions mutating it.
+  const sourceStreetName = item.streetName?.trim() || "";
+  const addressLabel =
+    language === "ja" && item.streetNameJa?.trim()
+      ? item.streetNameJa.trim()
+      : sourceStreetName
+        ? translateText(sourceStreetName, language)
+        : "";
   const primaryAction = isStore ? "store" : "profile";
   const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 

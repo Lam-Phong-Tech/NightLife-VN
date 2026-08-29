@@ -480,10 +480,17 @@ const localizedStoreParts = (parts: Array<string | null | undefined>, language: 
 
 const storeAddressText = (store: PublicStoreDetail, language: LanguageCode) => {
   if (store.address) {
-    return localizeAddressAdminLabels(store.address, language);
+    const localizedStreetAddress =
+      language === "ja" && store.streetName && store.streetNameJa
+        ? store.address.replaceAll(store.streetName, store.streetNameJa)
+        : store.address;
+    return localizeAddressAdminLabels(localizedStreetAddress, language);
   }
 
-  return localizedStoreParts([(store as any).ward, store.area?.ward, store.area?.name, store.district, store.city], language);
+  return localizedStoreParts(
+    [store.ward, store.area?.ward, store.area?.name, store.district, store.city],
+    language,
+  );
 };
 
 const formatStoreCastCount = (count: number, language: LanguageCode) =>
@@ -2090,7 +2097,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const selectedBookingCast = serviceBookingCastOptions.find(
     (option) => option.slug === activeSelectedCastSlug,
   );
-  const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
+  const introSource =
+    activeLanguage === "ja" && store.descriptionJa
+      ? `🇯🇵 ${store.descriptionJa}\n\n🇻🇳 ${store.description ?? ""}`
+      : store.description;
+  const introLines = useMemo(
+    () => buildIntroLines(introSource),
+    [introSource],
+  );
   const introText = useMemo(
     () => selectIntroText(introLines, activeLanguage),
     [activeLanguage, introLines],

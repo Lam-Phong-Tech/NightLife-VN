@@ -518,8 +518,10 @@ model Store {
   slug                       String                 @unique
   category                   StoreCategory
   description                String?
+  descriptionJa              String?                @map("description_ja")
   address                    String?
   streetName                 String?                @map("street_name")
+  streetNameJa               String?                @map("street_name_ja")
   city                       String                 @default("Ho Chi Minh City")
   district                   String?
   phone                      String?
@@ -579,6 +581,7 @@ model Cast {
   bio                   String?
   publicAlias           String?                @map("public_alias")
   publicBio             String?                @map("public_bio")
+  publicBioJa           String?                @map("public_bio_ja")
   tags                  String[]               @default([])
   youtubeLinks          String[]               @default([]) @map("youtube_links")
   languages             String[]               @default([])

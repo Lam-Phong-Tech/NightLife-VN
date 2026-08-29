@@ -21,6 +21,7 @@
     "seed:permissions": "ts-node prisma/seed/seed-permissions-only.ts",
     "images:migrate": "ts-node scripts/migrate-images-to-webp.ts",
     "images:migrate:rollback": "ts-node scripts/rollback-image-migration.ts",
+    "translations:backfill:ja": "ts-node scripts/backfill-japanese-content.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

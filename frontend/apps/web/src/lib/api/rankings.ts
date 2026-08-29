@@ -25,6 +25,7 @@ export type PublicRankingItem = {
   area?: string | null;
   ward?: string | null;
   streetName?: string | null;
+  streetNameJa?: string | null;
   /** @deprecated Use streetName. Kept temporarily for API compatibility. */
   streetAddress?: string | null;
   city: string;

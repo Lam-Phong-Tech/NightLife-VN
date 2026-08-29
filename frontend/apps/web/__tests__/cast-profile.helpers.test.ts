@@ -9,6 +9,7 @@ const castDetail: PublicCastDetail = {
   name: 'Admin Alias',
   publicAlias: 'Admin Alias',
   publicBio: 'Admin bio from CMS',
+  publicBioJa: 'CMSからの日本語プロフィール',
   monthOfBirth: 8,
   zodiacSign: 'Leo',
   heightCm: 168,
@@ -106,5 +107,11 @@ describe('profileFromCastDetail', () => {
     expect(profile.gallery[2]?.thumbnailUrl).toBe(
       'https://cdn.example.com/admin-cast-video.webp',
     );
+  });
+
+  it('uses the server-side Japanese bio on Japanese routes', () => {
+    const profile = profileFromCastDetail(castDetail, 'ja');
+
+    expect(profile.bio).toBe('CMSからの日本語プロフィール');
   });
 });

@@ -57,6 +57,7 @@ export type PublicCastDetail = {
   name: string;
   publicAlias?: string | null;
   publicBio?: string | null;
+  publicBioJa?: string | null;
   monthOfBirth?: number | null;
   zodiacSign?: string | null;
   heightCm?: number | null;

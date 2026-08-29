@@ -622,7 +622,7 @@ function AdminStoresContent() {
   ];
   
   // Form State
-  const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '', descriptionJa: '' });
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [partnerAccountId, setPartnerAccountId] = useState('');
@@ -636,6 +636,7 @@ function AdminStoresContent() {
   const [selWard, setSelWard] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
   const [streetName, setStreetName] = useState('');
+  const [streetNameJa, setStreetNameJa] = useState('');
   const [pendingAddress, setPendingAddress] = useState('');
   
   const [albums, setAlbums] = useState<any[]>([]);
@@ -850,7 +851,7 @@ function AdminStoresContent() {
     removedMediaIdsRef.current.clear();
     createdDraftStoreIdRef.current = null;
     storeUploadScopePromiseRef.current = null;
-    setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
+    setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '', descriptionJa: '' });
     setNameTouched(false);
     setPhoneTouched(false);
     setHoursForm(cloneDefaultHours());
@@ -869,6 +870,7 @@ function AdminStoresContent() {
     setSelWard('');
     setStreetAddress('');
     setStreetName('');
+    setStreetNameJa('');
     setPendingAddress('');
     setPartnerAccountId('');
     setPartnerLinkEditing(false);
@@ -897,6 +899,7 @@ function AdminStoresContent() {
       mapUrl: st.mapUrl || '', 
       phone: st.phone || '',
       description: st.description || '',
+      descriptionJa: st.descriptionJa || '',
       status: mapStatusToEnum(st.status || 'ACTIVE')
     });
     setNameTouched(false);
@@ -910,6 +913,7 @@ function AdminStoresContent() {
     setVideos(videoMedia);
     setTags(st.tags || []);
     setStreetName(st.streetName || '');
+    setStreetNameJa(st.streetNameJa || '');
     setPartnerAccountId(st.partnerAccountId || st.partnerAccount?.id || '');
     setPartnerLinkEditing(false);
     
@@ -1049,6 +1053,7 @@ function AdminStoresContent() {
         phone: normalizedPhone,
         address: finalAddress,
         streetName: normalizedStreetName,
+        streetNameJa: streetNameJa.trim(),
         city: finalCity,
         ward: wName || undefined,
         tags,
@@ -1889,13 +1894,25 @@ function AdminStoresContent() {
 
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>
-                    Tên đường (Đề xuất viết tiếng Nhật)
+                    Tên đường tiếng Việt
                   </div>
                   <input
                     style={inputS}
                     placeholder="Ví dụ: Thái Văn Lung..."
                     value={streetName}
                     onChange={e => setStreetName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>
+                    Tên đường tiếng Nhật (để trống để tự dịch)
+                  </div>
+                  <input
+                    style={inputS}
+                    placeholder="Ví dụ: タイヴァンルン"
+                    value={streetNameJa}
+                    onChange={e => setStreetNameJa(e.target.value)}
                   />
                 </div>
                 
@@ -1954,6 +1971,18 @@ function AdminStoresContent() {
                     .ql-stroke { stroke: #c5c0b6 !important; }
                     .ql-fill { fill: #c5c0b6 !important; }
                   `}} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>
+                    Mô tả tiếng Nhật (để trống để tự dịch)
+                  </div>
+                  <textarea
+                    style={{ ...inputS, minHeight: 96, resize: 'vertical', lineHeight: 1.6 }}
+                    placeholder="Backend sẽ tự dịch khi lưu; admin có thể sửa bản dịch tại đây."
+                    value={formData.descriptionJa}
+                    onChange={e => updateForm('descriptionJa', e.target.value)}
+                  />
                 </div>
 
                 <div>

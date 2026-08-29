@@ -385,6 +385,7 @@ type RankedItem = {
   area?: string;
   ward?: string;
   streetName?: string;
+  streetNameJa?: string;
   href?: string;
   responsiveImage?: PublicResponsiveImage | null;
 };
@@ -671,6 +672,7 @@ function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
     area: item.area ?? undefined,
     ward: item.ward ?? undefined,
     streetName: item.streetName ?? undefined,
+    streetNameJa: item.streetNameJa ?? undefined,
     href: item.href,
     responsiveImage: item.responsiveImage,
   };
@@ -2492,7 +2494,10 @@ function RankingRow({
   const cityLabel = item.city
     ? getCityDisplay(undefined, item.city, activeLanguage)
     : "";
-  const streetName = item.streetName?.trim() ?? "";
+  const streetName =
+    (activeLanguage === "ja" ? item.streetNameJa : null)?.trim() ||
+    item.streetName?.trim() ||
+    "";
   const categoryLabel = item.category
     ? getFilterCategoryLabel(item.category, activeLanguage)
     : "";

@@ -167,6 +167,10 @@ export class CreateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  streetNameJa?: string;
+
+  @IsOptional()
+  @IsString()
   ward?: string;
 
   @IsOptional()
@@ -195,6 +199,10 @@ export class CreateAdminStoreDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionJa?: string;
 
   @IsOptional()
   @IsArray()
@@ -236,6 +244,10 @@ export class UpdateAdminStoreDto {
 
   @IsOptional()
   @IsString()
+  streetNameJa?: string;
+
+  @IsOptional()
+  @IsString()
   ward?: string;
 
   @IsOptional()
@@ -264,6 +276,10 @@ export class UpdateAdminStoreDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionJa?: string;
 
   @IsOptional()
   @IsArray()

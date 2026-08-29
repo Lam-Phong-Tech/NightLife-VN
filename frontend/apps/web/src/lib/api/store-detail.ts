@@ -120,8 +120,11 @@ export type PublicStoreDetail = {
   name: string;
   category: string;
   description?: string | null;
+  descriptionJa?: string | null;
   area?: StoreDetailArea | null;
   address?: string | null;
+  streetName?: string | null;
+  streetNameJa?: string | null;
   city: string;
   cityCode?: string;
   district?: string | null;

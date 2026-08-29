@@ -51,7 +51,10 @@ export type PublicStore = {
   slug: string;
   category: string;
   description?: string | null;
+  descriptionJa?: string | null;
   address?: string | null;
+  streetName?: string | null;
+  streetNameJa?: string | null;
   city: string;
   cityCode?: string;
   district?: string | null;
