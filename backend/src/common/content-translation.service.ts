@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 const GOOGLE_TRANSLATE_ENDPOINT =
   'https://translate.googleapis.com/translate_a/single';
+const MY_MEMORY_TRANSLATE_ENDPOINT =
+  'https://api.mymemory.translated.net/get';
 
 const japaneseStreetNames = new Map<string, string>([
   ['Thái Văn Lung', 'タイヴァンルン'],
@@ -53,17 +55,24 @@ function readGoogleTranslation(payload: unknown) {
   return translated || null;
 }
 
+function readMyMemoryTranslation(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const responseData = (payload as { responseData?: unknown }).responseData;
+  if (!responseData || typeof responseData !== 'object') return null;
+
+  const translatedText = (responseData as { translatedText?: unknown })
+    .translatedText;
+  return typeof translatedText === 'string' && translatedText.trim()
+    ? translatedText.trim()
+    : null;
+}
+
 @Injectable()
 export class ContentTranslationService {
   private readonly logger = new Logger(ContentTranslationService.name);
 
-  async translateVietnameseToJapanese(value?: string | null) {
-    const source = value ? htmlToPlainText(value) : '';
-    if (!source) return null;
-    if (/[\u3040-\u30ff]/u.test(source) && !/[À-ỹ]/u.test(source)) {
-      return source;
-    }
-
+  private async translateWithGoogle(source: string) {
     const endpoint =
       process.env.TRANSLATION_API_BASE_URL?.trim() || GOOGLE_TRANSLATE_ENDPOINT;
     const url = new URL(endpoint);
@@ -73,19 +82,58 @@ export class ContentTranslationService {
     url.searchParams.set('dt', 't');
     url.searchParams.set('q', source);
 
-    try {
-      const response = await fetch(url, {
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(7_000),
-      });
-      if (!response.ok) {
-        throw new Error(`translation provider returned ${response.status}`);
-      }
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(7_000),
+    });
+    if (!response.ok) {
+      throw new Error(`Google provider returned ${response.status}`);
+    }
 
-      return readGoogleTranslation(await response.json());
+    return readGoogleTranslation(await response.json());
+  }
+
+  private async translateWithMyMemory(source: string) {
+    const url = new URL(MY_MEMORY_TRANSLATE_ENDPOINT);
+    url.searchParams.set('q', source);
+    url.searchParams.set('langpair', 'vi|ja');
+    const email = process.env.MYMEMORY_TRANSLATION_EMAIL?.trim();
+    if (email) url.searchParams.set('de', email);
+
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(7_000),
+    });
+    if (!response.ok) {
+      throw new Error(`MyMemory provider returned ${response.status}`);
+    }
+
+    return readMyMemoryTranslation(await response.json());
+  }
+
+  async translateVietnameseToJapanese(value?: string | null) {
+    const source = value ? htmlToPlainText(value) : '';
+    if (!source) return null;
+    if (/[\u3040-\u30ff]/u.test(source) && !/[À-ỹ]/u.test(source)) {
+      return source;
+    }
+
+    if (process.env.TRANSLATION_PROVIDER?.trim().toLowerCase() !== 'mymemory') {
+      try {
+        const translated = await this.translateWithGoogle(source);
+        if (translated) return translated;
+      } catch (error) {
+        this.logger.warn(
+          `Google Japanese translation failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    try {
+      return await this.translateWithMyMemory(source);
     } catch (error) {
       this.logger.warn(
-        `Japanese translation failed: ${error instanceof Error ? error.message : String(error)}`,
+        `MyMemory Japanese translation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
     }
@@ -106,4 +154,5 @@ export class ContentTranslationService {
 export const contentTranslationInternals = {
   htmlToPlainText,
   readGoogleTranslation,
+  readMyMemoryTranslation,
 };

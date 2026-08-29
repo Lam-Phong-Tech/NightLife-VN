@@ -44,6 +44,24 @@ describe('ContentTranslationService', () => {
     ).resolves.toBeNull();
   });
 
+  it('falls back to MyMemory when Google rejects the VPS IP', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockRejectedValueOnce(new Error('Google blocked'))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            responseData: { translatedText: '光が空間を照らします。' },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    await expect(
+      service.translateVietnameseToJapanese('Ánh đèn làm bừng sáng không gian.'),
+    ).resolves.toBe('光が空間を照らします。');
+  });
+
   it('normalizes rich text before sending it for translation', () => {
     expect(
       contentTranslationInternals.htmlToPlainText(

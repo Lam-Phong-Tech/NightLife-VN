@@ -4,7 +4,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { ContentTranslationService } from '../src/common/content-translation.service';
 
 const APPLY = process.argv.includes('--apply');
-const CONCURRENCY = 4;
+const STORE_SLUG = process.argv
+  .find((argument) => argument.startsWith('--store='))
+  ?.slice('--store='.length);
+// The fallback provider is deliberately rate-limited; keep production backfill
+// gentle so normal admin saves stay responsive.
+const CONCURRENCY = 1;
 
 type TranslationTask = {
   label: string;
@@ -56,6 +61,7 @@ async function main() {
       prisma.store.findMany({
         where: {
           deletedAt: null,
+          ...(STORE_SLUG ? { slug: STORE_SLUG } : {}),
           OR: [
             { streetName: { not: null }, streetNameJa: null },
             { description: { not: null }, descriptionJa: null },
