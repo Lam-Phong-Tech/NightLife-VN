@@ -26061,11 +26061,15 @@ export class NightlifeDataService {
             dto.bio ?? existing.publicBio,
           )
         : undefined;
+    const publicBioWasCleared =
+      sourceBioChanged && !this.cleanNullableText(dto.bio);
     const publicBioJa = manuallyChangedPublicBioJa
       ? requestedPublicBioJa
-      : automaticPublicBioJa !== undefined
-        ? automaticPublicBioJa
-        : existing.publicBioJa;
+      : publicBioWasCleared
+        ? null
+        : automaticPublicBioJa
+          ? automaticPublicBioJa
+          : existing.publicBioJa;
     if (dto.storeId !== undefined && dto.storeId !== existing.storeId) {
       await this.assertAdminCastStoreIsActive(dto.storeId);
     }
@@ -26789,16 +26793,23 @@ export class NightlifeDataService {
           )
         : undefined,
     ]);
+    const streetNameWasCleared = sourceStreetChanged && !streetName;
+    const descriptionWasCleared =
+      sourceDescriptionChanged && !this.cleanNullableText(dto.description);
     const streetNameJa = manuallyChangedStreetNameJa
       ? requestedStreetNameJa
-      : automaticStreetNameJa !== undefined
-        ? automaticStreetNameJa
-        : existing.streetNameJa;
+      : streetNameWasCleared
+        ? null
+        : automaticStreetNameJa
+          ? automaticStreetNameJa
+          : existing.streetNameJa;
     const descriptionJa = manuallyChangedDescriptionJa
       ? requestedDescriptionJa
-      : automaticDescriptionJa !== undefined
-        ? automaticDescriptionJa
-        : existing.descriptionJa;
+      : descriptionWasCleared
+        ? null
+        : automaticDescriptionJa
+          ? automaticDescriptionJa
+          : existing.descriptionJa;
     let slug: string | undefined;
     const nextName = dto.name ?? existing.name;
     const isActivatingDraft =
